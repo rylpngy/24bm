@@ -397,6 +397,7 @@ export interface JavaProcurementApiClient {
   loginPlatform(): Promise<JavaLoginResponse>;
   loginBuyer(): Promise<JavaLoginResponse>;
   loginSupplier(): Promise<JavaLoginResponse>;
+  getPlatformWorkspace(): Promise<JavaPlatformWorkspaceData>;
   getPlatformOverview(): Promise<JavaPlatformOverviewDto>;
   listPlatformTenants(): Promise<JavaPlatformTenantDto[]>;
   listPlatformEnterpriseReviews(): Promise<JavaEnterpriseReviewDto[]>;
@@ -746,6 +747,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     loginPlatform,
     loginBuyer,
     loginSupplier,
+    getPlatformWorkspace() {
+      return platformRequest<JavaPlatformWorkspaceData>('/api/v1/platform/workspace');
+    },
     getPlatformOverview() {
       return platformRequest<JavaPlatformOverviewDto>('/api/v1/platform/overview');
     },
@@ -1020,12 +1024,7 @@ const toTenantStatus = (status: string): ProcurementMvpModel['tenants'][number][
 export const loadJavaPlatformWorkspaceData = async (
   client: JavaProcurementApiClient,
 ): Promise<JavaPlatformWorkspaceData> => {
-  const [overview, tenants, enterpriseReviews] = await Promise.all([
-    client.getPlatformOverview(),
-    client.listPlatformTenants(),
-    client.listPlatformEnterpriseReviews(),
-  ]);
-  return { overview, tenants, enterpriseReviews };
+  return client.getPlatformWorkspace();
 };
 
 export const applyJavaPlatformWorkspaceData = (

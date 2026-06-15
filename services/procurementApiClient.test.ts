@@ -310,7 +310,7 @@ describe('procurement API clients', () => {
     ]);
   });
 
-  it('uses the Java API client to authenticate and load platform workspace data with bearer tokens', async () => {
+  it('uses the Java API client to authenticate and load platform workspace data from the aggregate endpoint', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
       calls.push({ input, init });
@@ -331,45 +331,33 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
-      if (input === 'http://java.test/api/v1/platform/overview') {
+      if (input === 'http://java.test/api/v1/platform/workspace') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer platform-token' });
         return Response.json({
           success: true,
           data: {
-            scope: 'platform',
-            tenantCount: 2,
-            publicSupplierCount: 3,
-            pendingEnterpriseReviews: 1,
+            overview: {
+              scope: 'platform',
+              tenantCount: 2,
+              publicSupplierCount: 3,
+              pendingEnterpriseReviews: 1,
+            },
+            tenants: [{
+              id: 'tenant-acme',
+              name: 'Acme 采购公司',
+              plan: 'MVP',
+              status: 'active',
+              enabledFeatures: ['rfq', 'order', 'finance'],
+              userLimit: 100,
+            }],
+            enterpriseReviews: [{
+              id: 'ent-supplier-sunrise',
+              name: '晨光科技供应商',
+              type: 'supplier',
+              verified: false,
+              reviewStatus: 'pending',
+            }],
           },
-          message: '',
-        });
-      }
-      if (input === 'http://java.test/api/v1/platform/tenants') {
-        expect(init?.headers).toMatchObject({ Authorization: 'Bearer platform-token' });
-        return Response.json({
-          success: true,
-          data: [{
-            id: 'tenant-acme',
-            name: 'Acme 采购公司',
-            plan: 'MVP',
-            status: 'active',
-            enabledFeatures: ['rfq', 'order', 'finance'],
-            userLimit: 100,
-          }],
-          message: '',
-        });
-      }
-      if (input === 'http://java.test/api/v1/platform/enterprise-reviews') {
-        expect(init?.headers).toMatchObject({ Authorization: 'Bearer platform-token' });
-        return Response.json({
-          success: true,
-          data: [{
-            id: 'ent-supplier-sunrise',
-            name: '晨光科技供应商',
-            type: 'supplier',
-            verified: false,
-            reviewStatus: 'pending',
-          }],
           message: '',
         });
       }
@@ -397,7 +385,10 @@ describe('procurement API clients', () => {
     expect(platformData.overview.publicSupplierCount).toBe(3);
     expect(platformData.tenants[0].name).toBe('Acme 采购公司');
     expect(platformData.enterpriseReviews[0].reviewStatus).toBe('pending');
-    expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/platform/workspace',
+    ]);
   });
 
   it('uses the Java API client to authenticate and load supplier workspace data from the aggregate endpoint', async () => {

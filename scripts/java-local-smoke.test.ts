@@ -16,6 +16,7 @@ describe('Java local smoke command', () => {
 
     expect(packageJson.scripts['java:smoke']).toBe('node scripts/java-local-smoke.mjs');
     expect(script).toContain('/api/v1/auth/login');
+    expect(script).toContain("requestJson('/api/v1/platform/workspace'");
     expect(script).toContain("requestJson('/api/v1/platform/overview'");
     expect(script).toContain("requestJson('/api/v1/platform/tenants'");
     expect(script).toContain("requestJson('/api/v1/platform/enterprise-reviews'");

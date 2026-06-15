@@ -92,6 +92,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/platform/workspace',
+    audience: 'platform',
+    action: '加载平台工作台聚合数据',
+    requestSchema: 'PlatformWorkspaceRequest',
+    responseSchema: 'PlatformWorkspace',
+  },
+  {
+    method: 'GET',
     path: '/platform/overview',
     audience: 'platform',
     action: '加载平台运营概览',
@@ -590,6 +598,8 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
         [
           'LoginRequest',
           'LoginResponse',
+          'PlatformWorkspaceRequest',
+          'PlatformWorkspace',
           'FeatureToggleRequest',
           'Tenant',
           'EnterpriseReviewRequest',

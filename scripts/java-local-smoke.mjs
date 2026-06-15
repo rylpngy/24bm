@@ -68,7 +68,8 @@ const main = async () => {
   const platformHeaders = { Authorization: `${platformLogin.tokenType} ${platformLogin.accessToken}` };
   const authHeaders = { Authorization: `${buyerLogin.tokenType} ${buyerLogin.accessToken}` };
   const supplierHeaders = { Authorization: `${supplierLogin.tokenType} ${supplierLogin.accessToken}` };
-  const [platformOverview, platformTenants, platformEnterpriseReviews] = await Promise.all([
+  const [platformWorkspace, platformOverview, platformTenants, platformEnterpriseReviews] = await Promise.all([
+    requestJson('/api/v1/platform/workspace', { headers: platformHeaders }),
     requestJson('/api/v1/platform/overview', { headers: platformHeaders }),
     requestJson('/api/v1/platform/tenants', { headers: platformHeaders }),
     requestJson('/api/v1/platform/enterprise-reviews', { headers: platformHeaders }),
@@ -99,6 +100,9 @@ const main = async () => {
   requireItem(platformTenants, (item) => item.id === 'tenant-acme', 'tenant-acme');
   if (platformOverview.scope !== 'platform') {
     throw new Error(`Unexpected Java platform overview scope: ${platformOverview.scope}`);
+  }
+  if (platformWorkspace.overview?.scope !== 'platform' || !Array.isArray(platformWorkspace.tenants)) {
+    throw new Error('Unexpected Java platform workspace aggregate payload');
   }
   if (supplierProfile.id !== 'ent-supplier-sunrise') {
     throw new Error(`Unexpected Java supplier profile: ${supplierProfile.id}`);
@@ -192,6 +196,7 @@ const main = async () => {
   console.log(`Logged in as ${platformLogin.displayName} for platform scope`);
   console.log(`Logged in as ${buyerLogin.displayName} for tenant ${buyerLogin.tenantId}`);
   console.log(`Loaded ${platformTenants.length} tenants, ${platformOverview.publicSupplierCount} public suppliers, ${platformEnterpriseReviews.length} pending enterprise reviews`);
+  console.log(`Loaded platform workspace aggregate with ${platformWorkspace.tenants.length} tenants and ${platformWorkspace.enterpriseReviews.length} pending enterprise reviews`);
   console.log(`Loaded ${suppliers.length} suppliers, ${materials.length} materials, ${users.length} buyer users`);
   console.log(`Loaded buyer workspace aggregate with ${buyerWorkspace.suppliers.length} suppliers and ${buyerWorkspace.auditLogs.length} audit logs`);
   console.log(`Loaded ${demands.length} purchase demands`);

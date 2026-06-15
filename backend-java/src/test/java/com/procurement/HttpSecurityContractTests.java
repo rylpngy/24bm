@@ -47,10 +47,13 @@ import com.procurement.platform.api.PlatformEnterpriseController;
 import com.procurement.platform.api.PlatformOverviewController;
 import com.procurement.platform.api.PlatformOverviewResponse;
 import com.procurement.platform.api.PlatformTenantController;
+import com.procurement.platform.api.PlatformWorkspaceController;
+import com.procurement.platform.api.PlatformWorkspaceResponse;
 import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.application.PlatformEnterpriseApplicationService;
 import com.procurement.platform.application.PlatformOverviewApplicationService;
 import com.procurement.platform.application.PlatformTenantApplicationService;
+import com.procurement.platform.application.PlatformWorkspaceApplicationService;
 import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.AwardDecisionResponse;
 import com.procurement.sourcing.api.AwardRfqRequest;
@@ -93,6 +96,7 @@ import org.springframework.test.web.servlet.MvcResult;
     PlatformOverviewController.class,
     PlatformTenantController.class,
     PlatformEnterpriseController.class,
+    PlatformWorkspaceController.class,
     BuyerSupplierController.class,
     MaterialController.class,
     BuyerUserController.class,
@@ -146,6 +150,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private PlatformOverviewApplicationService platformOverviewApplicationService;
+
+  @MockBean
+  private PlatformWorkspaceApplicationService platformWorkspaceApplicationService;
 
   @MockBean
   private BuyerSupplierApplicationService buyerSupplierApplicationService;
@@ -581,6 +588,42 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.tenantCount").value(2))
         .andExpect(jsonPath("$.data.publicSupplierCount").value(3))
         .andExpect(jsonPath("$.data.pendingEnterpriseReviews").value(1));
+  }
+
+  @Test
+  void platformCanLoadAggregatedWorkspaceButBuyerCannot() throws Exception {
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+    String platformToken = loginAndExtractToken("""
+        {
+          "account": "platform",
+          "password": "demo123456",
+          "scope": "PLATFORM"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/platform/workspace")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
+    when(platformWorkspaceApplicationService.load()).thenReturn(new PlatformWorkspaceResponse(
+        new PlatformOverviewResponse("platform", 2, 3, 1),
+        List.of(new TenantResponse("tenant-acme", "Acme 采购公司", "MVP", "active", List.of("rfq"), 100)),
+        List.of(new EnterpriseReviewResponse("ent-supplier-sunrise", "晨光科技供应商", "supplier", false, "pending"))));
+
+    mockMvc.perform(get("/api/v1/platform/workspace")
+            .header("Authorization", "Bearer " + platformToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.overview.scope").value("platform"))
+        .andExpect(jsonPath("$.data.tenants[0].id").value("tenant-acme"))
+        .andExpect(jsonPath("$.data.enterpriseReviews[0].reviewStatus").value("pending"));
   }
 
   @Test

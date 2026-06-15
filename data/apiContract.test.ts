@@ -11,6 +11,7 @@ describe('procurement SaaS API contract draft', () => {
   it('defines the first-phase inquiry-to-payment flow endpoints in order', () => {
     expect(mvpFlowEndpoints.map((endpoint) => `${endpoint.method} ${endpoint.path}`)).toEqual([
       'POST /auth/login',
+      'GET /platform/workspace',
       'GET /platform/overview',
       'GET /platform/tenants',
       'POST /platform/tenants/{tenantId}/features',
