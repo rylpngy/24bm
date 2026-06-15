@@ -10,12 +10,20 @@ describe('Java platform workspace scaffold', () => {
   it('uses an application service for real platform overview counts', () => {
     const controller = read('backend-java/src/main/java/com/procurement/platform/api/PlatformOverviewController.java');
     const service = read('backend-java/src/main/java/com/procurement/platform/application/PlatformOverviewApplicationService.java');
+    const workspaceService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformWorkspaceApplicationService.java');
+    const workspaceResponse = read('backend-java/src/main/java/com/procurement/platform/api/PlatformWorkspaceResponse.java');
+    const operationSummary = read('backend-java/src/main/java/com/procurement/platform/api/PlatformOperationSummaryResponse.java');
 
     expect(controller).toContain('PlatformOverviewApplicationService');
     expect(controller).toContain('platformOverviewApplicationService.overview()');
     expect(service).toContain('tenantCount');
     expect(service).toContain('publicSupplierCount');
     expect(service).toContain('pendingEnterpriseReviews');
+    expect(workspaceResponse).toContain('PlatformOperationSummaryResponse operationSummary');
+    expect(operationSummary).toContain('activeTenantCount');
+    expect(operationSummary).toContain('pendingEnterpriseReviewCount');
+    expect(workspaceService).toContain('summarizeOperations');
+    expect(workspaceService).toContain('ACTIVE_TENANT_STATUS');
   });
 
   it('exposes platform announcement publishing as a platform scoped API', () => {
@@ -56,5 +64,6 @@ describe('Java platform workspace scaffold', () => {
     expect(app).toContain('loadJavaPlatformWorkspaceData(javaApiClient)');
     expect(app).toContain('applyJavaPlatformWorkspaceData');
     expect(localGuide).toContain('GET /api/v1/platform/workspace');
+    expect(localGuide).toContain('platform operation summary');
   });
 });

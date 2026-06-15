@@ -90,6 +90,7 @@ import com.procurement.platform.api.FeatureToggleRequest;
 import com.procurement.platform.api.PlatformAnnouncementController;
 import com.procurement.platform.api.PlatformAnnouncementResponse;
 import com.procurement.platform.api.PlatformEnterpriseController;
+import com.procurement.platform.api.PlatformOperationSummaryResponse;
 import com.procurement.platform.api.PlatformOverviewController;
 import com.procurement.platform.api.PlatformOverviewResponse;
 import com.procurement.platform.api.PlatformTenantController;
@@ -1396,6 +1397,7 @@ class HttpSecurityContractTests {
 
     when(platformWorkspaceApplicationService.load()).thenReturn(new PlatformWorkspaceResponse(
         new PlatformOverviewResponse("platform", 2, 3, 1),
+        new PlatformOperationSummaryResponse(2, 1, 3, 1),
         List.of(new TenantResponse("tenant-acme", "Acme 采购公司", "MVP", "active", List.of("rfq"), 100)),
         List.of(new EnterpriseReviewResponse("ent-supplier-sunrise", "晨光科技供应商", "supplier", false, "pending"))));
 
@@ -1404,6 +1406,7 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.overview.scope").value("platform"))
+        .andExpect(jsonPath("$.data.operationSummary.activeTenantCount").value(1))
         .andExpect(jsonPath("$.data.tenants[0].id").value("tenant-acme"))
         .andExpect(jsonPath("$.data.enterpriseReviews[0].reviewStatus").value("pending"));
   }
