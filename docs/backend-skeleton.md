@@ -76,6 +76,18 @@ npm run legacy:api:dev
 VITE_API_BASE_URL=http://localhost:8787 npm run dev
 ```
 
+Java 本地联调方式：
+
+```bash
+npm run dev:java
+```
+
+mock 视觉模式仅用于没有 Java 后端时查看页面壳：
+
+```bash
+npm run dev:mock
+```
+
 后续接真实后端时，按 Java 路线处理：
 
 1. 保留 `ProcurementApiClient` 接口。

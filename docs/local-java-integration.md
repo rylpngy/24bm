@@ -56,7 +56,7 @@ The `local` Spring profile uses PostgreSQL at `jdbc:postgresql://localhost:5432/
 In another terminal:
 
 ```bash
-VITE_JAVA_API_BASE_URL=http://localhost:8080 npm run dev
+npm run dev:java
 ```
 
 Optional demo login overrides:
@@ -71,10 +71,10 @@ VITE_JAVA_API_BASE_URL=http://localhost:8080 \
 npm run dev
 ```
 
-The frontend now defaults to Java mode. If `VITE_JAVA_API_BASE_URL` is not set, the page surfaces a configuration error instead of silently using mock data. Use explicit mock mode only when you intentionally want the local visual shell without Java:
+The `dev:java` script sets `VITE_JAVA_API_BASE_URL=http://localhost:8080` for the standard local backend. The raw `npm run dev` command is still available for custom environment overrides; if `VITE_JAVA_API_BASE_URL` is not set, the page surfaces a configuration error instead of silently using mock data. Use explicit mock mode only when you intentionally want the local visual shell without Java:
 
 ```bash
-VITE_DATA_SOURCE=mock npm run dev
+npm run dev:mock
 ```
 
 ## CORS For Local Browser Calls

@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:java": "VITE_JAVA_API_BASE_URL=http://localhost:8080 vite",
+    "dev:mock": "VITE_DATA_SOURCE=mock vite",
     "build": "vite build",
     "preview": "vite preview",
     "legacy:api:dev": "node scripts/api-server.mjs",

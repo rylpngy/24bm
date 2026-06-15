@@ -164,9 +164,9 @@ API 分组在 [data/apiContract.ts](../data/apiContract.ts) 中以 `apiModules` 
 
 ## 9. 前端联调策略
 
-当前前端使用 [data/procurementModel.ts](../data/procurementModel.ts) 提供 mock 业务数据。后续应新增 `services/apiClient.ts` 和 `services/mockApiClient.ts`：
+当前前端已经通过 `services/procurementApiClient.ts` 统一 API adapter。Java 后端联调是主线，mock 业务数据只作为显式视觉模式保留：
 
-- 开发早期默认使用 mock adapter。
-- 后端接口完成后切换到 real adapter。
+- Java 联调使用 `npm run dev:java`，通过 `createJavaProcurementApiClient()` 调用 `backend-java/`。
+- mock 视觉模式使用 `npm run dev:mock`，不作为业务数据源。
 - 页面组件不直接读取 mock 数据，只调用统一 API client。
 - 保留现有模型测试，继续补充 API adapter 测试。

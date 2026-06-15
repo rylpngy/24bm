@@ -1,20 +1,49 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# 24Bid Procurement SaaS
 
-# Run and deploy your AI Studio app
+24Bid is being refactored from a frontend prototype into a Java-backed multi-enterprise procurement SaaS. The existing React UI remains the visual shell; new backend business work belongs in `backend-java/`.
 
-This contains everything you need to run your app locally.
+## Local Development
 
-View your app in AI Studio: https://ai.studio/apps/4e75ab34-646c-419d-97b4-5ad39b84f96d
+Prerequisites:
 
-## Run Locally
+- Node.js
+- Java 21
+- PostgreSQL for the Java local profile
 
-**Prerequisites:**  Node.js
+Install frontend dependencies:
 
+```bash
+npm install
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Start the Java backend:
+
+```bash
+cd backend-java
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+export PATH=/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:$PATH
+docker compose up -d
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+Start the frontend against Java:
+
+```bash
+npm run dev:java
+```
+
+Use mock mode only for local visual checks without Java:
+
+```bash
+npm run dev:mock
+```
+
+Legacy Node demo commands are intentionally kept under `legacy:*` names and should not receive new backend business features.
+
+## Verification
+
+```bash
+npm run verify
+```
+
+For the full local Java workflow, see [docs/local-java-integration.md](docs/local-java-integration.md).

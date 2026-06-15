@@ -17,6 +17,8 @@ describe('legacy Node backend boundary', () => {
     expect(packageJson.scripts['legacy:api:demo']).toBe('node scripts/api-demo.mjs');
     expect(packageJson.scripts['legacy:backend:demo']).toBe('node scripts/backend-demo.mjs');
     expect(packageJson.scripts['java:smoke']).toBe('node scripts/java-local-smoke.mjs');
+    expect(packageJson.scripts['dev:java']).toBe('VITE_JAVA_API_BASE_URL=http://localhost:8080 vite');
+    expect(packageJson.scripts['dev:mock']).toBe('VITE_DATA_SOURCE=mock vite');
   });
 
   it('marks Node server files and demo scripts as legacy prototype code', () => {

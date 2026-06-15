@@ -88,13 +88,22 @@ describe('Java backend scaffold', () => {
 
     const doc = read(docPath);
     expect(doc).toContain('mvn spring-boot:run');
-    expect(doc).toContain('VITE_JAVA_API_BASE_URL=http://localhost:8080 npm run dev');
+    expect(doc).toContain('npm run dev:java');
     expect(doc).toContain('POST /api/v1/auth/login');
     expect(doc).toContain('Authorization: Bearer');
     expect(doc).toContain('createJavaProcurementApiClient');
-    expect(doc).toContain('VITE_DATA_SOURCE=mock');
+    expect(doc).toContain('npm run dev:mock');
     expect(doc).toContain('mvn verify -Pintegration');
     expect(doc).toContain('Docker daemon');
+  });
+
+  it('keeps the frontend integration strategy aligned with Java as the primary backend path', () => {
+    const doc = read('docs/api-and-data-design.md');
+
+    expect(doc).toContain('Java 后端联调是主线');
+    expect(doc).toContain('npm run dev:java');
+    expect(doc).toContain('npm run dev:mock');
+    expect(doc).not.toContain('开发早期默认使用 mock adapter');
   });
 
   it('provides a reproducible local PostgreSQL runtime for Java frontend integration', () => {

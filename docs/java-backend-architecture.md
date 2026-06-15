@@ -57,7 +57,7 @@ backend-java/src/main/resources/db/migration/V1__initial_schema.sql
 前端保留 `services/procurementApiClient.ts` 作为 API adapter。Java 后端实现 `/api/v1` REST API 后，前端通过：
 
 ```bash
-VITE_JAVA_API_BASE_URL=http://localhost:8080 npm run dev
+npm run dev:java
 ```
 
 切换到 Java 后端。
