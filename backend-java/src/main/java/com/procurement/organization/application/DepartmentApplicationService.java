@@ -37,6 +37,7 @@ public class DepartmentApplicationService {
   @Transactional
   public DepartmentResponse createDepartment(CreateDepartmentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    requireActiveParentDepartment(tenantId, request.parentId());
     String departmentId = "dept-" + UUID.randomUUID();
     departmentMapper.insert(
         departmentId,
@@ -49,6 +50,15 @@ public class DepartmentApplicationService {
         DEPARTMENT_TARGET_TYPE,
         departmentId);
     return toResponse(departmentMapper.findByTenantAndId(tenantId, departmentId));
+  }
+
+  private void requireActiveParentDepartment(String tenantId, String parentId) {
+    if (parentId == null || parentId.isBlank()) {
+      return;
+    }
+    if (!departmentMapper.existsActiveByTenantAndId(tenantId, parentId)) {
+      throw new IllegalArgumentException("Parent department not found in tenant scope: " + parentId);
+    }
   }
 
   private DepartmentResponse toResponse(Department department) {

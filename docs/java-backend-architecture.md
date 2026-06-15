@@ -103,7 +103,7 @@ Authorization: Bearer <accessToken>
 
 - 采购方身份来自 JWT 中的 `tenantId`，不允许请求参数覆盖租户归属。
 - 只返回当前租户 `departments.status = active` 的部门，用于采购需求 `departmentId` 选择和后续审批/数据权限扩展。
-- 创建部门时租户来自 JWT，不接受请求体传入 `tenantId` 或 `status`；创建成功写入 `audit_logs`，动作为 `department.created`。
+- 创建部门时租户来自 JWT，不接受请求体传入 `tenantId` 或 `status`；`parentId` 为空表示顶级部门，非空时必须命中当前租户下 `active` 状态的父级部门；创建成功写入 `audit_logs`，动作为 `department.created`。
 - 供应商和平台 token 不能访问该 buyer 侧接口。
 
 ## 采购需求 Java API

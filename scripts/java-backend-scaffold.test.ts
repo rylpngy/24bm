@@ -137,6 +137,7 @@ describe('Java backend scaffold', () => {
     const readme = read('backend-java/README.md');
     const localSmoke = read('scripts/java-local-smoke.mjs');
     const apiClient = read('services/procurementApiClient.ts');
+    const departmentService = read('backend-java/src/main/java/com/procurement/organization/application/DepartmentApplicationService.java');
 
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/api/DepartmentController.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/application/DepartmentApplicationService.java'))).toBe(true);
@@ -149,6 +150,8 @@ describe('Java backend scaffold', () => {
     expect(localSmoke).toContain('/api/v1/buyer/departments');
     expect(apiClient).toContain('listBuyerDepartments');
     expect(apiClient).toContain('createBuyerDepartment');
+    expect(departmentService).toContain('requireActiveParentDepartment');
+    expect(departmentService).toContain('existsActiveByTenantAndId');
   });
 
   it('documents the buyer notification API handoff', () => {

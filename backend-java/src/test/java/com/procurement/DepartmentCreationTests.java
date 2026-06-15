@@ -1,6 +1,8 @@
 package com.procurement;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +31,7 @@ class DepartmentCreationTests {
   @Test
   void createsActiveDepartmentInCurrentTenantAndRecordsAuditLog() {
     TenantContext.set("tenant-1", null, "buyer-admin");
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-parent")).thenReturn(true);
     when(departmentMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -52,6 +55,29 @@ class DepartmentCreationTests {
         org.mockito.ArgumentMatchers.eq("department.created"),
         org.mockito.ArgumentMatchers.eq("department"),
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("dept-")));
+  }
+
+  @Test
+  void rejectsParentDepartmentOutsideCurrentTenantBeforeInsert() {
+    TenantContext.set("tenant-1", null, "buyer-admin");
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-other")).thenReturn(false);
+
+    assertThatThrownBy(() -> departmentApplicationService.createDepartment(new CreateDepartmentRequest(
+        "研发采购部",
+        "dept-other")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Parent department not found in tenant scope: dept-other");
+
+    verify(departmentMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+    verify(auditLogApplicationService, never()).recordTenantAction(
+        org.mockito.ArgumentMatchers.eq("department.created"),
+        org.mockito.ArgumentMatchers.eq("department"),
+        org.mockito.ArgumentMatchers.anyString());
   }
 
   private Department department(String id) {
