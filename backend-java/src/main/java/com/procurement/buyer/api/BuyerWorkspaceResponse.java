@@ -12,6 +12,7 @@ import com.procurement.supplier.api.BuyerSupplierResponse;
 import java.util.List;
 
 public record BuyerWorkspaceResponse(
+    BuyerTodoSummaryResponse todoSummary,
     List<BuyerSupplierResponse> suppliers,
     List<MaterialResponse> materials,
     List<BuyerUserResponse> users,

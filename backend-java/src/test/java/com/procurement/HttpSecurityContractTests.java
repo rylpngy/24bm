@@ -19,6 +19,7 @@ import com.procurement.catalog.api.MaterialResponse;
 import com.procurement.catalog.application.MaterialApplicationService;
 import com.procurement.buyer.api.BuyerWorkspaceController;
 import com.procurement.buyer.api.BuyerWorkspaceResponse;
+import com.procurement.buyer.api.BuyerTodoSummaryResponse;
 import com.procurement.buyer.application.BuyerWorkspaceApplicationService;
 import com.procurement.approval.api.ApprovalInboxController;
 import com.procurement.approval.api.ApprovalTemplateResponse;
@@ -622,6 +623,7 @@ class HttpSecurityContractTests {
         .andExpect(status().isForbidden());
 
     when(buyerWorkspaceApplicationService.load()).thenReturn(new BuyerWorkspaceResponse(
+        new BuyerTodoSummaryResponse(0, 0, 0, 0),
         List.of(),
         List.of(),
         List.of(),
@@ -636,6 +638,7 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.todoSummary.pendingApprovalCount").value(0))
         .andExpect(jsonPath("$.data.suppliers").isArray())
         .andExpect(jsonPath("$.data.materials").isArray())
         .andExpect(jsonPath("$.data.users").isArray())
