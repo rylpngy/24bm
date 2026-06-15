@@ -45,4 +45,11 @@ public class BuyerSupplierController {
       @Valid @RequestBody ReviewBuyerSupplierAdmissionRequest request) {
     return ApiResponse.ok(buyerSupplierApplicationService.reviewAdmission(relationId, request));
   }
+
+  @PostMapping("/{relationId}/status")
+  public ApiResponse<BuyerSupplierResponse> changeStatus(
+      @PathVariable String relationId,
+      @Valid @RequestBody ChangeBuyerSupplierStatusRequest request) {
+    return ApiResponse.ok(buyerSupplierApplicationService.changeRelationStatus(relationId, request));
+  }
 }

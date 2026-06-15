@@ -214,15 +214,25 @@ describe('Java backend scaffold', () => {
   it('guards buyer master data creation audit coverage', () => {
     const architecture = read('docs/java-backend-architecture.md');
     const readme = read('backend-java/README.md');
+    const controller = read('backend-java/src/main/java/com/procurement/supplier/api/BuyerSupplierController.java');
+    const service = read('backend-java/src/main/java/com/procurement/supplier/application/BuyerSupplierApplicationService.java');
     const auditTests = read('backend-java/src/test/java/com/procurement/BuyerMasterDataAuditLogTests.java');
+    const admissionTests = read('backend-java/src/test/java/com/procurement/BuyerSupplierAdmissionApprovalStateTransitionTests.java');
 
     expect(architecture).toContain('buyer_user.created');
     expect(architecture).toContain('material.created');
     expect(architecture).toContain('buyer_supplier_relation.created');
+    expect(architecture).toContain('buyer_supplier_relation.status_changed');
     expect(readme).toContain('Creating buyer users, materials, and private supplier relations records audit log actions');
+    expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/status');
+    expect(controller).toContain('@PostMapping("/{relationId}/status")');
+    expect(service).toContain('buyer_supplier_relation.status_changed');
+    expect(service).toContain('BLACKLISTED_STATUS');
+    expect(service).toContain('requireManualStatusTransition');
     expect(auditTests).toContain('buyerUserCreationRecordsAuditLog');
     expect(auditTests).toContain('materialCreationRecordsAuditLog');
     expect(auditTests).toContain('buyerSupplierRelationCreationRecordsAuditLog');
+    expect(admissionTests).toContain('changeSupplierRelationStatusCanBlacklistAdmittedSupplier');
   });
 
   it('keeps the Java architecture handoff aligned with implemented MVP flow stages', () => {

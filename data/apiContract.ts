@@ -251,6 +251,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'ApprovalTask',
   },
   {
+    method: 'POST',
+    path: '/buyer/suppliers/{relationId}/status',
+    audience: 'buyer',
+    action: '拉黑供应商或恢复待准入状态',
+    requestSchema: 'ChangeBuyerSupplierStatusRequest',
+    responseSchema: 'BuyerSupplier',
+  },
+  {
     method: 'GET',
     path: '/buyer/materials',
     audience: 'buyer',

@@ -113,6 +113,7 @@ import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.supplier.api.BuyerSupplierController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
+import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.ChangeSupplierUserStatusRequest;
 import com.procurement.supplier.api.CreateSupplierQualificationRequest;
@@ -1939,6 +1940,40 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.bizId").value("rel-created"))
         .andExpect(jsonPath("$.data.status").value("已通过"));
+
+    mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/status")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "status": "黑名单"
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(buyerSupplierApplicationService.changeRelationStatus(
+        org.mockito.ArgumentMatchers.eq("rel-created"),
+        org.mockito.ArgumentMatchers.any(ChangeBuyerSupplierStatusRequest.class)))
+        .thenReturn(new BuyerSupplierResponse(
+            "rel-created",
+            "tenant-acme",
+            "ent-supplier-ocean",
+            "远洋供应商",
+            "黑名单",
+            "B",
+            List.of("服务"),
+            BigDecimal.ZERO));
+
+    mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/status")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "status": "黑名单"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("黑名单"));
 
     when(materialApplicationService.listCurrentTenantMaterials()).thenReturn(List.of(new MaterialResponse(
         "mat-laptop",

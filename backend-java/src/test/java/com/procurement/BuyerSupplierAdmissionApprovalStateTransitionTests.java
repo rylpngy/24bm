@@ -15,6 +15,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
+import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
@@ -120,6 +121,39 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         new ReviewBuyerSupplierAdmissionRequest(true)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Only supplier relations in admission approval can be reviewed");
+  }
+
+  @Test
+  void changeSupplierRelationStatusCanBlacklistAdmittedSupplier() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
+        .thenReturn(relation("rel-1", "tenant-1", "已准入"))
+        .thenReturn(relation("rel-1", "tenant-1", "黑名单"));
+    when(buyerSupplierRelationMapper.updateStatus("tenant-1", "rel-1", "已准入", "黑名单"))
+        .thenReturn(1);
+
+    org.assertj.core.api.Assertions.assertThat(buyerSupplierApplicationService.changeRelationStatus(
+            "rel-1",
+            new ChangeBuyerSupplierStatusRequest("黑名单")).status())
+        .isEqualTo("黑名单");
+
+    verify(auditLogApplicationService).recordTenantAction(
+        "buyer_supplier_relation.status_changed",
+        "buyer_supplier_relation",
+        "rel-1");
+  }
+
+  @Test
+  void changeSupplierRelationStatusDoesNotBypassAdmissionApproval() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
+        .thenReturn(relation("rel-1", "tenant-1", "待准入"));
+
+    assertThatThrownBy(() -> buyerSupplierApplicationService.changeRelationStatus(
+        "rel-1",
+        new ChangeBuyerSupplierStatusRequest("已准入")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Unsupported buyer supplier relation target status");
   }
 
   private BuyerSupplierRelation relation(String id, String tenantId, String status) {

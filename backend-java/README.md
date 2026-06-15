@@ -263,6 +263,12 @@ Buyer and supplier announcement read endpoints are:
 
 Buyer users can read active announcements with audience `all` or `buyer`; supplier users can read active announcements with audience `all` or `supplier`.
 
+Buyer supplier relation maintenance also supports:
+
+- `POST /api/v1/buyer/suppliers/{relationId}/status`
+
+Manual status changes are deliberately narrow in the MVP: buyers can move a relation to `黑名单`, or restore a `黑名单`/`已驳回` relation to `待准入`. The endpoint does not allow bypassing supplier admission approval by setting `已准入` directly, and records `buyer_supplier_relation.status_changed`.
+
 ## Shared Dictionary API
 
 Authenticated platform, buyer, and supplier users can read shared dictionary entries:
