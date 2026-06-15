@@ -312,6 +312,25 @@ const App: React.FC = () => {
     }
   };
 
+  const submitSupplierQuote = async (rfqId: string) => {
+    if (!javaApiClient || !supplierData) return;
+    setSupplierActionBusyId(`quote:${rfqId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.submitSupplierQuote(rfqId, {
+        amount: 118000,
+        taxRate: 13,
+        deliveryDays: 7,
+      });
+      await refreshAfterSupplierAction();
+      setWorkflowStatus(`报价已提交：${rfqId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '报价提交失败');
+    } finally {
+      setSupplierActionBusyId(null);
+    }
+  };
+
   const confirmSupplierOrder = async (orderId: string) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`confirm:${orderId}`);
@@ -421,6 +440,7 @@ const App: React.FC = () => {
                 javaEnabled={Boolean(javaApiClient)}
                 workflowStatus={workflowStatus}
                 supplierActionBusyId={supplierActionBusyId}
+                onSubmitQuote={submitSupplierQuote}
                 onConfirmOrder={confirmSupplierOrder}
                 onCreateDelivery={createSupplierDelivery}
                 onCreateInvoice={createSupplierInvoice}
@@ -1034,6 +1054,7 @@ const SupplierWorkspaceView: React.FC<{
   javaEnabled: boolean;
   workflowStatus: string | null;
   supplierActionBusyId: string | null;
+  onSubmitQuote: (rfqId: string) => void;
   onConfirmOrder: (orderId: string) => void;
   onCreateDelivery: (orderId: string) => void;
   onCreateInvoice: (orderId: string, amount: number) => void;
@@ -1042,6 +1063,7 @@ const SupplierWorkspaceView: React.FC<{
   javaEnabled,
   workflowStatus,
   supplierActionBusyId,
+  onSubmitQuote,
   onConfirmOrder,
   onCreateDelivery,
   onCreateInvoice,
@@ -1069,30 +1091,43 @@ const SupplierWorkspaceView: React.FC<{
     <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
       <Panel title="商机与报价" icon={Send}>
         <div className="space-y-4">
-          {workspace.opportunities.map((rfq) => (
-            <div key={rfq.id} className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-black text-slate-900">{rfq.title}</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {rfq.id} · 截止 {rfq.deadline}
-                  </p>
+          {workspace.opportunities.map((rfq) => {
+            const myQuotes = rfq.quotes.filter((quote) => quote.supplierId === workspace.supplier.id);
+            const hasMyQuote = myQuotes.length > 0;
+            const quoteBusy = supplierActionBusyId === `quote:${rfq.id}`;
+            return (
+              <div key={rfq.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black text-slate-900">{rfq.title}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {rfq.id} · 截止 {rfq.deadline}
+                    </p>
+                  </div>
+                  <StatusPill label={rfq.status} />
                 </div>
-                <StatusPill label={rfq.status} />
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                {rfq.quotes
-                  .filter((quote) => quote.supplierId === workspace.supplier.id)
-                  .map((quote) => (
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  {myQuotes.map((quote) => (
                     <div key={quote.id} className="rounded-lg bg-orange-50 p-3">
                       <p className="text-xs font-bold text-orange-700">我的报价</p>
                       <p className="mt-1 font-mono text-lg font-black text-slate-900">{currency(quote.amount)}</p>
                       <p className="text-xs text-slate-500">{quote.deliveryDays} 天交付</p>
                     </div>
                   ))}
+                  {javaEnabled && rfq.status === '报价中' && !hasMyQuote && (
+                    <button
+                      type="button"
+                      onClick={() => onSubmitQuote(rfq.id)}
+                      disabled={quoteBusy}
+                      className="inline-flex min-h-24 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                    >
+                      {quoteBusy ? '提交中' : '提交报价'}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Panel>
 
