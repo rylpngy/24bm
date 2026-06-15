@@ -1476,8 +1476,25 @@
         "tags": [
           "buyer"
         ],
-        "summary": "加载采购方询价项目",
-        "parameters": [],
+        "summary": "加载采购方询价项目，支持按状态和关键词筛选",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []

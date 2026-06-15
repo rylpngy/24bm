@@ -107,6 +107,7 @@ import com.procurement.sourcing.api.AwardRfqRequest;
 import com.procurement.sourcing.api.RfqAwardController;
 import com.procurement.sourcing.api.SubmitQuoteRequest;
 import com.procurement.sourcing.api.RfqController;
+import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.api.SupplierQuoteListController;
 import com.procurement.sourcing.api.SupplierQuoteController;
 import com.procurement.sourcing.application.AwardApplicationService;
@@ -407,6 +408,36 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].title").value("采购需求"));
+
+    when(rfqApplicationService.listCurrentTenantRfqs(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of());
+    when(rfqApplicationService.listCurrentTenantRfqs(
+        org.mockito.ArgumentMatchers.eq("报价中"),
+        org.mockito.ArgumentMatchers.eq("电脑")))
+        .thenReturn(List.of(new RfqResponse(
+            "rfq-demo",
+            "tenant-acme",
+            "办公电脑 RFQ",
+            "报价中",
+            OffsetDateTime.parse("2026-06-20T18:00:00+08:00"),
+            "buyer-user-1",
+            null,
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            List.of("demand-demo"),
+            List.of("ent-supplier-sunrise"))));
+    mockMvc.perform(get("/api/v1/buyer/rfqs")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data").isArray());
+    mockMvc.perform(get("/api/v1/buyer/rfqs")
+            .queryParam("status", "报价中")
+            .queryParam("keyword", "电脑")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].title").value("办公电脑 RFQ"));
   }
 
   @Test

@@ -160,6 +160,12 @@ describe('procurement SaaS API contract draft', () => {
       expect.arrayContaining([expect.objectContaining({ name: 'notificationId', in: 'path', required: true })]),
     );
     expect(openApi.paths['/buyer/rfqs/{rfqId}/award'].post.tags).toContain('buyer');
+    expect(openApi.paths['/buyer/rfqs'].get.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'status', in: 'query', required: false }),
+        expect.objectContaining({ name: 'keyword', in: 'query', required: false }),
+      ]),
+    );
     expect(openApi.paths['/buyer/rfqs/{rfqId}/award/approval'].post.parameters).toEqual(
       expect.arrayContaining([expect.objectContaining({ name: 'rfqId', in: 'path', required: true })]),
     );

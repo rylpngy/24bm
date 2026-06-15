@@ -303,6 +303,8 @@ The first sourcing module exposes buyer-side RFQ APIs:
 
 RFQ creation requires the current buyer tenant to have the `rfq` feature enabled.
 
+The buyer RFQ list accepts optional `status` and `keyword` filters inside the current buyer tenant. `keyword` matches the RFQ title.
+
 Example creation payload:
 
 ```json

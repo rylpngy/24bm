@@ -1,6 +1,7 @@
 package com.procurement;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.procurement.common.tenant.TenantContext;
@@ -58,6 +59,17 @@ class RfqCreationStateTransitionTests {
     assertThatThrownBy(() -> rfqApplicationService.create(request))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Purchase demand already linked to an RFQ");
+  }
+
+  @Test
+  void listRfqsAppliesFiltersInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(rfqMapper.listByTenantFiltered("tenant-1", "报价中", "电脑"))
+        .thenReturn(List.of());
+
+    rfqApplicationService.listCurrentTenantRfqs("报价中", "电脑");
+
+    verify(rfqMapper).listByTenantFiltered("tenant-1", "报价中", "电脑");
   }
 
   private PurchaseDemand demand(String id, String tenantId, String status) {

@@ -53,6 +53,17 @@ public class RfqApplicationService {
         .toList();
   }
 
+  public List<RfqResponse> listCurrentTenantRfqs(String status, String keyword) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    return rfqMapper.listByTenantFiltered(
+            tenantId,
+            blankToNull(status),
+            blankToNull(keyword))
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public RfqResponse create(CreateRfqRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
@@ -116,5 +127,9 @@ public class RfqApplicationService {
 
   private String newId(String prefix) {
     return prefix + "-" + UUID.randomUUID();
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

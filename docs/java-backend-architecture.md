@@ -232,6 +232,7 @@ Authorization: Bearer <accessToken>
 
 创建 RFQ 的关键校验：
 
+- RFQ 列表始终按当前 `tenantId` 过滤，并支持可选 `status`、`keyword` 查询条件；`keyword` 匹配询价标题。
 - 请求中的所有 `demandIds` 必须属于当前 `tenantId`。
 - 需求状态必须是 `已通过`。
 - 请求中的所有 `invitedSupplierIds` 必须在 `buyer_supplier_relations` 中处于 `已准入`。

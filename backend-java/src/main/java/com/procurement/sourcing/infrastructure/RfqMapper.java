@@ -33,6 +33,27 @@ public interface RfqMapper {
   @Select("""
       select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at
       from rfqs
+      where tenant_id = #{tenantId}
+        and (#{status} is null or status = #{status})
+        and (#{keyword} is null or title ilike concat('%', #{keyword}, '%'))
+      order by created_at desc
+      """)
+  @Results(id = "rfqFilteredResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "deadline_at", property = "deadlineAt"),
+      @Result(column = "owner_id", property = "ownerId"),
+      @Result(column = "awarded_supplier_id", property = "awardedSupplierId"),
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "updated_at", property = "updatedAt")
+  })
+  List<Rfq> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("status") String status,
+      @Param("keyword") String keyword);
+
+  @Select("""
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at
+      from rfqs
       where tenant_id = #{tenantId} and id = #{id}
       """)
   @Results(id = "singleRfqResults", value = {
