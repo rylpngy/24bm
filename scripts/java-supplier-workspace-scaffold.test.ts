@@ -9,6 +9,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8');
 describe('Java supplier workspace scaffold', () => {
   it('exposes supplier workspace list endpoints', () => {
     const profileController = read('backend-java/src/main/java/com/procurement/supplier/api/SupplierProfileController.java');
+    const qualificationController = read('backend-java/src/main/java/com/procurement/supplier/api/SupplierQualificationController.java');
     const rfqController = read('backend-java/src/main/java/com/procurement/sourcing/api/SupplierQuoteController.java');
     const quoteController = read('backend-java/src/main/java/com/procurement/sourcing/api/SupplierQuoteListController.java');
     const orderController = read('backend-java/src/main/java/com/procurement/order/api/SupplierOrderController.java');
@@ -16,6 +17,9 @@ describe('Java supplier workspace scaffold', () => {
 
     expect(profileController).toContain('@RequestMapping("/api/v1/supplier/profile")');
     expect(profileController).toContain('@GetMapping');
+    expect(qualificationController).toContain('@RequestMapping("/api/v1/supplier/qualifications")');
+    expect(qualificationController).toContain('@GetMapping');
+    expect(qualificationController).toContain('@PostMapping');
     expect(rfqController).toContain('@GetMapping');
     expect(quoteController).toContain('@RequestMapping("/api/v1/supplier/quotes")');
     expect(quoteController).toContain('@GetMapping');
@@ -27,11 +31,14 @@ describe('Java supplier workspace scaffold', () => {
 
   it('keeps supplier list queries scoped to the authenticated supplier', () => {
     const supplierService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierProfileApplicationService.java');
+    const qualificationService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierQualificationApplicationService.java');
     const quoteService = read('backend-java/src/main/java/com/procurement/sourcing/application/QuoteApplicationService.java');
     const orderService = read('backend-java/src/main/java/com/procurement/order/application/PurchaseOrderApplicationService.java');
     const invoiceService = read('backend-java/src/main/java/com/procurement/finance/application/InvoiceApplicationService.java');
 
     expect(supplierService).toContain('TenantAccessGuard.requireSupplierId');
+    expect(qualificationService).toContain('TenantAccessGuard.requireSupplierId');
+    expect(qualificationService).toContain('listActiveBySupplier');
     expect(quoteService).toContain('listSupplierRfqs');
     expect(quoteService).toContain('listSupplierQuotes');
     expect(orderService).toContain('listCurrentSupplierOrders');
@@ -43,6 +50,9 @@ describe('Java supplier workspace scaffold', () => {
     const localGuide = read('docs/local-java-integration.md');
 
     expect(readme).toContain('GET /api/v1/supplier/profile');
+    expect(readme).toContain('GET /api/v1/supplier/qualifications');
+    expect(readme).toContain('POST /api/v1/supplier/qualifications');
+    expect(readme).toContain('supplier_qualifications');
     expect(readme).toContain('GET /api/v1/supplier/rfqs');
     expect(readme).toContain('GET /api/v1/supplier/quotes');
     expect(readme).toContain('GET /api/v1/supplier/orders');

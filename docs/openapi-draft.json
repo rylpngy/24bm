@@ -1235,6 +1235,54 @@
         }
       }
     },
+    "/supplier/qualifications": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "加载供应商资质列表",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierQualificationList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "登记供应商资质附件元数据",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierQualification"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/supplier/rfqs": {
       "get": {
         "tags": [
@@ -2049,6 +2097,8 @@
     "POST /buyer/rfqs",
     "GET /supplier/workspace",
     "GET /supplier/profile",
+    "GET /supplier/qualifications",
+    "POST /supplier/qualifications",
     "GET /supplier/rfqs",
     "POST /supplier/rfqs/{rfqId}/quotes",
     "POST /buyer/rfqs/{rfqId}/award",

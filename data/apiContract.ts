@@ -436,6 +436,22 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/supplier/qualifications',
+    audience: 'supplier',
+    action: '加载供应商资质列表',
+    requestSchema: 'SupplierQualificationListRequest',
+    responseSchema: 'SupplierQualificationList',
+  },
+  {
+    method: 'POST',
+    path: '/supplier/qualifications',
+    audience: 'supplier',
+    action: '登记供应商资质附件元数据',
+    requestSchema: 'CreateSupplierQualificationRequest',
+    responseSchema: 'SupplierQualification',
+  },
+  {
+    method: 'GET',
     path: '/supplier/rfqs',
     audience: 'supplier',
     action: '加载供应商询价邀请',
@@ -574,6 +590,12 @@ export const databaseTables: DatabaseTable[] = [
     tenantScoped: false,
     purpose: '供应商公共企业身份、认证和平台级基础档案。',
     requiredColumns: ['enterprise_id', 'credit_code', 'legal_person', 'verified_status', 'profile_status'],
+  },
+  {
+    name: 'supplier_qualifications',
+    tenantScoped: false,
+    purpose: '供应商公共资质附件元数据，按 supplier_id 隔离给供应商自维护和采购方准入参考。',
+    requiredColumns: ['id', 'supplier_id', 'qualification_type', 'certificate_no', 'expires_at', 'file_name', 'storage_key', 'status'],
   },
   {
     name: 'buyer_supplier_relations',

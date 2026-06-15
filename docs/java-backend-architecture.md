@@ -206,10 +206,14 @@ Authorization: Bearer <accessToken>
 
 第三批 Java 业务接口继续落在 `sourcing` 模块：
 
+- `GET /api/v1/supplier/qualifications`：供应商查询本企业资质附件元数据。
+- `POST /api/v1/supplier/qualifications`：供应商登记本企业资质附件元数据。
 - `POST /api/v1/supplier/rfqs/{rfqId}/quotes`：被邀请供应商提交报价。
 
 提交报价的关键校验：
 
+- 供应商资质接口的供应商身份来自 JWT 中的 `supplierId`，请求体不允许覆盖供应商归属。
+- 供应商资质存入公共供应商维度表 `supplier_qualifications`，不绑定采购方租户；采购方私域准入状态仍由 `buyer_supplier_relations` 隔离。
 - 供应商身份来自 JWT 中的 `supplierId`，不允许请求体传入供应商归属。
 - RFQ 必须能通过 `rfq_invites` 找到当前供应商邀请。
 - RFQ 状态必须是 `报价中`。

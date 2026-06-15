@@ -266,11 +266,32 @@ Example creation payload:
 
 RFQ creation requires every demand to be `已通过` within the current tenant and every invited supplier to be `已准入` in `buyer_supplier_relations`. Creation stores the RFQ as `报价中`, links `rfq_demands`, and creates `rfq_invites`.
 
+## Supplier Profile and Qualification APIs
+
+The supplier-side profile endpoints are:
+
+- `GET /api/v1/supplier/profile`
+- `GET /api/v1/supplier/qualifications`
+- `POST /api/v1/supplier/qualifications`
+
+Example qualification payload:
+
+```json
+{
+  "qualificationType": "营业执照",
+  "certificateNo": "Q-2026-001",
+  "expiresAt": "2027-12-31",
+  "fileName": "license.pdf",
+  "storageKey": "suppliers/ent-supplier-sunrise/license.pdf"
+}
+```
+
+Supplier qualification APIs use the supplier identity from `Authorization: Bearer <accessToken>`. The request body cannot override `supplierId`; new qualifications are stored in `supplier_qualifications` with status `active`.
+
 ## Supplier Quote APIs
 
 The supplier-side sourcing endpoints are:
 
-- `GET /api/v1/supplier/profile`
 - `GET /api/v1/supplier/rfqs`
 - `GET /api/v1/supplier/quotes`
 - `POST /api/v1/supplier/rfqs/{rfqId}/quotes`
