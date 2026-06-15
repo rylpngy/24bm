@@ -46,6 +46,23 @@ describe('Java identity and JWT scaffold', () => {
     expect(securityConfig).toContain('addFilterBefore');
   });
 
+  it('enforces buyer tenant user limits from SaaS plan entitlements', () => {
+    const service = read('backend-java/src/main/java/com/procurement/identity/application/BuyerUserApplicationService.java');
+    const userMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerUserMapper.java');
+    const entitlementService = read('backend-java/src/main/java/com/procurement/tenant/application/TenantEntitlementApplicationService.java');
+    const entitlementMapper = read('backend-java/src/main/java/com/procurement/tenant/infrastructure/TenantEntitlementMapper.java');
+    const readme = read('backend-java/README.md');
+    const architecture = read('docs/java-backend-architecture.md');
+
+    expect(service).toContain('TenantEntitlementApplicationService');
+    expect(service).toContain('requireUserCapacity');
+    expect(userMapper).toContain('countByTenant');
+    expect(entitlementService).toContain('Tenant user limit reached');
+    expect(entitlementMapper).toContain('user_limit');
+    expect(readme).toContain("current tenant's `user_limit`");
+    expect(architecture).toContain('当前用户数达到或超过 `user_limit` 时拒绝创建');
+  });
+
   it('documents the frontend header transition from demo headers to Authorization bearer', () => {
     const doc = read('docs/java-backend-architecture.md');
 

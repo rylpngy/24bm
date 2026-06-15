@@ -78,6 +78,19 @@ Authorization: Bearer <accessToken>
 
 旧 Node 原型和前端 demo 阶段仍保留 `X-Tenant-Id`、`X-Supplier-Id`、`X-User-Id` 请求头兼容；Java 正式后端以 JWT claims 中的 `tenantId`、`supplierId`、`userId`、`scope` 作为主身份来源。
 
+## 采购方用户 Java API
+
+采购方用户接口落在 `identity` 模块：
+
+- `GET /api/v1/buyer/users`：查询当前采购方租户用户。
+- `POST /api/v1/buyer/users`：创建当前采购方租户用户。
+
+用户创建的关键校验：
+
+- 采购方身份来自 JWT 中的 `tenantId`，不允许请求体覆盖租户归属。
+- 创建前读取 `tenants.user_limit`，并统计当前租户 `users` 数量。
+- 当前用户数达到或超过 `user_limit` 时拒绝创建，避免租户超出套餐人数。
+
 ## 采购需求 Java API
 
 第一批 Java 业务接口落在 `demand` 模块：

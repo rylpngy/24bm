@@ -182,6 +182,8 @@ Example buyer user payload:
 
 Buyer master data APIs use the buyer tenant from the JWT and reject supplier or platform tokens.
 
+Buyer user creation is limited by the current tenant's `user_limit`; when the current buyer-user count reaches the plan limit, the API rejects the new user before insert.
+
 ## Platform APIs
 
 The first platform-side MVP endpoints are:

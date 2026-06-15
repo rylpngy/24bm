@@ -5,6 +5,7 @@ import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
+import com.procurement.tenant.application.TenantEntitlementApplicationService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -13,9 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BuyerUserApplicationService {
   private final BuyerUserMapper buyerUserMapper;
+  private final TenantEntitlementApplicationService tenantEntitlementApplicationService;
 
-  public BuyerUserApplicationService(BuyerUserMapper buyerUserMapper) {
+  public BuyerUserApplicationService(
+      BuyerUserMapper buyerUserMapper,
+      TenantEntitlementApplicationService tenantEntitlementApplicationService) {
     this.buyerUserMapper = buyerUserMapper;
+    this.tenantEntitlementApplicationService = tenantEntitlementApplicationService;
   }
 
   public List<BuyerUserResponse> listCurrentTenantUsers() {
@@ -28,6 +33,7 @@ public class BuyerUserApplicationService {
   @Transactional
   public BuyerUserResponse createUser(CreateBuyerUserRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
+    tenantEntitlementApplicationService.requireUserCapacity(tenantId, buyerUserMapper.countByTenant(tenantId));
     String userId = "user-" + UUID.randomUUID();
     buyerUserMapper.insert(userId, tenantId, request.name(), request.mobile(), request.email(), request.status());
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));

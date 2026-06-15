@@ -19,7 +19,8 @@ class TenantIsolationArchitectureTests {
       "platform/infrastructure/PlatformTenantMapper.java",
       "platform/infrastructure/PlatformEnterpriseMapper.java",
       "supplier/infrastructure/SupplierProfileMapper.java",
-      "tenant/infrastructure/TenantFeatureMapper.java");
+      "tenant/infrastructure/TenantFeatureMapper.java",
+      "tenant/infrastructure/TenantEntitlementMapper.java");
 
   @Test
   void applicationServicesUseCentralTenantAccessGuardInsteadOfLocalThreadLocalReads() throws IOException {

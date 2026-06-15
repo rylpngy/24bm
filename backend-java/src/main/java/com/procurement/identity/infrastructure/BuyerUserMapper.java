@@ -33,6 +33,13 @@ public interface BuyerUserMapper {
   })
   BuyerUser findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
+  @Select("""
+      select count(1)
+      from users
+      where tenant_id = #{tenantId}
+      """)
+  int countByTenant(@Param("tenantId") String tenantId);
+
   @Insert("""
       insert into users (id, tenant_id, name, mobile, email, status)
       values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status})
