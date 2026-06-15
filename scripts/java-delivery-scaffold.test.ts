@@ -35,6 +35,7 @@ describe('Java supplier delivery scaffold', () => {
     expect(mapper).toContain('deliveries');
     expect(mapper).toContain('tracking_no');
     expect(mapper).toContain('insert');
+    expect(mapper).toContain('countByTenantAndOrder');
     expect(mapper).toContain('listBySupplierFiltered');
   });
 
@@ -55,6 +56,7 @@ describe('Java supplier delivery scaffold', () => {
     expect(service).toContain('待发货');
     expect(service).toContain('已发货');
     expect(service).toContain('Only ready-to-ship orders can be shipped');
+    expect(service).toContain('countByTenantAndOrder');
     expect(service).toContain('findBySupplierAndId');
     expect(service).toContain('updateStatus');
   });
@@ -66,6 +68,8 @@ describe('Java supplier delivery scaffold', () => {
     expect(readme).toContain('GET /api/v1/supplier/deliveries');
     expect(readme).toContain('POST /api/v1/supplier/orders/{orderId}/deliveries');
     expect(readme).toContain('The supplier delivery list accepts optional `status` and `orderId` filters');
+    expect(readme).toContain('MVP delivery creation allows only one delivery per purchase order');
     expect(architecture).toContain('供应商发货 Java API');
+    expect(architecture).toContain('MVP 阶段同一采购订单只能登记一条发货记录');
   });
 });

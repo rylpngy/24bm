@@ -29,4 +29,8 @@ describe('Java Flyway database migrations', () => {
   it('prevents duplicate receipts for the same purchase order in a tenant', () => {
     expect(migrationSql).toMatch(/create table receipts \([\s\S]*unique \(tenant_id, order_id\)[\s\S]*\);/);
   });
+
+  it('prevents duplicate deliveries for the same purchase order in a tenant', () => {
+    expect(migrationSql).toMatch(/create table deliveries \([\s\S]*unique \(tenant_id, order_id\)[\s\S]*\);/);
+  });
 });

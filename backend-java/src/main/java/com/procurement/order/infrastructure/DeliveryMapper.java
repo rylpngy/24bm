@@ -44,6 +44,14 @@ public interface DeliveryMapper {
       from deliveries
       where tenant_id = #{tenantId}
         and order_id = #{orderId}
+      """)
+  int countByTenantAndOrder(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
+
+  @Select("""
+      select count(1)
+      from deliveries
+      where tenant_id = #{tenantId}
+        and order_id = #{orderId}
         and status = #{status}
       """)
   int countByTenantOrderAndStatus(

@@ -110,6 +110,35 @@ class OrderFulfillmentStateTransitionTests {
   }
 
   @Test
+  void deliveryRejectsDuplicateDeliveryForSameOrderBeforeInsert() {
+    TenantContext.set(null, "supplier-1", "user-supplier");
+    when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "待发货"));
+    when(deliveryMapper.countByTenantAndOrder("tenant-1", "po-1"))
+        .thenReturn(1);
+
+    DeliveryApplicationService service = new DeliveryApplicationService(
+        purchaseOrderMapper,
+        deliveryMapper,
+        auditLogApplicationService,
+        notificationApplicationService,
+        tenantFeatureApplicationService);
+
+    assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Purchase order already has a delivery");
+
+    verify(deliveryMapper, never()).insert(
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString());
+  }
+
+  @Test
   void buyerOrderCreationRecordsAuditLogForNewPurchaseOrder() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(awardDecisionMapper.findApprovedForOrder("tenant-1", "award-1", "已通过"))

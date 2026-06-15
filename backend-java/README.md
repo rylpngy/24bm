@@ -474,7 +474,7 @@ Example delivery payload:
 }
 ```
 
-Delivery creation uses the supplier identity from `Authorization: Bearer <accessToken>`. The order must belong to the current supplier, its buyer tenant must have the `order` feature enabled, and it must be `待发货`. Creation stores a `deliveries` row with status `已发货` and updates the purchase order status to `已发货`.
+Delivery creation uses the supplier identity from `Authorization: Bearer <accessToken>`. The order must belong to the current supplier, its buyer tenant must have the `order` feature enabled, and it must be `待发货`. MVP delivery creation allows only one delivery per purchase order. Creation stores a `deliveries` row with status `已发货` and updates the purchase order status to `已发货`.
 
 ## Buyer Receipt APIs
 

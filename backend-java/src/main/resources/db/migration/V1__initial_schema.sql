@@ -216,7 +216,8 @@ create table deliveries (
   carrier text not null,
   tracking_no text not null,
   status text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (tenant_id, order_id)
 );
 
 create table receipts (

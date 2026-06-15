@@ -65,6 +65,9 @@ public class DeliveryApplicationService {
       throw new IllegalStateException("Only ready-to-ship orders can be shipped: " + orderId);
     }
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), ORDER_FEATURE);
+    if (deliveryMapper.countByTenantAndOrder(order.tenantId(), order.id()) > 0) {
+      throw new IllegalStateException("Purchase order already has a delivery: " + orderId);
+    }
 
     String deliveryId = newId("delivery");
     deliveryMapper.insert(
