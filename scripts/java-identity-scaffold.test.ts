@@ -109,11 +109,13 @@ describe('Java identity and JWT scaffold', () => {
     expect(apiContract).toContain('/buyer/users/{userId}/role');
     expect(apiContract).toContain('/buyer/users/{userId}/password');
     expect(apiContract).toContain('/buyer/users/{userId}/status');
+    expect(apiContract).toContain("queryParameters: ['status', 'departmentId', 'keyword']");
     expect(readme).toContain("current tenant's `user_limit`");
     expect(readme).toContain('GET /api/v1/buyer/roles');
     expect(readme).toContain('POST /api/v1/buyer/users/{userId}/role');
     expect(readme).toContain('POST /api/v1/buyer/users/{userId}/password');
     expect(readme).toContain('POST /api/v1/buyer/users/{userId}/status');
+    expect(readme).toContain('optional `status`, `departmentId`, and `keyword` filters');
     expect(readme).toContain('departmentId');
     expect(readme).toContain('roleId');
     expect(architecture).toContain('当前用户数达到或超过 `user_limit` 时拒绝创建');

@@ -2262,7 +2262,11 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.code").value("IT-MONITOR-27"))
         .andExpect(jsonPath("$.data.name").value("27寸显示器"));
 
-    when(buyerUserApplicationService.listCurrentTenantUsers()).thenReturn(List.of(new BuyerUserResponse(
+    when(buyerUserApplicationService.listCurrentTenantUsers(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(new BuyerUserResponse(
         "user-buyer-owner",
         "tenant-acme",
         "采购负责人",
@@ -2278,6 +2282,28 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data[0].name").value("采购负责人"))
         .andExpect(jsonPath("$.data[0].departmentId").value("dept-it"))
         .andExpect(jsonPath("$.data[0].roleId").value("role-buyer-owner"));
+
+    when(buyerUserApplicationService.listCurrentTenantUsers(
+        org.mockito.ArgumentMatchers.eq("active"),
+        org.mockito.ArgumentMatchers.eq("dept-it"),
+        org.mockito.ArgumentMatchers.eq("采购")))
+        .thenReturn(List.of(new BuyerUserResponse(
+            "user-buyer-owner",
+            "tenant-acme",
+            "采购负责人",
+            "13800000000",
+            "buyer@example.com",
+            "active",
+            "dept-it",
+            "role-buyer-owner")));
+
+    mockMvc.perform(get("/api/v1/buyer/users")
+            .queryParam("status", "active")
+            .queryParam("departmentId", "dept-it")
+            .queryParam("keyword", "采购")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].name").value("采购负责人"));
 
     when(buyerUserApplicationService.createUser(
         org.mockito.ArgumentMatchers.any(CreateBuyerUserRequest.class)))

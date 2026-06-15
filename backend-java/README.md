@@ -204,6 +204,8 @@ Department listing returns only active departments from the current buyer tenant
 
 Buyer user creation is limited by the current tenant's `user_limit`; when the current buyer-user count reaches the plan limit, the API rejects the new user before insert. New buyer users must also reference an active `departmentId` and a buyer `roleId` in the current tenant, then the backend hashes `initialPassword`, writes `users.password_hash`, and writes the `user_roles` relation in the same transaction. Buyer user role changes validate both the target user and target `roleId` inside the current buyer tenant, replace the buyer role relation, and record `buyer_user.role_changed`. Password reset validates the target user inside the current tenant, hashes `newPassword`, updates `users.password_hash`, and records `buyer_user.password_reset`. Buyer user status changes only accept `active` or `inactive`, update the current tenant user row, and record `buyer_user.status_changed`.
 
+The buyer user list accepts optional `status`, `departmentId`, and `keyword` filters inside the current buyer tenant. `keyword` matches user name, mobile, or email.
+
 Creating buyer users, materials, and private supplier relations records audit log actions `buyer_user.created`, `material.created`, and `buyer_supplier_relation.created`.
 
 ## Platform APIs

@@ -47,8 +47,17 @@ public class BuyerUserApplicationService {
   }
 
   public List<BuyerUserResponse> listCurrentTenantUsers() {
+    return listCurrentTenantUsers(null, null, null);
+  }
+
+  public List<BuyerUserResponse> listCurrentTenantUsers(String status, String departmentId, String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
-    return buyerUserMapper.listByTenant(tenantId).stream()
+    return buyerUserMapper.listByTenantFiltered(
+            tenantId,
+            blankToNull(status),
+            blankToNull(departmentId),
+            blankToNull(keyword))
+        .stream()
         .map(this::toResponse)
         .toList();
   }
@@ -137,5 +146,9 @@ public class BuyerUserApplicationService {
         user.status(),
         user.departmentId(),
         user.roleId());
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

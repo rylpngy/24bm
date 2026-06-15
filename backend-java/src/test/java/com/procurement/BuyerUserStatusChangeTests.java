@@ -102,4 +102,20 @@ class BuyerUserStatusChangeTests {
         "buyer_user",
         "user-1");
   }
+
+  @Test
+  void listUsersAppliesFiltersInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+
+    buyerUserApplicationService.listCurrentTenantUsers(
+        "active",
+        "dept-it",
+        "采购");
+
+    verify(buyerUserMapper).listByTenantFiltered(
+        "tenant-1",
+        "active",
+        "dept-it",
+        "采购");
+  }
 }

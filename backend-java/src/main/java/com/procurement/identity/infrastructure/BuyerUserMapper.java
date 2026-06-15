@@ -34,6 +34,34 @@ public interface BuyerUserMapper {
       from users u
       left join user_roles ur on ur.user_id = u.id
       left join roles r on r.id = ur.role_id and r.scope = 'buyer'
+      where u.tenant_id = #{tenantId}
+        and (#{status} is null or u.status = #{status})
+        and (#{departmentId} is null or u.department_id = #{departmentId})
+        and (
+          #{keyword} is null
+          or u.name ilike concat('%', #{keyword}, '%')
+          or u.mobile ilike concat('%', #{keyword}, '%')
+          or u.email ilike concat('%', #{keyword}, '%')
+        )
+      group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, u.created_at
+      order by u.created_at desc
+      """)
+  @Results(id = "buyerUserFilteredResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "department_id", property = "departmentId"),
+      @Result(column = "role_id", property = "roleId")
+  })
+  List<BuyerUser> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("status") String status,
+      @Param("departmentId") String departmentId,
+      @Param("keyword") String keyword);
+
+  @Select("""
+      select u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, min(r.id) as role_id
+      from users u
+      left join user_roles ur on ur.user_id = u.id
+      left join roles r on r.id = ur.role_id and r.scope = 'buyer'
       where u.tenant_id = #{tenantId} and u.id = #{id}
       group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id
       """)

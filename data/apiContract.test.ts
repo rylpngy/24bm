@@ -139,6 +139,13 @@ describe('procurement SaaS API contract draft', () => {
         expect.objectContaining({ name: 'keyword', in: 'query', required: false }),
       ]),
     );
+    expect(openApi.paths['/buyer/users'].get.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'status', in: 'query', required: false }),
+        expect.objectContaining({ name: 'departmentId', in: 'query', required: false }),
+        expect.objectContaining({ name: 'keyword', in: 'query', required: false }),
+      ]),
+    );
     expect(openApi.paths['/buyer/audit-logs'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/attachments'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/notifications'].get.tags).toContain('buyer');
