@@ -1,7 +1,9 @@
 package com.procurement.approval.application;
 
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.domain.ApprovalTemplate;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -9,15 +11,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class ApprovalTaskApplicationService {
   public static final String PENDING_APPROVAL_STATUS = "待审批";
-  private static final String DEFAULT_BUYER_APPROVER_ROLE_ID = "role-buyer-owner";
 
   private final ApprovalTaskMapper approvalTaskMapper;
+  private final ApprovalTemplateMapper approvalTemplateMapper;
   private final BuyerUserMapper buyerUserMapper;
 
   public ApprovalTaskApplicationService(
       ApprovalTaskMapper approvalTaskMapper,
+      ApprovalTemplateMapper approvalTemplateMapper,
       BuyerUserMapper buyerUserMapper) {
     this.approvalTaskMapper = approvalTaskMapper;
+    this.approvalTemplateMapper = approvalTemplateMapper;
     this.buyerUserMapper = buyerUserMapper;
   }
 
@@ -26,7 +30,7 @@ public class ApprovalTaskApplicationService {
       String bizType,
       String bizId,
       String assigneeId) {
-    ApprovalTemplate template = resolveTemplate(bizType);
+    ApprovalTemplate template = resolveTemplate(tenantId, bizType);
     String resolvedAssigneeId = assigneeId == null || assigneeId.isBlank()
         ? resolveDefaultAssigneeId(tenantId, template)
         : assigneeId;
@@ -41,22 +45,18 @@ public class ApprovalTaskApplicationService {
     return approvalTaskMapper.findByTenantAndId(tenantId, approvalTaskId);
   }
 
-  public ApprovalTemplate resolveTemplate(String bizType) {
-    return switch (bizType) {
-      case "purchase_demand" -> new ApprovalTemplate(
-          "TPL_PURCHASE_DEMAND",
-          bizType,
-          DEFAULT_BUYER_APPROVER_ROLE_ID);
-      case "buyer_supplier_admission" -> new ApprovalTemplate(
-          "TPL_SUPPLIER_ADMISSION",
-          bizType,
-          DEFAULT_BUYER_APPROVER_ROLE_ID);
-      case "rfq_award" -> new ApprovalTemplate(
-          "TPL_RFQ_AWARD",
-          bizType,
-          DEFAULT_BUYER_APPROVER_ROLE_ID);
+  public ApprovalTemplate resolveTemplate(String tenantId, String bizType) {
+    String expectedTemplateCode = switch (bizType) {
+      case "purchase_demand" -> "TPL_PURCHASE_DEMAND";
+      case "buyer_supplier_admission" -> "TPL_SUPPLIER_ADMISSION";
+      case "rfq_award" -> "TPL_RFQ_AWARD";
       default -> throw new IllegalArgumentException("Unsupported approval biz type: " + bizType);
     };
+    ApprovalTemplate template = approvalTemplateMapper.findActiveByTenantAndBizType(tenantId, bizType);
+    if (template == null) {
+      throw new IllegalStateException("Active approval template not found: " + expectedTemplateCode);
+    }
+    return template;
   }
 
   private String resolveDefaultAssigneeId(String tenantId, ApprovalTemplate template) {
@@ -66,11 +66,5 @@ public class ApprovalTaskApplicationService {
           "Default approver not found for template: " + template.templateCode());
     }
     return assigneeId;
-  }
-
-  public record ApprovalTemplate(
-      String templateCode,
-      String bizType,
-      String defaultApproverRoleId) {
   }
 }

@@ -310,7 +310,7 @@ The buyer-side approval inbox endpoint is:
 
 Approval tasks include `bizType`, `bizId`, and optional `parentBizId`. For `rfq_award`, `bizId` is the award decision ID and `parentBizId` is the RFQ ID. The frontend uses this shape to route demand, supplier admission, and award approvals without deriving backend state in React.
 
-Approval template listing reads rows from the current tenant's `approval_templates` table, including each template status. The local seed creates the MVP fixed templates `TPL_PURCHASE_DEMAND`, `TPL_SUPPLIER_ADMISSION`, and `TPL_RFQ_AWARD`, each with `defaultApproverRoleId = role-buyer-owner` and `status = active`. Template config updates can change `defaultApproverRoleId` and `status`; the service validates the role against the current buyer tenant and records `approval_template.config_updated`.
+Approval template listing reads rows from the current tenant's `approval_templates` table, including each template status. Approval task creation also resolves the active template from this table and uses its `defaultApproverRoleId` to find the current tenant's default approver. The local seed creates the MVP fixed templates `TPL_PURCHASE_DEMAND`, `TPL_SUPPLIER_ADMISSION`, and `TPL_RFQ_AWARD`, each with `defaultApproverRoleId = role-buyer-owner` and `status = active`. Template config updates can change `defaultApproverRoleId` and `status`; the service validates the role against the current buyer tenant and records `approval_template.config_updated`.
 
 ## Purchase Order APIs
 

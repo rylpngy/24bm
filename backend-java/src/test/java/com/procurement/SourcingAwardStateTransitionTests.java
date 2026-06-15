@@ -8,8 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.domain.ApprovalTemplate;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
@@ -35,9 +37,10 @@ class SourcingAwardStateTransitionTests {
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final ApprovalTemplateMapper approvalTemplateMapper = org.mockito.Mockito.mock(ApprovalTemplateMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
-      new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
+      new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
@@ -104,6 +107,8 @@ class SourcingAwardStateTransitionTests {
         .thenReturn(awardDecision("award-1", "tenant-1", "rfq-1", "quote-1", "supplier-1", "待审批"));
     when(approvalTaskMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.any()))
         .thenReturn(task("approval-1", "tenant-1", "award-1", "待审批"));
+    when(approvalTemplateMapper.findActiveByTenantAndBizType("tenant-1", "rfq_award"))
+        .thenReturn(template("TPL_RFQ_AWARD", "rfq_award"));
     when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
         .thenReturn("user-buyer-owner");
 
@@ -131,6 +136,10 @@ class SourcingAwardStateTransitionTests {
         org.mockito.ArgumentMatchers.eq("rfq_award"),
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("award-")));
     verify(rfqMapper, never()).updateAward("tenant-1", "rfq-1", "定标审批中", "已定标", "supplier-1");
+  }
+
+  private ApprovalTemplate template(String code, String bizType) {
+    return new ApprovalTemplate(code, "tenant-1", bizType, "审批模板", "role-buyer-owner", "active");
   }
 
   @Test

@@ -6,6 +6,8 @@ import static org.mockito.Mockito.when;
 
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
+import com.procurement.approval.domain.ApprovalTemplate;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.domain.BuyerUser;
@@ -32,9 +34,10 @@ class RfqAwardNotificationTests {
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final ApprovalTemplateMapper approvalTemplateMapper = org.mockito.Mockito.mock(ApprovalTemplateMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
-      new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
+      new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationMapper notificationMapper = org.mockito.Mockito.mock(NotificationMapper.class);
@@ -67,6 +70,8 @@ class RfqAwardNotificationTests {
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> awardDecision(invocation.getArgument(1)));
+    when(approvalTemplateMapper.findActiveByTenantAndBizType("tenant-1", "rfq_award"))
+        .thenReturn(template("TPL_RFQ_AWARD", "rfq_award"));
     when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
         .thenReturn("user-buyer-owner");
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
@@ -87,6 +92,10 @@ class RfqAwardNotificationTests {
         org.mockito.ArgumentMatchers.eq("disabled-1"),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString());
+  }
+
+  private ApprovalTemplate template(String code, String bizType) {
+    return new ApprovalTemplate(code, "tenant-1", bizType, "审批模板", "role-buyer-owner", "active");
   }
 
   private Rfq rfq(String id, String title, String status) {

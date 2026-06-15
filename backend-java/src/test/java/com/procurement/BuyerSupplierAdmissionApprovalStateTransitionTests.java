@@ -7,8 +7,10 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.domain.ApprovalTemplate;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.api.ApprovalTaskResponse;
@@ -27,9 +29,10 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final ApprovalTemplateMapper approvalTemplateMapper = org.mockito.Mockito.mock(ApprovalTemplateMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
-      new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
+      new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final BuyerSupplierApplicationService buyerSupplierApplicationService =
       new BuyerSupplierApplicationService(
@@ -53,6 +56,8 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         .thenReturn(1);
     when(approvalTaskMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.any()))
         .thenReturn(task("approval-1", "tenant-1", "rel-1", "待审批"));
+    when(approvalTemplateMapper.findActiveByTenantAndBizType("tenant-1", "buyer_supplier_admission"))
+        .thenReturn(template("TPL_SUPPLIER_ADMISSION", "buyer_supplier_admission"));
     when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
         .thenReturn("user-buyer-owner");
 
@@ -72,6 +77,10 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         "buyer_supplier_admission.submitted",
         "buyer_supplier_relation",
         "rel-1");
+  }
+
+  private ApprovalTemplate template(String code, String bizType) {
+    return new ApprovalTemplate(code, "tenant-1", bizType, "审批模板", "role-buyer-owner", "active");
   }
 
   @Test

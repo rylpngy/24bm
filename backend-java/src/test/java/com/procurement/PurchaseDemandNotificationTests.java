@@ -5,8 +5,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.domain.ApprovalTemplate;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.infrastructure.AuditLogMapper;
 import com.procurement.common.tenant.TenantContext;
@@ -30,10 +32,11 @@ class PurchaseDemandNotificationTests {
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
   private final PurchaseDemandItemMapper purchaseDemandItemMapper = org.mockito.Mockito.mock(PurchaseDemandItemMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final ApprovalTemplateMapper approvalTemplateMapper = org.mockito.Mockito.mock(ApprovalTemplateMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final DepartmentMapper departmentMapper = org.mockito.Mockito.mock(DepartmentMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
-      new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
+      new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper);
   private final AuditLogMapper auditLogMapper = org.mockito.Mockito.mock(AuditLogMapper.class);
   private final NotificationMapper notificationMapper = org.mockito.Mockito.mock(NotificationMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = new AuditLogApplicationService(auditLogMapper);
@@ -62,6 +65,8 @@ class PurchaseDemandNotificationTests {
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> approvalTask(invocation.getArgument(1)));
+    when(approvalTemplateMapper.findActiveByTenantAndBizType("tenant-1", "purchase_demand"))
+        .thenReturn(template("TPL_PURCHASE_DEMAND", "purchase_demand"));
     when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
         .thenReturn("user-buyer-owner");
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
@@ -82,6 +87,10 @@ class PurchaseDemandNotificationTests {
         org.mockito.ArgumentMatchers.eq("disabled-1"),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString());
+  }
+
+  private ApprovalTemplate template(String code, String bizType) {
+    return new ApprovalTemplate(code, "tenant-1", bizType, "审批模板", "role-buyer-owner", "active");
   }
 
   private PurchaseDemand demand(String id, String title, String status) {

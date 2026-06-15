@@ -60,7 +60,8 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalService).toContain('TPL_PURCHASE_DEMAND');
     expect(approvalService).toContain('TPL_SUPPLIER_ADMISSION');
     expect(approvalService).toContain('TPL_RFQ_AWARD');
-    expect(approvalService).toContain('role-buyer-owner');
+    expect(approvalService).not.toContain('DEFAULT_BUYER_APPROVER_ROLE_ID');
+    expect(approvalService).toContain('findActiveByTenantAndBizType');
     expect(approvalService).toContain('findDefaultApproverId');
     expect(approvalService).toContain('Unsupported approval biz type');
     expect(approvalTemplateService).toContain('listTemplates');
@@ -71,6 +72,8 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalTemplateMapper).toContain('approval_templates');
     expect(approvalTemplateMapper).toContain('tenant_id = #{tenantId}');
     expect(approvalTemplateMapper).toContain('listByTenant');
+    expect(approvalTemplateMapper).toContain('findActiveByTenantAndBizType');
+    expect(approvalTemplateMapper).toContain("status = 'active'");
     expect(approvalTemplateMapper).toContain('updateTemplateConfig');
     expect(approvalTemplateMapper).toContain('existsBuyerRoleByTenantAndId');
     expect(approvalTemplateResponse).toContain('defaultApproverRoleId');

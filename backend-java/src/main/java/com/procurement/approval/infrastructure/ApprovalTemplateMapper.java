@@ -31,6 +31,18 @@ public interface ApprovalTemplateMapper {
       select template_code, tenant_id, biz_type, name, default_approver_role_id, status
       from approval_templates
       where tenant_id = #{tenantId}
+        and biz_type = #{bizType}
+        and status = 'active'
+      """)
+  @ResultMap("approvalTemplateResults")
+  ApprovalTemplate findActiveByTenantAndBizType(
+      @Param("tenantId") String tenantId,
+      @Param("bizType") String bizType);
+
+  @Select("""
+      select template_code, tenant_id, biz_type, name, default_approver_role_id, status
+      from approval_templates
+      where tenant_id = #{tenantId}
         and template_code = #{templateCode}
       """)
   @ResultMap("approvalTemplateResults")
