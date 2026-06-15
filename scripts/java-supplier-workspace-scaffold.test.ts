@@ -46,6 +46,7 @@ describe('Java supplier workspace scaffold', () => {
     expect(supplierService).toContain('TenantAccessGuard.requireSupplierId');
     expect(qualificationService).toContain('TenantAccessGuard.requireSupplierId');
     expect(qualificationService).toContain('listActiveBySupplier');
+    expect(qualificationService).toContain('listBySupplierFiltered');
     expect(userService).toContain('TenantAccessGuard.requireSupplierId');
     expect(userService).toContain('passwordEncoder.encode');
     expect(userService).toContain('supplier_user.created');
@@ -67,6 +68,7 @@ describe('Java supplier workspace scaffold', () => {
     expect(readme).toContain('GET /api/v1/supplier/profile');
     expect(readme).toContain('GET /api/v1/supplier/qualifications');
     expect(readme).toContain('POST /api/v1/supplier/qualifications');
+    expect(readme).toContain('supplier qualification list accepts optional `status` and `keyword` filters');
     expect(readme).toContain('GET /api/v1/supplier/users');
     expect(readme).toContain('POST /api/v1/supplier/users');
     expect(readme).toContain('POST /api/v1/supplier/users/{userId}/password');

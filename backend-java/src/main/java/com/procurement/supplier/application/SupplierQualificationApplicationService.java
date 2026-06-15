@@ -29,6 +29,18 @@ public class SupplierQualificationApplicationService {
         .toList();
   }
 
+  public List<SupplierQualificationResponse> listCurrentSupplierQualifications(String status, String keyword) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
+    String normalizedStatus = blankToNull(status);
+    return supplierQualificationMapper.listBySupplierFiltered(
+            supplierId,
+            normalizedStatus == null ? ACTIVE_STATUS : normalizedStatus,
+            blankToNull(keyword))
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public SupplierQualificationResponse createCurrentSupplierQualification(CreateSupplierQualificationRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
@@ -60,6 +72,10 @@ public class SupplierQualificationApplicationService {
     if (!ACTIVE_STATUS.equals(status) && !INACTIVE_STATUS.equals(status)) {
       throw new IllegalArgumentException("Unsupported supplier qualification status: " + status);
     }
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 
   private void requireQualification(String supplierId, String qualificationId) {

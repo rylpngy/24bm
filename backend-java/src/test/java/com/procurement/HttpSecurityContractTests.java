@@ -940,7 +940,9 @@ class HttpSecurityContractTests {
             "approved",
             "published",
             List.of("Acme 采购公司")));
-    when(supplierQualificationApplicationService.listCurrentSupplierQualifications())
+    when(supplierQualificationApplicationService.listCurrentSupplierQualifications(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
         .thenReturn(List.of(new SupplierQualificationResponse(
             "qual-demo",
             "ent-supplier-sunrise",
@@ -950,6 +952,19 @@ class HttpSecurityContractTests {
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "active",
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"))));
+    when(supplierQualificationApplicationService.listCurrentSupplierQualifications(
+        org.mockito.ArgumentMatchers.eq("inactive"),
+        org.mockito.ArgumentMatchers.eq("营业")))
+        .thenReturn(List.of(new SupplierQualificationResponse(
+            "qual-demo",
+            "ent-supplier-sunrise",
+            "营业执照",
+            "Q-2026-001",
+            LocalDate.parse("2027-12-31"),
+            "license.pdf",
+            "suppliers/ent-supplier-sunrise/license.pdf",
+            "inactive",
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"))));
     when(supplierQualificationApplicationService.createCurrentSupplierQualification(
         org.mockito.ArgumentMatchers.any(CreateSupplierQualificationRequest.class)))
@@ -1076,6 +1091,12 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].qualificationType").value("营业执照"));
+    mockMvc.perform(get("/api/v1/supplier/qualifications")
+            .queryParam("status", "inactive")
+            .queryParam("keyword", "营业")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].status").value("inactive"));
     mockMvc.perform(post("/api/v1/supplier/qualifications")
             .header("Authorization", "Bearer " + supplierToken)
             .contentType(MediaType.APPLICATION_JSON)

@@ -63,6 +63,18 @@ class SupplierQualificationLifecycleTests {
   }
 
   @Test
+  void listQualificationsAppliesFiltersInsideCurrentSupplier() {
+    TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
+
+    supplierQualificationApplicationService.listCurrentSupplierQualifications("inactive", "营业");
+
+    verify(supplierQualificationMapper).listBySupplierFiltered(
+        "ent-supplier-sunrise",
+        "inactive",
+        "营业");
+  }
+
+  @Test
   void changeQualificationStatusUsesCurrentSupplierScope() {
     TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
     when(supplierQualificationMapper.findBySupplierAndId("ent-supplier-sunrise", "qual-demo"))

@@ -38,6 +38,34 @@ public interface SupplierQualificationMapper {
              file_name, storage_key, status, created_at
       from supplier_qualifications
       where supplier_id = #{supplierId}
+        and status = #{status}
+        and (
+          #{keyword} is null
+          or qualification_type ilike concat('%', #{keyword}, '%')
+          or certificate_no ilike concat('%', #{keyword}, '%')
+          or file_name ilike concat('%', #{keyword}, '%')
+        )
+      order by created_at desc
+      """)
+  @Results(id = "supplierQualificationFilteredResults", value = {
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "qualification_type", property = "qualificationType"),
+      @Result(column = "certificate_no", property = "certificateNo"),
+      @Result(column = "expires_at", property = "expiresAt"),
+      @Result(column = "file_name", property = "fileName"),
+      @Result(column = "storage_key", property = "storageKey"),
+      @Result(column = "created_at", property = "createdAt")
+  })
+  List<SupplierQualification> listBySupplierFiltered(
+      @Param("supplierId") String supplierId,
+      @Param("status") String status,
+      @Param("keyword") String keyword);
+
+  @Select("""
+      select id, supplier_id, qualification_type, certificate_no, expires_at,
+             file_name, storage_key, status, created_at
+      from supplier_qualifications
+      where supplier_id = #{supplierId}
         and id = #{id}
       """)
   @Results(id = "singleSupplierQualificationResults", value = {

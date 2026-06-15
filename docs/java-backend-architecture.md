@@ -267,6 +267,7 @@ Authorization: Bearer <accessToken>
 - 供应商档案维护的供应商身份来自 JWT 中的 `supplierId`，只允许更新 `enterprises.name`、`enterprises.industry`、`supplier_enterprises.credit_code`、`supplier_enterprises.legal_person`，不允许请求体覆盖审核、认证或档案状态。
 - 供应商资质接口的供应商身份来自 JWT 中的 `supplierId`，请求体不允许覆盖供应商归属；资质状态维护只允许当前供应商把本企业资质切换为 `active` 或 `inactive`。
 - 供应商资质存入公共供应商维度表 `supplier_qualifications`，不绑定采购方租户；采购方私域准入状态仍由 `buyer_supplier_relations` 隔离。
+- 供应商资质列表始终按当前 `supplierId` 过滤，默认只返回 `active` 资质，并支持可选 `status`、`keyword` 查询条件；`keyword` 匹配资质类型、证书编号或文件名。
 - 供应商子账号写入 `users.supplier_id`，不允许请求体覆盖供应商归属；创建时使用 `PasswordEncoder` 写入 `password_hash`，默认绑定 `scope = supplier` 角色并记录 `supplier_user.created`。
 - 供应商子账号密码重置和状态变更都以当前 JWT 的 `supplierId` 过滤目标用户；密码重置只写入哈希后的 `newPassword`，状态只允许 `active`/`inactive`，并分别记录 `supplier_user.password_reset`、`supplier_user.status_changed`。
 - 供应商子账号列表始终按当前 `supplierId` 过滤，并支持可选 `status`、`keyword` 查询条件；`keyword` 匹配姓名、手机号或邮箱。
