@@ -1,0 +1,39 @@
+package com.procurement.demand.infrastructure;
+
+import com.procurement.demand.domain.PurchaseDemandItem;
+import java.math.BigDecimal;
+import java.util.List;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.Results;
+import org.apache.ibatis.annotations.Select;
+
+@Mapper
+public interface PurchaseDemandItemMapper {
+
+  @Select("""
+      select id, tenant_id, demand_id, material_id, quantity
+      from purchase_demand_items
+      where tenant_id = #{tenantId} and demand_id = #{demandId}
+      order by id
+      """)
+  @Results(id = "purchaseDemandItemResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "demand_id", property = "demandId"),
+      @Result(column = "material_id", property = "materialId")
+  })
+  List<PurchaseDemandItem> listByDemand(@Param("tenantId") String tenantId, @Param("demandId") String demandId);
+
+  @Insert("""
+      insert into purchase_demand_items (id, tenant_id, demand_id, material_id, quantity)
+      values (#{id}, #{tenantId}, #{demandId}, #{materialId}, #{quantity})
+      """)
+  void insert(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId,
+      @Param("demandId") String demandId,
+      @Param("materialId") String materialId,
+      @Param("quantity") BigDecimal quantity);
+}

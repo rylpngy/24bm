@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/procurement_saas}
+    username: ${DB_USERNAME:procurement}
+    password: ${DB_PASSWORD:procurement}
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev

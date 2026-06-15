@@ -1,0 +1,308 @@
+# Java 后端架构设计
+
+## 技术栈
+
+- Java 21
+- Spring Boot 3
+- Spring Security + JWT
+- PostgreSQL
+- MyBatis / MyBatis-Plus
+- Flyway
+- Redis
+- JUnit 5 + Testcontainers
+
+## 模块边界
+
+- `platform`：平台运营、租户审核、套餐与功能开关。
+- `tenant`：采购方企业、组织、租户配置。
+- `identity`：用户、角色、权限、登录认证。
+- `supplier`：供应商企业档案、资质、采购方私域供应商关系。
+- `catalog`：物料与服务目录。
+- `demand`：采购需求申请、需求明细、需求审批入口。
+- `approval`：固定审批模板和审批任务。
+- `sourcing`：RFQ、邀请、报价、比价、定标。
+- `order`：采购订单、供应商确认、发货、收货。
+- `finance`：发票、付款状态、对账。
+- `notification`：站内通知，邮件和短信预留接口。
+- `attachment`：资质、需求、报价、发票附件。
+- `audit`：操作日志、数据变更留痕。
+- `common`：统一响应、异常、租户上下文、基础工具。
+
+## 分层
+
+```text
+Controller
+  -> Application Service
+    -> Domain Service
+      -> Repository / Mapper
+        -> PostgreSQL
+```
+
+## 多租户策略
+
+MVP 采用共享数据库、共享 Schema、`tenant_id` 字段隔离。平台数据、供应商公共企业档案和采购方私域关系分开建模。所有采购需求、询价、报价、订单、收货、发票、审批任务、附件和审计数据必须带租户上下文。
+
+## 迁移策略
+
+现有 PostgreSQL 初始表结构已迁移到：
+
+```text
+backend-java/src/main/resources/db/migration/V1__initial_schema.sql
+```
+
+后续数据库变更只新增 Flyway 版本文件，不直接修改已发布迁移。
+
+## 与前端对接
+
+前端保留 `services/procurementApiClient.ts` 作为 API adapter。Java 后端实现 `/api/v1` REST API 后，前端通过：
+
+```bash
+VITE_JAVA_API_BASE_URL=http://localhost:8080 npm run dev
+```
+
+切换到 Java 后端。
+
+## 认证与身份上下文
+
+Java 后端使用 `/api/v1/auth/login` 作为统一登录入口。登录请求需要传入账号、密码和身份范围，并且身份上下文必须显式匹配：
+
+- `PLATFORM`：平台运营方，不允许携带 `tenantId` 或 `supplierId`。
+- `BUYER`：采购方租户用户，必须携带 `tenantId`，不允许携带 `supplierId`。
+- `SUPPLIER`：供应商企业用户，必须携带 `supplierId`，不允许携带 `tenantId`。
+
+登录成功后返回 `accessToken`，前端后续请求使用：
+
+```text
+Authorization: Bearer <accessToken>
+```
+
+旧 Node 原型和前端 demo 阶段仍保留 `X-Tenant-Id`、`X-Supplier-Id`、`X-User-Id` 请求头兼容；Java 正式后端以 JWT claims 中的 `tenantId`、`supplierId`、`userId`、`scope` 作为主身份来源。
+
+## 采购需求 Java API
+
+第一批 Java 业务接口落在 `demand` 模块：
+
+- `GET /api/v1/buyer/demands`：查询当前采购方租户的需求列表。
+- `POST /api/v1/buyer/demands`：创建采购需求和需求明细，初始状态为 `草稿`。
+- `POST /api/v1/buyer/demands/{demandId}/submit`：提交审批，将需求状态改为 `审批中`，并创建 `approval_tasks` 记录。
+
+对应数据库表：
+
+- `purchase_demands`
+- `purchase_demand_items`
+- `approval_tasks`
+
+该模块从 `TenantContext.tenantId()` 和 `TenantContext.userId()` 获取租户与用户上下文，不接受前端在请求体中直接传入租户归属。
+
+## RFQ 询价 Java API
+
+第二批 Java 业务接口落在 `sourcing` 模块：
+
+- `GET /api/v1/buyer/rfqs`：查询当前采购方租户的 RFQ 列表。
+- `POST /api/v1/buyer/rfqs`：从已通过采购需求创建 RFQ，并邀请已准入供应商。
+
+创建 RFQ 的关键校验：
+
+- 请求中的所有 `demandIds` 必须属于当前 `tenantId`。
+- 需求状态必须是 `已通过`。
+- 请求中的所有 `invitedSupplierIds` 必须在 `buyer_supplier_relations` 中处于 `已准入`。
+- 创建后的 RFQ 状态为 `报价中`。
+
+对应数据库表：
+
+- `rfqs`
+- `rfq_demands`
+- `rfq_invites`
+- `buyer_supplier_relations`
+
+供应商报价、报价比价、定标和订单生成在后续阶段继续补齐。
+
+## 供应商报价 Java API
+
+第三批 Java 业务接口继续落在 `sourcing` 模块：
+
+- `POST /api/v1/supplier/rfqs/{rfqId}/quotes`：被邀请供应商提交报价。
+
+提交报价的关键校验：
+
+- 供应商身份来自 JWT 中的 `supplierId`，不允许请求体传入供应商归属。
+- RFQ 必须能通过 `rfq_invites` 找到当前供应商邀请。
+- RFQ 状态必须是 `报价中`。
+- 同一供应商在同一 RFQ 下只能存在一个 `已提交` 报价。
+
+对应数据库表：
+
+- `rfqs`
+- `rfq_invites`
+- `quotes`
+
+后续比价定标会基于 `quotes` 表中 `已提交` 报价生成 `award_decisions`。
+
+## 比价定标 Java API
+
+第四批 Java 业务接口继续落在 `sourcing` 模块：
+
+- `POST /api/v1/buyer/rfqs/{rfqId}/award`：采购方从已提交报价中选择拟中标供应商，并提交定标审批。
+- `POST /api/v1/buyer/rfqs/{rfqId}/award/approval`：采购方审批定标结果。
+
+定标的关键校验：
+
+- 采购方身份来自 JWT 中的 `tenantId`。
+- RFQ 必须属于当前采购方租户。
+- 选中的 `quoteId` 必须属于该 RFQ 和当前租户。
+- 报价状态必须是 `已提交`。
+
+定标后的状态流转：
+
+- 提交定标时，`rfqs.status` 更新为 `定标审批中`。
+- 提交定标时，`award_decisions.approved_status` 写入 `审批中`，并创建 `approval_tasks` 记录，`biz_type = rfq_award`。
+- 定标审批通过时，`rfqs.status` 更新为 `已定标`，`rfqs.awarded_supplier_id` 写入中标供应商，`award_decisions.approved_status` 写入 `已通过`。
+- 定标审批驳回时，`rfqs.status` 回到 `报价中`，`award_decisions.approved_status` 写入 `已驳回`。
+
+对应数据库表：
+
+- `rfqs`
+- `quotes`
+- `award_decisions`
+- `approval_tasks`
+
+后续订单模块会基于 `award_decisions` 生成 `purchase_orders`。
+
+## 审批待办 Java API
+
+MVP 审批模块采用固定审批模板，前端通过统一待办入口读取采购方需要处理的审批事项：
+
+- `GET /api/v1/buyer/approvals/pending`：查询当前采购方租户待处理审批任务。
+- `POST /api/v1/buyer/demands/{demandId}/approval`：审批采购需求。
+- `POST /api/v1/buyer/suppliers/{relationId}/approval`：审批供应商准入。
+- `POST /api/v1/buyer/rfqs/{rfqId}/award/approval`：审批定标结果。
+
+当前审批类型：
+
+- `purchase_demand`：需求审批，`bizId` 为采购需求 ID。
+- `buyer_supplier_admission`：供应商准入审批，`bizId` 为采购方私域供应商关系 ID。
+- `rfq_award`：定标审批，`bizId` 为定标决策 ID，`parentBizId` 为 RFQ ID。
+
+前端只消费审批待办 DTO，不在页面内推导后端状态。审批通过或驳回后的业务状态以 Java 后端返回和重新拉取的 buyer master data 为准。
+
+## 采购订单 Java API
+
+第五批 Java 业务接口落在 `order` 模块：
+
+- `POST /api/v1/buyer/orders`：采购方基于已通过定标结果生成采购订单。
+
+订单生成的关键校验：
+
+- 采购方身份来自 JWT 中的 `tenantId`。
+- `awardId` 必须属于当前采购方租户。
+- `award_decisions.approved_status` 必须是 `已通过`。
+- 同一 `tenantId + rfqId + supplierId` 已有订单时直接返回已有订单，避免重复下单。
+
+订单生成后的状态：
+
+- `purchase_orders.status` 写入 `待供应商确认`。
+- `purchase_orders.expected_receipt_date` 来自采购方下单请求。
+
+对应数据库表：
+
+- `award_decisions`
+- `purchase_orders`
+
+后续履约模块从供应商确认订单开始，继续推进发货、采购方收货验收、发票和付款状态。
+
+## 供应商确认订单 Java API
+
+第六批 Java 业务接口继续落在 `order` 模块：
+
+- `POST /api/v1/supplier/orders/{orderId}/confirm`：供应商确认采购订单。
+
+确认订单的关键校验：
+
+- 供应商身份来自 JWT 中的 `supplierId`。
+- 订单必须属于当前供应商。
+- 订单状态必须是 `待供应商确认`。
+
+确认后的状态流转：
+
+- `purchase_orders.status` 更新为 `待发货`。
+
+对应数据库表：
+
+- `purchase_orders`
+
+## 供应商发货 Java API
+
+第七批 Java 业务接口继续落在 `order` 模块：
+
+- `POST /api/v1/supplier/orders/{orderId}/deliveries`：供应商提交发货信息。
+
+发货的关键校验：
+
+- 供应商身份来自 JWT 中的 `supplierId`。
+- 订单必须属于当前供应商。
+- 订单状态必须是 `待发货`。
+
+发货后的状态流转：
+
+- `deliveries.status` 写入 `已发货`。
+- `purchase_orders.status` 更新为 `已发货`。
+
+对应数据库表：
+
+- `purchase_orders`
+- `deliveries`
+
+后续收货模块会基于 `purchase_orders` 和 `deliveries` 创建 `receipts`，并把订单推进到验收完成状态。
+
+## 采购方收货验收 Java API
+
+第八批 Java 业务接口继续落在 `order` 模块：
+
+- `POST /api/v1/buyer/orders/{orderId}/receipts`：采购方对已发货订单进行收货验收。
+
+收货验收的关键校验：
+
+- 采购方身份来自 JWT 中的 `tenantId`。
+- 验收人来自 JWT 中的 `userId`。
+- 订单必须属于当前采购方租户。
+- 订单状态必须是 `已发货`。
+
+收货后的状态流转：
+
+- `receipts.result` 写入验收结果。
+- `receipts.receiver_id` 写入当前用户。
+- `purchase_orders.status` 更新为 `已收货`。
+
+对应数据库表：
+
+- `purchase_orders`
+- `receipts`
+
+后续财务协同模块会在订单已收货后接入发票登记、付款状态和对账记录。
+
+## 财务协同 Java API
+
+第九批 Java 业务接口落在 `finance` 模块：
+
+- `POST /api/v1/supplier/orders/{orderId}/invoices`：供应商对已收货订单登记发票。
+- `POST /api/v1/buyer/invoices/{invoiceId}/payments`：采购方登记发票付款状态。
+
+发票登记的关键校验：
+
+- 供应商身份来自 JWT 中的 `supplierId`。
+- 订单必须属于当前供应商。
+- 订单状态必须是 `已收货`。
+- 新发票初始 `payment_status` 为 `待付款`。
+
+付款状态登记的关键校验：
+
+- 采购方身份来自 JWT 中的 `tenantId`。
+- 发票必须属于当前采购方租户。
+- 付款状态写入 `invoices.payment_status`。
+
+对应数据库表：
+
+- `purchase_orders`
+- `invoices`
+
+至此，Java 后端 MVP 主链路已经覆盖需求、询价、报价、定标、订单、发货、收货、发票和付款状态。

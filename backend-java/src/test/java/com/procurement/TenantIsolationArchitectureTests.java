@@ -1,0 +1,119 @@
+package com.procurement;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class TenantIsolationArchitectureTests {
+
+  private static final Path SOURCE_ROOT = Path.of("src/main/java/com/procurement");
+
+  @Test
+  void applicationServicesUseCentralTenantAccessGuardInsteadOfLocalThreadLocalReads() throws IOException {
+    List<Path> serviceFiles;
+    try (var stream = Files.walk(SOURCE_ROOT)) {
+      serviceFiles = stream
+          .filter(path -> path.toString().endsWith("ApplicationService.java"))
+          .toList();
+    }
+
+    assertThat(serviceFiles).isNotEmpty();
+    for (Path serviceFile : serviceFiles) {
+      String source = Files.readString(serviceFile);
+      assertThat(source)
+          .as(serviceFile + " should not read TenantContext directly")
+          .doesNotContain("TenantContext.tenantId()")
+          .doesNotContain("TenantContext.supplierId()")
+          .doesNotContain("TenantContext.userId()");
+      if (source.contains("requireTenantId()")
+          || source.contains("requireSupplierId()")
+          || source.contains("requireUserId()")) {
+        assertThat(source)
+            .as(serviceFile + " should delegate context requirements to TenantAccessGuard")
+            .contains("TenantAccessGuard");
+      }
+    }
+  }
+
+  @Test
+  void tenantAccessGuardCentralizesBuyerSupplierAndUserContextMessages() throws IOException {
+    Path guardPath = SOURCE_ROOT.resolve("common/tenant/TenantAccessGuard.java");
+
+    assertThat(guardPath).exists();
+    String guardSource = Files.readString(guardPath);
+
+    assertThat(guardSource)
+        .contains("requireTenantId")
+        .contains("requireSupplierId")
+        .contains("requireUserId")
+        .contains("Tenant context is required")
+        .contains("Supplier context is required")
+        .contains("User context is required");
+  }
+
+  @Test
+  void supplierWorkspaceOnlyListsApprovedBuyerRelationships() throws IOException {
+    Path mapperPath = SOURCE_ROOT.resolve("supplier/infrastructure/SupplierProfileMapper.java");
+    String mapperSource = Files.readString(mapperPath);
+
+    assertThat(mapperSource)
+        .contains("listConnectedBuyerNames")
+        .contains("where r.supplier_id = #{supplierId}")
+        .contains("and r.status = '已准入'");
+  }
+
+  @Test
+  void supplierRfqWorkspaceOnlyListsActiveInvites() throws IOException {
+    Path mapperPath = SOURCE_ROOT.resolve("sourcing/infrastructure/RfqMapper.java");
+    String mapperSource = Files.readString(mapperPath);
+
+    assertThat(mapperSource)
+        .contains("listBySupplierInvite")
+        .contains("i.supplier_id = #{supplierId}")
+        .contains("i.invite_status = '已邀请'");
+  }
+
+  @Test
+  void purchaseOrderStatusUpdatesRequireExpectedCurrentStatus() throws IOException {
+    Path mapperPath = SOURCE_ROOT.resolve("order/infrastructure/PurchaseOrderMapper.java");
+    String mapperSource = Files.readString(mapperPath);
+
+    assertThat(mapperSource)
+        .contains("@Param(\"currentStatus\") String currentStatus")
+        .contains("and status = #{currentStatus}");
+  }
+
+  @Test
+  void invoicePaymentStatusUpdatesRequireExpectedCurrentStatus() throws IOException {
+    Path mapperPath = SOURCE_ROOT.resolve("finance/infrastructure/InvoiceMapper.java");
+    String mapperSource = Files.readString(mapperPath);
+
+    assertThat(mapperSource)
+        .contains("@Param(\"currentPaymentStatus\") String currentPaymentStatus")
+        .contains("and payment_status = #{currentPaymentStatus}");
+  }
+
+  @Test
+  void rfqAwardStatusUpdatesRequireExpectedCurrentStatus() throws IOException {
+    Path mapperPath = SOURCE_ROOT.resolve("sourcing/infrastructure/RfqMapper.java");
+    String mapperSource = Files.readString(mapperPath);
+
+    assertThat(mapperSource)
+        .contains("@Param(\"currentStatus\") String currentStatus")
+        .contains("and status = #{currentStatus}");
+  }
+
+  @Test
+  void rfqDemandMapperCanDetectAlreadyLinkedDemandInTenantScope() throws IOException {
+    Path mapperPath = SOURCE_ROOT.resolve("sourcing/infrastructure/RfqDemandMapper.java");
+    String mapperSource = Files.readString(mapperPath);
+
+    assertThat(mapperSource)
+        .contains("countByTenantAndDemand")
+        .contains("where tenant_id = #{tenantId} and demand_id = #{demandId}");
+  }
+}

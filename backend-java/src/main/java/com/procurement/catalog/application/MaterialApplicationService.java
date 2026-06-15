@@ -1,0 +1,53 @@
+package com.procurement.catalog.application;
+
+import com.procurement.catalog.api.CreateMaterialRequest;
+import com.procurement.catalog.api.MaterialResponse;
+import com.procurement.catalog.domain.Material;
+import com.procurement.catalog.infrastructure.MaterialMapper;
+import com.procurement.common.tenant.TenantAccessGuard;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class MaterialApplicationService {
+  private final MaterialMapper materialMapper;
+
+  public MaterialApplicationService(MaterialMapper materialMapper) {
+    this.materialMapper = materialMapper;
+  }
+
+  public List<MaterialResponse> listCurrentTenantMaterials() {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer material APIs");
+    return materialMapper.listByTenant(tenantId).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  @Transactional
+  public MaterialResponse createMaterial(CreateMaterialRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer material APIs");
+    String materialId = "mat-" + UUID.randomUUID();
+    materialMapper.insert(
+        materialId,
+        tenantId,
+        request.code(),
+        request.name(),
+        request.category(),
+        request.unit(),
+        request.referencePrice());
+    return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
+  }
+
+  private MaterialResponse toResponse(Material material) {
+    return new MaterialResponse(
+        material.id(),
+        material.tenantId(),
+        material.code(),
+        material.name(),
+        material.category(),
+        material.unit(),
+        material.referencePrice());
+  }
+}

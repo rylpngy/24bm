@@ -1,0 +1,1348 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "24Bid Multi-tenant Procurement API",
+    "version": "0.1.0",
+    "description": "First-phase API draft for the inquiry-to-payment procurement SaaS MVP."
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Versioned application API"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "shared"
+        ],
+        "summary": "按平台方、采购方或供应商身份登录",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "LoginResponse"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/platform/overview": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "加载平台运营概览",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PlatformOverview"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/platform/tenants": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "加载平台租户列表",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "TenantList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/platform/tenants/{tenantId}/features": {
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "更新租户功能开关",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/platform/enterprise-reviews": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "加载企业审核列表",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "EnterpriseReviewList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/platform/enterprise-reviews/{enterpriseId}": {
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "审核平台企业入驻",
+        "parameters": [
+          {
+            "name": "enterpriseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "EnterpriseReview"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/suppliers": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方私域供应商库",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerSupplierList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "创建采购方私域供应商关系",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerSupplier"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/suppliers/{relationId}/submit": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "提交供应商准入审批",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ApprovalTask"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/suppliers/{relationId}/approval": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "审批供应商准入",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ApprovalTask"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/materials": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方物料/服务目录",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MaterialList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "创建采购方物料/服务",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Material"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/users": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方用户列表",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerUserList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "创建采购方用户",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerUser"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/demands": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购需求列表",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PurchaseDemandList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "创建采购需求",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PurchaseDemand"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/demands/{demandId}/submit": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "提交需求审批",
+        "parameters": [
+          {
+            "name": "demandId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ApprovalTask"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/demands/{demandId}/approval": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "审批采购需求",
+        "parameters": [
+          {
+            "name": "demandId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ApprovalTask"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/approvals/pending": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方审批待办",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PendingApprovalTaskList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/rfqs": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方询价项目",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RfqList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "从已通过需求创建询价",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RFQ"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/profile": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "加载供应商企业档案",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierProfile"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/rfqs": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "加载供应商询价邀请",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierRfqList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/rfqs/{rfqId}/quotes": {
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "供应商提交报价",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quote"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/rfqs/{rfqId}/award": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "提交定标审批",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AwardDecision"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/rfqs/{rfqId}/award/approval": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "审批定标结果",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AwardDecision"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/orders": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方订单列表",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerOrderList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "根据定标结果生成采购订单",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PurchaseOrder"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/orders": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "加载供应商销售订单",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierOrderList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/orders/{orderId}/confirm": {
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "供应商确认采购订单",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PurchaseOrder"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/orders/{orderId}/deliveries": {
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "供应商提交发货信息",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/orders/{orderId}/receipts": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方收货验收",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipt"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/invoices": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方发票付款列表",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerInvoiceList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/quotes": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "加载供应商报价历史",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierQuoteList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/invoices": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "加载供应商应收发票列表",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierInvoiceList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/orders/{orderId}/invoices": {
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "供应商登记发票",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/invoices/{invoiceId}/payments": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "登记付款状态",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentRecord"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "LoginResponse": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "FeatureToggleRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "Tenant": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "EnterpriseReviewRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "EnterpriseReview": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerSupplierListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerSupplierList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateBuyerSupplierRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerSupplier": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SubmitSupplierAdmissionRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ReviewApprovalRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "MaterialListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "MaterialList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateMaterialRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "Material": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerUserListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerUserList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateBuyerUserRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerUser": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "PurchaseDemandListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "PurchaseDemandList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreatePurchaseDemandRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "PurchaseDemand": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SubmitApprovalRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ApprovalTask": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "PendingApprovalListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "PendingApprovalTaskList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "RfqListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "RfqList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateRfqRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "RFQ": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierProfileRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierProfile": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierRfqListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierRfqList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SubmitQuoteRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "Quote": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "AwardRfqRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ReviewAwardApprovalRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "AwardDecision": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerOrderListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerOrderList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreatePurchaseOrderRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "PurchaseOrder": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierOrderListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierOrderList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ConfirmSupplierOrderRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateDeliveryRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "Delivery": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateReceiptRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "Receipt": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerInvoiceListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerInvoiceList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierQuoteListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierQuoteList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierInvoiceListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "SupplierInvoiceList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateInvoiceRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "Invoice": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "RegisterPaymentRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "PaymentRecord": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  },
+  "x-mvp-flow": [
+    "POST /auth/login",
+    "GET /platform/overview",
+    "GET /platform/tenants",
+    "POST /platform/tenants/{tenantId}/features",
+    "GET /platform/enterprise-reviews",
+    "POST /platform/enterprise-reviews/{enterpriseId}",
+    "GET /buyer/suppliers",
+    "POST /buyer/suppliers",
+    "POST /buyer/suppliers/{relationId}/submit",
+    "POST /buyer/suppliers/{relationId}/approval",
+    "GET /buyer/materials",
+    "POST /buyer/materials",
+    "GET /buyer/users",
+    "POST /buyer/users",
+    "GET /buyer/demands",
+    "POST /buyer/demands",
+    "POST /buyer/demands/{demandId}/submit",
+    "POST /buyer/demands/{demandId}/approval",
+    "GET /buyer/approvals/pending",
+    "GET /buyer/rfqs",
+    "POST /buyer/rfqs",
+    "GET /supplier/profile",
+    "GET /supplier/rfqs",
+    "POST /supplier/rfqs/{rfqId}/quotes",
+    "POST /buyer/rfqs/{rfqId}/award",
+    "POST /buyer/rfqs/{rfqId}/award/approval",
+    "GET /buyer/orders",
+    "POST /buyer/orders",
+    "GET /supplier/orders",
+    "POST /supplier/orders/{orderId}/confirm",
+    "POST /supplier/orders/{orderId}/deliveries",
+    "POST /buyer/orders/{orderId}/receipts",
+    "GET /buyer/invoices",
+    "GET /supplier/quotes",
+    "GET /supplier/invoices",
+    "POST /supplier/orders/{orderId}/invoices",
+    "POST /buyer/invoices/{invoiceId}/payments"
+  ]
+}

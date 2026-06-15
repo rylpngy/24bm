@@ -1,0 +1,121 @@
+package com.procurement.sourcing.application;
+
+import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.sourcing.api.QuoteResponse;
+import com.procurement.sourcing.api.RfqResponse;
+import com.procurement.sourcing.api.SubmitQuoteRequest;
+import com.procurement.sourcing.domain.Quote;
+import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.infrastructure.QuoteMapper;
+import com.procurement.sourcing.infrastructure.RfqDemandMapper;
+import com.procurement.sourcing.infrastructure.RfqInviteMapper;
+import com.procurement.sourcing.infrastructure.RfqMapper;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class QuoteApplicationService {
+  private static final String QUOTING_STATUS = "报价中";
+  private static final String SUBMITTED_STATUS = "已提交";
+
+  private final RfqMapper rfqMapper;
+  private final RfqDemandMapper rfqDemandMapper;
+  private final RfqInviteMapper rfqInviteMapper;
+  private final QuoteMapper quoteMapper;
+
+  public QuoteApplicationService(RfqMapper rfqMapper, RfqDemandMapper rfqDemandMapper, RfqInviteMapper rfqInviteMapper, QuoteMapper quoteMapper) {
+    this.rfqMapper = rfqMapper;
+    this.rfqDemandMapper = rfqDemandMapper;
+    this.rfqInviteMapper = rfqInviteMapper;
+    this.quoteMapper = quoteMapper;
+  }
+
+  public List<RfqResponse> listSupplierRfqs() {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    return rfqMapper.listBySupplierInvite(supplierId).stream()
+        .map(this::toRfqResponse)
+        .toList();
+  }
+
+  public List<QuoteResponse> listSupplierQuotes() {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    return quoteMapper.listBySupplier(supplierId).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  @Transactional
+  public QuoteResponse submit(String rfqId, SubmitQuoteRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    Rfq rfq = findRfqForInvitedSupplier(rfqId, supplierId);
+    if (!QUOTING_STATUS.equals(rfq.status())) {
+      throw new IllegalStateException("RFQ is not open for quotes: " + rfqId);
+    }
+
+    int submittedCount = quoteMapper.countSubmittedBySupplier(rfq.tenantId(), rfqId, supplierId, SUBMITTED_STATUS);
+    if (submittedCount > 0) {
+      throw new IllegalStateException("Supplier has already submitted a quote: " + rfqId);
+    }
+
+    String quoteId = newId("quote");
+    quoteMapper.insert(
+        quoteId,
+        rfq.tenantId(),
+        rfqId,
+        supplierId,
+        request.amount(),
+        request.taxRate(),
+        request.deliveryDays(),
+        SUBMITTED_STATUS);
+
+    return toResponse(quoteMapper.findByTenantAndId(rfq.tenantId(), quoteId));
+  }
+
+  private Rfq findRfqForInvitedSupplier(String rfqId, String supplierId) {
+    Rfq rfq = rfqMapper.findBySupplierInvite(rfqId, supplierId);
+    if (rfq == null) {
+      throw new IllegalArgumentException("RFQ not found for invited supplier: " + rfqId);
+    }
+
+    int inviteCount = rfqInviteMapper.isSupplierInvited(rfq.tenantId(), rfqId, supplierId);
+    if (inviteCount == 0) {
+      throw new IllegalStateException("Supplier is not invited to RFQ: " + rfqId);
+    }
+
+    return rfq;
+  }
+
+  private QuoteResponse toResponse(Quote quote) {
+    return new QuoteResponse(
+        quote.id(),
+        quote.tenantId(),
+        quote.rfqId(),
+        quote.supplierId(),
+        quote.amount(),
+        quote.taxRate(),
+        quote.deliveryDays(),
+        quote.status(),
+        quote.submittedAt());
+  }
+
+  private RfqResponse toRfqResponse(Rfq rfq) {
+    return new RfqResponse(
+        rfq.id(),
+        rfq.tenantId(),
+        rfq.title(),
+        rfq.status(),
+        rfq.deadlineAt(),
+        rfq.ownerId(),
+        rfq.awardedSupplierId(),
+        rfq.createdAt(),
+        rfq.updatedAt(),
+        rfqDemandMapper.listDemandIds(rfq.tenantId(), rfq.id()),
+        rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()));
+  }
+
+  private String newId(String prefix) {
+    return prefix + "-" + UUID.randomUUID();
+  }
+}

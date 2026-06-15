@@ -1,0 +1,86 @@
+package com.procurement.supplier.infrastructure;
+
+import com.procurement.supplier.domain.BuyerSupplierRelation;
+import java.util.List;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.Results;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
+
+@Mapper
+public interface BuyerSupplierRelationMapper {
+
+  @Select("""
+      select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
+             r.categories::text as categories_json, r.performance_score
+      from buyer_supplier_relations r
+      join enterprises e on e.id = r.supplier_id
+      where r.tenant_id = #{tenantId}
+      order by r.created_at desc
+      """)
+  @Results(id = "buyerSupplierRelationResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "supplier_name", property = "supplierName"),
+      @Result(column = "categories_json", property = "categoriesJson"),
+      @Result(column = "performance_score", property = "performanceScore")
+  })
+  List<BuyerSupplierRelation> listByTenant(@Param("tenantId") String tenantId);
+
+  @Select("""
+      select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
+             r.categories::text as categories_json, r.performance_score
+      from buyer_supplier_relations r
+      join enterprises e on e.id = r.supplier_id
+      where r.tenant_id = #{tenantId} and r.id = #{id}
+      """)
+  @Results(id = "singleBuyerSupplierRelationResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "supplier_name", property = "supplierName"),
+      @Result(column = "categories_json", property = "categoriesJson"),
+      @Result(column = "performance_score", property = "performanceScore")
+  })
+  BuyerSupplierRelation findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Insert("""
+      insert into buyer_supplier_relations (id, tenant_id, supplier_id, status, level, categories)
+      values (#{id}, #{tenantId}, #{supplierId}, #{status}, #{level}, #{categoriesJson}::jsonb)
+      """)
+  void insert(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId,
+      @Param("supplierId") String supplierId,
+      @Param("status") String status,
+      @Param("level") String level,
+      @Param("categoriesJson") String categoriesJson);
+
+  @Select("""
+      select count(1)
+      from buyer_supplier_relations
+      where tenant_id = #{tenantId}
+        and supplier_id = #{supplierId}
+        and status = #{status}
+      """)
+  int countByTenantSupplierAndStatus(
+      @Param("tenantId") String tenantId,
+      @Param("supplierId") String supplierId,
+      @Param("status") String status);
+
+  @Update("""
+      update buyer_supplier_relations
+      set status = #{status},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = #{currentStatus}
+      """)
+  int updateStatus(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("currentStatus") String currentStatus,
+      @Param("status") String status);
+}

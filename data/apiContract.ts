@@ -1,0 +1,643 @@
+export type ApiAudience = 'platform' | 'buyer' | 'supplier' | 'shared';
+export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+
+export interface ApiModule {
+  key: ApiAudience;
+  label: string;
+  responsibilities: string[];
+  resources: string[];
+}
+
+export interface FlowEndpoint {
+  method: HttpMethod;
+  path: string;
+  audience: ApiAudience;
+  action: string;
+  requestSchema: string;
+  responseSchema: string;
+}
+
+export interface DatabaseTable {
+  name: string;
+  tenantScoped: boolean;
+  purpose: string;
+  requiredColumns: string[];
+}
+
+type OpenApiParameter = {
+  name: string;
+  in: 'header' | 'path' | 'query';
+  required: boolean;
+  schema: { type: string };
+};
+
+type OpenApiPathOperation = {
+  tags: ApiAudience[];
+  summary: string;
+  parameters: OpenApiParameter[];
+  security?: Array<Record<string, unknown[]>>;
+  responses: Record<string, { description: string }>;
+};
+
+export interface OpenApiDraft {
+  openapi: '3.1.0';
+  info: {
+    title: string;
+    version: string;
+    description: string;
+  };
+  servers: Array<{ url: string; description: string }>;
+  paths: Record<string, Partial<Record<Lowercase<HttpMethod>, OpenApiPathOperation>>>;
+  components: {
+    securitySchemes: Record<string, unknown>;
+    schemas: Record<string, unknown>;
+  };
+}
+
+export const apiModules: ApiModule[] = [
+  {
+    key: 'platform',
+    label: '平台运营后台',
+    responsibilities: ['租户入驻审核', '套餐与功能开关', '公共供应商企业身份', '平台操作审计'],
+    resources: ['Tenant', 'Enterprise', 'FeatureFlag', 'PlatformAuditLog'],
+  },
+  {
+    key: 'buyer',
+    label: '采购方后台',
+    responsibilities: ['组织用户与权限', '供应商私域关系', '采购需求', '询价比价', '订单履约', '发票付款状态'],
+    resources: ['PurchaseDemand', 'MaterialItem', 'SupplierRelation', 'RFQ', 'AwardDecision', 'PurchaseOrder', 'Receipt', 'Invoice'],
+  },
+  {
+    key: 'supplier',
+    label: '供应商后台',
+    responsibilities: ['企业档案和资质', '询价邀请', '在线报价', '订单确认', '发货与发票提交'],
+    resources: ['SupplierProfile', 'SupplierQualification', 'Opportunity', 'Quote', 'SalesOrder', 'Delivery', 'Receivable'],
+  },
+  {
+    key: 'shared',
+    label: '公共底座',
+    responsibilities: ['认证鉴权', '附件中心', '站内通知', '操作日志', '数据字典'],
+    resources: ['UserAccount', 'Role', 'Attachment', 'Notification', 'AuditLog', 'Dictionary'],
+  },
+];
+
+export const mvpFlowEndpoints: FlowEndpoint[] = [
+  {
+    method: 'POST',
+    path: '/auth/login',
+    audience: 'shared',
+    action: '按平台方、采购方或供应商身份登录',
+    requestSchema: 'LoginRequest',
+    responseSchema: 'LoginResponse',
+  },
+  {
+    method: 'GET',
+    path: '/platform/overview',
+    audience: 'platform',
+    action: '加载平台运营概览',
+    requestSchema: 'PlatformOverviewRequest',
+    responseSchema: 'PlatformOverview',
+  },
+  {
+    method: 'GET',
+    path: '/platform/tenants',
+    audience: 'platform',
+    action: '加载平台租户列表',
+    requestSchema: 'PlatformTenantListRequest',
+    responseSchema: 'TenantList',
+  },
+  {
+    method: 'POST',
+    path: '/platform/tenants/{tenantId}/features',
+    audience: 'platform',
+    action: '更新租户功能开关',
+    requestSchema: 'FeatureToggleRequest',
+    responseSchema: 'Tenant',
+  },
+  {
+    method: 'GET',
+    path: '/platform/enterprise-reviews',
+    audience: 'platform',
+    action: '加载企业审核列表',
+    requestSchema: 'EnterpriseReviewListRequest',
+    responseSchema: 'EnterpriseReviewList',
+  },
+  {
+    method: 'POST',
+    path: '/platform/enterprise-reviews/{enterpriseId}',
+    audience: 'platform',
+    action: '审核平台企业入驻',
+    requestSchema: 'EnterpriseReviewRequest',
+    responseSchema: 'EnterpriseReview',
+  },
+  {
+    method: 'GET',
+    path: '/buyer/suppliers',
+    audience: 'buyer',
+    action: '加载采购方私域供应商库',
+    requestSchema: 'BuyerSupplierListRequest',
+    responseSchema: 'BuyerSupplierList',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/suppliers',
+    audience: 'buyer',
+    action: '创建采购方私域供应商关系',
+    requestSchema: 'CreateBuyerSupplierRequest',
+    responseSchema: 'BuyerSupplier',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/suppliers/{relationId}/submit',
+    audience: 'buyer',
+    action: '提交供应商准入审批',
+    requestSchema: 'SubmitSupplierAdmissionRequest',
+    responseSchema: 'ApprovalTask',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/suppliers/{relationId}/approval',
+    audience: 'buyer',
+    action: '审批供应商准入',
+    requestSchema: 'ReviewApprovalRequest',
+    responseSchema: 'ApprovalTask',
+  },
+  {
+    method: 'GET',
+    path: '/buyer/materials',
+    audience: 'buyer',
+    action: '加载采购方物料/服务目录',
+    requestSchema: 'MaterialListRequest',
+    responseSchema: 'MaterialList',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/materials',
+    audience: 'buyer',
+    action: '创建采购方物料/服务',
+    requestSchema: 'CreateMaterialRequest',
+    responseSchema: 'Material',
+  },
+  {
+    method: 'GET',
+    path: '/buyer/users',
+    audience: 'buyer',
+    action: '加载采购方用户列表',
+    requestSchema: 'BuyerUserListRequest',
+    responseSchema: 'BuyerUserList',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/users',
+    audience: 'buyer',
+    action: '创建采购方用户',
+    requestSchema: 'CreateBuyerUserRequest',
+    responseSchema: 'BuyerUser',
+  },
+  {
+    method: 'GET',
+    path: '/buyer/demands',
+    audience: 'buyer',
+    action: '加载采购需求列表',
+    requestSchema: 'PurchaseDemandListRequest',
+    responseSchema: 'PurchaseDemandList',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/demands',
+    audience: 'buyer',
+    action: '创建采购需求',
+    requestSchema: 'CreatePurchaseDemandRequest',
+    responseSchema: 'PurchaseDemand',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/demands/{demandId}/submit',
+    audience: 'buyer',
+    action: '提交需求审批',
+    requestSchema: 'SubmitApprovalRequest',
+    responseSchema: 'ApprovalTask',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/demands/{demandId}/approval',
+    audience: 'buyer',
+    action: '审批采购需求',
+    requestSchema: 'ReviewApprovalRequest',
+    responseSchema: 'ApprovalTask',
+  },
+  {
+    method: 'GET',
+    path: '/buyer/approvals/pending',
+    audience: 'buyer',
+    action: '加载采购方审批待办',
+    requestSchema: 'PendingApprovalListRequest',
+    responseSchema: 'PendingApprovalTaskList',
+  },
+  {
+    method: 'GET',
+    path: '/buyer/rfqs',
+    audience: 'buyer',
+    action: '加载采购方询价项目',
+    requestSchema: 'RfqListRequest',
+    responseSchema: 'RfqList',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/rfqs',
+    audience: 'buyer',
+    action: '从已通过需求创建询价',
+    requestSchema: 'CreateRfqRequest',
+    responseSchema: 'RFQ',
+  },
+  {
+    method: 'GET',
+    path: '/supplier/profile',
+    audience: 'supplier',
+    action: '加载供应商企业档案',
+    requestSchema: 'SupplierProfileRequest',
+    responseSchema: 'SupplierProfile',
+  },
+  {
+    method: 'GET',
+    path: '/supplier/rfqs',
+    audience: 'supplier',
+    action: '加载供应商询价邀请',
+    requestSchema: 'SupplierRfqListRequest',
+    responseSchema: 'SupplierRfqList',
+  },
+  {
+    method: 'POST',
+    path: '/supplier/rfqs/{rfqId}/quotes',
+    audience: 'supplier',
+    action: '供应商提交报价',
+    requestSchema: 'SubmitQuoteRequest',
+    responseSchema: 'Quote',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/rfqs/{rfqId}/award',
+    audience: 'buyer',
+    action: '提交定标审批',
+    requestSchema: 'AwardRfqRequest',
+    responseSchema: 'AwardDecision',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/rfqs/{rfqId}/award/approval',
+    audience: 'buyer',
+    action: '审批定标结果',
+    requestSchema: 'ReviewAwardApprovalRequest',
+    responseSchema: 'AwardDecision',
+  },
+  {
+    method: 'GET',
+    path: '/buyer/orders',
+    audience: 'buyer',
+    action: '加载采购方订单列表',
+    requestSchema: 'BuyerOrderListRequest',
+    responseSchema: 'BuyerOrderList',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/orders',
+    audience: 'buyer',
+    action: '根据定标结果生成采购订单',
+    requestSchema: 'CreatePurchaseOrderRequest',
+    responseSchema: 'PurchaseOrder',
+  },
+  {
+    method: 'GET',
+    path: '/supplier/orders',
+    audience: 'supplier',
+    action: '加载供应商销售订单',
+    requestSchema: 'SupplierOrderListRequest',
+    responseSchema: 'SupplierOrderList',
+  },
+  {
+    method: 'POST',
+    path: '/supplier/orders/{orderId}/confirm',
+    audience: 'supplier',
+    action: '供应商确认采购订单',
+    requestSchema: 'ConfirmSupplierOrderRequest',
+    responseSchema: 'PurchaseOrder',
+  },
+  {
+    method: 'POST',
+    path: '/supplier/orders/{orderId}/deliveries',
+    audience: 'supplier',
+    action: '供应商提交发货信息',
+    requestSchema: 'CreateDeliveryRequest',
+    responseSchema: 'Delivery',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/orders/{orderId}/receipts',
+    audience: 'buyer',
+    action: '采购方收货验收',
+    requestSchema: 'CreateReceiptRequest',
+    responseSchema: 'Receipt',
+  },
+  {
+    method: 'GET',
+    path: '/buyer/invoices',
+    audience: 'buyer',
+    action: '加载采购方发票付款列表',
+    requestSchema: 'BuyerInvoiceListRequest',
+    responseSchema: 'BuyerInvoiceList',
+  },
+  {
+    method: 'GET',
+    path: '/supplier/quotes',
+    audience: 'supplier',
+    action: '加载供应商报价历史',
+    requestSchema: 'SupplierQuoteListRequest',
+    responseSchema: 'SupplierQuoteList',
+  },
+  {
+    method: 'GET',
+    path: '/supplier/invoices',
+    audience: 'supplier',
+    action: '加载供应商应收发票列表',
+    requestSchema: 'SupplierInvoiceListRequest',
+    responseSchema: 'SupplierInvoiceList',
+  },
+  {
+    method: 'POST',
+    path: '/supplier/orders/{orderId}/invoices',
+    audience: 'supplier',
+    action: '供应商登记发票',
+    requestSchema: 'CreateInvoiceRequest',
+    responseSchema: 'Invoice',
+  },
+  {
+    method: 'POST',
+    path: '/buyer/invoices/{invoiceId}/payments',
+    audience: 'buyer',
+    action: '登记付款状态',
+    requestSchema: 'RegisterPaymentRequest',
+    responseSchema: 'PaymentRecord',
+  },
+];
+
+export const databaseTables: DatabaseTable[] = [
+  {
+    name: 'tenants',
+    tenantScoped: false,
+    purpose: '采购方租户、套餐、状态和功能开关。',
+    requiredColumns: ['id', 'name', 'plan', 'status', 'enabled_features', 'created_at', 'updated_at'],
+  },
+  {
+    name: 'enterprises',
+    tenantScoped: false,
+    purpose: '平台企业身份总表，承载采购方、供应商和平台运营方。',
+    requiredColumns: ['id', 'name', 'type', 'industry', 'verified', 'created_at', 'updated_at'],
+  },
+  {
+    name: 'supplier_enterprises',
+    tenantScoped: false,
+    purpose: '供应商公共企业身份、认证和平台级基础档案。',
+    requiredColumns: ['enterprise_id', 'credit_code', 'legal_person', 'verified_status', 'profile_status'],
+  },
+  {
+    name: 'buyer_supplier_relations',
+    tenantScoped: true,
+    purpose: '采购方私域供应商关系，保存准入、分级、品类授权和黑名单状态。',
+    requiredColumns: ['id', 'tenant_id', 'supplier_id', 'status', 'level', 'categories', 'performance_score'],
+  },
+  {
+    name: 'users',
+    tenantScoped: false,
+    purpose: '平台、采购方、供应商用户账号。采购方用户用 tenant_id，供应商用户用 supplier_id。',
+    requiredColumns: ['id', 'tenant_id', 'supplier_id', 'name', 'mobile', 'email', 'status'],
+  },
+  {
+    name: 'roles',
+    tenantScoped: true,
+    purpose: '租户内角色和权限集合；平台角色 tenant_id 为空并按 scope 区分。',
+    requiredColumns: ['id', 'tenant_id', 'scope', 'name', 'permissions'],
+  },
+  {
+    name: 'materials',
+    tenantScoped: true,
+    purpose: '采购方物料/服务目录。',
+    requiredColumns: ['id', 'tenant_id', 'code', 'name', 'category', 'unit', 'reference_price'],
+  },
+  {
+    name: 'purchase_demands',
+    tenantScoped: true,
+    purpose: '采购需求主表。',
+    requiredColumns: ['id', 'tenant_id', 'title', 'department_id', 'requester_id', 'budget', 'status'],
+  },
+  {
+    name: 'approval_tasks',
+    tenantScoped: true,
+    purpose: '固定审批模板下的待办、审批记录和结果。',
+    requiredColumns: ['id', 'tenant_id', 'biz_type', 'biz_id', 'assignee_id', 'status', 'acted_at'],
+  },
+  {
+    name: 'rfqs',
+    tenantScoped: true,
+    purpose: '询价项目主表。',
+    requiredColumns: ['id', 'tenant_id', 'title', 'status', 'deadline_at', 'owner_id'],
+  },
+  {
+    name: 'rfq_invites',
+    tenantScoped: true,
+    purpose: '询价邀请供应商明细。',
+    requiredColumns: ['id', 'tenant_id', 'rfq_id', 'supplier_id', 'invite_status'],
+  },
+  {
+    name: 'quotes',
+    tenantScoped: true,
+    purpose: '供应商报价主表和报价状态。',
+    requiredColumns: ['id', 'tenant_id', 'rfq_id', 'supplier_id', 'amount', 'tax_rate', 'delivery_days', 'status'],
+  },
+  {
+    name: 'award_decisions',
+    tenantScoped: true,
+    purpose: '定标结果、定标理由和中标供应商。',
+    requiredColumns: ['id', 'tenant_id', 'rfq_id', 'supplier_id', 'amount', 'reason', 'approved_status'],
+  },
+  {
+    name: 'purchase_orders',
+    tenantScoped: true,
+    purpose: '采购订单主表。',
+    requiredColumns: ['id', 'tenant_id', 'rfq_id', 'supplier_id', 'amount', 'status', 'expected_receipt_date'],
+  },
+  {
+    name: 'deliveries',
+    tenantScoped: true,
+    purpose: '供应商发货记录。',
+    requiredColumns: ['id', 'tenant_id', 'order_id', 'supplier_id', 'carrier', 'tracking_no', 'status'],
+  },
+  {
+    name: 'receipts',
+    tenantScoped: true,
+    purpose: '采购方收货验收记录。',
+    requiredColumns: ['id', 'tenant_id', 'order_id', 'receiver_id', 'result', 'received_at'],
+  },
+  {
+    name: 'invoices',
+    tenantScoped: true,
+    purpose: '供应商发票和采购方发票登记。',
+    requiredColumns: ['id', 'tenant_id', 'supplier_id', 'order_id', 'amount', 'invoice_no', 'payment_status'],
+  },
+  {
+    name: 'attachments',
+    tenantScoped: true,
+    purpose: '资质、需求、报价、发票等附件元数据。',
+    requiredColumns: ['id', 'tenant_id', 'owner_type', 'owner_id', 'file_name', 'storage_key', 'uploaded_by'],
+  },
+  {
+    name: 'notifications',
+    tenantScoped: true,
+    purpose: '站内通知。',
+    requiredColumns: ['id', 'tenant_id', 'recipient_id', 'title', 'content', 'read_at'],
+  },
+  {
+    name: 'audit_logs',
+    tenantScoped: true,
+    purpose: '业务操作审计日志。',
+    requiredColumns: ['id', 'tenant_id', 'actor_id', 'action', 'target_type', 'target_id', 'created_at'],
+  },
+];
+
+const pathParameter = (name: string): OpenApiParameter => ({
+  name,
+  in: 'path',
+  required: true,
+  schema: { type: 'string' },
+});
+
+const parametersFor = (endpoint: FlowEndpoint): OpenApiParameter[] => {
+  return Array.from(endpoint.path.matchAll(/\{([^}]+)\}/g)).map((match) => pathParameter(match[1]));
+};
+
+export const buildOpenApiDraft = (): OpenApiDraft => {
+  const paths = mvpFlowEndpoints.reduce<OpenApiDraft['paths']>((acc, endpoint) => {
+    const method = endpoint.method.toLowerCase() as Lowercase<HttpMethod>;
+    acc[endpoint.path] = {
+      ...acc[endpoint.path],
+      [method]: {
+        tags: [endpoint.audience],
+        summary: endpoint.action,
+        parameters: parametersFor(endpoint),
+        ...(endpoint.path === '/auth/login' ? {} : { security: [{ bearerAuth: [] }] }),
+        responses: {
+          '200': {
+            description: endpoint.responseSchema,
+          },
+          '400': {
+            description: 'Validation error',
+          },
+          '403': {
+            description: 'Permission or tenant isolation violation',
+          },
+        },
+      },
+    };
+    return acc;
+  }, {});
+
+  return {
+    openapi: '3.1.0',
+    info: {
+      title: '24Bid Multi-tenant Procurement API',
+      version: '0.1.0',
+      description: 'First-phase API draft for the inquiry-to-payment procurement SaaS MVP.',
+    },
+    servers: [
+      {
+        url: '/api/v1',
+        description: 'Versioned application API',
+      },
+    ],
+    paths,
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+      schemas: Object.fromEntries(
+        [
+          'LoginRequest',
+          'LoginResponse',
+          'FeatureToggleRequest',
+          'Tenant',
+          'EnterpriseReviewRequest',
+          'EnterpriseReview',
+          'BuyerSupplierListRequest',
+          'BuyerSupplierList',
+          'CreateBuyerSupplierRequest',
+          'BuyerSupplier',
+          'SubmitSupplierAdmissionRequest',
+          'ReviewApprovalRequest',
+          'MaterialListRequest',
+          'MaterialList',
+          'CreateMaterialRequest',
+          'Material',
+          'BuyerUserListRequest',
+          'BuyerUserList',
+          'CreateBuyerUserRequest',
+          'BuyerUser',
+          'PurchaseDemandListRequest',
+          'PurchaseDemandList',
+          'CreatePurchaseDemandRequest',
+          'PurchaseDemand',
+          'SubmitApprovalRequest',
+          'ApprovalTask',
+          'PendingApprovalListRequest',
+          'PendingApprovalTaskList',
+          'RfqListRequest',
+          'RfqList',
+          'CreateRfqRequest',
+          'RFQ',
+          'SupplierProfileRequest',
+          'SupplierProfile',
+          'SupplierRfqListRequest',
+          'SupplierRfqList',
+          'SubmitQuoteRequest',
+          'Quote',
+          'AwardRfqRequest',
+          'ReviewAwardApprovalRequest',
+          'AwardDecision',
+          'BuyerOrderListRequest',
+          'BuyerOrderList',
+          'CreatePurchaseOrderRequest',
+          'PurchaseOrder',
+          'SupplierOrderListRequest',
+          'SupplierOrderList',
+          'ConfirmSupplierOrderRequest',
+          'CreateDeliveryRequest',
+          'Delivery',
+          'CreateReceiptRequest',
+          'Receipt',
+          'BuyerInvoiceListRequest',
+          'BuyerInvoiceList',
+          'SupplierQuoteListRequest',
+          'SupplierQuoteList',
+          'SupplierInvoiceListRequest',
+          'SupplierInvoiceList',
+          'CreateInvoiceRequest',
+          'Invoice',
+          'RegisterPaymentRequest',
+          'PaymentRecord',
+        ].map((name) => [name, { type: 'object', additionalProperties: true }]),
+      ),
+    },
+  };
+};
+
+export const serializeOpenApiDraft = (): string => {
+  const draft = buildOpenApiDraft();
+  const withEndpointSummary = {
+    ...draft,
+    'x-mvp-flow': mvpFlowEndpoints.map((endpoint) => `${endpoint.method} ${endpoint.path}`),
+  };
+
+  return `${JSON.stringify(withEndpointSummary, null, 2)}\n`;
+};
