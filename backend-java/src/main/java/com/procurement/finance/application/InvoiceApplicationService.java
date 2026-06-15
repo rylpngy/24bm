@@ -7,6 +7,7 @@ import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
@@ -24,21 +25,25 @@ public class InvoiceApplicationService {
   private static final String INVOICE_PAID_ACTION = "invoice.paid";
   private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
   private static final String FINANCE_FEATURE = "finance";
+  private static final String INVOICE_CREATED_NOTIFICATION_TITLE = "供应商已登记发票";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final InvoiceMapper invoiceMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public InvoiceApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
       InvoiceMapper invoiceMapper,
       AuditLogApplicationService auditLogApplicationService,
-      TenantFeatureApplicationService tenantFeatureApplicationService) {
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.invoiceMapper = invoiceMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   public List<InvoiceResponse> listCurrentSupplierInvoices() {
@@ -105,6 +110,10 @@ public class InvoiceApplicationService {
         INVOICE_CREATED_ACTION,
         INVOICE_TARGET_TYPE,
         invoiceId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        order.tenantId(),
+        INVOICE_CREATED_NOTIFICATION_TITLE,
+        "采购订单 " + order.id() + " 已登记发票 " + request.invoiceNo() + "，金额：" + request.amount() + "。");
 
     return toResponse(invoiceMapper.findByTenantAndId(order.tenantId(), invoiceId));
   }

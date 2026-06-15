@@ -54,7 +54,8 @@ class OrderFinanceFeatureToggleTests {
       purchaseOrderMapper,
       invoiceMapper,
       auditLogApplicationService,
-      tenantFeatureApplicationService);
+      tenantFeatureApplicationService,
+      notificationApplicationService);
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
       purchaseOrderMapper,

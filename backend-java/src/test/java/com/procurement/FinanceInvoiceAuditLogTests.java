@@ -11,6 +11,7 @@ import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
@@ -26,13 +27,16 @@ class FinanceInvoiceAuditLogTests {
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
       invoiceMapper,
       auditLogApplicationService,
-      tenantFeatureApplicationService);
+      tenantFeatureApplicationService,
+      notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {
