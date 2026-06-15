@@ -140,6 +140,7 @@ const App: React.FC = () => {
   const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
   const [supplierAdmissionBusyId, setSupplierAdmissionBusyId] = useState<string | null>(null);
   const [supplierActionBusyId, setSupplierActionBusyId] = useState<string | null>(null);
+  const [rfqCreateBusy, setRfqCreateBusy] = useState<string | null>(null);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -312,6 +313,35 @@ const App: React.FC = () => {
     }
   };
 
+  const createBuyerRfqFromDemand = async (demandId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    const demand = buyerData.workspace.demands.find((item) => item.id === demandId);
+    const relation = buyerData.workspace.privateSupplierRelations.find((item) => item.status === '已准入');
+    if (!demand || !relation) {
+      setWorkflowStatus('创建询价需要已通过需求和已准入供应商');
+      return;
+    }
+
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + 14);
+    setRfqCreateBusy(demandId);
+    setWorkflowStatus(null);
+    try {
+      const rfq = await javaApiClient.createBuyerRfq({
+        title: `${demand.title} 询价`,
+        demandIds: [demand.id],
+        invitedSupplierIds: [relation.supplierId],
+        deadline: deadline.toISOString(),
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`询价已创建：${rfq.title}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '询价创建失败');
+    } finally {
+      setRfqCreateBusy(null);
+    }
+  };
+
   const submitSupplierQuote = async (rfqId: string) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`quote:${rfqId}`);
@@ -425,12 +455,14 @@ const App: React.FC = () => {
                 roles={buyerData.roles}
                 approvalBusyId={approvalBusyId}
                 supplierAdmissionBusyId={supplierAdmissionBusyId}
+                rfqCreateBusy={rfqCreateBusy}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowBusy={workflowBusy}
                 workflowStatus={workflowStatus}
                 onRunJavaWorkflow={runJavaWorkflow}
                 onReviewApproval={reviewApprovalTask}
                 onSubmitSupplierAdmission={submitSupplierAdmission}
+                onCreateRfqFromDemand={createBuyerRfqFromDemand}
                 onUpdateApprovalTemplate={updateApprovalTemplate}
               />
             )}
@@ -670,12 +702,14 @@ const BuyerWorkspaceView: React.FC<{
   roles: BuyerRoleDto[];
   approvalBusyId: string | null;
   supplierAdmissionBusyId: string | null;
+  rfqCreateBusy: string | null;
   javaEnabled: boolean;
   workflowBusy: boolean;
   workflowStatus: string | null;
   onRunJavaWorkflow: () => void;
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
   onSubmitSupplierAdmission: (relationId: string) => void;
+  onCreateRfqFromDemand: (demandId: string) => void;
   onUpdateApprovalTemplate: (
     templateCode: string,
     defaultApproverRoleId: string,
@@ -689,12 +723,14 @@ const BuyerWorkspaceView: React.FC<{
   roles,
   approvalBusyId,
   supplierAdmissionBusyId,
+  rfqCreateBusy,
   javaEnabled,
   workflowBusy,
   workflowStatus,
   onRunJavaWorkflow,
   onReviewApproval,
   onSubmitSupplierAdmission,
+  onCreateRfqFromDemand,
   onUpdateApprovalTemplate,
 }) => (
   <>
@@ -810,6 +846,17 @@ const BuyerWorkspaceView: React.FC<{
                 <span className="text-xs font-bold text-slate-500">预算</span>
                 <span className="font-mono font-black text-slate-900">{currency(demand.budget)}</span>
               </div>
+              {javaEnabled && demand.status === '已通过' && workspace.privateSupplierRelations.some((relation) => relation.status === '已准入') && (
+                <button
+                  type="button"
+                  onClick={() => onCreateRfqFromDemand(demand.id)}
+                  disabled={rfqCreateBusy === demand.id}
+                  className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  <Send size={14} />
+                  {rfqCreateBusy === demand.id ? '创建中' : '创建询价'}
+                </button>
+              )}
             </div>
           ))}
         </div>
