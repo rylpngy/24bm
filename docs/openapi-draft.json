@@ -778,6 +778,40 @@
         }
       }
     },
+    "/buyer/approvals/templates/{templateCode}/config": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "更新采购方审批模板配置",
+        "parameters": [
+          {
+            "name": "templateCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ApprovalTemplate"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/audit-logs": {
       "get": {
         "tags": [
@@ -1806,6 +1840,7 @@
     "POST /buyer/demands/{demandId}/approval",
     "GET /buyer/approvals/pending",
     "GET /buyer/approvals/templates",
+    "POST /buyer/approvals/templates/{templateCode}/config",
     "GET /buyer/audit-logs",
     "GET /buyer/attachments",
     "POST /buyer/attachments",

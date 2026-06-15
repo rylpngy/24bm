@@ -38,6 +38,7 @@ describe('procurement SaaS API contract draft', () => {
       'POST /buyer/demands/{demandId}/approval',
       'GET /buyer/approvals/pending',
       'GET /buyer/approvals/templates',
+      'POST /buyer/approvals/templates/{templateCode}/config',
       'GET /buyer/audit-logs',
       'GET /buyer/attachments',
       'POST /buyer/attachments',
@@ -87,6 +88,7 @@ describe('procurement SaaS API contract draft', () => {
     expect(openApi.info.title).toBe('24Bid Multi-tenant Procurement API');
     expect(openApi.paths['/platform/overview'].get.tags).toContain('platform');
     expect(openApi.paths['/buyer/approvals/pending'].get.tags).toContain('buyer');
+    expect(openApi.paths['/buyer/approvals/templates/{templateCode}/config'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/departments'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/departments'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/departments/{departmentId}/disable'].post.parameters).toEqual(

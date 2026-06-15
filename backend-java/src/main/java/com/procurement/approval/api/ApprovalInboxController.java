@@ -5,6 +5,9 @@ import com.procurement.approval.application.ApprovalTemplateApplicationService;
 import com.procurement.common.api.ApiResponse;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,5 +32,12 @@ public class ApprovalInboxController {
   @GetMapping("/templates")
   public ApiResponse<List<ApprovalTemplateResponse>> templates() {
     return ApiResponse.ok(approvalTemplateApplicationService.listTemplates());
+  }
+
+  @PostMapping("/templates/{templateCode}/config")
+  public ApiResponse<ApprovalTemplateResponse> updateTemplateConfig(
+      @PathVariable String templateCode,
+      @RequestBody UpdateApprovalTemplateRequest request) {
+    return ApiResponse.ok(approvalTemplateApplicationService.updateTemplate(templateCode, request));
   }
 }

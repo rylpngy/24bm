@@ -307,6 +307,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'ApprovalTemplateList',
   },
   {
+    method: 'POST',
+    path: '/buyer/approvals/templates/{templateCode}/config',
+    audience: 'buyer',
+    action: '更新采购方审批模板配置',
+    requestSchema: 'UpdateApprovalTemplateRequest',
+    responseSchema: 'ApprovalTemplate',
+  },
+  {
     method: 'GET',
     path: '/buyer/audit-logs',
     audience: 'buyer',

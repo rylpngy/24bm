@@ -376,6 +376,40 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].templateCode").value("TPL_PURCHASE_DEMAND"))
         .andExpect(jsonPath("$.data[0].defaultApproverRoleId").value("role-buyer-owner"));
+
+    mockMvc.perform(post("/api/v1/buyer/approvals/templates/TPL_PURCHASE_DEMAND/config")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "defaultApproverRoleId": "role-buyer-finance",
+                  "status": "inactive"
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(approvalTemplateApplicationService.updateTemplate(
+        org.mockito.ArgumentMatchers.eq("TPL_PURCHASE_DEMAND"),
+        org.mockito.ArgumentMatchers.any())).thenReturn(new ApprovalTemplateResponse(
+            "TPL_PURCHASE_DEMAND",
+            "purchase_demand",
+            "需求审批",
+            "role-buyer-finance",
+            "inactive"));
+
+    mockMvc.perform(post("/api/v1/buyer/approvals/templates/TPL_PURCHASE_DEMAND/config")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "defaultApproverRoleId": "role-buyer-finance",
+                  "status": "inactive"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.templateCode").value("TPL_PURCHASE_DEMAND"))
+        .andExpect(jsonPath("$.data.defaultApproverRoleId").value("role-buyer-finance"))
+        .andExpect(jsonPath("$.data.status").value("inactive"));
   }
 
   @Test
