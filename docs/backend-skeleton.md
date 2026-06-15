@@ -65,9 +65,9 @@ npm run legacy:api:demo
 
 当前 adapter：
 
-- `mockApiClient`：默认供页面使用，从本地 mock 模型返回平台、采购方、供应商工作台数据。
+- `mockApiClient`：仅在显式 `VITE_DATA_SOURCE=mock` 时供页面使用，从本地 mock 模型返回平台、采购方、供应商工作台壳数据。
 - `createHttpApiClient()`：调用 `/api/v1` HTTP API，已支持采购需求、RFQ、报价、定标、订单生成。
-- `procurementApiClient`：页面实际使用的 client。默认走 mock；设置 `VITE_API_BASE_URL` 后走 HTTP API。
+- `procurementApiClient`：legacy Node HTTP/demo client。主页面不再导入它；Java 后端联调使用 `VITE_JAVA_API_BASE_URL`，显式 mock 视觉模式使用 `VITE_DATA_SOURCE=mock`。
 
 legacy 本地联调方式，仅用于回看旧原型行为：
 

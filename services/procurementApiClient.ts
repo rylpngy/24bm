@@ -90,6 +90,33 @@ export interface ReviewApprovalPayload {
   approved: boolean;
 }
 
+export type AppRuntimeDataSource =
+  | { mode: 'java'; javaApiBaseUrl: string }
+  | { mode: 'mock' }
+  | { mode: 'misconfigured'; message: string };
+
+export const resolveAppRuntimeDataSource = (env: Record<string, string | undefined>): AppRuntimeDataSource => {
+  if (env.VITE_DATA_SOURCE === 'mock') {
+    return { mode: 'mock' };
+  }
+
+  if (env.VITE_DATA_SOURCE && env.VITE_DATA_SOURCE !== 'java') {
+    return {
+      mode: 'misconfigured',
+      message: 'VITE_DATA_SOURCE must be java or mock.',
+    };
+  }
+
+  if (env.VITE_JAVA_API_BASE_URL) {
+    return { mode: 'java', javaApiBaseUrl: env.VITE_JAVA_API_BASE_URL };
+  }
+
+  return {
+    mode: 'misconfigured',
+    message: 'VITE_JAVA_API_BASE_URL is required unless VITE_DATA_SOURCE=mock is set.',
+  };
+};
+
 export interface ProcurementApiClient {
   getPlatformWorkspace(): Promise<PlatformWorkspaceData>;
   getBuyerWorkspace(tenantId: string): Promise<BuyerWorkspaceData>;

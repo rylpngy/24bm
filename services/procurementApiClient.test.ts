@@ -11,10 +11,23 @@ import {
   loadJavaPlatformWorkspaceData,
   loadJavaSupplierWorkspaceData,
   mockApiClient,
+  resolveAppRuntimeDataSource,
   runJavaMvpWorkflow,
 } from './procurementApiClient';
 
 describe('procurement API clients', () => {
+  it('requires the Java API as the default runtime data source unless mock mode is explicit', () => {
+    expect(resolveAppRuntimeDataSource({ VITE_JAVA_API_BASE_URL: 'http://localhost:8080' })).toEqual({
+      mode: 'java',
+      javaApiBaseUrl: 'http://localhost:8080',
+    });
+    expect(resolveAppRuntimeDataSource({ VITE_DATA_SOURCE: 'mock' })).toEqual({ mode: 'mock' });
+    expect(resolveAppRuntimeDataSource({})).toEqual({
+      mode: 'misconfigured',
+      message: 'VITE_JAVA_API_BASE_URL is required unless VITE_DATA_SOURCE=mock is set.',
+    });
+  });
+
   it('loads platform, buyer, and supplier workspaces from the mock client', async () => {
     const platform = await mockApiClient.getPlatformWorkspace();
     const buyer = await mockApiClient.getBuyerWorkspace('tenant-acme');

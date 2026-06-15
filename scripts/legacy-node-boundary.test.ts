@@ -40,6 +40,7 @@ describe('legacy Node backend boundary', () => {
     const javaDoc = read('docs/local-java-integration.md');
     const backendReadme = read('backend-java/README.md');
     const client = read('services/procurementApiClient.ts');
+    const app = read('App.tsx');
 
     expect(nodeDoc).toContain('只读参考');
     expect(nodeDoc).toContain('不要继续扩展 Node 后端原型');
@@ -51,5 +52,7 @@ describe('legacy Node backend boundary', () => {
     expect(backendReadme).not.toContain('through `VITE_API_BASE_URL`');
     expect(client).toContain('VITE_API_BASE_URL is retained for old Hono demos only');
     expect(client).toContain('VITE_JAVA_API_BASE_URL');
+    expect(app).not.toContain('  procurementApiClient,');
+    expect(app).toContain('mockApiClient');
   });
 });

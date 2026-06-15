@@ -42,7 +42,8 @@ import {
   loadJavaPlatformWorkspaceData,
   loadJavaBuyerMasterData,
   loadJavaSupplierWorkspaceData,
-  procurementApiClient,
+  mockApiClient,
+  resolveAppRuntimeDataSource,
   runJavaMvpWorkflow,
   type PlatformWorkspaceData,
   type JavaApprovalTaskDto,
@@ -93,10 +94,11 @@ const formatAuditTime = (value: string) =>
   }).format(new Date(value));
 
 const runtimeEnv = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+const appDataSource = resolveAppRuntimeDataSource(runtimeEnv);
 
-const javaApiClient = runtimeEnv.VITE_JAVA_API_BASE_URL
+const javaApiClient = appDataSource.mode === 'java'
   ? createJavaProcurementApiClient({
-      baseUrl: runtimeEnv.VITE_JAVA_API_BASE_URL,
+      baseUrl: appDataSource.javaApiBaseUrl,
       platformLogin: {
         account: runtimeEnv.VITE_JAVA_PLATFORM_ACCOUNT ?? 'platform',
         password: runtimeEnv.VITE_JAVA_PLATFORM_PASSWORD ?? 'demo123456',
@@ -133,6 +135,8 @@ const App: React.FC = () => {
   const [workflowStatus, setWorkflowStatus] = useState<string | null>(null);
   const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
 
+  const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
+
   const refreshJavaBuyerData = async (currentBuyerData: NonNullable<typeof buyerData>) => {
     if (!javaApiClient) return currentBuyerData;
     const javaBuyerMasterData = await loadJavaBuyerMasterData(javaApiClient);
@@ -148,12 +152,13 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    if (configurationError) return;
     let active = true;
     setLoadError(null);
     Promise.all([
-      procurementApiClient.getPlatformWorkspace(),
-      procurementApiClient.getBuyerWorkspace(tenantId),
-      procurementApiClient.getSupplierWorkspace(supplierId),
+      mockApiClient.getPlatformWorkspace(),
+      mockApiClient.getBuyerWorkspace(tenantId),
+      mockApiClient.getSupplierWorkspace(supplierId),
       javaApiClient ? loadJavaPlatformWorkspaceData(javaApiClient) : Promise.resolve(null),
       javaApiClient ? loadJavaBuyerMasterData(javaApiClient) : Promise.resolve(null),
       javaApiClient ? loadJavaSupplierWorkspaceData(javaApiClient) : Promise.resolve(null),
@@ -188,7 +193,7 @@ const App: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [tenantId, supplierId]);
+  }, [configurationError, tenantId, supplierId]);
 
   const runJavaWorkflow = async () => {
     if (!javaApiClient || !buyerData) return;
@@ -238,12 +243,12 @@ const App: React.FC = () => {
     }
   };
 
-  if (loadError) {
+  if (configurationError || loadError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-8 text-slate-900">
         <div className="rounded-lg border border-red-100 bg-white p-6 shadow-sm">
           <p className="text-sm font-black text-red-600">加载失败</p>
-          <p className="mt-2 text-sm text-slate-600">{loadError}</p>
+          <p className="mt-2 text-sm text-slate-600">{configurationError ?? loadError}</p>
         </div>
       </div>
     );

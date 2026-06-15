@@ -47,6 +47,6 @@ describe('Java supplier workspace scaffold', () => {
     expect(readme).toContain('GET /api/v1/supplier/quotes');
     expect(readme).toContain('GET /api/v1/supplier/orders');
     expect(readme).toContain('GET /api/v1/supplier/invoices');
-    expect(localGuide).toContain('GET /api/v1/supplier/rfqs');
+    expect(localGuide).toContain('GET /api/v1/supplier/workspace');
   });
 });

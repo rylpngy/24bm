@@ -92,7 +92,7 @@ describe('Java backend scaffold', () => {
     expect(doc).toContain('POST /api/v1/auth/login');
     expect(doc).toContain('Authorization: Bearer');
     expect(doc).toContain('createJavaProcurementApiClient');
-    expect(doc).toContain('mock fallback');
+    expect(doc).toContain('VITE_DATA_SOURCE=mock');
     expect(doc).toContain('mvn verify -Pintegration');
     expect(doc).toContain('Docker daemon');
   });

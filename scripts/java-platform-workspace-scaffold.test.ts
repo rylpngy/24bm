@@ -31,6 +31,6 @@ describe('Java platform workspace scaffold', () => {
     expect(client).toContain('/api/v1/platform/enterprise-reviews');
     expect(app).toContain('loadJavaPlatformWorkspaceData(javaApiClient)');
     expect(app).toContain('applyJavaPlatformWorkspaceData');
-    expect(localGuide).toContain('GET /api/v1/platform/overview');
+    expect(localGuide).toContain('GET /api/v1/platform/workspace');
   });
 });
