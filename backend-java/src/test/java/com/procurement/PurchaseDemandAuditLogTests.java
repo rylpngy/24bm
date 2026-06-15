@@ -14,6 +14,7 @@ import com.procurement.demand.application.PurchaseDemandApplicationService;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -27,11 +28,14 @@ class PurchaseDemandAuditLogTests {
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
   private final AuditLogMapper auditLogMapper = org.mockito.Mockito.mock(AuditLogMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = new AuditLogApplicationService(auditLogMapper);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final PurchaseDemandApplicationService purchaseDemandApplicationService = new PurchaseDemandApplicationService(
       purchaseDemandMapper,
       purchaseDemandItemMapper,
       approvalTaskMapper,
-      auditLogApplicationService);
+      auditLogApplicationService,
+      notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {

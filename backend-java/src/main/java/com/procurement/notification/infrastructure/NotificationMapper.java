@@ -2,6 +2,7 @@ package com.procurement.notification.infrastructure;
 
 import com.procurement.notification.domain.Notification;
 import java.util.List;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
@@ -11,6 +12,17 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface NotificationMapper {
+
+  @Insert("""
+      insert into notifications (id, tenant_id, recipient_id, title, content)
+      values (#{id}, #{tenantId}, #{recipientId}, #{title}, #{content})
+      """)
+  void insert(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId,
+      @Param("recipientId") String recipientId,
+      @Param("title") String title,
+      @Param("content") String content);
 
   @Select("""
       select id, tenant_id, recipient_id, title, content, read_at, created_at

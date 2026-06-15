@@ -15,6 +15,7 @@ import com.procurement.demand.application.PurchaseDemandApplicationService;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.AfterEach;
@@ -26,11 +27,14 @@ class PurchaseDemandApprovalStateTransitionTests {
   private final PurchaseDemandItemMapper purchaseDemandItemMapper = org.mockito.Mockito.mock(PurchaseDemandItemMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final PurchaseDemandApplicationService purchaseDemandApplicationService = new PurchaseDemandApplicationService(
       purchaseDemandMapper,
       purchaseDemandItemMapper,
       approvalTaskMapper,
-      auditLogApplicationService);
+      auditLogApplicationService,
+      notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {

@@ -13,6 +13,7 @@ import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.domain.PurchaseDemandItem;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -29,21 +30,25 @@ public class PurchaseDemandApplicationService {
   private static final String PURCHASE_DEMAND_CREATED_ACTION = "purchase_demand.created";
   private static final String PURCHASE_DEMAND_APPROVED_ACTION = "purchase_demand.approved";
   private static final String PURCHASE_DEMAND_REJECTED_ACTION = "purchase_demand.rejected";
+  private static final String PURCHASE_DEMAND_PENDING_NOTIFICATION_TITLE = "采购需求待审批";
 
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public PurchaseDemandApplicationService(
       PurchaseDemandMapper purchaseDemandMapper,
       PurchaseDemandItemMapper purchaseDemandItemMapper,
       ApprovalTaskMapper approvalTaskMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   public List<PurchaseDemandResponse> listCurrentTenantDemands() {
@@ -105,6 +110,10 @@ public class PurchaseDemandApplicationService {
         demandId,
         null,
         PENDING_APPROVAL_STATUS);
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId,
+        PURCHASE_DEMAND_PENDING_NOTIFICATION_TITLE,
+        demand.title() + "已提交审批，请及时处理。");
 
     ApprovalTask approvalTask = approvalTaskMapper.findByTenantAndId(tenantId, approvalTaskId);
     return new ApprovalTaskResponse(
