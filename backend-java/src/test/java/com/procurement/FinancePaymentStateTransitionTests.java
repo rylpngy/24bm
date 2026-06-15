@@ -87,16 +87,38 @@ class FinancePaymentStateTransitionTests {
   }
 
   @Test
-  void paymentRejectsAlreadyFinalInvoiceStatus() {
+  void paymentReturnsCurrentInvoiceWhenSameFinalStatusIsRegisteredAgainWithoutAudit() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
+        .thenReturn(invoice("invoice-1", "tenant-1", "已付款"));
+
+    InvoiceResponse response = paymentApplicationService.register(
+        "invoice-1",
+        new RegisterPaymentRequest("已付款"));
+
+    org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("已付款");
+    verify(invoiceMapper, org.mockito.Mockito.never()).updatePaymentStatus(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+    verify(auditLogApplicationService, org.mockito.Mockito.never()).recordTenantAction(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void paymentRejectsChangingAlreadyPaidInvoiceBackToPartialPayment() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
         .thenReturn(invoice("invoice-1", "tenant-1", "已付款"));
 
     assertThatThrownBy(() -> paymentApplicationService.register(
         "invoice-1",
-        new RegisterPaymentRequest("已付款")))
+        new RegisterPaymentRequest("部分付款")))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Only pending invoices can be paid");
+        .hasMessageContaining("Paid invoices cannot be changed");
   }
 
   @Test
@@ -169,6 +191,25 @@ class FinancePaymentStateTransitionTests {
     when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
         .thenReturn(order(BigDecimal.valueOf(100)));
     when(invoiceMapper.updatePaymentStatus("tenant-1", "invoice-1", "待付款", "已付款"))
+        .thenReturn(1);
+
+    InvoiceResponse response = paymentApplicationService.register(
+        "invoice-1",
+        new RegisterPaymentRequest("已付款"));
+
+    org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("已付款");
+    verify(auditLogApplicationService).recordTenantAction("invoice.paid", "invoice", "invoice-1");
+  }
+
+  @Test
+  void partialPaymentCanBeCompletedToPaid() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
+        .thenReturn(invoice("invoice-1", "tenant-1", "部分付款"))
+        .thenReturn(invoice("invoice-1", "tenant-1", "已付款"));
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order(BigDecimal.valueOf(100)));
+    when(invoiceMapper.updatePaymentStatus("tenant-1", "invoice-1", "部分付款", "已付款"))
         .thenReturn(1);
 
     InvoiceResponse response = paymentApplicationService.register(

@@ -80,19 +80,20 @@ public class PaymentApplicationService {
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
     }
-    if (!PENDING_PAYMENT_STATUS.equals(invoice.paymentStatus())) {
-      throw new IllegalStateException("Only pending invoices can be paid: " + invoiceId);
-    }
-    if (!PAID_STATUS.equals(request.paymentStatus()) && !PARTIAL_PAID_STATUS.equals(request.paymentStatus())) {
+    if (!isSupportedPaymentTarget(request.paymentStatus())) {
       throw new IllegalArgumentException("Unsupported payment status: " + request.paymentStatus());
     }
+    if (isIdempotentPaymentRegistration(invoice.paymentStatus(), request.paymentStatus())) {
+      return toResponse(invoice);
+    }
+    requirePaymentTransition(invoice.paymentStatus(), request.paymentStatus(), invoiceId);
     requireInvoiceAmountMatchesOrder(tenantId, invoice);
     requireSupplierPayable(tenantId, invoice);
 
     int updated = invoiceMapper.updatePaymentStatus(
         tenantId,
         invoiceId,
-        PENDING_PAYMENT_STATUS,
+        invoice.paymentStatus(),
         request.paymentStatus());
     if (updated == 0) {
       throw new IllegalStateException("Invoice status changed before payment could be recorded: " + invoiceId);
@@ -115,6 +116,29 @@ public class PaymentApplicationService {
         invoice.paymentStatus(),
         invoice.createdAt(),
         invoice.updatedAt());
+  }
+
+  private boolean isSupportedPaymentTarget(String paymentStatus) {
+    return PAID_STATUS.equals(paymentStatus) || PARTIAL_PAID_STATUS.equals(paymentStatus);
+  }
+
+  private boolean isIdempotentPaymentRegistration(String currentStatus, String targetStatus) {
+    return currentStatus.equals(targetStatus)
+        && (PAID_STATUS.equals(currentStatus) || PARTIAL_PAID_STATUS.equals(currentStatus));
+  }
+
+  private void requirePaymentTransition(String currentStatus, String targetStatus, String invoiceId) {
+    if (PENDING_PAYMENT_STATUS.equals(currentStatus)) {
+      return;
+    }
+    if (PARTIAL_PAID_STATUS.equals(currentStatus) && PAID_STATUS.equals(targetStatus)) {
+      return;
+    }
+    if (PAID_STATUS.equals(currentStatus)) {
+      throw new IllegalStateException("Paid invoices cannot be changed: " + invoiceId);
+    }
+    throw new IllegalStateException(
+        "Unsupported payment status transition: " + currentStatus + " -> " + targetStatus);
   }
 
   private void requireSupplierPayable(String tenantId, Invoice invoice) {

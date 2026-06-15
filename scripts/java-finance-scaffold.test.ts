@@ -73,6 +73,8 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('invoice.partial_paid');
     expect(paymentService).toContain('listByTenantFiltered');
     expect(paymentService).toContain('updatePaymentStatus');
+    expect(paymentService).toContain('isIdempotentPaymentRegistration');
+    expect(paymentService).toContain('Paid invoices cannot be changed');
     expect(auditService).toContain('listCurrentTenantTargetActions');
   });
 
@@ -90,6 +92,8 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(readme).toContain('Invoice creation requires `amount` to equal the purchase order amount');
     expect(readme).toContain('MVP invoice creation allows only one invoice per purchase order');
     expect(readme).toContain('Payment registration rechecks that the invoice amount still equals the purchase order amount');
+    expect(readme).toContain('Repeated registration of the current `部分付款` or `已付款` status is idempotent');
+    expect(readme).toContain('A `部分付款` invoice can later be completed to `已付款`');
     expect(readme).toContain('`finance` feature enabled');
     expect(architecture).toContain('财务协同 Java API');
     expect(architecture).toContain('当前租户必须启用 `finance` 功能开关');
@@ -97,5 +101,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(architecture).toContain('MVP 阶段同一采购订单只能登记一张发票');
     expect(architecture).toContain('付款登记前会重新校验发票金额仍等于采购订单金额');
     expect(architecture).toContain('发票供应商在当前采购方私域供应商关系中不能是 `黑名单`');
+    expect(architecture).toContain('`部分付款` 可继续登记为 `已付款`');
+    expect(architecture).toContain('`已付款` 不允许回退为 `部分付款`');
   });
 });

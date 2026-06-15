@@ -19,6 +19,9 @@ describe('Java backend stage checklist', () => {
     expect(checklist).toContain('发票金额必须等于采购订单金额');
     expect(checklist).toContain('付款登记前会重新校验发票金额仍等于采购订单金额');
     expect(checklist).toContain('黑名单');
+    expect(checklist).toContain('`部分付款` 可补登记为 `已付款`');
+    expect(checklist).toContain('重复登记当前 `部分付款` / `已付款` 状态幂等返回');
+    expect(checklist).toContain('`已付款` 不允许回退为 `部分付款`');
     expect(checklist).toContain('三单匹配');
     expect(checklist).toContain('后续迭代入口');
   });
