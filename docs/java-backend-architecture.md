@@ -251,6 +251,7 @@ Authorization: Bearer <accessToken>
 MVP 审批模块采用固定审批模板，前端通过统一待办入口读取采购方需要处理的审批事项：
 
 - `GET /api/v1/buyer/approvals/pending`：查询当前采购方租户待处理审批任务。
+- `GET /api/v1/buyer/approvals/templates`：查询当前 MVP 固定审批模板。
 - `POST /api/v1/buyer/demands/{demandId}/approval`：审批采购需求。
 - `POST /api/v1/buyer/suppliers/{relationId}/approval`：审批供应商准入。
 - `POST /api/v1/buyer/rfqs/{rfqId}/award/approval`：审批定标结果。
@@ -262,6 +263,8 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `rfq_award`：定标审批，模板编码 `TPL_RFQ_AWARD`，`bizId` 为定标决策 ID，`parentBizId` 为 RFQ ID。
 
 后端通过 `ApprovalTaskApplicationService` 统一解析固定审批模板并创建待审批任务，固定使用 `待审批` 初始状态。当前默认审批人按模板中的默认角色 `role-buyer-owner`，从当前租户 active 用户的 `user_roles` 关系中解析；后续可替换为组织角色或可配置审批流。采购需求提交、供应商准入提交和定标提交只负责各自业务状态流转、审计和通知，不再直接写入 `approval_tasks`。
+
+`ApprovalTemplateApplicationService` 提供固定模板只读列表，先返回 `TPL_PURCHASE_DEMAND`、`TPL_SUPPLIER_ADMISSION`、`TPL_RFQ_AWARD` 三类模板及默认审批角色，为后续审批流可视化配置预留 API 边界。
 
 前端只消费审批待办 DTO，不在页面内推导后端状态。审批通过或驳回后的业务状态以 Java 后端返回和重新拉取的 buyer master data 为准。
 

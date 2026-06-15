@@ -300,6 +300,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/buyer/approvals/templates',
+    audience: 'buyer',
+    action: '加载采购方固定审批模板',
+    requestSchema: 'ApprovalTemplateListRequest',
+    responseSchema: 'ApprovalTemplateList',
+  },
+  {
+    method: 'GET',
     path: '/buyer/audit-logs',
     audience: 'buyer',
     action: '加载采购方操作审计日志',

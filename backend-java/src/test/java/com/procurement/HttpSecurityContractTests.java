@@ -21,8 +21,10 @@ import com.procurement.buyer.api.BuyerWorkspaceController;
 import com.procurement.buyer.api.BuyerWorkspaceResponse;
 import com.procurement.buyer.application.BuyerWorkspaceApplicationService;
 import com.procurement.approval.api.ApprovalInboxController;
+import com.procurement.approval.api.ApprovalTemplateResponse;
 import com.procurement.approval.api.PendingApprovalTaskResponse;
 import com.procurement.approval.application.ApprovalInboxApplicationService;
+import com.procurement.approval.application.ApprovalTemplateApplicationService;
 import com.procurement.attachment.api.AttachmentController;
 import com.procurement.attachment.api.AttachmentResponse;
 import com.procurement.attachment.api.CreateAttachmentRequest;
@@ -171,6 +173,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private ApprovalInboxApplicationService approvalInboxApplicationService;
+
+  @MockBean
+  private ApprovalTemplateApplicationService approvalTemplateApplicationService;
 
   @MockBean
   private QuoteApplicationService quoteApplicationService;
@@ -354,6 +359,23 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data[0].status").value("待审批"))
         .andExpect(jsonPath("$.data[1].bizType").value("purchase_demand"))
         .andExpect(jsonPath("$.data[1].summaryTitle").value("采购 20 台电脑"));
+
+    mockMvc.perform(get("/api/v1/buyer/approvals/templates")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(approvalTemplateApplicationService.listTemplates()).thenReturn(List.of(new ApprovalTemplateResponse(
+        "TPL_PURCHASE_DEMAND",
+        "purchase_demand",
+        "需求审批",
+        "role-buyer-owner",
+        "active")));
+
+    mockMvc.perform(get("/api/v1/buyer/approvals/templates")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].templateCode").value("TPL_PURCHASE_DEMAND"))
+        .andExpect(jsonPath("$.data[0].defaultApproverRoleId").value("role-buyer-owner"));
   }
 
   @Test

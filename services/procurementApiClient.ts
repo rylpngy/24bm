@@ -332,6 +332,14 @@ export interface JavaApprovalTaskDto {
   createdAt: string;
 }
 
+export interface JavaApprovalTemplateDto {
+  templateCode: string;
+  bizType: string;
+  name: string;
+  defaultApproverRoleId: string;
+  status: string;
+}
+
 export interface JavaRfqDto {
   id: string;
   tenantId: string;
@@ -464,6 +472,7 @@ export interface JavaProcurementApiClient {
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
   submitBuyerDemand(demandId: string): Promise<JavaApprovalTaskDto>;
   listBuyerPendingApprovals(): Promise<JavaApprovalTaskDto[]>;
+  listBuyerApprovalTemplates(): Promise<JavaApprovalTemplateDto[]>;
   listBuyerAuditLogs(): Promise<JavaAuditLogDto[]>;
   reviewBuyerDemandApproval(demandId: string, approved: boolean): Promise<JavaApprovalTaskDto>;
   reviewBuyerSupplierAdmission(relationId: string, approved: boolean): Promise<JavaApprovalTaskDto>;
@@ -882,6 +891,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     },
     listBuyerPendingApprovals() {
       return buyerRequest<JavaApprovalTaskDto[]>('/api/v1/buyer/approvals/pending');
+    },
+    listBuyerApprovalTemplates() {
+      return buyerRequest<JavaApprovalTemplateDto[]>('/api/v1/buyer/approvals/templates');
     },
     listBuyerAuditLogs() {
       return buyerRequest<JavaAuditLogDto[]>('/api/v1/buyer/audit-logs');

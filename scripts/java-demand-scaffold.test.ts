@@ -37,6 +37,9 @@ describe('Java purchase demand scaffold', () => {
     const departmentMapper = read('backend-java/src/main/java/com/procurement/organization/infrastructure/DepartmentMapper.java');
     const approvalMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTaskMapper.java');
     const approvalService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java');
+    const approvalTemplateService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTemplateApplicationService.java');
+    const approvalTemplateResponse = read('backend-java/src/main/java/com/procurement/approval/api/ApprovalTemplateResponse.java');
+    const approvalController = read('backend-java/src/main/java/com/procurement/approval/api/ApprovalInboxController.java');
     const buyerUserMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerUserMapper.java');
     const migration = read('backend-java/src/main/resources/db/migration/V1__initial_schema.sql');
     const localSeed = read('backend-java/src/main/resources/db/dev/V100__local_demo_seed.sql');
@@ -59,6 +62,10 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalService).toContain('role-buyer-owner');
     expect(approvalService).toContain('findDefaultApproverId');
     expect(approvalService).toContain('Unsupported approval biz type');
+    expect(approvalTemplateService).toContain('listTemplates');
+    expect(approvalTemplateService).toContain('TPL_PURCHASE_DEMAND');
+    expect(approvalTemplateResponse).toContain('defaultApproverRoleId');
+    expect(approvalController).toContain('/templates');
     expect(buyerUserMapper).toContain('findDefaultApproverId');
     expect(buyerUserMapper).toContain('user_roles');
     expect(migration).toContain('create table departments');

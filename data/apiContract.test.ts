@@ -37,6 +37,7 @@ describe('procurement SaaS API contract draft', () => {
       'POST /buyer/demands/{demandId}/submit',
       'POST /buyer/demands/{demandId}/approval',
       'GET /buyer/approvals/pending',
+      'GET /buyer/approvals/templates',
       'GET /buyer/audit-logs',
       'GET /buyer/attachments',
       'POST /buyer/attachments',
