@@ -12,5 +12,8 @@ public record CreateTenantRequest(
     @NotBlank String industry,
     @NotBlank String plan,
     @Min(1) Integer userLimit,
-    @NotNull List<String> enabledFeatures) {
+    @NotNull List<String> enabledFeatures,
+    @NotBlank String adminName,
+    String adminMobile,
+    @NotBlank String adminEmail) {
 }

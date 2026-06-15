@@ -45,6 +45,7 @@ public class PlatformTenantApplicationService {
   public TenantResponse createBuyerTenant(CreateTenantRequest request) {
     String enabledFeaturesJson = writeFeatures(request.enabledFeatures());
     String buyerOwnerRoleId = buyerOwnerRoleId(request.tenantId());
+    String buyerOwnerUserId = buyerOwnerUserId(request.tenantId());
     platformTenantMapper.insertTenant(
         request.tenantId(),
         request.name(),
@@ -62,6 +63,14 @@ public class PlatformTenantApplicationService {
         request.tenantId(),
         BUYER_OWNER_ROLE_NAME,
         BUYER_OWNER_PERMISSIONS);
+    platformTenantMapper.insertInitialBuyerAdminUser(
+        buyerOwnerUserId,
+        request.tenantId(),
+        request.adminName(),
+        request.adminMobile(),
+        request.adminEmail(),
+        ACTIVE_STATUS);
+    platformTenantMapper.assignUserRole(buyerOwnerUserId, buyerOwnerRoleId);
     insertDefaultApprovalTemplates(request.tenantId(), buyerOwnerRoleId);
     auditLogApplicationService.recordTenantAction(
         request.tenantId(),
@@ -143,5 +152,9 @@ public class PlatformTenantApplicationService {
 
   private String buyerOwnerRoleId(String tenantId) {
     return "role-" + tenantId + "-buyer-owner";
+  }
+
+  private String buyerOwnerUserId(String tenantId) {
+    return "user-" + tenantId + "-owner";
   }
 }

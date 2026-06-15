@@ -46,6 +46,26 @@ public interface PlatformTenantMapper {
       @Param("permissionsJson") String permissionsJson);
 
   @Insert("""
+      insert into users (id, tenant_id, name, mobile, email, status, department_id)
+      values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status}, null)
+      """)
+  void insertInitialBuyerAdminUser(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId,
+      @Param("name") String name,
+      @Param("mobile") String mobile,
+      @Param("email") String email,
+      @Param("status") String status);
+
+  @Insert("""
+      insert into user_roles (user_id, role_id)
+      values (#{userId}, #{roleId})
+      """)
+  void assignUserRole(
+      @Param("userId") String userId,
+      @Param("roleId") String roleId);
+
+  @Insert("""
       insert into approval_templates (
         template_code, tenant_id, biz_type, name, default_approver_role_id, status, sort_order
       )

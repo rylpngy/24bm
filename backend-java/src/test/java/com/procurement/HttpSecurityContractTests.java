@@ -1124,7 +1124,10 @@ class HttpSecurityContractTests {
                   "industry": "综合采购",
                   "plan": "MVP",
                   "userLimit": 50,
-                  "enabledFeatures": ["rfq", "order", "finance"]
+                  "enabledFeatures": ["rfq", "order", "finance"],
+                  "adminName": "首席采购管理员",
+                  "adminMobile": "13900000001",
+                  "adminEmail": "owner@demo.example.com"
                 }
                 """))
         .andExpect(status().isForbidden());
@@ -1140,7 +1143,10 @@ class HttpSecurityContractTests {
                   "industry": "综合采购",
                   "plan": "MVP",
                   "userLimit": 50,
-                  "enabledFeatures": ["rfq", "order", "finance"]
+                  "enabledFeatures": ["rfq", "order", "finance"],
+                  "adminName": "首席采购管理员",
+                  "adminMobile": "13900000001",
+                  "adminEmail": "owner@demo.example.com"
                 }
                 """))
         .andExpect(status().isOk())

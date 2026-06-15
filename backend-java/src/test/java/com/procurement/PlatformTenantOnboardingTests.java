@@ -50,7 +50,10 @@ class PlatformTenantOnboardingTests {
         "综合采购",
         "MVP",
         50,
-        List.of("rfq", "order", "finance")));
+        List.of("rfq", "order", "finance"),
+        "首席采购管理员",
+        "13900000001",
+        "owner@demo.example.com"));
 
     verify(platformTenantMapper).insertTenant(
         "tenant-demo",
@@ -69,6 +72,16 @@ class PlatformTenantOnboardingTests {
         "tenant-demo",
         "采购管理员",
         "[\"buyer:*\"]");
+    verify(platformTenantMapper).insertInitialBuyerAdminUser(
+        "user-tenant-demo-owner",
+        "tenant-demo",
+        "首席采购管理员",
+        "13900000001",
+        "owner@demo.example.com",
+        "active");
+    verify(platformTenantMapper).assignUserRole(
+        "user-tenant-demo-owner",
+        "role-tenant-demo-buyer-owner");
     verify(platformTenantMapper).insertApprovalTemplate(
         "TPL_PURCHASE_DEMAND",
         "tenant-demo",
