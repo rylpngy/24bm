@@ -139,6 +139,7 @@ const App: React.FC = () => {
   const [workflowStatus, setWorkflowStatus] = useState<string | null>(null);
   const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
   const [supplierAdmissionBusyId, setSupplierAdmissionBusyId] = useState<string | null>(null);
+  const [supplierActionBusyId, setSupplierActionBusyId] = useState<string | null>(null);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -156,6 +157,12 @@ const App: React.FC = () => {
         pendingApprovals: javaBuyerMasterData.pendingApprovals.length,
       },
     };
+  };
+
+  const refreshJavaSupplierData = async (currentSupplierData: SupplierWorkspace) => {
+    if (!javaApiClient) return currentSupplierData;
+    const javaSupplierWorkspaceData = await loadJavaSupplierWorkspaceData(javaApiClient);
+    return applyJavaSupplierWorkspaceData(currentSupplierData, javaSupplierWorkspaceData);
   };
 
   useEffect(() => {
@@ -293,6 +300,69 @@ const App: React.FC = () => {
     }
   };
 
+  const refreshAfterSupplierAction = async () => {
+    if (!supplierData) return;
+    const [nextSupplierData, nextBuyerData] = await Promise.all([
+      refreshJavaSupplierData(supplierData),
+      buyerData ? refreshJavaBuyerData(buyerData) : Promise.resolve(null),
+    ]);
+    setSupplierData(nextSupplierData);
+    if (nextBuyerData) {
+      setBuyerData(nextBuyerData);
+    }
+  };
+
+  const confirmSupplierOrder = async (orderId: string) => {
+    if (!javaApiClient || !supplierData) return;
+    setSupplierActionBusyId(`confirm:${orderId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.confirmSupplierOrder(orderId);
+      await refreshAfterSupplierAction();
+      setWorkflowStatus(`供应商订单已确认：${orderId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '供应商订单确认失败');
+    } finally {
+      setSupplierActionBusyId(null);
+    }
+  };
+
+  const createSupplierDelivery = async (orderId: string) => {
+    if (!javaApiClient || !supplierData) return;
+    setSupplierActionBusyId(`delivery:${orderId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.createSupplierDelivery(orderId, {
+        carrier: '顺丰速运',
+        trackingNo: `SF${Date.now()}`,
+      });
+      await refreshAfterSupplierAction();
+      setWorkflowStatus(`发货信息已提交：${orderId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '发货信息提交失败');
+    } finally {
+      setSupplierActionBusyId(null);
+    }
+  };
+
+  const createSupplierInvoice = async (orderId: string, amount: number) => {
+    if (!javaApiClient || !supplierData) return;
+    setSupplierActionBusyId(`invoice:${orderId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.createSupplierInvoice(orderId, {
+        amount,
+        invoiceNo: `INV-${Date.now()}`,
+      });
+      await refreshAfterSupplierAction();
+      setWorkflowStatus(`发票信息已提交：${orderId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '发票信息提交失败');
+    } finally {
+      setSupplierActionBusyId(null);
+    }
+  };
+
   if (configurationError || loadError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-8 text-slate-900">
@@ -345,7 +415,17 @@ const App: React.FC = () => {
                 onUpdateApprovalTemplate={updateApprovalTemplate}
               />
             )}
-            {mode === 'supplier' && <SupplierWorkspaceView workspace={supplierData} />}
+            {mode === 'supplier' && (
+              <SupplierWorkspaceView
+                workspace={supplierData}
+                javaEnabled={Boolean(javaApiClient)}
+                workflowStatus={workflowStatus}
+                supplierActionBusyId={supplierActionBusyId}
+                onConfirmOrder={confirmSupplierOrder}
+                onCreateDelivery={createSupplierDelivery}
+                onCreateInvoice={createSupplierInvoice}
+              />
+            )}
           </div>
         </section>
       </main>
@@ -949,13 +1029,35 @@ const ApprovalTemplateSettings: React.FC<{
   );
 };
 
-const SupplierWorkspaceView: React.FC<{ workspace: SupplierWorkspace }> = ({ workspace }) => (
+const SupplierWorkspaceView: React.FC<{
+  workspace: SupplierWorkspace;
+  javaEnabled: boolean;
+  workflowStatus: string | null;
+  supplierActionBusyId: string | null;
+  onConfirmOrder: (orderId: string) => void;
+  onCreateDelivery: (orderId: string) => void;
+  onCreateInvoice: (orderId: string, amount: number) => void;
+}> = ({
+  workspace,
+  javaEnabled,
+  workflowStatus,
+  supplierActionBusyId,
+  onConfirmOrder,
+  onCreateDelivery,
+  onCreateInvoice,
+}) => (
   <>
     <HeroBand
       eyebrow="供应商协同中心"
       title="一次注册，多采购方协作"
       desc="供应商维护企业档案与资质，接收不同采购方的询价邀请，但报价、订单、发票按采购方隔离。"
     />
+
+    {javaEnabled && workflowStatus && (
+      <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-700">
+        {workflowStatus}
+      </div>
+    )}
 
     <div className="grid gap-4 md:grid-cols-4">
       <MetricCard icon={Building2} label="合作采购方" value={`${workspace.connectedBuyerNames.length} 家`} tone="blue" />
@@ -1021,15 +1123,61 @@ const SupplierWorkspaceView: React.FC<{ workspace: SupplierWorkspace }> = ({ wor
 
     <div className="grid gap-6 lg:grid-cols-2">
       <Panel title="销售订单与发货" icon={Truck}>
-        <SimpleList
-          rows={workspace.orders.map((order) => ({
-            id: order.id,
-            title: order.id,
-            meta: `采购方租户 ${order.tenantId}`,
-            value: currency(order.amount),
-            status: order.status,
-          }))}
-        />
+        <div className="space-y-3">
+          {workspace.orders.map((order) => {
+            const confirmBusy = supplierActionBusyId === `confirm:${order.id}`;
+            const deliveryBusy = supplierActionBusyId === `delivery:${order.id}`;
+            const invoiceBusy = supplierActionBusyId === `invoice:${order.id}`;
+            return (
+              <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black text-slate-900">{order.id}</p>
+                    <p className="mt-1 text-sm text-slate-500">采购方租户 {order.tenantId}</p>
+                  </div>
+                  <p className="font-mono font-black text-slate-900">{currency(order.amount)}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <StatusPill label={order.status} />
+                  {javaEnabled && (
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {order.status === '待供应商确认' && (
+                        <button
+                          type="button"
+                          onClick={() => onConfirmOrder(order.id)}
+                          disabled={confirmBusy}
+                          className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                        >
+                          {confirmBusy ? '确认中' : '确认订单'}
+                        </button>
+                      )}
+                      {order.status === '待发货' && (
+                        <button
+                          type="button"
+                          onClick={() => onCreateDelivery(order.id)}
+                          disabled={deliveryBusy}
+                          className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                        >
+                          {deliveryBusy ? '提交中' : '提交发货'}
+                        </button>
+                      )}
+                      {order.status === '已收货' && !workspace.invoices.some((invoice) => invoice.orderId === order.id) && (
+                        <button
+                          type="button"
+                          onClick={() => onCreateInvoice(order.id, order.amount)}
+                          disabled={invoiceBusy}
+                          className="inline-flex h-9 items-center justify-center rounded-lg bg-amber-600 px-3 text-xs font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                        >
+                          {invoiceBusy ? '提交中' : '提交发票'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </Panel>
       <Panel title="发票与应收" icon={Receipt}>
         <SimpleList
