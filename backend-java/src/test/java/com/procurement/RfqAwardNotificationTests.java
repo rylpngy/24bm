@@ -70,8 +70,8 @@ class RfqAwardNotificationTests {
     when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
         .thenReturn("user-buyer-owner");
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("approver-1", "tenant-1", "审批人", "13800000001", "approver@example.com", "启用"),
-        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用")));
+        new BuyerUser("approver-1", "tenant-1", "审批人", "13800000001", "approver@example.com", "启用", "dept-it"),
+        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it")));
 
     awardApplicationService.award("rfq-1", new AwardRfqRequest("quote-1", "最低价"));
 

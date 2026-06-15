@@ -31,12 +31,12 @@ on conflict (enterprise_id) do update set
   verified_status = excluded.verified_status,
   profile_status = excluded.profile_status;
 
-insert into users (id, tenant_id, supplier_id, name, mobile, email, status)
+insert into users (id, tenant_id, supplier_id, name, mobile, email, status, department_id)
 values
-  ('user-platform-admin', null, null, '平台运营', '13800000000', 'platform.admin@example.com', 'active'),
-  ('user-buyer-owner', 'tenant-acme', null, '采购负责人', '13800000001', 'buyer.owner@example.com', 'active'),
-  ('user-buyer-requester', 'tenant-acme', null, '需求申请人', '13800000002', 'requester@example.com', 'active'),
-  ('user-supplier-sales', null, 'ent-supplier-sunrise', '供应商销售', '13800000003', 'supplier.sales@example.com', 'active')
+  ('user-platform-admin', null, null, '平台运营', '13800000000', 'platform.admin@example.com', 'active', null),
+  ('user-buyer-owner', 'tenant-acme', null, '采购负责人', '13800000001', 'buyer.owner@example.com', 'active', 'dept-it'),
+  ('user-buyer-requester', 'tenant-acme', null, '需求申请人', '13800000002', 'requester@example.com', 'active', 'dept-it'),
+  ('user-supplier-sales', null, 'ent-supplier-sunrise', '供应商销售', '13800000003', 'supplier.sales@example.com', 'active', null)
 on conflict (id) do update set
   tenant_id = excluded.tenant_id,
   supplier_id = excluded.supplier_id,
@@ -44,6 +44,7 @@ on conflict (id) do update set
   mobile = excluded.mobile,
   email = excluded.email,
   status = excluded.status,
+  department_id = excluded.department_id,
   updated_at = now();
 
 insert into roles (id, tenant_id, scope, name, permissions)

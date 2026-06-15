@@ -38,6 +38,7 @@ create table users (
   mobile text,
   email text,
   status text not null default 'active',
+  department_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (

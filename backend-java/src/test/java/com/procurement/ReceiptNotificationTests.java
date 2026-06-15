@@ -60,8 +60,8 @@ class ReceiptNotificationTests {
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> receipt(invocation.getArgument(1)));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用"),
-        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用")));
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it"),
+        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it")));
 
     receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过"));
 

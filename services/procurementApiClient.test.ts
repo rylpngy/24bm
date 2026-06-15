@@ -213,6 +213,7 @@ describe('procurement API clients', () => {
             mobile: '13800000000',
             email: 'buyer@example.com',
             status: 'active',
+            departmentId: 'dept-it',
           }],
           message: '',
         });
@@ -302,6 +303,7 @@ describe('procurement API clients', () => {
     expect(createdDepartment.id).toBe('dept-rd');
     expect(disabledDepartment.status).toBe('inactive');
     expect(users[0].email).toBe('buyer@example.com');
+    expect(users[0].departmentId).toBe('dept-it');
     expect(orders[0].status).toBe('已收货');
     expect(invoices[0].paymentStatus).toBe('已付款');
     expect(auditLogs[0].action).toBe('purchase_order.created');

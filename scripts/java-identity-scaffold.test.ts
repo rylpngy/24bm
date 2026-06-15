@@ -49,18 +49,31 @@ describe('Java identity and JWT scaffold', () => {
   it('enforces buyer tenant user limits from SaaS plan entitlements', () => {
     const service = read('backend-java/src/main/java/com/procurement/identity/application/BuyerUserApplicationService.java');
     const userMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerUserMapper.java');
+    const request = read('backend-java/src/main/java/com/procurement/identity/api/CreateBuyerUserRequest.java');
+    const response = read('backend-java/src/main/java/com/procurement/identity/api/BuyerUserResponse.java');
     const entitlementService = read('backend-java/src/main/java/com/procurement/tenant/application/TenantEntitlementApplicationService.java');
     const entitlementMapper = read('backend-java/src/main/java/com/procurement/tenant/infrastructure/TenantEntitlementMapper.java');
+    const migration = read('backend-java/src/main/resources/db/migration/V1__initial_schema.sql');
+    const apiContract = read('data/apiContract.ts');
     const readme = read('backend-java/README.md');
     const architecture = read('docs/java-backend-architecture.md');
 
     expect(service).toContain('TenantEntitlementApplicationService');
     expect(service).toContain('requireUserCapacity');
+    expect(service).toContain('DepartmentMapper');
+    expect(service).toContain('existsActiveByTenantAndId');
+    expect(request).toContain('departmentId');
+    expect(response).toContain('departmentId');
+    expect(userMapper).toContain('department_id');
     expect(userMapper).toContain('countByTenant');
     expect(entitlementService).toContain('Tenant user limit reached');
     expect(entitlementMapper).toContain('user_limit');
+    expect(migration).toContain('department_id text');
+    expect(apiContract).toContain('department_id');
     expect(readme).toContain("current tenant's `user_limit`");
+    expect(readme).toContain('departmentId');
     expect(architecture).toContain('当前用户数达到或超过 `user_limit` 时拒绝创建');
+    expect(architecture).toContain('用户所属 `departmentId`');
   });
 
   it('documents the frontend header transition from demo headers to Authorization bearer', () => {

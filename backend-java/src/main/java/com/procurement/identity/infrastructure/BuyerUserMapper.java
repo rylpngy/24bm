@@ -13,23 +13,25 @@ import org.apache.ibatis.annotations.Select;
 public interface BuyerUserMapper {
 
   @Select("""
-      select id, tenant_id, name, mobile, email, status
+      select id, tenant_id, name, mobile, email, status, department_id
       from users
       where tenant_id = #{tenantId}
       order by created_at desc
       """)
   @Results(id = "buyerUserResults", value = {
-      @Result(column = "tenant_id", property = "tenantId")
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "department_id", property = "departmentId")
   })
   List<BuyerUser> listByTenant(@Param("tenantId") String tenantId);
 
   @Select("""
-      select id, tenant_id, name, mobile, email, status
+      select id, tenant_id, name, mobile, email, status, department_id
       from users
       where tenant_id = #{tenantId} and id = #{id}
       """)
   @Results(id = "singleBuyerUserResults", value = {
-      @Result(column = "tenant_id", property = "tenantId")
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "department_id", property = "departmentId")
   })
   BuyerUser findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
@@ -57,8 +59,8 @@ public interface BuyerUserMapper {
       @Param("roleId") String roleId);
 
   @Insert("""
-      insert into users (id, tenant_id, name, mobile, email, status)
-      values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status})
+      insert into users (id, tenant_id, name, mobile, email, status, department_id)
+      values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status}, #{departmentId})
       """)
   void insert(
       @Param("id") String id,
@@ -66,5 +68,6 @@ public interface BuyerUserMapper {
       @Param("name") String name,
       @Param("mobile") String mobile,
       @Param("email") String email,
-      @Param("status") String status);
+      @Param("status") String status,
+      @Param("departmentId") String departmentId);
 }

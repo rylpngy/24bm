@@ -6,5 +6,6 @@ public record BuyerUserResponse(
     String name,
     String mobile,
     String email,
-    String status) {
+    String status,
+    String departmentId) {
 }

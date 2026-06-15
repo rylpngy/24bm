@@ -10,6 +10,7 @@ import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.application.BuyerUserApplicationService;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
+import com.procurement.organization.infrastructure.DepartmentMapper;
 import com.procurement.tenant.application.TenantEntitlementApplicationService;
 import com.procurement.tenant.infrastructure.TenantEntitlementMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 class BuyerUserLimitTests {
 
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
+  private final DepartmentMapper departmentMapper = org.mockito.Mockito.mock(DepartmentMapper.class);
   private final TenantEntitlementMapper tenantEntitlementMapper =
       org.mockito.Mockito.mock(TenantEntitlementMapper.class);
   private final TenantEntitlementApplicationService tenantEntitlementApplicationService =
@@ -27,6 +29,7 @@ class BuyerUserLimitTests {
   private final BuyerUserApplicationService buyerUserApplicationService =
       new BuyerUserApplicationService(
           buyerUserMapper,
+          departmentMapper,
           tenantEntitlementApplicationService,
           auditLogApplicationService);
 
@@ -45,11 +48,13 @@ class BuyerUserLimitTests {
         "新增用户",
         "13900000000",
         "new.user@example.com",
-        "active")))
+        "active",
+        "dept-it")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Tenant user limit reached: 2");
 
     verify(buyerUserMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
@@ -67,11 +72,13 @@ class BuyerUserLimitTests {
         "新增用户",
         "13900000000",
         "new.user@example.com",
-        "active")))
+        "active",
+        "dept-it")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Tenant user limit reached: 0");
 
     verify(buyerUserMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),

@@ -291,6 +291,7 @@ export interface BuyerUserDto {
   mobile: string | null;
   email: string | null;
   status: string;
+  departmentId: string;
 }
 
 export interface JavaPurchaseDemandDto {

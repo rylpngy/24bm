@@ -64,6 +64,7 @@ describe('procurement SaaS API contract draft', () => {
   it('declares tenant-scoped database tables and public supplier identity tables', () => {
     expect(databaseTables.find((table) => table.name === 'supplier_enterprises')?.tenantScoped).toBe(false);
     expect(databaseTables.find((table) => table.name === 'buyer_supplier_relations')?.tenantScoped).toBe(true);
+    expect(databaseTables.find((table) => table.name === 'users')?.requiredColumns).toContain('department_id');
     expect(databaseTables.find((table) => table.name === 'rfqs')?.requiredColumns).toEqual(
       expect.arrayContaining(['tenant_id', 'status', 'deadline_at']),
     );

@@ -497,7 +497,7 @@ export const databaseTables: DatabaseTable[] = [
     name: 'users',
     tenantScoped: false,
     purpose: '平台、采购方、供应商用户账号。采购方用户用 tenant_id，供应商用户用 supplier_id。',
-    requiredColumns: ['id', 'tenant_id', 'supplier_id', 'name', 'mobile', 'email', 'status'],
+    requiredColumns: ['id', 'tenant_id', 'supplier_id', 'name', 'mobile', 'email', 'status', 'department_id'],
   },
   {
     name: 'roles',
