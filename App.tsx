@@ -144,6 +144,7 @@ const App: React.FC = () => {
   const [supplierAdmissionBusyId, setSupplierAdmissionBusyId] = useState<string | null>(null);
   const [supplierActionBusyId, setSupplierActionBusyId] = useState<string | null>(null);
   const [rfqCreateBusy, setRfqCreateBusy] = useState<string | null>(null);
+  const [orderCreateBusy, setOrderCreateBusy] = useState<string | null>(null);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -351,6 +352,26 @@ const App: React.FC = () => {
     }
   };
 
+  const createBuyerOrderFromAward = async (awardId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    const expectedReceiptDate = new Date();
+    expectedReceiptDate.setDate(expectedReceiptDate.getDate() + 14);
+    setOrderCreateBusy(awardId);
+    setWorkflowStatus(null);
+    try {
+      const order = await javaApiClient.createBuyerOrder({
+        awardId,
+        expectedReceiptDate: expectedReceiptDate.toISOString().slice(0, 10),
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`订单已生成：${order.id}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '采购订单生成失败');
+    } finally {
+      setOrderCreateBusy(null);
+    }
+  };
+
   const submitSupplierQuote = async (rfqId: string) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`quote:${rfqId}`);
@@ -467,6 +488,7 @@ const App: React.FC = () => {
                 approvalBusyId={approvalBusyId}
                 supplierAdmissionBusyId={supplierAdmissionBusyId}
                 rfqCreateBusy={rfqCreateBusy}
+                orderCreateBusy={orderCreateBusy}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowBusy={workflowBusy}
                 workflowStatus={workflowStatus}
@@ -474,6 +496,7 @@ const App: React.FC = () => {
                 onReviewApproval={reviewApprovalTask}
                 onSubmitSupplierAdmission={submitSupplierAdmission}
                 onCreateRfqFromDemand={createBuyerRfqFromDemand}
+                onCreateOrderFromAward={createBuyerOrderFromAward}
                 onUpdateApprovalTemplate={updateApprovalTemplate}
               />
             )}
@@ -716,6 +739,7 @@ const BuyerWorkspaceView: React.FC<{
   approvalBusyId: string | null;
   supplierAdmissionBusyId: string | null;
   rfqCreateBusy: string | null;
+  orderCreateBusy: string | null;
   javaEnabled: boolean;
   workflowBusy: boolean;
   workflowStatus: string | null;
@@ -723,6 +747,7 @@ const BuyerWorkspaceView: React.FC<{
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
   onSubmitSupplierAdmission: (relationId: string) => void;
   onCreateRfqFromDemand: (demandId: string) => void;
+  onCreateOrderFromAward: (awardId: string) => void;
   onUpdateApprovalTemplate: (
     templateCode: string,
     defaultApproverRoleId: string,
@@ -739,6 +764,7 @@ const BuyerWorkspaceView: React.FC<{
   approvalBusyId,
   supplierAdmissionBusyId,
   rfqCreateBusy,
+  orderCreateBusy,
   javaEnabled,
   workflowBusy,
   workflowStatus,
@@ -746,6 +772,7 @@ const BuyerWorkspaceView: React.FC<{
   onReviewApproval,
   onSubmitSupplierAdmission,
   onCreateRfqFromDemand,
+  onCreateOrderFromAward,
   onUpdateApprovalTemplate,
 }) => {
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
@@ -963,9 +990,23 @@ const BuyerWorkspaceView: React.FC<{
 
       <Panel title="询价比价与定标" icon={BarChart3}>
         <div className="space-y-4">
-          {workspace.rfqs.map((rfq) => (
-            <RfqCard key={rfq.id} rfq={rfq} workspace={workspace} />
-          ))}
+          {workspace.rfqs.map((rfq) => {
+            const approvedAward = recentApprovals.find((approval) =>
+              approval.bizType === 'rfq_award'
+              && approval.parentBizId === rfq.id
+              && approval.status === '已通过');
+            return (
+              <RfqCard
+                key={rfq.id}
+                rfq={rfq}
+                workspace={workspace}
+                approvedAwardId={approvedAward?.bizId}
+                orderCreateBusy={orderCreateBusy}
+                javaEnabled={javaEnabled}
+                onCreateOrderFromAward={onCreateOrderFromAward}
+              />
+            );
+          })}
         </div>
       </Panel>
     </div>
@@ -1467,49 +1508,71 @@ const WorkflowRail: React.FC<{
 const RfqCard: React.FC<{
   rfq: Rfq;
   workspace: BuyerWorkspace;
-}> = ({ rfq, workspace }) => (
-  <div className="rounded-lg border border-slate-200 bg-white p-4">
-    <div className="flex items-start justify-between gap-3">
-      <div>
-        <p className="font-black text-slate-900">{rfq.title}</p>
-        <p className="mt-1 text-sm text-slate-500">
-          {rfq.id} · 负责人 {rfq.owner} · 截止 {rfq.deadline}
-        </p>
-      </div>
-      <StatusPill label={rfq.status} />
-    </div>
+  approvedAwardId?: string;
+  orderCreateBusy: string | null;
+  javaEnabled: boolean;
+  onCreateOrderFromAward: (awardId: string) => void;
+}> = ({ rfq, workspace, approvedAwardId, orderCreateBusy, javaEnabled, onCreateOrderFromAward }) => {
+  const hasGeneratedOrder = workspace.orders.some((order) =>
+    order.rfqId === rfq.id && (!rfq.awardedSupplierId || order.supplierId === rfq.awardedSupplierId));
+  const canCreateOrder = javaEnabled && approvedAwardId && rfq.status === '已定标' && !hasGeneratedOrder;
 
-    <div className="mt-4 space-y-2">
-      {rfq.quotes.length === 0 ? (
-        <div className="rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-500">暂无报价，等待供应商响应。</div>
-      ) : (
-        rfq.quotes.map((quote) => {
-          const supplier = workspace.suppliers.find((item) => item.id === quote.supplierId);
-          const awarded = rfq.awardedSupplierId === quote.supplierId;
-          return (
-            <div
-              key={quote.id}
-              className={`flex items-center justify-between rounded-lg border p-3 ${
-                awarded ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'
-              }`}
-            >
-              <div>
-                <p className="font-bold text-slate-900">{supplier?.name}</p>
-                <p className="text-xs text-slate-500">
-                  税率 {quote.taxRate}% · {quote.deliveryDays} 天交付
-                </p>
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-black text-slate-900">{rfq.title}</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {rfq.id} · 负责人 {rfq.owner} · 截止 {rfq.deadline}
+          </p>
+        </div>
+        <StatusPill label={rfq.status} />
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {rfq.quotes.length === 0 ? (
+          <div className="rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-500">暂无报价，等待供应商响应。</div>
+        ) : (
+          rfq.quotes.map((quote) => {
+            const supplier = workspace.suppliers.find((item) => item.id === quote.supplierId);
+            const awarded = rfq.awardedSupplierId === quote.supplierId;
+            return (
+              <div
+                key={quote.id}
+                className={`flex items-center justify-between rounded-lg border p-3 ${
+                  awarded ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'
+                }`}
+              >
+                <div>
+                  <p className="font-bold text-slate-900">{supplier?.name}</p>
+                  <p className="text-xs text-slate-500">
+                    税率 {quote.taxRate}% · {quote.deliveryDays} 天交付
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono font-black text-slate-900">{currency(quote.amount)}</p>
+                  {awarded && <p className="text-xs font-bold text-emerald-700">已定标</p>}
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-mono font-black text-slate-900">{currency(quote.amount)}</p>
-                {awarded && <p className="text-xs font-bold text-emerald-700">已定标</p>}
-              </div>
-            </div>
-          );
-        })
+            );
+          })
+        )}
+      </div>
+
+      {canCreateOrder && (
+        <button
+          type="button"
+          onClick={() => onCreateOrderFromAward(approvedAwardId)}
+          disabled={orderCreateBusy === approvedAwardId}
+          className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          <ShoppingCart size={14} />
+          {orderCreateBusy === approvedAwardId ? '生成中' : '生成采购订单'}
+        </button>
       )}
     </div>
-  </div>
-);
+  );
+};
 
 const SimpleList: React.FC<{
   rows: Array<{
