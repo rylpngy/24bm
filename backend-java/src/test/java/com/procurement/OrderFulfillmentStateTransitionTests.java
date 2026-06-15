@@ -94,7 +94,8 @@ class OrderFulfillmentStateTransitionTests {
     DeliveryApplicationService service = new DeliveryApplicationService(
         purchaseOrderMapper,
         deliveryMapper,
-        auditLogApplicationService);
+        auditLogApplicationService,
+        notificationApplicationService);
 
     assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123")))
         .isInstanceOf(IllegalStateException.class)
@@ -159,7 +160,8 @@ class OrderFulfillmentStateTransitionTests {
     DeliveryApplicationService service = new DeliveryApplicationService(
         purchaseOrderMapper,
         deliveryMapper,
-        auditLogApplicationService);
+        auditLogApplicationService,
+        notificationApplicationService);
 
     service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123"));
 

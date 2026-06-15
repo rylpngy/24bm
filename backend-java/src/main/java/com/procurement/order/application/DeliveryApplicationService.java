@@ -8,6 +8,7 @@ import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,18 +19,22 @@ public class DeliveryApplicationService {
   private static final String SHIPPED_STATUS = "已发货";
   private static final String PURCHASE_ORDER_SHIPPED_ACTION = "purchase_order.shipped";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
+  private static final String PURCHASE_ORDER_SHIPPED_NOTIFICATION_TITLE = "采购订单已发货";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final DeliveryMapper deliveryMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public DeliveryApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
       DeliveryMapper deliveryMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.deliveryMapper = deliveryMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   @Transactional
@@ -65,6 +70,10 @@ public class DeliveryApplicationService {
         PURCHASE_ORDER_SHIPPED_ACTION,
         PURCHASE_ORDER_TARGET_TYPE,
         order.id());
+    notificationApplicationService.notifyActiveTenantUsers(
+        order.tenantId(),
+        PURCHASE_ORDER_SHIPPED_NOTIFICATION_TITLE,
+        "采购订单 " + order.id() + " 已发货，物流：" + request.carrier() + " " + request.trackingNo() + "。");
 
     return toResponse(deliveryMapper.findByTenantAndId(order.tenantId(), deliveryId));
   }
