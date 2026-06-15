@@ -532,7 +532,7 @@ Example payment payload:
 }
 ```
 
-Invoice creation requires the order to belong to the current supplier, be `已收货`, and have the `finance` feature enabled for its buyer tenant. Invoice creation requires `amount` to equal the purchase order amount. MVP invoice creation allows only one invoice per purchase order. New invoices are stored with `payment_status = 待付款`. Payment registration requires the current tenant to have the `finance` feature enabled, is tenant scoped, and updates `invoices.payment_status`. Payment registration rejects invoices whose current-tenant supplier relation is `黑名单`.
+Invoice creation requires the order to belong to the current supplier, be `已收货`, and have the `finance` feature enabled for its buyer tenant. Invoice creation requires `amount` to equal the purchase order amount. MVP invoice creation allows only one invoice per purchase order. New invoices are stored with `payment_status = 待付款`. Payment registration requires the current tenant to have the `finance` feature enabled, is tenant scoped, and updates `invoices.payment_status`. Payment registration rechecks that the invoice amount still equals the purchase order amount. Payment registration rejects invoices whose current-tenant supplier relation is `黑名单`.
 
 ## Local Commands
 

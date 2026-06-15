@@ -63,8 +63,10 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
     expect(paymentService).toContain('BuyerSupplierRelationMapper');
+    expect(paymentService).toContain('PurchaseOrderMapper');
     expect(paymentService).toContain('requireEnabled(tenantId, FINANCE_FEATURE)');
     expect(paymentService).toContain('BLACKLISTED_SUPPLIER_STATUS');
+    expect(paymentService).toContain('requireInvoiceAmountMatchesOrder');
     expect(paymentService).toContain('countByTenantSupplierAndStatus');
     expect(paymentService).toContain('listCurrentTenantInvoices');
     expect(paymentService).toContain('listCurrentTenantPaymentAuditLogs');
@@ -87,11 +89,13 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(readme).toContain('Payment registration rejects invoices whose current-tenant supplier relation is `黑名单`');
     expect(readme).toContain('Invoice creation requires `amount` to equal the purchase order amount');
     expect(readme).toContain('MVP invoice creation allows only one invoice per purchase order');
+    expect(readme).toContain('Payment registration rechecks that the invoice amount still equals the purchase order amount');
     expect(readme).toContain('`finance` feature enabled');
     expect(architecture).toContain('财务协同 Java API');
     expect(architecture).toContain('当前租户必须启用 `finance` 功能开关');
     expect(architecture).toContain('发票金额必须等于采购订单金额');
     expect(architecture).toContain('MVP 阶段同一采购订单只能登记一张发票');
+    expect(architecture).toContain('付款登记前会重新校验发票金额仍等于采购订单金额');
     expect(architecture).toContain('发票供应商在当前采购方私域供应商关系中不能是 `黑名单`');
   });
 });

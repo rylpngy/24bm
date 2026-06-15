@@ -11,9 +11,12 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -22,6 +25,7 @@ import org.junit.jupiter.api.Test;
 class FinancePaymentStateTransitionTests {
 
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
+  private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
@@ -29,6 +33,7 @@ class FinancePaymentStateTransitionTests {
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
+      purchaseOrderMapper,
       buyerSupplierRelationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService);
@@ -99,6 +104,8 @@ class FinancePaymentStateTransitionTests {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
         .thenReturn(invoice("invoice-1", "tenant-1", "待付款"));
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order(BigDecimal.valueOf(100)));
     when(invoiceMapper.updatePaymentStatus("tenant-1", "invoice-1", "待付款", "已付款"))
         .thenReturn(0);
 
@@ -114,6 +121,8 @@ class FinancePaymentStateTransitionTests {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
         .thenReturn(invoice("invoice-1", "tenant-1", "待付款"));
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order(BigDecimal.valueOf(100)));
     when(buyerSupplierRelationMapper.countByTenantSupplierAndStatus("tenant-1", "supplier-1", "黑名单"))
         .thenReturn(1);
 
@@ -131,11 +140,34 @@ class FinancePaymentStateTransitionTests {
   }
 
   @Test
+  void paymentRejectsInvoiceAmountDifferentFromOrderAmountBeforeStatusUpdate() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
+        .thenReturn(invoice("invoice-1", "tenant-1", "待付款"));
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order(BigDecimal.valueOf(99)));
+
+    assertThatThrownBy(() -> paymentApplicationService.register(
+        "invoice-1",
+        new RegisterPaymentRequest("已付款")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Invoice amount no longer matches purchase order amount");
+
+    verify(invoiceMapper, org.mockito.Mockito.never()).updatePaymentStatus(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
   void paymentRecordsAuditLogAfterPaymentStatusUpdate() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
         .thenReturn(invoice("invoice-1", "tenant-1", "待付款"))
         .thenReturn(invoice("invoice-1", "tenant-1", "已付款"));
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order(BigDecimal.valueOf(100)));
     when(invoiceMapper.updatePaymentStatus("tenant-1", "invoice-1", "待付款", "已付款"))
         .thenReturn(1);
 
@@ -156,6 +188,19 @@ class FinancePaymentStateTransitionTests {
         BigDecimal.valueOf(100),
         "INV-001",
         paymentStatus,
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+  }
+
+  private PurchaseOrder order(BigDecimal amount) {
+    return new PurchaseOrder(
+        "po-1",
+        "tenant-1",
+        "rfq-1",
+        "supplier-1",
+        amount,
+        "已收货",
+        LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
   }

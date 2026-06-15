@@ -7,6 +7,8 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.List;
@@ -25,16 +27,19 @@ public class PaymentApplicationService {
   private static final String BLACKLISTED_SUPPLIER_STATUS = "黑名单";
 
   private final InvoiceMapper invoiceMapper;
+  private final PurchaseOrderMapper purchaseOrderMapper;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
 
   public PaymentApplicationService(
       InvoiceMapper invoiceMapper,
+      PurchaseOrderMapper purchaseOrderMapper,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService) {
     this.invoiceMapper = invoiceMapper;
+    this.purchaseOrderMapper = purchaseOrderMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
@@ -81,6 +86,7 @@ public class PaymentApplicationService {
     if (!PAID_STATUS.equals(request.paymentStatus()) && !PARTIAL_PAID_STATUS.equals(request.paymentStatus())) {
       throw new IllegalArgumentException("Unsupported payment status: " + request.paymentStatus());
     }
+    requireInvoiceAmountMatchesOrder(tenantId, invoice);
     requireSupplierPayable(tenantId, invoice);
 
     int updated = invoiceMapper.updatePaymentStatus(
@@ -118,6 +124,16 @@ public class PaymentApplicationService {
         BLACKLISTED_SUPPLIER_STATUS);
     if (blacklistedRelations > 0) {
       throw new IllegalStateException("Blacklisted supplier cannot be paid: " + invoice.supplierId());
+    }
+  }
+
+  private void requireInvoiceAmountMatchesOrder(String tenantId, Invoice invoice) {
+    PurchaseOrder order = purchaseOrderMapper.findByTenantAndId(tenantId, invoice.orderId());
+    if (order == null) {
+      throw new IllegalArgumentException("Purchase order not found for invoice payment: " + invoice.orderId());
+    }
+    if (invoice.amount().compareTo(order.amount()) != 0) {
+      throw new IllegalStateException("Invoice amount no longer matches purchase order amount: " + invoice.id());
     }
   }
 
