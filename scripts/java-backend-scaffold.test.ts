@@ -163,35 +163,44 @@ describe('Java backend scaffold', () => {
     expect(departmentService).toContain('countByTenantAndDepartment');
   });
 
-  it('documents the buyer notification API handoff', () => {
+  it('documents the notification API handoff', () => {
     const architecture = read('docs/java-backend-architecture.md');
     const readme = read('backend-java/README.md');
 
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/api/BuyerNotificationController.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/api/SupplierNotificationController.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/application/NotificationApplicationService.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/infrastructure/NotificationMapper.java'))).toBe(true);
     expect(architecture).toContain('站内通知 Java API');
     expect(architecture).toContain('GET /api/v1/buyer/notifications');
     expect(architecture).toContain('POST /api/v1/buyer/notifications/{notificationId}/read');
+    expect(architecture).toContain('GET /api/v1/supplier/notifications');
+    expect(architecture).toContain('POST /api/v1/supplier/notifications/{notificationId}/read');
+    expect(architecture).toContain('按当前 `recipient_id` 汇总多采购方业务通知');
     expect(architecture).toContain('采购需求提交审批时会为当前租户启用采购方用户生成站内通知');
     expect(architecture).toContain('RFQ 定标结果提交审批时会为当前租户启用采购方用户生成站内通知');
     expect(architecture).toContain('供应商确认采购订单时会为当前租户启用采购方用户生成站内通知');
     expect(architecture).toContain('供应商提交发货时会为当前租户启用采购方用户生成站内通知');
     expect(architecture).toContain('采购方完成收货验收时会为当前租户启用采购方用户生成站内通知');
     expect(architecture).toContain('供应商登记发票时会为订单所属采购方租户启用采购方用户生成站内通知');
-    expect(readme).toContain('Buyer Notification APIs');
+    expect(architecture).toContain('采购方登记付款状态时会为发票供应商企业启用供应商用户生成站内通知');
+    expect(readme).toContain('Notification APIs');
+    expect(readme).toContain('GET /api/v1/supplier/notifications');
     expect(readme).toContain('Purchase demand submission now creates in-app notifications');
     expect(readme).toContain('RFQ award approval submission also creates in-app notifications');
     expect(readme).toContain('Supplier order confirmation creates in-app notifications');
     expect(readme).toContain('Supplier shipment creates in-app notifications');
     expect(readme).toContain('Buyer receipt creates in-app notifications');
     expect(readme).toContain('Supplier invoice creation creates in-app notifications');
+    expect(readme).toContain('Buyer payment registration creates in-app notifications');
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/PurchaseDemandNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/RfqAwardNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/PurchaseOrderNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/DeliveryNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/ReceiptNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/FinanceInvoiceNotificationTests.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/SupplierNotificationTests.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/FinancePaymentNotificationTests.java'))).toBe(true);
   });
 
   it('documents and exposes shared dictionary APIs', () => {

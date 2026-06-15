@@ -58,6 +58,8 @@ describe('procurement SaaS API contract draft', () => {
       'POST /buyer/attachments',
       'GET /buyer/notifications',
       'POST /buyer/notifications/{notificationId}/read',
+      'GET /supplier/notifications',
+      'POST /supplier/notifications/{notificationId}/read',
       'GET /buyer/rfqs',
       'POST /buyer/rfqs',
       'GET /supplier/workspace',
@@ -161,6 +163,10 @@ describe('procurement SaaS API contract draft', () => {
     expect(openApi.paths['/buyer/attachments'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/notifications'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/notifications/{notificationId}/read'].post.parameters).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'notificationId', in: 'path', required: true })]),
+    );
+    expect(openApi.paths['/supplier/notifications'].get.tags).toContain('supplier');
+    expect(openApi.paths['/supplier/notifications/{notificationId}/read'].post.parameters).toEqual(
       expect.arrayContaining([expect.objectContaining({ name: 'notificationId', in: 'path', required: true })]),
     );
     expect(openApi.paths['/buyer/rfqs/{rfqId}/award'].post.tags).toContain('buyer');

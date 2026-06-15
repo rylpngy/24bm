@@ -7,6 +7,7 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
@@ -25,24 +26,29 @@ public class PaymentApplicationService {
   private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
   private static final String FINANCE_FEATURE = "finance";
   private static final String BLACKLISTED_SUPPLIER_STATUS = "黑名单";
+  private static final String INVOICE_PAID_NOTIFICATION_TITLE = "发票已付款";
+  private static final String INVOICE_PARTIAL_PAID_NOTIFICATION_TITLE = "发票部分付款";
 
   private final InvoiceMapper invoiceMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public PaymentApplicationService(
       InvoiceMapper invoiceMapper,
       PurchaseOrderMapper purchaseOrderMapper,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AuditLogApplicationService auditLogApplicationService,
-      TenantFeatureApplicationService tenantFeatureApplicationService) {
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.invoiceMapper = invoiceMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   public List<InvoiceResponse> listCurrentTenantInvoices() {
@@ -102,6 +108,13 @@ public class PaymentApplicationService {
         PAID_STATUS.equals(request.paymentStatus()) ? INVOICE_PAID_ACTION : INVOICE_PARTIAL_PAID_ACTION,
         INVOICE_TARGET_TYPE,
         invoiceId);
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId,
+        invoice.supplierId(),
+        PAID_STATUS.equals(request.paymentStatus())
+            ? INVOICE_PAID_NOTIFICATION_TITLE
+            : INVOICE_PARTIAL_PAID_NOTIFICATION_TITLE,
+        "采购方已登记发票 " + invoice.invoiceNo() + " 的付款状态：" + request.paymentStatus() + "。");
     return toResponse(invoiceMapper.findByTenantAndId(tenantId, invoiceId));
   }
 

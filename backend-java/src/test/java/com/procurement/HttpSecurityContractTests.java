@@ -62,6 +62,7 @@ import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.notification.api.BuyerNotificationController;
 import com.procurement.notification.api.NotificationResponse;
+import com.procurement.notification.api.SupplierNotificationController;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.organization.api.DepartmentController;
 import com.procurement.organization.api.DepartmentResponse;
@@ -189,6 +190,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierWorkspaceController.class,
     AttachmentController.class,
     BuyerNotificationController.class,
+    SupplierNotificationController.class,
     DepartmentController.class
 })
 @Import({
@@ -2104,6 +2106,65 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.id").value("notice-demand-approval"))
+        .andExpect(jsonPath("$.data.read").value(true));
+  }
+
+  @Test
+  void supplierNotificationApisListCurrentUserMessagesAndMarkThemRead() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    when(notificationApplicationService.listCurrentSupplierUserNotifications(50))
+        .thenReturn(List.of(new NotificationResponse(
+            "notice-invoice-paid",
+            "tenant-acme",
+            "user-supplier-owner",
+            "发票已付款",
+            "采购方已登记付款",
+            false,
+            null,
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/supplier/notifications")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(get("/api/v1/supplier/notifications")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("notice-invoice-paid"))
+        .andExpect(jsonPath("$.data[0].title").value("发票已付款"))
+        .andExpect(jsonPath("$.data[0].read").value(false));
+
+    when(notificationApplicationService.markCurrentSupplierUserNotificationRead("notice-invoice-paid"))
+        .thenReturn(new NotificationResponse(
+            "notice-invoice-paid",
+            "tenant-acme",
+            "user-supplier-owner",
+            "发票已付款",
+            "采购方已登记付款",
+            true,
+            OffsetDateTime.parse("2026-06-15T12:30:00+08:00"),
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+
+    mockMvc.perform(post("/api/v1/supplier/notifications/notice-invoice-paid/read")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("notice-invoice-paid"))
         .andExpect(jsonPath("$.data.read").value(true));
   }
 

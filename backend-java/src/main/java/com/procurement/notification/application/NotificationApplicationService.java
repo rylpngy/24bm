@@ -5,8 +5,10 @@ import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.domain.Notification;
 import com.procurement.notification.infrastructure.NotificationMapper;
+import com.procurement.supplier.infrastructure.SupplierUserMapper;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +20,20 @@ public class NotificationApplicationService {
 
   private final NotificationMapper notificationMapper;
   private final BuyerUserMapper buyerUserMapper;
+  private final SupplierUserMapper supplierUserMapper;
 
-  public NotificationApplicationService(NotificationMapper notificationMapper, BuyerUserMapper buyerUserMapper) {
+  @Autowired
+  public NotificationApplicationService(
+      NotificationMapper notificationMapper,
+      BuyerUserMapper buyerUserMapper,
+      SupplierUserMapper supplierUserMapper) {
     this.notificationMapper = notificationMapper;
     this.buyerUserMapper = buyerUserMapper;
+    this.supplierUserMapper = supplierUserMapper;
+  }
+
+  public NotificationApplicationService(NotificationMapper notificationMapper, BuyerUserMapper buyerUserMapper) {
+    this(notificationMapper, buyerUserMapper, null);
   }
 
   public List<NotificationResponse> listCurrentUserNotifications() {
@@ -37,9 +49,30 @@ public class NotificationApplicationService {
         .toList();
   }
 
+  public List<NotificationResponse> listCurrentSupplierUserNotifications(int limit) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier notification APIs");
+    String userId = TenantAccessGuard.requireUserId("supplier notification APIs");
+    int boundedLimit = Math.max(1, Math.min(limit, MAX_LIMIT));
+    return notificationMapper.listBySupplierAndRecipient(supplierId, userId, boundedLimit).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public void notifyActiveTenantUsers(String tenantId, String title, String content) {
     buyerUserMapper.listByTenant(tenantId).stream()
+        .filter(user -> ENABLED_STATUS.equals(user.status()))
+        .forEach(user -> notificationMapper.insert(
+            "notice-" + UUID.randomUUID(),
+            tenantId,
+            user.id(),
+            title,
+            content));
+  }
+
+  @Transactional
+  public void notifyActiveSupplierUsers(String tenantId, String supplierId, String title, String content) {
+    supplierUserMapper.listBySupplier(supplierId).stream()
         .filter(user -> ENABLED_STATUS.equals(user.status()))
         .forEach(user -> notificationMapper.insert(
             "notice-" + UUID.randomUUID(),
@@ -58,6 +91,17 @@ public class NotificationApplicationService {
       throw new IllegalArgumentException("Notification not found for current user: " + notificationId);
     }
     return toResponse(notificationMapper.findByTenantRecipientAndId(tenantId, userId, notificationId));
+  }
+
+  @Transactional
+  public NotificationResponse markCurrentSupplierUserNotificationRead(String notificationId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier notification APIs");
+    String userId = TenantAccessGuard.requireUserId("supplier notification APIs");
+    int updated = notificationMapper.markReadBySupplierAndRecipient(supplierId, userId, notificationId);
+    if (updated == 0) {
+      throw new IllegalArgumentException("Notification not found for current supplier user: " + notificationId);
+    }
+    return toResponse(notificationMapper.findBySupplierRecipientAndId(supplierId, userId, notificationId));
   }
 
   private NotificationResponse toResponse(Notification notification) {

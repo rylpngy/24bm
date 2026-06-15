@@ -11,6 +11,7 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
@@ -31,12 +32,15 @@ class FinancePaymentStateTransitionTests {
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
       purchaseOrderMapper,
       buyerSupplierRelationMapper,
       auditLogApplicationService,
-      tenantFeatureApplicationService);
+      tenantFeatureApplicationService,
+      notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {

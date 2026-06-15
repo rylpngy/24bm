@@ -473,6 +473,22 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/supplier/notifications',
+    audience: 'supplier',
+    action: '加载当前供应商用户站内通知',
+    requestSchema: 'NotificationListRequest',
+    responseSchema: 'NotificationList',
+  },
+  {
+    method: 'POST',
+    path: '/supplier/notifications/{notificationId}/read',
+    audience: 'supplier',
+    action: '标记当前供应商用户站内通知为已读',
+    requestSchema: 'MarkNotificationReadRequest',
+    responseSchema: 'Notification',
+  },
+  {
+    method: 'GET',
     path: '/buyer/rfqs',
     audience: 'buyer',
     action: '加载采购方询价项目，支持按状态和关键词筛选',

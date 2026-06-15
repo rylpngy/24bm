@@ -75,6 +75,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('updatePaymentStatus');
     expect(paymentService).toContain('isIdempotentPaymentRegistration');
     expect(paymentService).toContain('Paid invoices cannot be changed');
+    expect(paymentService).toContain('notifyActiveSupplierUsers');
     expect(auditService).toContain('listCurrentTenantTargetActions');
   });
 

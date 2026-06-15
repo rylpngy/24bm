@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -44,6 +45,22 @@ public interface NotificationMapper {
       @Param("limit") int limit);
 
   @Select("""
+      select n.id, n.tenant_id, n.recipient_id, n.title, n.content, n.read_at, n.created_at
+      from notifications n
+      join users u on u.id = n.recipient_id
+      where u.supplier_id = #{supplierId}
+        and u.tenant_id is null
+        and n.recipient_id = #{recipientId}
+      order by n.created_at desc
+      limit #{limit}
+      """)
+  @ResultMap("notificationResults")
+  List<Notification> listBySupplierAndRecipient(
+      @Param("supplierId") String supplierId,
+      @Param("recipientId") String recipientId,
+      @Param("limit") int limit);
+
+  @Select("""
       select id, tenant_id, recipient_id, title, content, read_at, created_at
       from notifications
       where tenant_id = #{tenantId}
@@ -61,6 +78,21 @@ public interface NotificationMapper {
       @Param("recipientId") String recipientId,
       @Param("id") String id);
 
+  @Select("""
+      select n.id, n.tenant_id, n.recipient_id, n.title, n.content, n.read_at, n.created_at
+      from notifications n
+      join users u on u.id = n.recipient_id
+      where u.supplier_id = #{supplierId}
+        and u.tenant_id is null
+        and n.recipient_id = #{recipientId}
+        and n.id = #{id}
+      """)
+  @ResultMap("singleNotificationResults")
+  Notification findBySupplierRecipientAndId(
+      @Param("supplierId") String supplierId,
+      @Param("recipientId") String recipientId,
+      @Param("id") String id);
+
   @Update("""
       update notifications
       set read_at = coalesce(read_at, now())
@@ -70,6 +102,24 @@ public interface NotificationMapper {
       """)
   int markRead(
       @Param("tenantId") String tenantId,
+      @Param("recipientId") String recipientId,
+      @Param("id") String id);
+
+  @Update("""
+      update notifications n
+      set read_at = coalesce(read_at, now())
+      where n.recipient_id = #{recipientId}
+        and n.id = #{id}
+        and exists (
+          select 1
+          from users u
+          where u.id = n.recipient_id
+            and u.supplier_id = #{supplierId}
+            and u.tenant_id is null
+        )
+      """)
+  int markReadBySupplierAndRecipient(
+      @Param("supplierId") String supplierId,
       @Param("recipientId") String recipientId,
       @Param("id") String id);
 }

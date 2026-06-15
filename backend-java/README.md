@@ -123,7 +123,7 @@ Example metadata registration payload:
 
 The API records metadata only. The current buyer tenant and uploader are read from JWT claims, and registration writes an `audit_logs` row with action `attachment.created`. `visibility` is optional and defaults to `tenant`; supported values are `tenant`, `buyer_internal`, and `supplier_shared`. New attachments are stored as `active`, and list queries only return active metadata.
 
-## Buyer Notification APIs
+## Notification APIs
 
 The buyer-side in-app notification endpoints are:
 
@@ -132,12 +132,20 @@ The buyer-side in-app notification endpoints are:
 
 Notifications are scoped by the JWT `tenantId` and current `userId`. A buyer user can list and mark only their own notifications. Email and SMS delivery are intentionally deferred; the MVP keeps this module as in-app notification data first.
 
+The supplier-side in-app notification endpoints are:
+
+- `GET /api/v1/supplier/notifications`
+- `POST /api/v1/supplier/notifications/{notificationId}/read`
+
+Supplier notifications are scoped by the JWT `supplierId` and current `userId`; the stored `tenant_id` remains the buyer tenant that produced the business event.
+
 Purchase demand submission now creates in-app notifications for active buyer users in the current tenant with title `采购需求待审批`.
 RFQ award approval submission also creates in-app notifications for active buyer users with title `定标结果待审批`.
 Supplier order confirmation creates in-app notifications for active buyer users with title `采购订单已确认`.
 Supplier shipment creates in-app notifications for active buyer users with title `采购订单已发货`.
 Buyer receipt creates in-app notifications for active buyer users with title `采购订单已收货`.
 Supplier invoice creation creates in-app notifications for active buyer users with title `供应商已登记发票`.
+Buyer payment registration creates in-app notifications for active supplier users with title `发票已付款` or `发票部分付款`.
 
 ## Buyer Master Data APIs
 

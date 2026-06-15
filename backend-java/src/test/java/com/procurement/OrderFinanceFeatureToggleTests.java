@@ -61,7 +61,8 @@ class OrderFinanceFeatureToggleTests {
       purchaseOrderMapper,
       buyerSupplierRelationMapper,
       auditLogApplicationService,
-      tenantFeatureApplicationService);
+      tenantFeatureApplicationService,
+      notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {

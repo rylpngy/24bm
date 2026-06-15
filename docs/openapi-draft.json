@@ -1471,6 +1471,65 @@
         }
       }
     },
+    "/supplier/notifications": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "加载当前供应商用户站内通知",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NotificationList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/notifications/{notificationId}/read": {
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "标记当前供应商用户站内通知为已读",
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/rfqs": {
       "get": {
         "tags": [
@@ -2966,6 +3025,8 @@
     "POST /buyer/attachments",
     "GET /buyer/notifications",
     "POST /buyer/notifications/{notificationId}/read",
+    "GET /supplier/notifications",
+    "POST /supplier/notifications/{notificationId}/read",
     "GET /buyer/rfqs",
     "POST /buyer/rfqs",
     "GET /supplier/workspace",
