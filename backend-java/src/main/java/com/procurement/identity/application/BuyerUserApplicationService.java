@@ -6,6 +6,7 @@ import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.api.ChangeBuyerUserRoleRequest;
 import com.procurement.identity.api.ChangeBuyerUserStatusRequest;
 import com.procurement.identity.api.CreateBuyerUserRequest;
+import com.procurement.identity.api.ResetBuyerUserPasswordRequest;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.organization.infrastructure.DepartmentMapper;
@@ -23,6 +24,7 @@ public class BuyerUserApplicationService {
   private static final String BUYER_USER_CREATED_ACTION = "buyer_user.created";
   private static final String BUYER_USER_ROLE_CHANGED_ACTION = "buyer_user.role_changed";
   private static final String BUYER_USER_STATUS_CHANGED_ACTION = "buyer_user.status_changed";
+  private static final String BUYER_USER_PASSWORD_RESET_ACTION = "buyer_user.password_reset";
   private static final String BUYER_USER_TARGET_TYPE = "buyer_user";
 
   private final BuyerUserMapper buyerUserMapper;
@@ -69,6 +71,15 @@ public class BuyerUserApplicationService {
         passwordEncoder.encode(request.initialPassword()));
     buyerUserMapper.assignRole(userId, request.roleId());
     auditLogApplicationService.recordTenantAction(BUYER_USER_CREATED_ACTION, BUYER_USER_TARGET_TYPE, userId);
+    return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
+  }
+
+  @Transactional
+  public BuyerUserResponse resetUserPassword(String userId, ResetBuyerUserPasswordRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
+    requireBuyerUser(tenantId, userId);
+    buyerUserMapper.updatePasswordHash(tenantId, userId, passwordEncoder.encode(request.newPassword()));
+    auditLogApplicationService.recordTenantAction(BUYER_USER_PASSWORD_RESET_ACTION, BUYER_USER_TARGET_TYPE, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 

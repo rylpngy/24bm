@@ -55,6 +55,7 @@ describe('Java identity and JWT scaffold', () => {
     const userController = read('backend-java/src/main/java/com/procurement/identity/api/BuyerUserController.java');
     const changeRoleRequest = read('backend-java/src/main/java/com/procurement/identity/api/ChangeBuyerUserRoleRequest.java');
     const changeStatusRequest = read('backend-java/src/main/java/com/procurement/identity/api/ChangeBuyerUserStatusRequest.java');
+    const resetPasswordRequest = read('backend-java/src/main/java/com/procurement/identity/api/ResetBuyerUserPasswordRequest.java');
     const request = read('backend-java/src/main/java/com/procurement/identity/api/CreateBuyerUserRequest.java');
     const response = read('backend-java/src/main/java/com/procurement/identity/api/BuyerUserResponse.java');
     const entitlementService = read('backend-java/src/main/java/com/procurement/tenant/application/TenantEntitlementApplicationService.java');
@@ -72,6 +73,8 @@ describe('Java identity and JWT scaffold', () => {
     expect(service).toContain('assignRole');
     expect(service).toContain('changeUserRole');
     expect(service).toContain('buyer_user.role_changed');
+    expect(service).toContain('resetUserPassword');
+    expect(service).toContain('buyer_user.password_reset');
     expect(service).toContain('changeUserStatus');
     expect(service).toContain('buyer_user.status_changed');
     expect(service).toContain('Unsupported buyer user status');
@@ -81,10 +84,12 @@ describe('Java identity and JWT scaffold', () => {
     expect(roleMapper).toContain('listBuyerRolesByTenant');
     expect(roleController).toContain('/api/v1/buyer/roles');
     expect(userController).toContain('/{userId}/role');
+    expect(userController).toContain('/{userId}/password');
     expect(userController).toContain('/{userId}/status');
     expect(request).toContain('departmentId');
     expect(request).toContain('roleId');
     expect(changeRoleRequest).toContain('roleId');
+    expect(resetPasswordRequest).toContain('newPassword');
     expect(changeStatusRequest).toContain('status');
     expect(response).toContain('departmentId');
     expect(response).toContain('roleId');
@@ -92,6 +97,7 @@ describe('Java identity and JWT scaffold', () => {
     expect(userMapper).toContain('existsBuyerRoleByTenantAndId');
     expect(userMapper).toContain('insert into user_roles');
     expect(userMapper).toContain('replaceRole');
+    expect(userMapper).toContain('updatePasswordHash');
     expect(userMapper).toContain('existsByTenantAndId');
     expect(userMapper).toContain('updateStatus');
     expect(userMapper).toContain('countByTenant');
@@ -101,16 +107,19 @@ describe('Java identity and JWT scaffold', () => {
     expect(apiContract).toContain('department_id');
     expect(apiContract).toContain('/buyer/roles');
     expect(apiContract).toContain('/buyer/users/{userId}/role');
+    expect(apiContract).toContain('/buyer/users/{userId}/password');
     expect(apiContract).toContain('/buyer/users/{userId}/status');
     expect(readme).toContain("current tenant's `user_limit`");
     expect(readme).toContain('GET /api/v1/buyer/roles');
     expect(readme).toContain('POST /api/v1/buyer/users/{userId}/role');
+    expect(readme).toContain('POST /api/v1/buyer/users/{userId}/password');
     expect(readme).toContain('POST /api/v1/buyer/users/{userId}/status');
     expect(readme).toContain('departmentId');
     expect(readme).toContain('roleId');
     expect(architecture).toContain('当前用户数达到或超过 `user_limit` 时拒绝创建');
     expect(architecture).toContain('GET /api/v1/buyer/roles');
     expect(architecture).toContain('POST /api/v1/buyer/users/{userId}/role');
+    expect(architecture).toContain('POST /api/v1/buyer/users/{userId}/password');
     expect(architecture).toContain('POST /api/v1/buyer/users/{userId}/status');
     expect(architecture).toContain('用户所属 `departmentId`');
     expect(architecture).toContain('用户角色 `roleId`');

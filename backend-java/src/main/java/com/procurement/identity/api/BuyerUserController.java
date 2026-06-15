@@ -40,6 +40,13 @@ public class BuyerUserController {
     return ApiResponse.ok(buyerUserApplicationService.changeUserRole(userId, request));
   }
 
+  @PostMapping("/{userId}/password")
+  public ApiResponse<BuyerUserResponse> resetPassword(
+      @PathVariable String userId,
+      @Valid @RequestBody ResetBuyerUserPasswordRequest request) {
+    return ApiResponse.ok(buyerUserApplicationService.resetUserPassword(userId, request));
+  }
+
   @PostMapping("/{userId}/status")
   public ApiResponse<BuyerUserResponse> changeStatus(
       @PathVariable String userId,

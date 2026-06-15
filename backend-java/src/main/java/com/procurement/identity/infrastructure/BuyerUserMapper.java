@@ -149,4 +149,16 @@ public interface BuyerUserMapper {
       @Param("tenantId") String tenantId,
       @Param("userId") String userId,
       @Param("status") String status);
+
+  @Update("""
+      update users
+      set password_hash = #{passwordHash},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{userId}
+      """)
+  void updatePasswordHash(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId,
+      @Param("passwordHash") String passwordHash);
 }

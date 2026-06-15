@@ -260,6 +260,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'POST',
+    path: '/buyer/users/{userId}/password',
+    audience: 'buyer',
+    action: '重置采购方用户密码',
+    requestSchema: 'ResetBuyerUserPasswordRequest',
+    responseSchema: 'BuyerUser',
+  },
+  {
+    method: 'POST',
     path: '/buyer/users/{userId}/status',
     audience: 'buyer',
     action: '启用或停用采购方用户',

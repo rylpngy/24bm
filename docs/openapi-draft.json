@@ -601,6 +601,40 @@
         }
       }
     },
+    "/buyer/users/{userId}/password": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "重置采购方用户密码",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerUser"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/users/{userId}/status": {
       "post": {
         "tags": [
@@ -1857,6 +1891,7 @@
     "GET /buyer/users",
     "POST /buyer/users",
     "POST /buyer/users/{userId}/role",
+    "POST /buyer/users/{userId}/password",
     "POST /buyer/users/{userId}/status",
     "GET /buyer/demands",
     "POST /buyer/demands",
