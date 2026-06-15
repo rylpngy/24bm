@@ -40,13 +40,21 @@ import com.procurement.identity.application.BuyerUserApplicationService;
 import com.procurement.identity.security.JwtAuthenticationFilter;
 import com.procurement.identity.security.JwtTokenService;
 import com.procurement.finance.api.SupplierReceivableController;
+import com.procurement.finance.api.BuyerPaymentController;
+import com.procurement.finance.api.SupplierInvoiceController;
 import com.procurement.finance.application.InvoiceApplicationService;
+import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.notification.api.BuyerNotificationController;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.order.api.BuyerReceiptController;
 import com.procurement.order.api.SupplierOrderController;
+import com.procurement.order.api.SupplierDeliveryController;
+import com.procurement.order.api.PurchaseOrderController;
 import com.procurement.order.api.PurchaseOrderResponse;
+import com.procurement.order.application.DeliveryApplicationService;
 import com.procurement.order.application.PurchaseOrderApplicationService;
+import com.procurement.order.application.ReceiptApplicationService;
 import com.procurement.platform.api.EnterpriseReviewRequest;
 import com.procurement.platform.api.EnterpriseReviewResponse;
 import com.procurement.platform.api.FeatureToggleRequest;
@@ -66,10 +74,12 @@ import com.procurement.sourcing.api.AwardDecisionResponse;
 import com.procurement.sourcing.api.AwardRfqRequest;
 import com.procurement.sourcing.api.RfqAwardController;
 import com.procurement.sourcing.api.SubmitQuoteRequest;
+import com.procurement.sourcing.api.RfqController;
 import com.procurement.sourcing.api.SupplierQuoteListController;
 import com.procurement.sourcing.api.SupplierQuoteController;
 import com.procurement.sourcing.application.AwardApplicationService;
 import com.procurement.sourcing.application.QuoteApplicationService;
+import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.supplier.api.BuyerSupplierController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
@@ -100,6 +110,7 @@ import org.springframework.test.web.servlet.MvcResult;
     ApprovalInboxController.class,
     PurchaseDemandController.class,
     SupplierQuoteController.class,
+    RfqController.class,
     PlatformOverviewController.class,
     PlatformTenantController.class,
     PlatformEnterpriseController.class,
@@ -110,7 +121,12 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierProfileController.class,
     SupplierQuoteListController.class,
     RfqAwardController.class,
+    PurchaseOrderController.class,
     SupplierOrderController.class,
+    BuyerReceiptController.class,
+    SupplierDeliveryController.class,
+    BuyerPaymentController.class,
+    SupplierInvoiceController.class,
     SupplierReceivableController.class,
     AuditLogController.class,
     BuyerWorkspaceController.class,
@@ -143,13 +159,25 @@ class HttpSecurityContractTests {
   private QuoteApplicationService quoteApplicationService;
 
   @MockBean
+  private RfqApplicationService rfqApplicationService;
+
+  @MockBean
   private AwardApplicationService awardApplicationService;
 
   @MockBean
   private PurchaseOrderApplicationService purchaseOrderApplicationService;
 
   @MockBean
+  private ReceiptApplicationService receiptApplicationService;
+
+  @MockBean
+  private DeliveryApplicationService deliveryApplicationService;
+
+  @MockBean
   private InvoiceApplicationService invoiceApplicationService;
+
+  @MockBean
+  private PaymentApplicationService paymentApplicationService;
 
   @MockBean
   private PlatformTenantApplicationService platformTenantApplicationService;

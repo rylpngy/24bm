@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 class TenantIsolationArchitectureTests {
 
   private static final Path SOURCE_ROOT = Path.of("src/main/java/com/procurement");
+  private static final Path TEST_ROOT = Path.of("src/test/java/com/procurement");
 
   @Test
   void applicationServicesUseCentralTenantAccessGuardInsteadOfLocalThreadLocalReads() throws IOException {
@@ -132,5 +135,37 @@ class TenantIsolationArchitectureTests {
     assertThat(mapperSource)
         .contains("countByTenantAndDemand")
         .contains("where tenant_id = #{tenantId} and demand_id = #{demandId}");
+  }
+
+  @Test
+  void allApiControllersAreIncludedInHttpSecurityContractTests() throws IOException {
+    List<String> apiControllers;
+    try (var stream = Files.walk(SOURCE_ROOT)) {
+      apiControllers = stream
+          .filter(path -> path.toString().endsWith("Controller.java"))
+          .filter(path -> {
+            try {
+              return Files.readString(path).contains("@RequestMapping(\"/api/");
+            } catch (IOException exception) {
+              throw new IllegalStateException(exception);
+            }
+          })
+          .map(path -> path.getFileName().toString().replace(".java", ".class"))
+          .sorted()
+          .toList();
+    }
+
+    String securityContractSource = Files.readString(TEST_ROOT.resolve("HttpSecurityContractTests.java"));
+    Matcher matcher = Pattern.compile("@WebMvcTest\\(controllers = \\{(?<controllers>.*?)\\}\\)", Pattern.DOTALL)
+        .matcher(securityContractSource);
+
+    assertThat(matcher.find()).isTrue();
+    String testedControllers = matcher.group("controllers");
+    assertThat(apiControllers).isNotEmpty();
+    for (String controller : apiControllers) {
+      assertThat(testedControllers)
+          .as(controller + " should be covered by HttpSecurityContractTests")
+          .contains(controller);
+    }
   }
 }
