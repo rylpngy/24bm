@@ -52,6 +52,18 @@ public class PurchaseOrderApplicationService {
         .toList();
   }
 
+  public List<PurchaseOrderResponse> listCurrentTenantOrders(String status, String supplierId, String rfqId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    return purchaseOrderMapper.listByTenantFiltered(
+            tenantId,
+            blankToNull(status),
+            blankToNull(supplierId),
+            blankToNull(rfqId))
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   public List<PurchaseOrderResponse> listCurrentSupplierOrders() {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier order APIs");
     return purchaseOrderMapper.listBySupplier(supplierId).stream()
@@ -138,5 +150,9 @@ public class PurchaseOrderApplicationService {
 
   private String newId(String prefix) {
     return prefix + "-" + UUID.randomUUID();
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

@@ -2015,8 +2015,33 @@
         "tags": [
           "buyer"
         ],
-        "summary": "加载采购方订单列表",
-        "parameters": [],
+        "summary": "加载采购方订单列表，支持按状态、供应商和 RFQ 筛选",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rfqId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []

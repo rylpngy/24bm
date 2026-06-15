@@ -364,6 +364,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 订单生成的关键校验：
 
 - 采购方身份来自 JWT 中的 `tenantId`。
+- 采购方订单列表始终按当前 `tenantId` 过滤，并支持可选 `status`、`supplierId`、`rfqId` 查询条件。
 - 当前租户必须启用 `order` 功能开关，否则不能生成采购订单。
 - `awardId` 必须属于当前采购方租户。
 - `award_decisions.approved_status` 必须是 `已通过`。

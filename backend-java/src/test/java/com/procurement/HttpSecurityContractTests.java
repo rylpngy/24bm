@@ -2642,7 +2642,16 @@ class HttpSecurityContractTests {
             .content(validPaymentPayload()))
         .andExpect(status().isForbidden());
 
-    when(purchaseOrderApplicationService.listCurrentTenantOrders()).thenReturn(List.of(orderResponse("po-demo", "待供应商确认")));
+    when(purchaseOrderApplicationService.listCurrentTenantOrders(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(orderResponse("po-demo", "待供应商确认")));
+    when(purchaseOrderApplicationService.listCurrentTenantOrders(
+        org.mockito.ArgumentMatchers.eq("待供应商确认"),
+        org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
+        org.mockito.ArgumentMatchers.eq("rfq-demo")))
+        .thenReturn(List.of(orderResponse("po-demo", "待供应商确认")));
     when(purchaseOrderApplicationService.createFromAward(
         org.mockito.ArgumentMatchers.any(CreatePurchaseOrderRequest.class)))
         .thenReturn(orderResponse("po-created", "待供应商确认"));
@@ -2663,6 +2672,13 @@ class HttpSecurityContractTests {
         .thenReturn(invoiceResponse("invoice-demo", "已付款"));
 
     mockMvc.perform(get("/api/v1/buyer/orders")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("po-demo"));
+    mockMvc.perform(get("/api/v1/buyer/orders")
+            .queryParam("status", "待供应商确认")
+            .queryParam("supplierId", "ent-supplier-sunrise")
+            .queryParam("rfqId", "rfq-demo")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("po-demo"));

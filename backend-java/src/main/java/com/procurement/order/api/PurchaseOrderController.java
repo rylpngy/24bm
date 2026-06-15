@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,8 +23,11 @@ public class PurchaseOrderController {
   }
 
   @GetMapping
-  public ApiResponse<List<PurchaseOrderResponse>> list() {
-    return ApiResponse.ok(purchaseOrderApplicationService.listCurrentTenantOrders());
+  public ApiResponse<List<PurchaseOrderResponse>> list(
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) String supplierId,
+      @RequestParam(required = false) String rfqId) {
+    return ApiResponse.ok(purchaseOrderApplicationService.listCurrentTenantOrders(status, supplierId, rfqId));
   }
 
   @PostMapping

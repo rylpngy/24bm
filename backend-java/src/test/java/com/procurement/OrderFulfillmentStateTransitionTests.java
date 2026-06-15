@@ -145,6 +145,24 @@ class OrderFulfillmentStateTransitionTests {
   }
 
   @Test
+  void listBuyerOrdersAppliesFiltersInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(purchaseOrderMapper.listByTenantFiltered("tenant-1", "待供应商确认", "supplier-1", "rfq-1"))
+        .thenReturn(java.util.List.of());
+
+    PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
+        awardDecisionMapper,
+        purchaseOrderMapper,
+        auditLogApplicationService,
+        notificationApplicationService,
+        tenantFeatureApplicationService);
+
+    service.listCurrentTenantOrders("待供应商确认", "supplier-1", "rfq-1");
+
+    verify(purchaseOrderMapper).listByTenantFiltered("tenant-1", "待供应商确认", "supplier-1", "rfq-1");
+  }
+
+  @Test
   void supplierDeliveryRecordsAuditLogAfterShipment() {
     TenantContext.set(null, "supplier-1", "user-supplier");
     when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))

@@ -615,9 +615,10 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     method: 'GET',
     path: '/buyer/orders',
     audience: 'buyer',
-    action: '加载采购方订单列表',
+    action: '加载采购方订单列表，支持按状态、供应商和 RFQ 筛选',
     requestSchema: 'BuyerOrderListRequest',
     responseSchema: 'BuyerOrderList',
+    queryParameters: ['status', 'supplierId', 'rfqId'],
   },
   {
     method: 'POST',

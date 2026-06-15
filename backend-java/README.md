@@ -438,6 +438,8 @@ The buyer-side order endpoint is:
 - `GET /api/v1/buyer/orders`
 - `POST /api/v1/buyer/orders`
 
+The buyer order list accepts optional `status`, `supplierId`, and `rfqId` filters inside the current buyer tenant.
+
 Example order payload:
 
 ```json

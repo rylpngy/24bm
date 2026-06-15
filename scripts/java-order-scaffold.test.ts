@@ -54,6 +54,7 @@ describe('Java purchase order scaffold', () => {
     expect(service).toContain('ORDER_FEATURE');
     expect(service).toContain('requireEnabled(tenantId, ORDER_FEATURE)');
     expect(service).toContain('listCurrentTenantOrders');
+    expect(service).toContain('listByTenantFiltered');
     expect(service).toContain('待供应商确认');
     expect(service).toContain('findApprovedForOrder');
     expect(service).toContain('findByAwardSource');
@@ -66,6 +67,7 @@ describe('Java purchase order scaffold', () => {
 
     expect(readme).toContain('POST /api/v1/buyer/orders');
     expect(readme).toContain('GET /api/v1/buyer/orders');
+    expect(readme).toContain('buyer order list accepts optional `status`, `supplierId`, and `rfqId` filters');
     expect(readme).toContain('current tenant to have the `order` feature enabled');
     expect(architecture).toContain('采购订单 Java API');
     expect(architecture).toContain('当前租户必须启用 `order` 功能开关');
