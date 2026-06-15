@@ -120,6 +120,19 @@ describe('Java backend scaffold', () => {
     expect(readme).toContain('POST /api/v1/buyer/attachments');
   });
 
+  it('documents the buyer notification API handoff', () => {
+    const architecture = read('docs/java-backend-architecture.md');
+    const readme = read('backend-java/README.md');
+
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/api/BuyerNotificationController.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/application/NotificationApplicationService.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/infrastructure/NotificationMapper.java'))).toBe(true);
+    expect(architecture).toContain('站内通知 Java API');
+    expect(architecture).toContain('GET /api/v1/buyer/notifications');
+    expect(architecture).toContain('POST /api/v1/buyer/notifications/{notificationId}/read');
+    expect(readme).toContain('Buyer Notification APIs');
+  });
+
   it('provides a reproducible local PostgreSQL runtime for Java frontend integration', () => {
     const compose = read('backend-java/docker-compose.yml');
     const localProfile = read('backend-java/src/main/resources/application-local.yml');

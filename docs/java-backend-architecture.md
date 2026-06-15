@@ -357,4 +357,22 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `attachments`
 - `audit_logs`
 
-至此，Java 后端 MVP 主链路已经覆盖需求、询价、报价、定标、订单、发货、收货、发票、付款状态和附件元数据登记。
+## 站内通知 Java API
+
+第十一批 Java 基础能力落在 `notification` 模块：
+
+- `GET /api/v1/buyer/notifications`：采购方用户查询自己的站内通知。
+- `POST /api/v1/buyer/notifications/{notificationId}/read`：采购方用户将自己的通知标记为已读。
+
+当前边界：
+
+- 通知查询使用 JWT 中的 `tenantId + userId`，不允许用户读取同租户其他人的通知。
+- 标记已读时同样使用 `tenantId + recipientId + notificationId` 三重条件。
+- 查询默认返回最近 50 条，服务端将 `limit` 限制在 1 到 200 之间。
+- MVP 先完成站内通知数据能力，邮件和短信只保留后续集成接口边界。
+
+对应数据库表：
+
+- `notifications`
+
+至此，Java 后端 MVP 主链路已经覆盖需求、询价、报价、定标、订单、发货、收货、发票、付款状态、附件元数据登记和站内通知。

@@ -1,0 +1,63 @@
+package com.procurement.notification.infrastructure;
+
+import com.procurement.notification.domain.Notification;
+import java.util.List;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.Results;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
+
+@Mapper
+public interface NotificationMapper {
+
+  @Select("""
+      select id, tenant_id, recipient_id, title, content, read_at, created_at
+      from notifications
+      where tenant_id = #{tenantId}
+        and recipient_id = #{recipientId}
+      order by created_at desc
+      limit #{limit}
+      """)
+  @Results(id = "notificationResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "recipient_id", property = "recipientId"),
+      @Result(column = "read_at", property = "readAt"),
+      @Result(column = "created_at", property = "createdAt")
+  })
+  List<Notification> listByTenantAndRecipient(
+      @Param("tenantId") String tenantId,
+      @Param("recipientId") String recipientId,
+      @Param("limit") int limit);
+
+  @Select("""
+      select id, tenant_id, recipient_id, title, content, read_at, created_at
+      from notifications
+      where tenant_id = #{tenantId}
+        and recipient_id = #{recipientId}
+        and id = #{id}
+      """)
+  @Results(id = "singleNotificationResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "recipient_id", property = "recipientId"),
+      @Result(column = "read_at", property = "readAt"),
+      @Result(column = "created_at", property = "createdAt")
+  })
+  Notification findByTenantRecipientAndId(
+      @Param("tenantId") String tenantId,
+      @Param("recipientId") String recipientId,
+      @Param("id") String id);
+
+  @Update("""
+      update notifications
+      set read_at = coalesce(read_at, now())
+      where tenant_id = #{tenantId}
+        and recipient_id = #{recipientId}
+        and id = #{id}
+      """)
+  int markRead(
+      @Param("tenantId") String tenantId,
+      @Param("recipientId") String recipientId,
+      @Param("id") String id);
+}

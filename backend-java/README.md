@@ -120,6 +120,15 @@ Example metadata registration payload:
 
 The API records metadata only. The current buyer tenant and uploader are read from JWT claims, and registration writes an `audit_logs` row with action `attachment.created`.
 
+## Buyer Notification APIs
+
+The buyer-side in-app notification endpoints are:
+
+- `GET /api/v1/buyer/notifications`
+- `POST /api/v1/buyer/notifications/{notificationId}/read`
+
+Notifications are scoped by the JWT `tenantId` and current `userId`. A buyer user can list and mark only their own notifications. Email and SMS delivery are intentionally deferred; the MVP keeps this module as in-app notification data first.
+
 ## Buyer Master Data APIs
 
 The first buyer-side master data endpoints are:

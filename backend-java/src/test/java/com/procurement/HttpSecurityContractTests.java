@@ -41,6 +41,9 @@ import com.procurement.identity.security.JwtAuthenticationFilter;
 import com.procurement.identity.security.JwtTokenService;
 import com.procurement.finance.api.SupplierReceivableController;
 import com.procurement.finance.application.InvoiceApplicationService;
+import com.procurement.notification.api.BuyerNotificationController;
+import com.procurement.notification.api.NotificationResponse;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.api.SupplierOrderController;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.application.PurchaseOrderApplicationService;
@@ -112,7 +115,8 @@ import org.springframework.test.web.servlet.MvcResult;
     AuditLogController.class,
     BuyerWorkspaceController.class,
     SupplierWorkspaceController.class,
-    AttachmentController.class
+    AttachmentController.class,
+    BuyerNotificationController.class
 })
 @Import({
     SecurityConfig.class,
@@ -182,6 +186,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private AttachmentApplicationService attachmentApplicationService;
+
+  @MockBean
+  private NotificationApplicationService notificationApplicationService;
 
   @Test
   void viteLocalhostPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
@@ -999,6 +1006,65 @@ class HttpSecurityContractTests {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.id").value("att-quote-file"))
         .andExpect(jsonPath("$.data.storageKey").value("tenant-acme/quote/quote-demo/quote.xlsx"));
+  }
+
+  @Test
+  void buyerNotificationApisListCurrentUserMessagesAndMarkThemRead() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    when(notificationApplicationService.listCurrentUserNotifications(50))
+        .thenReturn(List.of(new NotificationResponse(
+            "notice-demand-approval",
+            "tenant-acme",
+            "user-buyer-owner",
+            "采购需求待审批",
+            "办公电脑采购等待处理",
+            false,
+            null,
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/buyer/notifications")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(get("/api/v1/buyer/notifications")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("notice-demand-approval"))
+        .andExpect(jsonPath("$.data[0].title").value("采购需求待审批"))
+        .andExpect(jsonPath("$.data[0].read").value(false));
+
+    when(notificationApplicationService.markCurrentUserNotificationRead("notice-demand-approval"))
+        .thenReturn(new NotificationResponse(
+            "notice-demand-approval",
+            "tenant-acme",
+            "user-buyer-owner",
+            "采购需求待审批",
+            "办公电脑采购等待处理",
+            true,
+            OffsetDateTime.parse("2026-06-15T12:30:00+08:00"),
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+
+    mockMvc.perform(post("/api/v1/buyer/notifications/notice-demand-approval/read")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("notice-demand-approval"))
+        .andExpect(jsonPath("$.data.read").value(true));
   }
 
   @Test
