@@ -134,15 +134,18 @@ describe('Java backend scaffold', () => {
     expect(architecture).toContain('RFQ 定标结果提交审批时会为当前租户启用采购方用户生成站内通知');
     expect(architecture).toContain('供应商确认采购订单时会为当前租户启用采购方用户生成站内通知');
     expect(architecture).toContain('供应商提交发货时会为当前租户启用采购方用户生成站内通知');
+    expect(architecture).toContain('采购方完成收货验收时会为当前租户启用采购方用户生成站内通知');
     expect(readme).toContain('Buyer Notification APIs');
     expect(readme).toContain('Purchase demand submission now creates in-app notifications');
     expect(readme).toContain('RFQ award approval submission also creates in-app notifications');
     expect(readme).toContain('Supplier order confirmation creates in-app notifications');
     expect(readme).toContain('Supplier shipment creates in-app notifications');
+    expect(readme).toContain('Buyer receipt creates in-app notifications');
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/PurchaseDemandNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/RfqAwardNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/PurchaseOrderNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/DeliveryNotificationTests.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/ReceiptNotificationTests.java'))).toBe(true);
   });
 
   it('provides a reproducible local PostgreSQL runtime for Java frontend integration', () => {

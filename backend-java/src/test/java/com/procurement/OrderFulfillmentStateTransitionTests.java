@@ -183,7 +183,8 @@ class OrderFulfillmentStateTransitionTests {
     ReceiptApplicationService service = new ReceiptApplicationService(
         purchaseOrderMapper,
         receiptMapper,
-        auditLogApplicationService);
+        auditLogApplicationService,
+        notificationApplicationService);
 
     assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
         .isInstanceOf(IllegalStateException.class)
@@ -213,7 +214,8 @@ class OrderFulfillmentStateTransitionTests {
     ReceiptApplicationService service = new ReceiptApplicationService(
         purchaseOrderMapper,
         receiptMapper,
-        auditLogApplicationService);
+        auditLogApplicationService,
+        notificationApplicationService);
 
     service.create("po-1", new CreateReceiptRequest("验收通过"));
 

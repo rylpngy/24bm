@@ -8,6 +8,7 @@ import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.Receipt;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,18 +19,22 @@ public class ReceiptApplicationService {
   private static final String RECEIVED_STATUS = "已收货";
   private static final String PURCHASE_ORDER_RECEIVED_ACTION = "purchase_order.received";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
+  private static final String PURCHASE_ORDER_RECEIVED_NOTIFICATION_TITLE = "采购订单已收货";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final ReceiptMapper receiptMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public ReceiptApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
       ReceiptMapper receiptMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.receiptMapper = receiptMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   @Transactional
@@ -54,6 +59,10 @@ public class ReceiptApplicationService {
         PURCHASE_ORDER_RECEIVED_ACTION,
         PURCHASE_ORDER_TARGET_TYPE,
         orderId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId,
+        PURCHASE_ORDER_RECEIVED_NOTIFICATION_TITLE,
+        "采购订单 " + order.id() + " 已完成收货验收，结果：" + request.result() + "。");
 
     return toResponse(receiptMapper.findByTenantAndId(tenantId, receiptId));
   }

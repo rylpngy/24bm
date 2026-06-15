@@ -133,6 +133,7 @@ Purchase demand submission now creates in-app notifications for active buyer use
 RFQ award approval submission also creates in-app notifications for active buyer users with title `定标结果待审批`.
 Supplier order confirmation creates in-app notifications for active buyer users with title `采购订单已确认`.
 Supplier shipment creates in-app notifications for active buyer users with title `采购订单已发货`.
+Buyer receipt creates in-app notifications for active buyer users with title `采购订单已收货`.
 
 ## Buyer Master Data APIs
 
