@@ -37,6 +37,13 @@ public class PlatformTenantController {
     return ApiResponse.ok(platformTenantApplicationService.updateFeatureToggles(tenantId, request));
   }
 
+  @PostMapping("/{tenantId}/plan")
+  public ApiResponse<TenantResponse> updatePlan(
+      @PathVariable String tenantId,
+      @Valid @RequestBody UpdateTenantPlanRequest request) {
+    return ApiResponse.ok(platformTenantApplicationService.updateTenantPlan(tenantId, request));
+  }
+
   @PostMapping("/{tenantId}/disable")
   public ApiResponse<TenantResponse> disable(@PathVariable String tenantId) {
     return ApiResponse.ok(platformTenantApplicationService.disableTenant(tenantId));

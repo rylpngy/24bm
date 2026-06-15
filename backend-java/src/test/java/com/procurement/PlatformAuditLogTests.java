@@ -8,6 +8,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.platform.api.EnterpriseReviewRequest;
 import com.procurement.platform.api.FeatureToggleRequest;
+import com.procurement.platform.api.UpdateTenantPlanRequest;
 import com.procurement.platform.application.PlatformEnterpriseApplicationService;
 import com.procurement.platform.application.PlatformTenantApplicationService;
 import com.procurement.platform.domain.EnterpriseReview;
@@ -60,6 +61,37 @@ class PlatformAuditLogTests {
     verify(auditLogApplicationService).recordTenantAction(
         "tenant-1",
         "tenant.features.updated",
+        "tenant",
+        "tenant-1");
+  }
+
+  @Test
+  void tenantPlanUpdateRecordsAuditLogInTargetTenant() {
+    TenantContext.set(null, null, "user-platform-admin");
+    PlatformTenantMapper platformTenantMapper = org.mockito.Mockito.mock(PlatformTenantMapper.class);
+    PlatformTenantApplicationService platformTenantApplicationService =
+        new PlatformTenantApplicationService(
+            platformTenantMapper,
+            new ObjectMapper(),
+            auditLogApplicationService,
+            passwordEncoder);
+    when(platformTenantMapper.updatePlan("tenant-1", "pro", 120)).thenReturn(1);
+    when(platformTenantMapper.findById("tenant-1"))
+        .thenReturn(new PlatformTenant(
+            "tenant-1",
+            "示例采购企业",
+            "pro",
+            "active",
+            "[\"rfq\",\"order\"]",
+            120));
+
+    platformTenantApplicationService.updateTenantPlan(
+        "tenant-1",
+        new UpdateTenantPlanRequest("pro", 120));
+
+    verify(auditLogApplicationService).recordTenantAction(
+        "tenant-1",
+        "tenant.plan_updated",
         "tenant",
         "tenant-1");
   }

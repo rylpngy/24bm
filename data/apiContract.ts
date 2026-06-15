@@ -132,6 +132,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'POST',
+    path: '/platform/tenants/{tenantId}/plan',
+    audience: 'platform',
+    action: '调整租户套餐和用户上限',
+    requestSchema: 'UpdateTenantPlanRequest',
+    responseSchema: 'Tenant',
+  },
+  {
+    method: 'POST',
     path: '/platform/tenants/{tenantId}/disable',
     audience: 'platform',
     action: '停用采购方企业租户',

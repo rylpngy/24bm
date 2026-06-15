@@ -207,6 +207,7 @@ The first platform-side MVP endpoints are:
 - `GET /api/v1/platform/tenants`
 - `POST /api/v1/platform/tenants`
 - `POST /api/v1/platform/tenants/{tenantId}/features`
+- `POST /api/v1/platform/tenants/{tenantId}/plan`
 - `POST /api/v1/platform/tenants/{tenantId}/disable`
 - `GET /api/v1/platform/enterprise-reviews`
 - `POST /api/v1/platform/enterprise-reviews/{enterpriseId}`
@@ -216,6 +217,15 @@ Example feature toggle payload:
 ```json
 {
   "enabledFeatures": ["rfq", "order", "finance"]
+}
+```
+
+Example tenant plan payload:
+
+```json
+{
+  "plan": "pro",
+  "userLimit": 120
 }
 ```
 
@@ -230,7 +240,7 @@ Example enterprise review payload:
 
 Platform APIs require a `PLATFORM` login token. Buyer and supplier tokens are rejected by path-level Spring Security rules.
 
-Platform tenant creation, feature toggle changes, tenant disablement, and enterprise reviews write audit log actions `tenant.created`, `tenant.features.updated`, `tenant.disabled`, and `enterprise.reviewed`. The local demo seed includes `user-platform-admin` so these audit rows satisfy the `audit_logs.actor_id` foreign key.
+Platform tenant creation, feature toggle changes, plan/user-limit updates, tenant disablement, and enterprise reviews write audit log actions `tenant.created`, `tenant.features.updated`, `tenant.plan_updated`, `tenant.disabled`, and `enterprise.reviewed`. The local demo seed includes `user-platform-admin` so these audit rows satisfy the `audit_logs.actor_id` foreign key.
 
 ## RFQ APIs
 

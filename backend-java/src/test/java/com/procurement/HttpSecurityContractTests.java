@@ -86,6 +86,7 @@ import com.procurement.platform.api.PlatformTenantController;
 import com.procurement.platform.api.PlatformWorkspaceController;
 import com.procurement.platform.api.PlatformWorkspaceResponse;
 import com.procurement.platform.api.TenantResponse;
+import com.procurement.platform.api.UpdateTenantPlanRequest;
 import com.procurement.platform.application.PlatformEnterpriseApplicationService;
 import com.procurement.platform.application.PlatformOverviewApplicationService;
 import com.procurement.platform.application.PlatformTenantApplicationService;
@@ -1216,6 +1217,41 @@ class HttpSecurityContractTests {
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.enabledFeatures[2]").value("finance"));
+
+    when(platformTenantApplicationService.updateTenantPlan(
+        org.mockito.ArgumentMatchers.eq("tenant-acme"),
+        org.mockito.ArgumentMatchers.any(UpdateTenantPlanRequest.class)))
+        .thenReturn(new TenantResponse(
+            "tenant-acme",
+            "Acme 采购公司",
+            "pro",
+            "active",
+            List.of("rfq", "order", "finance"),
+            120));
+
+    mockMvc.perform(post("/api/v1/platform/tenants/tenant-acme/plan")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "plan": "pro",
+                  "userLimit": 120
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(post("/api/v1/platform/tenants/tenant-acme/plan")
+            .header("Authorization", "Bearer " + platformToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "plan": "pro",
+                  "userLimit": 120
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.plan").value("pro"))
+        .andExpect(jsonPath("$.data.userLimit").value(120));
 
     when(platformTenantApplicationService.disableTenant("tenant-acme"))
         .thenReturn(new TenantResponse(

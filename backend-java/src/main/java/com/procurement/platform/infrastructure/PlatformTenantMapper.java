@@ -123,6 +123,18 @@ public interface PlatformTenantMapper {
 
   @Update("""
       update tenants
+      set plan = #{plan},
+          user_limit = #{userLimit},
+          updated_at = now()
+      where id = #{tenantId}
+      """)
+  int updatePlan(
+      @Param("tenantId") String tenantId,
+      @Param("plan") String plan,
+      @Param("userLimit") Integer userLimit);
+
+  @Update("""
+      update tenants
       set status = #{status},
           updated_at = now()
       where id = #{tenantId}
