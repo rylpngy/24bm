@@ -162,6 +162,20 @@ describe('Java backend scaffold', () => {
     expect(auditTests).toContain('buyerSupplierRelationCreationRecordsAuditLog');
   });
 
+  it('guards platform operation audit coverage', () => {
+    const architecture = read('docs/java-backend-architecture.md');
+    const readme = read('backend-java/README.md');
+    const auditTests = read('backend-java/src/test/java/com/procurement/PlatformAuditLogTests.java');
+    const localSeed = read('backend-java/src/main/resources/db/dev/V100__local_demo_seed.sql');
+
+    expect(architecture).toContain('tenant.features.updated');
+    expect(architecture).toContain('enterprise.reviewed');
+    expect(readme).toContain('Platform feature toggle changes and enterprise reviews write audit log actions');
+    expect(auditTests).toContain('tenantFeatureToggleUpdateRecordsAuditLogInTargetTenant');
+    expect(auditTests).toContain('enterpriseReviewRecordsPlatformAuditLog');
+    expect(localSeed).toContain('user-platform-admin');
+  });
+
   it('provides a reproducible local PostgreSQL runtime for Java frontend integration', () => {
     const compose = read('backend-java/docker-compose.yml');
     const localProfile = read('backend-java/src/main/resources/application-local.yml');
@@ -181,6 +195,7 @@ describe('Java backend scaffold', () => {
     expect(localSeed).toContain('supplier-tech');
     expect(localSeed).toContain('mat-laptop');
     expect(localSeed).toContain('user-buyer-owner');
+    expect(localSeed).toContain('user-platform-admin');
 
     expect(readme).toContain('docker compose up -d');
     expect(readme).toContain('mvn spring-boot:run -Dspring-boot.run.profiles=local');

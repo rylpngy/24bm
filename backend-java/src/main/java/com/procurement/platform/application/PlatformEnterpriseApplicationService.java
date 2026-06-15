@@ -1,5 +1,6 @@
 package com.procurement.platform.application;
 
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.platform.api.EnterpriseReviewRequest;
 import com.procurement.platform.api.EnterpriseReviewResponse;
 import com.procurement.platform.domain.EnterpriseReview;
@@ -10,10 +11,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlatformEnterpriseApplicationService {
-  private final PlatformEnterpriseMapper platformEnterpriseMapper;
+  private static final String ENTERPRISE_REVIEWED_ACTION = "enterprise.reviewed";
+  private static final String ENTERPRISE_TARGET_TYPE = "enterprise";
 
-  public PlatformEnterpriseApplicationService(PlatformEnterpriseMapper platformEnterpriseMapper) {
+  private final PlatformEnterpriseMapper platformEnterpriseMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
+
+  public PlatformEnterpriseApplicationService(
+      PlatformEnterpriseMapper platformEnterpriseMapper,
+      AuditLogApplicationService auditLogApplicationService) {
     this.platformEnterpriseMapper = platformEnterpriseMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   public List<EnterpriseReviewResponse> listPendingReviews() {
@@ -29,6 +37,11 @@ public class PlatformEnterpriseApplicationService {
       throw new IllegalArgumentException("Enterprise not found: " + enterpriseId);
     }
     platformEnterpriseMapper.updateSupplierReviewStatus(enterpriseId, request.reviewStatus());
+    auditLogApplicationService.recordTenantAction(
+        null,
+        ENTERPRISE_REVIEWED_ACTION,
+        ENTERPRISE_TARGET_TYPE,
+        enterpriseId);
     return toResponse(platformEnterpriseMapper.findById(enterpriseId));
   }
 

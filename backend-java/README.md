@@ -215,6 +215,8 @@ Example enterprise review payload:
 
 Platform APIs require a `PLATFORM` login token. Buyer and supplier tokens are rejected by path-level Spring Security rules.
 
+Platform feature toggle changes and enterprise reviews write audit log actions `tenant.features.updated` and `enterprise.reviewed`. The local demo seed includes `user-platform-admin` so these audit rows satisfy the `audit_logs.actor_id` foreign key.
+
 ## RFQ APIs
 
 The first sourcing module exposes buyer-side RFQ APIs:

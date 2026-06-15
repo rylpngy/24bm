@@ -3,6 +3,7 @@ package com.procurement.platform.application;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.platform.api.FeatureToggleRequest;
 import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.domain.PlatformTenant;
@@ -13,12 +14,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlatformTenantApplicationService {
+  private static final String TENANT_FEATURES_UPDATED_ACTION = "tenant.features.updated";
+  private static final String TENANT_TARGET_TYPE = "tenant";
+
   private final PlatformTenantMapper platformTenantMapper;
   private final ObjectMapper objectMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
 
-  public PlatformTenantApplicationService(PlatformTenantMapper platformTenantMapper, ObjectMapper objectMapper) {
+  public PlatformTenantApplicationService(
+      PlatformTenantMapper platformTenantMapper,
+      ObjectMapper objectMapper,
+      AuditLogApplicationService auditLogApplicationService) {
     this.platformTenantMapper = platformTenantMapper;
     this.objectMapper = objectMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   public List<TenantResponse> listTenants() {
@@ -33,6 +42,11 @@ public class PlatformTenantApplicationService {
     if (updated == 0) {
       throw new IllegalArgumentException("Tenant not found: " + tenantId);
     }
+    auditLogApplicationService.recordTenantAction(
+        tenantId,
+        TENANT_FEATURES_UPDATED_ACTION,
+        TENANT_TARGET_TYPE,
+        tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));
   }
 

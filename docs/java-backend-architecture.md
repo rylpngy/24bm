@@ -140,8 +140,10 @@ Authorization: Bearer <accessToken>
 - `invoice.created`：供应商登记发票。
 - `invoice.paid` / `invoice.partial_paid`：采购方登记付款状态。
 - `attachment.created`：采购方登记已上传附件元数据并关联业务对象。
+- `tenant.features.updated`：平台运营方更新租户功能开关，审计记录挂到目标租户。
+- `enterprise.reviewed`：平台运营方审核企业入驻，审计记录为平台级操作，`tenant_id` 为空。
 
-后续应继续把平台企业审核和功能开关变更纳入同一审计入口。
+后续应继续把套餐变更、租户状态变更和平台公告发布纳入同一审计入口。
 
 ## RFQ 询价 Java API
 
