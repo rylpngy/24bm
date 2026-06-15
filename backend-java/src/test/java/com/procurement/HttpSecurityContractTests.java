@@ -1566,6 +1566,7 @@ class HttpSecurityContractTests {
         List.of(),
         List.of(),
         List.of(),
+        List.of(),
         List.of()));
 
     mockMvc.perform(get("/api/v1/supplier/workspace")
@@ -1576,7 +1577,8 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.opportunities").isArray())
         .andExpect(jsonPath("$.data.quotes").isArray())
         .andExpect(jsonPath("$.data.orders").isArray())
-        .andExpect(jsonPath("$.data.invoices").isArray());
+        .andExpect(jsonPath("$.data.invoices").isArray())
+        .andExpect(jsonPath("$.data.notifications").isArray());
   }
 
   @Test

@@ -38,6 +38,8 @@ describe('Java supplier workspace scaffold', () => {
 
   it('keeps supplier list queries scoped to the authenticated supplier', () => {
     const supplierService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierProfileApplicationService.java');
+    const supplierWorkspaceService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierWorkspaceApplicationService.java');
+    const supplierWorkspaceResponse = read('backend-java/src/main/java/com/procurement/supplier/api/SupplierWorkspaceResponse.java');
     const qualificationService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierQualificationApplicationService.java');
     const userService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierUserApplicationService.java');
     const quoteService = read('backend-java/src/main/java/com/procurement/sourcing/application/QuoteApplicationService.java');
@@ -66,6 +68,8 @@ describe('Java supplier workspace scaffold', () => {
     expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listBySupplierFiltered');
+    expect(supplierWorkspaceService).toContain('listCurrentSupplierUserNotifications(WORKSPACE_NOTIFICATION_LIMIT)');
+    expect(supplierWorkspaceResponse).toContain('List<NotificationResponse> notifications');
   });
 
   it('documents the supplier workspace Java API handoff', () => {
@@ -92,6 +96,9 @@ describe('Java supplier workspace scaffold', () => {
     expect(readme).toContain('The supplier invoice list accepts optional `paymentStatus` and `orderId` filters');
     expect(readme).toContain('GET /api/v1/supplier/invoices/{invoiceId}/payment-audit-logs');
     expect(readme).toContain('The supplier payment audit log list first verifies the invoice belongs to the current supplier enterprise');
+    expect(readme).toContain('GET /api/v1/supplier/notifications');
+    expect(readme).toContain('Supplier workspace includes recent in-app notifications');
     expect(localGuide).toContain('GET /api/v1/supplier/workspace');
+    expect(localGuide).toContain('receivables, and recent in-app notifications are loaded through the Java supplier workspace overlay');
   });
 });
