@@ -1263,6 +1263,24 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/suppliers/rel-001/submit') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        expect(init?.body).toBeUndefined();
+        return Response.json({
+          success: true,
+          data: {
+            id: 'approval-supplier-submit',
+            tenantId: 'tenant-acme',
+            bizType: 'buyer_supplier_admission',
+            bizId: 'rel-001',
+            assigneeId: 'user-buyer-owner',
+            status: '审批中',
+            createdAt: '2026-06-15T10:04:00+08:00',
+          },
+          message: '',
+        });
+      }
       if (input === 'http://java.test/api/v1/buyer/rfqs/rfq-001/award/approval') {
         expect(init?.method).toBe('POST');
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
@@ -1298,10 +1316,12 @@ describe('procurement API clients', () => {
     });
 
     const demandApproval = await client.reviewBuyerDemandApproval('dem-001', true);
+    const supplierAdmission = await client.submitBuyerSupplierAdmission('rel-001');
     const supplierApproval = await client.reviewBuyerSupplierAdmission('rel-001', false);
     const awardApproval = await client.reviewBuyerAwardApproval('rfq-001', 'award-001', true);
 
     expect(demandApproval.status).toBe('已通过');
+    expect(supplierAdmission.status).toBe('审批中');
     expect(supplierApproval.status).toBe('已驳回');
     expect(awardApproval.approvedStatus).toBe('已通过');
     expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);

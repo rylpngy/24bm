@@ -465,6 +465,7 @@ export interface JavaProcurementApiClient {
   listPlatformEnterpriseReviews(): Promise<JavaEnterpriseReviewDto[]>;
   getBuyerWorkspace(): Promise<JavaBuyerMasterData>;
   listBuyerSuppliers(): Promise<BuyerSupplierRelationDto[]>;
+  submitBuyerSupplierAdmission(relationId: string): Promise<JavaApprovalTaskDto>;
   listBuyerMaterials(): Promise<MaterialDto[]>;
   listBuyerDepartments(): Promise<DepartmentDto[]>;
   createBuyerDepartment(payload: CreateDepartmentPayload): Promise<DepartmentDto>;
@@ -839,6 +840,11 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     },
     listBuyerSuppliers() {
       return buyerRequest<BuyerSupplierRelationDto[]>('/api/v1/buyer/suppliers');
+    },
+    submitBuyerSupplierAdmission(relationId: string) {
+      return buyerRequest<JavaApprovalTaskDto>(`/api/v1/buyer/suppliers/${relationId}/submit`, {
+        method: 'POST',
+      });
     },
     listBuyerMaterials() {
       return buyerRequest<MaterialDto[]>('/api/v1/buyer/materials');

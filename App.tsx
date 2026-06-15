@@ -138,6 +138,7 @@ const App: React.FC = () => {
   const [workflowBusy, setWorkflowBusy] = useState(false);
   const [workflowStatus, setWorkflowStatus] = useState<string | null>(null);
   const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
+  const [supplierAdmissionBusyId, setSupplierAdmissionBusyId] = useState<string | null>(null);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -253,6 +254,21 @@ const App: React.FC = () => {
     }
   };
 
+  const submitSupplierAdmission = async (relationId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setSupplierAdmissionBusyId(relationId);
+    setWorkflowStatus(null);
+    try {
+      const approval = await javaApiClient.submitBuyerSupplierAdmission(relationId);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`供应商准入已提交：${approval.summaryTitle || approval.bizId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '供应商准入提交失败');
+    } finally {
+      setSupplierAdmissionBusyId(null);
+    }
+  };
+
   const updateApprovalTemplate = async (
     templateCode: string,
     defaultApproverRoleId: string,
@@ -319,11 +335,13 @@ const App: React.FC = () => {
                 approvalTemplates={buyerData.approvalTemplates}
                 roles={buyerData.roles}
                 approvalBusyId={approvalBusyId}
+                supplierAdmissionBusyId={supplierAdmissionBusyId}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowBusy={workflowBusy}
                 workflowStatus={workflowStatus}
                 onRunJavaWorkflow={runJavaWorkflow}
                 onReviewApproval={reviewApprovalTask}
+                onSubmitSupplierAdmission={submitSupplierAdmission}
                 onUpdateApprovalTemplate={updateApprovalTemplate}
               />
             )}
@@ -551,11 +569,13 @@ const BuyerWorkspaceView: React.FC<{
   approvalTemplates: JavaApprovalTemplateDto[];
   roles: BuyerRoleDto[];
   approvalBusyId: string | null;
+  supplierAdmissionBusyId: string | null;
   javaEnabled: boolean;
   workflowBusy: boolean;
   workflowStatus: string | null;
   onRunJavaWorkflow: () => void;
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
+  onSubmitSupplierAdmission: (relationId: string) => void;
   onUpdateApprovalTemplate: (
     templateCode: string,
     defaultApproverRoleId: string,
@@ -568,11 +588,13 @@ const BuyerWorkspaceView: React.FC<{
   approvalTemplates,
   roles,
   approvalBusyId,
+  supplierAdmissionBusyId,
   javaEnabled,
   workflowBusy,
   workflowStatus,
   onRunJavaWorkflow,
   onReviewApproval,
+  onSubmitSupplierAdmission,
   onUpdateApprovalTemplate,
 }) => (
   <>
@@ -720,6 +742,17 @@ const BuyerWorkspaceView: React.FC<{
                   <StatusPill label={relation.status} />
                   <span className="font-mono font-bold text-slate-700">{relation.performanceScore} 分</span>
                 </div>
+                {javaEnabled && relation.status === '待准入' && (
+                  <button
+                    type="button"
+                    onClick={() => onSubmitSupplierAdmission(relation.id)}
+                    disabled={supplierAdmissionBusyId === relation.id}
+                    className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    <Send size={14} />
+                    {supplierAdmissionBusyId === relation.id ? '提交中' : '提交准入'}
+                  </button>
+                )}
               </div>
             );
           })}
