@@ -665,9 +665,10 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     method: 'GET',
     path: '/buyer/invoices',
     audience: 'buyer',
-    action: '加载采购方发票付款列表',
+    action: '加载采购方发票付款列表，支持按付款状态、供应商和订单筛选',
     requestSchema: 'BuyerInvoiceListRequest',
     responseSchema: 'BuyerInvoiceList',
+    queryParameters: ['paymentStatus', 'supplierId', 'orderId'],
   },
   {
     method: 'GET',

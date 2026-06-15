@@ -513,6 +513,8 @@ The buyer-side payment endpoint is:
 - `GET /api/v1/buyer/invoices`
 - `POST /api/v1/buyer/invoices/{invoiceId}/payments`
 
+The buyer invoice list accepts optional `paymentStatus`, `supplierId`, and `orderId` filters inside the current buyer tenant.
+
 Example payment payload:
 
 ```json

@@ -14,6 +14,7 @@ import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +32,17 @@ class FinancePaymentStateTransitionTests {
   @AfterEach
   void clearTenantContext() {
     TenantContext.clear();
+  }
+
+  @Test
+  void listBuyerInvoicesAppliesFiltersInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.listByTenantFiltered("tenant-1", "待付款", "supplier-1", "po-1"))
+        .thenReturn(List.of());
+
+    paymentApplicationService.listCurrentTenantInvoices("待付款", "supplier-1", "po-1");
+
+    verify(invoiceMapper).listByTenantFiltered("tenant-1", "待付款", "supplier-1", "po-1");
   }
 
   @Test

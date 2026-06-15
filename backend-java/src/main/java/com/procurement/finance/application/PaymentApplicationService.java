@@ -41,6 +41,18 @@ public class PaymentApplicationService {
         .toList();
   }
 
+  public List<InvoiceResponse> listCurrentTenantInvoices(String paymentStatus, String supplierId, String orderId) {
+    String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
+    return invoiceMapper.listByTenantFiltered(
+            tenantId,
+            blankToNull(paymentStatus),
+            blankToNull(supplierId),
+            blankToNull(orderId))
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public InvoiceResponse register(String invoiceId, RegisterPaymentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
@@ -82,5 +94,9 @@ public class PaymentApplicationService {
         invoice.paymentStatus(),
         invoice.createdAt(),
         invoice.updatedAt());
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

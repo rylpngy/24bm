@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -21,8 +22,11 @@ public class BuyerPaymentController {
   }
 
   @GetMapping
-  public ApiResponse<List<InvoiceResponse>> list() {
-    return ApiResponse.ok(paymentApplicationService.listCurrentTenantInvoices());
+  public ApiResponse<List<InvoiceResponse>> list(
+      @RequestParam(required = false) String paymentStatus,
+      @RequestParam(required = false) String supplierId,
+      @RequestParam(required = false) String orderId) {
+    return ApiResponse.ok(paymentApplicationService.listCurrentTenantInvoices(paymentStatus, supplierId, orderId));
   }
 
   @PostMapping("/{invoiceId}/payments")

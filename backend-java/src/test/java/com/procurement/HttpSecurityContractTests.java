@@ -2709,7 +2709,16 @@ class HttpSecurityContractTests {
             "user-buyer-owner",
             "验收通过",
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
-    when(paymentApplicationService.listCurrentTenantInvoices()).thenReturn(List.of(invoiceResponse("invoice-demo", "待付款")));
+    when(paymentApplicationService.listCurrentTenantInvoices(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(invoiceResponse("invoice-demo", "待付款")));
+    when(paymentApplicationService.listCurrentTenantInvoices(
+        org.mockito.ArgumentMatchers.eq("待付款"),
+        org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
+        org.mockito.ArgumentMatchers.eq("po-demo")))
+        .thenReturn(List.of(invoiceResponse("invoice-filtered", "待付款")));
     when(paymentApplicationService.register(
         org.mockito.ArgumentMatchers.eq("invoice-demo"),
         org.mockito.ArgumentMatchers.any(RegisterPaymentRequest.class)))
@@ -2742,6 +2751,13 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("invoice-demo"));
+    mockMvc.perform(get("/api/v1/buyer/invoices")
+            .queryParam("paymentStatus", "待付款")
+            .queryParam("supplierId", "ent-supplier-sunrise")
+            .queryParam("orderId", "po-demo")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("invoice-filtered"));
     mockMvc.perform(post("/api/v1/buyer/invoices/invoice-demo/payments")
             .header("Authorization", "Bearer " + buyerToken)
             .contentType(MediaType.APPLICATION_JSON)

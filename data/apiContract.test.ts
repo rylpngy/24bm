@@ -206,6 +206,13 @@ describe('procurement SaaS API contract draft', () => {
         expect.objectContaining({ name: 'rfqId', in: 'query', required: false }),
       ]),
     );
+    expect(openApi.paths['/buyer/invoices'].get.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'paymentStatus', in: 'query', required: false }),
+        expect.objectContaining({ name: 'supplierId', in: 'query', required: false }),
+        expect.objectContaining({ name: 'orderId', in: 'query', required: false }),
+      ]),
+    );
     expect(openApi.paths['/supplier/invoices'].get.parameters).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: 'paymentStatus', in: 'query', required: false }),

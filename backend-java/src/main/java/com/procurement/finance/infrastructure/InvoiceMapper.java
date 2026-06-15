@@ -34,6 +34,30 @@ public interface InvoiceMapper {
   @Select("""
       select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
       from invoices
+      where tenant_id = #{tenantId}
+        and (#{paymentStatus} is null or payment_status = #{paymentStatus})
+        and (#{supplierId} is null or supplier_id = #{supplierId})
+        and (#{orderId} is null or order_id = #{orderId})
+      order by created_at desc
+      """)
+  @Results(id = "filteredInvoiceResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "order_id", property = "orderId"),
+      @Result(column = "invoice_no", property = "invoiceNo"),
+      @Result(column = "payment_status", property = "paymentStatus"),
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "updated_at", property = "updatedAt")
+  })
+  List<Invoice> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("paymentStatus") String paymentStatus,
+      @Param("supplierId") String supplierId,
+      @Param("orderId") String orderId);
+
+  @Select("""
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
+      from invoices
       where supplier_id = #{supplierId}
       order by created_at desc
       """)

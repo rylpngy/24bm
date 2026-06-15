@@ -460,6 +460,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 
 第九批 Java 业务接口落在 `finance` 模块：
 
+- `GET /api/v1/buyer/invoices`：采购方查看发票付款列表。
 - `POST /api/v1/supplier/orders/{orderId}/invoices`：供应商对已收货订单登记发票。
 - `POST /api/v1/buyer/invoices/{invoiceId}/payments`：采购方登记发票付款状态。
 
@@ -475,6 +476,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 付款状态登记的关键校验：
 
 - 采购方身份来自 JWT 中的 `tenantId`。
+- 采购方发票列表始终按当前 `tenantId` 过滤，并支持可选 `paymentStatus`、`supplierId`、`orderId` 查询条件。
 - 发票必须属于当前采购方租户。
 - 当前租户必须启用 `finance` 功能开关。
 - 付款状态写入 `invoices.payment_status`。

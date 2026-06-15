@@ -38,6 +38,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(mapper).toContain('@Mapper');
     expect(mapper).toContain('invoices');
     expect(mapper).toContain('listByTenant');
+    expect(mapper).toContain('listByTenantFiltered');
     expect(mapper).toContain('payment_status');
     expect(mapper).toContain('updatePaymentStatus');
   });
@@ -56,6 +57,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
     expect(paymentService).toContain('requireEnabled(tenantId, FINANCE_FEATURE)');
     expect(paymentService).toContain('listCurrentTenantInvoices');
+    expect(paymentService).toContain('listByTenantFiltered');
     expect(paymentService).toContain('updatePaymentStatus');
   });
 
@@ -65,6 +67,7 @@ describe('Java finance invoice and payment scaffold', () => {
 
     expect(readme).toContain('POST /api/v1/supplier/orders/{orderId}/invoices');
     expect(readme).toContain('GET /api/v1/buyer/invoices');
+    expect(readme).toContain('The buyer invoice list accepts optional `paymentStatus`, `supplierId`, and `orderId` filters');
     expect(readme).toContain('POST /api/v1/buyer/invoices/{invoiceId}/payments');
     expect(readme).toContain('`finance` feature enabled');
     expect(architecture).toContain('财务协同 Java API');
