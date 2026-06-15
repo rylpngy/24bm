@@ -41,6 +41,8 @@ import com.procurement.identity.security.JwtAuthenticationFilter;
 import com.procurement.identity.security.JwtTokenService;
 import com.procurement.finance.api.SupplierReceivableController;
 import com.procurement.finance.api.BuyerPaymentController;
+import com.procurement.finance.api.InvoiceResponse;
+import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.SupplierInvoiceController;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
@@ -48,7 +50,12 @@ import com.procurement.notification.api.BuyerNotificationController;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.api.BuyerReceiptController;
+import com.procurement.order.api.CreatePurchaseOrderRequest;
+import com.procurement.order.api.CreateReceiptRequest;
+import com.procurement.order.api.ReceiptResponse;
 import com.procurement.order.api.SupplierOrderController;
+import com.procurement.order.api.CreateDeliveryRequest;
+import com.procurement.order.api.DeliveryResponse;
 import com.procurement.order.api.SupplierDeliveryController;
 import com.procurement.order.api.PurchaseOrderController;
 import com.procurement.order.api.PurchaseOrderResponse;
@@ -1292,6 +1299,156 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.id").value("user-buyer-new"));
   }
 
+  @Test
+  void buyerFulfillmentAndPaymentApisRequireBuyerRole() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/orders")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/buyer/orders")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validCreateOrderPayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/buyer/orders/po-demo/receipts")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validReceiptPayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/invoices")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/buyer/invoices/invoice-demo/payments")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validPaymentPayload()))
+        .andExpect(status().isForbidden());
+
+    when(purchaseOrderApplicationService.listCurrentTenantOrders()).thenReturn(List.of(orderResponse("po-demo", "待供应商确认")));
+    when(purchaseOrderApplicationService.createFromAward(
+        org.mockito.ArgumentMatchers.any(CreatePurchaseOrderRequest.class)))
+        .thenReturn(orderResponse("po-created", "待供应商确认"));
+    when(receiptApplicationService.create(
+        org.mockito.ArgumentMatchers.eq("po-demo"),
+        org.mockito.ArgumentMatchers.any(CreateReceiptRequest.class)))
+        .thenReturn(new ReceiptResponse(
+            "receipt-demo",
+            "tenant-acme",
+            "po-demo",
+            "user-buyer-owner",
+            "验收通过",
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+    when(paymentApplicationService.listCurrentTenantInvoices()).thenReturn(List.of(invoiceResponse("invoice-demo", "待付款")));
+    when(paymentApplicationService.register(
+        org.mockito.ArgumentMatchers.eq("invoice-demo"),
+        org.mockito.ArgumentMatchers.any(RegisterPaymentRequest.class)))
+        .thenReturn(invoiceResponse("invoice-demo", "已付款"));
+
+    mockMvc.perform(get("/api/v1/buyer/orders")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("po-demo"));
+    mockMvc.perform(post("/api/v1/buyer/orders")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validCreateOrderPayload()))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.id").value("po-created"));
+    mockMvc.perform(post("/api/v1/buyer/orders/po-demo/receipts")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validReceiptPayload()))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.result").value("验收通过"));
+    mockMvc.perform(get("/api/v1/buyer/invoices")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("invoice-demo"));
+    mockMvc.perform(post("/api/v1/buyer/invoices/invoice-demo/payments")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validPaymentPayload()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.paymentStatus").value("已付款"));
+  }
+
+  @Test
+  void supplierFulfillmentAndInvoiceApisRequireSupplierRole() throws Exception {
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+
+    mockMvc.perform(post("/api/v1/supplier/orders/po-demo/deliveries")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validDeliveryPayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/supplier/orders/po-demo/invoices")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validInvoicePayload()))
+        .andExpect(status().isForbidden());
+
+    when(deliveryApplicationService.create(
+        org.mockito.ArgumentMatchers.eq("po-demo"),
+        org.mockito.ArgumentMatchers.any(CreateDeliveryRequest.class)))
+        .thenReturn(new DeliveryResponse(
+            "delivery-demo",
+            "tenant-acme",
+            "po-demo",
+            "ent-supplier-sunrise",
+            "顺丰",
+            "SF123",
+            "已发货",
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+    when(invoiceApplicationService.create(
+        org.mockito.ArgumentMatchers.eq("po-demo"),
+        org.mockito.ArgumentMatchers.any()))
+        .thenReturn(invoiceResponse("invoice-created", "待付款"));
+
+    mockMvc.perform(post("/api/v1/supplier/orders/po-demo/deliveries")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validDeliveryPayload()))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.status").value("已发货"));
+    mockMvc.perform(post("/api/v1/supplier/orders/po-demo/invoices")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validInvoicePayload()))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.id").value("invoice-created"));
+  }
+
   private String loginAndExtractToken(String payload) throws Exception {
     String responseBody = mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
@@ -1316,5 +1473,74 @@ class HttpSecurityContractTests {
           "deliveryDays": 7
         }
         """;
+  }
+
+  private String validCreateOrderPayload() {
+    return """
+        {
+          "awardId": "award-demo",
+          "expectedReceiptDate": "2026-07-10"
+        }
+        """;
+  }
+
+  private String validReceiptPayload() {
+    return """
+        {
+          "result": "验收通过"
+        }
+        """;
+  }
+
+  private String validDeliveryPayload() {
+    return """
+        {
+          "carrier": "顺丰",
+          "trackingNo": "SF123"
+        }
+        """;
+  }
+
+  private String validInvoicePayload() {
+    return """
+        {
+          "amount": 98000,
+          "invoiceNo": "INV-20260615"
+        }
+        """;
+  }
+
+  private String validPaymentPayload() {
+    return """
+        {
+          "paymentStatus": "已付款"
+        }
+        """;
+  }
+
+  private PurchaseOrderResponse orderResponse(String id, String status) {
+    return new PurchaseOrderResponse(
+        id,
+        "tenant-acme",
+        "rfq-demo",
+        "ent-supplier-sunrise",
+        BigDecimal.valueOf(98000),
+        status,
+        LocalDate.parse("2026-07-10"),
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+  }
+
+  private InvoiceResponse invoiceResponse(String id, String paymentStatus) {
+    return new InvoiceResponse(
+        id,
+        "tenant-acme",
+        "ent-supplier-sunrise",
+        "po-demo",
+        BigDecimal.valueOf(98000),
+        "INV-20260615",
+        paymentStatus,
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
   }
 }
