@@ -53,7 +53,7 @@ describe('Java backend scaffold', () => {
 
   it('moves the initial PostgreSQL schema into Flyway migrations', () => {
     const migration = read('backend-java/src/main/resources/db/migration/V1__initial_schema.sql');
-    const supplierQualificationMigration = read('backend-java/src/main/resources/db/migration/V2__supplier_qualifications.sql');
+    const supplierQualificationMigration = read('backend-java/src/main/resources/db/migration/V3__supplier_qualifications.sql');
 
     expect(migration).toContain('create table tenants');
     expect(migration).toContain('create table departments');

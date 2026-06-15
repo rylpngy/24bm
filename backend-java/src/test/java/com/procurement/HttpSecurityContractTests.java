@@ -106,15 +106,19 @@ import com.procurement.supplier.api.BuyerSupplierController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.CreateSupplierQualificationRequest;
+import com.procurement.supplier.api.CreateSupplierUserRequest;
 import com.procurement.supplier.api.SupplierProfileController;
 import com.procurement.supplier.api.SupplierProfileResponse;
 import com.procurement.supplier.api.SupplierQualificationController;
 import com.procurement.supplier.api.SupplierQualificationResponse;
+import com.procurement.supplier.api.SupplierUserController;
+import com.procurement.supplier.api.SupplierUserResponse;
 import com.procurement.supplier.api.SupplierWorkspaceController;
 import com.procurement.supplier.api.SupplierWorkspaceResponse;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
 import com.procurement.supplier.application.SupplierQualificationApplicationService;
+import com.procurement.supplier.application.SupplierUserApplicationService;
 import com.procurement.supplier.application.SupplierWorkspaceApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -148,6 +152,7 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerUserController.class,
     SupplierProfileController.class,
     SupplierQualificationController.class,
+    SupplierUserController.class,
     SupplierQuoteListController.class,
     RfqAwardController.class,
     PurchaseOrderController.class,
@@ -234,6 +239,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private SupplierQualificationApplicationService supplierQualificationApplicationService;
+
+  @MockBean
+  private SupplierUserApplicationService supplierUserApplicationService;
 
   @MockBean
   private MaterialApplicationService materialApplicationService;
@@ -794,6 +802,10 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isForbidden());
 
+    mockMvc.perform(get("/api/v1/supplier/users")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
     mockMvc.perform(post("/api/v1/supplier/orders/po-demo/confirm")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isForbidden());
@@ -842,6 +854,25 @@ class HttpSecurityContractTests {
             "suppliers/ent-supplier-sunrise/license.pdf",
             "active",
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+    when(supplierUserApplicationService.listCurrentSupplierUsers())
+        .thenReturn(List.of(new SupplierUserResponse(
+            "user-supplier-finance",
+            "ent-supplier-sunrise",
+            "供应商财务",
+            "13800009999",
+            "supplier.finance@example.com",
+            "active",
+            "role-supplier-sales")));
+    when(supplierUserApplicationService.createCurrentSupplierUser(
+        org.mockito.ArgumentMatchers.any(CreateSupplierUserRequest.class)))
+        .thenReturn(new SupplierUserResponse(
+            "user-supplier-finance",
+            "ent-supplier-sunrise",
+            "供应商财务",
+            "13800009999",
+            "supplier.finance@example.com",
+            "active",
+            "role-supplier-sales"));
     when(quoteApplicationService.listSupplierRfqs()).thenReturn(List.of());
     when(quoteApplicationService.listSupplierQuotes()).thenReturn(List.of());
     when(purchaseOrderApplicationService.listCurrentSupplierOrders()).thenReturn(List.of());
@@ -884,6 +915,24 @@ class HttpSecurityContractTests {
                   "expiresAt": "2027-12-31",
                   "fileName": "license.pdf",
                   "storageKey": "suppliers/ent-supplier-sunrise/license.pdf"
+                }
+                """))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.supplierId").value("ent-supplier-sunrise"));
+    mockMvc.perform(get("/api/v1/supplier/users")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].email").value("supplier.finance@example.com"));
+    mockMvc.perform(post("/api/v1/supplier/users")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "供应商财务",
+                  "mobile": "13800009999",
+                  "email": "supplier.finance@example.com",
+                  "status": "active",
+                  "initialPassword": "initial-password"
                 }
                 """))
         .andExpect(status().isCreated())

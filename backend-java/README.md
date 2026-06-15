@@ -273,6 +273,8 @@ The supplier-side profile endpoints are:
 - `GET /api/v1/supplier/profile`
 - `GET /api/v1/supplier/qualifications`
 - `POST /api/v1/supplier/qualifications`
+- `GET /api/v1/supplier/users`
+- `POST /api/v1/supplier/users`
 
 Example qualification payload:
 
@@ -287,6 +289,20 @@ Example qualification payload:
 ```
 
 Supplier qualification APIs use the supplier identity from `Authorization: Bearer <accessToken>`. The request body cannot override `supplierId`; new qualifications are stored in `supplier_qualifications` with status `active`.
+
+Example supplier sub-account payload:
+
+```json
+{
+  "name": "供应商财务",
+  "mobile": "13800009999",
+  "email": "supplier.finance@example.com",
+  "status": "active",
+  "initialPassword": "initial-password"
+}
+```
+
+Supplier user APIs also use the supplier identity from `Authorization: Bearer <accessToken>`. New users are written to `users.supplier_id`, get a hashed `password_hash`, are assigned the default `supplier` role, and record `supplier_user.created`.
 
 ## Supplier Quote APIs
 
