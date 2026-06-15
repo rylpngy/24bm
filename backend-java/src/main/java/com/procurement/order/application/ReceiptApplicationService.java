@@ -73,6 +73,9 @@ public class ReceiptApplicationService {
     if (deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, SHIPPED_STATUS) == 0) {
       throw new IllegalStateException("Shipped delivery not found for receipt: " + orderId);
     }
+    if (receiptMapper.countByTenantAndOrder(tenantId, orderId) > 0) {
+      throw new IllegalStateException("Purchase order already has a receipt: " + orderId);
+    }
 
     String receiptId = newId("receipt");
     receiptMapper.insert(receiptId, tenantId, orderId, userId, request.result());

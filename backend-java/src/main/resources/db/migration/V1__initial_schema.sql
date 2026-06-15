@@ -225,7 +225,8 @@ create table receipts (
   order_id text not null references purchase_orders(id),
   receiver_id text not null references users(id),
   result text not null,
-  received_at timestamptz not null default now()
+  received_at timestamptz not null default now(),
+  unique (tenant_id, order_id)
 );
 
 create table invoices (

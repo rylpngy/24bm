@@ -493,7 +493,7 @@ Example receipt payload:
 }
 ```
 
-Receipt creation uses the buyer tenant and receiver identity from `Authorization: Bearer <accessToken>`. The current tenant must have the `order` feature enabled, and the order must belong to the current tenant and be `已发货`. Receipt creation requires a current-tenant delivery record with status `已发货` for the order. Creation stores a `receipts` row and updates the purchase order status to `已收货`.
+Receipt creation uses the buyer tenant and receiver identity from `Authorization: Bearer <accessToken>`. The current tenant must have the `order` feature enabled, and the order must belong to the current tenant and be `已发货`. Receipt creation requires a current-tenant delivery record with status `已发货` for the order. MVP receipt creation allows only one receipt per purchase order. Creation stores a `receipts` row and updates the purchase order status to `已收货`.
 
 ## Finance APIs
 

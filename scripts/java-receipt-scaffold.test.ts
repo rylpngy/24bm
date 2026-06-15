@@ -34,6 +34,7 @@ describe('Java buyer receipt scaffold', () => {
     expect(mapper).toContain('receipts');
     expect(mapper).toContain('receiver_id');
     expect(mapper).toContain('received_at');
+    expect(mapper).toContain('countByTenantAndOrder');
     expect(mapper).toContain('listByTenantFiltered');
   });
 
@@ -48,6 +49,7 @@ describe('Java buyer receipt scaffold', () => {
     expect(service).toContain('已发货');
     expect(service).toContain('已收货');
     expect(service).toContain('countByTenantOrderAndStatus');
+    expect(service).toContain('countByTenantAndOrder');
     expect(service).toContain('findByTenantAndId');
     expect(service).toContain('updateStatus');
   });
@@ -60,7 +62,9 @@ describe('Java buyer receipt scaffold', () => {
     expect(readme).toContain('POST /api/v1/buyer/orders/{orderId}/receipts');
     expect(readme).toContain('The buyer receipt list accepts optional `orderId` and `receiverId` filters');
     expect(readme).toContain('Receipt creation requires a current-tenant delivery record with status `已发货` for the order');
+    expect(readme).toContain('MVP receipt creation allows only one receipt per purchase order');
     expect(architecture).toContain('采购方收货验收 Java API');
     expect(architecture).toContain('当前租户下该订单必须存在状态为 `已发货` 的发货记录');
+    expect(architecture).toContain('MVP 阶段同一采购订单只能登记一条收货记录');
   });
 });
