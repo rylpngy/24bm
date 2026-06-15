@@ -1,10 +1,14 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { databaseTables } from '../data/apiContract';
 
-const migrationSql = readFileSync('server/migrations/001_initial_schema.sql', 'utf8');
+const migrationSql = readdirSync('backend-java/src/main/resources/db/migration')
+  .filter((fileName) => fileName.endsWith('.sql'))
+  .sort()
+  .map((fileName) => readFileSync(`backend-java/src/main/resources/db/migration/${fileName}`, 'utf8'))
+  .join('\n');
 
-describe('initial database migration', () => {
+describe('Java Flyway database migrations', () => {
   it('creates every table declared by the API contract', () => {
     for (const table of databaseTables) {
       expect(migrationSql).toContain(`create table ${table.name}`);

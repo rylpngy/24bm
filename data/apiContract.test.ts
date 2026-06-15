@@ -22,6 +22,8 @@ describe('procurement SaaS API contract draft', () => {
       'POST /platform/tenants/{tenantId}/disable',
       'GET /platform/enterprise-reviews',
       'POST /platform/enterprise-reviews/{enterpriseId}',
+      'GET /platform/announcements',
+      'POST /platform/announcements',
       'GET /buyer/workspace',
       'GET /buyer/suppliers',
       'POST /buyer/suppliers',
@@ -80,6 +82,8 @@ describe('procurement SaaS API contract draft', () => {
 
   it('declares tenant-scoped database tables and public supplier identity tables', () => {
     expect(databaseTables.find((table) => table.name === 'supplier_enterprises')?.tenantScoped).toBe(false);
+    expect(databaseTables.find((table) => table.name === 'platform_announcements')?.tenantScoped).toBe(false);
+    expect(databaseTables.find((table) => table.name === 'platform_announcements')?.requiredColumns).toContain('audience');
     expect(databaseTables.find((table) => table.name === 'supplier_qualifications')?.tenantScoped).toBe(false);
     expect(databaseTables.find((table) => table.name === 'supplier_qualifications')?.requiredColumns).toContain('supplier_id');
     expect(databaseTables.find((table) => table.name === 'buyer_supplier_relations')?.tenantScoped).toBe(true);
@@ -101,6 +105,7 @@ describe('procurement SaaS API contract draft', () => {
     expect(openApi.openapi).toBe('3.1.0');
     expect(openApi.info.title).toBe('24Bid Multi-tenant Procurement API');
     expect(openApi.paths['/platform/overview'].get.tags).toContain('platform');
+    expect(openApi.paths['/platform/announcements'].post.tags).toContain('platform');
     expect(openApi.paths['/buyer/approvals/pending'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/approvals/templates/{templateCode}/config'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/departments'].get.tags).toContain('buyer');

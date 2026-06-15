@@ -175,8 +175,27 @@ Authorization: Bearer <accessToken>
 - `tenant.enabled`：平台运营方恢复采购方企业租户，审计记录挂到目标租户。
 - `tenant.disabled`：平台运营方停用采购方企业租户，审计记录挂到目标租户。
 - `enterprise.reviewed`：平台运营方审核企业入驻，审计记录为平台级操作，`tenant_id` 为空。
+- `platform_announcement.published`：平台运营方发布公告，审计记录为平台级操作，`tenant_id` 为空。
 
-后续应继续把平台公告发布纳入同一审计入口。
+## 平台公告 Java API
+
+平台公告接口落在 `platform` 模块：
+
+- `GET /api/v1/platform/announcements`：平台运营方查看 active 公告。
+- `POST /api/v1/platform/announcements`：平台运营方发布公告。
+
+当前边界：
+
+- 平台身份来自 JWT 中的 `scope = PLATFORM`，采购方和供应商 token 不能访问。
+- 公告是平台公共资源，不绑定采购方 `tenant_id`。
+- `audience` 当前支持 `all`、`buyer`、`supplier`。
+- 新公告状态由服务端固定为 `active`，发布人来自 JWT 中的 `userId`。
+- 发布公告写入 `audit_logs`，动作为 `platform_announcement.published`，且 `tenant_id` 为空。
+
+对应数据库表：
+
+- `platform_announcements`
+- `audit_logs`
 
 ## RFQ 询价 Java API
 

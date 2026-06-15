@@ -128,3 +128,8 @@ insert into purchase_demand_items (id, tenant_id, demand_id, material_id, quanti
 values
   ('dem-local-laptop-item-1', 'tenant-acme', 'dem-local-laptop', 'mat-laptop', 10.0000)
 on conflict (id) do nothing;
+
+insert into platform_announcements (id, title, content, audience, status, published_by)
+values
+  ('announcement-demo-maintenance', '系统维护通知', '6 月 20 日 22:00-23:00 进行例行维护。', 'all', 'active', 'user-platform-admin')
+on conflict (id) do nothing;

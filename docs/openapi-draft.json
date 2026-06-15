@@ -359,6 +359,54 @@
         }
       }
     },
+    "/platform/announcements": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "加载平台公告列表",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PlatformAnnouncementList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "发布平台公告",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PlatformAnnouncement"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/workspace": {
       "get": {
         "tags": [
@@ -2181,6 +2229,8 @@
     "POST /platform/tenants/{tenantId}/disable",
     "GET /platform/enterprise-reviews",
     "POST /platform/enterprise-reviews/{enterpriseId}",
+    "GET /platform/announcements",
+    "POST /platform/announcements",
     "GET /buyer/workspace",
     "GET /buyer/suppliers",
     "POST /buyer/suppliers",

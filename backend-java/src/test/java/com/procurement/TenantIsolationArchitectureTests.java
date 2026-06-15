@@ -16,6 +16,7 @@ class TenantIsolationArchitectureTests {
   private static final Path SOURCE_ROOT = Path.of("src/main/java/com/procurement");
   private static final Path TEST_ROOT = Path.of("src/test/java/com/procurement");
   private static final Set<String> SHARED_SCOPE_MAPPERS = Set.of(
+      "platform/infrastructure/PlatformAnnouncementMapper.java",
       "platform/infrastructure/PlatformTenantMapper.java",
       "platform/infrastructure/PlatformEnterpriseMapper.java",
       "supplier/infrastructure/SupplierProfileMapper.java",

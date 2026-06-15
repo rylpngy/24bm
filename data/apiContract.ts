@@ -59,7 +59,7 @@ export const apiModules: ApiModule[] = [
     key: 'platform',
     label: '平台运营后台',
     responsibilities: ['租户入驻审核', '套餐与功能开关', '公共供应商企业身份', '平台操作审计'],
-    resources: ['Tenant', 'Enterprise', 'FeatureFlag', 'PlatformAuditLog'],
+    resources: ['Tenant', 'Enterprise', 'FeatureFlag', 'PlatformAnnouncement', 'PlatformAuditLog'],
   },
   {
     key: 'buyer',
@@ -177,6 +177,22 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     action: '审核平台企业入驻',
     requestSchema: 'EnterpriseReviewRequest',
     responseSchema: 'EnterpriseReview',
+  },
+  {
+    method: 'GET',
+    path: '/platform/announcements',
+    audience: 'platform',
+    action: '加载平台公告列表',
+    requestSchema: 'PlatformAnnouncementListRequest',
+    responseSchema: 'PlatformAnnouncementList',
+  },
+  {
+    method: 'POST',
+    path: '/platform/announcements',
+    audience: 'platform',
+    action: '发布平台公告',
+    requestSchema: 'CreatePlatformAnnouncementRequest',
+    responseSchema: 'PlatformAnnouncement',
   },
   {
     method: 'GET',
@@ -622,6 +638,12 @@ export const databaseTables: DatabaseTable[] = [
     tenantScoped: false,
     purpose: '供应商公共企业身份、认证和平台级基础档案。',
     requiredColumns: ['enterprise_id', 'credit_code', 'legal_person', 'verified_status', 'profile_status'],
+  },
+  {
+    name: 'platform_announcements',
+    tenantScoped: false,
+    purpose: '平台运营方发布的公共公告，面向全部、采购方或供应商。',
+    requiredColumns: ['id', 'title', 'content', 'audience', 'status', 'published_by', 'created_at'],
   },
   {
     name: 'supplier_qualifications',

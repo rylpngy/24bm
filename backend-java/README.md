@@ -213,6 +213,8 @@ The first platform-side MVP endpoints are:
 - `POST /api/v1/platform/tenants/{tenantId}/disable`
 - `GET /api/v1/platform/enterprise-reviews`
 - `POST /api/v1/platform/enterprise-reviews/{enterpriseId}`
+- `GET /api/v1/platform/announcements`
+- `POST /api/v1/platform/announcements`
 
 Example feature toggle payload:
 
@@ -240,9 +242,19 @@ Example enterprise review payload:
 }
 ```
 
+Example platform announcement payload:
+
+```json
+{
+  "title": "系统维护通知",
+  "content": "6 月 20 日 22:00-23:00 进行例行维护。",
+  "audience": "all"
+}
+```
+
 Platform APIs require a `PLATFORM` login token. Buyer and supplier tokens are rejected by path-level Spring Security rules.
 
-Platform tenant creation, feature toggle changes, plan/user-limit updates, tenant restoration, tenant disablement, and enterprise reviews write audit log actions `tenant.created`, `tenant.features.updated`, `tenant.plan_updated`, `tenant.enabled`, `tenant.disabled`, and `enterprise.reviewed`. The local demo seed includes `user-platform-admin` so these audit rows satisfy the `audit_logs.actor_id` foreign key.
+Platform tenant creation, feature toggle changes, plan/user-limit updates, tenant restoration, tenant disablement, enterprise reviews, and announcement publishing write audit log actions `tenant.created`, `tenant.features.updated`, `tenant.plan_updated`, `tenant.enabled`, `tenant.disabled`, `enterprise.reviewed`, and `platform_announcement.published`. Platform announcements are stored in `platform_announcements`, support `all`/`buyer`/`supplier` audiences, and are platform scoped rather than tenant scoped. The local demo seed includes `user-platform-admin` so these audit rows satisfy the `audit_logs.actor_id` foreign key.
 
 ## RFQ APIs
 

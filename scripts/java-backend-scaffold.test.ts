@@ -228,6 +228,7 @@ describe('Java backend scaffold', () => {
     expect(architecture).toContain('tenant.enabled');
     expect(architecture).toContain('tenant.disabled');
     expect(architecture).toContain('enterprise.reviewed');
+    expect(architecture).toContain('platform_announcement.published');
     expect(readme).toContain('GET /api/v1/platform/tenants/{tenantId}');
     expect(readme).toContain('POST /api/v1/platform/tenants/{tenantId}/plan');
     expect(readme).toContain('POST /api/v1/platform/tenants/{tenantId}/enable');
@@ -235,6 +236,7 @@ describe('Java backend scaffold', () => {
     expect(readme).toContain('tenant.plan_updated');
     expect(readme).toContain('tenant.enabled');
     expect(readme).toContain('tenant.disabled');
+    expect(readme).toContain('platform_announcement.published');
     expect(tenantController).toContain('@GetMapping("/{tenantId}")');
     expect(tenantService).toContain('getTenant');
     expect(auditTests).toContain('tenantFeatureToggleUpdateRecordsAuditLogInTargetTenant');
@@ -242,6 +244,7 @@ describe('Java backend scaffold', () => {
     expect(auditTests).toContain('tenantEnableRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantDisableRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('enterpriseReviewRecordsPlatformAuditLog');
+    expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/PlatformAnnouncementLifecycleTests.java'))).toBe(true);
     expect(localSeed).toContain('user-platform-admin');
   });
 

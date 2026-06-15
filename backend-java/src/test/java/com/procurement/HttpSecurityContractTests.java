@@ -77,8 +77,11 @@ import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.application.ReceiptApplicationService;
 import com.procurement.platform.api.EnterpriseReviewRequest;
 import com.procurement.platform.api.EnterpriseReviewResponse;
+import com.procurement.platform.api.CreatePlatformAnnouncementRequest;
 import com.procurement.platform.api.CreateTenantRequest;
 import com.procurement.platform.api.FeatureToggleRequest;
+import com.procurement.platform.api.PlatformAnnouncementController;
+import com.procurement.platform.api.PlatformAnnouncementResponse;
 import com.procurement.platform.api.PlatformEnterpriseController;
 import com.procurement.platform.api.PlatformOverviewController;
 import com.procurement.platform.api.PlatformOverviewResponse;
@@ -88,6 +91,7 @@ import com.procurement.platform.api.PlatformWorkspaceResponse;
 import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.api.UpdateTenantPlanRequest;
 import com.procurement.platform.application.PlatformEnterpriseApplicationService;
+import com.procurement.platform.application.PlatformAnnouncementApplicationService;
 import com.procurement.platform.application.PlatformOverviewApplicationService;
 import com.procurement.platform.application.PlatformTenantApplicationService;
 import com.procurement.platform.application.PlatformWorkspaceApplicationService;
@@ -145,6 +149,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierQuoteController.class,
     RfqController.class,
     PlatformOverviewController.class,
+    PlatformAnnouncementController.class,
     PlatformTenantController.class,
     PlatformEnterpriseController.class,
     PlatformWorkspaceController.class,
@@ -223,6 +228,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private PlatformTenantApplicationService platformTenantApplicationService;
+
+  @MockBean
+  private PlatformAnnouncementApplicationService platformAnnouncementApplicationService;
 
   @MockBean
   private PlatformEnterpriseApplicationService platformEnterpriseApplicationService;
@@ -1072,6 +1080,75 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.overview.scope").value("platform"))
         .andExpect(jsonPath("$.data.tenants[0].id").value("tenant-acme"))
         .andExpect(jsonPath("$.data.enterpriseReviews[0].reviewStatus").value("pending"));
+  }
+
+  @Test
+  void platformCanPublishAnnouncementsButBuyerCannot() throws Exception {
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+    String platformToken = loginAndExtractToken("""
+        {
+          "account": "platform",
+          "password": "demo123456",
+          "scope": "PLATFORM"
+        }
+        """);
+
+    mockMvc.perform(post("/api/v1/platform/announcements")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "title": "系统维护通知",
+                  "content": "6 月 20 日 22:00-23:00 进行例行维护。",
+                  "audience": "all"
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(platformAnnouncementApplicationService.publish(
+        org.mockito.ArgumentMatchers.any(CreatePlatformAnnouncementRequest.class)))
+        .thenReturn(new PlatformAnnouncementResponse(
+            "announcement-demo",
+            "系统维护通知",
+            "6 月 20 日 22:00-23:00 进行例行维护。",
+            "all",
+            "active",
+            "user-platform-admin",
+            OffsetDateTime.parse("2026-06-16T10:00:00+08:00")));
+    when(platformAnnouncementApplicationService.listActive()).thenReturn(List.of(new PlatformAnnouncementResponse(
+        "announcement-demo",
+        "系统维护通知",
+        "6 月 20 日 22:00-23:00 进行例行维护。",
+        "all",
+        "active",
+        "user-platform-admin",
+        OffsetDateTime.parse("2026-06-16T10:00:00+08:00"))));
+
+    mockMvc.perform(post("/api/v1/platform/announcements")
+            .header("Authorization", "Bearer " + platformToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "title": "系统维护通知",
+                  "content": "6 月 20 日 22:00-23:00 进行例行维护。",
+                  "audience": "all"
+                }
+                """))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.id").value("announcement-demo"))
+        .andExpect(jsonPath("$.data.audience").value("all"));
+
+    mockMvc.perform(get("/api/v1/platform/announcements")
+            .header("Authorization", "Bearer " + platformToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].title").value("系统维护通知"));
   }
 
   @Test
