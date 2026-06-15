@@ -9,17 +9,21 @@ import com.procurement.identity.infrastructure.AuthenticationUserMapper;
 import com.procurement.identity.security.JwtTokenService;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class AuthenticationApplicationService {
   private final JwtTokenService jwtTokenService;
   private final AuthenticationUserMapper authenticationUserMapper;
+  private final PasswordEncoder passwordEncoder;
 
   public AuthenticationApplicationService(
       JwtTokenService jwtTokenService,
-      AuthenticationUserMapper authenticationUserMapper) {
+      AuthenticationUserMapper authenticationUserMapper,
+      PasswordEncoder passwordEncoder) {
     this.jwtTokenService = jwtTokenService;
     this.authenticationUserMapper = authenticationUserMapper;
+    this.passwordEncoder = passwordEncoder;
   }
 
   public LoginResponse login(LoginRequest request) {
@@ -39,10 +43,6 @@ public class AuthenticationApplicationService {
   }
 
   private AuthenticatedPrincipal resolveDemoPrincipal(LoginRequest request) {
-    if (!"demo123456".equals(request.password())) {
-      throw new IllegalArgumentException("Invalid account or password");
-    }
-
     if (request.scope() == IdentityScope.PLATFORM) {
       requireBlank(request.tenantId(), request.supplierId(), "PLATFORM login forbids tenantId and supplierId");
       return resolveDatabasePrincipal(request);
@@ -64,6 +64,9 @@ public class AuthenticationApplicationService {
         request.tenantId(),
         request.supplierId());
     if (user == null) {
+      throw new IllegalArgumentException("Invalid account or password");
+    }
+    if (!passwordEncoder.matches(request.password(), user.passwordHash())) {
       throw new IllegalArgumentException("Invalid account or password");
     }
     List<String> roles = authenticationUserMapper.listSecurityRoles(

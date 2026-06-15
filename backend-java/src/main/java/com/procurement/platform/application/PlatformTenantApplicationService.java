@@ -10,6 +10,7 @@ import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.domain.PlatformTenant;
 import com.procurement.platform.infrastructure.PlatformTenantMapper;
 import java.util.List;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,14 +26,17 @@ public class PlatformTenantApplicationService {
   private final PlatformTenantMapper platformTenantMapper;
   private final ObjectMapper objectMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final PasswordEncoder passwordEncoder;
 
   public PlatformTenantApplicationService(
       PlatformTenantMapper platformTenantMapper,
       ObjectMapper objectMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      PasswordEncoder passwordEncoder) {
     this.platformTenantMapper = platformTenantMapper;
     this.objectMapper = objectMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.passwordEncoder = passwordEncoder;
   }
 
   public List<TenantResponse> listTenants() {
@@ -69,7 +73,8 @@ public class PlatformTenantApplicationService {
         request.adminName(),
         request.adminMobile(),
         request.adminEmail(),
-        ACTIVE_STATUS);
+        ACTIVE_STATUS,
+        passwordEncoder.encode(request.adminPassword()));
     platformTenantMapper.assignUserRole(buyerOwnerUserId, buyerOwnerRoleId);
     insertDefaultApprovalTemplates(request.tenantId(), buyerOwnerRoleId);
     auditLogApplicationService.recordTenantAction(

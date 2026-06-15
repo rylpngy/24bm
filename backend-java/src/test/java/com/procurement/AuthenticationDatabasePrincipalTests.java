@@ -12,14 +12,16 @@ import com.procurement.identity.infrastructure.AuthenticationUserMapper;
 import com.procurement.identity.security.JwtTokenService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class AuthenticationDatabasePrincipalTests {
 
   private final JwtTokenService jwtTokenService = org.mockito.Mockito.mock(JwtTokenService.class);
   private final AuthenticationUserMapper authenticationUserMapper =
       org.mockito.Mockito.mock(AuthenticationUserMapper.class);
+  private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
   private final AuthenticationApplicationService authenticationApplicationService =
-      new AuthenticationApplicationService(jwtTokenService, authenticationUserMapper);
+      new AuthenticationApplicationService(jwtTokenService, authenticationUserMapper, passwordEncoder);
 
   @Test
   void buyerLoginBuildsPrincipalFromActiveTenantUserAndRoles() {
@@ -32,7 +34,9 @@ class AuthenticationDatabasePrincipalTests {
             "user-tenant-demo-owner",
             "tenant-demo",
             null,
-            "首席采购管理员"));
+            "首席采购管理员",
+            "{bcrypt}hash"));
+    when(passwordEncoder.matches("real-password", "{bcrypt}hash")).thenReturn(true);
     when(authenticationUserMapper.listSecurityRoles("user-tenant-demo-owner", "BUYER", "tenant-demo", null))
         .thenReturn(List.of("BUYER_OWNER"));
     when(jwtTokenService.issue(org.mockito.ArgumentMatchers.any())).thenReturn("jwt-token");
@@ -40,7 +44,7 @@ class AuthenticationDatabasePrincipalTests {
 
     LoginResponse response = authenticationApplicationService.login(new LoginRequest(
         "owner@demo.example.com",
-        "demo123456",
+        "real-password",
         IdentityScope.BUYER,
         "tenant-demo",
         null));

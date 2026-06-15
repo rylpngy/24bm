@@ -46,8 +46,8 @@ public interface PlatformTenantMapper {
       @Param("permissionsJson") String permissionsJson);
 
   @Insert("""
-      insert into users (id, tenant_id, name, mobile, email, status, department_id)
-      values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status}, null)
+      insert into users (id, tenant_id, name, mobile, email, status, department_id, password_hash)
+      values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status}, null, #{passwordHash})
       """)
   void insertInitialBuyerAdminUser(
       @Param("id") String id,
@@ -55,7 +55,8 @@ public interface PlatformTenantMapper {
       @Param("name") String name,
       @Param("mobile") String mobile,
       @Param("email") String email,
-      @Param("status") String status);
+      @Param("status") String status,
+      @Param("passwordHash") String passwordHash);
 
   @Insert("""
       insert into user_roles (user_id, role_id)

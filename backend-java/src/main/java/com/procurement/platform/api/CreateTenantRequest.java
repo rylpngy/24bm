@@ -15,5 +15,6 @@ public record CreateTenantRequest(
     @NotNull List<String> enabledFeatures,
     @NotBlank String adminName,
     String adminMobile,
-    @NotBlank String adminEmail) {
+    @NotBlank String adminEmail,
+    @NotBlank String adminPassword) {
 }

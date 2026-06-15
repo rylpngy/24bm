@@ -49,7 +49,7 @@ The default backend URL is:
 http://localhost:8080
 ```
 
-The `local` Spring profile uses PostgreSQL at `jdbc:postgresql://localhost:5432/procurement_saas` and loads demo seed rows from `db/dev`. The seeded buyer tenant is `tenant-acme`, matching the default frontend demo login.
+The `local` Spring profile uses PostgreSQL at `jdbc:postgresql://localhost:5432/procurement_saas` and loads demo seed rows from `db/dev`. The seeded buyer tenant is `tenant-acme`, matching the default frontend demo login. Demo login accounts resolve from `users.email` and validate password `demo123456` against `users.password_hash`.
 
 ## Frontend: Start With Java Backend Enabled
 

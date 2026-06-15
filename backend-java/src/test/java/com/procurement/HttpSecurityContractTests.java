@@ -168,6 +168,8 @@ import org.springframework.test.web.servlet.MvcResult;
     "procurement.security.jwt-expires-in-seconds=7200"
 })
 class HttpSecurityContractTests {
+  private static final String LOCAL_DEMO_PASSWORD_HASH =
+      "$2y$10$HKSnHnokVMkEYDQUlfB/e..3beDCFeM8KKj9.ZpFHGPTQeTjIKP.O";
 
   @Autowired
   private MockMvc mockMvc;
@@ -256,15 +258,30 @@ class HttpSecurityContractTests {
   @BeforeEach
   void stubDatabaseBackedLoginPrincipals() {
     when(authenticationUserMapper.findActiveUser("buyer", "BUYER", "tenant-acme", null))
-        .thenReturn(new AuthenticatedUser("user-buyer-owner", "tenant-acme", null, "采购负责人"));
+        .thenReturn(new AuthenticatedUser(
+            "user-buyer-owner",
+            "tenant-acme",
+            null,
+            "采购负责人",
+            LOCAL_DEMO_PASSWORD_HASH));
     when(authenticationUserMapper.listSecurityRoles("user-buyer-owner", "BUYER", "tenant-acme", null))
         .thenReturn(List.of("BUYER_OWNER"));
     when(authenticationUserMapper.findActiveUser("supplier", "SUPPLIER", null, "ent-supplier-sunrise"))
-        .thenReturn(new AuthenticatedUser("user-supplier-sales", null, "ent-supplier-sunrise", "供应商销售"));
+        .thenReturn(new AuthenticatedUser(
+            "user-supplier-sales",
+            null,
+            "ent-supplier-sunrise",
+            "供应商销售",
+            LOCAL_DEMO_PASSWORD_HASH));
     when(authenticationUserMapper.listSecurityRoles("user-supplier-sales", "SUPPLIER", null, "ent-supplier-sunrise"))
         .thenReturn(List.of("SUPPLIER_SALES"));
     when(authenticationUserMapper.findActiveUser("platform", "PLATFORM", null, null))
-        .thenReturn(new AuthenticatedUser("user-platform-admin", null, null, "平台运营"));
+        .thenReturn(new AuthenticatedUser(
+            "user-platform-admin",
+            null,
+            null,
+            "平台运营",
+            LOCAL_DEMO_PASSWORD_HASH));
     when(authenticationUserMapper.listSecurityRoles("user-platform-admin", "PLATFORM", null, null))
         .thenReturn(List.of("PLATFORM_ADMIN"));
   }
@@ -1149,7 +1166,8 @@ class HttpSecurityContractTests {
                   "enabledFeatures": ["rfq", "order", "finance"],
                   "adminName": "首席采购管理员",
                   "adminMobile": "13900000001",
-                  "adminEmail": "owner@demo.example.com"
+                  "adminEmail": "owner@demo.example.com",
+                  "adminPassword": "owner-password"
                 }
                 """))
         .andExpect(status().isForbidden());
@@ -1168,7 +1186,8 @@ class HttpSecurityContractTests {
                   "enabledFeatures": ["rfq", "order", "finance"],
                   "adminName": "首席采购管理员",
                   "adminMobile": "13900000001",
-                  "adminEmail": "owner@demo.example.com"
+                  "adminEmail": "owner@demo.example.com",
+                  "adminPassword": "owner-password"
                 }
                 """))
         .andExpect(status().isOk())

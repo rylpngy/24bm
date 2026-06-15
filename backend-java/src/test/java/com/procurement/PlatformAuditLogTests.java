@@ -17,11 +17,13 @@ import com.procurement.platform.infrastructure.PlatformTenantMapper;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class PlatformAuditLogTests {
 
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
 
   @AfterEach
   void clearTenantContext() {
@@ -36,7 +38,8 @@ class PlatformAuditLogTests {
         new PlatformTenantApplicationService(
             platformTenantMapper,
             new ObjectMapper(),
-            auditLogApplicationService);
+            auditLogApplicationService,
+            passwordEncoder);
     when(platformTenantMapper.updateEnabledFeatures(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))

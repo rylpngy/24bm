@@ -12,9 +12,10 @@ import org.apache.ibatis.annotations.Select;
 public interface AuthenticationUserMapper {
 
   @Select("""
-      select u.id as user_id, u.tenant_id, u.supplier_id, u.name as display_name
+      select u.id as user_id, u.tenant_id, u.supplier_id, u.name as display_name, u.password_hash
       from users u
       where u.status = 'active'
+        and u.password_hash is not null
         and (u.email = #{account} or u.mobile = #{account} or u.id = #{account})
         and (
           (#{scope} = 'PLATFORM' and u.tenant_id is null and u.supplier_id is null)
@@ -27,7 +28,8 @@ public interface AuthenticationUserMapper {
       @Result(column = "user_id", property = "userId"),
       @Result(column = "tenant_id", property = "tenantId"),
       @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "display_name", property = "displayName")
+      @Result(column = "display_name", property = "displayName"),
+      @Result(column = "password_hash", property = "passwordHash")
   })
   AuthenticatedUser findActiveUser(
       @Param("account") String account,

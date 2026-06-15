@@ -13,6 +13,7 @@ import com.procurement.platform.infrastructure.PlatformTenantMapper;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class PlatformTenantOnboardingTests {
 
@@ -20,11 +21,13 @@ class PlatformTenantOnboardingTests {
       org.mockito.Mockito.mock(PlatformTenantMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
   private final PlatformTenantApplicationService platformTenantApplicationService =
       new PlatformTenantApplicationService(
           platformTenantMapper,
           new ObjectMapper(),
-          auditLogApplicationService);
+          auditLogApplicationService,
+          passwordEncoder);
 
   @AfterEach
   void clearTenantContext() {
@@ -42,6 +45,7 @@ class PlatformTenantOnboardingTests {
             "active",
             "[\"rfq\",\"order\",\"finance\"]",
             50));
+    when(passwordEncoder.encode("owner-password")).thenReturn("{bcrypt}owner-hash");
 
     platformTenantApplicationService.createBuyerTenant(new CreateTenantRequest(
         "tenant-demo",
@@ -53,7 +57,8 @@ class PlatformTenantOnboardingTests {
         List.of("rfq", "order", "finance"),
         "首席采购管理员",
         "13900000001",
-        "owner@demo.example.com"));
+        "owner@demo.example.com",
+        "owner-password"));
 
     verify(platformTenantMapper).insertTenant(
         "tenant-demo",
@@ -78,7 +83,8 @@ class PlatformTenantOnboardingTests {
         "首席采购管理员",
         "13900000001",
         "owner@demo.example.com",
-        "active");
+        "active",
+        "{bcrypt}owner-hash");
     verify(platformTenantMapper).assignUserRole(
         "user-tenant-demo-owner",
         "role-tenant-demo-buyer-owner");

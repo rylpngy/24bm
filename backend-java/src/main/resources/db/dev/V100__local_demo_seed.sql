@@ -31,12 +31,12 @@ on conflict (enterprise_id) do update set
   verified_status = excluded.verified_status,
   profile_status = excluded.profile_status;
 
-insert into users (id, tenant_id, supplier_id, name, mobile, email, status, department_id)
+insert into users (id, tenant_id, supplier_id, name, mobile, email, status, department_id, password_hash)
 values
-  ('user-platform-admin', null, null, '平台运营', '13800000000', 'platform.admin@example.com', 'active', null),
-  ('user-buyer-owner', 'tenant-acme', null, '采购负责人', '13800000001', 'buyer.owner@example.com', 'active', 'dept-it'),
-  ('user-buyer-requester', 'tenant-acme', null, '需求申请人', '13800000002', 'requester@example.com', 'active', 'dept-it'),
-  ('user-supplier-sales', null, 'ent-supplier-sunrise', '供应商销售', '13800000003', 'supplier.sales@example.com', 'active', null)
+  ('user-platform-admin', null, null, '平台运营', '13800000000', 'platform.admin@example.com', 'active', null, '$2y$10$HKSnHnokVMkEYDQUlfB/e..3beDCFeM8KKj9.ZpFHGPTQeTjIKP.O'),
+  ('user-buyer-owner', 'tenant-acme', null, '采购负责人', '13800000001', 'buyer.owner@example.com', 'active', 'dept-it', '$2y$10$HKSnHnokVMkEYDQUlfB/e..3beDCFeM8KKj9.ZpFHGPTQeTjIKP.O'),
+  ('user-buyer-requester', 'tenant-acme', null, '需求申请人', '13800000002', 'requester@example.com', 'active', 'dept-it', '$2y$10$HKSnHnokVMkEYDQUlfB/e..3beDCFeM8KKj9.ZpFHGPTQeTjIKP.O'),
+  ('user-supplier-sales', null, 'ent-supplier-sunrise', '供应商销售', '13800000003', 'supplier.sales@example.com', 'active', null, '$2y$10$HKSnHnokVMkEYDQUlfB/e..3beDCFeM8KKj9.ZpFHGPTQeTjIKP.O')
 on conflict (id) do update set
   tenant_id = excluded.tenant_id,
   supplier_id = excluded.supplier_id,
@@ -45,6 +45,7 @@ on conflict (id) do update set
   email = excluded.email,
   status = excluded.status,
   department_id = excluded.department_id,
+  password_hash = excluded.password_hash,
   updated_at = now();
 
 insert into roles (id, tenant_id, scope, name, permissions)

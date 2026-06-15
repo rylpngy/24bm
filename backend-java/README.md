@@ -28,7 +28,7 @@ The first Java backend iteration exposes:
 - `GET /api/v1/health`
 - `POST /api/v1/auth/login`
 
-Demo login reads the active user and roles from the database by `account` (email, mobile, or user ID). The local profile still accepts password `demo123456` and one of these explicit scopes:
+Demo login reads the active user, password hash, and roles from the database by `account` (email, mobile, or user ID). The local seed stores a BCrypt hash for password `demo123456` in `users.password_hash` and accepts one of these explicit scopes:
 
 - `BUYER` requires `tenantId` and must not include `supplierId`.
 - `SUPPLIER` requires `supplierId` and must not include `tenantId`.
