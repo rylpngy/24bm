@@ -130,6 +130,7 @@ The buyer-side in-app notification endpoints are:
 Notifications are scoped by the JWT `tenantId` and current `userId`. A buyer user can list and mark only their own notifications. Email and SMS delivery are intentionally deferred; the MVP keeps this module as in-app notification data first.
 
 Purchase demand submission now creates in-app notifications for active buyer users in the current tenant with title `采购需求待审批`.
+RFQ award approval submission also creates in-app notifications for active buyer users with title `定标结果待审批`.
 
 ## Buyer Master Data APIs
 

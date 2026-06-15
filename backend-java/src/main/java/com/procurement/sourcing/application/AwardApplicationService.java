@@ -13,6 +13,7 @@ import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,24 +31,28 @@ public class AwardApplicationService {
   private static final String RFQ_AWARD_SUBMITTED_ACTION = "rfq_award.submitted";
   private static final String RFQ_AWARD_APPROVED_ACTION = "rfq_award.approved";
   private static final String RFQ_AWARD_REJECTED_ACTION = "rfq_award.rejected";
+  private static final String RFQ_AWARD_PENDING_NOTIFICATION_TITLE = "定标结果待审批";
 
   private final RfqMapper rfqMapper;
   private final QuoteMapper quoteMapper;
   private final AwardDecisionMapper awardDecisionMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public AwardApplicationService(
       RfqMapper rfqMapper,
       QuoteMapper quoteMapper,
       AwardDecisionMapper awardDecisionMapper,
       ApprovalTaskMapper approvalTaskMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.rfqMapper = rfqMapper;
     this.quoteMapper = quoteMapper;
     this.awardDecisionMapper = awardDecisionMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   @Transactional
@@ -94,6 +99,10 @@ public class AwardApplicationService {
         null,
         PENDING_APPROVAL_STATUS);
     auditLogApplicationService.recordTenantAction(RFQ_AWARD_SUBMITTED_ACTION, RFQ_AWARD_BIZ_TYPE, awardId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId,
+        RFQ_AWARD_PENDING_NOTIFICATION_TITLE,
+        rfq.title() + "已提交定标审批，请及时处理。");
 
     return toResponse(awardDecisionMapper.findByTenantAndId(tenantId, awardId));
   }

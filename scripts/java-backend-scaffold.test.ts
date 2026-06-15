@@ -131,9 +131,12 @@ describe('Java backend scaffold', () => {
     expect(architecture).toContain('GET /api/v1/buyer/notifications');
     expect(architecture).toContain('POST /api/v1/buyer/notifications/{notificationId}/read');
     expect(architecture).toContain('采购需求提交审批时会为当前租户启用采购方用户生成站内通知');
+    expect(architecture).toContain('RFQ 定标结果提交审批时会为当前租户启用采购方用户生成站内通知');
     expect(readme).toContain('Buyer Notification APIs');
     expect(readme).toContain('Purchase demand submission now creates in-app notifications');
+    expect(readme).toContain('RFQ award approval submission also creates in-app notifications');
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/PurchaseDemandNotificationTests.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/RfqAwardNotificationTests.java'))).toBe(true);
   });
 
   it('provides a reproducible local PostgreSQL runtime for Java frontend integration', () => {

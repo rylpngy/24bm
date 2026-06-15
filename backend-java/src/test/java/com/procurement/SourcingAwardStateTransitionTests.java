@@ -15,6 +15,7 @@ import com.procurement.sourcing.api.AwardDecisionResponse;
 import com.procurement.sourcing.api.AwardRfqRequest;
 import com.procurement.sourcing.api.ReviewAwardApprovalRequest;
 import com.procurement.sourcing.application.AwardApplicationService;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.Rfq;
@@ -33,12 +34,15 @@ class SourcingAwardStateTransitionTests {
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final AwardApplicationService awardApplicationService = new AwardApplicationService(
       rfqMapper,
       quoteMapper,
       awardDecisionMapper,
       approvalTaskMapper,
-      auditLogApplicationService);
+      auditLogApplicationService,
+      notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {
