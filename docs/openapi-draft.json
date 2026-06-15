@@ -437,6 +437,40 @@
         }
       }
     },
+    "/buyer/departments/{departmentId}/disable": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "停用未被采购需求引用的组织部门",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Department"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/users": {
       "get": {
         "tags": [
@@ -1642,6 +1676,7 @@
     "POST /buyer/materials",
     "GET /buyer/departments",
     "POST /buyer/departments",
+    "POST /buyer/departments/{departmentId}/disable",
     "GET /buyer/users",
     "POST /buyer/users",
     "GET /buyer/demands",

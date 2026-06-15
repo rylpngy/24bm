@@ -100,8 +100,9 @@ const main = async () => {
   requireItem(users, (item) => item.id === 'user-buyer-owner', 'user-buyer-owner');
   requireItem(demands, (item) => item.id === 'dem-local-laptop', 'dem-local-laptop');
   requireItem(platformTenants, (item) => item.id === 'tenant-acme', 'tenant-acme');
+  let createdSmokeDepartment = null;
   if (process.env.JAVA_CREATE_SMOKE_DEPARTMENT === '1') {
-    const createdDepartment = await requestJson('/api/v1/buyer/departments', {
+    createdSmokeDepartment = await requestJson('/api/v1/buyer/departments', {
       method: 'POST',
       headers: { ...authHeaders, 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -109,8 +110,17 @@ const main = async () => {
         parentId: 'dept-it',
       }),
     });
-    if (createdDepartment.status !== 'active' || createdDepartment.parentId !== 'dept-it') {
+    if (createdSmokeDepartment.status !== 'active' || createdSmokeDepartment.parentId !== 'dept-it') {
       throw new Error('Unexpected Java created department payload');
+    }
+  }
+  if (process.env.JAVA_DISABLE_SMOKE_DEPARTMENT === '1' && createdSmokeDepartment) {
+    const disabledDepartment = await requestJson(`/api/v1/buyer/departments/${createdSmokeDepartment.id}/disable`, {
+      method: 'POST',
+      headers: authHeaders,
+    });
+    if (disabledDepartment.status !== 'inactive') {
+      throw new Error('Unexpected Java disabled department payload');
     }
   }
   if (platformOverview.scope !== 'platform') {

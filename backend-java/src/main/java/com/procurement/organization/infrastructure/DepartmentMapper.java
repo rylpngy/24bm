@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface DepartmentMapper {
@@ -60,4 +61,17 @@ public interface DepartmentMapper {
       @Param("name") String name,
       @Param("parentId") String parentId,
       @Param("status") String status);
+
+  @Update("""
+      update departments
+      set status = #{nextStatus}, updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = #{currentStatus}
+      """)
+  int updateStatus(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("currentStatus") String currentStatus,
+      @Param("nextStatus") String nextStatus);
 }

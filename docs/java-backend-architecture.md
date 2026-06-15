@@ -98,12 +98,14 @@ Authorization: Bearer <accessToken>
 
 - `GET /api/v1/buyer/departments`：查询当前采购方租户下 `active` 状态的组织部门。
 - `POST /api/v1/buyer/departments`：在当前采购方租户下创建组织部门，初始状态固定为 `active`。
+- `POST /api/v1/buyer/departments/{departmentId}/disable`：停用当前租户下未被采购需求引用的组织部门。
 
 查询规则：
 
 - 采购方身份来自 JWT 中的 `tenantId`，不允许请求参数覆盖租户归属。
 - 只返回当前租户 `departments.status = active` 的部门，用于采购需求 `departmentId` 选择和后续审批/数据权限扩展。
 - 创建部门时租户来自 JWT，不接受请求体传入 `tenantId` 或 `status`；`parentId` 为空表示顶级部门，非空时必须命中当前租户下 `active` 状态的父级部门；创建成功写入 `audit_logs`，动作为 `department.created`。
+- 停用部门只允许从 `active` 更新为 `inactive`；若当前租户下已有 `purchase_demands.department_id` 引用该部门，则拒绝停用；停用成功写入 `audit_logs`，动作为 `department.disabled`。
 - 供应商和平台 token 不能访问该 buyer 侧接口。
 
 ## 采购需求 Java API

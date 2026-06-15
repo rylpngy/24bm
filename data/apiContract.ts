@@ -211,6 +211,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'Department',
   },
   {
+    method: 'POST',
+    path: '/buyer/departments/{departmentId}/disable',
+    audience: 'buyer',
+    action: '停用未被采购需求引用的组织部门',
+    requestSchema: 'DisableDepartmentRequest',
+    responseSchema: 'Department',
+  },
+  {
     method: 'GET',
     path: '/buyer/users',
     audience: 'buyer',

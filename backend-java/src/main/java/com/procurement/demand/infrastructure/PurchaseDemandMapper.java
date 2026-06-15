@@ -62,4 +62,14 @@ public interface PurchaseDemandMapper {
       where tenant_id = #{tenantId} and id = #{id}
       """)
   int updateStatus(@Param("tenantId") String tenantId, @Param("id") String id, @Param("status") String status);
+
+  @Select("""
+      select count(*)
+      from purchase_demands
+      where tenant_id = #{tenantId}
+        and department_id = #{departmentId}
+      """)
+  int countByTenantAndDepartment(
+      @Param("tenantId") String tenantId,
+      @Param("departmentId") String departmentId);
 }

@@ -446,6 +446,7 @@ export interface JavaProcurementApiClient {
   listBuyerMaterials(): Promise<MaterialDto[]>;
   listBuyerDepartments(): Promise<DepartmentDto[]>;
   createBuyerDepartment(payload: CreateDepartmentPayload): Promise<DepartmentDto>;
+  disableBuyerDepartment(departmentId: string): Promise<DepartmentDto>;
   listBuyerUsers(): Promise<BuyerUserDto[]>;
   listBuyerDemands(): Promise<PurchaseDemand[]>;
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
@@ -818,6 +819,11 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
+      });
+    },
+    disableBuyerDepartment(departmentId: string) {
+      return buyerRequest<DepartmentDto>(`/api/v1/buyer/departments/${departmentId}/disable`, {
+        method: 'POST',
       });
     },
     listBuyerUsers() {

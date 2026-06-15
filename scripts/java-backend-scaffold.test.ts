@@ -145,13 +145,17 @@ describe('Java backend scaffold', () => {
     expect(architecture).toContain('采购方组织部门 Java API');
     expect(architecture).toContain('GET /api/v1/buyer/departments');
     expect(architecture).toContain('POST /api/v1/buyer/departments');
+    expect(architecture).toContain('POST /api/v1/buyer/departments/{departmentId}/disable');
     expect(readme).toContain('GET /api/v1/buyer/departments');
     expect(readme).toContain('POST /api/v1/buyer/departments');
+    expect(readme).toContain('POST /api/v1/buyer/departments/{departmentId}/disable');
     expect(localSmoke).toContain('/api/v1/buyer/departments');
     expect(apiClient).toContain('listBuyerDepartments');
     expect(apiClient).toContain('createBuyerDepartment');
+    expect(apiClient).toContain('disableBuyerDepartment');
     expect(departmentService).toContain('requireActiveParentDepartment');
     expect(departmentService).toContain('existsActiveByTenantAndId');
+    expect(departmentService).toContain('countByTenantAndDepartment');
   });
 
   it('documents the buyer notification API handoff', () => {

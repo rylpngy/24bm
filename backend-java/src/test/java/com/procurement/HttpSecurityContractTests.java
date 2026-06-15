@@ -524,6 +524,40 @@ class HttpSecurityContractTests {
   }
 
   @Test
+  void buyerCanDisableDepartmentButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(post("/api/v1/buyer/departments/dept-old/disable")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(departmentApplicationService.disableDepartment("dept-old")).thenReturn(
+        new DepartmentResponse("dept-old", "tenant-acme", "历史部门", null, "inactive"));
+
+    mockMvc.perform(post("/api/v1/buyer/departments/dept-old/disable")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.id").value("dept-old"))
+        .andExpect(jsonPath("$.data.status").value("inactive"));
+  }
+
+  @Test
   void loginIssuesScopedTokensWithoutCrossTenantSupplierClaims() throws Exception {
     MvcResult buyerLogin = mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)

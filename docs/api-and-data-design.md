@@ -89,7 +89,7 @@ API 分组在 [data/apiContract.ts](../data/apiContract.ts) 中以 `apiModules` 
 第一阶段端到端流程固定如下：
 
 1. `POST /auth/login`：平台方、采购方或供应商登录并获得 JWT。
-2. `GET /buyer/suppliers`、`GET /buyer/materials`、`GET /buyer/departments`、`POST /buyer/departments`、`GET /buyer/users`：加载并维护采购方主数据。
+2. `GET /buyer/suppliers`、`GET /buyer/materials`、`GET /buyer/departments`、`POST /buyer/departments`、`POST /buyer/departments/{departmentId}/disable`、`GET /buyer/users`：加载并维护采购方主数据。
 3. `POST /buyer/suppliers/{relationId}/submit`、`POST /buyer/suppliers/{relationId}/approval`：供应商准入审批。
 4. `POST /buyer/demands`：采购方创建采购需求。
 5. `POST /buyer/demands/{demandId}/submit`、`POST /buyer/demands/{demandId}/approval`：提交并审批采购需求。

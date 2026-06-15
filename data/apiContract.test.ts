@@ -26,6 +26,7 @@ describe('procurement SaaS API contract draft', () => {
       'POST /buyer/materials',
       'GET /buyer/departments',
       'POST /buyer/departments',
+      'POST /buyer/departments/{departmentId}/disable',
       'GET /buyer/users',
       'POST /buyer/users',
       'GET /buyer/demands',
@@ -77,6 +78,9 @@ describe('procurement SaaS API contract draft', () => {
     expect(openApi.paths['/buyer/approvals/pending'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/departments'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/departments'].post.tags).toContain('buyer');
+    expect(openApi.paths['/buyer/departments/{departmentId}/disable'].post.parameters).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'departmentId', in: 'path', required: true })]),
+    );
     expect(openApi.paths['/buyer/audit-logs'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/attachments'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/notifications'].get.tags).toContain('buyer');
@@ -106,6 +110,7 @@ describe('procurement SaaS API contract draft', () => {
     expect(json).toContain('"GET /buyer/audit-logs"');
     expect(json).toContain('"GET /buyer/departments"');
     expect(json).toContain('"POST /buyer/departments"');
+    expect(json).toContain('"POST /buyer/departments/{departmentId}/disable"');
     expect(json).toContain('"POST /supplier/orders/{orderId}/confirm"');
     expect(JSON.parse(json).paths['/buyer/orders'].post.summary).toBe('根据定标结果生成采购订单');
   });

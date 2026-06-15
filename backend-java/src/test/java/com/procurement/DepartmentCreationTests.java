@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
+import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.organization.api.CreateDepartmentRequest;
 import com.procurement.organization.application.DepartmentApplicationService;
 import com.procurement.organization.domain.Department;
@@ -18,10 +19,11 @@ import org.junit.jupiter.api.Test;
 class DepartmentCreationTests {
 
   private final DepartmentMapper departmentMapper = org.mockito.Mockito.mock(DepartmentMapper.class);
+  private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final DepartmentApplicationService departmentApplicationService =
-      new DepartmentApplicationService(departmentMapper, auditLogApplicationService);
+      new DepartmentApplicationService(departmentMapper, purchaseDemandMapper, auditLogApplicationService);
 
   @AfterEach
   void clearTenantContext() {
@@ -76,6 +78,47 @@ class DepartmentCreationTests {
         org.mockito.ArgumentMatchers.anyString());
     verify(auditLogApplicationService, never()).recordTenantAction(
         org.mockito.ArgumentMatchers.eq("department.created"),
+        org.mockito.ArgumentMatchers.eq("department"),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void disablesDepartmentWhenNoPurchaseDemandReferencesIt() {
+    TenantContext.set("tenant-1", null, "buyer-admin");
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-old")).thenReturn(true);
+    when(purchaseDemandMapper.countByTenantAndDepartment("tenant-1", "dept-old")).thenReturn(0);
+    when(departmentMapper.updateStatus("tenant-1", "dept-old", "active", "inactive")).thenReturn(1);
+    when(departmentMapper.findByTenantAndId("tenant-1", "dept-old"))
+        .thenReturn(new Department("dept-old", "tenant-1", "历史部门", null, "inactive"));
+
+    var response = departmentApplicationService.disableDepartment("dept-old");
+
+    assertThat(response.id()).isEqualTo("dept-old");
+    assertThat(response.status()).isEqualTo("inactive");
+    verify(departmentMapper).updateStatus("tenant-1", "dept-old", "active", "inactive");
+    verify(auditLogApplicationService).recordTenantAction(
+        "department.disabled",
+        "department",
+        "dept-old");
+  }
+
+  @Test
+  void rejectsDisablingDepartmentReferencedByPurchaseDemands() {
+    TenantContext.set("tenant-1", null, "buyer-admin");
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-used")).thenReturn(true);
+    when(purchaseDemandMapper.countByTenantAndDepartment("tenant-1", "dept-used")).thenReturn(2);
+
+    assertThatThrownBy(() -> departmentApplicationService.disableDepartment("dept-used"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Department is referenced by purchase demands: dept-used");
+
+    verify(departmentMapper, never()).updateStatus(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+    verify(auditLogApplicationService, never()).recordTenantAction(
+        org.mockito.ArgumentMatchers.eq("department.disabled"),
         org.mockito.ArgumentMatchers.eq("department"),
         org.mockito.ArgumentMatchers.anyString());
   }
