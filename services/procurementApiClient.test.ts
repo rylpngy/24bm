@@ -766,6 +766,8 @@ describe('procurement API clients', () => {
             summaryTitle: '新建 Java 需求',
             businessStatus: '审批中',
             priority: 70,
+            submittedById: 'requester-1',
+            submittedByName: '需求申请人',
             amount: 66000,
             counterpartyId: null,
             counterpartyName: null,
@@ -860,6 +862,7 @@ describe('procurement API clients', () => {
       summaryTitle: '新建 Java 需求',
       businessStatus: '审批中',
       priority: 70,
+      submittedByName: '需求申请人',
       amount: 66000,
     });
     expect(approvalTemplates[0]).toMatchObject({

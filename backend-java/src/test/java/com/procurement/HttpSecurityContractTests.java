@@ -478,6 +478,8 @@ class HttpSecurityContractTests {
             "办公电脑询价",
             "定标审批中",
             90,
+            "owner-1",
+            "采购负责人",
             BigDecimal.valueOf(98000),
             "ent-supplier-sunrise",
             null,
@@ -493,6 +495,8 @@ class HttpSecurityContractTests {
             "采购 20 台电脑",
             "审批中",
             70,
+            "requester-1",
+            "需求申请人",
             BigDecimal.valueOf(120000),
             null,
             null,
@@ -508,12 +512,14 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data[0].summaryTitle").value("办公电脑询价"))
         .andExpect(jsonPath("$.data[0].businessStatus").value("定标审批中"))
         .andExpect(jsonPath("$.data[0].priority").value(90))
+        .andExpect(jsonPath("$.data[0].submittedByName").value("采购负责人"))
         .andExpect(jsonPath("$.data[0].amount").value(98000))
         .andExpect(jsonPath("$.data[0].status").value("待审批"))
         .andExpect(jsonPath("$.data[1].bizType").value("purchase_demand"))
         .andExpect(jsonPath("$.data[1].summaryTitle").value("采购 20 台电脑"))
         .andExpect(jsonPath("$.data[1].businessStatus").value("审批中"))
-        .andExpect(jsonPath("$.data[1].priority").value(70));
+        .andExpect(jsonPath("$.data[1].priority").value(70))
+        .andExpect(jsonPath("$.data[1].submittedByName").value("需求申请人"));
 
     mockMvc.perform(get("/api/v1/buyer/approvals/templates")
             .header("Authorization", "Bearer " + supplierToken))

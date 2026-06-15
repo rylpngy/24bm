@@ -6,6 +6,8 @@ import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.domain.BuyerUser;
+import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
@@ -28,18 +30,21 @@ public class ApprovalInboxApplicationService {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final AwardDecisionMapper awardDecisionMapper;
   private final RfqMapper rfqMapper;
+  private final BuyerUserMapper buyerUserMapper;
 
   public ApprovalInboxApplicationService(
       ApprovalTaskMapper approvalTaskMapper,
       PurchaseDemandMapper purchaseDemandMapper,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AwardDecisionMapper awardDecisionMapper,
-      RfqMapper rfqMapper) {
+      RfqMapper rfqMapper,
+      BuyerUserMapper buyerUserMapper) {
     this.approvalTaskMapper = approvalTaskMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.awardDecisionMapper = awardDecisionMapper;
     this.rfqMapper = rfqMapper;
+    this.buyerUserMapper = buyerUserMapper;
   }
 
   public List<PendingApprovalTaskResponse> listPending() {
@@ -60,6 +65,8 @@ public class ApprovalInboxApplicationService {
         summary.title(),
         summary.businessStatus(),
         priorityFor(task.bizType()),
+        summary.submittedById(),
+        summary.submittedByName(),
         summary.amount(),
         summary.counterpartyId(),
         summary.counterpartyName(),
@@ -91,7 +98,16 @@ public class ApprovalInboxApplicationService {
     if (demand == null) {
       return ApprovalTaskSummary.empty();
     }
-    return new ApprovalTaskSummary(null, demand.title(), demand.status(), demand.budget(), null, null);
+    BuyerUser requester = buyerUserMapper.findByTenantAndId(task.tenantId(), demand.requesterId());
+    return new ApprovalTaskSummary(
+        null,
+        demand.title(),
+        demand.status(),
+        demand.requesterId(),
+        requester == null ? demand.requesterId() : requester.name(),
+        demand.budget(),
+        null,
+        null);
   }
 
   private ApprovalTaskSummary buyerSupplierAdmissionSummary(ApprovalTask task) {
@@ -103,6 +119,8 @@ public class ApprovalInboxApplicationService {
         null,
         relation.supplierName(),
         relation.status(),
+        relation.supplierId(),
+        relation.supplierName(),
         null,
         relation.supplierId(),
         relation.supplierName());
@@ -114,10 +132,13 @@ public class ApprovalInboxApplicationService {
       return ApprovalTaskSummary.empty();
     }
     Rfq rfq = rfqMapper.findByTenantAndId(task.tenantId(), awardDecision.rfqId());
+    BuyerUser owner = rfq == null ? null : buyerUserMapper.findByTenantAndId(task.tenantId(), rfq.ownerId());
     return new ApprovalTaskSummary(
         awardDecision.rfqId(),
         rfq == null ? "" : rfq.title(),
         rfq == null ? "" : rfq.status(),
+        rfq == null ? null : rfq.ownerId(),
+        rfq == null ? null : owner == null ? rfq.ownerId() : owner.name(),
         awardDecision.amount(),
         awardDecision.supplierId(),
         null);
@@ -127,11 +148,13 @@ public class ApprovalInboxApplicationService {
       String parentBizId,
       String title,
       String businessStatus,
+      String submittedById,
+      String submittedByName,
       BigDecimal amount,
       String counterpartyId,
       String counterpartyName) {
     private static ApprovalTaskSummary empty() {
-      return new ApprovalTaskSummary(null, "", "", null, null, null);
+      return new ApprovalTaskSummary(null, "", "", null, null, null, null, null);
     }
   }
 }

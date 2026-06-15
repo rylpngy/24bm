@@ -12,6 +12,8 @@ public record PendingApprovalTaskResponse(
     String summaryTitle,
     String businessStatus,
     Integer priority,
+    String submittedById,
+    String submittedByName,
     BigDecimal amount,
     String counterpartyId,
     String counterpartyName,

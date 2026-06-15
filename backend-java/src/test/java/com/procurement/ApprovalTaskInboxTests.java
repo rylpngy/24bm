@@ -11,6 +11,8 @@ import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.domain.BuyerUser;
+import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
@@ -31,13 +33,15 @@ class ApprovalTaskInboxTests {
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final RfqMapper rfqMapper = org.mockito.Mockito.mock(RfqMapper.class);
+  private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalInboxApplicationService approvalInboxApplicationService =
       new ApprovalInboxApplicationService(
           approvalTaskMapper,
           purchaseDemandMapper,
           buyerSupplierRelationMapper,
           awardDecisionMapper,
-          rfqMapper);
+          rfqMapper,
+          buyerUserMapper);
 
   @AfterEach
   void clearTenantContext() {
@@ -55,8 +59,12 @@ class ApprovalTaskInboxTests {
         .thenReturn(awardDecision("award-1", "tenant-1", "rfq-1", "supplier-1"));
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
         .thenReturn(rfq("rfq-1", "tenant-1", "办公电脑询价"));
+    when(buyerUserMapper.findByTenantAndId("tenant-1", "owner-1"))
+        .thenReturn(user("owner-1", "采购负责人"));
     when(purchaseDemandMapper.findByTenantAndId("tenant-1", "demand-1"))
         .thenReturn(demand("demand-1", "tenant-1", "采购 20 台电脑", BigDecimal.valueOf(120000)));
+    when(buyerUserMapper.findByTenantAndId("tenant-1", "requester-1"))
+        .thenReturn(user("requester-1", "需求申请人"));
 
     List<PendingApprovalTaskResponse> responses = approvalInboxApplicationService.listPending();
 
@@ -74,6 +82,10 @@ class ApprovalTaskInboxTests {
         .containsExactly("定标审批中", "审批中");
     assertThat(responses).extracting(PendingApprovalTaskResponse::priority)
         .containsExactly(90, 70);
+    assertThat(responses).extracting(PendingApprovalTaskResponse::submittedById)
+        .containsExactly("owner-1", "requester-1");
+    assertThat(responses).extracting(PendingApprovalTaskResponse::submittedByName)
+        .containsExactly("采购负责人", "需求申请人");
     verify(approvalTaskMapper).listByTenantAndStatus("tenant-1", "待审批");
   }
 
@@ -93,6 +105,8 @@ class ApprovalTaskInboxTests {
           assertThat(response.summaryTitle()).isEqualTo("晨光供应商");
           assertThat(response.businessStatus()).isEqualTo("准入审批中");
           assertThat(response.priority()).isEqualTo(80);
+          assertThat(response.submittedById()).isEqualTo("supplier-1");
+          assertThat(response.submittedByName()).isEqualTo("晨光供应商");
           assertThat(response.counterpartyName()).isEqualTo("晨光供应商");
           assertThat(response.amount()).isNull();
         });
@@ -164,5 +178,17 @@ class ApprovalTaskInboxTests {
         null,
         OffsetDateTime.parse("2026-06-15T09:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T09:00:00+08:00"));
+  }
+
+  private BuyerUser user(String id, String name) {
+    return new BuyerUser(
+        id,
+        "tenant-1",
+        name,
+        "13900000001",
+        "buyer@example.com",
+        "active",
+        "dept-1",
+        "role-buyer-owner");
   }
 }

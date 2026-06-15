@@ -10,10 +10,13 @@ describe('buyer approval inbox UI', () => {
 
     expect(apiClient).toContain('businessStatus?: string');
     expect(apiClient).toContain('priority?: number');
+    expect(apiClient).toContain('submittedByName?: string');
     expect(app).toContain('sortedPendingApprovals');
     expect(app).toContain('approval.businessStatus');
     expect(app).toContain('approval.priority');
+    expect(app).toContain('approval.submittedByName');
     expect(app).toContain('业务状态');
     expect(app).toContain('优先级');
+    expect(app).toContain('提交人');
   });
 });

@@ -796,6 +796,7 @@ const BuyerWorkspaceView: React.FC<{
                   <div className="mt-3 space-y-2 text-xs font-bold text-slate-500">
                     {approval.businessStatus && <p>业务状态：{approval.businessStatus}</p>}
                     {typeof approval.priority === 'number' && <p>优先级：{approval.priority}</p>}
+                    {approval.submittedByName && <p>提交人：{approval.submittedByName}</p>}
                     {approval.counterpartyName && <p>{approval.counterpartyName}</p>}
                     {typeof approval.amount === 'number' && (
                       <p className="font-mono text-sm font-black text-slate-900">{currency(approval.amount)}</p>
