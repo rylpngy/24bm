@@ -467,6 +467,22 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'SupplierUser',
   },
   {
+    method: 'POST',
+    path: '/supplier/users/{userId}/password',
+    audience: 'supplier',
+    action: '重置供应商子账号密码',
+    requestSchema: 'ResetSupplierUserPasswordRequest',
+    responseSchema: 'SupplierUser',
+  },
+  {
+    method: 'POST',
+    path: '/supplier/users/{userId}/status',
+    audience: 'supplier',
+    action: '启用或停用供应商子账号',
+    requestSchema: 'ChangeSupplierUserStatusRequest',
+    responseSchema: 'SupplierUser',
+  },
+  {
     method: 'GET',
     path: '/supplier/rfqs',
     audience: 'supplier',

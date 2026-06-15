@@ -1331,6 +1331,74 @@
         }
       }
     },
+    "/supplier/users/{userId}/password": {
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "重置供应商子账号密码",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierUser"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/users/{userId}/status": {
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "启用或停用供应商子账号",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierUser"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/supplier/rfqs": {
       "get": {
         "tags": [
@@ -2149,6 +2217,8 @@
     "POST /supplier/qualifications",
     "GET /supplier/users",
     "POST /supplier/users",
+    "POST /supplier/users/{userId}/password",
+    "POST /supplier/users/{userId}/status",
     "GET /supplier/rfqs",
     "POST /supplier/rfqs/{rfqId}/quotes",
     "POST /buyer/rfqs/{rfqId}/award",

@@ -105,8 +105,10 @@ import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.supplier.api.BuyerSupplierController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
+import com.procurement.supplier.api.ChangeSupplierUserStatusRequest;
 import com.procurement.supplier.api.CreateSupplierQualificationRequest;
 import com.procurement.supplier.api.CreateSupplierUserRequest;
+import com.procurement.supplier.api.ResetSupplierUserPasswordRequest;
 import com.procurement.supplier.api.SupplierProfileController;
 import com.procurement.supplier.api.SupplierProfileResponse;
 import com.procurement.supplier.api.SupplierQualificationController;
@@ -805,6 +807,24 @@ class HttpSecurityContractTests {
     mockMvc.perform(get("/api/v1/supplier/users")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/supplier/users/user-supplier-finance/password")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "newPassword": "new-password"
+                }
+                """))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/supplier/users/user-supplier-finance/status")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "status": "inactive"
+                }
+                """))
+        .andExpect(status().isForbidden());
 
     mockMvc.perform(post("/api/v1/supplier/orders/po-demo/confirm")
             .header("Authorization", "Bearer " + buyerToken))
@@ -873,6 +893,28 @@ class HttpSecurityContractTests {
             "supplier.finance@example.com",
             "active",
             "role-supplier-sales"));
+    when(supplierUserApplicationService.resetUserPassword(
+        org.mockito.ArgumentMatchers.eq("user-supplier-finance"),
+        org.mockito.ArgumentMatchers.any(ResetSupplierUserPasswordRequest.class)))
+        .thenReturn(new SupplierUserResponse(
+            "user-supplier-finance",
+            "ent-supplier-sunrise",
+            "供应商财务",
+            "13800009999",
+            "supplier.finance@example.com",
+            "active",
+            "role-supplier-sales"));
+    when(supplierUserApplicationService.changeUserStatus(
+        org.mockito.ArgumentMatchers.eq("user-supplier-finance"),
+        org.mockito.ArgumentMatchers.any(ChangeSupplierUserStatusRequest.class)))
+        .thenReturn(new SupplierUserResponse(
+            "user-supplier-finance",
+            "ent-supplier-sunrise",
+            "供应商财务",
+            "13800009999",
+            "supplier.finance@example.com",
+            "inactive",
+            "role-supplier-sales"));
     when(quoteApplicationService.listSupplierRfqs()).thenReturn(List.of());
     when(quoteApplicationService.listSupplierQuotes()).thenReturn(List.of());
     when(purchaseOrderApplicationService.listCurrentSupplierOrders()).thenReturn(List.of());
@@ -937,6 +979,26 @@ class HttpSecurityContractTests {
                 """))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.supplierId").value("ent-supplier-sunrise"));
+    mockMvc.perform(post("/api/v1/supplier/users/user-supplier-finance/password")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "newPassword": "new-password"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("user-supplier-finance"));
+    mockMvc.perform(post("/api/v1/supplier/users/user-supplier-finance/status")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "status": "inactive"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("inactive"));
     mockMvc.perform(get("/api/v1/supplier/rfqs")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())

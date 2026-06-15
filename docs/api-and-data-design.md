@@ -75,7 +75,7 @@ API 分组在 [data/apiContract.ts](../data/apiContract.ts) 中以 `apiModules` 
 
 供应商后台：
 
-- 企业档案、资质、子账号。
+- 企业档案、资质、子账号创建、密码重置和启停。
 - 询价邀请、报价提交。
 - 销售订单确认、发货、发票和应收记录。
 

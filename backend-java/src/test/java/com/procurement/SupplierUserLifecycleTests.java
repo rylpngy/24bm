@@ -5,11 +5,14 @@ import static org.mockito.Mockito.when;
 
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
+import com.procurement.supplier.api.ChangeSupplierUserStatusRequest;
 import com.procurement.supplier.api.CreateSupplierUserRequest;
+import com.procurement.supplier.api.ResetSupplierUserPasswordRequest;
 import com.procurement.supplier.application.SupplierUserApplicationService;
 import com.procurement.supplier.domain.SupplierUser;
 import com.procurement.supplier.infrastructure.SupplierUserMapper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -69,6 +72,66 @@ class SupplierUserLifecycleTests {
     supplierUserApplicationService.listCurrentSupplierUsers();
 
     verify(supplierUserMapper).listBySupplier("ent-supplier-sunrise");
+  }
+
+  @Test
+  void resetSupplierUserPasswordHashesNewPasswordInCurrentSupplierScope() {
+    TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
+    when(supplierUserMapper.existsBySupplierAndId("ent-supplier-sunrise", "user-supplier-finance"))
+        .thenReturn(true);
+    when(passwordEncoder.encode("new-password")).thenReturn("{bcrypt}new-hash");
+    when(supplierUserMapper.findBySupplierAndId("ent-supplier-sunrise", "user-supplier-finance"))
+        .thenReturn(user("user-supplier-finance"));
+
+    supplierUserApplicationService.resetUserPassword(
+        "user-supplier-finance",
+        new ResetSupplierUserPasswordRequest("new-password"));
+
+    verify(supplierUserMapper).updatePasswordHash(
+        "ent-supplier-sunrise",
+        "user-supplier-finance",
+        "{bcrypt}new-hash");
+    verify(auditLogApplicationService).recordTenantAction(
+        null,
+        "supplier_user.password_reset",
+        "supplier_user",
+        "user-supplier-finance");
+  }
+
+  @Test
+  void changeSupplierUserStatusUpdatesOnlyCurrentSupplierUser() {
+    TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
+    when(supplierUserMapper.existsBySupplierAndId("ent-supplier-sunrise", "user-supplier-finance"))
+        .thenReturn(true);
+    when(supplierUserMapper.findBySupplierAndId("ent-supplier-sunrise", "user-supplier-finance"))
+        .thenReturn(user("user-supplier-finance"));
+
+    supplierUserApplicationService.changeUserStatus(
+        "user-supplier-finance",
+        new ChangeSupplierUserStatusRequest("inactive"));
+
+    verify(supplierUserMapper).updateStatus(
+        "ent-supplier-sunrise",
+        "user-supplier-finance",
+        "inactive");
+    verify(auditLogApplicationService).recordTenantAction(
+        null,
+        "supplier_user.status_changed",
+        "supplier_user",
+        "user-supplier-finance");
+  }
+
+  @Test
+  void changeSupplierUserStatusRejectsUnsupportedStatus() {
+    TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
+    when(supplierUserMapper.existsBySupplierAndId("ent-supplier-sunrise", "user-supplier-finance"))
+        .thenReturn(true);
+
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> supplierUserApplicationService.changeUserStatus(
+            "user-supplier-finance",
+            new ChangeSupplierUserStatusRequest("locked")));
   }
 
   private SupplierUser user(String id) {

@@ -24,6 +24,8 @@ describe('Java supplier workspace scaffold', () => {
     expect(userController).toContain('@RequestMapping("/api/v1/supplier/users")');
     expect(userController).toContain('@GetMapping');
     expect(userController).toContain('@PostMapping');
+    expect(userController).toContain('/{userId}/password');
+    expect(userController).toContain('/{userId}/status');
     expect(rfqController).toContain('@GetMapping');
     expect(quoteController).toContain('@RequestMapping("/api/v1/supplier/quotes")');
     expect(quoteController).toContain('@GetMapping');
@@ -47,6 +49,10 @@ describe('Java supplier workspace scaffold', () => {
     expect(userService).toContain('TenantAccessGuard.requireSupplierId');
     expect(userService).toContain('passwordEncoder.encode');
     expect(userService).toContain('supplier_user.created');
+    expect(userService).toContain('supplier_user.password_reset');
+    expect(userService).toContain('supplier_user.status_changed');
+    expect(userService).toContain('updatePasswordHash');
+    expect(userService).toContain('updateStatus');
     expect(quoteService).toContain('listSupplierRfqs');
     expect(quoteService).toContain('listSupplierQuotes');
     expect(orderService).toContain('listCurrentSupplierOrders');
@@ -62,6 +68,8 @@ describe('Java supplier workspace scaffold', () => {
     expect(readme).toContain('POST /api/v1/supplier/qualifications');
     expect(readme).toContain('GET /api/v1/supplier/users');
     expect(readme).toContain('POST /api/v1/supplier/users');
+    expect(readme).toContain('POST /api/v1/supplier/users/{userId}/password');
+    expect(readme).toContain('POST /api/v1/supplier/users/{userId}/status');
     expect(readme).toContain('supplier_qualifications');
     expect(readme).toContain('GET /api/v1/supplier/rfqs');
     expect(readme).toContain('GET /api/v1/supplier/quotes');

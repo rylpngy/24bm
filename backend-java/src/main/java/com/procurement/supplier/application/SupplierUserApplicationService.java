@@ -2,7 +2,9 @@ package com.procurement.supplier.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.supplier.api.ChangeSupplierUserStatusRequest;
 import com.procurement.supplier.api.CreateSupplierUserRequest;
+import com.procurement.supplier.api.ResetSupplierUserPasswordRequest;
 import com.procurement.supplier.api.SupplierUserResponse;
 import com.procurement.supplier.domain.SupplierUser;
 import com.procurement.supplier.infrastructure.SupplierUserMapper;
@@ -17,6 +19,8 @@ public class SupplierUserApplicationService {
   private static final String ACTIVE_STATUS = "active";
   private static final String INACTIVE_STATUS = "inactive";
   private static final String SUPPLIER_USER_CREATED_ACTION = "supplier_user.created";
+  private static final String SUPPLIER_USER_PASSWORD_RESET_ACTION = "supplier_user.password_reset";
+  private static final String SUPPLIER_USER_STATUS_CHANGED_ACTION = "supplier_user.status_changed";
   private static final String SUPPLIER_USER_TARGET_TYPE = "supplier_user";
 
   private final SupplierUserMapper supplierUserMapper;
@@ -62,6 +66,36 @@ public class SupplierUserApplicationService {
     return toResponse(supplierUserMapper.findBySupplierAndId(supplierId, userId));
   }
 
+  @Transactional
+  public SupplierUserResponse resetUserPassword(String userId, ResetSupplierUserPasswordRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier user APIs");
+    requireSupplierUser(supplierId, userId);
+    supplierUserMapper.updatePasswordHash(
+        supplierId,
+        userId,
+        passwordEncoder.encode(request.newPassword()));
+    auditLogApplicationService.recordTenantAction(
+        null,
+        SUPPLIER_USER_PASSWORD_RESET_ACTION,
+        SUPPLIER_USER_TARGET_TYPE,
+        userId);
+    return toResponse(supplierUserMapper.findBySupplierAndId(supplierId, userId));
+  }
+
+  @Transactional
+  public SupplierUserResponse changeUserStatus(String userId, ChangeSupplierUserStatusRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier user APIs");
+    requireSupplierUser(supplierId, userId);
+    requireSupportedStatus(request.status());
+    supplierUserMapper.updateStatus(supplierId, userId, request.status());
+    auditLogApplicationService.recordTenantAction(
+        null,
+        SUPPLIER_USER_STATUS_CHANGED_ACTION,
+        SUPPLIER_USER_TARGET_TYPE,
+        userId);
+    return toResponse(supplierUserMapper.findBySupplierAndId(supplierId, userId));
+  }
+
   private String requireDefaultSupplierRoleId(String supplierId) {
     String roleId = supplierUserMapper.findDefaultSupplierRoleId(supplierId);
     if (roleId == null || roleId.isBlank()) {
@@ -73,6 +107,12 @@ public class SupplierUserApplicationService {
   private void requireSupportedStatus(String status) {
     if (!ACTIVE_STATUS.equals(status) && !INACTIVE_STATUS.equals(status)) {
       throw new IllegalArgumentException("Unsupported supplier user status: " + status);
+    }
+  }
+
+  private void requireSupplierUser(String supplierId, String userId) {
+    if (!supplierUserMapper.existsBySupplierAndId(supplierId, userId)) {
+      throw new IllegalArgumentException("Supplier user not found in supplier scope: " + userId);
     }
   }
 

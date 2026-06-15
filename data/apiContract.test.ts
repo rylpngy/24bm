@@ -58,6 +58,8 @@ describe('procurement SaaS API contract draft', () => {
       'POST /supplier/qualifications',
       'GET /supplier/users',
       'POST /supplier/users',
+      'POST /supplier/users/{userId}/password',
+      'POST /supplier/users/{userId}/status',
       'GET /supplier/rfqs',
       'POST /supplier/rfqs/{rfqId}/quotes',
       'POST /buyer/rfqs/{rfqId}/award',

@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface SupplierUserMapper {
@@ -47,6 +48,19 @@ public interface SupplierUserMapper {
       @Param("id") String id);
 
   @Select("""
+      select exists(
+        select 1
+        from users
+        where supplier_id = #{supplierId}
+          and tenant_id is null
+          and id = #{id}
+      )
+      """)
+  boolean existsBySupplierAndId(
+      @Param("supplierId") String supplierId,
+      @Param("id") String id);
+
+  @Select("""
       select r.id
       from roles r
       where r.scope = 'supplier'
@@ -82,4 +96,30 @@ public interface SupplierUserMapper {
   void assignRole(
       @Param("userId") String userId,
       @Param("roleId") String roleId);
+
+  @Update("""
+      update users
+      set password_hash = #{passwordHash},
+          updated_at = now()
+      where supplier_id = #{supplierId}
+        and tenant_id is null
+        and id = #{userId}
+      """)
+  void updatePasswordHash(
+      @Param("supplierId") String supplierId,
+      @Param("userId") String userId,
+      @Param("passwordHash") String passwordHash);
+
+  @Update("""
+      update users
+      set status = #{status},
+          updated_at = now()
+      where supplier_id = #{supplierId}
+        and tenant_id is null
+        and id = #{userId}
+      """)
+  void updateStatus(
+      @Param("supplierId") String supplierId,
+      @Param("userId") String userId,
+      @Param("status") String status);
 }

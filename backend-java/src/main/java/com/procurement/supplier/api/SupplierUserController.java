@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,5 +31,19 @@ public class SupplierUserController {
   @ResponseStatus(HttpStatus.CREATED)
   public ApiResponse<SupplierUserResponse> create(@Valid @RequestBody CreateSupplierUserRequest request) {
     return ApiResponse.ok(supplierUserApplicationService.createCurrentSupplierUser(request));
+  }
+
+  @PostMapping("/{userId}/password")
+  public ApiResponse<SupplierUserResponse> resetPassword(
+      @PathVariable String userId,
+      @Valid @RequestBody ResetSupplierUserPasswordRequest request) {
+    return ApiResponse.ok(supplierUserApplicationService.resetUserPassword(userId, request));
+  }
+
+  @PostMapping("/{userId}/status")
+  public ApiResponse<SupplierUserResponse> changeStatus(
+      @PathVariable String userId,
+      @Valid @RequestBody ChangeSupplierUserStatusRequest request) {
+    return ApiResponse.ok(supplierUserApplicationService.changeUserStatus(userId, request));
   }
 }

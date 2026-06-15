@@ -275,6 +275,8 @@ The supplier-side profile endpoints are:
 - `POST /api/v1/supplier/qualifications`
 - `GET /api/v1/supplier/users`
 - `POST /api/v1/supplier/users`
+- `POST /api/v1/supplier/users/{userId}/password`
+- `POST /api/v1/supplier/users/{userId}/status`
 
 Example qualification payload:
 
@@ -302,7 +304,7 @@ Example supplier sub-account payload:
 }
 ```
 
-Supplier user APIs also use the supplier identity from `Authorization: Bearer <accessToken>`. New users are written to `users.supplier_id`, get a hashed `password_hash`, are assigned the default `supplier` role, and record `supplier_user.created`.
+Supplier user APIs also use the supplier identity from `Authorization: Bearer <accessToken>`. New users are written to `users.supplier_id`, get a hashed `password_hash`, are assigned the default `supplier` role, and record `supplier_user.created`. Password reset hashes `newPassword` before updating `password_hash`, status changes support only `active` and `inactive`, and both maintenance actions stay scoped to the current supplier while recording `supplier_user.password_reset` or `supplier_user.status_changed`.
 
 ## Supplier Quote APIs
 
