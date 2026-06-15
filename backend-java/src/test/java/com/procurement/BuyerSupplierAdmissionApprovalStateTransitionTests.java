@@ -62,7 +62,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.eq("buyer_supplier_admission"),
         org.mockito.ArgumentMatchers.eq("rel-1"),
-        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.eq("buyer-owner"),
         org.mockito.ArgumentMatchers.eq("待审批"));
     verify(auditLogApplicationService).recordTenantAction(
         "buyer_supplier_admission.submitted",

@@ -90,7 +90,7 @@ Example creation payload:
 }
 ```
 
-Demand creation stores `草稿` and records an `audit_logs` row with action `purchase_demand.created`. Submit changes the demand to `审批中` and creates a pending approval task through `ApprovalTaskApplicationService` with `biz_type = purchase_demand`.
+Demand creation stores `草稿` and records an `audit_logs` row with action `purchase_demand.created`. Submit changes the demand to `审批中` and creates a pending approval task through `ApprovalTaskApplicationService` with `biz_type = purchase_demand` and fixed template `TPL_PURCHASE_DEMAND`.
 
 ## Buyer Audit Log APIs
 
@@ -286,7 +286,7 @@ Example award approval payload:
 }
 ```
 
-Award submission requires a `已提交` quote under the current tenant RFQ. The service updates the RFQ to `定标审批中`, creates an `award_decisions` row with `approved_status = 审批中`, and creates a pending approval task through `ApprovalTaskApplicationService` with `biz_type = rfq_award`.
+Award submission requires a `已提交` quote under the current tenant RFQ. The service updates the RFQ to `定标审批中`, creates an `award_decisions` row with `approved_status = 审批中`, and creates a pending approval task through `ApprovalTaskApplicationService` with `biz_type = rfq_award` and fixed template `TPL_RFQ_AWARD`.
 
 Award approval uses the RFQ ID plus award decision ID. Approval updates the RFQ to `已定标`, stores `awarded_supplier_id`, and changes the award decision to `已通过`. Rejection moves the RFQ back to `报价中` and changes the award decision to `已驳回`.
 

@@ -44,7 +44,13 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalMapper).toContain('@Mapper');
     expect(approvalMapper).toContain('approval_tasks');
     expect(approvalService).toContain('createPendingTask');
+    expect(approvalService).toContain('resolveTemplate');
     expect(approvalService).toContain('PENDING_APPROVAL_STATUS');
+    expect(approvalService).toContain('TPL_PURCHASE_DEMAND');
+    expect(approvalService).toContain('TPL_SUPPLIER_ADMISSION');
+    expect(approvalService).toContain('TPL_RFQ_AWARD');
+    expect(approvalService).toContain('buyer-owner');
+    expect(approvalService).toContain('Unsupported approval biz type');
   });
 
   it('centralizes pending approval task creation behind the approval application service', () => {

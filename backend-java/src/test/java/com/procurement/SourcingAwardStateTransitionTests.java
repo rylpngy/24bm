@@ -120,7 +120,7 @@ class SourcingAwardStateTransitionTests {
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.eq("rfq_award"),
         org.mockito.ArgumentMatchers.any(),
-        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.eq("buyer-owner"),
         org.mockito.ArgumentMatchers.eq("待审批"));
     verify(auditLogApplicationService).recordTenantAction(
         org.mockito.ArgumentMatchers.eq("rfq_award.submitted"),

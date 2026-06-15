@@ -39,6 +39,46 @@ class ApprovalTaskCreationServiceTests {
         org.mockito.ArgumentMatchers.eq("待审批"));
   }
 
+  @Test
+  void createPendingTaskResolvesFixedTemplateDefaultAssigneeWhenMissing() {
+    when(approvalTaskMapper.findByTenantAndId(
+            org.mockito.ArgumentMatchers.eq("tenant-1"),
+            org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> new ApprovalTask(
+            invocation.getArgument(1),
+            "tenant-1",
+            "buyer_supplier_admission",
+            "relation-1",
+            "buyer-owner",
+            "待审批",
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+
+    ApprovalTask task = approvalTaskApplicationService.createPendingTask(
+        "tenant-1",
+        "buyer_supplier_admission",
+        "relation-1",
+        null);
+
+    assertThat(task.assigneeId()).isEqualTo("buyer-owner");
+    assertThat(approvalTaskApplicationService.resolveTemplate("buyer_supplier_admission").templateCode())
+        .isEqualTo("TPL_SUPPLIER_ADMISSION");
+    verify(approvalTaskMapper).insert(
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("approval-")),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("buyer_supplier_admission"),
+        org.mockito.ArgumentMatchers.eq("relation-1"),
+        org.mockito.ArgumentMatchers.eq("buyer-owner"),
+        org.mockito.ArgumentMatchers.eq("待审批"));
+  }
+
+  @Test
+  void resolveTemplateRejectsUnsupportedApprovalBizType() {
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+        () -> approvalTaskApplicationService.resolveTemplate("unknown_biz"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Unsupported approval biz type");
+  }
+
   private ApprovalTask task(String id) {
     return new ApprovalTask(
         id,
