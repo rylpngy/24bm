@@ -376,6 +376,8 @@ The supplier-side sourcing endpoints are:
 
 The supplier RFQ invitation list accepts optional `status` and `keyword` filters inside the current supplier enterprise. `keyword` matches the RFQ title.
 
+The supplier quote history list accepts optional `rfqId` and `status` filters inside the current supplier enterprise.
+
 Example submission payload:
 
 ```json

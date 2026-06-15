@@ -2215,8 +2215,25 @@
         "tags": [
           "supplier"
         ],
-        "summary": "加载供应商报价历史",
-        "parameters": [],
+        "summary": "加载供应商报价历史，支持按 RFQ 和状态筛选",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []

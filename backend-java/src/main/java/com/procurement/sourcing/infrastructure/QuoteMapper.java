@@ -75,6 +75,27 @@ public interface QuoteMapper {
   @Select("""
       select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
       from quotes
+      where supplier_id = #{supplierId}
+        and (#{rfqId} is null or rfq_id = #{rfqId})
+        and (#{status} is null or status = #{status})
+      order by submitted_at desc
+      """)
+  @Results(id = "supplierQuoteFilteredListResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "rfq_id", property = "rfqId"),
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "tax_rate", property = "taxRate"),
+      @Result(column = "delivery_days", property = "deliveryDays"),
+      @Result(column = "submitted_at", property = "submittedAt")
+  })
+  List<Quote> listBySupplierFiltered(
+      @Param("supplierId") String supplierId,
+      @Param("rfqId") String rfqId,
+      @Param("status") String status);
+
+  @Select("""
+      select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
+      from quotes
       where tenant_id = #{tenantId}
         and rfq_id = #{rfqId}
         and id = #{quoteId}

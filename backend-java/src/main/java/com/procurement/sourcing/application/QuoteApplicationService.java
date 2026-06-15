@@ -57,6 +57,17 @@ public class QuoteApplicationService {
         .toList();
   }
 
+  public List<QuoteResponse> listSupplierQuotes(String rfqId, String status) {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    return quoteMapper.listBySupplierFiltered(
+            supplierId,
+            blankToNull(rfqId),
+            blankToNull(status))
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public QuoteResponse submit(String rfqId, SubmitQuoteRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");

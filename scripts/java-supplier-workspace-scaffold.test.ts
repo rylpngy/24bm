@@ -58,6 +58,7 @@ describe('Java supplier workspace scaffold', () => {
     expect(quoteService).toContain('listSupplierRfqs');
     expect(quoteService).toContain('listBySupplierInviteFiltered');
     expect(quoteService).toContain('listSupplierQuotes');
+    expect(quoteService).toContain('listBySupplierFiltered');
     expect(orderService).toContain('listCurrentSupplierOrders');
     expect(invoiceService).toContain('listCurrentSupplierInvoices');
   });
@@ -79,6 +80,7 @@ describe('Java supplier workspace scaffold', () => {
     expect(readme).toContain('GET /api/v1/supplier/rfqs');
     expect(readme).toContain('supplier RFQ invitation list accepts optional `status` and `keyword` filters');
     expect(readme).toContain('GET /api/v1/supplier/quotes');
+    expect(readme).toContain('supplier quote history list accepts optional `rfqId` and `status` filters');
     expect(readme).toContain('GET /api/v1/supplier/orders');
     expect(readme).toContain('GET /api/v1/supplier/invoices');
     expect(localGuide).toContain('GET /api/v1/supplier/workspace');

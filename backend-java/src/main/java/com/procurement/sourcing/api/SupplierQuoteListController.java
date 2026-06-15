@@ -5,6 +5,7 @@ import com.procurement.sourcing.application.QuoteApplicationService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -17,7 +18,9 @@ public class SupplierQuoteListController {
   }
 
   @GetMapping
-  public ApiResponse<List<QuoteResponse>> list() {
-    return ApiResponse.ok(quoteApplicationService.listSupplierQuotes());
+  public ApiResponse<List<QuoteResponse>> list(
+      @RequestParam(required = false) String rfqId,
+      @RequestParam(required = false) String status) {
+    return ApiResponse.ok(quoteApplicationService.listSupplierQuotes(rfqId, status));
   }
 }

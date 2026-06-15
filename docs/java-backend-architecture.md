@@ -266,6 +266,7 @@ Authorization: Bearer <accessToken>
 提交报价的关键校验：
 
 - 供应商 RFQ 邀请列表始终按当前 `supplierId` 和 `rfq_invites.invite_status = 已邀请` 过滤，并支持可选 `status`、`keyword` 查询条件；`keyword` 匹配询价标题。
+- 供应商报价历史列表始终按当前 `supplierId` 过滤，并支持可选 `rfqId`、`status` 查询条件。
 - 供应商档案维护的供应商身份来自 JWT 中的 `supplierId`，只允许更新 `enterprises.name`、`enterprises.industry`、`supplier_enterprises.credit_code`、`supplier_enterprises.legal_person`，不允许请求体覆盖审核、认证或档案状态。
 - 供应商资质接口的供应商身份来自 JWT 中的 `supplierId`，请求体不允许覆盖供应商归属；资质状态维护只允许当前供应商把本企业资质切换为 `active` 或 `inactive`。
 - 供应商资质存入公共供应商维度表 `supplier_qualifications`，不绑定采购方租户；采购方私域准入状态仍由 `buyer_supplier_relations` 隔离。

@@ -1122,7 +1122,23 @@ class HttpSecurityContractTests {
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
             List.of("demand-demo"),
             List.of("ent-supplier-sunrise"))));
-    when(quoteApplicationService.listSupplierQuotes()).thenReturn(List.of());
+    when(quoteApplicationService.listSupplierQuotes(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of());
+    when(quoteApplicationService.listSupplierQuotes(
+        org.mockito.ArgumentMatchers.eq("rfq-demo"),
+        org.mockito.ArgumentMatchers.eq("已提交")))
+        .thenReturn(List.of(new QuoteResponse(
+            "quote-demo",
+            "tenant-acme",
+            "rfq-demo",
+            "ent-supplier-sunrise",
+            BigDecimal.valueOf(98000),
+            BigDecimal.valueOf(13),
+            7,
+            "已提交",
+            OffsetDateTime.parse("2026-06-15T13:00:00+08:00"))));
     when(purchaseOrderApplicationService.listCurrentSupplierOrders()).thenReturn(List.of());
     when(purchaseOrderApplicationService.confirmCurrentSupplierOrder("po-demo"))
         .thenReturn(new PurchaseOrderResponse(
@@ -1255,6 +1271,12 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").isArray());
+    mockMvc.perform(get("/api/v1/supplier/quotes")
+            .queryParam("rfqId", "rfq-demo")
+            .queryParam("status", "已提交")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("quote-demo"));
     mockMvc.perform(get("/api/v1/supplier/orders")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
