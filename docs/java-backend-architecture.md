@@ -136,7 +136,7 @@ Authorization: Bearer <accessToken>
 - `approval_tasks`
 - `audit_logs`
 
-该模块通过 `TenantAccessGuard` 读取 JWT 派生的租户与用户上下文，不接受前端在请求体中直接传入租户归属。创建采购需求时，`departmentId` 必须命中当前租户下 `active` 状态的 `departments` 记录，防止跨租户组织归属被写入需求。创建采购需求成功后会写入 `audit_logs`，当前动作为 `purchase_demand.created`，目标类型为 `purchase_demand`。
+该模块通过 `TenantAccessGuard` 读取 JWT 派生的租户与用户上下文，不接受前端在请求体中直接传入租户归属。采购需求列表始终按当前 `tenantId` 过滤，并支持可选 `status`、`departmentId`、`keyword` 查询条件；`keyword` 匹配需求标题。创建采购需求时，`departmentId` 必须命中当前租户下 `active` 状态的 `departments` 记录，防止跨租户组织归属被写入需求。创建采购需求成功后会写入 `audit_logs`，当前动作为 `purchase_demand.created`，目标类型为 `purchase_demand`。
 
 ## 操作审计 Java 能力
 

@@ -109,6 +109,17 @@ class PurchaseDemandDepartmentValidationTests {
         org.mockito.ArgumentMatchers.eq("草稿"));
   }
 
+  @Test
+  void listDemandsAppliesFiltersInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-user-1");
+    when(purchaseDemandMapper.listByTenantFiltered("tenant-1", "已通过", "dept-it", "电脑"))
+        .thenReturn(List.of());
+
+    purchaseDemandApplicationService.listCurrentTenantDemands("已通过", "dept-it", "电脑");
+
+    verify(purchaseDemandMapper).listByTenantFiltered("tenant-1", "已通过", "dept-it", "电脑");
+  }
+
   private PurchaseDemand demand(String id) {
     return new PurchaseDemand(
         id,

@@ -1119,8 +1119,33 @@
         "tags": [
           "buyer"
         ],
-        "summary": "加载采购需求列表",
-        "parameters": [],
+        "summary": "加载采购需求列表，支持按状态、部门和关键词筛选",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "departmentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []

@@ -31,6 +31,7 @@ import com.procurement.attachment.api.CreateAttachmentRequest;
 import com.procurement.attachment.application.AttachmentApplicationService;
 import com.procurement.demand.api.PurchaseDemandController;
 import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.demand.api.PurchaseDemandResponse;
 import com.procurement.demand.application.PurchaseDemandApplicationService;
 import com.procurement.dictionary.api.DictionaryController;
 import com.procurement.dictionary.api.DictionaryEntryResponse;
@@ -365,7 +366,26 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isForbidden());
 
-    when(purchaseDemandApplicationService.listCurrentTenantDemands()).thenReturn(List.of());
+    when(purchaseDemandApplicationService.listCurrentTenantDemands(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of());
+    when(purchaseDemandApplicationService.listCurrentTenantDemands(
+        org.mockito.ArgumentMatchers.eq("已通过"),
+        org.mockito.ArgumentMatchers.eq("dept-it"),
+        org.mockito.ArgumentMatchers.eq("电脑")))
+        .thenReturn(List.of(new PurchaseDemandResponse(
+            "demand-demo",
+            "tenant-acme",
+            "采购需求",
+            "dept-it",
+            "buyer-user-1",
+            BigDecimal.valueOf(120000),
+            "已通过",
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            List.of())));
     String buyerToken = loginAndExtractToken("""
         {
           "account": "buyer",
@@ -380,6 +400,13 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data").isArray());
+    mockMvc.perform(get("/api/v1/buyer/demands")
+            .queryParam("status", "已通过")
+            .queryParam("departmentId", "dept-it")
+            .queryParam("keyword", "电脑")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].title").value("采购需求"));
   }
 
   @Test

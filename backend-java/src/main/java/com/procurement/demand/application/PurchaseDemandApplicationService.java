@@ -65,6 +65,21 @@ public class PurchaseDemandApplicationService {
         .toList();
   }
 
+  public List<PurchaseDemandResponse> listCurrentTenantDemands(
+      String status,
+      String departmentId,
+      String keyword) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
+    return purchaseDemandMapper.listByTenantFiltered(
+            tenantId,
+            blankToNull(status),
+            blankToNull(departmentId),
+            blankToNull(keyword))
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public PurchaseDemandResponse create(CreatePurchaseDemandRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
@@ -204,6 +219,10 @@ public class PurchaseDemandApplicationService {
 
   private String newId(String prefix) {
     return prefix + "-" + UUID.randomUUID();
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 
   private void requireActiveDepartment(String tenantId, String departmentId) {

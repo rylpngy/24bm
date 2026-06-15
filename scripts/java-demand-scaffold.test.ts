@@ -111,6 +111,7 @@ describe('Java purchase demand scaffold', () => {
     expect(service).toContain('TenantAccessGuard.requireUserId');
     expect(service).toContain('requireActiveDepartment');
     expect(service).toContain('existsActiveByTenantAndId');
+    expect(service).toContain('listByTenantFiltered');
     expect(service).toContain('草稿');
     expect(service).toContain('审批中');
     expect(service).toContain('purchase_demand');
@@ -122,6 +123,7 @@ describe('Java purchase demand scaffold', () => {
 
     expect(readme).toContain('GET /api/v1/buyer/demands');
     expect(readme).toContain('POST /api/v1/buyer/demands');
+    expect(readme).toContain('optional `status`, `departmentId`, and `keyword` filters');
     expect(architecture).toContain('采购需求 Java API');
   });
 

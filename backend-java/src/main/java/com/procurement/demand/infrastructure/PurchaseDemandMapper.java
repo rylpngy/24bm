@@ -32,6 +32,28 @@ public interface PurchaseDemandMapper {
   @Select("""
       select id, tenant_id, title, department_id, requester_id, budget, status, created_at, updated_at
       from purchase_demands
+      where tenant_id = #{tenantId}
+        and (#{status} is null or status = #{status})
+        and (#{departmentId} is null or department_id = #{departmentId})
+        and (#{keyword} is null or title ilike concat('%', #{keyword}, '%'))
+      order by created_at desc
+      """)
+  @Results(id = "purchaseDemandFilteredResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "department_id", property = "departmentId"),
+      @Result(column = "requester_id", property = "requesterId"),
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "updated_at", property = "updatedAt")
+  })
+  List<PurchaseDemand> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("status") String status,
+      @Param("departmentId") String departmentId,
+      @Param("keyword") String keyword);
+
+  @Select("""
+      select id, tenant_id, title, department_id, requester_id, budget, status, created_at, updated_at
+      from purchase_demands
       where tenant_id = #{tenantId} and id = #{id}
       """)
   @Results(id = "singlePurchaseDemandResults", value = {

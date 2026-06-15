@@ -378,9 +378,10 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     method: 'GET',
     path: '/buyer/demands',
     audience: 'buyer',
-    action: '加载采购需求列表',
+    action: '加载采购需求列表，支持按状态、部门和关键词筛选',
     requestSchema: 'PurchaseDemandListRequest',
     responseSchema: 'PurchaseDemandList',
+    queryParameters: ['status', 'departmentId', 'keyword'],
   },
   {
     method: 'POST',
