@@ -84,6 +84,9 @@ public class InvoiceApplicationService {
       throw new IllegalStateException("Only received purchase orders can be invoiced: " + orderId);
     }
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), FINANCE_FEATURE);
+    if (request.amount().compareTo(order.amount()) != 0) {
+      throw new IllegalArgumentException("Invoice amount must equal purchase order amount: " + orderId);
+    }
 
     String invoiceId = newId("invoice");
     invoiceMapper.insert(

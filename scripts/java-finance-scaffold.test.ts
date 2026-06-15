@@ -56,6 +56,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('requireEnabled(order.tenantId(), FINANCE_FEATURE)');
     expect(invoiceService).toContain('已收货');
     expect(invoiceService).toContain('待付款');
+    expect(invoiceService).toContain('compareTo(order.amount())');
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
@@ -82,9 +83,11 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(readme).toContain('GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs');
     expect(readme).toContain('The buyer payment audit log list returns current-tenant `invoice.paid` and `invoice.partial_paid` audit entries');
     expect(readme).toContain('Payment registration rejects invoices whose current-tenant supplier relation is `黑名单`');
+    expect(readme).toContain('Invoice creation requires `amount` to equal the purchase order amount');
     expect(readme).toContain('`finance` feature enabled');
     expect(architecture).toContain('财务协同 Java API');
     expect(architecture).toContain('当前租户必须启用 `finance` 功能开关');
+    expect(architecture).toContain('发票金额必须等于采购订单金额');
     expect(architecture).toContain('发票供应商在当前采购方私域供应商关系中不能是 `黑名单`');
   });
 });

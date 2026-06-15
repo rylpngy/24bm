@@ -1,5 +1,7 @@
 package com.procurement;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,6 +90,28 @@ class FinanceInvoiceAuditLogTests {
         org.mockito.ArgumentMatchers.eq("invoice.created"),
         org.mockito.ArgumentMatchers.eq("invoice"),
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("invoice-")));
+  }
+
+  @Test
+  void supplierInvoiceCreationRejectsAmountDifferentFromOrderAmountBeforeInsert() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))
+        .thenReturn(order());
+
+    assertThatThrownBy(() -> invoiceApplicationService.create(
+        "po-1",
+        new CreateInvoiceRequest(BigDecimal.valueOf(99), "INV-001")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Invoice amount must equal purchase order amount");
+
+    verify(invoiceMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
   }
 
   private PurchaseOrder order() {
