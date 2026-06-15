@@ -14,6 +14,7 @@ import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.supplier.api.SupplierProfileResponse;
 import com.procurement.supplier.api.SupplierWorkspaceResponse;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
+import com.procurement.supplier.application.SupplierTodoSummaryAssembler;
 import com.procurement.supplier.application.SupplierWorkspaceApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -33,13 +34,15 @@ class SupplierWorkspaceNotificationTests {
       org.mockito.Mockito.mock(InvoiceApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
+  private final SupplierTodoSummaryAssembler supplierTodoSummaryAssembler = new SupplierTodoSummaryAssembler();
   private final SupplierWorkspaceApplicationService supplierWorkspaceApplicationService =
       new SupplierWorkspaceApplicationService(
           supplierProfileApplicationService,
           quoteApplicationService,
           purchaseOrderApplicationService,
           invoiceApplicationService,
-          notificationApplicationService);
+          notificationApplicationService,
+          supplierTodoSummaryAssembler);
 
   @Test
   void supplierWorkspaceAggregatesCurrentSupplierUserNotifications() {

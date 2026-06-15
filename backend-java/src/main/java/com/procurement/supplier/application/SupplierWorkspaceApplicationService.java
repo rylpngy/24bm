@@ -9,7 +9,6 @@ import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.application.QuoteApplicationService;
-import com.procurement.supplier.api.SupplierTodoSummaryResponse;
 import com.procurement.supplier.api.SupplierWorkspaceResponse;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -17,29 +16,27 @@ import org.springframework.stereotype.Service;
 @Service
 public class SupplierWorkspaceApplicationService {
   private static final int WORKSPACE_NOTIFICATION_LIMIT = 20;
-  private static final String RFQ_QUOTING_STATUS = "报价中";
-  private static final String ORDER_PENDING_CONFIRMATION_STATUS = "待供应商确认";
-  private static final String ORDER_PENDING_SHIPMENT_STATUS = "待发货";
-  private static final String INVOICE_PENDING_PAYMENT_STATUS = "待付款";
-  private static final String INVOICE_PARTIAL_PAYMENT_STATUS = "部分付款";
 
   private final SupplierProfileApplicationService supplierProfileApplicationService;
   private final QuoteApplicationService quoteApplicationService;
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
   private final InvoiceApplicationService invoiceApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final SupplierTodoSummaryAssembler supplierTodoSummaryAssembler;
 
   public SupplierWorkspaceApplicationService(
       SupplierProfileApplicationService supplierProfileApplicationService,
       QuoteApplicationService quoteApplicationService,
       PurchaseOrderApplicationService purchaseOrderApplicationService,
       InvoiceApplicationService invoiceApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      SupplierTodoSummaryAssembler supplierTodoSummaryAssembler) {
     this.supplierProfileApplicationService = supplierProfileApplicationService;
     this.quoteApplicationService = quoteApplicationService;
     this.purchaseOrderApplicationService = purchaseOrderApplicationService;
     this.invoiceApplicationService = invoiceApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.supplierTodoSummaryAssembler = supplierTodoSummaryAssembler;
   }
 
   public SupplierWorkspaceResponse load() {
@@ -52,37 +49,11 @@ public class SupplierWorkspaceApplicationService {
 
     return new SupplierWorkspaceResponse(
         supplierProfileApplicationService.getCurrentSupplierProfile(),
-        summarizeTodos(opportunities, orders, invoices),
+        supplierTodoSummaryAssembler.summarize(opportunities, orders, invoices),
         opportunities,
         quotes,
         orders,
         invoices,
         notifications);
-  }
-
-  private SupplierTodoSummaryResponse summarizeTodos(
-      List<RfqResponse> opportunities,
-      List<PurchaseOrderResponse> orders,
-      List<InvoiceResponse> invoices) {
-    return new SupplierTodoSummaryResponse(
-        countRfqsByStatus(opportunities, RFQ_QUOTING_STATUS),
-        countOrdersByStatus(orders, ORDER_PENDING_CONFIRMATION_STATUS),
-        countOrdersByStatus(orders, ORDER_PENDING_SHIPMENT_STATUS),
-        invoices.stream()
-            .filter(invoice -> INVOICE_PENDING_PAYMENT_STATUS.equals(invoice.paymentStatus())
-                || INVOICE_PARTIAL_PAYMENT_STATUS.equals(invoice.paymentStatus()))
-            .count());
-  }
-
-  private long countRfqsByStatus(List<RfqResponse> rfqs, String status) {
-    return rfqs.stream()
-        .filter(rfq -> status.equals(rfq.status()))
-        .count();
-  }
-
-  private long countOrdersByStatus(List<PurchaseOrderResponse> orders, String status) {
-    return orders.stream()
-        .filter(order -> status.equals(order.status()))
-        .count();
   }
 }

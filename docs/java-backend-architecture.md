@@ -45,6 +45,8 @@ Controller
 
 采购方工作台属于跨模块聚合入口，`BuyerWorkspaceApplicationService` 只负责调用各业务应用服务并组装响应；待办数量等展示型汇总规则下沉到 `BuyerTodoSummaryAssembler`，避免工作台服务承载采购需求、询价、订单和财务模块的业务状态细节。
 
+供应商工作台采用同样边界：`SupplierWorkspaceApplicationService` 只聚合供应商档案、商机、报价、订单、发票和通知；报价、确认订单、发货和应收等展示型待办规则由 `SupplierTodoSummaryAssembler` 承接。
+
 ## 多租户策略
 
 MVP 采用共享数据库、共享 Schema、`tenant_id` 字段隔离。平台数据、供应商公共企业档案和采购方私域关系分开建模。所有组织部门、采购需求、询价、报价、订单、收货、发票、审批任务、附件和审计数据必须带租户上下文。

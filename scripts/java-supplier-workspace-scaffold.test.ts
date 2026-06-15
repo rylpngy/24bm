@@ -39,6 +39,7 @@ describe('Java supplier workspace scaffold', () => {
   it('keeps supplier list queries scoped to the authenticated supplier', () => {
     const supplierService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierProfileApplicationService.java');
     const supplierWorkspaceService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierWorkspaceApplicationService.java');
+    const supplierTodoSummaryAssembler = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierTodoSummaryAssembler.java');
     const supplierWorkspaceResponse = read('backend-java/src/main/java/com/procurement/supplier/api/SupplierWorkspaceResponse.java');
     const qualificationService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierQualificationApplicationService.java');
     const userService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierUserApplicationService.java');
@@ -69,9 +70,10 @@ describe('Java supplier workspace scaffold', () => {
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listBySupplierFiltered');
     expect(supplierWorkspaceService).toContain('listCurrentSupplierUserNotifications(WORKSPACE_NOTIFICATION_LIMIT)');
-    expect(supplierWorkspaceService).toContain('summarizeTodos');
-    expect(supplierWorkspaceService).toContain('ORDER_PENDING_CONFIRMATION_STATUS');
-    expect(supplierWorkspaceService).toContain('INVOICE_PARTIAL_PAYMENT_STATUS');
+    expect(supplierWorkspaceService).toContain('SupplierTodoSummaryAssembler');
+    expect(supplierWorkspaceService).toContain('supplierTodoSummaryAssembler.summarize');
+    expect(supplierTodoSummaryAssembler).toContain('ORDER_PENDING_CONFIRMATION_STATUS');
+    expect(supplierTodoSummaryAssembler).toContain('INVOICE_PARTIAL_PAYMENT_STATUS');
     expect(supplierWorkspaceResponse).toContain('SupplierTodoSummaryResponse todoSummary');
     expect(supplierWorkspaceResponse).toContain('List<NotificationResponse> notifications');
   });
