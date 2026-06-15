@@ -123,6 +123,14 @@ describe('procurement SaaS API contract draft', () => {
     expect(openApi.paths['/buyer/departments/{departmentId}/disable'].post.parameters).toEqual(
       expect.arrayContaining([expect.objectContaining({ name: 'departmentId', in: 'path', required: true })]),
     );
+    expect(openApi.paths['/buyer/suppliers'].get.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'status', in: 'query', required: false }),
+        expect.objectContaining({ name: 'level', in: 'query', required: false }),
+        expect.objectContaining({ name: 'category', in: 'query', required: false }),
+        expect.objectContaining({ name: 'keyword', in: 'query', required: false }),
+      ]),
+    );
     expect(openApi.paths['/buyer/audit-logs'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/attachments'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/notifications'].get.tags).toContain('buyer');

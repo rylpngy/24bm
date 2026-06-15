@@ -1927,7 +1927,12 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isForbidden());
 
-    when(buyerSupplierApplicationService.listCurrentTenantSuppliers()).thenReturn(List.of(new BuyerSupplierResponse(
+    when(buyerSupplierApplicationService.listCurrentTenantSuppliers(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(new BuyerSupplierResponse(
         "rel-sunrise",
         "tenant-acme",
         "ent-supplier-sunrise",
@@ -1942,6 +1947,30 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].supplierName").value("晨光供应商"))
         .andExpect(jsonPath("$.data[0].categories[0]").value("办公设备"));
+
+    when(buyerSupplierApplicationService.listCurrentTenantSuppliers(
+        org.mockito.ArgumentMatchers.eq("已准入"),
+        org.mockito.ArgumentMatchers.eq("A"),
+        org.mockito.ArgumentMatchers.eq("办公设备"),
+        org.mockito.ArgumentMatchers.eq("晨光")))
+        .thenReturn(List.of(new BuyerSupplierResponse(
+            "rel-sunrise",
+            "tenant-acme",
+            "ent-supplier-sunrise",
+            "晨光供应商",
+            "已准入",
+            "A",
+            List.of("办公设备"),
+            BigDecimal.valueOf(92.50))));
+
+    mockMvc.perform(get("/api/v1/buyer/suppliers")
+            .queryParam("status", "已准入")
+            .queryParam("level", "A")
+            .queryParam("category", "办公设备")
+            .queryParam("keyword", "晨光")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].supplierName").value("晨光供应商"));
 
     when(buyerSupplierApplicationService.createSupplierRelation(
         org.mockito.ArgumentMatchers.any(CreateBuyerSupplierRequest.class)))

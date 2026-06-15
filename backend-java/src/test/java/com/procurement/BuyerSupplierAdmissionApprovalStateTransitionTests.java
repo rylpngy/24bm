@@ -187,6 +187,24 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         "rel-1");
   }
 
+  @Test
+  void listSupplierRelationsAppliesFiltersInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+
+    buyerSupplierApplicationService.listCurrentTenantSuppliers(
+        "已准入",
+        "S",
+        "办公设备",
+        "晨光");
+
+    verify(buyerSupplierRelationMapper).listByTenant(
+        "tenant-1",
+        "已准入",
+        "S",
+        "办公设备",
+        "晨光");
+  }
+
   private BuyerSupplierRelation relation(String id, String tenantId, String status) {
     return new BuyerSupplierRelation(
         id,

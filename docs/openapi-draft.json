@@ -487,8 +487,41 @@
         "tags": [
           "buyer"
         ],
-        "summary": "加载采购方私域供应商库",
-        "parameters": [],
+        "summary": "加载采购方私域供应商库，支持按状态、分级、品类和关键词筛选",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []

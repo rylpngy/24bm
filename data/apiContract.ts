@@ -15,6 +15,7 @@ export interface FlowEndpoint {
   action: string;
   requestSchema: string;
   responseSchema: string;
+  queryParameters?: string[];
 }
 
 export interface DatabaseTable {
@@ -222,9 +223,10 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     method: 'GET',
     path: '/buyer/suppliers',
     audience: 'buyer',
-    action: '加载采购方私域供应商库',
+    action: '加载采购方私域供应商库，支持按状态、分级、品类和关键词筛选',
     requestSchema: 'BuyerSupplierListRequest',
     responseSchema: 'BuyerSupplierList',
+    queryParameters: ['status', 'level', 'category', 'keyword'],
   },
   {
     method: 'POST',
@@ -843,7 +845,15 @@ const pathParameter = (name: string): OpenApiParameter => ({
 });
 
 const parametersFor = (endpoint: FlowEndpoint): OpenApiParameter[] => {
-  return Array.from(endpoint.path.matchAll(/\{([^}]+)\}/g)).map((match) => pathParameter(match[1]));
+  return [
+    ...Array.from(endpoint.path.matchAll(/\{([^}]+)\}/g)).map((match) => pathParameter(match[1])),
+    ...(endpoint.queryParameters ?? []).map((name): OpenApiParameter => ({
+      name,
+      in: 'query',
+      required: false,
+      schema: { type: 'string' },
+    })),
+  ];
 };
 
 export const buildOpenApiDraft = (): OpenApiDraft => {

@@ -58,8 +58,22 @@ public class BuyerSupplierApplicationService {
   }
 
   public List<BuyerSupplierResponse> listCurrentTenantSuppliers() {
+    return listCurrentTenantSuppliers(null, null, null, null);
+  }
+
+  public List<BuyerSupplierResponse> listCurrentTenantSuppliers(
+      String status,
+      String level,
+      String category,
+      String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
-    return buyerSupplierRelationMapper.listByTenant(tenantId).stream()
+    return buyerSupplierRelationMapper.listByTenant(
+            tenantId,
+            blankToNull(status),
+            blankToNull(level),
+            blankToNull(category),
+            blankToNull(keyword))
+        .stream()
         .map(this::toResponse)
         .toList();
   }
@@ -260,5 +274,9 @@ public class BuyerSupplierApplicationService {
     } catch (JsonProcessingException exception) {
       throw new IllegalStateException("Unable to serialize supplier categories.", exception);
     }
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

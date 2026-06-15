@@ -19,6 +19,14 @@ public interface BuyerSupplierRelationMapper {
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
       where r.tenant_id = #{tenantId}
+        and (#{status} is null or r.status = #{status})
+        and (#{level} is null or r.level = #{level})
+        and (#{category} is null or jsonb_exists(r.categories, #{category}))
+        and (
+          #{keyword} is null
+          or e.name ilike concat('%', #{keyword}, '%')
+          or r.supplier_id ilike concat('%', #{keyword}, '%')
+        )
       order by r.created_at desc
       """)
   @Results(id = "buyerSupplierRelationResults", value = {
@@ -28,7 +36,12 @@ public interface BuyerSupplierRelationMapper {
       @Result(column = "categories_json", property = "categoriesJson"),
       @Result(column = "performance_score", property = "performanceScore")
   })
-  List<BuyerSupplierRelation> listByTenant(@Param("tenantId") String tenantId);
+  List<BuyerSupplierRelation> listByTenant(
+      @Param("tenantId") String tenantId,
+      @Param("status") String status,
+      @Param("level") String level,
+      @Param("category") String category,
+      @Param("keyword") String keyword);
 
   @Select("""
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
