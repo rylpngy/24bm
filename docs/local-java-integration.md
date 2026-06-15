@@ -94,7 +94,7 @@ The backend accepts `GET`, `POST`, and `OPTIONS`, including the `Authorization` 
 2. Go to the platform workspace and confirm tenant count, public supplier count, pending review count, and tenant rows are loaded through the Java platform workspace overlay.
 3. Go to the buyer workspace.
 4. Confirm the private supplier relation cards, material-backed sections, buyer users, purchase demand cards, RFQ cards, order sections, and invoice/payment sections are loaded through the Java buyer workspace overlay.
-5. Go to the supplier workspace and confirm supplier profile, RFQ opportunities, quotes, sales orders, receivables, and recent in-app notifications are loaded through the Java supplier workspace overlay.
+5. Go to the supplier workspace and confirm supplier profile, RFQ opportunities, quotes, sales orders, todo summary, receivables, and recent in-app notifications are loaded through the Java supplier workspace overlay.
 6. In the buyer workspace, confirm Java approval tasks appear in `审批待办` when pending demand, supplier admission, or award approval tasks exist.
 7. Click approval actions in `审批待办` and confirm the page refreshes Java buyer data after the review result.
 8. Click `跑通主流程` in the buyer workspace to execute the Java-backed RFQ, quote, award approval, order, supplier confirmation, delivery, receipt, invoice, and payment-status path.

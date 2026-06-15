@@ -139,6 +139,7 @@ The supplier-side in-app notification endpoints are:
 
 Supplier notifications are scoped by the JWT `supplierId` and current `userId`; the stored `tenant_id` remains the buyer tenant that produced the business event.
 Supplier workspace includes recent in-app notifications so the supplier portal can surface payment and receivable updates from `GET /api/v1/supplier/workspace` without an extra first-screen request.
+Supplier workspace includes `todoSummary` counts for pending quotes, pending order confirmation, pending shipment, and pending receivables.
 
 Purchase demand submission now creates in-app notifications for active buyer users in the current tenant with title `采购需求待审批`.
 RFQ award approval submission also creates in-app notifications for active buyer users with title `定标结果待审批`.

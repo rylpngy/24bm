@@ -69,6 +69,10 @@ describe('Java supplier workspace scaffold', () => {
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listBySupplierFiltered');
     expect(supplierWorkspaceService).toContain('listCurrentSupplierUserNotifications(WORKSPACE_NOTIFICATION_LIMIT)');
+    expect(supplierWorkspaceService).toContain('summarizeTodos');
+    expect(supplierWorkspaceService).toContain('ORDER_PENDING_CONFIRMATION_STATUS');
+    expect(supplierWorkspaceService).toContain('INVOICE_PARTIAL_PAYMENT_STATUS');
+    expect(supplierWorkspaceResponse).toContain('SupplierTodoSummaryResponse todoSummary');
     expect(supplierWorkspaceResponse).toContain('List<NotificationResponse> notifications');
   });
 
@@ -98,7 +102,8 @@ describe('Java supplier workspace scaffold', () => {
     expect(readme).toContain('The supplier payment audit log list first verifies the invoice belongs to the current supplier enterprise');
     expect(readme).toContain('GET /api/v1/supplier/notifications');
     expect(readme).toContain('Supplier workspace includes recent in-app notifications');
+    expect(readme).toContain('Supplier workspace includes `todoSummary` counts');
     expect(localGuide).toContain('GET /api/v1/supplier/workspace');
-    expect(localGuide).toContain('receivables, and recent in-app notifications are loaded through the Java supplier workspace overlay');
+    expect(localGuide).toContain('todo summary, receivables, and recent in-app notifications are loaded through the Java supplier workspace overlay');
   });
 });

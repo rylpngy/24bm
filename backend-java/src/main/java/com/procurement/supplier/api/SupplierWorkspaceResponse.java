@@ -9,6 +9,7 @@ import java.util.List;
 
 public record SupplierWorkspaceResponse(
     SupplierProfileResponse profile,
+    SupplierTodoSummaryResponse todoSummary,
     List<RfqResponse> opportunities,
     List<QuoteResponse> quotes,
     List<PurchaseOrderResponse> orders,

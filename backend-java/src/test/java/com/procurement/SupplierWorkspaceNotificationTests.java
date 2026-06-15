@@ -4,14 +4,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.procurement.finance.application.InvoiceApplicationService;
+import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.application.PurchaseOrderApplicationService;
+import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.supplier.api.SupplierProfileResponse;
 import com.procurement.supplier.api.SupplierWorkspaceResponse;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
 import com.procurement.supplier.application.SupplierWorkspaceApplicationService;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -53,6 +58,33 @@ class SupplierWorkspaceNotificationTests {
     assertThat(response.notifications().get(0).title()).isEqualTo("发票已付款");
   }
 
+  @Test
+  void supplierWorkspaceSummarizesActionableTodos() {
+    when(supplierProfileApplicationService.getCurrentSupplierProfile())
+        .thenReturn(profile());
+    when(quoteApplicationService.listSupplierRfqs()).thenReturn(List.of(
+        rfq("rfq-open", "报价中"),
+        rfq("rfq-awarded", "已定标")));
+    when(quoteApplicationService.listSupplierQuotes()).thenReturn(List.of());
+    when(purchaseOrderApplicationService.listCurrentSupplierOrders()).thenReturn(List.of(
+        order("po-confirm", "待供应商确认"),
+        order("po-ship", "待发货"),
+        order("po-received", "已收货")));
+    when(invoiceApplicationService.listCurrentSupplierInvoices()).thenReturn(List.of(
+        invoice("inv-pending", "待付款"),
+        invoice("inv-partial", "部分付款"),
+        invoice("inv-paid", "已付款")));
+    when(notificationApplicationService.listCurrentSupplierUserNotifications(20))
+        .thenReturn(List.of());
+
+    SupplierWorkspaceResponse response = supplierWorkspaceApplicationService.load();
+
+    assertThat(response.todoSummary().pendingQuoteCount()).isEqualTo(1);
+    assertThat(response.todoSummary().pendingOrderConfirmationCount()).isEqualTo(1);
+    assertThat(response.todoSummary().pendingShipmentCount()).isEqualTo(1);
+    assertThat(response.todoSummary().pendingReceivableCount()).isEqualTo(2);
+  }
+
   private SupplierProfileResponse profile() {
     return new SupplierProfileResponse(
         "supplier-1",
@@ -77,5 +109,46 @@ class SupplierWorkspaceNotificationTests {
         false,
         null,
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"));
+  }
+
+  private RfqResponse rfq(String id, String status) {
+    return new RfqResponse(
+        id,
+        "tenant-1",
+        "办公电脑采购",
+        status,
+        OffsetDateTime.parse("2026-06-20T18:00:00+08:00"),
+        "buyer-user",
+        null,
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        List.of("demand-1"),
+        List.of("supplier-1"));
+  }
+
+  private PurchaseOrderResponse order(String id, String status) {
+    return new PurchaseOrderResponse(
+        id,
+        "tenant-1",
+        "rfq-1",
+        "supplier-1",
+        BigDecimal.valueOf(100),
+        status,
+        LocalDate.parse("2026-06-20"),
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+  }
+
+  private InvoiceResponse invoice(String id, String paymentStatus) {
+    return new InvoiceResponse(
+        id,
+        "tenant-1",
+        "supplier-1",
+        "po-1",
+        BigDecimal.valueOf(100),
+        "INV-001",
+        paymentStatus,
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
   }
 }

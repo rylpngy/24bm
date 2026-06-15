@@ -134,6 +134,7 @@ import com.procurement.supplier.api.SupplierUserResponse;
 import com.procurement.supplier.api.UpdateSupplierProfileRequest;
 import com.procurement.supplier.api.SupplierWorkspaceController;
 import com.procurement.supplier.api.SupplierWorkspaceResponse;
+import com.procurement.supplier.api.SupplierTodoSummaryResponse;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
 import com.procurement.supplier.application.SupplierQualificationApplicationService;
@@ -1563,6 +1564,7 @@ class HttpSecurityContractTests {
             "approved",
             "published",
             List.of("Acme 采购公司")),
+        new SupplierTodoSummaryResponse(0, 0, 0, 0),
         List.of(),
         List.of(),
         List.of(),
@@ -1574,6 +1576,7 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.profile.id").value("ent-supplier-sunrise"))
+        .andExpect(jsonPath("$.data.todoSummary.pendingQuoteCount").value(0))
         .andExpect(jsonPath("$.data.opportunities").isArray())
         .andExpect(jsonPath("$.data.quotes").isArray())
         .andExpect(jsonPath("$.data.orders").isArray())
