@@ -42,10 +42,12 @@ describe('Java buyer receipt scaffold', () => {
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantAccessGuard.requireUserId');
+    expect(service).toContain('DeliveryMapper');
     expect(service).toContain('listCurrentTenantReceipts');
     expect(service).toContain('listByTenantFiltered');
     expect(service).toContain('已发货');
     expect(service).toContain('已收货');
+    expect(service).toContain('countByTenantOrderAndStatus');
     expect(service).toContain('findByTenantAndId');
     expect(service).toContain('updateStatus');
   });
@@ -57,6 +59,8 @@ describe('Java buyer receipt scaffold', () => {
     expect(readme).toContain('GET /api/v1/buyer/receipts');
     expect(readme).toContain('POST /api/v1/buyer/orders/{orderId}/receipts');
     expect(readme).toContain('The buyer receipt list accepts optional `orderId` and `receiverId` filters');
+    expect(readme).toContain('Receipt creation requires a current-tenant delivery record with status `已发货` for the order');
     expect(architecture).toContain('采购方收货验收 Java API');
+    expect(architecture).toContain('当前租户下该订单必须存在状态为 `已发货` 的发货记录');
   });
 });

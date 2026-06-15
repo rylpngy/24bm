@@ -14,6 +14,7 @@ import com.procurement.order.api.CreateReceiptRequest;
 import com.procurement.order.application.ReceiptApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.Receipt;
+import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 class ReceiptNotificationTests {
 
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
+  private final DeliveryMapper deliveryMapper = org.mockito.Mockito.mock(DeliveryMapper.class);
   private final ReceiptMapper receiptMapper = org.mockito.Mockito.mock(ReceiptMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
@@ -38,6 +40,7 @@ class ReceiptNotificationTests {
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final ReceiptApplicationService receiptApplicationService = new ReceiptApplicationService(
       purchaseOrderMapper,
+      deliveryMapper,
       receiptMapper,
       auditLogApplicationService,
       notificationApplicationService,
@@ -53,6 +56,8 @@ class ReceiptNotificationTests {
     TenantContext.set("tenant-1", null, "user-buyer");
     when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
         .thenReturn(order("po-1", "tenant-1", "supplier-1", "已发货"));
+    when(deliveryMapper.countByTenantOrderAndStatus("tenant-1", "po-1", "已发货"))
+        .thenReturn(1);
     when(purchaseOrderMapper.updateStatus("tenant-1", "po-1", "已发货", "已收货"))
         .thenReturn(1);
     when(receiptMapper.findByTenantAndId(

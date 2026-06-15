@@ -40,6 +40,18 @@ public interface DeliveryMapper {
   Delivery findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
+      select count(1)
+      from deliveries
+      where tenant_id = #{tenantId}
+        and order_id = #{orderId}
+        and status = #{status}
+      """)
+  int countByTenantOrderAndStatus(
+      @Param("tenantId") String tenantId,
+      @Param("orderId") String orderId,
+      @Param("status") String status);
+
+  @Select("""
       select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
       from deliveries
       where supplier_id = #{supplierId}

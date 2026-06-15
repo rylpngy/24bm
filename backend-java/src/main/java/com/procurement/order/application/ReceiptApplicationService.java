@@ -6,6 +6,7 @@ import com.procurement.order.api.CreateReceiptRequest;
 import com.procurement.order.api.ReceiptResponse;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.Receipt;
+import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -25,6 +26,7 @@ public class ReceiptApplicationService {
   private static final String ORDER_FEATURE = "order";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
+  private final DeliveryMapper deliveryMapper;
   private final ReceiptMapper receiptMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -32,11 +34,13 @@ public class ReceiptApplicationService {
 
   public ReceiptApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
+      DeliveryMapper deliveryMapper,
       ReceiptMapper receiptMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
+    this.deliveryMapper = deliveryMapper;
     this.receiptMapper = receiptMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -66,6 +70,9 @@ public class ReceiptApplicationService {
       throw new IllegalStateException("Only shipped purchase orders can be received: " + orderId);
     }
     tenantFeatureApplicationService.requireEnabled(tenantId, ORDER_FEATURE);
+    if (deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, SHIPPED_STATUS) == 0) {
+      throw new IllegalStateException("Shipped delivery not found for receipt: " + orderId);
+    }
 
     String receiptId = newId("receipt");
     receiptMapper.insert(receiptId, tenantId, orderId, userId, request.result());

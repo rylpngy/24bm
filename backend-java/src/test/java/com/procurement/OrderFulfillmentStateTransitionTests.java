@@ -189,6 +189,7 @@ class OrderFulfillmentStateTransitionTests {
 
     ReceiptApplicationService service = new ReceiptApplicationService(
         purchaseOrderMapper,
+        deliveryMapper,
         receiptMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -258,11 +259,14 @@ class OrderFulfillmentStateTransitionTests {
     TenantContext.set("tenant-1", null, "user-buyer");
     when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
         .thenReturn(order("po-1", "tenant-1", "supplier-1", "已发货"));
+    when(deliveryMapper.countByTenantOrderAndStatus("tenant-1", "po-1", "已发货"))
+        .thenReturn(1);
     when(purchaseOrderMapper.updateStatus("tenant-1", "po-1", "已发货", "已收货"))
         .thenReturn(0);
 
     ReceiptApplicationService service = new ReceiptApplicationService(
         purchaseOrderMapper,
+        deliveryMapper,
         receiptMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -276,10 +280,40 @@ class OrderFulfillmentStateTransitionTests {
   }
 
   @Test
+  void receiptRejectsOrderWithoutTenantShippedDeliveryBeforeInsert() {
+    TenantContext.set("tenant-1", null, "user-buyer");
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "已发货"));
+    when(deliveryMapper.countByTenantOrderAndStatus("tenant-1", "po-1", "已发货"))
+        .thenReturn(0);
+
+    ReceiptApplicationService service = new ReceiptApplicationService(
+        purchaseOrderMapper,
+        deliveryMapper,
+        receiptMapper,
+        auditLogApplicationService,
+        notificationApplicationService,
+        tenantFeatureApplicationService);
+
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Shipped delivery not found for receipt");
+
+    verify(receiptMapper, never()).insert(
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString());
+  }
+
+  @Test
   void buyerReceiptRecordsAuditLogAfterReceipt() {
     TenantContext.set("tenant-1", null, "user-buyer");
     when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
         .thenReturn(order("po-1", "tenant-1", "supplier-1", "已发货"));
+    when(deliveryMapper.countByTenantOrderAndStatus("tenant-1", "po-1", "已发货"))
+        .thenReturn(1);
     when(purchaseOrderMapper.updateStatus("tenant-1", "po-1", "已发货", "已收货"))
         .thenReturn(1);
     when(receiptMapper.findByTenantAndId(
@@ -295,6 +329,7 @@ class OrderFulfillmentStateTransitionTests {
 
     ReceiptApplicationService service = new ReceiptApplicationService(
         purchaseOrderMapper,
+        deliveryMapper,
         receiptMapper,
         auditLogApplicationService,
         notificationApplicationService,
