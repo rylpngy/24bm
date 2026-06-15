@@ -10,6 +10,7 @@ import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,17 @@ public class DeliveryApplicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+  }
+
+  public List<DeliveryResponse> listCurrentSupplierDeliveries(String status, String orderId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("delivery APIs");
+    return deliveryMapper.listBySupplierFiltered(
+            supplierId,
+            blankToNull(status),
+            blankToNull(orderId))
+        .stream()
+        .map(this::toResponse)
+        .toList();
   }
 
   @Transactional
@@ -98,5 +110,9 @@ public class DeliveryApplicationService {
 
   private String newId(String prefix) {
     return prefix + "-" + UUID.randomUUID();
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

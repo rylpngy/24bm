@@ -200,6 +200,24 @@ class OrderFulfillmentStateTransitionTests {
   }
 
   @Test
+  void listSupplierDeliveriesAppliesFiltersInsideCurrentSupplier() {
+    TenantContext.set(null, "supplier-1", "user-supplier");
+    when(deliveryMapper.listBySupplierFiltered("supplier-1", "已发货", "po-1"))
+        .thenReturn(List.of());
+
+    DeliveryApplicationService service = new DeliveryApplicationService(
+        purchaseOrderMapper,
+        deliveryMapper,
+        auditLogApplicationService,
+        notificationApplicationService,
+        tenantFeatureApplicationService);
+
+    service.listCurrentSupplierDeliveries("已发货", "po-1");
+
+    verify(deliveryMapper).listBySupplierFiltered("supplier-1", "已发货", "po-1");
+  }
+
+  @Test
   void supplierDeliveryRecordsAuditLogAfterShipment() {
     TenantContext.set(null, "supplier-1", "user-supplier");
     when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))

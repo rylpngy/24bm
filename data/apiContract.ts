@@ -655,6 +655,15 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/supplier/deliveries',
+    audience: 'supplier',
+    action: '加载供应商发货记录列表，支持按状态和订单筛选',
+    requestSchema: 'SupplierDeliveryListRequest',
+    responseSchema: 'SupplierDeliveryList',
+    queryParameters: ['status', 'orderId'],
+  },
+  {
+    method: 'GET',
     path: '/buyer/receipts',
     audience: 'buyer',
     action: '加载采购方收货记录列表，支持按订单和验收人筛选',

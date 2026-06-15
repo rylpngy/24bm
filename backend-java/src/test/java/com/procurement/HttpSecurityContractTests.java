@@ -2809,6 +2809,9 @@ class HttpSecurityContractTests {
             .contentType(MediaType.APPLICATION_JSON)
             .content(validDeliveryPayload()))
         .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/supplier/deliveries")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
     mockMvc.perform(post("/api/v1/supplier/orders/po-demo/invoices")
             .header("Authorization", "Bearer " + buyerToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -2827,6 +2830,18 @@ class HttpSecurityContractTests {
             "SF123",
             "已发货",
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+    when(deliveryApplicationService.listCurrentSupplierDeliveries(
+        org.mockito.ArgumentMatchers.eq("已发货"),
+        org.mockito.ArgumentMatchers.eq("po-demo")))
+        .thenReturn(List.of(new DeliveryResponse(
+            "delivery-demo",
+            "tenant-acme",
+            "po-demo",
+            "ent-supplier-sunrise",
+            "顺丰",
+            "SF123",
+            "已发货",
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
     when(invoiceApplicationService.create(
         org.mockito.ArgumentMatchers.eq("po-demo"),
         org.mockito.ArgumentMatchers.any()))
@@ -2838,6 +2853,12 @@ class HttpSecurityContractTests {
             .content(validDeliveryPayload()))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.status").value("已发货"));
+    mockMvc.perform(get("/api/v1/supplier/deliveries")
+            .queryParam("status", "已发货")
+            .queryParam("orderId", "po-demo")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("delivery-demo"));
     mockMvc.perform(post("/api/v1/supplier/orders/po-demo/invoices")
             .header("Authorization", "Bearer " + supplierToken)
             .contentType(MediaType.APPLICATION_JSON)

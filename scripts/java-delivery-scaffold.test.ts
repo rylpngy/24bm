@@ -7,11 +7,12 @@ const root = process.cwd();
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
 describe('Java supplier delivery scaffold', () => {
-  it('exposes supplier delivery creation endpoint', () => {
+  it('exposes supplier delivery list and creation endpoints', () => {
     const controller = read('backend-java/src/main/java/com/procurement/order/api/SupplierDeliveryController.java');
 
-    expect(controller).toContain('@RequestMapping("/api/v1/supplier/orders")');
-    expect(controller).toContain('@PostMapping("/{orderId}/deliveries")');
+    expect(controller).toContain('@RequestMapping("/api/v1/supplier")');
+    expect(controller).toContain('@GetMapping("/deliveries")');
+    expect(controller).toContain('@PostMapping("/orders/{orderId}/deliveries")');
     expect(controller).toContain('CreateDeliveryRequest');
   });
 
@@ -34,6 +35,7 @@ describe('Java supplier delivery scaffold', () => {
     expect(mapper).toContain('deliveries');
     expect(mapper).toContain('tracking_no');
     expect(mapper).toContain('insert');
+    expect(mapper).toContain('listBySupplierFiltered');
   });
 
   it('extends purchase order mapper for supplier scoped lookup and delivery status update', () => {
@@ -48,6 +50,8 @@ describe('Java supplier delivery scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/order/application/DeliveryApplicationService.java');
 
     expect(service).toContain('TenantAccessGuard.requireSupplierId');
+    expect(service).toContain('listCurrentSupplierDeliveries');
+    expect(service).toContain('listBySupplierFiltered');
     expect(service).toContain('待发货');
     expect(service).toContain('已发货');
     expect(service).toContain('Only ready-to-ship orders can be shipped');
@@ -59,7 +63,9 @@ describe('Java supplier delivery scaffold', () => {
     const readme = read('backend-java/README.md');
     const architecture = read('docs/java-backend-architecture.md');
 
+    expect(readme).toContain('GET /api/v1/supplier/deliveries');
     expect(readme).toContain('POST /api/v1/supplier/orders/{orderId}/deliveries');
+    expect(readme).toContain('The supplier delivery list accepts optional `status` and `orderId` filters');
     expect(architecture).toContain('供应商发货 Java API');
   });
 });

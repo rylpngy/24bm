@@ -1,6 +1,7 @@
 package com.procurement.order.infrastructure;
 
 import com.procurement.order.domain.Delivery;
+import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -37,4 +38,24 @@ public interface DeliveryMapper {
       @Result(column = "created_at", property = "createdAt")
   })
   Delivery findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("""
+      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
+      from deliveries
+      where supplier_id = #{supplierId}
+        and (#{status} is null or status = #{status})
+        and (#{orderId} is null or order_id = #{orderId})
+      order by created_at desc
+      """)
+  @Results(id = "supplierDeliveryListResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "order_id", property = "orderId"),
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "tracking_no", property = "trackingNo"),
+      @Result(column = "created_at", property = "createdAt")
+  })
+  List<Delivery> listBySupplierFiltered(
+      @Param("supplierId") String supplierId,
+      @Param("status") String status,
+      @Param("orderId") String orderId);
 }

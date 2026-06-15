@@ -408,11 +408,13 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 
 第七批 Java 业务接口继续落在 `order` 模块：
 
+- `GET /api/v1/supplier/deliveries`：供应商查看发货记录列表。
 - `POST /api/v1/supplier/orders/{orderId}/deliveries`：供应商提交发货信息。
 
 发货的关键校验：
 
 - 供应商身份来自 JWT 中的 `supplierId`。
+- 供应商发货记录列表始终按当前 `supplierId` 过滤，并支持可选 `status`、`orderId` 查询条件。
 - 订单必须属于当前供应商。
 - 订单所属采购方租户必须启用 `order` 功能开关。
 - 订单状态必须是 `待发货`。
