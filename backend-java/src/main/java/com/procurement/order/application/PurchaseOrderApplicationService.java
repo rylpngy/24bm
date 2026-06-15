@@ -71,6 +71,17 @@ public class PurchaseOrderApplicationService {
         .toList();
   }
 
+  public List<PurchaseOrderResponse> listCurrentSupplierOrders(String status, String rfqId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier order APIs");
+    return purchaseOrderMapper.listBySupplierFiltered(
+            supplierId,
+            blankToNull(status),
+            blankToNull(rfqId))
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public PurchaseOrderResponse confirmCurrentSupplierOrder(String orderId) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier order APIs");

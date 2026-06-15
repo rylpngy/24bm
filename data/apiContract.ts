@@ -632,9 +632,10 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     method: 'GET',
     path: '/supplier/orders',
     audience: 'supplier',
-    action: '加载供应商销售订单',
+    action: '加载供应商销售订单，支持按状态和 RFQ 筛选',
     requestSchema: 'SupplierOrderListRequest',
     responseSchema: 'SupplierOrderList',
+    queryParameters: ['status', 'rfqId'],
   },
   {
     method: 'POST',

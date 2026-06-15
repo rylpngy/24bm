@@ -120,6 +120,27 @@ public interface PurchaseOrderMapper {
   })
   List<PurchaseOrder> listBySupplier(@Param("supplierId") String supplierId);
 
+  @Select("""
+      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
+      from purchase_orders
+      where supplier_id = #{supplierId}
+        and (#{status} is null or status = #{status})
+        and (#{rfqId} is null or rfq_id = #{rfqId})
+      order by created_at desc
+      """)
+  @Results(id = "supplierPurchaseOrderFilteredListResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "rfq_id", property = "rfqId"),
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "expected_receipt_date", property = "expectedReceiptDate"),
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "updated_at", property = "updatedAt")
+  })
+  List<PurchaseOrder> listBySupplierFiltered(
+      @Param("supplierId") String supplierId,
+      @Param("status") String status,
+      @Param("rfqId") String rfqId);
+
   @Insert("""
       insert into purchase_orders (id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date)
       values (#{id}, #{tenantId}, #{rfqId}, #{supplierId}, #{amount}, #{status}, #{expectedReceiptDate})

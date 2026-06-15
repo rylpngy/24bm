@@ -459,6 +459,8 @@ The supplier-side order fulfillment endpoints are:
 - `POST /api/v1/supplier/orders/{orderId}/confirm`
 - `POST /api/v1/supplier/orders/{orderId}/deliveries`
 
+The supplier order list accepts optional `status` and `rfqId` filters inside the current supplier enterprise.
+
 Order confirmation uses the supplier identity from `Authorization: Bearer <accessToken>`. The order must belong to the current supplier, its buyer tenant must have the `order` feature enabled, and it must be `待供应商确认`. Confirmation updates the purchase order status to `待发货`.
 
 Example delivery payload:

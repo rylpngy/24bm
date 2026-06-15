@@ -163,6 +163,24 @@ class OrderFulfillmentStateTransitionTests {
   }
 
   @Test
+  void listSupplierOrdersAppliesFiltersInsideCurrentSupplier() {
+    TenantContext.set(null, "supplier-1", "user-supplier");
+    when(purchaseOrderMapper.listBySupplierFiltered("supplier-1", "待发货", "rfq-1"))
+        .thenReturn(java.util.List.of());
+
+    PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
+        awardDecisionMapper,
+        purchaseOrderMapper,
+        auditLogApplicationService,
+        notificationApplicationService,
+        tenantFeatureApplicationService);
+
+    service.listCurrentSupplierOrders("待发货", "rfq-1");
+
+    verify(purchaseOrderMapper).listBySupplierFiltered("supplier-1", "待发货", "rfq-1");
+  }
+
+  @Test
   void supplierDeliveryRecordsAuditLogAfterShipment() {
     TenantContext.set(null, "supplier-1", "user-supplier");
     when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))

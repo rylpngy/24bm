@@ -2088,8 +2088,25 @@
         "tags": [
           "supplier"
         ],
-        "summary": "加载供应商销售订单",
-        "parameters": [],
+        "summary": "加载供应商销售订单，支持按状态和 RFQ 筛选",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rfqId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []
