@@ -1,6 +1,7 @@
 package com.procurement.order.application;
 
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.domain.PurchaseOrder;
@@ -17,13 +18,21 @@ public class PurchaseOrderApplicationService {
   private static final String APPROVED_STATUS = "已通过";
   private static final String PENDING_SUPPLIER_CONFIRM_STATUS = "待供应商确认";
   private static final String READY_TO_SHIP_STATUS = "待发货";
+  private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
+  private static final String PURCHASE_ORDER_CREATED_ACTION = "purchase_order.created";
+  private static final String PURCHASE_ORDER_CONFIRMED_ACTION = "purchase_order.confirmed";
 
   private final AwardDecisionMapper awardDecisionMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
 
-  public PurchaseOrderApplicationService(AwardDecisionMapper awardDecisionMapper, PurchaseOrderMapper purchaseOrderMapper) {
+  public PurchaseOrderApplicationService(
+      AwardDecisionMapper awardDecisionMapper,
+      PurchaseOrderMapper purchaseOrderMapper,
+      AuditLogApplicationService auditLogApplicationService) {
     this.awardDecisionMapper = awardDecisionMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   public List<PurchaseOrderResponse> listCurrentTenantOrders() {
@@ -59,6 +68,11 @@ public class PurchaseOrderApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("Purchase order status changed before supplier confirmation could be recorded: " + orderId);
     }
+    auditLogApplicationService.recordTenantAction(
+        order.tenantId(),
+        PURCHASE_ORDER_CONFIRMED_ACTION,
+        PURCHASE_ORDER_TARGET_TYPE,
+        order.id());
 
     return toResponse(purchaseOrderMapper.findByTenantAndId(order.tenantId(), order.id()));
   }
@@ -85,6 +99,10 @@ public class PurchaseOrderApplicationService {
         award.amount(),
         PENDING_SUPPLIER_CONFIRM_STATUS,
         request.expectedReceiptDate());
+    auditLogApplicationService.recordTenantAction(
+        PURCHASE_ORDER_CREATED_ACTION,
+        PURCHASE_ORDER_TARGET_TYPE,
+        orderId);
 
     return toResponse(purchaseOrderMapper.findByTenantAndId(tenantId, orderId));
   }

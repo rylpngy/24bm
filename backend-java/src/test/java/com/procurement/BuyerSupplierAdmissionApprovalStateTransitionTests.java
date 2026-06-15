@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
@@ -24,11 +25,13 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final BuyerSupplierApplicationService buyerSupplierApplicationService =
       new BuyerSupplierApplicationService(
           buyerSupplierRelationMapper,
           new ObjectMapper(),
-          approvalTaskMapper);
+          approvalTaskMapper,
+          auditLogApplicationService);
 
   @AfterEach
   void clearTenantContext() {
@@ -57,6 +60,10 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         org.mockito.ArgumentMatchers.eq("rel-1"),
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.eq("待审批"));
+    verify(auditLogApplicationService).recordTenantAction(
+        "buyer_supplier_admission.submitted",
+        "buyer_supplier_relation",
+        "rel-1");
   }
 
   @Test
@@ -79,6 +86,10 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
 
     assertThat(response.status()).isEqualTo("已通过");
     verify(buyerSupplierRelationMapper).updateStatus("tenant-1", "rel-1", "准入审批中", "已准入");
+    verify(auditLogApplicationService).recordTenantAction(
+        "buyer_supplier_admission.approved",
+        "buyer_supplier_relation",
+        "rel-1");
   }
 
   @Test

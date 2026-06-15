@@ -105,8 +105,14 @@ Authorization: Bearer <accessToken>
 当前已接入的审计动作：
 
 - `purchase_demand.created`：采购方创建采购需求。
+- `purchase_demand.approved` / `purchase_demand.rejected`：采购方审批采购需求。
+- `buyer_supplier_admission.submitted`：采购方提交供应商准入审批。
+- `buyer_supplier_admission.approved` / `buyer_supplier_admission.rejected`：采购方审批供应商准入。
+- `purchase_order.created`：采购方生成采购订单。
+- `purchase_order.confirmed`：供应商确认采购订单。
+- `purchase_order.shipped`：供应商提交发货。
 
-后续应优先把供应商准入提交、需求审批、定标提交、订单创建、供应商确认、发货、收货、发票登记和付款状态登记纳入同一审计入口。
+后续应优先把定标提交/审批、收货、发票登记和付款状态登记纳入同一审计入口。
 
 ## RFQ 询价 Java API
 

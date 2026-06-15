@@ -1,5 +1,6 @@
 package com.procurement.order.application;
 
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.order.api.CreateDeliveryRequest;
 import com.procurement.order.api.DeliveryResponse;
@@ -15,13 +16,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeliveryApplicationService {
   private static final String READY_TO_SHIP_STATUS = "待发货";
   private static final String SHIPPED_STATUS = "已发货";
+  private static final String PURCHASE_ORDER_SHIPPED_ACTION = "purchase_order.shipped";
+  private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final DeliveryMapper deliveryMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
 
-  public DeliveryApplicationService(PurchaseOrderMapper purchaseOrderMapper, DeliveryMapper deliveryMapper) {
+  public DeliveryApplicationService(
+      PurchaseOrderMapper purchaseOrderMapper,
+      DeliveryMapper deliveryMapper,
+      AuditLogApplicationService auditLogApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.deliveryMapper = deliveryMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   @Transactional
@@ -52,6 +60,11 @@ public class DeliveryApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("Purchase order status changed before delivery could be recorded: " + orderId);
     }
+    auditLogApplicationService.recordTenantAction(
+        order.tenantId(),
+        PURCHASE_ORDER_SHIPPED_ACTION,
+        PURCHASE_ORDER_TARGET_TYPE,
+        order.id());
 
     return toResponse(deliveryMapper.findByTenantAndId(order.tenantId(), deliveryId));
   }

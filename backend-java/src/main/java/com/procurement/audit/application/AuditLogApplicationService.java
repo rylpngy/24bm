@@ -15,6 +15,10 @@ public class AuditLogApplicationService {
 
   public void recordTenantAction(String action, String targetType, String targetId) {
     String tenantId = TenantAccessGuard.requireTenantId("audit log APIs");
+    recordTenantAction(tenantId, action, targetType, targetId);
+  }
+
+  public void recordTenantAction(String tenantId, String action, String targetType, String targetId) {
     String actorId = TenantAccessGuard.requireUserId("audit log APIs");
     auditLogMapper.insert(newId(), tenantId, actorId, action, targetType, targetId);
   }

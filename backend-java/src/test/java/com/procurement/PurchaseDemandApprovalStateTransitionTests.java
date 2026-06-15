@@ -55,6 +55,7 @@ class PurchaseDemandApprovalStateTransitionTests {
 
     assertThat(response.status()).isEqualTo("已通过");
     verify(purchaseDemandMapper).updateStatus("tenant-1", "demand-1", "已通过");
+    verify(auditLogApplicationService).recordTenantAction("purchase_demand.approved", "purchase_demand", "demand-1");
   }
 
   @Test

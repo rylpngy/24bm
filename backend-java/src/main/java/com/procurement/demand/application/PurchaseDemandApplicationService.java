@@ -27,6 +27,8 @@ public class PurchaseDemandApplicationService {
   private static final String REJECTED_STATUS = "已驳回";
   private static final String PURCHASE_DEMAND_BIZ_TYPE = "purchase_demand";
   private static final String PURCHASE_DEMAND_CREATED_ACTION = "purchase_demand.created";
+  private static final String PURCHASE_DEMAND_APPROVED_ACTION = "purchase_demand.approved";
+  private static final String PURCHASE_DEMAND_REJECTED_ACTION = "purchase_demand.rejected";
 
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
@@ -147,6 +149,10 @@ public class PurchaseDemandApplicationService {
       throw new IllegalStateException("Approval task status changed before review could be recorded: " + approvalTask.id());
     }
     purchaseDemandMapper.updateStatus(tenantId, demandId, reviewedStatus);
+    auditLogApplicationService.recordTenantAction(
+        Boolean.TRUE.equals(request.approved()) ? PURCHASE_DEMAND_APPROVED_ACTION : PURCHASE_DEMAND_REJECTED_ACTION,
+        PURCHASE_DEMAND_BIZ_TYPE,
+        demandId);
 
     ApprovalTask reviewedTask = approvalTaskMapper.findByTenantAndId(tenantId, approvalTask.id());
     return new ApprovalTaskResponse(
