@@ -732,8 +732,15 @@ const BuyerWorkspaceView: React.FC<{
   onSubmitSupplierAdmission,
   onCreateRfqFromDemand,
   onUpdateApprovalTemplate,
-}) => (
-  <>
+}) => {
+  const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
+    const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
+    if (priorityDelta !== 0) return priorityDelta;
+    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+  });
+
+  return (
+    <>
     <HeroBand
       eyebrow="采购方企业后台"
       title="从需求申请到发票付款的询价比价闭环"
@@ -773,9 +780,9 @@ const BuyerWorkspaceView: React.FC<{
     {javaEnabled && (
       <div className="grid gap-6 xl:grid-cols-[1fr_0.85fr]">
         <Panel title="审批待办" icon={ClipboardCheck}>
-          {pendingApprovals.length > 0 ? (
+          {sortedPendingApprovals.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
-              {pendingApprovals.map((approval) => (
+              {sortedPendingApprovals.map((approval) => (
                 <div key={approval.id} className="rounded-lg border border-amber-100 bg-amber-50 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -788,6 +795,7 @@ const BuyerWorkspaceView: React.FC<{
                   </div>
                   <div className="mt-3 space-y-2 text-xs font-bold text-slate-500">
                     {approval.businessStatus && <p>业务状态：{approval.businessStatus}</p>}
+                    {typeof approval.priority === 'number' && <p>优先级：{approval.priority}</p>}
                     {approval.counterpartyName && <p>{approval.counterpartyName}</p>}
                     {typeof approval.amount === 'number' && (
                       <p className="font-mono text-sm font-black text-slate-900">{currency(approval.amount)}</p>
@@ -935,8 +943,9 @@ const BuyerWorkspaceView: React.FC<{
     <Panel title="最近操作日志" icon={ShieldCheck}>
       <AuditLogList workspace={workspace} />
     </Panel>
-  </>
-);
+    </>
+  );
+};
 
 const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) => {
   const logs = [...workspace.auditLogs]

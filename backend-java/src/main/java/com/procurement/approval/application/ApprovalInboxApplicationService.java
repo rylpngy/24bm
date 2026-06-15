@@ -59,6 +59,7 @@ public class ApprovalInboxApplicationService {
         summary.parentBizId(),
         summary.title(),
         summary.businessStatus(),
+        priorityFor(task.bizType()),
         summary.amount(),
         summary.counterpartyId(),
         summary.counterpartyName(),
@@ -73,6 +74,15 @@ public class ApprovalInboxApplicationService {
       case BUYER_SUPPLIER_ADMISSION_BIZ_TYPE -> buyerSupplierAdmissionSummary(task);
       case RFQ_AWARD_BIZ_TYPE -> rfqAwardSummary(task);
       default -> ApprovalTaskSummary.empty();
+    };
+  }
+
+  private Integer priorityFor(String bizType) {
+    return switch (bizType) {
+      case RFQ_AWARD_BIZ_TYPE -> 90;
+      case BUYER_SUPPLIER_ADMISSION_BIZ_TYPE -> 80;
+      case PURCHASE_DEMAND_BIZ_TYPE -> 70;
+      default -> 50;
     };
   }
 

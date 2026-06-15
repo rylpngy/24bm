@@ -135,6 +135,7 @@ class BuyerWorkspaceTodoSummaryTests {
         null,
         "办公电脑采购",
         "审批中",
+        70,
         BigDecimal.valueOf(100),
         "supplier-1",
         "晨光科技供应商",

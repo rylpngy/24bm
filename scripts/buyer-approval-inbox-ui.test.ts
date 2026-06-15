@@ -9,7 +9,11 @@ describe('buyer approval inbox UI', () => {
     const apiClient = read('services/procurementApiClient.ts');
 
     expect(apiClient).toContain('businessStatus?: string');
+    expect(apiClient).toContain('priority?: number');
+    expect(app).toContain('sortedPendingApprovals');
     expect(app).toContain('approval.businessStatus');
+    expect(app).toContain('approval.priority');
     expect(app).toContain('业务状态');
+    expect(app).toContain('优先级');
   });
 });
