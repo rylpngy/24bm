@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface MaterialMapper {
@@ -43,6 +44,26 @@ public interface MaterialMapper {
   void insert(
       @Param("id") String id,
       @Param("tenantId") String tenantId,
+      @Param("code") String code,
+      @Param("name") String name,
+      @Param("category") String category,
+      @Param("unit") String unit,
+      @Param("referencePrice") BigDecimal referencePrice);
+
+  @Update("""
+      update materials
+      set code = #{code},
+          name = #{name},
+          category = #{category},
+          unit = #{unit},
+          reference_price = #{referencePrice},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+      """)
+  void update(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
       @Param("code") String code,
       @Param("name") String name,
       @Param("category") String category,

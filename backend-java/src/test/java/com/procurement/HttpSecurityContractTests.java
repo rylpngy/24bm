@@ -2198,6 +2198,48 @@ class HttpSecurityContractTests {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.name").value("显示器"));
 
+    mockMvc.perform(post("/api/v1/buyer/materials/mat-monitor")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "code": "IT-MONITOR-27",
+                  "name": "27寸显示器",
+                  "category": "办公设备",
+                  "unit": "台",
+                  "referencePrice": 1500
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(materialApplicationService.updateMaterial(
+        org.mockito.ArgumentMatchers.eq("mat-monitor"),
+        org.mockito.ArgumentMatchers.any(CreateMaterialRequest.class)))
+        .thenReturn(new MaterialResponse(
+            "mat-monitor",
+            "tenant-acme",
+            "IT-MONITOR-27",
+            "27寸显示器",
+            "办公设备",
+            "台",
+            BigDecimal.valueOf(1500)));
+
+    mockMvc.perform(post("/api/v1/buyer/materials/mat-monitor")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "code": "IT-MONITOR-27",
+                  "name": "27寸显示器",
+                  "category": "办公设备",
+                  "unit": "台",
+                  "referencePrice": 1500
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.code").value("IT-MONITOR-27"))
+        .andExpect(jsonPath("$.data.name").value("27寸显示器"));
+
     when(buyerUserApplicationService.listCurrentTenantUsers()).thenReturn(List.of(new BuyerUserResponse(
         "user-buyer-owner",
         "tenant-acme",

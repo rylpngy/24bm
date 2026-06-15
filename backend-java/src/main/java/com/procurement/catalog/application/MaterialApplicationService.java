@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MaterialApplicationService {
   private static final String MATERIAL_CREATED_ACTION = "material.created";
+  private static final String MATERIAL_UPDATED_ACTION = "material.updated";
   private static final String MATERIAL_TARGET_TYPE = "material";
 
   private final MaterialMapper materialMapper;
@@ -47,6 +48,28 @@ public class MaterialApplicationService {
         request.referencePrice());
     auditLogApplicationService.recordTenantAction(MATERIAL_CREATED_ACTION, MATERIAL_TARGET_TYPE, materialId);
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
+  }
+
+  @Transactional
+  public MaterialResponse updateMaterial(String materialId, CreateMaterialRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer material APIs");
+    requireMaterial(tenantId, materialId);
+    materialMapper.update(
+        tenantId,
+        materialId,
+        request.code(),
+        request.name(),
+        request.category(),
+        request.unit(),
+        request.referencePrice());
+    auditLogApplicationService.recordTenantAction(MATERIAL_UPDATED_ACTION, MATERIAL_TARGET_TYPE, materialId);
+    return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
+  }
+
+  private void requireMaterial(String tenantId, String materialId) {
+    if (materialMapper.findByTenantAndId(tenantId, materialId) == null) {
+      throw new IllegalArgumentException("Material not found in buyer tenant scope: " + materialId);
+    }
   }
 
   private MaterialResponse toResponse(Material material) {

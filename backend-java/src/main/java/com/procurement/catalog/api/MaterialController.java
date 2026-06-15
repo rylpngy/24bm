@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,5 +31,12 @@ public class MaterialController {
   @ResponseStatus(HttpStatus.CREATED)
   public ApiResponse<MaterialResponse> create(@Valid @RequestBody CreateMaterialRequest request) {
     return ApiResponse.ok(materialApplicationService.createMaterial(request));
+  }
+
+  @PostMapping("/{materialId}")
+  public ApiResponse<MaterialResponse> update(
+      @PathVariable String materialId,
+      @Valid @RequestBody CreateMaterialRequest request) {
+    return ApiResponse.ok(materialApplicationService.updateMaterial(materialId, request));
   }
 }

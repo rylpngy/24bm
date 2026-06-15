@@ -144,6 +144,7 @@ The first buyer-side master data endpoints are:
 - `POST /api/v1/buyer/suppliers`
 - `GET /api/v1/buyer/materials`
 - `POST /api/v1/buyer/materials`
+- `POST /api/v1/buyer/materials/{materialId}`
 - `GET /api/v1/buyer/departments`
 - `POST /api/v1/buyer/departments`
 - `POST /api/v1/buyer/departments/{departmentId}/disable`
@@ -194,6 +195,8 @@ Example buyer user payload:
 Buyer master data APIs use the buyer tenant from the JWT and reject supplier or platform tokens.
 
 The buyer supplier list accepts optional query filters: `status`, `level`, `category`, and `keyword`. Filtering always stays inside the current buyer tenant; `category` matches the relation's authorized category JSON array, and `keyword` matches supplier name or supplier ID.
+
+Material maintenance updates `code`, `name`, `category`, `unit`, and `referencePrice` inside the current buyer tenant and records `material.updated`.
 
 Department listing returns only active departments from the current buyer tenant and is used by purchase demand creation to choose a valid `departmentId`. Department creation uses the buyer tenant from the JWT, stores new rows as `active`, allows a blank `parentId` for top-level departments, validates non-blank parents inside the current active tenant organization, and records `department.created` audit logs. Department disable is a soft status change to `inactive`, rejects departments referenced by purchase demands, and records `department.disabled`.
 

@@ -221,12 +221,14 @@ describe('Java backend scaffold', () => {
 
     expect(architecture).toContain('buyer_user.created');
     expect(architecture).toContain('material.created');
+    expect(architecture).toContain('material.updated');
     expect(architecture).toContain('buyer_supplier_relation.created');
     expect(architecture).toContain('buyer_supplier_relation.profile_updated');
     expect(architecture).toContain('buyer_supplier_relation.performance_updated');
     expect(architecture).toContain('buyer_supplier_relation.status_changed');
     expect(architecture).toContain('supplier_profile.updated');
     expect(readme).toContain('Creating buyer users, materials, and private supplier relations records audit log actions');
+    expect(readme).toContain('POST /api/v1/buyer/materials/{materialId}');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/status');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/profile');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/performance');

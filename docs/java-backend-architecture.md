@@ -158,6 +158,7 @@ Authorization: Bearer <accessToken>
 - `purchase_demand.approved` / `purchase_demand.rejected`：采购方审批采购需求。
 - `buyer_user.created`：采购方创建租户用户。
 - `material.created`：采购方创建物料/服务目录项。
+- `material.updated`：采购方维护物料/服务目录项。
 - `buyer_supplier_relation.created`：采购方创建私域供应商关系。
 - `buyer_supplier_relation.profile_updated`：采购方维护供应商分级和授权品类。
 - `buyer_supplier_relation.performance_updated`：采购方维护供应商绩效评分。

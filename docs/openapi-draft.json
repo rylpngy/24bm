@@ -781,6 +781,40 @@
         }
       }
     },
+    "/buyer/materials/{materialId}": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "维护采购方物料/服务基础信息",
+        "parameters": [
+          {
+            "name": "materialId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Material"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/departments": {
       "get": {
         "tags": [
@@ -2522,6 +2556,7 @@
     "POST /buyer/suppliers/{relationId}/performance",
     "GET /buyer/materials",
     "POST /buyer/materials",
+    "POST /buyer/materials/{materialId}",
     "GET /buyer/departments",
     "POST /buyer/departments",
     "POST /buyer/departments/{departmentId}/disable",
