@@ -22,6 +22,7 @@ public class PlatformTenantApplicationService {
   private static final String BUYER_OWNER_PERMISSIONS = "[\"buyer:*\"]";
   private static final String TENANT_CREATED_ACTION = "tenant.created";
   private static final String TENANT_DISABLED_ACTION = "tenant.disabled";
+  private static final String TENANT_ENABLED_ACTION = "tenant.enabled";
   private static final String TENANT_FEATURES_UPDATED_ACTION = "tenant.features.updated";
   private static final String TENANT_PLAN_UPDATED_ACTION = "tenant.plan_updated";
   private static final String TENANT_TARGET_TYPE = "tenant";
@@ -112,6 +113,20 @@ public class PlatformTenantApplicationService {
     auditLogApplicationService.recordTenantAction(
         tenantId,
         TENANT_PLAN_UPDATED_ACTION,
+        TENANT_TARGET_TYPE,
+        tenantId);
+    return toResponse(platformTenantMapper.findById(tenantId));
+  }
+
+  @Transactional
+  public TenantResponse enableTenant(String tenantId) {
+    int updated = platformTenantMapper.updateStatus(tenantId, ACTIVE_STATUS);
+    if (updated == 0) {
+      throw new IllegalArgumentException("Tenant not found: " + tenantId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        tenantId,
+        TENANT_ENABLED_ACTION,
         TENANT_TARGET_TYPE,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));

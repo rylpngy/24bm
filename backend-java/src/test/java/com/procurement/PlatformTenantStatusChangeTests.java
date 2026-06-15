@@ -28,6 +28,43 @@ class PlatformTenantStatusChangeTests {
           passwordEncoder);
 
   @Test
+  void enableTenantMarksTenantActiveAndRecordsAuditLog() {
+    when(platformTenantMapper.updateStatus("tenant-acme", "active")).thenReturn(1);
+    when(platformTenantMapper.findById("tenant-acme"))
+        .thenReturn(new PlatformTenant(
+            "tenant-acme",
+            "Acme 采购公司",
+            "starter",
+            "active",
+            "[\"rfq\",\"order\"]",
+            50));
+
+    platformTenantApplicationService.enableTenant("tenant-acme");
+
+    verify(platformTenantMapper).updateStatus("tenant-acme", "active");
+    verify(auditLogApplicationService).recordTenantAction(
+        "tenant-acme",
+        "tenant.enabled",
+        "tenant",
+        "tenant-acme");
+  }
+
+  @Test
+  void enableTenantRejectsUnknownTenantBeforeWritingAuditLog() {
+    when(platformTenantMapper.updateStatus("tenant-missing", "active")).thenReturn(0);
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> platformTenantApplicationService.enableTenant("tenant-missing"));
+
+    verify(auditLogApplicationService, never()).recordTenantAction(
+        "tenant-missing",
+        "tenant.enabled",
+        "tenant",
+        "tenant-missing");
+  }
+
+  @Test
   void disableTenantMarksTenantInactiveAndRecordsAuditLog() {
     when(platformTenantMapper.updateStatus("tenant-acme", "inactive")).thenReturn(1);
     when(platformTenantMapper.findById("tenant-acme"))

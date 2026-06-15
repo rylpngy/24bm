@@ -1253,6 +1253,24 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.plan").value("pro"))
         .andExpect(jsonPath("$.data.userLimit").value(120));
 
+    when(platformTenantApplicationService.enableTenant("tenant-acme"))
+        .thenReturn(new TenantResponse(
+            "tenant-acme",
+            "Acme 采购公司",
+            "starter",
+            "active",
+            List.of("rfq", "order", "finance"),
+            50));
+
+    mockMvc.perform(post("/api/v1/platform/tenants/tenant-acme/enable")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(post("/api/v1/platform/tenants/tenant-acme/enable")
+            .header("Authorization", "Bearer " + platformToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("active"));
+
     when(platformTenantApplicationService.disableTenant("tenant-acme"))
         .thenReturn(new TenantResponse(
             "tenant-acme",

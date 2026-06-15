@@ -172,6 +172,7 @@ Authorization: Bearer <accessToken>
 - `tenant.created`：平台运营方开通采购方企业租户，并初始化管理员、角色和固定审批模板。
 - `tenant.features.updated`：平台运营方更新租户功能开关，审计记录挂到目标租户。
 - `tenant.plan_updated`：平台运营方调整租户套餐和用户上限，后续采购方用户创建会继续受 `user_limit` 约束。
+- `tenant.enabled`：平台运营方恢复采购方企业租户，审计记录挂到目标租户。
 - `tenant.disabled`：平台运营方停用采购方企业租户，审计记录挂到目标租户。
 - `enterprise.reviewed`：平台运营方审核企业入驻，审计记录为平台级操作，`tenant_id` 为空。
 

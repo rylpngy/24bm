@@ -208,14 +208,18 @@ describe('Java backend scaffold', () => {
 
     expect(architecture).toContain('tenant.features.updated');
     expect(architecture).toContain('tenant.plan_updated');
+    expect(architecture).toContain('tenant.enabled');
     expect(architecture).toContain('tenant.disabled');
     expect(architecture).toContain('enterprise.reviewed');
     expect(readme).toContain('POST /api/v1/platform/tenants/{tenantId}/plan');
+    expect(readme).toContain('POST /api/v1/platform/tenants/{tenantId}/enable');
     expect(readme).toContain('POST /api/v1/platform/tenants/{tenantId}/disable');
     expect(readme).toContain('tenant.plan_updated');
+    expect(readme).toContain('tenant.enabled');
     expect(readme).toContain('tenant.disabled');
     expect(auditTests).toContain('tenantFeatureToggleUpdateRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantPlanUpdateRecordsAuditLogInTargetTenant');
+    expect(auditTests).toContain('tenantEnableRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantDisableRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('enterpriseReviewRecordsPlatformAuditLog');
     expect(localSeed).toContain('user-platform-admin');

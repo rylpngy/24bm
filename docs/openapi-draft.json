@@ -198,6 +198,40 @@
         }
       }
     },
+    "/platform/tenants/{tenantId}/enable": {
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "恢复采购方企业租户",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/platform/tenants/{tenantId}/disable": {
       "post": {
         "tags": [
@@ -1944,6 +1978,7 @@
     "POST /platform/tenants",
     "POST /platform/tenants/{tenantId}/features",
     "POST /platform/tenants/{tenantId}/plan",
+    "POST /platform/tenants/{tenantId}/enable",
     "POST /platform/tenants/{tenantId}/disable",
     "GET /platform/enterprise-reviews",
     "POST /platform/enterprise-reviews/{enterpriseId}",
