@@ -568,6 +568,12 @@ export const databaseTables: DatabaseTable[] = [
     requiredColumns: ['id', 'tenant_id', 'biz_type', 'biz_id', 'assignee_id', 'status', 'acted_at'],
   },
   {
+    name: 'approval_templates',
+    tenantScoped: true,
+    purpose: '租户级审批模板配置，MVP 先承载三类固定审批模板。',
+    requiredColumns: ['template_code', 'tenant_id', 'biz_type', 'name', 'default_approver_role_id', 'status', 'sort_order'],
+  },
+  {
     name: 'rfqs',
     tenantScoped: true,
     purpose: '询价项目主表。',

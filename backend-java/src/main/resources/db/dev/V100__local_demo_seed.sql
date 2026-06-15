@@ -67,6 +67,21 @@ values
   ('user-platform-admin', 'role-platform-admin')
 on conflict (user_id, role_id) do nothing;
 
+insert into approval_templates (
+  template_code, tenant_id, biz_type, name, default_approver_role_id, status, sort_order
+)
+values
+  ('TPL_PURCHASE_DEMAND', 'tenant-acme', 'purchase_demand', '需求审批', 'role-buyer-owner', 'active', 10),
+  ('TPL_SUPPLIER_ADMISSION', 'tenant-acme', 'buyer_supplier_admission', '供应商准入', 'role-buyer-owner', 'active', 20),
+  ('TPL_RFQ_AWARD', 'tenant-acme', 'rfq_award', '定标审批', 'role-buyer-owner', 'active', 30)
+on conflict (tenant_id, template_code) do update set
+  biz_type = excluded.biz_type,
+  name = excluded.name,
+  default_approver_role_id = excluded.default_approver_role_id,
+  status = excluded.status,
+  sort_order = excluded.sort_order,
+  updated_at = now();
+
 insert into departments (id, tenant_id, name, parent_id, status)
 values
   ('dept-it', 'tenant-acme', '信息化部', null, 'active'),

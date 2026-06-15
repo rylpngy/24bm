@@ -38,6 +38,7 @@ describe('Java purchase demand scaffold', () => {
     const approvalMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTaskMapper.java');
     const approvalService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java');
     const approvalTemplateService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTemplateApplicationService.java');
+    const approvalTemplateMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTemplateMapper.java');
     const approvalTemplateResponse = read('backend-java/src/main/java/com/procurement/approval/api/ApprovalTemplateResponse.java');
     const approvalController = read('backend-java/src/main/java/com/procurement/approval/api/ApprovalInboxController.java');
     const buyerUserMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerUserMapper.java');
@@ -63,13 +64,19 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalService).toContain('findDefaultApproverId');
     expect(approvalService).toContain('Unsupported approval biz type');
     expect(approvalTemplateService).toContain('listTemplates');
-    expect(approvalTemplateService).toContain('TPL_PURCHASE_DEMAND');
+    expect(approvalTemplateService).toContain('ApprovalTemplateMapper');
+    expect(approvalTemplateService).toContain('buyer approval template APIs');
+    expect(approvalTemplateMapper).toContain('approval_templates');
+    expect(approvalTemplateMapper).toContain('tenant_id = #{tenantId}');
+    expect(approvalTemplateMapper).toContain("status = 'active'");
     expect(approvalTemplateResponse).toContain('defaultApproverRoleId');
     expect(approvalController).toContain('/templates');
     expect(buyerUserMapper).toContain('findDefaultApproverId');
     expect(buyerUserMapper).toContain('user_roles');
     expect(migration).toContain('create table departments');
     expect(migration).toContain('create table user_roles');
+    expect(migration).toContain('create table approval_templates');
+    expect(localSeed).toContain('TPL_PURCHASE_DEMAND');
     expect(localSeed).toContain("'dept-it', 'tenant-acme'");
     expect(localSeed).toContain("('user-buyer-owner', 'role-buyer-owner')");
   });

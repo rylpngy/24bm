@@ -1,33 +1,33 @@
 package com.procurement.approval.application;
 
 import com.procurement.approval.api.ApprovalTemplateResponse;
+import com.procurement.approval.domain.ApprovalTemplate;
+import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
+import com.procurement.common.tenant.TenantAccessGuard;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ApprovalTemplateApplicationService {
-  private static final String DEFAULT_BUYER_APPROVER_ROLE_ID = "role-buyer-owner";
-  private static final String ACTIVE_STATUS = "active";
+  private final ApprovalTemplateMapper approvalTemplateMapper;
+
+  public ApprovalTemplateApplicationService(ApprovalTemplateMapper approvalTemplateMapper) {
+    this.approvalTemplateMapper = approvalTemplateMapper;
+  }
 
   public List<ApprovalTemplateResponse> listTemplates() {
-    return List.of(
-        new ApprovalTemplateResponse(
-            "TPL_PURCHASE_DEMAND",
-            "purchase_demand",
-            "需求审批",
-            DEFAULT_BUYER_APPROVER_ROLE_ID,
-            ACTIVE_STATUS),
-        new ApprovalTemplateResponse(
-            "TPL_SUPPLIER_ADMISSION",
-            "buyer_supplier_admission",
-            "供应商准入",
-            DEFAULT_BUYER_APPROVER_ROLE_ID,
-            ACTIVE_STATUS),
-        new ApprovalTemplateResponse(
-            "TPL_RFQ_AWARD",
-            "rfq_award",
-            "定标审批",
-            DEFAULT_BUYER_APPROVER_ROLE_ID,
-            ACTIVE_STATUS));
+    String tenantId = TenantAccessGuard.requireTenantId("buyer approval template APIs");
+    return approvalTemplateMapper.listActiveByTenant(tenantId).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  private ApprovalTemplateResponse toResponse(ApprovalTemplate template) {
+    return new ApprovalTemplateResponse(
+        template.templateCode(),
+        template.bizType(),
+        template.name(),
+        template.defaultApproverRoleId(),
+        template.status());
   }
 }

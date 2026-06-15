@@ -129,6 +129,20 @@ create table approval_tasks (
   created_at timestamptz not null default now()
 );
 
+create table approval_templates (
+  template_code text not null,
+  tenant_id text not null references tenants(id),
+  biz_type text not null,
+  name text not null,
+  default_approver_role_id text not null references roles(id),
+  status text not null default 'active',
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (tenant_id, template_code),
+  unique (tenant_id, biz_type)
+);
+
 create table rfqs (
   id text primary key,
   tenant_id text not null references tenants(id),
