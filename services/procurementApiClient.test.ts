@@ -158,6 +158,23 @@ describe('procurement API clients', () => {
       }
       if (input === 'http://java.test/api/v1/buyer/departments') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        if (init?.method === 'POST') {
+          expect(JSON.parse(init.body as string)).toEqual({
+            name: '研发采购部',
+            parentId: 'dept-it',
+          });
+          return Response.json({
+            success: true,
+            data: {
+              id: 'dept-rd',
+              tenantId: 'tenant-acme',
+              name: '研发采购部',
+              parentId: 'dept-it',
+              status: 'active',
+            },
+            message: '',
+          }, { status: 201 });
+        }
         return Response.json({
           success: true,
           data: [{
@@ -254,6 +271,10 @@ describe('procurement API clients', () => {
     const suppliers = await client.listBuyerSuppliers();
     const materials = await client.listBuyerMaterials();
     const departments = await client.listBuyerDepartments();
+    const createdDepartment = await client.createBuyerDepartment({
+      name: '研发采购部',
+      parentId: 'dept-it',
+    });
     const users = await client.listBuyerUsers();
     const orders = await client.listBuyerOrders();
     const invoices = await client.listBuyerInvoices();
@@ -262,6 +283,7 @@ describe('procurement API clients', () => {
     expect(suppliers[0].supplierName).toBe('晨光供应商');
     expect(materials[0].code).toBe('IT-LAPTOP');
     expect(departments[0].name).toBe('信息化部');
+    expect(createdDepartment.id).toBe('dept-rd');
     expect(users[0].email).toBe('buyer@example.com');
     expect(orders[0].status).toBe('已收货');
     expect(invoices[0].paymentStatus).toBe('已付款');

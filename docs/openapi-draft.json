@@ -412,6 +412,29 @@
             "description": "Permission or tenant isolation violation"
           }
         }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "创建采购方组织部门",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Department"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
       }
     },
     "/buyer/users": {
@@ -1618,6 +1641,7 @@
     "GET /buyer/materials",
     "POST /buyer/materials",
     "GET /buyer/departments",
+    "POST /buyer/departments",
     "GET /buyer/users",
     "POST /buyer/users",
     "GET /buyer/demands",

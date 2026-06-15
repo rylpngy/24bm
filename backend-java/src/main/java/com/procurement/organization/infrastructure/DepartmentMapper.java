@@ -2,6 +2,7 @@ package com.procurement.organization.infrastructure;
 
 import com.procurement.organization.domain.Department;
 import java.util.List;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
@@ -36,4 +37,27 @@ public interface DepartmentMapper {
   boolean existsActiveByTenantAndId(
       @Param("tenantId") String tenantId,
       @Param("departmentId") String departmentId);
+
+  @Select("""
+      select id, tenant_id, name, parent_id, status
+      from departments
+      where tenant_id = #{tenantId}
+        and id = #{id}
+      """)
+  @Results(id = "singleDepartmentResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "parent_id", property = "parentId")
+  })
+  Department findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Insert("""
+      insert into departments (id, tenant_id, name, parent_id, status)
+      values (#{id}, #{tenantId}, #{name}, #{parentId}, #{status})
+      """)
+  void insert(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId,
+      @Param("name") String name,
+      @Param("parentId") String parentId,
+      @Param("status") String status);
 }

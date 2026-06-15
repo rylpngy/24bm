@@ -86,6 +86,11 @@ export interface RegisterPaymentPayload {
   paymentStatus: string;
 }
 
+export interface CreateDepartmentPayload {
+  name: string;
+  parentId?: string | null;
+}
+
 export interface ReviewApprovalPayload {
   approved: boolean;
 }
@@ -440,6 +445,7 @@ export interface JavaProcurementApiClient {
   listBuyerSuppliers(): Promise<BuyerSupplierRelationDto[]>;
   listBuyerMaterials(): Promise<MaterialDto[]>;
   listBuyerDepartments(): Promise<DepartmentDto[]>;
+  createBuyerDepartment(payload: CreateDepartmentPayload): Promise<DepartmentDto>;
   listBuyerUsers(): Promise<BuyerUserDto[]>;
   listBuyerDemands(): Promise<PurchaseDemand[]>;
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
@@ -806,6 +812,13 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     },
     listBuyerDepartments() {
       return buyerRequest<DepartmentDto[]>('/api/v1/buyer/departments');
+    },
+    createBuyerDepartment(payload: CreateDepartmentPayload) {
+      return buyerRequest<DepartmentDto>('/api/v1/buyer/departments', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
     },
     listBuyerUsers() {
       return buyerRequest<BuyerUserDto[]>('/api/v1/buyer/users');

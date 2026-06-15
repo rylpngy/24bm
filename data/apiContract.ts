@@ -203,6 +203,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'DepartmentList',
   },
   {
+    method: 'POST',
+    path: '/buyer/departments',
+    audience: 'buyer',
+    action: '创建采购方组织部门',
+    requestSchema: 'CreateDepartmentRequest',
+    responseSchema: 'Department',
+  },
+  {
     method: 'GET',
     path: '/buyer/users',
     audience: 'buyer',

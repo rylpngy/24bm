@@ -100,6 +100,19 @@ const main = async () => {
   requireItem(users, (item) => item.id === 'user-buyer-owner', 'user-buyer-owner');
   requireItem(demands, (item) => item.id === 'dem-local-laptop', 'dem-local-laptop');
   requireItem(platformTenants, (item) => item.id === 'tenant-acme', 'tenant-acme');
+  if (process.env.JAVA_CREATE_SMOKE_DEPARTMENT === '1') {
+    const createdDepartment = await requestJson('/api/v1/buyer/departments', {
+      method: 'POST',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: `联调部门 ${Date.now()}`,
+        parentId: 'dept-it',
+      }),
+    });
+    if (createdDepartment.status !== 'active' || createdDepartment.parentId !== 'dept-it') {
+      throw new Error('Unexpected Java created department payload');
+    }
+  }
   if (platformOverview.scope !== 'platform') {
     throw new Error(`Unexpected Java platform overview scope: ${platformOverview.scope}`);
   }
@@ -199,7 +212,7 @@ const main = async () => {
   console.log(`Logged in as ${buyerLogin.displayName} for tenant ${buyerLogin.tenantId}`);
   console.log(`Loaded ${platformTenants.length} tenants, ${platformOverview.publicSupplierCount} public suppliers, ${platformEnterpriseReviews.length} pending enterprise reviews`);
   console.log(`Loaded platform workspace aggregate with ${platformWorkspace.tenants.length} tenants and ${platformWorkspace.enterpriseReviews.length} pending enterprise reviews`);
-  console.log(`Loaded ${suppliers.length} suppliers, ${materials.length} materials, ${users.length} buyer users`);
+  console.log(`Loaded ${suppliers.length} suppliers, ${materials.length} materials, ${departments.length} departments, ${users.length} buyer users`);
   console.log(`Loaded buyer workspace aggregate with ${buyerWorkspace.suppliers.length} suppliers and ${buyerWorkspace.auditLogs.length} audit logs`);
   console.log(`Loaded ${demands.length} purchase demands`);
   console.log(`Loaded ${orders.length} purchase orders, ${invoices.length} invoices, ${auditLogs.length} audit logs`);

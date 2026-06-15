@@ -143,9 +143,12 @@ describe('Java backend scaffold', () => {
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/infrastructure/DepartmentMapper.java'))).toBe(true);
     expect(architecture).toContain('采购方组织部门 Java API');
     expect(architecture).toContain('GET /api/v1/buyer/departments');
+    expect(architecture).toContain('POST /api/v1/buyer/departments');
     expect(readme).toContain('GET /api/v1/buyer/departments');
+    expect(readme).toContain('POST /api/v1/buyer/departments');
     expect(localSmoke).toContain('/api/v1/buyer/departments');
     expect(apiClient).toContain('listBuyerDepartments');
+    expect(apiClient).toContain('createBuyerDepartment');
   });
 
   it('documents the buyer notification API handoff', () => {

@@ -1,0 +1,60 @@
+package com.procurement;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.common.tenant.TenantContext;
+import com.procurement.organization.api.CreateDepartmentRequest;
+import com.procurement.organization.application.DepartmentApplicationService;
+import com.procurement.organization.domain.Department;
+import com.procurement.organization.infrastructure.DepartmentMapper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+class DepartmentCreationTests {
+
+  private final DepartmentMapper departmentMapper = org.mockito.Mockito.mock(DepartmentMapper.class);
+  private final AuditLogApplicationService auditLogApplicationService =
+      org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final DepartmentApplicationService departmentApplicationService =
+      new DepartmentApplicationService(departmentMapper, auditLogApplicationService);
+
+  @AfterEach
+  void clearTenantContext() {
+    TenantContext.clear();
+  }
+
+  @Test
+  void createsActiveDepartmentInCurrentTenantAndRecordsAuditLog() {
+    TenantContext.set("tenant-1", null, "buyer-admin");
+    when(departmentMapper.findByTenantAndId(
+            org.mockito.ArgumentMatchers.eq("tenant-1"),
+            org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> department(invocation.getArgument(1)));
+
+    var response = departmentApplicationService.createDepartment(new CreateDepartmentRequest(
+        "研发采购部",
+        "dept-parent"));
+
+    assertThat(response.tenantId()).isEqualTo("tenant-1");
+    assertThat(response.name()).isEqualTo("研发采购部");
+    assertThat(response.parentId()).isEqualTo("dept-parent");
+    assertThat(response.status()).isEqualTo("active");
+    verify(departmentMapper).insert(
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("dept-")),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("研发采购部"),
+        org.mockito.ArgumentMatchers.eq("dept-parent"),
+        org.mockito.ArgumentMatchers.eq("active"));
+    verify(auditLogApplicationService).recordTenantAction(
+        org.mockito.ArgumentMatchers.eq("department.created"),
+        org.mockito.ArgumentMatchers.eq("department"),
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("dept-")));
+  }
+
+  private Department department(String id) {
+    return new Department(id, "tenant-1", "研发采购部", "dept-parent", "active");
+  }
+}

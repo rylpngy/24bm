@@ -474,6 +474,56 @@ class HttpSecurityContractTests {
   }
 
   @Test
+  void buyerCanCreateDepartmentButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(post("/api/v1/buyer/departments")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "研发采购部",
+                  "parentId": "dept-it"
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(departmentApplicationService.createDepartment(org.mockito.ArgumentMatchers.any())).thenReturn(
+        new DepartmentResponse("dept-rd", "tenant-acme", "研发采购部", "dept-it", "active"));
+
+    mockMvc.perform(post("/api/v1/buyer/departments")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "研发采购部",
+                  "parentId": "dept-it"
+                }
+                """))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.id").value("dept-rd"))
+        .andExpect(jsonPath("$.data.name").value("研发采购部"))
+        .andExpect(jsonPath("$.data.parentId").value("dept-it"))
+        .andExpect(jsonPath("$.data.status").value("active"));
+  }
+
+  @Test
   void loginIssuesScopedTokensWithoutCrossTenantSupplierClaims() throws Exception {
     MvcResult buyerLogin = mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
