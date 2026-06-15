@@ -53,6 +53,7 @@ describe('Java supplier workspace scaffold', () => {
     expect(userService).toContain('supplier_user.status_changed');
     expect(userService).toContain('updatePasswordHash');
     expect(userService).toContain('updateStatus');
+    expect(userService).toContain('listBySupplierFiltered');
     expect(quoteService).toContain('listSupplierRfqs');
     expect(quoteService).toContain('listSupplierQuotes');
     expect(orderService).toContain('listCurrentSupplierOrders');
@@ -70,6 +71,7 @@ describe('Java supplier workspace scaffold', () => {
     expect(readme).toContain('POST /api/v1/supplier/users');
     expect(readme).toContain('POST /api/v1/supplier/users/{userId}/password');
     expect(readme).toContain('POST /api/v1/supplier/users/{userId}/status');
+    expect(readme).toContain('optional `status` and `keyword` filters');
     expect(readme).toContain('supplier_qualifications');
     expect(readme).toContain('GET /api/v1/supplier/rfqs');
     expect(readme).toContain('GET /api/v1/supplier/quotes');

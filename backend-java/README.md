@@ -358,6 +358,8 @@ Example supplier sub-account payload:
 
 Supplier user APIs also use the supplier identity from `Authorization: Bearer <accessToken>`. New users are written to `users.supplier_id`, get a hashed `password_hash`, are assigned the default `supplier` role, and record `supplier_user.created`. Password reset hashes `newPassword` before updating `password_hash`, status changes support only `active` and `inactive`, and both maintenance actions stay scoped to the current supplier while recording `supplier_user.password_reset` or `supplier_user.status_changed`.
 
+The supplier user list accepts optional `status` and `keyword` filters inside the current supplier enterprise. `keyword` matches user name, mobile, or email.
+
 ## Supplier Quote APIs
 
 The supplier-side sourcing endpoints are:

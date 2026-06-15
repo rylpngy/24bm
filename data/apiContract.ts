@@ -546,9 +546,10 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     method: 'GET',
     path: '/supplier/users',
     audience: 'supplier',
-    action: '加载供应商子账号列表',
+    action: '加载供应商子账号列表，支持按状态和关键词筛选',
     requestSchema: 'SupplierUserListRequest',
     responseSchema: 'SupplierUserList',
+    queryParameters: ['status', 'keyword'],
   },
   {
     method: 'POST',

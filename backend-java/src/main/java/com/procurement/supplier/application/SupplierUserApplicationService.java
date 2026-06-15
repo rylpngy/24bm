@@ -43,6 +43,17 @@ public class SupplierUserApplicationService {
         .toList();
   }
 
+  public List<SupplierUserResponse> listCurrentSupplierUsers(String status, String keyword) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier user APIs");
+    return supplierUserMapper.listBySupplierFiltered(
+            supplierId,
+            blankToNull(status),
+            blankToNull(keyword))
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public SupplierUserResponse createCurrentSupplierUser(CreateSupplierUserRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier user APIs");
@@ -108,6 +119,10 @@ public class SupplierUserApplicationService {
     if (!ACTIVE_STATUS.equals(status) && !INACTIVE_STATUS.equals(status)) {
       throw new IllegalArgumentException("Unsupported supplier user status: " + status);
     }
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 
   private void requireSupplierUser(String supplierId, String userId) {

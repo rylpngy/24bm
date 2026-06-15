@@ -75,6 +75,18 @@ class SupplierUserLifecycleTests {
   }
 
   @Test
+  void listSupplierUsersAppliesFiltersInsideCurrentSupplier() {
+    TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
+
+    supplierUserApplicationService.listCurrentSupplierUsers("active", "财务");
+
+    verify(supplierUserMapper).listBySupplierFiltered(
+        "ent-supplier-sunrise",
+        "active",
+        "财务");
+  }
+
+  @Test
   void resetSupplierUserPasswordHashesNewPasswordInCurrentSupplierScope() {
     TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
     when(supplierUserMapper.existsBySupplierAndId("ent-supplier-sunrise", "user-supplier-finance"))

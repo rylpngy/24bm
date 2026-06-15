@@ -976,7 +976,20 @@ class HttpSecurityContractTests {
             "suppliers/ent-supplier-sunrise/license.pdf",
             "inactive",
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
-    when(supplierUserApplicationService.listCurrentSupplierUsers())
+    when(supplierUserApplicationService.listCurrentSupplierUsers(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(new SupplierUserResponse(
+            "user-supplier-finance",
+            "ent-supplier-sunrise",
+            "供应商财务",
+            "13800009999",
+            "supplier.finance@example.com",
+            "active",
+            "role-supplier-sales")));
+    when(supplierUserApplicationService.listCurrentSupplierUsers(
+        org.mockito.ArgumentMatchers.eq("active"),
+        org.mockito.ArgumentMatchers.eq("财务")))
         .thenReturn(List.of(new SupplierUserResponse(
             "user-supplier-finance",
             "ent-supplier-sunrise",
@@ -1091,6 +1104,12 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].email").value("supplier.finance@example.com"));
+    mockMvc.perform(get("/api/v1/supplier/users")
+            .queryParam("status", "active")
+            .queryParam("keyword", "财务")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].name").value("供应商财务"));
     mockMvc.perform(post("/api/v1/supplier/users")
             .header("Authorization", "Bearer " + supplierToken)
             .contentType(MediaType.APPLICATION_JSON)

@@ -36,6 +36,32 @@ public interface SupplierUserMapper {
       left join roles r on r.id = ur.role_id and r.scope = 'supplier'
       where u.supplier_id = #{supplierId}
         and u.tenant_id is null
+        and (#{status} is null or u.status = #{status})
+        and (
+          #{keyword} is null
+          or u.name ilike concat('%', #{keyword}, '%')
+          or u.mobile ilike concat('%', #{keyword}, '%')
+          or u.email ilike concat('%', #{keyword}, '%')
+        )
+      group by u.id, u.supplier_id, u.name, u.mobile, u.email, u.status, u.created_at
+      order by u.created_at desc
+      """)
+  @Results(id = "supplierUserFilteredResults", value = {
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "role_id", property = "roleId")
+  })
+  List<SupplierUser> listBySupplierFiltered(
+      @Param("supplierId") String supplierId,
+      @Param("status") String status,
+      @Param("keyword") String keyword);
+
+  @Select("""
+      select u.id, u.supplier_id, u.name, u.mobile, u.email, u.status, min(r.id) as role_id
+      from users u
+      left join user_roles ur on ur.user_id = u.id
+      left join roles r on r.id = ur.role_id and r.scope = 'supplier'
+      where u.supplier_id = #{supplierId}
+        and u.tenant_id is null
         and u.id = #{id}
       group by u.id, u.supplier_id, u.name, u.mobile, u.email, u.status
       """)
