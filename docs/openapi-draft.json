@@ -1280,6 +1280,31 @@
         }
       }
     },
+    "/buyer/approvals/recent": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方最近已处理审批记录",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PendingApprovalTaskList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/approvals/templates": {
       "get": {
         "tags": [
@@ -3018,6 +3043,7 @@
     "POST /buyer/demands/{demandId}/submit",
     "POST /buyer/demands/{demandId}/approval",
     "GET /buyer/approvals/pending",
+    "GET /buyer/approvals/recent",
     "GET /buyer/approvals/templates",
     "POST /buyer/approvals/templates/{templateCode}/config",
     "GET /buyer/audit-logs",

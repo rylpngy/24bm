@@ -334,6 +334,7 @@ export interface JavaApprovalTaskDto {
   assigneeId: string | null;
   status: string;
   createdAt: string;
+  actedAt?: string | null;
 }
 
 export interface JavaApprovalTemplateDto {
@@ -482,6 +483,7 @@ export interface JavaProcurementApiClient {
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
   submitBuyerDemand(demandId: string): Promise<JavaApprovalTaskDto>;
   listBuyerPendingApprovals(): Promise<JavaApprovalTaskDto[]>;
+  listBuyerRecentApprovals(): Promise<JavaApprovalTaskDto[]>;
   listBuyerApprovalTemplates(): Promise<JavaApprovalTemplateDto[]>;
   updateBuyerApprovalTemplate(
     templateCode: string,
@@ -521,6 +523,7 @@ export interface JavaBuyerMasterData {
   orders: PurchaseOrder[];
   invoices: InvoiceRecord[];
   pendingApprovals: JavaApprovalTaskDto[];
+  recentApprovals: JavaApprovalTaskDto[];
   approvalTemplates: JavaApprovalTemplateDto[];
   auditLogs: JavaAuditLogDto[];
 }
@@ -913,6 +916,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     listBuyerPendingApprovals() {
       return buyerRequest<JavaApprovalTaskDto[]>('/api/v1/buyer/approvals/pending');
     },
+    listBuyerRecentApprovals() {
+      return buyerRequest<JavaApprovalTaskDto[]>('/api/v1/buyer/approvals/recent');
+    },
     listBuyerApprovalTemplates() {
       return buyerRequest<JavaApprovalTemplateDto[]>('/api/v1/buyer/approvals/templates');
     },
@@ -1071,14 +1077,16 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 };
 
 export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient): Promise<JavaBuyerMasterData> => {
-  const [workspace, roles, approvalTemplates] = await Promise.all([
+  const [workspace, roles, recentApprovals, approvalTemplates] = await Promise.all([
     client.getBuyerWorkspace(),
     client.listBuyerRoles(),
+    client.listBuyerRecentApprovals(),
     client.listBuyerApprovalTemplates(),
   ]);
   return {
     ...workspace,
     roles,
+    recentApprovals,
     approvalTemplates,
   };
 };

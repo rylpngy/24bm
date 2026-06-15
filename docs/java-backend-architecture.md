@@ -322,6 +322,7 @@ Authorization: Bearer <accessToken>
 MVP 审批模块采用固定审批模板，前端通过统一待办入口读取采购方需要处理的审批事项：
 
 - `GET /api/v1/buyer/approvals/pending`：查询当前采购方租户待处理审批任务。
+- `GET /api/v1/buyer/approvals/recent`：查询当前采购方租户最近已通过/驳回审批记录，按处理时间倒序返回。
 - `GET /api/v1/buyer/approvals/templates`：查询当前 MVP 审批模板。
 - `POST /api/v1/buyer/approvals/templates/{templateCode}/config`：更新当前租户审批模板的默认审批角色和启停状态。
 - `POST /api/v1/buyer/demands/{demandId}/approval`：审批采购需求。

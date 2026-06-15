@@ -26,7 +26,7 @@ public interface ApprovalTaskMapper {
       @Param("status") String status);
 
   @Select("""
-      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at
+      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at, acted_at
       from approval_tasks
       where tenant_id = #{tenantId} and id = #{id}
       """)
@@ -35,12 +35,13 @@ public interface ApprovalTaskMapper {
       @Result(column = "biz_type", property = "bizType"),
       @Result(column = "biz_id", property = "bizId"),
       @Result(column = "assignee_id", property = "assigneeId"),
-      @Result(column = "created_at", property = "createdAt")
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "acted_at", property = "actedAt")
   })
   ApprovalTask findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at
+      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at, acted_at
       from approval_tasks
       where tenant_id = #{tenantId}
         and biz_type = #{bizType}
@@ -54,7 +55,8 @@ public interface ApprovalTaskMapper {
       @Result(column = "biz_type", property = "bizType"),
       @Result(column = "biz_id", property = "bizId"),
       @Result(column = "assignee_id", property = "assigneeId"),
-      @Result(column = "created_at", property = "createdAt")
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "acted_at", property = "actedAt")
   })
   ApprovalTask findPendingByBiz(
       @Param("tenantId") String tenantId,
@@ -63,7 +65,7 @@ public interface ApprovalTaskMapper {
       @Param("status") String status);
 
   @Select("""
-      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at
+      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at, acted_at
       from approval_tasks
       where tenant_id = #{tenantId}
         and status = #{status}
@@ -74,11 +76,32 @@ public interface ApprovalTaskMapper {
       @Result(column = "biz_type", property = "bizType"),
       @Result(column = "biz_id", property = "bizId"),
       @Result(column = "assignee_id", property = "assigneeId"),
-      @Result(column = "created_at", property = "createdAt")
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "acted_at", property = "actedAt")
   })
   List<ApprovalTask> listByTenantAndStatus(
       @Param("tenantId") String tenantId,
       @Param("status") String status);
+
+  @Select("""
+      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at, acted_at
+      from approval_tasks
+      where tenant_id = #{tenantId}
+        and status in ('已通过', '已驳回')
+      order by acted_at desc nulls last, created_at desc
+      limit #{limit}
+      """)
+  @Results(id = "recentReviewedApprovalTaskResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "biz_type", property = "bizType"),
+      @Result(column = "biz_id", property = "bizId"),
+      @Result(column = "assignee_id", property = "assigneeId"),
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "acted_at", property = "actedAt")
+  })
+  List<ApprovalTask> listRecentReviewedByTenant(
+      @Param("tenantId") String tenantId,
+      @Param("limit") int limit);
 
   @Update("""
       update approval_tasks

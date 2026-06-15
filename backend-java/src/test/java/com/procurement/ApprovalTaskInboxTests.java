@@ -112,6 +112,51 @@ class ApprovalTaskInboxTests {
         });
   }
 
+  @Test
+  void listsRecentReviewedApprovalTasksWithActedAtAndBusinessSummary() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(approvalTaskMapper.listRecentReviewedByTenant("tenant-1", 10))
+        .thenReturn(List.of(
+            task(
+                "approval-approved",
+                "tenant-1",
+                "purchase_demand",
+                "demand-1",
+                "已通过",
+                "2026-06-15T10:00:00+08:00",
+                "2026-06-15T13:00:00+08:00"),
+            task(
+                "approval-rejected",
+                "tenant-1",
+                "buyer_supplier_admission",
+                "rel-1",
+                "已驳回",
+                "2026-06-15T09:00:00+08:00",
+                "2026-06-15T12:00:00+08:00")));
+    when(purchaseDemandMapper.findByTenantAndId("tenant-1", "demand-1"))
+        .thenReturn(demand("demand-1", "tenant-1", "采购 20 台电脑", BigDecimal.valueOf(120000)));
+    when(buyerUserMapper.findByTenantAndId("tenant-1", "requester-1"))
+        .thenReturn(user("requester-1", "需求申请人"));
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
+        .thenReturn(supplierRelation("rel-1", "tenant-1", "晨光供应商"));
+
+    List<PendingApprovalTaskResponse> responses = approvalInboxApplicationService.listRecentReviewed();
+
+    assertThat(responses).extracting(PendingApprovalTaskResponse::id)
+        .containsExactly("approval-approved", "approval-rejected");
+    assertThat(responses).extracting(PendingApprovalTaskResponse::status)
+        .containsExactly("已通过", "已驳回");
+    assertThat(responses).extracting(PendingApprovalTaskResponse::summaryTitle)
+        .containsExactly("采购 20 台电脑", "晨光供应商");
+    assertThat(responses).extracting(PendingApprovalTaskResponse::submittedByName)
+        .containsExactly("需求申请人", "晨光供应商");
+    assertThat(responses).extracting(PendingApprovalTaskResponse::actedAt)
+        .containsExactly(
+            OffsetDateTime.parse("2026-06-15T13:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"));
+    verify(approvalTaskMapper).listRecentReviewedByTenant("tenant-1", 10);
+  }
+
   private ApprovalTask task(
       String id,
       String tenantId,
@@ -119,6 +164,17 @@ class ApprovalTaskInboxTests {
       String bizId,
       String status,
       String createdAt) {
+    return task(id, tenantId, bizType, bizId, status, createdAt, null);
+  }
+
+  private ApprovalTask task(
+      String id,
+      String tenantId,
+      String bizType,
+      String bizId,
+      String status,
+      String createdAt,
+      String actedAt) {
     return new ApprovalTask(
         id,
         tenantId,
@@ -126,7 +182,8 @@ class ApprovalTaskInboxTests {
         bizId,
         null,
         status,
-        OffsetDateTime.parse(createdAt));
+        OffsetDateTime.parse(createdAt),
+        actedAt == null ? null : OffsetDateTime.parse(actedAt));
   }
 
   private PurchaseDemand demand(String id, String tenantId, String title, BigDecimal budget) {

@@ -24,6 +24,7 @@ public class ApprovalInboxApplicationService {
   private static final String PURCHASE_DEMAND_BIZ_TYPE = "purchase_demand";
   private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE = "buyer_supplier_admission";
   private static final String RFQ_AWARD_BIZ_TYPE = "rfq_award";
+  private static final int RECENT_REVIEW_LIMIT = 10;
 
   private final ApprovalTaskMapper approvalTaskMapper;
   private final PurchaseDemandMapper purchaseDemandMapper;
@@ -54,6 +55,13 @@ public class ApprovalInboxApplicationService {
         .toList();
   }
 
+  public List<PendingApprovalTaskResponse> listRecentReviewed() {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer approval inbox APIs");
+    return approvalTaskMapper.listRecentReviewedByTenant(tenantId, RECENT_REVIEW_LIMIT).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   private PendingApprovalTaskResponse toResponse(ApprovalTask task) {
     ApprovalTaskSummary summary = summaryFor(task);
     return new PendingApprovalTaskResponse(
@@ -72,7 +80,8 @@ public class ApprovalInboxApplicationService {
         summary.counterpartyName(),
         task.assigneeId(),
         task.status(),
-        task.createdAt());
+        task.createdAt(),
+        task.actedAt());
   }
 
   private ApprovalTaskSummary summaryFor(ApprovalTask task) {

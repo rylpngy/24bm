@@ -276,6 +276,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         relationId,
         "approver-1",
         status,
-        OffsetDateTime.parse("2026-06-15T10:30:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:30:00+08:00"),
+        null);
   }
 }

@@ -485,7 +485,8 @@ class HttpSecurityContractTests {
             null,
             null,
             "待审批",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")),
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+            null),
         new PendingApprovalTaskResponse(
             "approval-demand",
             "tenant-acme",
@@ -502,7 +503,8 @@ class HttpSecurityContractTests {
             null,
             null,
             "待审批",
-            OffsetDateTime.parse("2026-06-15T11:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T11:00:00+08:00"),
+            null)));
 
     mockMvc.perform(get("/api/v1/buyer/approvals/pending")
             .header("Authorization", "Bearer " + buyerToken))
@@ -520,6 +522,37 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data[1].businessStatus").value("审批中"))
         .andExpect(jsonPath("$.data[1].priority").value(70))
         .andExpect(jsonPath("$.data[1].submittedByName").value("需求申请人"));
+
+    mockMvc.perform(get("/api/v1/buyer/approvals/recent")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(approvalInboxApplicationService.listRecentReviewed()).thenReturn(List.of(
+        new PendingApprovalTaskResponse(
+            "approval-reviewed",
+            "tenant-acme",
+            "purchase_demand",
+            "demand-demo",
+            null,
+            "采购 20 台电脑",
+            "已通过",
+            70,
+            "requester-1",
+            "需求申请人",
+            BigDecimal.valueOf(120000),
+            null,
+            null,
+            "buyer-user",
+            "已通过",
+            OffsetDateTime.parse("2026-06-15T11:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-15T13:00:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/buyer/approvals/recent")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("approval-reviewed"))
+        .andExpect(jsonPath("$.data[0].status").value("已通过"))
+        .andExpect(jsonPath("$.data[0].actedAt").value("2026-06-15T13:00:00+08:00"));
 
     mockMvc.perform(get("/api/v1/buyer/approvals/templates")
             .header("Authorization", "Bearer " + supplierToken))

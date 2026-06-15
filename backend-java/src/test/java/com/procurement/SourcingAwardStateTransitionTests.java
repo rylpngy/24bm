@@ -227,6 +227,7 @@ class SourcingAwardStateTransitionTests {
         awardId,
         "approver-1",
         status,
-        OffsetDateTime.parse("2026-06-15T11:35:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T11:35:00+08:00"),
+        null);
   }
 }

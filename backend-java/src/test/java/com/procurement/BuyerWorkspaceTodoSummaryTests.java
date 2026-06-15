@@ -143,6 +143,7 @@ class BuyerWorkspaceTodoSummaryTests {
         "晨光科技供应商",
         "buyer-user",
         "待审批",
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        null);
   }
 }

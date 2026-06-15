@@ -51,6 +51,7 @@ describe('procurement SaaS API contract draft', () => {
       'POST /buyer/demands/{demandId}/submit',
       'POST /buyer/demands/{demandId}/approval',
       'GET /buyer/approvals/pending',
+      'GET /buyer/approvals/recent',
       'GET /buyer/approvals/templates',
       'POST /buyer/approvals/templates/{templateCode}/config',
       'GET /buyer/audit-logs',
@@ -264,6 +265,7 @@ describe('procurement SaaS API contract draft', () => {
     expect(json).toContain('"GET /dictionaries"');
     expect(json).toContain('"POST /buyer/demands"');
     expect(json).toContain('"GET /buyer/approvals/pending"');
+    expect(json).toContain('"GET /buyer/approvals/recent"');
     expect(json).toContain('"GET /buyer/audit-logs"');
     expect(json).toContain('"GET /buyer/departments"');
     expect(json).toContain('"POST /buyer/departments"');

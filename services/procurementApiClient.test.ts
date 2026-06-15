@@ -435,6 +435,23 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/approvals/recent') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'approval-reviewed',
+            tenantId: 'tenant-acme',
+            bizType: 'purchase_demand',
+            bizId: 'demand-java-001',
+            summaryTitle: 'Java 采购需求',
+            status: '已通过',
+            createdAt: '2026-06-15T11:00:00+08:00',
+            actedAt: '2026-06-15T12:00:00+08:00',
+          }],
+          message: '',
+        });
+      }
       if (input === 'http://java.test/api/v1/buyer/approvals/templates') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
         return Response.json({
@@ -467,11 +484,13 @@ describe('procurement API clients', () => {
 
     expect(masterData.auditLogs[0].action).toBe('purchase_order.created');
     expect(masterData.roles[0].id).toBe('role-buyer-owner');
+    expect(masterData.recentApprovals[0].actedAt).toBe('2026-06-15T12:00:00+08:00');
     expect(masterData.approvalTemplates[0].templateCode).toBe('TPL_PURCHASE_DEMAND');
     expect(calls.map((call) => call.input)).toEqual([
       'http://java.test/api/v1/auth/login',
       'http://java.test/api/v1/buyer/workspace',
       'http://java.test/api/v1/buyer/roles',
+      'http://java.test/api/v1/buyer/approvals/recent',
       'http://java.test/api/v1/buyer/approvals/templates',
     ]);
   });
@@ -774,6 +793,33 @@ describe('procurement API clients', () => {
             assigneeId: 'user-buyer-owner',
             status: '待审批',
             createdAt: '2026-06-15T11:05:00+08:00',
+            actedAt: null,
+          }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/approvals/recent') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'approval-reviewed',
+            tenantId: 'tenant-acme',
+            bizType: 'purchase_demand',
+            bizId: 'dem-java-new',
+            parentBizId: null,
+            summaryTitle: '新建 Java 需求',
+            businessStatus: '已通过',
+            priority: 70,
+            submittedById: 'requester-1',
+            submittedByName: '需求申请人',
+            amount: 66000,
+            counterpartyId: null,
+            counterpartyName: null,
+            assigneeId: 'user-buyer-owner',
+            status: '已通过',
+            createdAt: '2026-06-15T11:05:00+08:00',
+            actedAt: '2026-06-15T12:05:00+08:00',
           }],
           message: '',
         });
@@ -838,6 +884,7 @@ describe('procurement API clients', () => {
     });
     const approval = await client.submitBuyerDemand(created.id);
     const pendingApprovals = await client.listBuyerPendingApprovals();
+    const recentApprovals = await client.listBuyerRecentApprovals();
     const approvalTemplates = await client.listBuyerApprovalTemplates();
     const updatedTemplate = await client.updateBuyerApprovalTemplate('TPL_PURCHASE_DEMAND', {
       defaultApproverRoleId: 'role-buyer-finance',
@@ -864,6 +911,11 @@ describe('procurement API clients', () => {
       priority: 70,
       submittedByName: '需求申请人',
       amount: 66000,
+    });
+    expect(recentApprovals[0]).toMatchObject({
+      id: 'approval-reviewed',
+      status: '已通过',
+      actedAt: '2026-06-15T12:05:00+08:00',
     });
     expect(approvalTemplates[0]).toMatchObject({
       templateCode: 'TPL_PURCHASE_DEMAND',

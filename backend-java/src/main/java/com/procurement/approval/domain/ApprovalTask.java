@@ -9,5 +9,6 @@ public record ApprovalTask(
     String bizId,
     String assigneeId,
     String status,
-    OffsetDateTime createdAt) {
+    OffsetDateTime createdAt,
+    OffsetDateTime actedAt) {
 }

@@ -130,6 +130,7 @@ const App: React.FC = () => {
     workspace: BuyerWorkspace;
     kpis: TenantKpis;
     pendingApprovals: JavaApprovalTaskDto[];
+    recentApprovals: JavaApprovalTaskDto[];
     approvalTemplates: JavaApprovalTemplateDto[];
     roles: BuyerRoleDto[];
   } | null>(null);
@@ -151,6 +152,7 @@ const App: React.FC = () => {
       ...currentBuyerData,
       workspace: applyJavaBuyerMasterData(currentBuyerData.workspace, javaBuyerMasterData),
       pendingApprovals: javaBuyerMasterData.pendingApprovals,
+      recentApprovals: javaBuyerMasterData.recentApprovals,
       approvalTemplates: javaBuyerMasterData.approvalTemplates,
       roles: javaBuyerMasterData.roles,
       kpis: {
@@ -187,12 +189,14 @@ const App: React.FC = () => {
           ? applyJavaBuyerMasterData(nextBuyer.workspace, javaBuyerMasterData)
           : nextBuyer.workspace;
         const pendingApprovals = javaBuyerMasterData?.pendingApprovals ?? [];
+        const recentApprovals = javaBuyerMasterData?.recentApprovals ?? [];
         const approvalTemplates = javaBuyerMasterData?.approvalTemplates ?? [];
         const roles = javaBuyerMasterData?.roles ?? [];
         setBuyerData({
           ...nextBuyer,
           workspace: buyerWorkspace,
           pendingApprovals,
+          recentApprovals,
           approvalTemplates,
           roles,
           kpis: {
@@ -451,6 +455,7 @@ const App: React.FC = () => {
                 workspace={buyerData.workspace}
                 kpis={buyerData.kpis}
                 pendingApprovals={buyerData.pendingApprovals}
+                recentApprovals={buyerData.recentApprovals}
                 approvalTemplates={buyerData.approvalTemplates}
                 roles={buyerData.roles}
                 approvalBusyId={approvalBusyId}
@@ -698,6 +703,7 @@ const BuyerWorkspaceView: React.FC<{
   workspace: BuyerWorkspace;
   kpis: TenantKpis;
   pendingApprovals: JavaApprovalTaskDto[];
+  recentApprovals: JavaApprovalTaskDto[];
   approvalTemplates: JavaApprovalTemplateDto[];
   roles: BuyerRoleDto[];
   approvalBusyId: string | null;
@@ -719,6 +725,7 @@ const BuyerWorkspaceView: React.FC<{
   workspace,
   kpis,
   pendingApprovals,
+  recentApprovals,
   approvalTemplates,
   roles,
   approvalBusyId,
@@ -737,6 +744,11 @@ const BuyerWorkspaceView: React.FC<{
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
     if (priorityDelta !== 0) return priorityDelta;
     return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+  });
+  const sortedRecentApprovals = [...recentApprovals].sort((left, right) => {
+    const leftTime = new Date(left.actedAt ?? left.createdAt).getTime();
+    const rightTime = new Date(right.actedAt ?? right.createdAt).getTime();
+    return rightTime - leftTime;
   });
 
   return (
@@ -836,6 +848,37 @@ const BuyerWorkspaceView: React.FC<{
           onSave={onUpdateApprovalTemplate}
         />
       </div>
+    )}
+
+    {javaEnabled && (
+      <Panel title="最近审批记录" icon={ShieldCheck}>
+        {sortedRecentApprovals.length > 0 ? (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {sortedRecentApprovals.map((approval) => (
+              <div key={approval.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-slate-950">
+                      {approval.summaryTitle || approval.bizId}
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">{approvalTypeLabel(approval.bizType)}</p>
+                  </div>
+                  <StatusPill label={approval.status} />
+                </div>
+                <div className="mt-3 space-y-2 text-xs font-bold text-slate-500">
+                  {approval.businessStatus && <p>业务状态：{approval.businessStatus}</p>}
+                  {approval.submittedByName && <p>提交人：{approval.submittedByName}</p>}
+                  <p>处理时间：{formatAuditTime(approval.actedAt ?? approval.createdAt)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
+            暂无已处理审批记录
+          </p>
+        )}
+      </Panel>
     )}
 
     <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">

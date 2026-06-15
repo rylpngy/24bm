@@ -29,6 +29,11 @@ public class ApprovalInboxController {
     return ApiResponse.ok(approvalInboxApplicationService.listPending());
   }
 
+  @GetMapping("/recent")
+  public ApiResponse<List<PendingApprovalTaskResponse>> recent() {
+    return ApiResponse.ok(approvalInboxApplicationService.listRecentReviewed());
+  }
+
   @GetMapping("/templates")
   public ApiResponse<List<ApprovalTemplateResponse>> templates() {
     return ApiResponse.ok(approvalTemplateApplicationService.listTemplates());

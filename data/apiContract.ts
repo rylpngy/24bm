@@ -417,6 +417,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/buyer/approvals/recent',
+    audience: 'buyer',
+    action: '加载采购方最近已处理审批记录',
+    requestSchema: 'RecentApprovalListRequest',
+    responseSchema: 'PendingApprovalTaskList',
+  },
+  {
+    method: 'GET',
     path: '/buyer/approvals/templates',
     audience: 'buyer',
     action: '加载采购方固定审批模板',
