@@ -106,7 +106,9 @@ Run the API smoke check after Spring Boot is up:
 npm run java:smoke
 ```
 
-It logs in as the seeded platform, buyer, and supplier accounts, verifies `GET /api/v1/platform/workspace`, `GET /api/v1/buyer/workspace`, `GET /api/v1/supplier/workspace`, and the key list endpoints return expected Java data, then creates one RFQ, submits one supplier quote, submits and approves one award decision, creates one purchase order, confirms the order as supplier, submits one delivery, registers one receipt, creates one invoice, and registers payment status.
+It logs in as the seeded platform, buyer, and supplier accounts, verifies `GET /api/v1/platform/workspace`, `GET /api/v1/buyer/workspace`, `GET /api/v1/supplier/workspace`, and the key list endpoints return expected Java data, then checks supplier admission submission, approval, and refreshed buyer workspace relation status when a pending admission relation is available. It also creates one RFQ, submits one supplier quote, submits and approves one award decision, creates one purchase order, confirms the order as supplier, submits one delivery, registers one receipt, creates one invoice, and registers payment status.
+
+On a fresh local seed, the smoke script uses the pending supplier relation to verify `供应商准入提交、审批通过、买方工作台关系状态刷新`. If the local database has already admitted that relation from a previous run, the script skips only that supplier-admission mutation and continues with the RFQ-to-payment smoke path.
 
 ## Manual API Check
 

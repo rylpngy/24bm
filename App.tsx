@@ -1221,7 +1221,7 @@ const CapabilityList: React.FC<{ items: string[] }> = ({ items }) => (
 
 const StatusPill: React.FC<{ label: string }> = ({ label }) => {
   const isPositive = ['已启用', '已通过', '已准入', '已定标', '已完成', '已付款', '已提交', '已签收', '已完成'].includes(label);
-  const isWarning = ['审批中', '报价中', '待付款', '待供应商确认', '待收货', '运输中', '试用中', '待准入', '进行中'].includes(label);
+  const isWarning = ['审批中', '报价中', '待付款', '待供应商确认', '待收货', '运输中', '试用中', '待准入', '准入审批中', '进行中'].includes(label);
   const classes = isPositive
     ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
     : isWarning

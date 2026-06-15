@@ -20,6 +20,10 @@ const requireItem = (items, predicate, label) => {
   }
 };
 
+const findPendingAdmissionRelation = (relations) =>
+  relations.find((item) => item.status === '待准入')
+    ?? relations.find((item) => item.id === (process.env.JAVA_ADMISSION_SMOKE_RELATION_ID ?? 'rel-acme-tech'));
+
 const futureDeadline = () => {
   const date = new Date();
   date.setDate(date.getDate() + 14);
@@ -139,6 +143,34 @@ const main = async () => {
     throw new Error('Unexpected Java buyer workspace aggregate payload');
   }
 
+  const pendingAdmissionRelation = findPendingAdmissionRelation(suppliers);
+  let admissionApproval = null;
+  let admittedRelation = null;
+  if (pendingAdmissionRelation?.status === '待准入') {
+    const submittedAdmission = await requestJson(`/api/v1/buyer/suppliers/${pendingAdmissionRelation.id}/submit`, {
+      method: 'POST',
+      headers: authHeaders,
+    });
+    if (submittedAdmission.bizType !== 'buyer_supplier_admission' || submittedAdmission.bizId !== pendingAdmissionRelation.id) {
+      throw new Error('Unexpected Java supplier admission submission payload');
+    }
+
+    admissionApproval = await requestJson(`/api/v1/buyer/suppliers/${pendingAdmissionRelation.id}/approval`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({ approved: true }),
+    });
+    if (admissionApproval.status !== '已通过') {
+      throw new Error(`Unexpected Java supplier admission approval status: ${admissionApproval.status}`);
+    }
+
+    const refreshedBuyerWorkspace = await requestJson('/api/v1/buyer/workspace', { headers: authHeaders });
+    admittedRelation = refreshedBuyerWorkspace.suppliers.find((item) => item.id === pendingAdmissionRelation.id);
+    if (!admittedRelation || admittedRelation.status !== '已准入') {
+      throw new Error('Java buyer workspace did not refresh supplier admission status to admitted');
+    }
+  }
+
   const rfq = await requestJson('/api/v1/buyer/rfqs', {
     method: 'POST',
     headers: { ...authHeaders, 'content-type': 'application/json' },
@@ -224,6 +256,11 @@ const main = async () => {
   console.log(`Loaded platform workspace aggregate with ${platformWorkspace.tenants.length} tenants and ${platformWorkspace.enterpriseReviews.length} pending enterprise reviews`);
   console.log(`Loaded ${suppliers.length} suppliers, ${materials.length} materials, ${departments.length} departments, ${users.length} buyer users`);
   console.log(`Loaded buyer workspace aggregate with ${buyerWorkspace.suppliers.length} suppliers and ${buyerWorkspace.auditLogs.length} audit logs`);
+  if (admittedRelation && admissionApproval) {
+    console.log(`Approved supplier admission ${admissionApproval.id}; relation ${admittedRelation.id} status is ${admittedRelation.status}`);
+  } else {
+    console.log('Skipped supplier admission approval smoke because no pending admission relation was available');
+  }
   console.log(`Loaded ${demands.length} purchase demands`);
   console.log(`Loaded ${orders.length} purchase orders, ${invoices.length} invoices, ${auditLogs.length} audit logs`);
   console.log(`Loaded supplier ${supplierProfile.name}, ${supplierRfqs.length} RFQs, ${supplierQuotes.length} quotes, ${supplierOrders.length} orders, ${supplierInvoices.length} invoices`);

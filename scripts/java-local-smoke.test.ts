@@ -22,6 +22,10 @@ describe('Java local smoke command', () => {
     expect(script).toContain("requestJson('/api/v1/platform/enterprise-reviews'");
     expect(script).toContain("requestJson('/api/v1/buyer/workspace'");
     expect(script).toContain('/api/v1/buyer/suppliers');
+    expect(script).toContain("findPendingAdmissionRelation");
+    expect(script).toContain('/api/v1/buyer/suppliers/${pendingAdmissionRelation.id}/submit');
+    expect(script).toContain('/api/v1/buyer/suppliers/${pendingAdmissionRelation.id}/approval');
+    expect(script).toContain("admittedRelation.status !== '已准入'");
     expect(script).toContain('/api/v1/buyer/materials');
     expect(script).toContain('/api/v1/buyer/departments');
     expect(script).toContain('JAVA_CREATE_SMOKE_DEPARTMENT');
@@ -53,5 +57,6 @@ describe('Java local smoke command', () => {
     expect(script).toContain('dem-local-laptop');
     expect(script).toContain('ent-supplier-sunrise');
     expect(doc).toContain('npm run java:smoke');
+    expect(doc).toContain('供应商准入提交、审批通过、买方工作台关系状态刷新');
   });
 });

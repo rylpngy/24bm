@@ -1,7 +1,7 @@
 export type EnterpriseType = 'platform' | 'buyer' | 'supplier';
 export type TenantPlan = '标准版' | '专业版' | '旗舰版';
 export type ApprovalStatus = '草稿' | '审批中' | '已通过' | '已驳回';
-export type SupplierRelationStatus = '待准入' | '已准入' | '暂停合作' | '黑名单';
+export type SupplierRelationStatus = '待准入' | '准入审批中' | '已准入' | '已驳回' | '暂停合作' | '黑名单';
 export type SupplierLevel = 'A' | 'B' | 'C';
 export type RfqStatus = '草稿' | '报价中' | '已截标' | '已定标' | '已关闭';
 export type QuoteStatus = '待提交' | '已提交' | '已撤回' | '已失效';
