@@ -123,8 +123,9 @@ Authorization: Bearer <accessToken>
 - `purchase_order.received`：采购方收货验收。
 - `invoice.created`：供应商登记发票。
 - `invoice.paid` / `invoice.partial_paid`：采购方登记付款状态。
+- `attachment.created`：采购方登记已上传附件元数据并关联业务对象。
 
-后续应继续把物料维护、用户维护、平台企业审核、功能开关变更和附件上传纳入同一审计入口。
+后续应继续把物料维护、用户维护、平台企业审核和功能开关变更纳入同一审计入口。
 
 ## RFQ 询价 Java API
 
@@ -337,4 +338,23 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `purchase_orders`
 - `invoices`
 
-至此，Java 后端 MVP 主链路已经覆盖需求、询价、报价、定标、订单、发货、收货、发票和付款状态。
+## 附件元数据 Java API
+
+第十批 Java 业务接口落在 `attachment` 模块：
+
+- `GET /api/v1/buyer/attachments`：采购方按 `ownerType + ownerId` 查询当前租户业务对象附件。
+- `POST /api/v1/buyer/attachments`：采购方登记已上传附件元数据，并关联到需求、报价、发票等业务对象。
+
+当前边界：
+
+- 采购方身份来自 JWT 中的 `tenantId`，上传人来自 JWT 中的 `userId`。
+- 请求体只接收 `ownerType`、`ownerId`、`fileName` 和 `storageKey`，不接受前端传入 `tenantId` 或 `uploadedBy`。
+- 当前实现登记附件元数据，不直接处理对象存储直传、病毒扫描、文件预览或下载签名。
+- 新增附件会写入 `audit_logs`，动作为 `attachment.created`，目标类型为附件关联的 `ownerType`。
+
+对应数据库表：
+
+- `attachments`
+- `audit_logs`
+
+至此，Java 后端 MVP 主链路已经覆盖需求、询价、报价、定标、订单、发货、收货、发票、付款状态和附件元数据登记。

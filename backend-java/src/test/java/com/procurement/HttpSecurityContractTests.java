@@ -23,6 +23,10 @@ import com.procurement.buyer.application.BuyerWorkspaceApplicationService;
 import com.procurement.approval.api.ApprovalInboxController;
 import com.procurement.approval.api.PendingApprovalTaskResponse;
 import com.procurement.approval.application.ApprovalInboxApplicationService;
+import com.procurement.attachment.api.AttachmentController;
+import com.procurement.attachment.api.AttachmentResponse;
+import com.procurement.attachment.api.CreateAttachmentRequest;
+import com.procurement.attachment.application.AttachmentApplicationService;
 import com.procurement.demand.api.PurchaseDemandController;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.demand.application.PurchaseDemandApplicationService;
@@ -107,7 +111,8 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierReceivableController.class,
     AuditLogController.class,
     BuyerWorkspaceController.class,
-    SupplierWorkspaceController.class
+    SupplierWorkspaceController.class,
+    AttachmentController.class
 })
 @Import({
     SecurityConfig.class,
@@ -174,6 +179,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private SupplierWorkspaceApplicationService supplierWorkspaceApplicationService;
+
+  @MockBean
+  private AttachmentApplicationService attachmentApplicationService;
 
   @Test
   void viteLocalhostPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
@@ -917,6 +925,80 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.verified").value(true))
         .andExpect(jsonPath("$.data.reviewStatus").value("approved"));
+  }
+
+  @Test
+  void buyerAttachmentApisRegisterAndListTenantScopedAttachmentMetadata() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    when(attachmentApplicationService.listCurrentTenantAttachments("purchase_demand", "demand-demo"))
+        .thenReturn(List.of(new AttachmentResponse(
+            "att-demand-spec",
+            "tenant-acme",
+            "purchase_demand",
+            "demand-demo",
+            "需求规格书.pdf",
+            "tenant-acme/purchase_demand/demand-demo/spec.pdf",
+            "user-buyer-owner",
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/buyer/attachments")
+            .param("ownerType", "purchase_demand")
+            .param("ownerId", "demand-demo")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(get("/api/v1/buyer/attachments")
+            .param("ownerType", "purchase_demand")
+            .param("ownerId", "demand-demo")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("att-demand-spec"))
+        .andExpect(jsonPath("$.data[0].ownerType").value("purchase_demand"))
+        .andExpect(jsonPath("$.data[0].fileName").value("需求规格书.pdf"))
+        .andExpect(jsonPath("$.data[0].uploadedBy").value("user-buyer-owner"));
+
+    when(attachmentApplicationService.createCurrentTenantAttachment(
+        org.mockito.ArgumentMatchers.any(CreateAttachmentRequest.class)))
+        .thenReturn(new AttachmentResponse(
+            "att-quote-file",
+            "tenant-acme",
+            "quote",
+            "quote-demo",
+            "报价单.xlsx",
+            "tenant-acme/quote/quote-demo/quote.xlsx",
+            "user-buyer-owner",
+            OffsetDateTime.parse("2026-06-15T11:00:00+08:00")));
+
+    mockMvc.perform(post("/api/v1/buyer/attachments")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "ownerType": "quote",
+                  "ownerId": "quote-demo",
+                  "fileName": "报价单.xlsx",
+                  "storageKey": "tenant-acme/quote/quote-demo/quote.xlsx"
+                }
+                """))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.id").value("att-quote-file"))
+        .andExpect(jsonPath("$.data.storageKey").value("tenant-acme/quote/quote-demo/quote.xlsx"));
   }
 
   @Test

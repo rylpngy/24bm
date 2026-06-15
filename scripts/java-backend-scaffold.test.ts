@@ -106,6 +106,20 @@ describe('Java backend scaffold', () => {
     expect(doc).not.toContain('开发早期默认使用 mock adapter');
   });
 
+  it('documents the buyer attachment metadata API handoff', () => {
+    const architecture = read('docs/java-backend-architecture.md');
+    const readme = read('backend-java/README.md');
+
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/attachment/api/AttachmentController.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/attachment/application/AttachmentApplicationService.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/attachment/infrastructure/AttachmentMapper.java'))).toBe(true);
+    expect(architecture).toContain('附件元数据 Java API');
+    expect(architecture).toContain('GET /api/v1/buyer/attachments');
+    expect(architecture).toContain('attachment.created');
+    expect(readme).toContain('Buyer Attachment Metadata APIs');
+    expect(readme).toContain('POST /api/v1/buyer/attachments');
+  });
+
   it('provides a reproducible local PostgreSQL runtime for Java frontend integration', () => {
     const compose = read('backend-java/docker-compose.yml');
     const localProfile = read('backend-java/src/main/resources/application-local.yml');

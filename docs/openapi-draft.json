@@ -603,6 +603,54 @@
         }
       }
     },
+    "/buyer/attachments": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "按业务对象加载附件元数据",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AttachmentList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "登记已上传附件元数据并关联业务对象",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attachment"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/rfqs": {
       "get": {
         "tags": [
@@ -1292,6 +1340,22 @@
         "type": "object",
         "additionalProperties": true
       },
+      "AttachmentListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "AttachmentList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateAttachmentRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "Attachment": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "RfqListRequest": {
         "type": "object",
         "additionalProperties": true
@@ -1461,6 +1525,8 @@
     "POST /buyer/demands/{demandId}/approval",
     "GET /buyer/approvals/pending",
     "GET /buyer/audit-logs",
+    "GET /buyer/attachments",
+    "POST /buyer/attachments",
     "GET /buyer/rfqs",
     "POST /buyer/rfqs",
     "GET /supplier/workspace",

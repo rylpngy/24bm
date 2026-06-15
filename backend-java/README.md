@@ -100,6 +100,26 @@ The buyer-side audit endpoint is:
 
 It returns recent audit logs for the current buyer tenant from the JWT `tenantId`. The optional `limit` query parameter is clamped by the service to keep responses bounded.
 
+## Buyer Attachment Metadata APIs
+
+The buyer-side attachment metadata endpoints are:
+
+- `GET /api/v1/buyer/attachments?ownerType=purchase_demand&ownerId=demand-demo`
+- `POST /api/v1/buyer/attachments`
+
+Example metadata registration payload:
+
+```json
+{
+  "ownerType": "purchase_demand",
+  "ownerId": "demand-demo",
+  "fileName": "需求规格书.pdf",
+  "storageKey": "tenant-acme/purchase_demand/demand-demo/spec.pdf"
+}
+```
+
+The API records metadata only. The current buyer tenant and uploader are read from JWT claims, and registration writes an `audit_logs` row with action `attachment.created`.
+
 ## Buyer Master Data APIs
 
 The first buyer-side master data endpoints are:
