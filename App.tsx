@@ -145,6 +145,7 @@ const App: React.FC = () => {
   const [supplierActionBusyId, setSupplierActionBusyId] = useState<string | null>(null);
   const [rfqCreateBusy, setRfqCreateBusy] = useState<string | null>(null);
   const [orderCreateBusy, setOrderCreateBusy] = useState<string | null>(null);
+  const [buyerFulfillmentBusyId, setBuyerFulfillmentBusyId] = useState<string | null>(null);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -372,6 +373,36 @@ const App: React.FC = () => {
     }
   };
 
+  const createBuyerReceiptFromOrder = async (orderId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`receipt:${orderId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.createBuyerReceipt(orderId, { result: '验收通过' });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`收货验收已登记：${orderId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '收货验收登记失败');
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const registerBuyerInvoicePayment = async (invoiceId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`payment:${invoiceId}`);
+    setWorkflowStatus(null);
+    try {
+      const invoice = await javaApiClient.registerBuyerPayment(invoiceId, { paymentStatus: '已付款' });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`登记付款完成：${invoice.id}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '付款登记失败');
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
   const submitSupplierQuote = async (rfqId: string) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`quote:${rfqId}`);
@@ -489,6 +520,7 @@ const App: React.FC = () => {
                 supplierAdmissionBusyId={supplierAdmissionBusyId}
                 rfqCreateBusy={rfqCreateBusy}
                 orderCreateBusy={orderCreateBusy}
+                buyerFulfillmentBusyId={buyerFulfillmentBusyId}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowBusy={workflowBusy}
                 workflowStatus={workflowStatus}
@@ -497,6 +529,8 @@ const App: React.FC = () => {
                 onSubmitSupplierAdmission={submitSupplierAdmission}
                 onCreateRfqFromDemand={createBuyerRfqFromDemand}
                 onCreateOrderFromAward={createBuyerOrderFromAward}
+                onCreateReceipt={createBuyerReceiptFromOrder}
+                onRegisterPayment={registerBuyerInvoicePayment}
                 onUpdateApprovalTemplate={updateApprovalTemplate}
               />
             )}
@@ -740,6 +774,7 @@ const BuyerWorkspaceView: React.FC<{
   supplierAdmissionBusyId: string | null;
   rfqCreateBusy: string | null;
   orderCreateBusy: string | null;
+  buyerFulfillmentBusyId: string | null;
   javaEnabled: boolean;
   workflowBusy: boolean;
   workflowStatus: string | null;
@@ -748,6 +783,8 @@ const BuyerWorkspaceView: React.FC<{
   onSubmitSupplierAdmission: (relationId: string) => void;
   onCreateRfqFromDemand: (demandId: string) => void;
   onCreateOrderFromAward: (awardId: string) => void;
+  onCreateReceipt: (orderId: string) => void;
+  onRegisterPayment: (invoiceId: string) => void;
   onUpdateApprovalTemplate: (
     templateCode: string,
     defaultApproverRoleId: string,
@@ -765,6 +802,7 @@ const BuyerWorkspaceView: React.FC<{
   supplierAdmissionBusyId,
   rfqCreateBusy,
   orderCreateBusy,
+  buyerFulfillmentBusyId,
   javaEnabled,
   workflowBusy,
   workflowStatus,
@@ -773,6 +811,8 @@ const BuyerWorkspaceView: React.FC<{
   onSubmitSupplierAdmission,
   onCreateRfqFromDemand,
   onCreateOrderFromAward,
+  onCreateReceipt,
+  onRegisterPayment,
   onUpdateApprovalTemplate,
 }) => {
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
@@ -1047,27 +1087,70 @@ const BuyerWorkspaceView: React.FC<{
       </Panel>
 
       <Panel title="订单履约" icon={PackageCheck}>
-        <SimpleList
-          rows={workspace.orders.map((order) => ({
-            id: order.id,
-            title: order.id,
-            meta: `${workspace.suppliers.find((supplier) => supplier.id === order.supplierId)?.name} · ${order.expectedReceiptDate}`,
-            value: currency(order.amount),
-            status: order.status,
-          }))}
-        />
+        <div className="space-y-3">
+          {workspace.orders.map((order) => {
+            const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
+            const receiptBusy = buyerFulfillmentBusyId === `receipt:${order.id}`;
+            return (
+              <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black text-slate-900">{order.id}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {supplier?.name} · {order.expectedReceiptDate}
+                    </p>
+                  </div>
+                  <p className="font-mono font-black text-slate-900">{currency(order.amount)}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <StatusPill label={order.status} />
+                  {javaEnabled && order.status === '已发货' && (
+                    <button
+                      type="button"
+                      onClick={() => onCreateReceipt(order.id)}
+                      disabled={receiptBusy}
+                      className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                    >
+                      {receiptBusy ? '登记中' : '登记收货'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </Panel>
 
       <Panel title="发票付款" icon={Receipt}>
-        <SimpleList
-          rows={workspace.invoices.map((invoice) => ({
-            id: invoice.id,
-            title: invoice.id,
-            meta: `订单 ${invoice.orderId}`,
-            value: currency(invoice.amount),
-            status: invoice.paymentStatus,
-          }))}
-        />
+        <div className="space-y-3">
+          {workspace.invoices.map((invoice) => {
+            const paymentBusy = buyerFulfillmentBusyId === `payment:${invoice.id}`;
+            return (
+              <div key={invoice.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black text-slate-900">{invoice.id}</p>
+                    <p className="mt-1 text-sm text-slate-500">订单 {invoice.orderId}</p>
+                  </div>
+                  <p className="font-mono font-black text-slate-900">{currency(invoice.amount)}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <StatusPill label={invoice.paymentStatus} />
+                  {javaEnabled && invoice.paymentStatus !== '已付款' && (
+                    <button
+                      type="button"
+                      onClick={() => onRegisterPayment(invoice.id)}
+                      disabled={paymentBusy}
+                      className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                    >
+                      {paymentBusy ? '登记中' : '登记付款'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </Panel>
     </div>
 
