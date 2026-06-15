@@ -200,7 +200,7 @@ Authorization: Bearer <accessToken>
 - `rfq_invites`
 - `buyer_supplier_relations`
 
-供应商报价、报价比价、定标和订单生成在后续阶段继续补齐。
+供应商报价、比价定标和订单生成已在后续 `sourcing`、`approval`、`order` 模块承接，形成从 RFQ 到采购订单的主链路。
 
 ## 供应商报价 Java API
 
@@ -231,7 +231,7 @@ Authorization: Bearer <accessToken>
 - `rfq_invites`
 - `quotes`
 
-后续比价定标会基于 `quotes` 表中 `已提交` 报价生成 `award_decisions`。
+比价定标基于 `quotes` 表中 `已提交` 报价生成 `award_decisions`，并通过固定审批模板进入定标审批。
 
 ## 比价定标 Java API
 
@@ -261,7 +261,7 @@ Authorization: Bearer <accessToken>
 - `award_decisions`
 - `approval_tasks`
 
-后续订单模块会基于 `award_decisions` 生成 `purchase_orders`。
+订单模块基于已通过的 `award_decisions` 生成 `purchase_orders`，并把订单推进到供应商确认节点。
 
 ## 审批待办 Java API
 
@@ -310,7 +310,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `award_decisions`
 - `purchase_orders`
 
-后续履约模块从供应商确认订单开始，继续推进发货、采购方收货验收、发票和付款状态。
+履约模块从供应商确认订单开始，已串起发货、采购方收货验收、发票登记和付款状态。
 
 ## 供应商确认订单 Java API
 
@@ -356,7 +356,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `purchase_orders`
 - `deliveries`
 
-后续收货模块会基于 `purchase_orders` 和 `deliveries` 创建 `receipts`，并把订单推进到验收完成状态。
+收货模块基于 `purchase_orders` 和 `deliveries` 创建 `receipts`，并把订单推进到验收完成状态。
 
 ## 采购方收货验收 Java API
 
@@ -383,7 +383,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `purchase_orders`
 - `receipts`
 
-后续财务协同模块会在订单已收货后接入发票登记、付款状态和对账记录。
+财务协同模块在订单已收货后接入发票登记和付款状态；对账记录仍保留为后续财务深化能力。
 
 ## 财务协同 Java API
 
