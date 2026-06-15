@@ -131,6 +131,7 @@ Notifications are scoped by the JWT `tenantId` and current `userId`. A buyer use
 
 Purchase demand submission now creates in-app notifications for active buyer users in the current tenant with title `采购需求待审批`.
 RFQ award approval submission also creates in-app notifications for active buyer users with title `定标结果待审批`.
+Supplier order confirmation creates in-app notifications for active buyer users with title `采购订单已确认`.
 
 ## Buyer Master Data APIs
 

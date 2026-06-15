@@ -19,6 +19,7 @@ import com.procurement.order.domain.Receipt;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import java.math.BigDecimal;
@@ -34,6 +35,8 @@ class OrderFulfillmentStateTransitionTests {
   private final ReceiptMapper receiptMapper = org.mockito.Mockito.mock(ReceiptMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
 
   @AfterEach
   void clearTenantContext() {
@@ -53,7 +56,8 @@ class OrderFulfillmentStateTransitionTests {
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
         awardDecisionMapper,
         purchaseOrderMapper,
-        auditLogApplicationService);
+        auditLogApplicationService,
+        notificationApplicationService);
 
     org.assertj.core.api.Assertions.assertThat(service.confirmCurrentSupplierOrder("po-1").status())
         .isEqualTo("待发货");
@@ -71,7 +75,8 @@ class OrderFulfillmentStateTransitionTests {
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
         awardDecisionMapper,
         purchaseOrderMapper,
-        auditLogApplicationService);
+        auditLogApplicationService,
+        notificationApplicationService);
 
     assertThatThrownBy(() -> service.confirmCurrentSupplierOrder("po-1"))
         .isInstanceOf(IllegalStateException.class)
@@ -120,7 +125,8 @@ class OrderFulfillmentStateTransitionTests {
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
         awardDecisionMapper,
         purchaseOrderMapper,
-        auditLogApplicationService);
+        auditLogApplicationService,
+        notificationApplicationService);
 
     service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
 

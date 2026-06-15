@@ -6,6 +6,7 @@ import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import java.util.List;
@@ -21,18 +22,22 @@ public class PurchaseOrderApplicationService {
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_CREATED_ACTION = "purchase_order.created";
   private static final String PURCHASE_ORDER_CONFIRMED_ACTION = "purchase_order.confirmed";
+  private static final String PURCHASE_ORDER_CONFIRMED_NOTIFICATION_TITLE = "采购订单已确认";
 
   private final AwardDecisionMapper awardDecisionMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public PurchaseOrderApplicationService(
       AwardDecisionMapper awardDecisionMapper,
       PurchaseOrderMapper purchaseOrderMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.awardDecisionMapper = awardDecisionMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   public List<PurchaseOrderResponse> listCurrentTenantOrders() {
@@ -73,6 +78,10 @@ public class PurchaseOrderApplicationService {
         PURCHASE_ORDER_CONFIRMED_ACTION,
         PURCHASE_ORDER_TARGET_TYPE,
         order.id());
+    notificationApplicationService.notifyActiveTenantUsers(
+        order.tenantId(),
+        PURCHASE_ORDER_CONFIRMED_NOTIFICATION_TITLE,
+        "采购订单 " + order.id() + " 已由供应商确认，进入待发货。");
 
     return toResponse(purchaseOrderMapper.findByTenantAndId(order.tenantId(), order.id()));
   }
