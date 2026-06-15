@@ -115,6 +115,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'TenantList',
   },
   {
+    method: 'GET',
+    path: '/platform/tenants/{tenantId}',
+    audience: 'platform',
+    action: '查看平台租户详情',
+    requestSchema: 'PlatformTenantDetailRequest',
+    responseSchema: 'Tenant',
+  },
+  {
     method: 'POST',
     path: '/platform/tenants',
     audience: 'platform',

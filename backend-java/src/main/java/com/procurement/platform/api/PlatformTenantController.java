@@ -25,6 +25,11 @@ public class PlatformTenantController {
     return ApiResponse.ok(platformTenantApplicationService.listTenants());
   }
 
+  @GetMapping("/{tenantId}")
+  public ApiResponse<TenantResponse> get(@PathVariable String tenantId) {
+    return ApiResponse.ok(platformTenantApplicationService.getTenant(tenantId));
+  }
+
   @PostMapping
   public ApiResponse<TenantResponse> create(@Valid @RequestBody CreateTenantRequest request) {
     return ApiResponse.ok(platformTenantApplicationService.createBuyerTenant(request));

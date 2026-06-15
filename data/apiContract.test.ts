@@ -14,6 +14,7 @@ describe('procurement SaaS API contract draft', () => {
       'GET /platform/workspace',
       'GET /platform/overview',
       'GET /platform/tenants',
+      'GET /platform/tenants/{tenantId}',
       'POST /platform/tenants',
       'POST /platform/tenants/{tenantId}/features',
       'POST /platform/tenants/{tenantId}/plan',

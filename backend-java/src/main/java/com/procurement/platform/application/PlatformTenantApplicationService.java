@@ -50,6 +50,14 @@ public class PlatformTenantApplicationService {
         .toList();
   }
 
+  public TenantResponse getTenant(String tenantId) {
+    PlatformTenant tenant = platformTenantMapper.findById(tenantId);
+    if (tenant == null) {
+      throw new IllegalArgumentException("Tenant not found: " + tenantId);
+    }
+    return toResponse(tenant);
+  }
+
   @Transactional
   public TenantResponse createBuyerTenant(CreateTenantRequest request) {
     String enabledFeaturesJson = writeFeatures(request.enabledFeatures());

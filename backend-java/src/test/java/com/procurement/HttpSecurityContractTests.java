@@ -1144,6 +1144,25 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data[0].id").value("tenant-acme"))
         .andExpect(jsonPath("$.data[0].enabledFeatures[0]").value("rfq"));
 
+    when(platformTenantApplicationService.getTenant("tenant-acme"))
+        .thenReturn(new TenantResponse(
+            "tenant-acme",
+            "Acme 采购公司",
+            "starter",
+            "active",
+            List.of("rfq", "order"),
+            50));
+
+    mockMvc.perform(get("/api/v1/platform/tenants/tenant-acme")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(get("/api/v1/platform/tenants/tenant-acme")
+            .header("Authorization", "Bearer " + platformToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("tenant-acme"))
+        .andExpect(jsonPath("$.data.plan").value("starter"));
+
     when(platformTenantApplicationService.createBuyerTenant(
         org.mockito.ArgumentMatchers.any(CreateTenantRequest.class)))
         .thenReturn(new TenantResponse(

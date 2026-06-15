@@ -205,6 +205,7 @@ The first platform-side MVP endpoints are:
 
 - `GET /api/v1/platform/overview`
 - `GET /api/v1/platform/tenants`
+- `GET /api/v1/platform/tenants/{tenantId}`
 - `POST /api/v1/platform/tenants`
 - `POST /api/v1/platform/tenants/{tenantId}/features`
 - `POST /api/v1/platform/tenants/{tenantId}/plan`

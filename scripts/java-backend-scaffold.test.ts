@@ -203,6 +203,8 @@ describe('Java backend scaffold', () => {
   it('guards platform operation audit coverage', () => {
     const architecture = read('docs/java-backend-architecture.md');
     const readme = read('backend-java/README.md');
+    const tenantController = read('backend-java/src/main/java/com/procurement/platform/api/PlatformTenantController.java');
+    const tenantService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformTenantApplicationService.java');
     const auditTests = read('backend-java/src/test/java/com/procurement/PlatformAuditLogTests.java');
     const localSeed = read('backend-java/src/main/resources/db/dev/V100__local_demo_seed.sql');
 
@@ -211,12 +213,15 @@ describe('Java backend scaffold', () => {
     expect(architecture).toContain('tenant.enabled');
     expect(architecture).toContain('tenant.disabled');
     expect(architecture).toContain('enterprise.reviewed');
+    expect(readme).toContain('GET /api/v1/platform/tenants/{tenantId}');
     expect(readme).toContain('POST /api/v1/platform/tenants/{tenantId}/plan');
     expect(readme).toContain('POST /api/v1/platform/tenants/{tenantId}/enable');
     expect(readme).toContain('POST /api/v1/platform/tenants/{tenantId}/disable');
     expect(readme).toContain('tenant.plan_updated');
     expect(readme).toContain('tenant.enabled');
     expect(readme).toContain('tenant.disabled');
+    expect(tenantController).toContain('@GetMapping("/{tenantId}")');
+    expect(tenantService).toContain('getTenant');
     expect(auditTests).toContain('tenantFeatureToggleUpdateRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantPlanUpdateRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantEnableRecordsAuditLogInTargetTenant');

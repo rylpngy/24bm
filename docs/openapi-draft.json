@@ -130,6 +130,40 @@
         }
       }
     },
+    "/platform/tenants/{tenantId}": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "查看平台租户详情",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/platform/tenants/{tenantId}/features": {
       "post": {
         "tags": [
@@ -1975,6 +2009,7 @@
     "GET /platform/workspace",
     "GET /platform/overview",
     "GET /platform/tenants",
+    "GET /platform/tenants/{tenantId}",
     "POST /platform/tenants",
     "POST /platform/tenants/{tenantId}/features",
     "POST /platform/tenants/{tenantId}/plan",
