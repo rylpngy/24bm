@@ -163,6 +163,7 @@ Authorization: Bearer <accessToken>
 - `buyer_supplier_relation.status_changed`：采购方拉黑供应商或恢复到待准入状态。
 - `buyer_supplier_admission.submitted`：采购方提交供应商准入审批。
 - `buyer_supplier_admission.approved` / `buyer_supplier_admission.rejected`：采购方审批供应商准入。
+- `supplier_profile.updated`：供应商维护本企业档案基础信息。
 - `rfq_award.submitted`：采购方提交定标审批。
 - `rfq_award.approved` / `rfq_award.rejected`：采购方审批定标结果。
 - `purchase_order.created`：采购方生成采购订单。
@@ -248,6 +249,8 @@ Authorization: Bearer <accessToken>
 
 第三批 Java 业务接口继续落在 `sourcing` 模块：
 
+- `GET /api/v1/supplier/profile`：供应商读取本企业档案。
+- `POST /api/v1/supplier/profile`：供应商维护本企业档案基础信息。
 - `GET /api/v1/supplier/qualifications`：供应商查询本企业资质附件元数据。
 - `POST /api/v1/supplier/qualifications`：供应商登记本企业资质附件元数据。
 - `GET /api/v1/supplier/users`：供应商查询本企业子账号。
@@ -258,6 +261,7 @@ Authorization: Bearer <accessToken>
 
 提交报价的关键校验：
 
+- 供应商档案维护的供应商身份来自 JWT 中的 `supplierId`，只允许更新 `enterprises.name`、`enterprises.industry`、`supplier_enterprises.credit_code`、`supplier_enterprises.legal_person`，不允许请求体覆盖审核、认证或档案状态。
 - 供应商资质接口的供应商身份来自 JWT 中的 `supplierId`，请求体不允许覆盖供应商归属。
 - 供应商资质存入公共供应商维度表 `supplier_qualifications`，不绑定采购方租户；采购方私域准入状态仍由 `buyer_supplier_relations` 隔离。
 - 供应商子账号写入 `users.supplier_id`，不允许请求体覆盖供应商归属；创建时使用 `PasswordEncoder` 写入 `password_hash`，默认绑定 `scope = supplier` 角色并记录 `supplier_user.created`。

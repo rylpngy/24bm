@@ -5,5 +5,9 @@ public record SupplierProfile(
     String name,
     String type,
     String industry,
-    Boolean verified) {
+    Boolean verified,
+    String creditCode,
+    String legalPerson,
+    String verifiedStatus,
+    String profileStatus) {
 }

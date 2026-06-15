@@ -126,6 +126,7 @@ import com.procurement.supplier.api.SupplierQualificationController;
 import com.procurement.supplier.api.SupplierQualificationResponse;
 import com.procurement.supplier.api.SupplierUserController;
 import com.procurement.supplier.api.SupplierUserResponse;
+import com.procurement.supplier.api.UpdateSupplierProfileRequest;
 import com.procurement.supplier.api.SupplierWorkspaceController;
 import com.procurement.supplier.api.SupplierWorkspaceResponse;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
@@ -847,6 +848,18 @@ class HttpSecurityContractTests {
     mockMvc.perform(get("/api/v1/supplier/profile")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/supplier/profile")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "晨光科技集团",
+                  "industry": "办公设备与企业服务",
+                  "creditCode": "91310000MA1K2026X8",
+                  "legalPerson": "李小明"
+                }
+                """))
+        .andExpect(status().isForbidden());
 
     mockMvc.perform(get("/api/v1/supplier/qualifications")
             .header("Authorization", "Bearer " + buyerToken))
@@ -898,6 +911,23 @@ class HttpSecurityContractTests {
             "supplier",
             "办公设备",
             true,
+            "91310000MA1K2026X1",
+            "王小明",
+            "approved",
+            "published",
+            List.of("Acme 采购公司")));
+    when(supplierProfileApplicationService.updateCurrentSupplierProfile(
+        org.mockito.ArgumentMatchers.any(UpdateSupplierProfileRequest.class)))
+        .thenReturn(new SupplierProfileResponse(
+            "ent-supplier-sunrise",
+            "晨光科技集团",
+            "supplier",
+            "办公设备与企业服务",
+            true,
+            "91310000MA1K2026X8",
+            "李小明",
+            "approved",
+            "published",
             List.of("Acme 采购公司")));
     when(supplierQualificationApplicationService.listCurrentSupplierQualifications())
         .thenReturn(List.of(new SupplierQualificationResponse(
@@ -991,6 +1021,20 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.id").value("ent-supplier-sunrise"));
+    mockMvc.perform(post("/api/v1/supplier/profile")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "晨光科技集团",
+                  "industry": "办公设备与企业服务",
+                  "creditCode": "91310000MA1K2026X8",
+                  "legalPerson": "李小明"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.name").value("晨光科技集团"))
+        .andExpect(jsonPath("$.data.creditCode").value("91310000MA1K2026X8"));
     mockMvc.perform(get("/api/v1/supplier/qualifications")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
@@ -1276,6 +1320,10 @@ class HttpSecurityContractTests {
             "supplier",
             "办公设备",
             true,
+            "91310000MA1K2026X1",
+            "王小明",
+            "approved",
+            "published",
             List.of("Acme 采购公司")),
         List.of(),
         List.of(),

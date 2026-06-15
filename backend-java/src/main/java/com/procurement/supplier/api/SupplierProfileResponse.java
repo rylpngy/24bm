@@ -8,5 +8,9 @@ public record SupplierProfileResponse(
     String type,
     String industry,
     Boolean verified,
+    String creditCode,
+    String legalPerson,
+    String verifiedStatus,
+    String profileStatus,
     List<String> connectedBuyerNames) {
 }

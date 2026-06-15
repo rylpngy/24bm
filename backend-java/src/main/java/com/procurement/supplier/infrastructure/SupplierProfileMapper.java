@@ -4,17 +4,59 @@ import com.procurement.supplier.domain.SupplierProfile;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface SupplierProfileMapper {
 
   @Select("""
-      select id, name, type, industry, verified
-      from enterprises
-      where id = #{supplierId} and type = 'supplier'
+      select e.id,
+             e.name,
+             e.type,
+             e.industry,
+             e.verified,
+             s.credit_code,
+             s.legal_person,
+             s.verified_status,
+             s.profile_status
+      from enterprises e
+      left join supplier_enterprises s on s.enterprise_id = e.id
+      where e.id = #{supplierId} and e.type = 'supplier'
       """)
+  @Results(id = "supplierProfileResults", value = {
+      @Result(column = "credit_code", property = "creditCode"),
+      @Result(column = "legal_person", property = "legalPerson"),
+      @Result(column = "verified_status", property = "verifiedStatus"),
+      @Result(column = "profile_status", property = "profileStatus")
+  })
   SupplierProfile findBySupplierId(@Param("supplierId") String supplierId);
+
+  @Update("""
+      update enterprises
+      set name = #{name},
+          industry = #{industry},
+          updated_at = now()
+      where id = #{supplierId}
+        and type = 'supplier'
+      """)
+  void updateEnterpriseProfile(
+      @Param("supplierId") String supplierId,
+      @Param("name") String name,
+      @Param("industry") String industry);
+
+  @Update("""
+      update supplier_enterprises
+      set credit_code = #{creditCode},
+          legal_person = #{legalPerson}
+      where enterprise_id = #{supplierId}
+      """)
+  void updateSupplierEnterpriseProfile(
+      @Param("supplierId") String supplierId,
+      @Param("creditCode") String creditCode,
+      @Param("legalPerson") String legalPerson);
 
   @Select("""
       select t.name

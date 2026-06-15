@@ -307,6 +307,7 @@ RFQ creation requires every demand to be `已通过` within the current tenant a
 The supplier-side profile endpoints are:
 
 - `GET /api/v1/supplier/profile`
+- `POST /api/v1/supplier/profile`
 - `GET /api/v1/supplier/qualifications`
 - `POST /api/v1/supplier/qualifications`
 - `GET /api/v1/supplier/users`
@@ -325,6 +326,8 @@ Example qualification payload:
   "storageKey": "suppliers/ent-supplier-sunrise/license.pdf"
 }
 ```
+
+Supplier profile maintenance uses the supplier identity from `Authorization: Bearer <accessToken>`. Suppliers can update their own enterprise `name`, `industry`, `creditCode`, and `legalPerson`; platform-owned review fields such as `verified`, `verifiedStatus`, and `profileStatus` are not accepted from the request. The update records `supplier_profile.updated`.
 
 Supplier qualification APIs use the supplier identity from `Authorization: Bearer <accessToken>`. The request body cannot override `supplierId`; new qualifications are stored in `supplier_qualifications` with status `active`.
 

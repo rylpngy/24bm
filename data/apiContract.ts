@@ -491,6 +491,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'SupplierProfile',
   },
   {
+    method: 'POST',
+    path: '/supplier/profile',
+    audience: 'supplier',
+    action: '维护供应商企业档案',
+    requestSchema: 'UpdateSupplierProfileRequest',
+    responseSchema: 'SupplierProfile',
+  },
+  {
     method: 'GET',
     path: '/supplier/qualifications',
     audience: 'supplier',
@@ -929,6 +937,7 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'SupplierWorkspaceRequest',
           'SupplierWorkspace',
           'SupplierProfileRequest',
+          'UpdateSupplierProfileRequest',
           'SupplierProfile',
           'SupplierRfqListRequest',
           'SupplierRfqList',
