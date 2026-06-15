@@ -168,6 +168,10 @@ class SourcingAwardStateTransitionTests {
     assertThat(response.approvedStatus()).isEqualTo("已通过");
     verify(rfqMapper).updateAward("tenant-1", "rfq-1", "定标审批中", "已定标", "supplier-1");
     verify(auditLogApplicationService).recordTenantAction("rfq_award.approved", "rfq_award", "award-1");
+    verify(notificationApplicationService).notifyActiveTenantUsers(
+        "tenant-1",
+        "定标审批已通过",
+        "办公电脑询价定标审批已通过。");
   }
 
   private Rfq rfq(String id, String tenantId, String status) {

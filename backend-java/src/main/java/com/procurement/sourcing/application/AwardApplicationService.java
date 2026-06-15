@@ -32,6 +32,8 @@ public class AwardApplicationService {
   private static final String RFQ_AWARD_APPROVED_ACTION = "rfq_award.approved";
   private static final String RFQ_AWARD_REJECTED_ACTION = "rfq_award.rejected";
   private static final String RFQ_AWARD_PENDING_NOTIFICATION_TITLE = "定标结果待审批";
+  private static final String RFQ_AWARD_APPROVED_NOTIFICATION_TITLE = "定标审批已通过";
+  private static final String RFQ_AWARD_REJECTED_NOTIFICATION_TITLE = "定标审批已驳回";
 
   private final RfqMapper rfqMapper;
   private final QuoteMapper quoteMapper;
@@ -181,6 +183,12 @@ public class AwardApplicationService {
         Boolean.TRUE.equals(request.approved()) ? RFQ_AWARD_APPROVED_ACTION : RFQ_AWARD_REJECTED_ACTION,
         RFQ_AWARD_BIZ_TYPE,
         request.awardId());
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId,
+        Boolean.TRUE.equals(request.approved())
+            ? RFQ_AWARD_APPROVED_NOTIFICATION_TITLE
+            : RFQ_AWARD_REJECTED_NOTIFICATION_TITLE,
+        rfq.title() + "定标审批已" + (Boolean.TRUE.equals(request.approved()) ? "通过" : "驳回") + "。");
 
     return toResponse(awardDecisionMapper.findByTenantAndId(tenantId, request.awardId()));
   }
