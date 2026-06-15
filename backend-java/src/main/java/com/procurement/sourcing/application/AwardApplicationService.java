@@ -1,6 +1,7 @@
 package com.procurement.sourcing.application;
 
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -24,7 +25,6 @@ public class AwardApplicationService {
   private static final String AWARD_APPROVAL_RFQ_STATUS = "定标审批中";
   private static final String SUBMITTED_QUOTE_STATUS = "已提交";
   private static final String AWARDED_RFQ_STATUS = "已定标";
-  private static final String PENDING_APPROVAL_STATUS = "待审批";
   private static final String APPROVED_STATUS = "已通过";
   private static final String REJECTED_STATUS = "已驳回";
   private static final String RFQ_AWARD_BIZ_TYPE = "rfq_award";
@@ -37,6 +37,7 @@ public class AwardApplicationService {
   private final QuoteMapper quoteMapper;
   private final AwardDecisionMapper awardDecisionMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
+  private final ApprovalTaskApplicationService approvalTaskApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
 
@@ -45,12 +46,14 @@ public class AwardApplicationService {
       QuoteMapper quoteMapper,
       AwardDecisionMapper awardDecisionMapper,
       ApprovalTaskMapper approvalTaskMapper,
+      ApprovalTaskApplicationService approvalTaskApplicationService,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService) {
     this.rfqMapper = rfqMapper;
     this.quoteMapper = quoteMapper;
     this.awardDecisionMapper = awardDecisionMapper;
     this.approvalTaskMapper = approvalTaskMapper;
+    this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
   }
@@ -89,15 +92,13 @@ public class AwardApplicationService {
         quote.supplierId(),
         quote.amount(),
         request.reason(),
-        PENDING_APPROVAL_STATUS);
+        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS);
 
-    approvalTaskMapper.insert(
-        newId("approval"),
+    approvalTaskApplicationService.createPendingTask(
         tenantId,
         RFQ_AWARD_BIZ_TYPE,
         awardId,
-        null,
-        PENDING_APPROVAL_STATUS);
+        null);
     auditLogApplicationService.recordTenantAction(RFQ_AWARD_SUBMITTED_ACTION, RFQ_AWARD_BIZ_TYPE, awardId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
@@ -115,7 +116,7 @@ public class AwardApplicationService {
     if (awardDecision == null || !rfqId.equals(awardDecision.rfqId())) {
       throw new IllegalArgumentException("Pending award decision not found in RFQ scope: " + request.awardId());
     }
-    if (!PENDING_APPROVAL_STATUS.equals(awardDecision.approvedStatus())) {
+    if (!ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS.equals(awardDecision.approvedStatus())) {
       throw new IllegalStateException("Only pending award decisions can be reviewed: " + request.awardId());
     }
 
@@ -131,7 +132,7 @@ public class AwardApplicationService {
         tenantId,
         RFQ_AWARD_BIZ_TYPE,
         request.awardId(),
-        PENDING_APPROVAL_STATUS);
+        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS);
     if (approvalTask == null) {
       throw new IllegalStateException("Pending approval task not found for RFQ award: " + request.awardId());
     }
@@ -140,7 +141,7 @@ public class AwardApplicationService {
     int approvalUpdated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
-        PENDING_APPROVAL_STATUS,
+        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS,
         approvalStatus,
         userId);
     if (approvalUpdated == 0) {
@@ -150,7 +151,7 @@ public class AwardApplicationService {
     int awardUpdated = awardDecisionMapper.updateApprovedStatus(
         tenantId,
         request.awardId(),
-        PENDING_APPROVAL_STATUS,
+        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS,
         approvalStatus);
     if (awardUpdated == 0) {
       throw new IllegalStateException("Award decision status changed before review could be applied: " + request.awardId());

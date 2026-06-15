@@ -35,6 +35,7 @@ describe('Java purchase demand scaffold', () => {
     const demandMapper = read('backend-java/src/main/java/com/procurement/demand/infrastructure/PurchaseDemandMapper.java');
     const itemMapper = read('backend-java/src/main/java/com/procurement/demand/infrastructure/PurchaseDemandItemMapper.java');
     const approvalMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTaskMapper.java');
+    const approvalService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java');
 
     expect(demandMapper).toContain('@Mapper');
     expect(demandMapper).toContain('purchase_demands');
@@ -42,6 +43,23 @@ describe('Java purchase demand scaffold', () => {
     expect(itemMapper).toContain('purchase_demand_items');
     expect(approvalMapper).toContain('@Mapper');
     expect(approvalMapper).toContain('approval_tasks');
+    expect(approvalService).toContain('createPendingTask');
+    expect(approvalService).toContain('PENDING_APPROVAL_STATUS');
+  });
+
+  it('centralizes pending approval task creation behind the approval application service', () => {
+    const demandService = read('backend-java/src/main/java/com/procurement/demand/application/PurchaseDemandApplicationService.java');
+    const supplierService = read('backend-java/src/main/java/com/procurement/supplier/application/BuyerSupplierApplicationService.java');
+    const awardService = read('backend-java/src/main/java/com/procurement/sourcing/application/AwardApplicationService.java');
+    const approvalService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java');
+
+    for (const service of [demandService, supplierService, awardService]) {
+      expect(service).toContain('ApprovalTaskApplicationService');
+      expect(service).toContain('createPendingTask');
+      expect(service).not.toContain('approvalTaskMapper.insert');
+    }
+
+    expect(approvalService).toContain('approvalTaskMapper.insert');
   });
 
   it('keeps tenant isolation in the demand application service', () => {

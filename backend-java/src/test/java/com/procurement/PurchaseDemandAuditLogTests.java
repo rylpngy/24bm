@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.infrastructure.AuditLogMapper;
 import com.procurement.common.tenant.TenantContext;
@@ -26,6 +27,8 @@ class PurchaseDemandAuditLogTests {
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
   private final PurchaseDemandItemMapper purchaseDemandItemMapper = org.mockito.Mockito.mock(PurchaseDemandItemMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final ApprovalTaskApplicationService approvalTaskApplicationService =
+      new ApprovalTaskApplicationService(approvalTaskMapper);
   private final AuditLogMapper auditLogMapper = org.mockito.Mockito.mock(AuditLogMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = new AuditLogApplicationService(auditLogMapper);
   private final NotificationApplicationService notificationApplicationService =
@@ -34,6 +37,7 @@ class PurchaseDemandAuditLogTests {
       purchaseDemandMapper,
       purchaseDemandItemMapper,
       approvalTaskMapper,
+      approvalTaskApplicationService,
       auditLogApplicationService,
       notificationApplicationService);
 

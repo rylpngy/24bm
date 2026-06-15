@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.domain.BuyerUser;
@@ -31,6 +32,8 @@ class RfqAwardNotificationTests {
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final ApprovalTaskApplicationService approvalTaskApplicationService =
+      new ApprovalTaskApplicationService(approvalTaskMapper);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationMapper notificationMapper = org.mockito.Mockito.mock(NotificationMapper.class);
@@ -42,6 +45,7 @@ class RfqAwardNotificationTests {
       quoteMapper,
       awardDecisionMapper,
       approvalTaskMapper,
+      approvalTaskApplicationService,
       auditLogApplicationService,
       notificationApplicationService);
 

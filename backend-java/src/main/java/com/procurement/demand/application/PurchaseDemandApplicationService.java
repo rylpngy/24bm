@@ -1,6 +1,7 @@
 package com.procurement.demand.application;
 
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -23,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PurchaseDemandApplicationService {
   private static final String DRAFT_STATUS = "草稿";
   private static final String IN_APPROVAL_STATUS = "审批中";
-  private static final String PENDING_APPROVAL_STATUS = "待审批";
   private static final String APPROVED_STATUS = "已通过";
   private static final String REJECTED_STATUS = "已驳回";
   private static final String PURCHASE_DEMAND_BIZ_TYPE = "purchase_demand";
@@ -35,6 +35,7 @@ public class PurchaseDemandApplicationService {
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
+  private final ApprovalTaskApplicationService approvalTaskApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
 
@@ -42,11 +43,13 @@ public class PurchaseDemandApplicationService {
       PurchaseDemandMapper purchaseDemandMapper,
       PurchaseDemandItemMapper purchaseDemandItemMapper,
       ApprovalTaskMapper approvalTaskMapper,
+      ApprovalTaskApplicationService approvalTaskApplicationService,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService) {
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
+    this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
   }
@@ -102,20 +105,16 @@ public class PurchaseDemandApplicationService {
 
     purchaseDemandMapper.updateStatus(tenantId, demandId, IN_APPROVAL_STATUS);
 
-    String approvalTaskId = newId("approval");
-    approvalTaskMapper.insert(
-        approvalTaskId,
+    ApprovalTask approvalTask = approvalTaskApplicationService.createPendingTask(
         tenantId,
         PURCHASE_DEMAND_BIZ_TYPE,
         demandId,
-        null,
-        PENDING_APPROVAL_STATUS);
+        null);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         PURCHASE_DEMAND_PENDING_NOTIFICATION_TITLE,
         demand.title() + "已提交审批，请及时处理。");
 
-    ApprovalTask approvalTask = approvalTaskMapper.findByTenantAndId(tenantId, approvalTaskId);
     return new ApprovalTaskResponse(
         approvalTask.id(),
         approvalTask.tenantId(),
@@ -142,7 +141,7 @@ public class PurchaseDemandApplicationService {
         tenantId,
         PURCHASE_DEMAND_BIZ_TYPE,
         demandId,
-        PENDING_APPROVAL_STATUS);
+        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS);
     if (approvalTask == null) {
       throw new IllegalStateException("Pending approval task not found for purchase demand: " + demandId);
     }
@@ -151,7 +150,7 @@ public class PurchaseDemandApplicationService {
     int updated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
-        PENDING_APPROVAL_STATUS,
+        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS,
         reviewedStatus,
         userId);
     if (updated == 0) {

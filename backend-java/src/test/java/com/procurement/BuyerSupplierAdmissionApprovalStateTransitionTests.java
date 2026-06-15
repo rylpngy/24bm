@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
@@ -25,12 +26,15 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final ApprovalTaskApplicationService approvalTaskApplicationService =
+      new ApprovalTaskApplicationService(approvalTaskMapper);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final BuyerSupplierApplicationService buyerSupplierApplicationService =
       new BuyerSupplierApplicationService(
           buyerSupplierRelationMapper,
           new ObjectMapper(),
           approvalTaskMapper,
+          approvalTaskApplicationService,
           auditLogApplicationService);
 
   @AfterEach

@@ -3,6 +3,7 @@ package com.procurement.supplier.application;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
@@ -24,7 +25,6 @@ public class BuyerSupplierApplicationService {
   private static final String IN_ADMISSION_APPROVAL_STATUS = "准入审批中";
   private static final String ADMITTED_STATUS = "已准入";
   private static final String REJECTED_STATUS = "已驳回";
-  private static final String PENDING_APPROVAL_STATUS = "待审批";
   private static final String APPROVED_STATUS = "已通过";
   private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE = "buyer_supplier_admission";
   private static final String BUYER_SUPPLIER_RELATION_TARGET_TYPE = "buyer_supplier_relation";
@@ -36,16 +36,19 @@ public class BuyerSupplierApplicationService {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final ObjectMapper objectMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
+  private final ApprovalTaskApplicationService approvalTaskApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
 
   public BuyerSupplierApplicationService(
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       ObjectMapper objectMapper,
       ApprovalTaskMapper approvalTaskMapper,
+      ApprovalTaskApplicationService approvalTaskApplicationService,
       AuditLogApplicationService auditLogApplicationService) {
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.objectMapper = objectMapper;
     this.approvalTaskMapper = approvalTaskMapper;
+    this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
   }
 
@@ -91,20 +94,17 @@ public class BuyerSupplierApplicationService {
       throw new IllegalStateException("Supplier relation status changed before admission could be submitted: " + relationId);
     }
 
-    String approvalTaskId = "approval-" + UUID.randomUUID();
-    approvalTaskMapper.insert(
-        approvalTaskId,
+    ApprovalTask approvalTask = approvalTaskApplicationService.createPendingTask(
         tenantId,
         BUYER_SUPPLIER_ADMISSION_BIZ_TYPE,
         relationId,
-        null,
-        PENDING_APPROVAL_STATUS);
+        null);
     auditLogApplicationService.recordTenantAction(
         SUPPLIER_ADMISSION_SUBMITTED_ACTION,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
 
-    return toApprovalTaskResponse(approvalTaskMapper.findByTenantAndId(tenantId, approvalTaskId));
+    return toApprovalTaskResponse(approvalTask);
   }
 
   @Transactional
@@ -120,7 +120,7 @@ public class BuyerSupplierApplicationService {
         tenantId,
         BUYER_SUPPLIER_ADMISSION_BIZ_TYPE,
         relationId,
-        PENDING_APPROVAL_STATUS);
+        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS);
     if (approvalTask == null) {
       throw new IllegalStateException("Pending approval task not found for supplier admission: " + relationId);
     }
@@ -130,7 +130,7 @@ public class BuyerSupplierApplicationService {
     int approvalUpdated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
-        PENDING_APPROVAL_STATUS,
+        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS,
         approvalStatus,
         userId);
     if (approvalUpdated == 0) {

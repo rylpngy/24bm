@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
@@ -33,6 +34,8 @@ class SourcingAwardStateTransitionTests {
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final ApprovalTaskApplicationService approvalTaskApplicationService =
+      new ApprovalTaskApplicationService(approvalTaskMapper);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
@@ -41,6 +44,7 @@ class SourcingAwardStateTransitionTests {
       quoteMapper,
       awardDecisionMapper,
       approvalTaskMapper,
+      approvalTaskApplicationService,
       auditLogApplicationService,
       notificationApplicationService);
 
