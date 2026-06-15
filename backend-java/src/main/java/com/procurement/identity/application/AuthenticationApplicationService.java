@@ -3,7 +3,9 @@ package com.procurement.identity.application;
 import com.procurement.identity.api.LoginRequest;
 import com.procurement.identity.api.LoginResponse;
 import com.procurement.identity.domain.AuthenticatedPrincipal;
+import com.procurement.identity.domain.AuthenticatedUser;
 import com.procurement.identity.domain.IdentityScope;
+import com.procurement.identity.infrastructure.AuthenticationUserMapper;
 import com.procurement.identity.security.JwtTokenService;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -11,9 +13,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthenticationApplicationService {
   private final JwtTokenService jwtTokenService;
+  private final AuthenticationUserMapper authenticationUserMapper;
 
-  public AuthenticationApplicationService(JwtTokenService jwtTokenService) {
+  public AuthenticationApplicationService(
+      JwtTokenService jwtTokenService,
+      AuthenticationUserMapper authenticationUserMapper) {
     this.jwtTokenService = jwtTokenService;
+    this.authenticationUserMapper = authenticationUserMapper;
   }
 
   public LoginResponse login(LoginRequest request) {
@@ -39,16 +45,42 @@ public class AuthenticationApplicationService {
 
     if (request.scope() == IdentityScope.PLATFORM) {
       requireBlank(request.tenantId(), request.supplierId(), "PLATFORM login forbids tenantId and supplierId");
-      return new AuthenticatedPrincipal("user-platform-admin", "平台运营", IdentityScope.PLATFORM, null, null, List.of("PLATFORM_ADMIN"));
+      return resolveDatabasePrincipal(request);
     }
 
     if (request.scope() == IdentityScope.SUPPLIER) {
       requirePresentOnly(request.supplierId(), request.tenantId(), "SUPPLIER login requires supplierId and forbids tenantId");
-      return new AuthenticatedPrincipal("user-supplier-sales", "供应商销售", IdentityScope.SUPPLIER, null, request.supplierId(), List.of("SUPPLIER_SALES"));
+      return resolveDatabasePrincipal(request);
     }
 
     requirePresentOnly(request.tenantId(), request.supplierId(), "BUYER login requires tenantId and forbids supplierId");
-    return new AuthenticatedPrincipal("user-buyer-owner", "采购负责人", IdentityScope.BUYER, request.tenantId(), null, List.of("BUYER_OWNER"));
+    return resolveDatabasePrincipal(request);
+  }
+
+  private AuthenticatedPrincipal resolveDatabasePrincipal(LoginRequest request) {
+    AuthenticatedUser user = authenticationUserMapper.findActiveUser(
+        request.account(),
+        request.scope().name(),
+        request.tenantId(),
+        request.supplierId());
+    if (user == null) {
+      throw new IllegalArgumentException("Invalid account or password");
+    }
+    List<String> roles = authenticationUserMapper.listSecurityRoles(
+        user.userId(),
+        request.scope().name(),
+        user.tenantId(),
+        user.supplierId());
+    if (roles.isEmpty()) {
+      throw new IllegalArgumentException("No active roles assigned to account");
+    }
+    return new AuthenticatedPrincipal(
+        user.userId(),
+        user.displayName(),
+        request.scope(),
+        user.tenantId(),
+        user.supplierId(),
+        roles);
   }
 
   private void requirePresentOnly(String requiredValue, String forbiddenValue, String message) {

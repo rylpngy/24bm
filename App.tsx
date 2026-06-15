@@ -102,18 +102,18 @@ const javaApiClient = appDataSource.mode === 'java'
   ? createJavaProcurementApiClient({
       baseUrl: appDataSource.javaApiBaseUrl,
       platformLogin: {
-        account: runtimeEnv.VITE_JAVA_PLATFORM_ACCOUNT ?? 'platform',
+        account: runtimeEnv.VITE_JAVA_PLATFORM_ACCOUNT ?? 'platform.admin@example.com',
         password: runtimeEnv.VITE_JAVA_PLATFORM_PASSWORD ?? 'demo123456',
         scope: 'PLATFORM',
       },
       buyerLogin: {
-        account: runtimeEnv.VITE_JAVA_BUYER_ACCOUNT ?? 'buyer',
+        account: runtimeEnv.VITE_JAVA_BUYER_ACCOUNT ?? 'buyer.owner@example.com',
         password: runtimeEnv.VITE_JAVA_BUYER_PASSWORD ?? 'demo123456',
         scope: 'BUYER',
         tenantId: runtimeEnv.VITE_JAVA_BUYER_TENANT_ID ?? 'tenant-acme',
       },
       supplierLogin: {
-        account: runtimeEnv.VITE_JAVA_SUPPLIER_ACCOUNT ?? 'supplier',
+        account: runtimeEnv.VITE_JAVA_SUPPLIER_ACCOUNT ?? 'supplier.sales@example.com',
         password: runtimeEnv.VITE_JAVA_SUPPLIER_PASSWORD ?? 'demo123456',
         scope: 'SUPPLIER',
         supplierId: runtimeEnv.VITE_JAVA_SUPPLIER_ID ?? 'ent-supplier-sunrise',

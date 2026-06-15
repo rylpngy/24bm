@@ -44,6 +44,8 @@ import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.application.AuthenticationApplicationService;
 import com.procurement.identity.application.BuyerRoleApplicationService;
 import com.procurement.identity.application.BuyerUserApplicationService;
+import com.procurement.identity.domain.AuthenticatedUser;
+import com.procurement.identity.infrastructure.AuthenticationUserMapper;
 import com.procurement.identity.security.JwtAuthenticationFilter;
 import com.procurement.identity.security.JwtTokenService;
 import com.procurement.finance.api.SupplierReceivableController;
@@ -112,6 +114,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -246,6 +249,25 @@ class HttpSecurityContractTests {
 
   @MockBean
   private DepartmentApplicationService departmentApplicationService;
+
+  @MockBean
+  private AuthenticationUserMapper authenticationUserMapper;
+
+  @BeforeEach
+  void stubDatabaseBackedLoginPrincipals() {
+    when(authenticationUserMapper.findActiveUser("buyer", "BUYER", "tenant-acme", null))
+        .thenReturn(new AuthenticatedUser("user-buyer-owner", "tenant-acme", null, "采购负责人"));
+    when(authenticationUserMapper.listSecurityRoles("user-buyer-owner", "BUYER", "tenant-acme", null))
+        .thenReturn(List.of("BUYER_OWNER"));
+    when(authenticationUserMapper.findActiveUser("supplier", "SUPPLIER", null, "ent-supplier-sunrise"))
+        .thenReturn(new AuthenticatedUser("user-supplier-sales", null, "ent-supplier-sunrise", "供应商销售"));
+    when(authenticationUserMapper.listSecurityRoles("user-supplier-sales", "SUPPLIER", null, "ent-supplier-sunrise"))
+        .thenReturn(List.of("SUPPLIER_SALES"));
+    when(authenticationUserMapper.findActiveUser("platform", "PLATFORM", null, null))
+        .thenReturn(new AuthenticatedUser("user-platform-admin", null, null, "平台运营"));
+    when(authenticationUserMapper.listSecurityRoles("user-platform-admin", "PLATFORM", null, null))
+        .thenReturn(List.of("PLATFORM_ADMIN"));
+  }
 
   @Test
   void viteLocalhostPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {

@@ -62,10 +62,10 @@ npm run dev:java
 Optional demo login overrides:
 
 ```bash
-VITE_JAVA_BUYER_ACCOUNT=buyer \
+VITE_JAVA_BUYER_ACCOUNT=buyer.owner@example.com \
 VITE_JAVA_BUYER_PASSWORD=demo123456 \
 VITE_JAVA_BUYER_TENANT_ID=tenant-acme \
-VITE_JAVA_PLATFORM_ACCOUNT=platform \
+VITE_JAVA_PLATFORM_ACCOUNT=platform.admin@example.com \
 VITE_JAVA_PLATFORM_PASSWORD=demo123456 \
 VITE_JAVA_API_BASE_URL=http://localhost:8080 \
 npm run dev
@@ -117,7 +117,7 @@ Login:
 ```bash
 curl -s http://localhost:8080/api/v1/auth/login \
   -H 'content-type: application/json' \
-  -d '{"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}'
+  -d '{"account":"buyer.owner@example.com","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}'
 ```
 
 Use the returned token:

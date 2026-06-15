@@ -41,7 +41,7 @@ const main = async () => {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      account: process.env.JAVA_PLATFORM_ACCOUNT ?? 'platform',
+      account: process.env.JAVA_PLATFORM_ACCOUNT ?? 'platform.admin@example.com',
       password: process.env.JAVA_PLATFORM_PASSWORD ?? 'demo123456',
       scope: 'PLATFORM',
     }),
@@ -51,7 +51,7 @@ const main = async () => {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      account: process.env.JAVA_BUYER_ACCOUNT ?? 'buyer',
+      account: process.env.JAVA_BUYER_ACCOUNT ?? 'buyer.owner@example.com',
       password: process.env.JAVA_BUYER_PASSWORD ?? 'demo123456',
       scope: 'BUYER',
       tenantId: process.env.JAVA_BUYER_TENANT_ID ?? 'tenant-acme',
@@ -62,7 +62,7 @@ const main = async () => {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      account: process.env.JAVA_SUPPLIER_ACCOUNT ?? 'supplier',
+      account: process.env.JAVA_SUPPLIER_ACCOUNT ?? 'supplier.sales@example.com',
       password: process.env.JAVA_SUPPLIER_PASSWORD ?? 'demo123456',
       scope: 'SUPPLIER',
       supplierId: process.env.JAVA_SUPPLIER_ID ?? 'ent-supplier-sunrise',

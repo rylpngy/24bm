@@ -28,7 +28,7 @@ The first Java backend iteration exposes:
 - `GET /api/v1/health`
 - `POST /api/v1/auth/login`
 
-Demo login accepts password `demo123456` and one of these explicit scopes:
+Demo login reads the active user and roles from the database by `account` (email, mobile, or user ID). The local profile still accepts password `demo123456` and one of these explicit scopes:
 
 - `BUYER` requires `tenantId` and must not include `supplierId`.
 - `SUPPLIER` requires `supplierId` and must not include `tenantId`.
@@ -36,7 +36,7 @@ Demo login accepts password `demo123456` and one of these explicit scopes:
 
 ```json
 {
-  "account": "buyer",
+  "account": "buyer.owner@example.com",
   "password": "demo123456",
   "scope": "BUYER",
   "tenantId": "tenant-acme"
@@ -45,7 +45,7 @@ Demo login accepts password `demo123456` and one of these explicit scopes:
 
 ```json
 {
-  "account": "supplier",
+  "account": "supplier.sales@example.com",
   "password": "demo123456",
   "scope": "SUPPLIER",
   "supplierId": "ent-supplier-sunrise"
@@ -54,7 +54,7 @@ Demo login accepts password `demo123456` and one of these explicit scopes:
 
 ```json
 {
-  "account": "platform",
+  "account": "platform.admin@example.com",
   "password": "demo123456",
   "scope": "PLATFORM"
 }
