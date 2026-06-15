@@ -64,6 +64,15 @@ values
   ('user-platform-admin', 'role-platform-admin')
 on conflict (user_id, role_id) do nothing;
 
+insert into departments (id, tenant_id, name, parent_id, status)
+values
+  ('dept-it', 'tenant-acme', '信息化部', null, 'active'),
+  ('dept-finance', 'tenant-acme', '财务部', null, 'active')
+on conflict (tenant_id, name) do update set
+  parent_id = excluded.parent_id,
+  status = excluded.status,
+  updated_at = now();
+
 insert into buyer_supplier_relations (id, tenant_id, supplier_id, status, level, categories, performance_score)
 values
   ('rel-acme-sunrise', 'tenant-acme', 'ent-supplier-sunrise', '已准入', 'A', '["办公设备","电脑整机"]'::jsonb, 94.50),

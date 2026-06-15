@@ -18,6 +18,7 @@ import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.organization.infrastructure.DepartmentMapper;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.AfterEach;
@@ -29,6 +30,7 @@ class PurchaseDemandApprovalStateTransitionTests {
   private final PurchaseDemandItemMapper purchaseDemandItemMapper = org.mockito.Mockito.mock(PurchaseDemandItemMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
+  private final DepartmentMapper departmentMapper = org.mockito.Mockito.mock(DepartmentMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
       new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
@@ -39,6 +41,7 @@ class PurchaseDemandApprovalStateTransitionTests {
       purchaseDemandItemMapper,
       approvalTaskMapper,
       approvalTaskApplicationService,
+      departmentMapper,
       auditLogApplicationService,
       notificationApplicationService);
 

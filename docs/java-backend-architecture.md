@@ -14,7 +14,8 @@
 ## 模块边界
 
 - `platform`：平台运营、租户审核、套餐与功能开关。
-- `tenant`：采购方企业、组织、租户配置。
+- `tenant`：采购方企业、租户配置。
+- `organization`：采购方租户内组织部门，供需求归属、审批和后续数据权限使用。
 - `identity`：用户、角色、权限、登录认证。
 - `supplier`：供应商企业档案、资质、采购方私域供应商关系。
 - `catalog`：物料与服务目录。
@@ -40,7 +41,7 @@ Controller
 
 ## 多租户策略
 
-MVP 采用共享数据库、共享 Schema、`tenant_id` 字段隔离。平台数据、供应商公共企业档案和采购方私域关系分开建模。所有采购需求、询价、报价、订单、收货、发票、审批任务、附件和审计数据必须带租户上下文。
+MVP 采用共享数据库、共享 Schema、`tenant_id` 字段隔离。平台数据、供应商公共企业档案和采购方私域关系分开建模。所有组织部门、采购需求、询价、报价、订单、收货、发票、审批任务、附件和审计数据必须带租户上下文。
 
 ## 迁移策略
 
@@ -101,12 +102,13 @@ Authorization: Bearer <accessToken>
 
 对应数据库表：
 
+- `departments`
 - `purchase_demands`
 - `purchase_demand_items`
 - `approval_tasks`
 - `audit_logs`
 
-该模块通过 `TenantAccessGuard` 读取 JWT 派生的租户与用户上下文，不接受前端在请求体中直接传入租户归属。创建采购需求成功后会写入 `audit_logs`，当前动作为 `purchase_demand.created`，目标类型为 `purchase_demand`。
+该模块通过 `TenantAccessGuard` 读取 JWT 派生的租户与用户上下文，不接受前端在请求体中直接传入租户归属。创建采购需求时，`departmentId` 必须命中当前租户下 `active` 状态的 `departments` 记录，防止跨租户组织归属被写入需求。创建采购需求成功后会写入 `audit_logs`，当前动作为 `purchase_demand.created`，目标类型为 `purchase_demand`。
 
 ## 操作审计 Java 能力
 

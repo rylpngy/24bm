@@ -90,7 +90,7 @@ Example creation payload:
 }
 ```
 
-Demand creation stores `草稿` and records an `audit_logs` row with action `purchase_demand.created`. Submit changes the demand to `审批中` and creates a pending approval task through `ApprovalTaskApplicationService` with `biz_type = purchase_demand` and fixed template `TPL_PURCHASE_DEMAND`.
+Demand creation requires `departmentId` to belong to an active department in the current buyer tenant, stores `草稿`, and records an `audit_logs` row with action `purchase_demand.created`. Submit changes the demand to `审批中` and creates a pending approval task through `ApprovalTaskApplicationService` with `biz_type = purchase_demand` and fixed template `TPL_PURCHASE_DEMAND`.
 
 ## Buyer Audit Log APIs
 

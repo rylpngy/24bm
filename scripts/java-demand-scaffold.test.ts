@@ -31,9 +31,10 @@ describe('Java purchase demand scaffold', () => {
     expect(response).toContain('status');
   });
 
-  it('uses MyBatis mappers for demand, demand items, and approval tasks', () => {
+  it('uses MyBatis mappers for demand, demand items, departments, and approval tasks', () => {
     const demandMapper = read('backend-java/src/main/java/com/procurement/demand/infrastructure/PurchaseDemandMapper.java');
     const itemMapper = read('backend-java/src/main/java/com/procurement/demand/infrastructure/PurchaseDemandItemMapper.java');
+    const departmentMapper = read('backend-java/src/main/java/com/procurement/organization/infrastructure/DepartmentMapper.java');
     const approvalMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTaskMapper.java');
     const approvalService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java');
     const buyerUserMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerUserMapper.java');
@@ -44,6 +45,9 @@ describe('Java purchase demand scaffold', () => {
     expect(demandMapper).toContain('purchase_demands');
     expect(itemMapper).toContain('@Mapper');
     expect(itemMapper).toContain('purchase_demand_items');
+    expect(departmentMapper).toContain('@Mapper');
+    expect(departmentMapper).toContain('departments');
+    expect(departmentMapper).toContain('existsActiveByTenantAndId');
     expect(approvalMapper).toContain('@Mapper');
     expect(approvalMapper).toContain('approval_tasks');
     expect(approvalService).toContain('createPendingTask');
@@ -57,7 +61,9 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalService).toContain('Unsupported approval biz type');
     expect(buyerUserMapper).toContain('findDefaultApproverId');
     expect(buyerUserMapper).toContain('user_roles');
+    expect(migration).toContain('create table departments');
     expect(migration).toContain('create table user_roles');
+    expect(localSeed).toContain("'dept-it', 'tenant-acme'");
     expect(localSeed).toContain("('user-buyer-owner', 'role-buyer-owner')");
   });
 
@@ -81,6 +87,8 @@ describe('Java purchase demand scaffold', () => {
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantAccessGuard.requireUserId');
+    expect(service).toContain('requireActiveDepartment');
+    expect(service).toContain('existsActiveByTenantAndId');
     expect(service).toContain('草稿');
     expect(service).toContain('审批中');
     expect(service).toContain('purchase_demand');

@@ -62,6 +62,17 @@ create table user_roles (
   primary key (user_id, role_id)
 );
 
+create table departments (
+  id text primary key,
+  tenant_id text not null references tenants(id),
+  name text not null,
+  parent_id text,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (tenant_id, name)
+);
+
 create table buyer_supplier_relations (
   id text primary key,
   tenant_id text not null references tenants(id),

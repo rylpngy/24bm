@@ -25,6 +25,7 @@ describe('Java backend scaffold', () => {
       'platform',
       'tenant',
       'identity',
+      'organization',
       'supplier',
       'catalog',
       'demand',
@@ -54,6 +55,7 @@ describe('Java backend scaffold', () => {
     const migration = read('backend-java/src/main/resources/db/migration/V1__initial_schema.sql');
 
     expect(migration).toContain('create table tenants');
+    expect(migration).toContain('create table departments');
     expect(migration).toContain('create table purchase_demands');
     expect(migration).toContain('create table rfqs');
     expect(migration).toContain('create table purchase_orders');

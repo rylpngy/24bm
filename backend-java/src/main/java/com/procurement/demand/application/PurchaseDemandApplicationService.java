@@ -15,6 +15,7 @@ import com.procurement.demand.domain.PurchaseDemandItem;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.organization.infrastructure.DepartmentMapper;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class PurchaseDemandApplicationService {
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
+  private final DepartmentMapper departmentMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
 
@@ -44,12 +46,14 @@ public class PurchaseDemandApplicationService {
       PurchaseDemandItemMapper purchaseDemandItemMapper,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
+      DepartmentMapper departmentMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService) {
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
+    this.departmentMapper = departmentMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
   }
@@ -65,6 +69,7 @@ public class PurchaseDemandApplicationService {
   public PurchaseDemandResponse create(CreatePurchaseDemandRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     String userId = TenantAccessGuard.requireUserId("buyer demand APIs");
+    requireActiveDepartment(tenantId, request.departmentId());
     String demandId = newId("dem");
 
     purchaseDemandMapper.insert(
@@ -199,5 +204,11 @@ public class PurchaseDemandApplicationService {
 
   private String newId(String prefix) {
     return prefix + "-" + UUID.randomUUID();
+  }
+
+  private void requireActiveDepartment(String tenantId, String departmentId) {
+    if (!departmentMapper.existsActiveByTenantAndId(tenantId, departmentId)) {
+      throw new IllegalArgumentException("Department not found in tenant scope: " + departmentId);
+    }
   }
 }

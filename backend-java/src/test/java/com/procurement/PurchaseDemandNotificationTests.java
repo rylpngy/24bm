@@ -18,6 +18,7 @@ import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.infrastructure.NotificationMapper;
+import com.procurement.organization.infrastructure.DepartmentMapper;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -30,6 +31,7 @@ class PurchaseDemandNotificationTests {
   private final PurchaseDemandItemMapper purchaseDemandItemMapper = org.mockito.Mockito.mock(PurchaseDemandItemMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
+  private final DepartmentMapper departmentMapper = org.mockito.Mockito.mock(DepartmentMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
       new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
   private final AuditLogMapper auditLogMapper = org.mockito.Mockito.mock(AuditLogMapper.class);
@@ -42,6 +44,7 @@ class PurchaseDemandNotificationTests {
       purchaseDemandItemMapper,
       approvalTaskMapper,
       approvalTaskApplicationService,
+      departmentMapper,
       auditLogApplicationService,
       notificationApplicationService);
 

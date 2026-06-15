@@ -17,6 +17,7 @@ import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.organization.infrastructure.DepartmentMapper;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -29,6 +30,7 @@ class PurchaseDemandAuditLogTests {
   private final PurchaseDemandItemMapper purchaseDemandItemMapper = org.mockito.Mockito.mock(PurchaseDemandItemMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
+  private final DepartmentMapper departmentMapper = org.mockito.Mockito.mock(DepartmentMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
       new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
   private final AuditLogMapper auditLogMapper = org.mockito.Mockito.mock(AuditLogMapper.class);
@@ -40,6 +42,7 @@ class PurchaseDemandAuditLogTests {
       purchaseDemandItemMapper,
       approvalTaskMapper,
       approvalTaskApplicationService,
+      departmentMapper,
       auditLogApplicationService,
       notificationApplicationService);
 
@@ -51,6 +54,7 @@ class PurchaseDemandAuditLogTests {
   @Test
   void creatingPurchaseDemandRecordsTenantScopedAuditLog() {
     TenantContext.set("tenant-1", null, "buyer-user-1");
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
     when(purchaseDemandMapper.findByTenantAndId(
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.anyString()))
