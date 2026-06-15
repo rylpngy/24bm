@@ -497,6 +497,8 @@ The supplier-side invoice endpoint is:
 - `GET /api/v1/supplier/invoices`
 - `POST /api/v1/supplier/orders/{orderId}/invoices`
 
+The supplier invoice list accepts optional `paymentStatus` and `orderId` filters inside the current supplier enterprise.
+
 Example invoice payload:
 
 ```json

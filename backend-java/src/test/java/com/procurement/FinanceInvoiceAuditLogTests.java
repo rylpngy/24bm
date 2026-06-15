@@ -15,6 +15,7 @@ import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +35,17 @@ class FinanceInvoiceAuditLogTests {
   @AfterEach
   void clearTenantContext() {
     TenantContext.clear();
+  }
+
+  @Test
+  void listSupplierInvoicesAppliesFiltersInsideCurrentSupplier() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(invoiceMapper.listBySupplierFiltered("supplier-1", "待付款", "po-1"))
+        .thenReturn(List.of());
+
+    invoiceApplicationService.listCurrentSupplierInvoices("待付款", "po-1");
+
+    verify(invoiceMapper).listBySupplierFiltered("supplier-1", "待付款", "po-1");
   }
 
   @Test

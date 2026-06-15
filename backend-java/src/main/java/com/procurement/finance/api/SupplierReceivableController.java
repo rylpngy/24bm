@@ -5,6 +5,7 @@ import com.procurement.finance.application.InvoiceApplicationService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -17,7 +18,9 @@ public class SupplierReceivableController {
   }
 
   @GetMapping
-  public ApiResponse<List<InvoiceResponse>> list() {
-    return ApiResponse.ok(invoiceApplicationService.listCurrentSupplierInvoices());
+  public ApiResponse<List<InvoiceResponse>> list(
+      @RequestParam(required = false) String paymentStatus,
+      @RequestParam(required = false) String orderId) {
+    return ApiResponse.ok(invoiceApplicationService.listCurrentSupplierInvoices(paymentStatus, orderId));
   }
 }

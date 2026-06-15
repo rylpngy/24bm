@@ -48,6 +48,28 @@ public interface InvoiceMapper {
   })
   List<Invoice> listBySupplier(@Param("supplierId") String supplierId);
 
+  @Select("""
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
+      from invoices
+      where supplier_id = #{supplierId}
+        and (#{paymentStatus} is null or payment_status = #{paymentStatus})
+        and (#{orderId} is null or order_id = #{orderId})
+      order by created_at desc
+      """)
+  @Results(id = "supplierInvoiceFilteredListResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "order_id", property = "orderId"),
+      @Result(column = "invoice_no", property = "invoiceNo"),
+      @Result(column = "payment_status", property = "paymentStatus"),
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "updated_at", property = "updatedAt")
+  })
+  List<Invoice> listBySupplierFiltered(
+      @Param("supplierId") String supplierId,
+      @Param("paymentStatus") String paymentStatus,
+      @Param("orderId") String orderId);
+
   @Insert("""
       insert into invoices (id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status)
       values (#{id}, #{tenantId}, #{supplierId}, #{orderId}, #{amount}, #{invoiceNo}, #{paymentStatus})

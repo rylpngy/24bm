@@ -1167,7 +1167,23 @@ class HttpSecurityContractTests {
             LocalDate.parse("2026-07-10"),
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T12:05:00+08:00")));
-    when(invoiceApplicationService.listCurrentSupplierInvoices()).thenReturn(List.of());
+    when(invoiceApplicationService.listCurrentSupplierInvoices(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of());
+    when(invoiceApplicationService.listCurrentSupplierInvoices(
+        org.mockito.ArgumentMatchers.eq("待付款"),
+        org.mockito.ArgumentMatchers.eq("po-demo")))
+        .thenReturn(List.of(new InvoiceResponse(
+            "invoice-demo",
+            "tenant-acme",
+            "ent-supplier-sunrise",
+            "po-demo",
+            BigDecimal.valueOf(98000),
+            "INV-20260615-001",
+            "待付款",
+            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"))));
 
     mockMvc.perform(post("/api/v1/supplier/rfqs/rfq-demo/quotes")
             .header("Authorization", "Bearer " + supplierToken)
@@ -1312,6 +1328,12 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").isArray());
+    mockMvc.perform(get("/api/v1/supplier/invoices")
+            .queryParam("paymentStatus", "待付款")
+            .queryParam("orderId", "po-demo")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("invoice-demo"));
 
     mockMvc.perform(get("/api/v1/platform/overview")
             .header("Authorization", "Bearer " + buyerToken))

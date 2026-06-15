@@ -2299,8 +2299,25 @@
         "tags": [
           "supplier"
         ],
-        "summary": "加载供应商应收发票列表",
-        "parameters": [],
+        "summary": "加载供应商应收发票列表，支持按付款状态和订单筛选",
+        "parameters": [
+          {
+            "name": "paymentStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []

@@ -62,6 +62,7 @@ describe('Java supplier workspace scaffold', () => {
     expect(orderService).toContain('listCurrentSupplierOrders');
     expect(orderService).toContain('listBySupplierFiltered');
     expect(invoiceService).toContain('listCurrentSupplierInvoices');
+    expect(invoiceService).toContain('listBySupplierFiltered');
   });
 
   it('documents the supplier workspace Java API handoff', () => {
@@ -85,6 +86,7 @@ describe('Java supplier workspace scaffold', () => {
     expect(readme).toContain('GET /api/v1/supplier/orders');
     expect(readme).toContain('The supplier order list accepts optional `status` and `rfqId` filters');
     expect(readme).toContain('GET /api/v1/supplier/invoices');
+    expect(readme).toContain('The supplier invoice list accepts optional `paymentStatus` and `orderId` filters');
     expect(localGuide).toContain('GET /api/v1/supplier/workspace');
   });
 });

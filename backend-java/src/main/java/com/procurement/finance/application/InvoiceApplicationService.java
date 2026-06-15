@@ -45,6 +45,17 @@ public class InvoiceApplicationService {
         .toList();
   }
 
+  public List<InvoiceResponse> listCurrentSupplierInvoices(String paymentStatus, String orderId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("invoice APIs");
+    return invoiceMapper.listBySupplierFiltered(
+            supplierId,
+            blankToNull(paymentStatus),
+            blankToNull(orderId))
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public InvoiceResponse create(String orderId, CreateInvoiceRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("invoice APIs");
@@ -90,5 +101,9 @@ public class InvoiceApplicationService {
 
   private String newId(String prefix) {
     return prefix + "-" + UUID.randomUUID();
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }
