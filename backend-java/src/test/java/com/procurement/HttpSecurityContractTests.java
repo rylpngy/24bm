@@ -65,8 +65,11 @@ import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.SupplierProfileController;
 import com.procurement.supplier.api.SupplierProfileResponse;
+import com.procurement.supplier.api.SupplierWorkspaceController;
+import com.procurement.supplier.api.SupplierWorkspaceResponse;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
+import com.procurement.supplier.application.SupplierWorkspaceApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -99,7 +102,8 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierOrderController.class,
     SupplierReceivableController.class,
     AuditLogController.class,
-    BuyerWorkspaceController.class
+    BuyerWorkspaceController.class,
+    SupplierWorkspaceController.class
 })
 @Import({
     SecurityConfig.class,
@@ -160,6 +164,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private BuyerWorkspaceApplicationService buyerWorkspaceApplicationService;
+
+  @MockBean
+  private SupplierWorkspaceApplicationService supplierWorkspaceApplicationService;
 
   @Test
   void viteLocalhostPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
@@ -574,6 +581,53 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.tenantCount").value(2))
         .andExpect(jsonPath("$.data.publicSupplierCount").value(3))
         .andExpect(jsonPath("$.data.pendingEnterpriseReviews").value(1));
+  }
+
+  @Test
+  void supplierCanLoadAggregatedWorkspaceButBuyerCannot() throws Exception {
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/supplier/workspace")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
+    when(supplierWorkspaceApplicationService.load()).thenReturn(new SupplierWorkspaceResponse(
+        new SupplierProfileResponse(
+            "ent-supplier-sunrise",
+            "晨光科技供应商",
+            "supplier",
+            "办公设备",
+            true,
+            List.of("Acme 采购公司")),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of()));
+
+    mockMvc.perform(get("/api/v1/supplier/workspace")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.profile.id").value("ent-supplier-sunrise"))
+        .andExpect(jsonPath("$.data.opportunities").isArray())
+        .andExpect(jsonPath("$.data.quotes").isArray())
+        .andExpect(jsonPath("$.data.orders").isArray())
+        .andExpect(jsonPath("$.data.invoices").isArray());
   }
 
   @Test

@@ -424,6 +424,7 @@ export interface JavaProcurementApiClient {
   listBuyerInvoices(): Promise<InvoiceRecord[]>;
   createSupplierInvoice(orderId: string, payload: CreateInvoicePayload): Promise<InvoiceRecord>;
   registerBuyerPayment(invoiceId: string, payload: RegisterPaymentPayload): Promise<InvoiceRecord>;
+  getSupplierWorkspace(): Promise<JavaSupplierWorkspaceData>;
   getSupplierProfile(): Promise<JavaSupplierProfileDto>;
   listSupplierRfqs(): Promise<Rfq[]>;
   listSupplierQuotes(): Promise<RfqQuote[]>;
@@ -900,6 +901,22 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       });
       return toInvoice(invoice);
     },
+    async getSupplierWorkspace() {
+      const workspace = await supplierRequest<{
+        profile: JavaSupplierProfileDto;
+        opportunities: JavaRfqDto[];
+        quotes: JavaQuoteDto[];
+        orders: JavaPurchaseOrderDto[];
+        invoices: JavaInvoiceDto[];
+      }>('/api/v1/supplier/workspace');
+      return {
+        profile: workspace.profile,
+        opportunities: workspace.opportunities.map(toRfq),
+        quotes: workspace.quotes.map(toQuote),
+        orders: workspace.orders.map(toPurchaseOrder),
+        invoices: workspace.invoices.map(toInvoice),
+      };
+    },
     getSupplierProfile() {
       return supplierRequest<JavaSupplierProfileDto>('/api/v1/supplier/profile');
     },
@@ -1058,14 +1075,7 @@ export const applyJavaPlatformWorkspaceData = (
 export const loadJavaSupplierWorkspaceData = async (
   client: JavaProcurementApiClient,
 ): Promise<JavaSupplierWorkspaceData> => {
-  const [profile, opportunities, quotes, orders, invoices] = await Promise.all([
-    client.getSupplierProfile(),
-    client.listSupplierRfqs(),
-    client.listSupplierQuotes(),
-    client.listSupplierOrders(),
-    client.listSupplierInvoices(),
-  ]);
-  return { profile, opportunities, quotes, orders, invoices };
+  return client.getSupplierWorkspace();
 };
 
 export const applyJavaSupplierWorkspaceData = (

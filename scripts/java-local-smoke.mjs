@@ -83,7 +83,8 @@ const main = async () => {
     requestJson('/api/v1/buyer/invoices', { headers: authHeaders }),
     requestJson('/api/v1/buyer/audit-logs', { headers: authHeaders }),
   ]);
-  const [supplierProfile, supplierRfqs, supplierQuotes, supplierOrders, supplierInvoices] = await Promise.all([
+  const [supplierWorkspace, supplierProfile, supplierRfqs, supplierQuotes, supplierOrders, supplierInvoices] = await Promise.all([
+    requestJson('/api/v1/supplier/workspace', { headers: supplierHeaders }),
     requestJson('/api/v1/supplier/profile', { headers: supplierHeaders }),
     requestJson('/api/v1/supplier/rfqs', { headers: supplierHeaders }),
     requestJson('/api/v1/supplier/quotes', { headers: supplierHeaders }),
@@ -101,6 +102,9 @@ const main = async () => {
   }
   if (supplierProfile.id !== 'ent-supplier-sunrise') {
     throw new Error(`Unexpected Java supplier profile: ${supplierProfile.id}`);
+  }
+  if (supplierWorkspace.profile?.id !== 'ent-supplier-sunrise' || !Array.isArray(supplierWorkspace.opportunities)) {
+    throw new Error('Unexpected Java supplier workspace aggregate payload');
   }
   if (!Array.isArray(buyerWorkspace.suppliers) || !Array.isArray(buyerWorkspace.auditLogs)) {
     throw new Error('Unexpected Java buyer workspace aggregate payload');
@@ -193,6 +197,7 @@ const main = async () => {
   console.log(`Loaded ${demands.length} purchase demands`);
   console.log(`Loaded ${orders.length} purchase orders, ${invoices.length} invoices, ${auditLogs.length} audit logs`);
   console.log(`Loaded supplier ${supplierProfile.name}, ${supplierRfqs.length} RFQs, ${supplierQuotes.length} quotes, ${supplierOrders.length} orders, ${supplierInvoices.length} invoices`);
+  console.log(`Loaded supplier workspace aggregate with ${supplierWorkspace.opportunities.length} opportunities and ${supplierWorkspace.orders.length} orders`);
   console.log(`Created RFQ ${rfq.id}, quote ${quote.id}, award ${award.id}, order ${order.id}, confirmed status ${confirmedOrder.status}`);
   console.log(`Created delivery ${delivery.id}, receipt ${receipt.id}`);
   console.log(`Created invoice ${invoice.id}, payment status ${paidInvoice.paymentStatus}`);

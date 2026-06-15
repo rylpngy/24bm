@@ -400,7 +400,7 @@ describe('procurement API clients', () => {
     expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);
   });
 
-  it('uses the Java API client to authenticate and load supplier workspace data with bearer tokens', async () => {
+  it('uses the Java API client to authenticate and load supplier workspace data from the aggregate endpoint', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
       calls.push({ input, init });
@@ -422,85 +422,59 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
-      if (input === 'http://java.test/api/v1/supplier/profile') {
+      if (input === 'http://java.test/api/v1/supplier/workspace') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
         return Response.json({
           success: true,
           data: {
-            id: 'ent-supplier-sunrise',
-            name: '晨光科技供应商',
-            type: 'supplier',
-            industry: '办公设备',
-            verified: true,
-            connectedBuyerNames: ['Acme 采购公司'],
+            profile: {
+              id: 'ent-supplier-sunrise',
+              name: '晨光科技供应商',
+              type: 'supplier',
+              industry: '办公设备',
+              verified: true,
+              connectedBuyerNames: ['Acme 采购公司'],
+            },
+            opportunities: [{
+              id: 'rfq-java-001',
+              tenantId: 'tenant-acme',
+              title: 'Java RFQ',
+              status: '报价中',
+              deadlineAt: '2026-07-01T18:00:00+08:00',
+              ownerId: 'user-buyer-owner',
+              awardedSupplierId: null,
+              demandIds: ['dem-java-001'],
+              invitedSupplierIds: ['ent-supplier-sunrise'],
+            }],
+            quotes: [{
+              id: 'quote-java-001',
+              tenantId: 'tenant-acme',
+              rfqId: 'rfq-java-001',
+              supplierId: 'ent-supplier-sunrise',
+              amount: 118000,
+              taxRate: 13,
+              deliveryDays: 7,
+              status: '已提交',
+            }],
+            orders: [{
+              id: 'po-java-001',
+              tenantId: 'tenant-acme',
+              rfqId: 'rfq-java-001',
+              supplierId: 'ent-supplier-sunrise',
+              amount: 118000,
+              status: '待供应商确认',
+              expectedReceiptDate: '2026-07-10',
+            }],
+            invoices: [{
+              id: 'invoice-java-001',
+              tenantId: 'tenant-acme',
+              supplierId: 'ent-supplier-sunrise',
+              orderId: 'po-java-001',
+              amount: 118000,
+              invoiceNo: 'INV-2026-0001',
+              paymentStatus: '待付款',
+            }],
           },
-          message: '',
-        });
-      }
-      if (input === 'http://java.test/api/v1/supplier/rfqs') {
-        expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
-        return Response.json({
-          success: true,
-          data: [{
-            id: 'rfq-java-001',
-            tenantId: 'tenant-acme',
-            title: 'Java RFQ',
-            status: '报价中',
-            deadlineAt: '2026-07-01T18:00:00+08:00',
-            ownerId: 'user-buyer-owner',
-            awardedSupplierId: null,
-            demandIds: ['dem-java-001'],
-            invitedSupplierIds: ['ent-supplier-sunrise'],
-          }],
-          message: '',
-        });
-      }
-      if (input === 'http://java.test/api/v1/supplier/quotes') {
-        expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
-        return Response.json({
-          success: true,
-          data: [{
-            id: 'quote-java-001',
-            tenantId: 'tenant-acme',
-            rfqId: 'rfq-java-001',
-            supplierId: 'ent-supplier-sunrise',
-            amount: 118000,
-            taxRate: 13,
-            deliveryDays: 7,
-            status: '已提交',
-          }],
-          message: '',
-        });
-      }
-      if (input === 'http://java.test/api/v1/supplier/orders') {
-        expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
-        return Response.json({
-          success: true,
-          data: [{
-            id: 'po-java-001',
-            tenantId: 'tenant-acme',
-            rfqId: 'rfq-java-001',
-            supplierId: 'ent-supplier-sunrise',
-            amount: 118000,
-            status: '待供应商确认',
-            expectedReceiptDate: '2026-07-10',
-          }],
-          message: '',
-        });
-      }
-      if (input === 'http://java.test/api/v1/supplier/invoices') {
-        expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
-        return Response.json({
-          success: true,
-          data: [{
-            id: 'invoice-java-001',
-            tenantId: 'tenant-acme',
-            supplierId: 'ent-supplier-sunrise',
-            orderId: 'po-java-001',
-            amount: 118000,
-            invoiceNo: 'INV-2026-0001',
-            paymentStatus: '待付款',
-          }],
           message: '',
         });
       }
@@ -531,7 +505,10 @@ describe('procurement API clients', () => {
     expect(supplierData.quotes[0].amount).toBe(118000);
     expect(supplierData.orders[0].status).toBe('待供应商确认');
     expect(supplierData.invoices[0].paymentStatus).toBe('待付款');
-    expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/supplier/workspace',
+    ]);
   });
 
   it('uses the Java API client to list, create, and submit buyer purchase demands', async () => {

@@ -33,6 +33,7 @@ describe('procurement SaaS API contract draft', () => {
       'GET /buyer/audit-logs',
       'GET /buyer/rfqs',
       'POST /buyer/rfqs',
+      'GET /supplier/workspace',
       'GET /supplier/profile',
       'GET /supplier/rfqs',
       'POST /supplier/rfqs/{rfqId}/quotes',
