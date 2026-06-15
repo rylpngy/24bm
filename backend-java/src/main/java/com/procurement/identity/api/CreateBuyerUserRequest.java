@@ -8,5 +8,6 @@ public record CreateBuyerUserRequest(
     String mobile,
     @Email String email,
     @NotBlank String status,
-    @NotBlank String departmentId) {
+    @NotBlank String departmentId,
+    @NotBlank String roleId) {
 }

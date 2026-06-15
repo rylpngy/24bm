@@ -62,9 +62,15 @@ describe('Java identity and JWT scaffold', () => {
     expect(service).toContain('requireUserCapacity');
     expect(service).toContain('DepartmentMapper');
     expect(service).toContain('existsActiveByTenantAndId');
+    expect(service).toContain('requireBuyerRole');
+    expect(service).toContain('assignRole');
     expect(request).toContain('departmentId');
+    expect(request).toContain('roleId');
     expect(response).toContain('departmentId');
+    expect(response).toContain('roleId');
     expect(userMapper).toContain('department_id');
+    expect(userMapper).toContain('existsBuyerRoleByTenantAndId');
+    expect(userMapper).toContain('insert into user_roles');
     expect(userMapper).toContain('countByTenant');
     expect(entitlementService).toContain('Tenant user limit reached');
     expect(entitlementMapper).toContain('user_limit');
@@ -72,8 +78,10 @@ describe('Java identity and JWT scaffold', () => {
     expect(apiContract).toContain('department_id');
     expect(readme).toContain("current tenant's `user_limit`");
     expect(readme).toContain('departmentId');
+    expect(readme).toContain('roleId');
     expect(architecture).toContain('当前用户数达到或超过 `user_limit` 时拒绝创建');
     expect(architecture).toContain('用户所属 `departmentId`');
+    expect(architecture).toContain('用户角色 `roleId`');
   });
 
   it('documents the frontend header transition from demo headers to Authorization bearer', () => {

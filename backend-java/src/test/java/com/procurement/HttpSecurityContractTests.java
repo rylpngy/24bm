@@ -1404,13 +1404,15 @@ class HttpSecurityContractTests {
         "13800000000",
         "buyer@example.com",
         "active",
-        "dept-it")));
+        "dept-it",
+        "role-buyer-owner")));
 
     mockMvc.perform(get("/api/v1/buyer/users")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].name").value("采购负责人"))
-        .andExpect(jsonPath("$.data[0].departmentId").value("dept-it"));
+        .andExpect(jsonPath("$.data[0].departmentId").value("dept-it"))
+        .andExpect(jsonPath("$.data[0].roleId").value("role-buyer-owner"));
 
     when(buyerUserApplicationService.createUser(
         org.mockito.ArgumentMatchers.any(CreateBuyerUserRequest.class)))
@@ -1421,7 +1423,8 @@ class HttpSecurityContractTests {
             "13900000000",
             "requester@example.com",
             "active",
-            "dept-it"));
+            "dept-it",
+            "role-buyer-requester"));
 
     mockMvc.perform(post("/api/v1/buyer/users")
             .header("Authorization", "Bearer " + buyerToken)
@@ -1432,12 +1435,14 @@ class HttpSecurityContractTests {
                   "mobile": "13900000000",
                   "email": "requester@example.com",
                   "status": "active",
-                  "departmentId": "dept-it"
+                  "departmentId": "dept-it",
+                  "roleId": "role-buyer-requester"
                 }
                 """))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.id").value("user-buyer-new"))
-        .andExpect(jsonPath("$.data.departmentId").value("dept-it"));
+        .andExpect(jsonPath("$.data.departmentId").value("dept-it"))
+        .andExpect(jsonPath("$.data.roleId").value("role-buyer-requester"));
   }
 
   @Test

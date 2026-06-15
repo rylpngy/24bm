@@ -65,6 +65,9 @@ describe('procurement SaaS API contract draft', () => {
     expect(databaseTables.find((table) => table.name === 'supplier_enterprises')?.tenantScoped).toBe(false);
     expect(databaseTables.find((table) => table.name === 'buyer_supplier_relations')?.tenantScoped).toBe(true);
     expect(databaseTables.find((table) => table.name === 'users')?.requiredColumns).toContain('department_id');
+    expect(databaseTables.find((table) => table.name === 'user_roles')?.requiredColumns).toEqual(
+      expect.arrayContaining(['user_id', 'role_id']),
+    );
     expect(databaseTables.find((table) => table.name === 'rfqs')?.requiredColumns).toEqual(
       expect.arrayContaining(['tenant_id', 'status', 'deadline_at']),
     );

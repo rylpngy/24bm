@@ -52,7 +52,8 @@ class BuyerUserDepartmentValidationTests {
         "13900000000",
         "new.user@example.com",
         "active",
-        "dept-other")))
+        "dept-other",
+        "role-buyer-requester")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Department not found in tenant scope: dept-other");
 
@@ -72,6 +73,7 @@ class BuyerUserDepartmentValidationTests {
     when(tenantEntitlementMapper.findUserLimit("tenant-1")).thenReturn(10);
     when(buyerUserMapper.countByTenant("tenant-1")).thenReturn(1);
     when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
+    when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-buyer-requester")).thenReturn(true);
     when(buyerUserMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -82,7 +84,8 @@ class BuyerUserDepartmentValidationTests {
         "13900000000",
         "new.user@example.com",
         "active",
-        "dept-it"));
+        "dept-it",
+        "role-buyer-requester"));
 
     assertThat(response.departmentId()).isEqualTo("dept-it");
     verify(buyerUserMapper).insert(
@@ -96,6 +99,14 @@ class BuyerUserDepartmentValidationTests {
   }
 
   private BuyerUser user(String id) {
-    return new BuyerUser(id, "tenant-1", "新增用户", "13900000000", "new.user@example.com", "active", "dept-it");
+    return new BuyerUser(
+        id,
+        "tenant-1",
+        "新增用户",
+        "13900000000",
+        "new.user@example.com",
+        "active",
+        "dept-it",
+        "role-buyer-requester");
   }
 }

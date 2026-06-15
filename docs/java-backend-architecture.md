@@ -92,6 +92,7 @@ Authorization: Bearer <accessToken>
 - 创建前读取 `tenants.user_limit`，并统计当前租户 `users` 数量。
 - 当前用户数达到或超过 `user_limit` 时拒绝创建，避免租户超出套餐人数。
 - 用户所属 `departmentId` 必须命中当前租户下 `active` 状态的组织部门，防止采购方用户挂靠到跨租户或停用部门。
+- 用户角色 `roleId` 必须命中当前租户下 `buyer` 范围的角色，创建成功后写入 `user_roles`，防止采购方用户绑定平台、供应商或其他租户角色。
 
 ## 采购方组织部门 Java API
 

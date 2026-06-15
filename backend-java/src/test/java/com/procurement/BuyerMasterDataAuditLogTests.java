@@ -52,6 +52,7 @@ class BuyerMasterDataAuditLogTests {
             auditLogApplicationService);
     when(buyerUserMapper.countByTenant("tenant-1")).thenReturn(3);
     when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
+    when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-buyer-requester")).thenReturn(true);
     when(buyerUserMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -62,7 +63,8 @@ class BuyerMasterDataAuditLogTests {
         "13900000001",
         "buyer@example.com",
         "active",
-        "dept-it"));
+        "dept-it",
+        "role-buyer-requester"));
 
     verify(tenantEntitlementApplicationService).requireUserCapacity("tenant-1", 3);
     verify(auditLogApplicationService).recordTenantAction(
@@ -127,7 +129,15 @@ class BuyerMasterDataAuditLogTests {
   }
 
   private BuyerUser user(String id) {
-    return new BuyerUser(id, "tenant-1", "采购员", "13900000001", "buyer@example.com", "active", "dept-it");
+    return new BuyerUser(
+        id,
+        "tenant-1",
+        "采购员",
+        "13900000001",
+        "buyer@example.com",
+        "active",
+        "dept-it",
+        "role-buyer-requester");
   }
 
   private Material material(String id) {

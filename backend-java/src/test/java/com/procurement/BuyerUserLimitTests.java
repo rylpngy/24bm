@@ -49,7 +49,8 @@ class BuyerUserLimitTests {
         "13900000000",
         "new.user@example.com",
         "active",
-        "dept-it")))
+        "dept-it",
+        "role-buyer-requester")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Tenant user limit reached: 2");
 
@@ -73,7 +74,8 @@ class BuyerUserLimitTests {
         "13900000000",
         "new.user@example.com",
         "active",
-        "dept-it")))
+        "dept-it",
+        "role-buyer-requester")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Tenant user limit reached: 0");
 

@@ -50,6 +50,7 @@ on conflict (id) do update set
 insert into roles (id, tenant_id, scope, name, permissions)
 values
   ('role-buyer-owner', 'tenant-acme', 'buyer', '采购管理员', '["buyer:*"]'::jsonb),
+  ('role-buyer-requester', 'tenant-acme', 'buyer', '需求申请人', '["buyer:demand:create","buyer:demand:read"]'::jsonb),
   ('role-supplier-sales', null, 'supplier', '供应商销售', '["supplier:*"]'::jsonb),
   ('role-platform-admin', null, 'platform', '平台管理员', '["platform:*"]'::jsonb)
 on conflict (id) do update set
@@ -61,6 +62,7 @@ on conflict (id) do update set
 insert into user_roles (user_id, role_id)
 values
   ('user-buyer-owner', 'role-buyer-owner'),
+  ('user-buyer-requester', 'role-buyer-requester'),
   ('user-supplier-sales', 'role-supplier-sales'),
   ('user-platform-admin', 'role-platform-admin')
 on conflict (user_id, role_id) do nothing;

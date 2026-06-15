@@ -7,5 +7,6 @@ public record BuyerUser(
     String mobile,
     String email,
     String status,
-    String departmentId) {
+    String departmentId,
+    String roleId) {
 }

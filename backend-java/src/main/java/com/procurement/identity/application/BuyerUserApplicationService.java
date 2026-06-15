@@ -46,6 +46,7 @@ public class BuyerUserApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
     tenantEntitlementApplicationService.requireUserCapacity(tenantId, buyerUserMapper.countByTenant(tenantId));
     requireActiveDepartment(tenantId, request.departmentId());
+    requireBuyerRole(tenantId, request.roleId());
     String userId = "user-" + UUID.randomUUID();
     buyerUserMapper.insert(
         userId,
@@ -55,6 +56,7 @@ public class BuyerUserApplicationService {
         request.email(),
         request.status(),
         request.departmentId());
+    buyerUserMapper.assignRole(userId, request.roleId());
     auditLogApplicationService.recordTenantAction(BUYER_USER_CREATED_ACTION, BUYER_USER_TARGET_TYPE, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
@@ -62,6 +64,12 @@ public class BuyerUserApplicationService {
   private void requireActiveDepartment(String tenantId, String departmentId) {
     if (!departmentMapper.existsActiveByTenantAndId(tenantId, departmentId)) {
       throw new IllegalArgumentException("Department not found in tenant scope: " + departmentId);
+    }
+  }
+
+  private void requireBuyerRole(String tenantId, String roleId) {
+    if (!buyerUserMapper.existsBuyerRoleByTenantAndId(tenantId, roleId)) {
+      throw new IllegalArgumentException("Buyer role not found in tenant scope: " + roleId);
     }
   }
 
@@ -73,6 +81,7 @@ public class BuyerUserApplicationService {
         user.mobile(),
         user.email(),
         user.status(),
-        user.departmentId());
+        user.departmentId(),
+        user.roleId());
   }
 }

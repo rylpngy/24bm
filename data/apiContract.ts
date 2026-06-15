@@ -506,6 +506,12 @@ export const databaseTables: DatabaseTable[] = [
     requiredColumns: ['id', 'tenant_id', 'scope', 'name', 'permissions'],
   },
   {
+    name: 'user_roles',
+    tenantScoped: false,
+    purpose: '用户与角色的授权关系，采购方创建用户时写入当前租户 buyer 角色。',
+    requiredColumns: ['user_id', 'role_id', 'created_at'],
+  },
+  {
     name: 'departments',
     tenantScoped: true,
     purpose: '采购方租户内组织部门，供需求归属、审批和后续数据权限使用。',
