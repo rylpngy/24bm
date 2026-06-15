@@ -9,6 +9,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8');
 describe('Java buyer workspace scaffold', () => {
   it('aggregates buyer todo summary in the Java workspace response', () => {
     const service = read('backend-java/src/main/java/com/procurement/buyer/application/BuyerWorkspaceApplicationService.java');
+    const assembler = read('backend-java/src/main/java/com/procurement/buyer/application/BuyerTodoSummaryAssembler.java');
     const response = read('backend-java/src/main/java/com/procurement/buyer/api/BuyerWorkspaceResponse.java');
     const summary = read('backend-java/src/main/java/com/procurement/buyer/api/BuyerTodoSummaryResponse.java');
     const readme = read('backend-java/README.md');
@@ -21,10 +22,11 @@ describe('Java buyer workspace scaffold', () => {
     expect(summary).toContain('pendingAwardCount');
     expect(summary).toContain('pendingReceiptCount');
     expect(summary).toContain('pendingPaymentCount');
-    expect(service).toContain('summarizeTodos');
-    expect(service).toContain('RFQ_QUOTING_STATUS');
-    expect(service).toContain('ORDER_SHIPPED_STATUS');
-    expect(service).toContain('INVOICE_PARTIAL_PAYMENT_STATUS');
+    expect(service).toContain('BuyerTodoSummaryAssembler');
+    expect(service).toContain('buyerTodoSummaryAssembler.summarize');
+    expect(assembler).toContain('RFQ_QUOTING_STATUS');
+    expect(assembler).toContain('ORDER_SHIPPED_STATUS');
+    expect(assembler).toContain('INVOICE_PARTIAL_PAYMENT_STATUS');
     expect(service).toContain('listRecentReviewed()');
     expect(service).toContain('listCurrentUserNotifications(NOTIFICATION_LIMIT)');
     expect(readme).toContain('Buyer workspace includes `todoSummary` counts');

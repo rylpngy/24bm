@@ -8,6 +8,7 @@ import com.procurement.approval.application.ApprovalInboxApplicationService;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.buyer.api.BuyerWorkspaceResponse;
 import com.procurement.buyer.application.BuyerWorkspaceApplicationService;
+import com.procurement.buyer.application.BuyerTodoSummaryAssembler;
 import com.procurement.catalog.application.MaterialApplicationService;
 import com.procurement.demand.application.PurchaseDemandApplicationService;
 import com.procurement.finance.api.InvoiceResponse;
@@ -48,6 +49,7 @@ class BuyerWorkspaceTodoSummaryTests {
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
+  private final BuyerTodoSummaryAssembler buyerTodoSummaryAssembler = new BuyerTodoSummaryAssembler();
   private final BuyerWorkspaceApplicationService buyerWorkspaceApplicationService =
       new BuyerWorkspaceApplicationService(
           buyerSupplierApplicationService,
@@ -59,7 +61,8 @@ class BuyerWorkspaceTodoSummaryTests {
           paymentApplicationService,
           approvalInboxApplicationService,
           auditLogApplicationService,
-          notificationApplicationService);
+          notificationApplicationService,
+          buyerTodoSummaryAssembler);
 
   @Test
   void buyerWorkspaceSummarizesActionableTodos() {
