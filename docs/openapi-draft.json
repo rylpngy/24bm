@@ -105,6 +105,29 @@
             "description": "Permission or tenant isolation violation"
           }
         }
+      },
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "开通采购方企业租户",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
       }
     },
     "/platform/tenants/{tenantId}/features": {
@@ -1816,6 +1839,7 @@
     "GET /platform/workspace",
     "GET /platform/overview",
     "GET /platform/tenants",
+    "POST /platform/tenants",
     "POST /platform/tenants/{tenantId}/features",
     "GET /platform/enterprise-reviews",
     "POST /platform/enterprise-reviews/{enterpriseId}",

@@ -74,6 +74,7 @@ import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.application.ReceiptApplicationService;
 import com.procurement.platform.api.EnterpriseReviewRequest;
 import com.procurement.platform.api.EnterpriseReviewResponse;
+import com.procurement.platform.api.CreateTenantRequest;
 import com.procurement.platform.api.FeatureToggleRequest;
 import com.procurement.platform.api.PlatformEnterpriseController;
 import com.procurement.platform.api.PlatformOverviewController;
@@ -1101,6 +1102,50 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("tenant-acme"))
         .andExpect(jsonPath("$.data[0].enabledFeatures[0]").value("rfq"));
+
+    when(platformTenantApplicationService.createBuyerTenant(
+        org.mockito.ArgumentMatchers.any(CreateTenantRequest.class)))
+        .thenReturn(new TenantResponse(
+            "tenant-demo",
+            "示例采购企业",
+            "MVP",
+            "active",
+            List.of("rfq", "order", "finance"),
+            50));
+
+    mockMvc.perform(post("/api/v1/platform/tenants")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "tenantId": "tenant-demo",
+                  "enterpriseId": "ent-demo-buyer",
+                  "name": "示例采购企业",
+                  "industry": "综合采购",
+                  "plan": "MVP",
+                  "userLimit": 50,
+                  "enabledFeatures": ["rfq", "order", "finance"]
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(post("/api/v1/platform/tenants")
+            .header("Authorization", "Bearer " + platformToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "tenantId": "tenant-demo",
+                  "enterpriseId": "ent-demo-buyer",
+                  "name": "示例采购企业",
+                  "industry": "综合采购",
+                  "plan": "MVP",
+                  "userLimit": 50,
+                  "enabledFeatures": ["rfq", "order", "finance"]
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("tenant-demo"))
+        .andExpect(jsonPath("$.data.enabledFeatures[2]").value("finance"));
 
     when(platformTenantApplicationService.updateFeatureToggles(
         org.mockito.ArgumentMatchers.eq("tenant-acme"),

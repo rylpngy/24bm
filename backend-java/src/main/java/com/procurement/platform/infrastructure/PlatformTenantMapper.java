@@ -2,6 +2,7 @@ package com.procurement.platform.infrastructure;
 
 import com.procurement.platform.domain.PlatformTenant;
 import java.util.List;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
@@ -11,6 +12,55 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface PlatformTenantMapper {
+
+  @Insert("""
+      insert into tenants (id, name, plan, status, enabled_features, user_limit)
+      values (#{id}, #{name}, #{plan}, #{status}, #{enabledFeaturesJson}::jsonb, #{userLimit})
+      """)
+  void insertTenant(
+      @Param("id") String id,
+      @Param("name") String name,
+      @Param("plan") String plan,
+      @Param("status") String status,
+      @Param("enabledFeaturesJson") String enabledFeaturesJson,
+      @Param("userLimit") Integer userLimit);
+
+  @Insert("""
+      insert into enterprises (id, name, type, industry, verified)
+      values (#{id}, #{name}, 'buyer', #{industry}, #{verified})
+      """)
+  void insertBuyerEnterprise(
+      @Param("id") String id,
+      @Param("name") String name,
+      @Param("industry") String industry,
+      @Param("verified") Boolean verified);
+
+  @Insert("""
+      insert into roles (id, tenant_id, scope, name, permissions)
+      values (#{id}, #{tenantId}, 'buyer', #{name}, #{permissionsJson}::jsonb)
+      """)
+  void insertBuyerAdminRole(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId,
+      @Param("name") String name,
+      @Param("permissionsJson") String permissionsJson);
+
+  @Insert("""
+      insert into approval_templates (
+        template_code, tenant_id, biz_type, name, default_approver_role_id, status, sort_order
+      )
+      values (
+        #{templateCode}, #{tenantId}, #{bizType}, #{name}, #{defaultApproverRoleId}, #{status}, #{sortOrder}
+      )
+      """)
+  void insertApprovalTemplate(
+      @Param("templateCode") String templateCode,
+      @Param("tenantId") String tenantId,
+      @Param("bizType") String bizType,
+      @Param("name") String name,
+      @Param("defaultApproverRoleId") String defaultApproverRoleId,
+      @Param("status") String status,
+      @Param("sortOrder") Integer sortOrder);
 
   @Select("""
       select id, name, plan, status, enabled_features::text as enabled_features_json, user_limit
