@@ -486,6 +486,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - 采购方发票列表始终按当前 `tenantId` 过滤，并支持可选 `paymentStatus`、`supplierId`、`orderId` 查询条件。
 - 发票必须属于当前采购方租户。
 - 当前租户必须启用 `finance` 功能开关。
+- 发票供应商在当前采购方私域供应商关系中不能是 `黑名单`。
 - 付款状态写入 `invoices.payment_status`。
 - 付款审计明细复用 `audit_logs`，仅返回当前租户下目标类型为 `invoice` 且动作为 `invoice.paid` / `invoice.partial_paid` 的记录。
 

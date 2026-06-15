@@ -18,6 +18,7 @@ import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
@@ -35,6 +36,8 @@ class OrderFinanceFeatureToggleTests {
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
+      org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final TenantFeatureMapper tenantFeatureMapper = org.mockito.Mockito.mock(TenantFeatureMapper.class);
@@ -54,6 +57,7 @@ class OrderFinanceFeatureToggleTests {
       tenantFeatureApplicationService);
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
+      buyerSupplierRelationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService);
 

@@ -7,6 +7,7 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -21,16 +22,20 @@ public class PaymentApplicationService {
   private static final String INVOICE_PAID_ACTION = "invoice.paid";
   private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
   private static final String FINANCE_FEATURE = "finance";
+  private static final String BLACKLISTED_SUPPLIER_STATUS = "黑名单";
 
   private final InvoiceMapper invoiceMapper;
+  private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
 
   public PaymentApplicationService(
       InvoiceMapper invoiceMapper,
+      BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService) {
     this.invoiceMapper = invoiceMapper;
+    this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
   }
@@ -76,6 +81,7 @@ public class PaymentApplicationService {
     if (!PAID_STATUS.equals(request.paymentStatus()) && !PARTIAL_PAID_STATUS.equals(request.paymentStatus())) {
       throw new IllegalArgumentException("Unsupported payment status: " + request.paymentStatus());
     }
+    requireSupplierPayable(tenantId, invoice);
 
     int updated = invoiceMapper.updatePaymentStatus(
         tenantId,
@@ -103,6 +109,16 @@ public class PaymentApplicationService {
         invoice.paymentStatus(),
         invoice.createdAt(),
         invoice.updatedAt());
+  }
+
+  private void requireSupplierPayable(String tenantId, Invoice invoice) {
+    int blacklistedRelations = buyerSupplierRelationMapper.countByTenantSupplierAndStatus(
+        tenantId,
+        invoice.supplierId(),
+        BLACKLISTED_SUPPLIER_STATUS);
+    if (blacklistedRelations > 0) {
+      throw new IllegalStateException("Blacklisted supplier cannot be paid: " + invoice.supplierId());
+    }
   }
 
   private String blankToNull(String value) {

@@ -59,7 +59,10 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
+    expect(paymentService).toContain('BuyerSupplierRelationMapper');
     expect(paymentService).toContain('requireEnabled(tenantId, FINANCE_FEATURE)');
+    expect(paymentService).toContain('BLACKLISTED_SUPPLIER_STATUS');
+    expect(paymentService).toContain('countByTenantSupplierAndStatus');
     expect(paymentService).toContain('listCurrentTenantInvoices');
     expect(paymentService).toContain('listCurrentTenantPaymentAuditLogs');
     expect(paymentService).toContain('invoice.partial_paid');
@@ -78,8 +81,10 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(readme).toContain('POST /api/v1/buyer/invoices/{invoiceId}/payments');
     expect(readme).toContain('GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs');
     expect(readme).toContain('The buyer payment audit log list returns current-tenant `invoice.paid` and `invoice.partial_paid` audit entries');
+    expect(readme).toContain('Payment registration rejects invoices whose current-tenant supplier relation is `黑名单`');
     expect(readme).toContain('`finance` feature enabled');
     expect(architecture).toContain('财务协同 Java API');
     expect(architecture).toContain('当前租户必须启用 `finance` 功能开关');
+    expect(architecture).toContain('发票供应商在当前采购方私域供应商关系中不能是 `黑名单`');
   });
 });

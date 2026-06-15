@@ -11,6 +11,7 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -22,10 +23,13 @@ class FinancePaymentStateTransitionTests {
 
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
+      org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
+      buyerSupplierRelationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService);
 
@@ -103,6 +107,27 @@ class FinancePaymentStateTransitionTests {
         new RegisterPaymentRequest("已付款")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Invoice status changed before payment could be recorded");
+  }
+
+  @Test
+  void paymentRejectsBlacklistedSupplierRelationBeforeStatusUpdate() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
+        .thenReturn(invoice("invoice-1", "tenant-1", "待付款"));
+    when(buyerSupplierRelationMapper.countByTenantSupplierAndStatus("tenant-1", "supplier-1", "黑名单"))
+        .thenReturn(1);
+
+    assertThatThrownBy(() -> paymentApplicationService.register(
+        "invoice-1",
+        new RegisterPaymentRequest("已付款")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Blacklisted supplier cannot be paid");
+
+    verify(invoiceMapper, org.mockito.Mockito.never()).updatePaymentStatus(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
   }
 
   @Test
