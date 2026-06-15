@@ -9,6 +9,7 @@ import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.supplier.api.ChangeBuyerSupplierPerformanceRequest;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
@@ -40,24 +41,29 @@ public class BuyerSupplierApplicationService {
   private static final String SUPPLIER_RELATION_PROFILE_UPDATED_ACTION = "buyer_supplier_relation.profile_updated";
   private static final String SUPPLIER_RELATION_PERFORMANCE_UPDATED_ACTION = "buyer_supplier_relation.performance_updated";
   private static final String SUPPLIER_RELATION_STATUS_CHANGED_ACTION = "buyer_supplier_relation.status_changed";
+  private static final String SUPPLIER_ADMISSION_APPROVED_NOTIFICATION_TITLE = "供应商准入审批已通过";
+  private static final String SUPPLIER_ADMISSION_REJECTED_NOTIFICATION_TITLE = "供应商准入审批已驳回";
 
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final ObjectMapper objectMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public BuyerSupplierApplicationService(
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       ObjectMapper objectMapper,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.objectMapper = objectMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   public List<BuyerSupplierResponse> listCurrentTenantSuppliers() {
@@ -171,6 +177,12 @@ public class BuyerSupplierApplicationService {
         Boolean.TRUE.equals(request.approved()) ? SUPPLIER_ADMISSION_APPROVED_ACTION : SUPPLIER_ADMISSION_REJECTED_ACTION,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId,
+        Boolean.TRUE.equals(request.approved())
+            ? SUPPLIER_ADMISSION_APPROVED_NOTIFICATION_TITLE
+            : SUPPLIER_ADMISSION_REJECTED_NOTIFICATION_TITLE,
+        relation.supplierName() + "准入审批已" + (Boolean.TRUE.equals(request.approved()) ? "通过" : "驳回") + "。");
 
     return toApprovalTaskResponse(approvalTaskMapper.findByTenantAndId(tenantId, approvalTask.id()));
   }

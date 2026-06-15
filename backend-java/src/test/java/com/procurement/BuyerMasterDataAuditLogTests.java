@@ -17,6 +17,7 @@ import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.application.BuyerUserApplicationService;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
@@ -155,13 +156,16 @@ class BuyerMasterDataAuditLogTests {
     ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
     ApprovalTemplateMapper approvalTemplateMapper = org.mockito.Mockito.mock(ApprovalTemplateMapper.class);
     BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
+    NotificationApplicationService notificationApplicationService =
+        org.mockito.Mockito.mock(NotificationApplicationService.class);
     BuyerSupplierApplicationService buyerSupplierApplicationService =
         new BuyerSupplierApplicationService(
             buyerSupplierRelationMapper,
             new ObjectMapper(),
             approvalTaskMapper,
             new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper),
-            auditLogApplicationService);
+            auditLogApplicationService,
+            notificationApplicationService);
     when(buyerSupplierRelationMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))

@@ -15,6 +15,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierPerformanceRequest;
@@ -38,13 +39,16 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
       new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final BuyerSupplierApplicationService buyerSupplierApplicationService =
       new BuyerSupplierApplicationService(
           buyerSupplierRelationMapper,
           new ObjectMapper(),
           approvalTaskMapper,
           approvalTaskApplicationService,
-          auditLogApplicationService);
+          auditLogApplicationService,
+          notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {
@@ -111,6 +115,10 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         "buyer_supplier_admission.approved",
         "buyer_supplier_relation",
         "rel-1");
+    verify(notificationApplicationService).notifyActiveTenantUsers(
+        "tenant-1",
+        "供应商准入审批已通过",
+        "晨光供应商准入审批已通过。");
   }
 
   @Test
