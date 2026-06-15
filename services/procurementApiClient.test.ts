@@ -422,6 +422,33 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/roles') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'role-buyer-owner',
+            tenantId: 'tenant-acme',
+            name: '采购负责人',
+            permissions: ['buyer:approval:review'],
+          }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/approvals/templates') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            templateCode: 'TPL_PURCHASE_DEMAND',
+            bizType: 'purchase_demand',
+            name: '需求审批',
+            defaultApproverRoleId: 'role-buyer-owner',
+            status: 'active',
+          }],
+          message: '',
+        });
+      }
       throw new Error(`Unexpected request: ${input}`);
     };
 
@@ -439,9 +466,13 @@ describe('procurement API clients', () => {
     const masterData = await loadJavaBuyerMasterData(client);
 
     expect(masterData.auditLogs[0].action).toBe('purchase_order.created');
+    expect(masterData.roles[0].id).toBe('role-buyer-owner');
+    expect(masterData.approvalTemplates[0].templateCode).toBe('TPL_PURCHASE_DEMAND');
     expect(calls.map((call) => call.input)).toEqual([
       'http://java.test/api/v1/auth/login',
       'http://java.test/api/v1/buyer/workspace',
+      'http://java.test/api/v1/buyer/roles',
+      'http://java.test/api/v1/buyer/approvals/templates',
     ]);
   });
 
@@ -757,6 +788,28 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/approvals/templates/TPL_PURCHASE_DEMAND/config') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(init.body as string)).toEqual({
+          defaultApproverRoleId: 'role-buyer-finance',
+          status: 'inactive',
+        });
+        return Response.json({
+          success: true,
+          data: {
+            templateCode: 'TPL_PURCHASE_DEMAND',
+            bizType: 'purchase_demand',
+            name: '需求审批',
+            defaultApproverRoleId: 'role-buyer-finance',
+            status: 'inactive',
+          },
+          message: '',
+        });
+      }
       throw new Error(`Unexpected request: ${input}`);
     };
 
@@ -782,6 +835,10 @@ describe('procurement API clients', () => {
     const approval = await client.submitBuyerDemand(created.id);
     const pendingApprovals = await client.listBuyerPendingApprovals();
     const approvalTemplates = await client.listBuyerApprovalTemplates();
+    const updatedTemplate = await client.updateBuyerApprovalTemplate('TPL_PURCHASE_DEMAND', {
+      defaultApproverRoleId: 'role-buyer-finance',
+      status: 'inactive',
+    });
 
     expect(demands[0]).toMatchObject({
       id: 'dem-java-001',
@@ -804,6 +861,11 @@ describe('procurement API clients', () => {
     expect(approvalTemplates[0]).toMatchObject({
       templateCode: 'TPL_PURCHASE_DEMAND',
       defaultApproverRoleId: 'role-buyer-owner',
+    });
+    expect(updatedTemplate).toMatchObject({
+      templateCode: 'TPL_PURCHASE_DEMAND',
+      defaultApproverRoleId: 'role-buyer-finance',
+      status: 'inactive',
     });
     expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);
   });

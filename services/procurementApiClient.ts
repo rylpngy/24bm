@@ -340,6 +340,11 @@ export interface JavaApprovalTemplateDto {
   status: string;
 }
 
+export interface UpdateApprovalTemplatePayload {
+  defaultApproverRoleId: string;
+  status: 'active' | 'inactive';
+}
+
 export interface JavaRfqDto {
   id: string;
   tenantId: string;
@@ -473,6 +478,10 @@ export interface JavaProcurementApiClient {
   submitBuyerDemand(demandId: string): Promise<JavaApprovalTaskDto>;
   listBuyerPendingApprovals(): Promise<JavaApprovalTaskDto[]>;
   listBuyerApprovalTemplates(): Promise<JavaApprovalTemplateDto[]>;
+  updateBuyerApprovalTemplate(
+    templateCode: string,
+    payload: UpdateApprovalTemplatePayload,
+  ): Promise<JavaApprovalTemplateDto>;
   listBuyerAuditLogs(): Promise<JavaAuditLogDto[]>;
   reviewBuyerDemandApproval(demandId: string, approved: boolean): Promise<JavaApprovalTaskDto>;
   reviewBuyerSupplierAdmission(relationId: string, approved: boolean): Promise<JavaApprovalTaskDto>;
@@ -501,11 +510,13 @@ export interface JavaBuyerMasterData {
   suppliers: BuyerSupplierRelationDto[];
   materials: MaterialDto[];
   users: BuyerUserDto[];
+  roles: BuyerRoleDto[];
   demands: PurchaseDemand[];
   rfqs: Rfq[];
   orders: PurchaseOrder[];
   invoices: InvoiceRecord[];
   pendingApprovals: JavaApprovalTaskDto[];
+  approvalTemplates: JavaApprovalTemplateDto[];
   auditLogs: JavaAuditLogDto[];
 }
 
@@ -895,6 +906,13 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     listBuyerApprovalTemplates() {
       return buyerRequest<JavaApprovalTemplateDto[]>('/api/v1/buyer/approvals/templates');
     },
+    updateBuyerApprovalTemplate(templateCode: string, payload: UpdateApprovalTemplatePayload) {
+      return buyerRequest<JavaApprovalTemplateDto>(`/api/v1/buyer/approvals/templates/${templateCode}/config`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
     listBuyerAuditLogs() {
       return buyerRequest<JavaAuditLogDto[]>('/api/v1/buyer/audit-logs');
     },
@@ -1043,7 +1061,16 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 };
 
 export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient): Promise<JavaBuyerMasterData> => {
-  return client.getBuyerWorkspace();
+  const [workspace, roles, approvalTemplates] = await Promise.all([
+    client.getBuyerWorkspace(),
+    client.listBuyerRoles(),
+    client.listBuyerApprovalTemplates(),
+  ]);
+  return {
+    ...workspace,
+    roles,
+    approvalTemplates,
+  };
 };
 
 export const applyJavaBuyerMasterData = (

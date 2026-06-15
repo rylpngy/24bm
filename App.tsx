@@ -47,6 +47,8 @@ import {
   runJavaMvpWorkflow,
   type PlatformWorkspaceData,
   type JavaApprovalTaskDto,
+  type JavaApprovalTemplateDto,
+  type BuyerRoleDto,
 } from './services/procurementApiClient';
 
 type WorkspaceMode = 'platform' | 'buyer' | 'supplier';
@@ -128,6 +130,8 @@ const App: React.FC = () => {
     workspace: BuyerWorkspace;
     kpis: TenantKpis;
     pendingApprovals: JavaApprovalTaskDto[];
+    approvalTemplates: JavaApprovalTemplateDto[];
+    roles: BuyerRoleDto[];
   } | null>(null);
   const [supplierData, setSupplierData] = useState<SupplierWorkspace | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -144,6 +148,8 @@ const App: React.FC = () => {
       ...currentBuyerData,
       workspace: applyJavaBuyerMasterData(currentBuyerData.workspace, javaBuyerMasterData),
       pendingApprovals: javaBuyerMasterData.pendingApprovals,
+      approvalTemplates: javaBuyerMasterData.approvalTemplates,
+      roles: javaBuyerMasterData.roles,
       kpis: {
         ...currentBuyerData.kpis,
         pendingApprovals: javaBuyerMasterData.pendingApprovals.length,
@@ -172,10 +178,14 @@ const App: React.FC = () => {
           ? applyJavaBuyerMasterData(nextBuyer.workspace, javaBuyerMasterData)
           : nextBuyer.workspace;
         const pendingApprovals = javaBuyerMasterData?.pendingApprovals ?? [];
+        const approvalTemplates = javaBuyerMasterData?.approvalTemplates ?? [];
+        const roles = javaBuyerMasterData?.roles ?? [];
         setBuyerData({
           ...nextBuyer,
           workspace: buyerWorkspace,
           pendingApprovals,
+          approvalTemplates,
+          roles,
           kpis: {
             ...nextBuyer.kpis,
             pendingApprovals: javaBuyerMasterData ? pendingApprovals.length : nextBuyer.kpis.pendingApprovals,
@@ -243,6 +253,30 @@ const App: React.FC = () => {
     }
   };
 
+  const updateApprovalTemplate = async (
+    templateCode: string,
+    defaultApproverRoleId: string,
+    status: 'active' | 'inactive',
+  ) => {
+    if (!javaApiClient || !buyerData) return;
+    setWorkflowStatus(null);
+    try {
+      const updatedTemplate = await javaApiClient.updateBuyerApprovalTemplate(templateCode, {
+        defaultApproverRoleId,
+        status,
+      });
+      setBuyerData({
+        ...buyerData,
+        approvalTemplates: buyerData.approvalTemplates.map((template) =>
+          template.templateCode === updatedTemplate.templateCode ? updatedTemplate : template,
+        ),
+      });
+      setWorkflowStatus(`审批模板配置已保存：${updatedTemplate.name}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '审批模板配置保存失败');
+    }
+  };
+
   if (configurationError || loadError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-8 text-slate-900">
@@ -282,12 +316,15 @@ const App: React.FC = () => {
                 workspace={buyerData.workspace}
                 kpis={buyerData.kpis}
                 pendingApprovals={buyerData.pendingApprovals}
+                approvalTemplates={buyerData.approvalTemplates}
+                roles={buyerData.roles}
                 approvalBusyId={approvalBusyId}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowBusy={workflowBusy}
                 workflowStatus={workflowStatus}
                 onRunJavaWorkflow={runJavaWorkflow}
                 onReviewApproval={reviewApprovalTask}
+                onUpdateApprovalTemplate={updateApprovalTemplate}
               />
             )}
             {mode === 'supplier' && <SupplierWorkspaceView workspace={supplierData} />}
@@ -511,22 +548,32 @@ const BuyerWorkspaceView: React.FC<{
   workspace: BuyerWorkspace;
   kpis: TenantKpis;
   pendingApprovals: JavaApprovalTaskDto[];
+  approvalTemplates: JavaApprovalTemplateDto[];
+  roles: BuyerRoleDto[];
   approvalBusyId: string | null;
   javaEnabled: boolean;
   workflowBusy: boolean;
   workflowStatus: string | null;
   onRunJavaWorkflow: () => void;
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
+  onUpdateApprovalTemplate: (
+    templateCode: string,
+    defaultApproverRoleId: string,
+    status: 'active' | 'inactive',
+  ) => void;
 }> = ({
   workspace,
   kpis,
   pendingApprovals,
+  approvalTemplates,
+  roles,
   approvalBusyId,
   javaEnabled,
   workflowBusy,
   workflowStatus,
   onRunJavaWorkflow,
   onReviewApproval,
+  onUpdateApprovalTemplate,
 }) => (
   <>
     <HeroBand
@@ -566,53 +613,61 @@ const BuyerWorkspaceView: React.FC<{
     </Panel>
 
     {javaEnabled && (
-      <Panel title="审批待办" icon={ClipboardCheck}>
-        {pendingApprovals.length > 0 ? (
-          <div className="grid gap-3 md:grid-cols-3">
-            {pendingApprovals.map((approval) => (
-              <div key={approval.id} className="rounded-lg border border-amber-100 bg-amber-50 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-slate-950">
-                      {approval.summaryTitle || approval.bizId}
-                    </p>
-                    <p className="mt-1 text-xs font-bold text-amber-700">{approvalTypeLabel(approval.bizType)}</p>
+      <div className="grid gap-6 xl:grid-cols-[1fr_0.85fr]">
+        <Panel title="审批待办" icon={ClipboardCheck}>
+          {pendingApprovals.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {pendingApprovals.map((approval) => (
+                <div key={approval.id} className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-950">
+                        {approval.summaryTitle || approval.bizId}
+                      </p>
+                      <p className="mt-1 text-xs font-bold text-amber-700">{approvalTypeLabel(approval.bizType)}</p>
+                    </div>
+                    <StatusPill label={approval.status} />
                   </div>
-                  <StatusPill label={approval.status} />
+                  <div className="mt-3 space-y-2 text-xs font-bold text-slate-500">
+                    {approval.counterpartyName && <p>{approval.counterpartyName}</p>}
+                    {typeof approval.amount === 'number' && (
+                      <p className="font-mono text-sm font-black text-slate-900">{currency(approval.amount)}</p>
+                    )}
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onReviewApproval(approval, false)}
+                      disabled={approvalBusyId === approval.id}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white text-xs font-black text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      驳回
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onReviewApproval(approval, true)}
+                      disabled={approvalBusyId === approval.id}
+                      className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                    >
+                      {approvalBusyId === approval.id ? '处理中' : '通过'}
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-3 space-y-2 text-xs font-bold text-slate-500">
-                  {approval.counterpartyName && <p>{approval.counterpartyName}</p>}
-                  {typeof approval.amount === 'number' && (
-                    <p className="font-mono text-sm font-black text-slate-900">{currency(approval.amount)}</p>
-                  )}
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onReviewApproval(approval, false)}
-                    disabled={approvalBusyId === approval.id}
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white text-xs font-black text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    驳回
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onReviewApproval(approval, true)}
-                    disabled={approvalBusyId === approval.id}
-                    className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-                  >
-                    {approvalBusyId === approval.id ? '处理中' : '通过'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
-            当前没有待审批事项
-          </p>
-        )}
-      </Panel>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
+              当前没有待审批事项
+            </p>
+          )}
+        </Panel>
+
+        <ApprovalTemplateSettings
+          templates={approvalTemplates}
+          roles={roles}
+          onSave={onUpdateApprovalTemplate}
+        />
+      </div>
     )}
 
     <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
@@ -740,6 +795,124 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) =>
         );
       })}
     </div>
+  );
+};
+
+const ApprovalTemplateSettings: React.FC<{
+  templates: JavaApprovalTemplateDto[];
+  roles: BuyerRoleDto[];
+  onSave: (
+    templateCode: string,
+    defaultApproverRoleId: string,
+    status: 'active' | 'inactive',
+  ) => void;
+}> = ({ templates, roles, onSave }) => {
+  const [drafts, setDrafts] = useState<Record<string, {
+    defaultApproverRoleId: string;
+    status: 'active' | 'inactive';
+  }>>({});
+
+  useEffect(() => {
+    setDrafts(Object.fromEntries(templates.map((template) => [
+      template.templateCode,
+      {
+        defaultApproverRoleId: template.defaultApproverRoleId,
+        status: template.status === 'active' ? 'active' : 'inactive',
+      },
+    ])));
+  }, [templates]);
+
+  const roleName = (roleId: string) => roles.find((role) => role.id === roleId)?.name ?? roleId;
+
+  if (templates.length === 0) {
+    return (
+      <Panel title="审批模板配置" icon={Settings}>
+        <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
+          暂无可配置审批模板
+        </p>
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel title="审批模板配置" icon={Settings}>
+      <div className="space-y-3">
+        {templates.map((template) => {
+          const draft = drafts[template.templateCode] ?? {
+            defaultApproverRoleId: template.defaultApproverRoleId,
+            status: template.status === 'active' ? 'active' : 'inactive',
+          };
+          return (
+            <div key={template.templateCode} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-950">{template.name}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-400">{approvalTypeLabel(template.bizType)}</p>
+                </div>
+                <StatusPill label={draft.status === 'active' ? '启用' : '停用'} />
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                <label className="block">
+                  <span className="text-xs font-black text-slate-500">默认审批角色</span>
+                  <select
+                    value={draft.defaultApproverRoleId}
+                    onChange={(event) => setDrafts((current) => ({
+                      ...current,
+                      [template.templateCode]: {
+                        ...draft,
+                        defaultApproverRoleId: event.target.value,
+                      },
+                    }))}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ))}
+                    {!roles.some((role) => role.id === draft.defaultApproverRoleId) && (
+                      <option value={draft.defaultApproverRoleId}>
+                        {roleName(draft.defaultApproverRoleId)}
+                      </option>
+                    )}
+                  </select>
+                </label>
+
+                <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={draft.status === 'active'}
+                    onChange={(event) => setDrafts((current) => ({
+                      ...current,
+                      [template.templateCode]: {
+                        ...draft,
+                        status: event.target.checked ? 'active' : 'inactive',
+                      },
+                    }))}
+                    className="h-4 w-4 accent-blue-600"
+                  />
+                  启用
+                </label>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <p className="truncate text-xs font-bold text-slate-500">
+                  当前默认：{roleName(template.defaultApproverRoleId)}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onSave(template.templateCode, draft.defaultApproverRoleId, draft.status)}
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                >
+                  保存配置
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
   );
 };
 
