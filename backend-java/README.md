@@ -256,6 +256,13 @@ Platform APIs require a `PLATFORM` login token. Buyer and supplier tokens are re
 
 Platform tenant creation, feature toggle changes, plan/user-limit updates, tenant restoration, tenant disablement, enterprise reviews, and announcement publishing write audit log actions `tenant.created`, `tenant.features.updated`, `tenant.plan_updated`, `tenant.enabled`, `tenant.disabled`, `enterprise.reviewed`, and `platform_announcement.published`. Platform announcements are stored in `platform_announcements`, support `all`/`buyer`/`supplier` audiences, and are platform scoped rather than tenant scoped. The local demo seed includes `user-platform-admin` so these audit rows satisfy the `audit_logs.actor_id` foreign key.
 
+Buyer and supplier announcement read endpoints are:
+
+- `GET /api/v1/buyer/announcements`
+- `GET /api/v1/supplier/announcements`
+
+Buyer users can read active announcements with audience `all` or `buyer`; supplier users can read active announcements with audience `all` or `supplier`.
+
 ## RFQ APIs
 
 The first sourcing module exposes buyer-side RFQ APIs:

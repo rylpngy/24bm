@@ -36,6 +36,18 @@ public class PlatformAnnouncementApplicationService {
         .toList();
   }
 
+  public List<PlatformAnnouncementResponse> listBuyerVisible() {
+    return platformAnnouncementMapper.listActiveForAudiences(ALL_AUDIENCE, BUYER_AUDIENCE).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  public List<PlatformAnnouncementResponse> listSupplierVisible() {
+    return platformAnnouncementMapper.listActiveForAudiences(ALL_AUDIENCE, SUPPLIER_AUDIENCE).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public PlatformAnnouncementResponse publish(CreatePlatformAnnouncementRequest request) {
     requireSupportedAudience(request.audience());

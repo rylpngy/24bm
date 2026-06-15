@@ -20,6 +20,8 @@ describe('Java platform workspace scaffold', () => {
 
   it('exposes platform announcement publishing as a platform scoped API', () => {
     const controller = read('backend-java/src/main/java/com/procurement/platform/api/PlatformAnnouncementController.java');
+    const buyerController = read('backend-java/src/main/java/com/procurement/platform/api/BuyerAnnouncementController.java');
+    const supplierController = read('backend-java/src/main/java/com/procurement/platform/api/SupplierAnnouncementController.java');
     const service = read('backend-java/src/main/java/com/procurement/platform/application/PlatformAnnouncementApplicationService.java');
     const mapper = read('backend-java/src/main/java/com/procurement/platform/infrastructure/PlatformAnnouncementMapper.java');
     const migration = read('backend-java/src/main/resources/db/migration/V4__platform_announcements.sql');
@@ -28,7 +30,11 @@ describe('Java platform workspace scaffold', () => {
     expect(controller).toContain('@RequestMapping("/api/v1/platform/announcements")');
     expect(controller).toContain('@GetMapping');
     expect(controller).toContain('@PostMapping');
+    expect(buyerController).toContain('@RequestMapping("/api/v1/buyer/announcements")');
+    expect(supplierController).toContain('@RequestMapping("/api/v1/supplier/announcements")');
     expect(service).toContain('TenantAccessGuard.requireUserId');
+    expect(service).toContain('listBuyerVisible');
+    expect(service).toContain('listSupplierVisible');
     expect(service).toContain('platform_announcement.published');
     expect(mapper).toContain('platform_announcements');
     expect(migration).toContain('create table platform_announcements');

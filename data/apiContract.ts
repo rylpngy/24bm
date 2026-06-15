@@ -204,6 +204,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/buyer/announcements',
+    audience: 'buyer',
+    action: '加载采购方可见平台公告',
+    requestSchema: 'BuyerAnnouncementListRequest',
+    responseSchema: 'PlatformAnnouncementList',
+  },
+  {
+    method: 'GET',
     path: '/buyer/suppliers',
     audience: 'buyer',
     action: '加载采购方私域供应商库',
@@ -441,6 +449,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     action: '加载供应商工作台聚合数据',
     requestSchema: 'SupplierWorkspaceRequest',
     responseSchema: 'SupplierWorkspace',
+  },
+  {
+    method: 'GET',
+    path: '/supplier/announcements',
+    audience: 'supplier',
+    action: '加载供应商可见平台公告',
+    requestSchema: 'SupplierAnnouncementListRequest',
+    responseSchema: 'PlatformAnnouncementList',
   },
   {
     method: 'GET',

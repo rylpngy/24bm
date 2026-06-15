@@ -27,6 +27,21 @@ public interface PlatformAnnouncementMapper {
   @Select("""
       select id, title, content, audience, status, published_by, created_at
       from platform_announcements
+      where status = 'active'
+        and audience in (#{sharedAudience}, #{specificAudience})
+      order by created_at desc
+      """)
+  @Results(id = "visiblePlatformAnnouncementResults", value = {
+      @Result(column = "published_by", property = "publishedBy"),
+      @Result(column = "created_at", property = "createdAt")
+  })
+  List<PlatformAnnouncement> listActiveForAudiences(
+      @Param("sharedAudience") String sharedAudience,
+      @Param("specificAudience") String specificAudience);
+
+  @Select("""
+      select id, title, content, audience, status, published_by, created_at
+      from platform_announcements
       where id = #{id}
       """)
   @Results(id = "singlePlatformAnnouncementResults", value = {

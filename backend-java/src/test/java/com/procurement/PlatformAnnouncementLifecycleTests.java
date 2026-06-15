@@ -63,6 +63,20 @@ class PlatformAnnouncementLifecycleTests {
         .hasMessageContaining("Unsupported platform announcement audience");
   }
 
+  @Test
+  void listBuyerVisibleAnnouncementsIncludesAllAndBuyerAudiences() {
+    platformAnnouncementApplicationService.listBuyerVisible();
+
+    verify(platformAnnouncementMapper).listActiveForAudiences("all", "buyer");
+  }
+
+  @Test
+  void listSupplierVisibleAnnouncementsIncludesAllAndSupplierAudiences() {
+    platformAnnouncementApplicationService.listSupplierVisible();
+
+    verify(platformAnnouncementMapper).listActiveForAudiences("all", "supplier");
+  }
+
   private PlatformAnnouncement announcement(String id) {
     return new PlatformAnnouncement(
         id,

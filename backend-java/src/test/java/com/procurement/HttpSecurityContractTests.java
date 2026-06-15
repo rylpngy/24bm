@@ -77,6 +77,7 @@ import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.application.ReceiptApplicationService;
 import com.procurement.platform.api.EnterpriseReviewRequest;
 import com.procurement.platform.api.EnterpriseReviewResponse;
+import com.procurement.platform.api.BuyerAnnouncementController;
 import com.procurement.platform.api.CreatePlatformAnnouncementRequest;
 import com.procurement.platform.api.CreateTenantRequest;
 import com.procurement.platform.api.FeatureToggleRequest;
@@ -87,6 +88,7 @@ import com.procurement.platform.api.PlatformOverviewController;
 import com.procurement.platform.api.PlatformOverviewResponse;
 import com.procurement.platform.api.PlatformTenantController;
 import com.procurement.platform.api.PlatformWorkspaceController;
+import com.procurement.platform.api.SupplierAnnouncementController;
 import com.procurement.platform.api.PlatformWorkspaceResponse;
 import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.api.UpdateTenantPlanRequest;
@@ -150,9 +152,11 @@ import org.springframework.test.web.servlet.MvcResult;
     RfqController.class,
     PlatformOverviewController.class,
     PlatformAnnouncementController.class,
+    BuyerAnnouncementController.class,
     PlatformTenantController.class,
     PlatformEnterpriseController.class,
     PlatformWorkspaceController.class,
+    SupplierAnnouncementController.class,
     BuyerSupplierController.class,
     MaterialController.class,
     BuyerRoleController.class,
@@ -1149,6 +1153,61 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + platformToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].title").value("系统维护通知"));
+  }
+
+  @Test
+  void buyerAndSupplierCanReadVisiblePlatformAnnouncements() throws Exception {
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/announcements")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(get("/api/v1/supplier/announcements")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
+    when(platformAnnouncementApplicationService.listBuyerVisible()).thenReturn(List.of(new PlatformAnnouncementResponse(
+        "announcement-buyer",
+        "采购方功能更新",
+        "询价比价流程新增导出能力。",
+        "buyer",
+        "active",
+        "user-platform-admin",
+        OffsetDateTime.parse("2026-06-16T11:00:00+08:00"))));
+    when(platformAnnouncementApplicationService.listSupplierVisible()).thenReturn(List.of(new PlatformAnnouncementResponse(
+        "announcement-supplier",
+        "供应商报价提醒",
+        "请及时维护报价联系人。",
+        "supplier",
+        "active",
+        "user-platform-admin",
+        OffsetDateTime.parse("2026-06-16T11:30:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/buyer/announcements")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].audience").value("buyer"));
+
+    mockMvc.perform(get("/api/v1/supplier/announcements")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].audience").value("supplier"));
   }
 
   @Test

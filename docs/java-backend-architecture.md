@@ -183,12 +183,15 @@ Authorization: Bearer <accessToken>
 
 - `GET /api/v1/platform/announcements`：平台运营方查看 active 公告。
 - `POST /api/v1/platform/announcements`：平台运营方发布公告。
+- `GET /api/v1/buyer/announcements`：采购方查看面向全部或采购方的 active 公告。
+- `GET /api/v1/supplier/announcements`：供应商查看面向全部或供应商的 active 公告。
 
 当前边界：
 
 - 平台身份来自 JWT 中的 `scope = PLATFORM`，采购方和供应商 token 不能访问。
 - 公告是平台公共资源，不绑定采购方 `tenant_id`。
 - `audience` 当前支持 `all`、`buyer`、`supplier`。
+- 采购方只读取 `all`/`buyer`，供应商只读取 `all`/`supplier`。
 - 新公告状态由服务端固定为 `active`，发布人来自 JWT 中的 `userId`。
 - 发布公告写入 `audit_logs`，动作为 `platform_announcement.published`，且 `tenant_id` 为空。
 
