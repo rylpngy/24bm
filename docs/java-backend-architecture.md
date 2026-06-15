@@ -126,6 +126,9 @@ Authorization: Bearer <accessToken>
 
 - `purchase_demand.created`：采购方创建采购需求。
 - `purchase_demand.approved` / `purchase_demand.rejected`：采购方审批采购需求。
+- `buyer_user.created`：采购方创建租户用户。
+- `material.created`：采购方创建物料/服务目录项。
+- `buyer_supplier_relation.created`：采购方创建私域供应商关系。
 - `buyer_supplier_admission.submitted`：采购方提交供应商准入审批。
 - `buyer_supplier_admission.approved` / `buyer_supplier_admission.rejected`：采购方审批供应商准入。
 - `rfq_award.submitted`：采购方提交定标审批。
@@ -138,7 +141,7 @@ Authorization: Bearer <accessToken>
 - `invoice.paid` / `invoice.partial_paid`：采购方登记付款状态。
 - `attachment.created`：采购方登记已上传附件元数据并关联业务对象。
 
-后续应继续把物料维护、用户维护、平台企业审核和功能开关变更纳入同一审计入口。
+后续应继续把平台企业审核和功能开关变更纳入同一审计入口。
 
 ## RFQ 询价 Java API
 

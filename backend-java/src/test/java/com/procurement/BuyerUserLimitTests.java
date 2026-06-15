@@ -5,6 +5,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.application.BuyerUserApplicationService;
@@ -21,8 +22,13 @@ class BuyerUserLimitTests {
       org.mockito.Mockito.mock(TenantEntitlementMapper.class);
   private final TenantEntitlementApplicationService tenantEntitlementApplicationService =
       new TenantEntitlementApplicationService(tenantEntitlementMapper);
+  private final AuditLogApplicationService auditLogApplicationService =
+      org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final BuyerUserApplicationService buyerUserApplicationService =
-      new BuyerUserApplicationService(buyerUserMapper, tenantEntitlementApplicationService);
+      new BuyerUserApplicationService(
+          buyerUserMapper,
+          tenantEntitlementApplicationService,
+          auditLogApplicationService);
 
   @AfterEach
   void clearTenantContext() {

@@ -184,6 +184,8 @@ Buyer master data APIs use the buyer tenant from the JWT and reject supplier or 
 
 Buyer user creation is limited by the current tenant's `user_limit`; when the current buyer-user count reaches the plan limit, the API rejects the new user before insert.
 
+Creating buyer users, materials, and private supplier relations records audit log actions `buyer_user.created`, `material.created`, and `buyer_supplier_relation.created`.
+
 ## Platform APIs
 
 The first platform-side MVP endpoints are:

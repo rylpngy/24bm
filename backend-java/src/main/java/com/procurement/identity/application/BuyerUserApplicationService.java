@@ -1,5 +1,6 @@
 package com.procurement.identity.application;
 
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.api.CreateBuyerUserRequest;
@@ -13,14 +14,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BuyerUserApplicationService {
+  private static final String BUYER_USER_CREATED_ACTION = "buyer_user.created";
+  private static final String BUYER_USER_TARGET_TYPE = "buyer_user";
+
   private final BuyerUserMapper buyerUserMapper;
   private final TenantEntitlementApplicationService tenantEntitlementApplicationService;
+  private final AuditLogApplicationService auditLogApplicationService;
 
   public BuyerUserApplicationService(
       BuyerUserMapper buyerUserMapper,
-      TenantEntitlementApplicationService tenantEntitlementApplicationService) {
+      TenantEntitlementApplicationService tenantEntitlementApplicationService,
+      AuditLogApplicationService auditLogApplicationService) {
     this.buyerUserMapper = buyerUserMapper;
     this.tenantEntitlementApplicationService = tenantEntitlementApplicationService;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   public List<BuyerUserResponse> listCurrentTenantUsers() {
@@ -36,6 +43,7 @@ public class BuyerUserApplicationService {
     tenantEntitlementApplicationService.requireUserCapacity(tenantId, buyerUserMapper.countByTenant(tenantId));
     String userId = "user-" + UUID.randomUUID();
     buyerUserMapper.insert(userId, tenantId, request.name(), request.mobile(), request.email(), request.status());
+    auditLogApplicationService.recordTenantAction(BUYER_USER_CREATED_ACTION, BUYER_USER_TARGET_TYPE, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 

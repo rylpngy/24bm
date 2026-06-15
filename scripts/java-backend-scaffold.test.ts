@@ -148,6 +148,20 @@ describe('Java backend scaffold', () => {
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/ReceiptNotificationTests.java'))).toBe(true);
   });
 
+  it('guards buyer master data creation audit coverage', () => {
+    const architecture = read('docs/java-backend-architecture.md');
+    const readme = read('backend-java/README.md');
+    const auditTests = read('backend-java/src/test/java/com/procurement/BuyerMasterDataAuditLogTests.java');
+
+    expect(architecture).toContain('buyer_user.created');
+    expect(architecture).toContain('material.created');
+    expect(architecture).toContain('buyer_supplier_relation.created');
+    expect(readme).toContain('Creating buyer users, materials, and private supplier relations records audit log actions');
+    expect(auditTests).toContain('buyerUserCreationRecordsAuditLog');
+    expect(auditTests).toContain('materialCreationRecordsAuditLog');
+    expect(auditTests).toContain('buyerSupplierRelationCreationRecordsAuditLog');
+  });
+
   it('provides a reproducible local PostgreSQL runtime for Java frontend integration', () => {
     const compose = read('backend-java/docker-compose.yml');
     const localProfile = read('backend-java/src/main/resources/application-local.yml');

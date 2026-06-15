@@ -28,6 +28,7 @@ public class BuyerSupplierApplicationService {
   private static final String APPROVED_STATUS = "已通过";
   private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE = "buyer_supplier_admission";
   private static final String BUYER_SUPPLIER_RELATION_TARGET_TYPE = "buyer_supplier_relation";
+  private static final String SUPPLIER_RELATION_CREATED_ACTION = "buyer_supplier_relation.created";
   private static final String SUPPLIER_ADMISSION_SUBMITTED_ACTION = "buyer_supplier_admission.submitted";
   private static final String SUPPLIER_ADMISSION_APPROVED_ACTION = "buyer_supplier_admission.approved";
   private static final String SUPPLIER_ADMISSION_REJECTED_ACTION = "buyer_supplier_admission.rejected";
@@ -66,6 +67,10 @@ public class BuyerSupplierApplicationService {
         request.status(),
         request.level(),
         writeCategories(request.categories()));
+    auditLogApplicationService.recordTenantAction(
+        SUPPLIER_RELATION_CREATED_ACTION,
+        BUYER_SUPPLIER_RELATION_TARGET_TYPE,
+        relationId);
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
   }
 

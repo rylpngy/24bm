@@ -4,6 +4,7 @@ import com.procurement.catalog.api.CreateMaterialRequest;
 import com.procurement.catalog.api.MaterialResponse;
 import com.procurement.catalog.domain.Material;
 import com.procurement.catalog.infrastructure.MaterialMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import java.util.List;
 import java.util.UUID;
@@ -12,10 +13,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MaterialApplicationService {
-  private final MaterialMapper materialMapper;
+  private static final String MATERIAL_CREATED_ACTION = "material.created";
+  private static final String MATERIAL_TARGET_TYPE = "material";
 
-  public MaterialApplicationService(MaterialMapper materialMapper) {
+  private final MaterialMapper materialMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
+
+  public MaterialApplicationService(
+      MaterialMapper materialMapper,
+      AuditLogApplicationService auditLogApplicationService) {
     this.materialMapper = materialMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   public List<MaterialResponse> listCurrentTenantMaterials() {
@@ -37,6 +45,7 @@ public class MaterialApplicationService {
         request.category(),
         request.unit(),
         request.referencePrice());
+    auditLogApplicationService.recordTenantAction(MATERIAL_CREATED_ACTION, MATERIAL_TARGET_TYPE, materialId);
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
   }
 
