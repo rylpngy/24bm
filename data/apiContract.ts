@@ -722,6 +722,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     requestSchema: 'RegisterPaymentRequest',
     responseSchema: 'PaymentRecord',
   },
+  {
+    method: 'GET',
+    path: '/buyer/invoices/{invoiceId}/payment-audit-logs',
+    audience: 'buyer',
+    action: '查看发票付款操作审计明细',
+    requestSchema: 'BuyerPaymentAuditLogListRequest',
+    responseSchema: 'AuditLogList',
+  },
 ];
 
 export const databaseTables: DatabaseTable[] = [

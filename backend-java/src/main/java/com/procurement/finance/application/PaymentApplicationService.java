@@ -1,6 +1,7 @@
 package com.procurement.finance.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.api.AuditLogResponse;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
@@ -51,6 +52,14 @@ public class PaymentApplicationService {
         .stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  public List<AuditLogResponse> listCurrentTenantPaymentAuditLogs(String invoiceId) {
+    return auditLogApplicationService.listCurrentTenantTargetActions(
+        INVOICE_TARGET_TYPE,
+        invoiceId,
+        List.of(INVOICE_PAID_ACTION, INVOICE_PARTIAL_PAID_ACTION),
+        50);
   }
 
   @Transactional

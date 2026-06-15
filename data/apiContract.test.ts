@@ -88,6 +88,7 @@ describe('procurement SaaS API contract draft', () => {
       'GET /supplier/invoices',
       'POST /supplier/orders/{orderId}/invoices',
       'POST /buyer/invoices/{invoiceId}/payments',
+      'GET /buyer/invoices/{invoiceId}/payment-audit-logs',
     ]);
   });
 
@@ -238,6 +239,9 @@ describe('procurement SaaS API contract draft', () => {
     );
     expect(openApi.paths['/supplier/orders/{orderId}/confirm'].post.parameters).toEqual(
       expect.arrayContaining([expect.objectContaining({ name: 'orderId', in: 'path', required: true })]),
+    );
+    expect(openApi.paths['/buyer/invoices/{invoiceId}/payment-audit-logs'].get.parameters).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'invoiceId', in: 'path', required: true })]),
     );
     expect(openApi.paths['/buyer/demands'].post.security).toEqual([{ bearerAuth: [] }]);
     expect(openApi.paths['/supplier/rfqs/{rfqId}/quotes'].post.security).toEqual([{ bearerAuth: [] }]);

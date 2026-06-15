@@ -46,6 +46,25 @@ class FinancePaymentStateTransitionTests {
   }
 
   @Test
+  void listPaymentAuditLogsAppliesInvoicePaymentScopeInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(auditLogApplicationService.listCurrentTenantTargetActions(
+        "invoice",
+        "invoice-1",
+        List.of("invoice.paid", "invoice.partial_paid"),
+        50))
+        .thenReturn(List.of());
+
+    paymentApplicationService.listCurrentTenantPaymentAuditLogs("invoice-1");
+
+    verify(auditLogApplicationService).listCurrentTenantTargetActions(
+        "invoice",
+        "invoice-1",
+        List.of("invoice.paid", "invoice.partial_paid"),
+        50);
+  }
+
+  @Test
   void paymentRejectsUnsupportedTargetStatus() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))

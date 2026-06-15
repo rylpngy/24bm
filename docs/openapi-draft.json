@@ -2512,6 +2512,40 @@
           }
         }
       }
+    },
+    "/buyer/invoices/{invoiceId}/payment-audit-logs": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "查看发票付款操作审计明细",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AuditLogList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2927,6 +2961,7 @@
     "GET /supplier/quotes",
     "GET /supplier/invoices",
     "POST /supplier/orders/{orderId}/invoices",
-    "POST /buyer/invoices/{invoiceId}/payments"
+    "POST /buyer/invoices/{invoiceId}/payments",
+    "GET /buyer/invoices/{invoiceId}/payment-audit-logs"
   ]
 }

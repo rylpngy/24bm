@@ -2688,6 +2688,9 @@ class HttpSecurityContractTests {
             .contentType(MediaType.APPLICATION_JSON)
             .content(validPaymentPayload()))
         .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/invoices/invoice-demo/payment-audit-logs")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
 
     when(purchaseOrderApplicationService.listCurrentTenantOrders(
         org.mockito.ArgumentMatchers.isNull(),
@@ -2736,6 +2739,15 @@ class HttpSecurityContractTests {
         org.mockito.ArgumentMatchers.eq("invoice-demo"),
         org.mockito.ArgumentMatchers.any(RegisterPaymentRequest.class)))
         .thenReturn(invoiceResponse("invoice-demo", "已付款"));
+    when(paymentApplicationService.listCurrentTenantPaymentAuditLogs("invoice-demo"))
+        .thenReturn(List.of(new AuditLogResponse(
+            "audit-payment-demo",
+            "tenant-acme",
+            "user-buyer-owner",
+            "invoice.paid",
+            "invoice",
+            "invoice-demo",
+            OffsetDateTime.parse("2026-06-15T12:30:00+08:00"))));
 
     mockMvc.perform(get("/api/v1/buyer/orders")
             .header("Authorization", "Bearer " + buyerToken))
@@ -2783,6 +2795,11 @@ class HttpSecurityContractTests {
             .content(validPaymentPayload()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.paymentStatus").value("已付款"));
+    mockMvc.perform(get("/api/v1/buyer/invoices/invoice-demo/payment-audit-logs")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("audit-payment-demo"))
+        .andExpect(jsonPath("$.data[0].action").value("invoice.paid"));
   }
 
   @Test

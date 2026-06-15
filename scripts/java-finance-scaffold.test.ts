@@ -16,6 +16,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentController).toContain('@RequestMapping("/api/v1/buyer/invoices")');
     expect(paymentController).toContain('@GetMapping');
     expect(paymentController).toContain('@PostMapping("/{invoiceId}/payments")');
+    expect(paymentController).toContain('@GetMapping("/{invoiceId}/payment-audit-logs")');
   });
 
   it('defines request and response DTOs for invoices and payments', () => {
@@ -46,6 +47,7 @@ describe('Java finance invoice and payment scaffold', () => {
   it('keeps invoice creation supplier scoped and payment tenant scoped', () => {
     const invoiceService = read('backend-java/src/main/java/com/procurement/finance/application/InvoiceApplicationService.java');
     const paymentService = read('backend-java/src/main/java/com/procurement/finance/application/PaymentApplicationService.java');
+    const auditService = read('backend-java/src/main/java/com/procurement/audit/application/AuditLogApplicationService.java');
 
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
     expect(invoiceService).toContain('TenantFeatureApplicationService');
@@ -57,8 +59,11 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
     expect(paymentService).toContain('requireEnabled(tenantId, FINANCE_FEATURE)');
     expect(paymentService).toContain('listCurrentTenantInvoices');
+    expect(paymentService).toContain('listCurrentTenantPaymentAuditLogs');
+    expect(paymentService).toContain('invoice.partial_paid');
     expect(paymentService).toContain('listByTenantFiltered');
     expect(paymentService).toContain('updatePaymentStatus');
+    expect(auditService).toContain('listCurrentTenantTargetActions');
   });
 
   it('documents the finance Java API handoff', () => {
@@ -69,6 +74,8 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(readme).toContain('GET /api/v1/buyer/invoices');
     expect(readme).toContain('The buyer invoice list accepts optional `paymentStatus`, `supplierId`, and `orderId` filters');
     expect(readme).toContain('POST /api/v1/buyer/invoices/{invoiceId}/payments');
+    expect(readme).toContain('GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs');
+    expect(readme).toContain('The buyer payment audit log list returns current-tenant `invoice.paid` and `invoice.partial_paid` audit entries');
     expect(readme).toContain('`finance` feature enabled');
     expect(architecture).toContain('财务协同 Java API');
     expect(architecture).toContain('当前租户必须启用 `finance` 功能开关');

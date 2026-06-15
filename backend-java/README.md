@@ -517,8 +517,10 @@ The buyer-side payment endpoint is:
 
 - `GET /api/v1/buyer/invoices`
 - `POST /api/v1/buyer/invoices/{invoiceId}/payments`
+- `GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs`
 
 The buyer invoice list accepts optional `paymentStatus`, `supplierId`, and `orderId` filters inside the current buyer tenant.
+The buyer payment audit log list returns current-tenant `invoice.paid` and `invoice.partial_paid` audit entries for the selected invoice.
 
 Example payment payload:
 

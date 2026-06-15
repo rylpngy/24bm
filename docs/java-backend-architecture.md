@@ -467,6 +467,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `GET /api/v1/buyer/invoices`：采购方查看发票付款列表。
 - `POST /api/v1/supplier/orders/{orderId}/invoices`：供应商对已收货订单登记发票。
 - `POST /api/v1/buyer/invoices/{invoiceId}/payments`：采购方登记发票付款状态。
+- `GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs`：采购方查看发票付款操作审计明细。
 
 发票登记的关键校验：
 
@@ -484,6 +485,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - 发票必须属于当前采购方租户。
 - 当前租户必须启用 `finance` 功能开关。
 - 付款状态写入 `invoices.payment_status`。
+- 付款审计明细复用 `audit_logs`，仅返回当前租户下目标类型为 `invoice` 且动作为 `invoice.paid` / `invoice.partial_paid` 的记录。
 
 对应数据库表：
 

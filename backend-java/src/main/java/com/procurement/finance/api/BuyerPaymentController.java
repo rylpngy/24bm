@@ -1,6 +1,7 @@
 package com.procurement.finance.api;
 
 import com.procurement.common.api.ApiResponse;
+import com.procurement.audit.api.AuditLogResponse;
 import com.procurement.finance.application.PaymentApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -32,5 +33,10 @@ public class BuyerPaymentController {
   @PostMapping("/{invoiceId}/payments")
   public ApiResponse<InvoiceResponse> register(@PathVariable String invoiceId, @Valid @RequestBody RegisterPaymentRequest request) {
     return ApiResponse.ok(paymentApplicationService.register(invoiceId, request));
+  }
+
+  @GetMapping("/{invoiceId}/payment-audit-logs")
+  public ApiResponse<List<AuditLogResponse>> paymentAuditLogs(@PathVariable String invoiceId) {
+    return ApiResponse.ok(paymentApplicationService.listCurrentTenantPaymentAuditLogs(invoiceId));
   }
 }
