@@ -220,6 +220,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/buyer/roles',
+    audience: 'buyer',
+    action: '加载当前采购方租户可分配角色',
+    requestSchema: 'BuyerRoleListRequest',
+    responseSchema: 'BuyerRoleList',
+  },
+  {
+    method: 'GET',
     path: '/buyer/users',
     audience: 'buyer',
     action: '加载采购方用户列表',

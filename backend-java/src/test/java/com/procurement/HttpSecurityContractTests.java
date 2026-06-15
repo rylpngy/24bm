@@ -33,9 +33,12 @@ import com.procurement.demand.application.PurchaseDemandApplicationService;
 import com.procurement.identity.SecurityConfig;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.api.AuthController;
+import com.procurement.identity.api.BuyerRoleController;
+import com.procurement.identity.api.BuyerRoleResponse;
 import com.procurement.identity.api.BuyerUserController;
 import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.application.AuthenticationApplicationService;
+import com.procurement.identity.application.BuyerRoleApplicationService;
 import com.procurement.identity.application.BuyerUserApplicationService;
 import com.procurement.identity.security.JwtAuthenticationFilter;
 import com.procurement.identity.security.JwtTokenService;
@@ -127,6 +130,7 @@ import org.springframework.test.web.servlet.MvcResult;
     PlatformWorkspaceController.class,
     BuyerSupplierController.class,
     MaterialController.class,
+    BuyerRoleController.class,
     BuyerUserController.class,
     SupplierProfileController.class,
     SupplierQuoteListController.class,
@@ -210,6 +214,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private MaterialApplicationService materialApplicationService;
+
+  @MockBean
+  private BuyerRoleApplicationService buyerRoleApplicationService;
 
   @MockBean
   private BuyerUserApplicationService buyerUserApplicationService;
@@ -1443,6 +1450,22 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.id").value("user-buyer-new"))
         .andExpect(jsonPath("$.data.departmentId").value("dept-it"))
         .andExpect(jsonPath("$.data.roleId").value("role-buyer-requester"));
+
+    mockMvc.perform(get("/api/v1/buyer/roles")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(buyerRoleApplicationService.listCurrentTenantRoles()).thenReturn(List.of(new BuyerRoleResponse(
+        "role-buyer-requester",
+        "tenant-acme",
+        "需求申请人",
+        List.of("buyer:demand:create", "buyer:demand:read"))));
+
+    mockMvc.perform(get("/api/v1/buyer/roles")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("role-buyer-requester"))
+        .andExpect(jsonPath("$.data[0].permissions[0]").value("buyer:demand:create"));
   }
 
   @Test

@@ -48,7 +48,10 @@ describe('Java identity and JWT scaffold', () => {
 
   it('enforces buyer tenant user limits from SaaS plan entitlements', () => {
     const service = read('backend-java/src/main/java/com/procurement/identity/application/BuyerUserApplicationService.java');
+    const roleService = read('backend-java/src/main/java/com/procurement/identity/application/BuyerRoleApplicationService.java');
     const userMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerUserMapper.java');
+    const roleMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerRoleMapper.java');
+    const roleController = read('backend-java/src/main/java/com/procurement/identity/api/BuyerRoleController.java');
     const request = read('backend-java/src/main/java/com/procurement/identity/api/CreateBuyerUserRequest.java');
     const response = read('backend-java/src/main/java/com/procurement/identity/api/BuyerUserResponse.java');
     const entitlementService = read('backend-java/src/main/java/com/procurement/tenant/application/TenantEntitlementApplicationService.java');
@@ -64,6 +67,11 @@ describe('Java identity and JWT scaffold', () => {
     expect(service).toContain('existsActiveByTenantAndId');
     expect(service).toContain('requireBuyerRole');
     expect(service).toContain('assignRole');
+    expect(roleService).toContain('listCurrentTenantRoles');
+    expect(roleService).toContain('buyer role APIs');
+    expect(roleMapper).toContain("scope = 'buyer'");
+    expect(roleMapper).toContain('listBuyerRolesByTenant');
+    expect(roleController).toContain('/api/v1/buyer/roles');
     expect(request).toContain('departmentId');
     expect(request).toContain('roleId');
     expect(response).toContain('departmentId');
@@ -76,10 +84,13 @@ describe('Java identity and JWT scaffold', () => {
     expect(entitlementMapper).toContain('user_limit');
     expect(migration).toContain('department_id text');
     expect(apiContract).toContain('department_id');
+    expect(apiContract).toContain('/buyer/roles');
     expect(readme).toContain("current tenant's `user_limit`");
+    expect(readme).toContain('GET /api/v1/buyer/roles');
     expect(readme).toContain('departmentId');
     expect(readme).toContain('roleId');
     expect(architecture).toContain('当前用户数达到或超过 `user_limit` 时拒绝创建');
+    expect(architecture).toContain('GET /api/v1/buyer/roles');
     expect(architecture).toContain('用户所属 `departmentId`');
     expect(architecture).toContain('用户角色 `roleId`');
   });

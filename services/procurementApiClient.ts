@@ -284,6 +284,13 @@ export interface DepartmentDto {
   status: string;
 }
 
+export interface BuyerRoleDto {
+  id: string;
+  tenantId: string;
+  name: string;
+  permissions: string[];
+}
+
 export interface BuyerUserDto {
   id: string;
   tenantId: string;
@@ -449,6 +456,7 @@ export interface JavaProcurementApiClient {
   listBuyerDepartments(): Promise<DepartmentDto[]>;
   createBuyerDepartment(payload: CreateDepartmentPayload): Promise<DepartmentDto>;
   disableBuyerDepartment(departmentId: string): Promise<DepartmentDto>;
+  listBuyerRoles(): Promise<BuyerRoleDto[]>;
   listBuyerUsers(): Promise<BuyerUserDto[]>;
   listBuyerDemands(): Promise<PurchaseDemand[]>;
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
@@ -827,6 +835,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       return buyerRequest<DepartmentDto>(`/api/v1/buyer/departments/${departmentId}/disable`, {
         method: 'POST',
       });
+    },
+    listBuyerRoles() {
+      return buyerRequest<BuyerRoleDto[]>('/api/v1/buyer/roles');
     },
     listBuyerUsers() {
       return buyerRequest<BuyerUserDto[]>('/api/v1/buyer/users');

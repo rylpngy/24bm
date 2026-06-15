@@ -471,6 +471,31 @@
         }
       }
     },
+    "/buyer/roles": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载当前采购方租户可分配角色",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerRoleList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/users": {
       "get": {
         "tags": [
@@ -1677,6 +1702,7 @@
     "GET /buyer/departments",
     "POST /buyer/departments",
     "POST /buyer/departments/{departmentId}/disable",
+    "GET /buyer/roles",
     "GET /buyer/users",
     "POST /buyer/users",
     "GET /buyer/demands",

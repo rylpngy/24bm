@@ -147,6 +147,7 @@ The first buyer-side master data endpoints are:
 - `GET /api/v1/buyer/departments`
 - `POST /api/v1/buyer/departments`
 - `POST /api/v1/buyer/departments/{departmentId}/disable`
+- `GET /api/v1/buyer/roles`
 - `GET /api/v1/buyer/users`
 - `POST /api/v1/buyer/users`
 

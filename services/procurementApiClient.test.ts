@@ -219,6 +219,19 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/roles') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'role-buyer-requester',
+            tenantId: 'tenant-acme',
+            name: '需求申请人',
+            permissions: ['buyer:demand:create', 'buyer:demand:read'],
+          }],
+          message: '',
+        });
+      }
       if (input === 'http://java.test/api/v1/buyer/orders') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
         return Response.json({
@@ -293,6 +306,7 @@ describe('procurement API clients', () => {
       parentId: 'dept-it',
     });
     const disabledDepartment = await client.disableBuyerDepartment('dept-old');
+    const roles = await client.listBuyerRoles();
     const users = await client.listBuyerUsers();
     const orders = await client.listBuyerOrders();
     const invoices = await client.listBuyerInvoices();
@@ -303,6 +317,7 @@ describe('procurement API clients', () => {
     expect(departments[0].name).toBe('信息化部');
     expect(createdDepartment.id).toBe('dept-rd');
     expect(disabledDepartment.status).toBe('inactive');
+    expect(roles[0].permissions).toContain('buyer:demand:create');
     expect(users[0].email).toBe('buyer@example.com');
     expect(users[0].departmentId).toBe('dept-it');
     expect(users[0].roleId).toBe('role-buyer-owner');

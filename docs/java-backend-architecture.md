@@ -83,6 +83,7 @@ Authorization: Bearer <accessToken>
 
 采购方用户接口落在 `identity` 模块：
 
+- `GET /api/v1/buyer/roles`：查询当前采购方租户下可分配的 `buyer` 角色及权限。
 - `GET /api/v1/buyer/users`：查询当前采购方租户用户。
 - `POST /api/v1/buyer/users`：创建当前采购方租户用户。
 
@@ -93,6 +94,7 @@ Authorization: Bearer <accessToken>
 - 当前用户数达到或超过 `user_limit` 时拒绝创建，避免租户超出套餐人数。
 - 用户所属 `departmentId` 必须命中当前租户下 `active` 状态的组织部门，防止采购方用户挂靠到跨租户或停用部门。
 - 用户角色 `roleId` 必须命中当前租户下 `buyer` 范围的角色，创建成功后写入 `user_roles`，防止采购方用户绑定平台、供应商或其他租户角色。
+- 角色列表只返回当前租户 `roles.scope = buyer` 的记录和 `permissions`，用于采购方用户创建和后续用户角色维护。
 
 ## 采购方组织部门 Java API
 
