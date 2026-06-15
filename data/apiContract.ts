@@ -707,6 +707,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     queryParameters: ['paymentStatus', 'orderId'],
   },
   {
+    method: 'GET',
+    path: '/supplier/invoices/{invoiceId}/payment-audit-logs',
+    audience: 'supplier',
+    action: '查看供应商应收发票付款审计明细',
+    requestSchema: 'SupplierPaymentAuditLogListRequest',
+    responseSchema: 'AuditLogList',
+  },
+  {
     method: 'POST',
     path: '/supplier/orders/{orderId}/invoices',
     audience: 'supplier',

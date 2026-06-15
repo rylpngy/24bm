@@ -123,6 +123,22 @@ public interface InvoiceMapper {
   })
   Invoice findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
+  @Select("""
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
+      from invoices
+      where supplier_id = #{supplierId} and id = #{id}
+      """)
+  @Results(id = "supplierInvoiceResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "supplier_id", property = "supplierId"),
+      @Result(column = "order_id", property = "orderId"),
+      @Result(column = "invoice_no", property = "invoiceNo"),
+      @Result(column = "payment_status", property = "paymentStatus"),
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "updated_at", property = "updatedAt")
+  })
+  Invoice findBySupplierAndId(@Param("supplierId") String supplierId, @Param("id") String id);
+
   @Update("""
       update invoices
       set payment_status = #{paymentStatus}, updated_at = now()

@@ -49,6 +49,29 @@ class FinanceInvoiceAuditLogTests {
   }
 
   @Test
+  void listSupplierPaymentAuditLogsRequiresInvoiceInsideCurrentSupplier() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(invoiceMapper.findBySupplierAndId("supplier-1", "invoice-1"))
+        .thenReturn(invoice("invoice-1"));
+    when(auditLogApplicationService.listTenantTargetActions(
+        "tenant-1",
+        "invoice",
+        "invoice-1",
+        List.of("invoice.paid", "invoice.partial_paid"),
+        50))
+        .thenReturn(List.of());
+
+    invoiceApplicationService.listCurrentSupplierPaymentAuditLogs("invoice-1");
+
+    verify(auditLogApplicationService).listTenantTargetActions(
+        "tenant-1",
+        "invoice",
+        "invoice-1",
+        List.of("invoice.paid", "invoice.partial_paid"),
+        50);
+  }
+
+  @Test
   void supplierInvoiceCreationRecordsAuditLogInOrderTenant() {
     TenantContext.set(null, "supplier-1", "supplier-user");
     when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))

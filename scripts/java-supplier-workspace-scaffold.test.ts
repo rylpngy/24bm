@@ -33,6 +33,7 @@ describe('Java supplier workspace scaffold', () => {
     expect(orderController).toContain('@GetMapping');
     expect(invoiceController).toContain('@RequestMapping("/api/v1/supplier/invoices")');
     expect(invoiceController).toContain('@GetMapping');
+    expect(invoiceController).toContain('@GetMapping("/{invoiceId}/payment-audit-logs")');
   });
 
   it('keeps supplier list queries scoped to the authenticated supplier', () => {
@@ -62,6 +63,8 @@ describe('Java supplier workspace scaffold', () => {
     expect(orderService).toContain('listCurrentSupplierOrders');
     expect(orderService).toContain('listBySupplierFiltered');
     expect(invoiceService).toContain('listCurrentSupplierInvoices');
+    expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
+    expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listBySupplierFiltered');
   });
 
@@ -87,6 +90,8 @@ describe('Java supplier workspace scaffold', () => {
     expect(readme).toContain('The supplier order list accepts optional `status` and `rfqId` filters');
     expect(readme).toContain('GET /api/v1/supplier/invoices');
     expect(readme).toContain('The supplier invoice list accepts optional `paymentStatus` and `orderId` filters');
+    expect(readme).toContain('GET /api/v1/supplier/invoices/{invoiceId}/payment-audit-logs');
+    expect(readme).toContain('The supplier payment audit log list first verifies the invoice belongs to the current supplier enterprise');
     expect(localGuide).toContain('GET /api/v1/supplier/workspace');
   });
 });

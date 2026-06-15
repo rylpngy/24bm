@@ -1,6 +1,7 @@
 package com.procurement.finance.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.api.AuditLogResponse;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.InvoiceResponse;
@@ -20,6 +21,8 @@ public class InvoiceApplicationService {
   private static final String PENDING_PAYMENT_STATUS = "待付款";
   private static final String INVOICE_CREATED_ACTION = "invoice.created";
   private static final String INVOICE_TARGET_TYPE = "invoice";
+  private static final String INVOICE_PAID_ACTION = "invoice.paid";
+  private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
   private static final String FINANCE_FEATURE = "finance";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
@@ -54,6 +57,20 @@ public class InvoiceApplicationService {
         .stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  public List<AuditLogResponse> listCurrentSupplierPaymentAuditLogs(String invoiceId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("invoice APIs");
+    Invoice invoice = invoiceMapper.findBySupplierAndId(supplierId, invoiceId);
+    if (invoice == null) {
+      throw new IllegalArgumentException("Invoice not found for supplier scope: " + invoiceId);
+    }
+    return auditLogApplicationService.listTenantTargetActions(
+        invoice.tenantId(),
+        INVOICE_TARGET_TYPE,
+        invoiceId,
+        List.of(INVOICE_PAID_ACTION, INVOICE_PARTIAL_PAID_ACTION),
+        50);
   }
 
   @Transactional

@@ -40,6 +40,15 @@ public class AuditLogApplicationService {
       List<String> actions,
       int limit) {
     String tenantId = TenantAccessGuard.requireTenantId("audit log APIs");
+    return listTenantTargetActions(tenantId, targetType, targetId, actions, limit);
+  }
+
+  public List<AuditLogResponse> listTenantTargetActions(
+      String tenantId,
+      String targetType,
+      String targetId,
+      List<String> actions,
+      int limit) {
     int safeLimit = Math.max(1, Math.min(limit, 200));
     return auditLogMapper.listByTenantTargetActions(tenantId, targetType, targetId, actions, safeLimit).stream()
         .map(this::toResponse)

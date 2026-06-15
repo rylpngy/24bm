@@ -2445,6 +2445,40 @@
         }
       }
     },
+    "/supplier/invoices/{invoiceId}/payment-audit-logs": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "查看供应商应收发票付款审计明细",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AuditLogList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/supplier/orders/{orderId}/invoices": {
       "post": {
         "tags": [
@@ -2960,6 +2994,7 @@
     "GET /buyer/invoices",
     "GET /supplier/quotes",
     "GET /supplier/invoices",
+    "GET /supplier/invoices/{invoiceId}/payment-audit-logs",
     "POST /supplier/orders/{orderId}/invoices",
     "POST /buyer/invoices/{invoiceId}/payments",
     "GET /buyer/invoices/{invoiceId}/payment-audit-logs"

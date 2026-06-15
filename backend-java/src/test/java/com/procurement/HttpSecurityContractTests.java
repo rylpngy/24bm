@@ -1184,6 +1184,15 @@ class HttpSecurityContractTests {
             "待付款",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"))));
+    when(invoiceApplicationService.listCurrentSupplierPaymentAuditLogs("invoice-demo"))
+        .thenReturn(List.of(new AuditLogResponse(
+            "audit-supplier-payment-demo",
+            "tenant-acme",
+            "user-buyer-owner",
+            "invoice.paid",
+            "invoice",
+            "invoice-demo",
+            OffsetDateTime.parse("2026-06-15T15:00:00+08:00"))));
 
     mockMvc.perform(post("/api/v1/supplier/rfqs/rfq-demo/quotes")
             .header("Authorization", "Bearer " + supplierToken)
@@ -1334,6 +1343,11 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("invoice-demo"));
+    mockMvc.perform(get("/api/v1/supplier/invoices/invoice-demo/payment-audit-logs")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("audit-supplier-payment-demo"))
+        .andExpect(jsonPath("$.data[0].action").value("invoice.paid"));
 
     mockMvc.perform(get("/api/v1/platform/overview")
             .header("Authorization", "Bearer " + buyerToken))
@@ -2833,6 +2847,9 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken)
             .contentType(MediaType.APPLICATION_JSON)
             .content(validInvoicePayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/supplier/invoices/invoice-demo/payment-audit-logs")
+            .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isForbidden());
 
     when(deliveryApplicationService.create(

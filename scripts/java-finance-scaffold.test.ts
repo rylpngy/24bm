@@ -40,6 +40,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(mapper).toContain('invoices');
     expect(mapper).toContain('listByTenant');
     expect(mapper).toContain('listByTenantFiltered');
+    expect(mapper).toContain('findBySupplierAndId');
     expect(mapper).toContain('payment_status');
     expect(mapper).toContain('updatePaymentStatus');
   });
@@ -56,6 +57,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('已收货');
     expect(invoiceService).toContain('待付款');
     expect(invoiceService).toContain('findBySupplierAndId');
+    expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
     expect(paymentService).toContain('requireEnabled(tenantId, FINANCE_FEATURE)');
     expect(paymentService).toContain('listCurrentTenantInvoices');
