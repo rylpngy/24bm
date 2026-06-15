@@ -116,6 +116,7 @@ import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
+import com.procurement.supplier.api.ChangeSupplierQualificationStatusRequest;
 import com.procurement.supplier.api.ChangeSupplierUserStatusRequest;
 import com.procurement.supplier.api.CreateSupplierQualificationRequest;
 import com.procurement.supplier.api.CreateSupplierUserRequest;
@@ -864,6 +865,15 @@ class HttpSecurityContractTests {
     mockMvc.perform(get("/api/v1/supplier/qualifications")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/supplier/qualifications/qual-demo/status")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "status": "inactive"
+                }
+                """))
+        .andExpect(status().isForbidden());
 
     mockMvc.perform(get("/api/v1/supplier/users")
             .header("Authorization", "Bearer " + buyerToken))
@@ -951,6 +961,19 @@ class HttpSecurityContractTests {
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "active",
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+    when(supplierQualificationApplicationService.changeQualificationStatus(
+        org.mockito.ArgumentMatchers.eq("qual-demo"),
+        org.mockito.ArgumentMatchers.any(ChangeSupplierQualificationStatusRequest.class)))
+        .thenReturn(new SupplierQualificationResponse(
+            "qual-demo",
+            "ent-supplier-sunrise",
+            "营业执照",
+            "Q-2026-001",
+            LocalDate.parse("2027-12-31"),
+            "license.pdf",
+            "suppliers/ent-supplier-sunrise/license.pdf",
+            "inactive",
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
     when(supplierUserApplicationService.listCurrentSupplierUsers())
         .thenReturn(List.of(new SupplierUserResponse(
@@ -1053,6 +1076,16 @@ class HttpSecurityContractTests {
                 """))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.supplierId").value("ent-supplier-sunrise"));
+    mockMvc.perform(post("/api/v1/supplier/qualifications/qual-demo/status")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "status": "inactive"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("inactive"));
     mockMvc.perform(get("/api/v1/supplier/users")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())

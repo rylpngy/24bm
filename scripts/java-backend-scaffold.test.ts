@@ -229,6 +229,7 @@ describe('Java backend scaffold', () => {
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/status');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/profile');
     expect(readme).toContain('POST /api/v1/supplier/profile');
+    expect(readme).toContain('POST /api/v1/supplier/qualifications/{qualificationId}/status');
     expect(controller).toContain('@PostMapping("/{relationId}/status")');
     expect(controller).toContain('@PostMapping("/{relationId}/profile")');
     expect(service).toContain('buyer_supplier_relation.profile_updated');

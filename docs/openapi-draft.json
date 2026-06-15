@@ -1497,6 +1497,40 @@
         }
       }
     },
+    "/supplier/qualifications/{qualificationId}/status": {
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "启用或停用供应商资质",
+        "parameters": [
+          {
+            "name": "qualificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierQualification"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/supplier/users": {
       "get": {
         "tags": [
@@ -2280,6 +2314,10 @@
         "type": "object",
         "additionalProperties": true
       },
+      "ChangeSupplierQualificationStatusRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "SubmitQuoteRequest": {
         "type": "object",
         "additionalProperties": true
@@ -2441,6 +2479,7 @@
     "POST /supplier/profile",
     "GET /supplier/qualifications",
     "POST /supplier/qualifications",
+    "POST /supplier/qualifications/{qualificationId}/status",
     "GET /supplier/users",
     "POST /supplier/users",
     "POST /supplier/users/{userId}/password",

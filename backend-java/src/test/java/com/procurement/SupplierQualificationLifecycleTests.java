@@ -4,6 +4,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.procurement.common.tenant.TenantContext;
+import com.procurement.supplier.api.ChangeSupplierQualificationStatusRequest;
 import com.procurement.supplier.api.CreateSupplierQualificationRequest;
 import com.procurement.supplier.application.SupplierQualificationApplicationService;
 import com.procurement.supplier.domain.SupplierQualification;
@@ -59,6 +60,22 @@ class SupplierQualificationLifecycleTests {
     supplierQualificationApplicationService.listCurrentSupplierQualifications();
 
     verify(supplierQualificationMapper).listActiveBySupplier("ent-supplier-sunrise");
+  }
+
+  @Test
+  void changeQualificationStatusUsesCurrentSupplierScope() {
+    TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
+    when(supplierQualificationMapper.findBySupplierAndId("ent-supplier-sunrise", "qual-demo"))
+        .thenReturn(qualification("qual-demo"));
+
+    supplierQualificationApplicationService.changeQualificationStatus(
+        "qual-demo",
+        new ChangeSupplierQualificationStatusRequest("inactive"));
+
+    verify(supplierQualificationMapper).updateStatus(
+        "ent-supplier-sunrise",
+        "qual-demo",
+        "inactive");
   }
 
   private SupplierQualification qualification(String id) {

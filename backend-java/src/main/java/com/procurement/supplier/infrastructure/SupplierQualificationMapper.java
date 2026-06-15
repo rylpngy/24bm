@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface SupplierQualificationMapper {
@@ -68,5 +69,16 @@ public interface SupplierQualificationMapper {
       @Param("expiresAt") LocalDate expiresAt,
       @Param("fileName") String fileName,
       @Param("storageKey") String storageKey,
+      @Param("status") String status);
+
+  @Update("""
+      update supplier_qualifications
+      set status = #{status}
+      where supplier_id = #{supplierId}
+        and id = #{id}
+      """)
+  void updateStatus(
+      @Param("supplierId") String supplierId,
+      @Param("id") String id,
       @Param("status") String status);
 }
