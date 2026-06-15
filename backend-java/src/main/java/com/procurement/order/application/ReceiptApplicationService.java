@@ -1,5 +1,6 @@
 package com.procurement.order.application;
 
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.order.api.CreateReceiptRequest;
 import com.procurement.order.api.ReceiptResponse;
@@ -15,13 +16,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReceiptApplicationService {
   private static final String SHIPPED_STATUS = "已发货";
   private static final String RECEIVED_STATUS = "已收货";
+  private static final String PURCHASE_ORDER_RECEIVED_ACTION = "purchase_order.received";
+  private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final ReceiptMapper receiptMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
 
-  public ReceiptApplicationService(PurchaseOrderMapper purchaseOrderMapper, ReceiptMapper receiptMapper) {
+  public ReceiptApplicationService(
+      PurchaseOrderMapper purchaseOrderMapper,
+      ReceiptMapper receiptMapper,
+      AuditLogApplicationService auditLogApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.receiptMapper = receiptMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   @Transactional
@@ -42,6 +50,10 @@ public class ReceiptApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("Purchase order status changed before receipt could be recorded: " + orderId);
     }
+    auditLogApplicationService.recordTenantAction(
+        PURCHASE_ORDER_RECEIVED_ACTION,
+        PURCHASE_ORDER_TARGET_TYPE,
+        orderId);
 
     return toResponse(receiptMapper.findByTenantAndId(tenantId, receiptId));
   }

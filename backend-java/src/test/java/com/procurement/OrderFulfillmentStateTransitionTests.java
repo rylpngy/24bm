@@ -15,6 +15,7 @@ import com.procurement.order.application.DeliveryApplicationService;
 import com.procurement.order.application.ReceiptApplicationService;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.Receipt;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
@@ -171,13 +172,47 @@ class OrderFulfillmentStateTransitionTests {
     when(purchaseOrderMapper.updateStatus("tenant-1", "po-1", "已发货", "已收货"))
         .thenReturn(0);
 
-    ReceiptApplicationService service = new ReceiptApplicationService(purchaseOrderMapper, receiptMapper);
+    ReceiptApplicationService service = new ReceiptApplicationService(
+        purchaseOrderMapper,
+        receiptMapper,
+        auditLogApplicationService);
 
     assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("status changed before receipt");
 
     verify(receiptMapper, never()).findByTenantAndId(anyString(), anyString());
+  }
+
+  @Test
+  void buyerReceiptRecordsAuditLogAfterReceipt() {
+    TenantContext.set("tenant-1", null, "user-buyer");
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "已发货"));
+    when(purchaseOrderMapper.updateStatus("tenant-1", "po-1", "已发货", "已收货"))
+        .thenReturn(1);
+    when(receiptMapper.findByTenantAndId(
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> new Receipt(
+            invocation.getArgument(1),
+            "tenant-1",
+            "po-1",
+            "user-buyer",
+            "验收通过",
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+
+    ReceiptApplicationService service = new ReceiptApplicationService(
+        purchaseOrderMapper,
+        receiptMapper,
+        auditLogApplicationService);
+
+    service.create("po-1", new CreateReceiptRequest("验收通过"));
+
+    verify(auditLogApplicationService).recordTenantAction(
+        "purchase_order.received",
+        "purchase_order",
+        "po-1");
   }
 
   private PurchaseOrder order(String id, String tenantId, String supplierId, String status) {

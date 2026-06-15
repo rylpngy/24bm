@@ -2,6 +2,7 @@ package com.procurement.sourcing.application;
 
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.sourcing.api.AwardDecisionResponse;
 import com.procurement.sourcing.api.AwardRfqRequest;
@@ -26,21 +27,27 @@ public class AwardApplicationService {
   private static final String APPROVED_STATUS = "已通过";
   private static final String REJECTED_STATUS = "已驳回";
   private static final String RFQ_AWARD_BIZ_TYPE = "rfq_award";
+  private static final String RFQ_AWARD_SUBMITTED_ACTION = "rfq_award.submitted";
+  private static final String RFQ_AWARD_APPROVED_ACTION = "rfq_award.approved";
+  private static final String RFQ_AWARD_REJECTED_ACTION = "rfq_award.rejected";
 
   private final RfqMapper rfqMapper;
   private final QuoteMapper quoteMapper;
   private final AwardDecisionMapper awardDecisionMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
 
   public AwardApplicationService(
       RfqMapper rfqMapper,
       QuoteMapper quoteMapper,
       AwardDecisionMapper awardDecisionMapper,
-      ApprovalTaskMapper approvalTaskMapper) {
+      ApprovalTaskMapper approvalTaskMapper,
+      AuditLogApplicationService auditLogApplicationService) {
     this.rfqMapper = rfqMapper;
     this.quoteMapper = quoteMapper;
     this.awardDecisionMapper = awardDecisionMapper;
     this.approvalTaskMapper = approvalTaskMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   @Transactional
@@ -86,6 +93,7 @@ public class AwardApplicationService {
         awardId,
         null,
         PENDING_APPROVAL_STATUS);
+    auditLogApplicationService.recordTenantAction(RFQ_AWARD_SUBMITTED_ACTION, RFQ_AWARD_BIZ_TYPE, awardId);
 
     return toResponse(awardDecisionMapper.findByTenantAndId(tenantId, awardId));
   }
@@ -159,6 +167,10 @@ public class AwardApplicationService {
         throw new IllegalStateException("RFQ status changed before award rejection could be applied: " + rfqId);
       }
     }
+    auditLogApplicationService.recordTenantAction(
+        Boolean.TRUE.equals(request.approved()) ? RFQ_AWARD_APPROVED_ACTION : RFQ_AWARD_REJECTED_ACTION,
+        RFQ_AWARD_BIZ_TYPE,
+        request.awardId());
 
     return toResponse(awardDecisionMapper.findByTenantAndId(tenantId, request.awardId()));
   }

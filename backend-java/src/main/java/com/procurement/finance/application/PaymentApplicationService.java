@@ -1,5 +1,6 @@
 package com.procurement.finance.application;
 
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
@@ -14,11 +15,16 @@ public class PaymentApplicationService {
   private static final String PENDING_PAYMENT_STATUS = "待付款";
   private static final String PAID_STATUS = "已付款";
   private static final String PARTIAL_PAID_STATUS = "部分付款";
+  private static final String INVOICE_TARGET_TYPE = "invoice";
+  private static final String INVOICE_PAID_ACTION = "invoice.paid";
+  private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
 
   private final InvoiceMapper invoiceMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
 
-  public PaymentApplicationService(InvoiceMapper invoiceMapper) {
+  public PaymentApplicationService(InvoiceMapper invoiceMapper, AuditLogApplicationService auditLogApplicationService) {
     this.invoiceMapper = invoiceMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   public List<InvoiceResponse> listCurrentTenantInvoices() {
@@ -50,6 +56,10 @@ public class PaymentApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("Invoice status changed before payment could be recorded: " + invoiceId);
     }
+    auditLogApplicationService.recordTenantAction(
+        PAID_STATUS.equals(request.paymentStatus()) ? INVOICE_PAID_ACTION : INVOICE_PARTIAL_PAID_ACTION,
+        INVOICE_TARGET_TYPE,
+        invoiceId);
     return toResponse(invoiceMapper.findByTenantAndId(tenantId, invoiceId));
   }
 

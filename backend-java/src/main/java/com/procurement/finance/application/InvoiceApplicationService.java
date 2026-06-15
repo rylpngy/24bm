@@ -1,5 +1,6 @@
 package com.procurement.finance.application;
 
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.InvoiceResponse;
@@ -16,13 +17,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class InvoiceApplicationService {
   private static final String RECEIVED_STATUS = "已收货";
   private static final String PENDING_PAYMENT_STATUS = "待付款";
+  private static final String INVOICE_CREATED_ACTION = "invoice.created";
+  private static final String INVOICE_TARGET_TYPE = "invoice";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final InvoiceMapper invoiceMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
 
-  public InvoiceApplicationService(PurchaseOrderMapper purchaseOrderMapper, InvoiceMapper invoiceMapper) {
+  public InvoiceApplicationService(
+      PurchaseOrderMapper purchaseOrderMapper,
+      InvoiceMapper invoiceMapper,
+      AuditLogApplicationService auditLogApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.invoiceMapper = invoiceMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   public List<InvoiceResponse> listCurrentSupplierInvoices() {
@@ -52,6 +60,11 @@ public class InvoiceApplicationService {
         request.amount(),
         request.invoiceNo(),
         PENDING_PAYMENT_STATUS);
+    auditLogApplicationService.recordTenantAction(
+        order.tenantId(),
+        INVOICE_CREATED_ACTION,
+        INVOICE_TARGET_TYPE,
+        invoiceId);
 
     return toResponse(invoiceMapper.findByTenantAndId(order.tenantId(), invoiceId));
   }

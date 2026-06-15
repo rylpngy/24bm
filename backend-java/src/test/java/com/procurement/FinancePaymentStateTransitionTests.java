@@ -1,10 +1,13 @@
 package com.procurement;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.finance.api.RegisterPaymentRequest;
+import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
@@ -16,7 +19,10 @@ import org.junit.jupiter.api.Test;
 class FinancePaymentStateTransitionTests {
 
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
-  private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(invoiceMapper);
+  private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
+      invoiceMapper,
+      auditLogApplicationService);
 
   @AfterEach
   void clearTenantContext() {
@@ -62,6 +68,23 @@ class FinancePaymentStateTransitionTests {
         new RegisterPaymentRequest("已付款")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Invoice status changed before payment could be recorded");
+  }
+
+  @Test
+  void paymentRecordsAuditLogAfterPaymentStatusUpdate() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
+        .thenReturn(invoice("invoice-1", "tenant-1", "待付款"))
+        .thenReturn(invoice("invoice-1", "tenant-1", "已付款"));
+    when(invoiceMapper.updatePaymentStatus("tenant-1", "invoice-1", "待付款", "已付款"))
+        .thenReturn(1);
+
+    InvoiceResponse response = paymentApplicationService.register(
+        "invoice-1",
+        new RegisterPaymentRequest("已付款"));
+
+    org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("已付款");
+    verify(auditLogApplicationService).recordTenantAction("invoice.paid", "invoice", "invoice-1");
   }
 
   private Invoice invoice(String id, String tenantId, String paymentStatus) {

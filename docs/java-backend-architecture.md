@@ -108,11 +108,16 @@ Authorization: Bearer <accessToken>
 - `purchase_demand.approved` / `purchase_demand.rejected`：采购方审批采购需求。
 - `buyer_supplier_admission.submitted`：采购方提交供应商准入审批。
 - `buyer_supplier_admission.approved` / `buyer_supplier_admission.rejected`：采购方审批供应商准入。
+- `rfq_award.submitted`：采购方提交定标审批。
+- `rfq_award.approved` / `rfq_award.rejected`：采购方审批定标结果。
 - `purchase_order.created`：采购方生成采购订单。
 - `purchase_order.confirmed`：供应商确认采购订单。
 - `purchase_order.shipped`：供应商提交发货。
+- `purchase_order.received`：采购方收货验收。
+- `invoice.created`：供应商登记发票。
+- `invoice.paid` / `invoice.partial_paid`：采购方登记付款状态。
 
-后续应优先把定标提交/审批、收货、发票登记和付款状态登记纳入同一审计入口。
+后续应继续把物料维护、用户维护、平台企业审核、功能开关变更和附件上传纳入同一审计入口。
 
 ## RFQ 询价 Java API
 

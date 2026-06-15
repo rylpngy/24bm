@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.sourcing.api.AwardDecisionResponse;
 import com.procurement.sourcing.api.AwardRfqRequest;
@@ -31,11 +32,13 @@ class SourcingAwardStateTransitionTests {
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final AwardApplicationService awardApplicationService = new AwardApplicationService(
       rfqMapper,
       quoteMapper,
       awardDecisionMapper,
-      approvalTaskMapper);
+      approvalTaskMapper,
+      auditLogApplicationService);
 
   @AfterEach
   void clearTenantContext() {
@@ -111,6 +114,10 @@ class SourcingAwardStateTransitionTests {
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.eq("待审批"));
+    verify(auditLogApplicationService).recordTenantAction(
+        org.mockito.ArgumentMatchers.eq("rfq_award.submitted"),
+        org.mockito.ArgumentMatchers.eq("rfq_award"),
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("award-")));
     verify(rfqMapper, never()).updateAward("tenant-1", "rfq-1", "定标审批中", "已定标", "supplier-1");
   }
 
@@ -139,6 +146,7 @@ class SourcingAwardStateTransitionTests {
 
     assertThat(response.approvedStatus()).isEqualTo("已通过");
     verify(rfqMapper).updateAward("tenant-1", "rfq-1", "定标审批中", "已定标", "supplier-1");
+    verify(auditLogApplicationService).recordTenantAction("rfq_award.approved", "rfq_award", "award-1");
   }
 
   private Rfq rfq(String id, String tenantId, String status) {
