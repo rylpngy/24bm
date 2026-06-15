@@ -65,6 +65,35 @@ class PlatformAuditLogTests {
   }
 
   @Test
+  void tenantDisableRecordsAuditLogInTargetTenant() {
+    TenantContext.set(null, null, "user-platform-admin");
+    PlatformTenantMapper platformTenantMapper = org.mockito.Mockito.mock(PlatformTenantMapper.class);
+    PlatformTenantApplicationService platformTenantApplicationService =
+        new PlatformTenantApplicationService(
+            platformTenantMapper,
+            new ObjectMapper(),
+            auditLogApplicationService,
+            passwordEncoder);
+    when(platformTenantMapper.updateStatus("tenant-1", "inactive")).thenReturn(1);
+    when(platformTenantMapper.findById("tenant-1"))
+        .thenReturn(new PlatformTenant(
+            "tenant-1",
+            "示例采购企业",
+            "pro",
+            "inactive",
+            "[\"rfq\",\"order\"]",
+            50));
+
+    platformTenantApplicationService.disableTenant("tenant-1");
+
+    verify(auditLogApplicationService).recordTenantAction(
+        "tenant-1",
+        "tenant.disabled",
+        "tenant",
+        "tenant-1");
+  }
+
+  @Test
   void enterpriseReviewRecordsPlatformAuditLog() {
     TenantContext.set(null, null, "user-platform-admin");
     PlatformEnterpriseMapper platformEnterpriseMapper =

@@ -36,4 +36,9 @@ public class PlatformTenantController {
       @Valid @RequestBody FeatureToggleRequest request) {
     return ApiResponse.ok(platformTenantApplicationService.updateFeatureToggles(tenantId, request));
   }
+
+  @PostMapping("/{tenantId}/disable")
+  public ApiResponse<TenantResponse> disable(@PathVariable String tenantId) {
+    return ApiResponse.ok(platformTenantApplicationService.disableTenant(tenantId));
+  }
 }

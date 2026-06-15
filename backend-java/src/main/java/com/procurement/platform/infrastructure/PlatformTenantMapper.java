@@ -120,4 +120,14 @@ public interface PlatformTenantMapper {
   int updateEnabledFeatures(
       @Param("tenantId") String tenantId,
       @Param("enabledFeaturesJson") String enabledFeaturesJson);
+
+  @Update("""
+      update tenants
+      set status = #{status},
+          updated_at = now()
+      where id = #{tenantId}
+      """)
+  int updateStatus(
+      @Param("tenantId") String tenantId,
+      @Param("status") String status);
 }

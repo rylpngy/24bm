@@ -164,6 +164,40 @@
         }
       }
     },
+    "/platform/tenants/{tenantId}/disable": {
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "停用采购方企业租户",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/platform/enterprise-reviews": {
       "get": {
         "tags": [
@@ -1875,6 +1909,7 @@
     "GET /platform/tenants",
     "POST /platform/tenants",
     "POST /platform/tenants/{tenantId}/features",
+    "POST /platform/tenants/{tenantId}/disable",
     "GET /platform/enterprise-reviews",
     "POST /platform/enterprise-reviews/{enterpriseId}",
     "GET /buyer/workspace",

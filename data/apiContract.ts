@@ -131,6 +131,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'Tenant',
   },
   {
+    method: 'POST',
+    path: '/platform/tenants/{tenantId}/disable',
+    audience: 'platform',
+    action: '停用采购方企业租户',
+    requestSchema: 'DisableTenantRequest',
+    responseSchema: 'Tenant',
+  },
+  {
     method: 'GET',
     path: '/platform/enterprise-reviews',
     audience: 'platform',

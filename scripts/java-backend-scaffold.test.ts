@@ -207,9 +207,12 @@ describe('Java backend scaffold', () => {
     const localSeed = read('backend-java/src/main/resources/db/dev/V100__local_demo_seed.sql');
 
     expect(architecture).toContain('tenant.features.updated');
+    expect(architecture).toContain('tenant.disabled');
     expect(architecture).toContain('enterprise.reviewed');
-    expect(readme).toContain('Platform feature toggle changes and enterprise reviews write audit log actions');
+    expect(readme).toContain('POST /api/v1/platform/tenants/{tenantId}/disable');
+    expect(readme).toContain('tenant.disabled');
     expect(auditTests).toContain('tenantFeatureToggleUpdateRecordsAuditLogInTargetTenant');
+    expect(auditTests).toContain('tenantDisableRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('enterpriseReviewRecordsPlatformAuditLog');
     expect(localSeed).toContain('user-platform-admin');
   });

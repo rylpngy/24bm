@@ -20,8 +20,10 @@ public class PlatformTenantApplicationService {
   private static final String BUYER_OWNER_ROLE_NAME = "采购管理员";
   private static final String BUYER_OWNER_PERMISSIONS = "[\"buyer:*\"]";
   private static final String TENANT_CREATED_ACTION = "tenant.created";
+  private static final String TENANT_DISABLED_ACTION = "tenant.disabled";
   private static final String TENANT_FEATURES_UPDATED_ACTION = "tenant.features.updated";
   private static final String TENANT_TARGET_TYPE = "tenant";
+  private static final String INACTIVE_STATUS = "inactive";
 
   private final PlatformTenantMapper platformTenantMapper;
   private final ObjectMapper objectMapper;
@@ -94,6 +96,20 @@ public class PlatformTenantApplicationService {
     auditLogApplicationService.recordTenantAction(
         tenantId,
         TENANT_FEATURES_UPDATED_ACTION,
+        TENANT_TARGET_TYPE,
+        tenantId);
+    return toResponse(platformTenantMapper.findById(tenantId));
+  }
+
+  @Transactional
+  public TenantResponse disableTenant(String tenantId) {
+    int updated = platformTenantMapper.updateStatus(tenantId, INACTIVE_STATUS);
+    if (updated == 0) {
+      throw new IllegalArgumentException("Tenant not found: " + tenantId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        tenantId,
+        TENANT_DISABLED_ACTION,
         TENANT_TARGET_TYPE,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));
