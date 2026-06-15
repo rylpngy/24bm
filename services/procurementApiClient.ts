@@ -390,6 +390,16 @@ export interface JavaEnterpriseReviewDto {
   reviewStatus: string;
 }
 
+export interface JavaAuditLogDto {
+  id: string;
+  tenantId: string;
+  actorId: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  createdAt: string;
+}
+
 export interface JavaProcurementApiClient {
   loginPlatform(): Promise<JavaLoginResponse>;
   loginBuyer(): Promise<JavaLoginResponse>;
@@ -404,6 +414,7 @@ export interface JavaProcurementApiClient {
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
   submitBuyerDemand(demandId: string): Promise<JavaApprovalTaskDto>;
   listBuyerPendingApprovals(): Promise<JavaApprovalTaskDto[]>;
+  listBuyerAuditLogs(): Promise<JavaAuditLogDto[]>;
   reviewBuyerDemandApproval(demandId: string, approved: boolean): Promise<JavaApprovalTaskDto>;
   reviewBuyerSupplierAdmission(relationId: string, approved: boolean): Promise<JavaApprovalTaskDto>;
   reviewBuyerAwardApproval(rfqId: string, awardId: string, approved: boolean): Promise<JavaAwardDecisionDto>;
@@ -435,6 +446,7 @@ export interface JavaBuyerMasterData {
   orders: PurchaseOrder[];
   invoices: InvoiceRecord[];
   pendingApprovals: JavaApprovalTaskDto[];
+  auditLogs: JavaAuditLogDto[];
 }
 
 export interface JavaSupplierWorkspaceData {
@@ -782,6 +794,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     listBuyerPendingApprovals() {
       return buyerRequest<JavaApprovalTaskDto[]>('/api/v1/buyer/approvals/pending');
     },
+    listBuyerAuditLogs() {
+      return buyerRequest<JavaAuditLogDto[]>('/api/v1/buyer/audit-logs');
+    },
     reviewBuyerDemandApproval(demandId: string, approved: boolean) {
       return buyerRequest<JavaApprovalTaskDto>(`/api/v1/buyer/demands/${demandId}/approval`, {
         method: 'POST',
@@ -911,7 +926,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 };
 
 export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient): Promise<JavaBuyerMasterData> => {
-  const [suppliers, materials, users, demands, rfqs, orders, invoices, pendingApprovals] = await Promise.all([
+  const [suppliers, materials, users, demands, rfqs, orders, invoices, pendingApprovals, auditLogs] = await Promise.all([
     client.listBuyerSuppliers(),
     client.listBuyerMaterials(),
     client.listBuyerUsers(),
@@ -920,8 +935,9 @@ export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient):
     client.listBuyerOrders(),
     client.listBuyerInvoices(),
     client.listBuyerPendingApprovals(),
+    client.listBuyerAuditLogs(),
   ]);
-  return { suppliers, materials, users, demands, rfqs, orders, invoices, pendingApprovals };
+  return { suppliers, materials, users, demands, rfqs, orders, invoices, pendingApprovals, auditLogs };
 };
 
 export const applyJavaBuyerMasterData = (

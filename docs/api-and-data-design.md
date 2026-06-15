@@ -92,7 +92,7 @@ API 分组在 [data/apiContract.ts](../data/apiContract.ts) 中以 `apiModules` 
 3. `POST /buyer/suppliers/{relationId}/submit`、`POST /buyer/suppliers/{relationId}/approval`：供应商准入审批。
 4. `POST /buyer/demands`：采购方创建采购需求。
 5. `POST /buyer/demands/{demandId}/submit`、`POST /buyer/demands/{demandId}/approval`：提交并审批采购需求。
-6. `GET /buyer/approvals/pending`：加载需求、供应商准入、定标审批待办。
+6. `GET /buyer/approvals/pending`、`GET /buyer/audit-logs`：加载需求、供应商准入、定标审批待办和当前租户操作审计日志。
 7. `POST /buyer/rfqs`：从已通过需求创建询价。
 8. `GET /supplier/rfqs`、`POST /supplier/rfqs/{rfqId}/quotes`：供应商查看询价邀请并提交报价。
 9. `POST /buyer/rfqs/{rfqId}/award`、`POST /buyer/rfqs/{rfqId}/award/approval`：提交并审批定标结果。

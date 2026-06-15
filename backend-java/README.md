@@ -92,6 +92,14 @@ Example creation payload:
 
 Demand creation stores `草稿` and records an `audit_logs` row with action `purchase_demand.created`. Submit changes the demand to `审批中` and creates an `approval_tasks` row with `biz_type = purchase_demand`.
 
+## Buyer Audit Log APIs
+
+The buyer-side audit endpoint is:
+
+- `GET /api/v1/buyer/audit-logs`
+
+It returns recent audit logs for the current buyer tenant from the JWT `tenantId`. The optional `limit` query parameter is clamped by the service to keep responses bounded.
+
 ## Buyer Master Data APIs
 
 The first buyer-side master data endpoints are:

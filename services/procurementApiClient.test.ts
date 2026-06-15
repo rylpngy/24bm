@@ -193,6 +193,22 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/audit-logs') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'audit-java-001',
+            tenantId: 'tenant-acme',
+            actorId: 'user-buyer-owner',
+            action: 'purchase_order.created',
+            targetType: 'purchase_order',
+            targetId: 'po-java-001',
+            createdAt: '2026-06-15T13:00:00+08:00',
+          }],
+          message: '',
+        });
+      }
       throw new Error(`Unexpected request: ${input}`);
     };
 
@@ -212,12 +228,14 @@ describe('procurement API clients', () => {
     const users = await client.listBuyerUsers();
     const orders = await client.listBuyerOrders();
     const invoices = await client.listBuyerInvoices();
+    const auditLogs = await client.listBuyerAuditLogs();
 
     expect(suppliers[0].supplierName).toBe('晨光供应商');
     expect(materials[0].code).toBe('IT-LAPTOP');
     expect(users[0].email).toBe('buyer@example.com');
     expect(orders[0].status).toBe('已收货');
     expect(invoices[0].paymentStatus).toBe('已付款');
+    expect(auditLogs[0].action).toBe('purchase_order.created');
     expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);
   });
 

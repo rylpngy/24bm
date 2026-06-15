@@ -118,7 +118,7 @@ Run the API smoke check after Spring Boot is up:
 npm run java:smoke
 ```
 
-It logs in as the seeded platform, buyer, and supplier accounts, verifies `GET /api/v1/platform/overview`, `GET /api/v1/platform/tenants`, `GET /api/v1/platform/enterprise-reviews`, `GET /api/v1/buyer/suppliers`, `GET /api/v1/buyer/materials`, `GET /api/v1/buyer/users`, `GET /api/v1/buyer/demands`, `GET /api/v1/buyer/orders`, `GET /api/v1/buyer/invoices`, and `GET /api/v1/buyer/approvals/pending` return expected Java data, then creates one RFQ, submits one supplier quote, submits and approves one award decision, creates one purchase order, confirms the order as supplier, submits one delivery, registers one receipt, creates one invoice, and registers payment status.
+It logs in as the seeded platform, buyer, and supplier accounts, verifies `GET /api/v1/platform/overview`, `GET /api/v1/platform/tenants`, `GET /api/v1/platform/enterprise-reviews`, `GET /api/v1/buyer/suppliers`, `GET /api/v1/buyer/materials`, `GET /api/v1/buyer/users`, `GET /api/v1/buyer/demands`, `GET /api/v1/buyer/orders`, `GET /api/v1/buyer/invoices`, `GET /api/v1/buyer/audit-logs`, and `GET /api/v1/buyer/approvals/pending` return expected Java data, then creates one RFQ, submits one supplier quote, submits and approves one award decision, creates one purchase order, confirms the order as supplier, submits one delivery, registers one receipt, creates one invoice, and registers payment status.
 
 ## Manual API Check
 

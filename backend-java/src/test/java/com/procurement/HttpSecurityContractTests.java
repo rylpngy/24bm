@@ -10,6 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.procurement.common.api.HealthController;
+import com.procurement.audit.api.AuditLogController;
+import com.procurement.audit.api.AuditLogResponse;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.catalog.api.CreateMaterialRequest;
 import com.procurement.catalog.api.MaterialController;
 import com.procurement.catalog.api.MaterialResponse;
@@ -91,7 +94,8 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierQuoteListController.class,
     RfqAwardController.class,
     SupplierOrderController.class,
-    SupplierReceivableController.class
+    SupplierReceivableController.class,
+    AuditLogController.class
 })
 @Import({
     SecurityConfig.class,
@@ -146,6 +150,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private BuyerUserApplicationService buyerUserApplicationService;
+
+  @MockBean
+  private AuditLogApplicationService auditLogApplicationService;
 
   @Test
   void viteLocalhostPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
@@ -260,6 +267,47 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data[0].status").value("待审批"))
         .andExpect(jsonPath("$.data[1].bizType").value("purchase_demand"))
         .andExpect(jsonPath("$.data[1].summaryTitle").value("采购 20 台电脑"));
+  }
+
+  @Test
+  void buyerCanListTenantAuditLogsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/audit-logs")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(auditLogApplicationService.listCurrentTenantAuditLogs(50)).thenReturn(List.of(
+        new AuditLogResponse(
+            "audit-demo",
+            "tenant-acme",
+            "buyer-user",
+            "purchase_order.created",
+            "purchase_order",
+            "po-demo",
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/buyer/audit-logs")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data[0].tenantId").value("tenant-acme"))
+        .andExpect(jsonPath("$.data[0].action").value("purchase_order.created"));
   }
 
   @Test

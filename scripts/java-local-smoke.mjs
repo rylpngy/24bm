@@ -73,13 +73,14 @@ const main = async () => {
     requestJson('/api/v1/platform/tenants', { headers: platformHeaders }),
     requestJson('/api/v1/platform/enterprise-reviews', { headers: platformHeaders }),
   ]);
-  const [suppliers, materials, users, demands, orders, invoices] = await Promise.all([
+  const [suppliers, materials, users, demands, orders, invoices, auditLogs] = await Promise.all([
     requestJson('/api/v1/buyer/suppliers', { headers: authHeaders }),
     requestJson('/api/v1/buyer/materials', { headers: authHeaders }),
     requestJson('/api/v1/buyer/users', { headers: authHeaders }),
     requestJson('/api/v1/buyer/demands', { headers: authHeaders }),
     requestJson('/api/v1/buyer/orders', { headers: authHeaders }),
     requestJson('/api/v1/buyer/invoices', { headers: authHeaders }),
+    requestJson('/api/v1/buyer/audit-logs', { headers: authHeaders }),
   ]);
   const [supplierProfile, supplierRfqs, supplierQuotes, supplierOrders, supplierInvoices] = await Promise.all([
     requestJson('/api/v1/supplier/profile', { headers: supplierHeaders }),
@@ -185,7 +186,7 @@ const main = async () => {
   console.log(`Loaded ${platformTenants.length} tenants, ${platformOverview.publicSupplierCount} public suppliers, ${platformEnterpriseReviews.length} pending enterprise reviews`);
   console.log(`Loaded ${suppliers.length} suppliers, ${materials.length} materials, ${users.length} buyer users`);
   console.log(`Loaded ${demands.length} purchase demands`);
-  console.log(`Loaded ${orders.length} purchase orders, ${invoices.length} invoices`);
+  console.log(`Loaded ${orders.length} purchase orders, ${invoices.length} invoices, ${auditLogs.length} audit logs`);
   console.log(`Loaded supplier ${supplierProfile.name}, ${supplierRfqs.length} RFQs, ${supplierQuotes.length} quotes, ${supplierOrders.length} orders, ${supplierInvoices.length} invoices`);
   console.log(`Created RFQ ${rfq.id}, quote ${quote.id}, award ${award.id}, order ${order.id}, confirmed status ${confirmedOrder.status}`);
   console.log(`Created delivery ${delivery.id}, receipt ${receipt.id}`);

@@ -236,6 +236,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/buyer/audit-logs',
+    audience: 'buyer',
+    action: '加载采购方操作审计日志',
+    requestSchema: 'AuditLogListRequest',
+    responseSchema: 'AuditLogList',
+  },
+  {
+    method: 'GET',
     path: '/buyer/rfqs',
     audience: 'buyer',
     action: '加载采购方询价项目',
@@ -592,6 +600,8 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'ApprovalTask',
           'PendingApprovalListRequest',
           'PendingApprovalTaskList',
+          'AuditLogListRequest',
+          'AuditLogList',
           'RfqListRequest',
           'RfqList',
           'CreateRfqRequest',

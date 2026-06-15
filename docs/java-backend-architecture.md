@@ -99,8 +99,15 @@ Authorization: Bearer <accessToken>
 
 审计能力落在 `audit` 模块：
 
+- `GET /api/v1/buyer/audit-logs`：采购方查询当前租户最近的操作审计日志。
 - `AuditLogApplicationService`：统一记录租户内业务操作。
 - `AuditLogMapper`：写入 `audit_logs` 表。
+
+查询规则：
+
+- 查询租户来自 JWT 中的 `tenantId`，不接受请求体覆盖。
+- 默认返回最近 50 条，服务端将 `limit` 限制在 1 到 200 之间。
+- 查询按 `created_at desc` 排序，并始终带 `tenant_id` 条件。
 
 当前已接入的审计动作：
 
