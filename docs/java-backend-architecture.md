@@ -92,6 +92,18 @@ Authorization: Bearer <accessToken>
 - 创建前读取 `tenants.user_limit`，并统计当前租户 `users` 数量。
 - 当前用户数达到或超过 `user_limit` 时拒绝创建，避免租户超出套餐人数。
 
+## 采购方组织部门 Java API
+
+采购方组织部门接口落在 `organization` 模块：
+
+- `GET /api/v1/buyer/departments`：查询当前采购方租户下 `active` 状态的组织部门。
+
+查询规则：
+
+- 采购方身份来自 JWT 中的 `tenantId`，不允许请求参数覆盖租户归属。
+- 只返回当前租户 `departments.status = active` 的部门，用于采购需求 `departmentId` 选择和后续审批/数据权限扩展。
+- 供应商和平台 token 不能访问该 buyer 侧接口。
+
 ## 采购需求 Java API
 
 第一批 Java 业务接口落在 `demand` 模块：

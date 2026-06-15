@@ -132,6 +132,22 @@ describe('Java backend scaffold', () => {
     expect(attachmentTests).toContain('createAttachmentRecordsVisibilityAndActiveStatusFromServerContext');
   });
 
+  it('documents and exposes buyer organization department APIs', () => {
+    const architecture = read('docs/java-backend-architecture.md');
+    const readme = read('backend-java/README.md');
+    const localSmoke = read('scripts/java-local-smoke.mjs');
+    const apiClient = read('services/procurementApiClient.ts');
+
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/api/DepartmentController.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/application/DepartmentApplicationService.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/infrastructure/DepartmentMapper.java'))).toBe(true);
+    expect(architecture).toContain('采购方组织部门 Java API');
+    expect(architecture).toContain('GET /api/v1/buyer/departments');
+    expect(readme).toContain('GET /api/v1/buyer/departments');
+    expect(localSmoke).toContain('/api/v1/buyer/departments');
+    expect(apiClient).toContain('listBuyerDepartments');
+  });
+
   it('documents the buyer notification API handoff', () => {
     const architecture = read('docs/java-backend-architecture.md');
     const readme = read('backend-java/README.md');

@@ -271,6 +271,14 @@ export interface MaterialDto {
   referencePrice: number;
 }
 
+export interface DepartmentDto {
+  id: string;
+  tenantId: string;
+  name: string;
+  parentId: string | null;
+  status: string;
+}
+
 export interface BuyerUserDto {
   id: string;
   tenantId: string;
@@ -431,6 +439,7 @@ export interface JavaProcurementApiClient {
   getBuyerWorkspace(): Promise<JavaBuyerMasterData>;
   listBuyerSuppliers(): Promise<BuyerSupplierRelationDto[]>;
   listBuyerMaterials(): Promise<MaterialDto[]>;
+  listBuyerDepartments(): Promise<DepartmentDto[]>;
   listBuyerUsers(): Promise<BuyerUserDto[]>;
   listBuyerDemands(): Promise<PurchaseDemand[]>;
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
@@ -794,6 +803,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     },
     listBuyerMaterials() {
       return buyerRequest<MaterialDto[]>('/api/v1/buyer/materials');
+    },
+    listBuyerDepartments() {
+      return buyerRequest<DepartmentDto[]>('/api/v1/buyer/departments');
     },
     listBuyerUsers() {
       return buyerRequest<BuyerUserDto[]>('/api/v1/buyer/users');

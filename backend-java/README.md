@@ -144,6 +144,7 @@ The first buyer-side master data endpoints are:
 - `POST /api/v1/buyer/suppliers`
 - `GET /api/v1/buyer/materials`
 - `POST /api/v1/buyer/materials`
+- `GET /api/v1/buyer/departments`
 - `GET /api/v1/buyer/users`
 - `POST /api/v1/buyer/users`
 
@@ -182,6 +183,8 @@ Example buyer user payload:
 ```
 
 Buyer master data APIs use the buyer tenant from the JWT and reject supplier or platform tokens.
+
+Department listing returns only active departments from the current buyer tenant and is used by purchase demand creation to choose a valid `departmentId`.
 
 Buyer user creation is limited by the current tenant's `user_limit`; when the current buyer-user count reaches the plan limit, the API rejects the new user before insert.
 

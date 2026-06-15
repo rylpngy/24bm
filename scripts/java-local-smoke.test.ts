@@ -23,6 +23,7 @@ describe('Java local smoke command', () => {
     expect(script).toContain("requestJson('/api/v1/buyer/workspace'");
     expect(script).toContain('/api/v1/buyer/suppliers');
     expect(script).toContain('/api/v1/buyer/materials');
+    expect(script).toContain('/api/v1/buyer/departments');
     expect(script).toContain('/api/v1/buyer/users');
     expect(script).toContain('/api/v1/buyer/demands');
     expect(script).toContain("requestJson('/api/v1/buyer/orders'");
@@ -45,6 +46,7 @@ describe('Java local smoke command', () => {
     expect(script).toContain('/api/v1/buyer/invoices/${invoice.id}/payments');
     expect(script).toContain('tenant-acme');
     expect(script).toContain('mat-laptop');
+    expect(script).toContain('dept-it');
     expect(script).toContain('user-buyer-owner');
     expect(script).toContain('dem-local-laptop');
     expect(script).toContain('ent-supplier-sunrise');

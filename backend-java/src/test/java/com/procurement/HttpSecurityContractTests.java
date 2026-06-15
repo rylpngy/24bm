@@ -49,6 +49,9 @@ import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.notification.api.BuyerNotificationController;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.organization.api.DepartmentController;
+import com.procurement.organization.api.DepartmentResponse;
+import com.procurement.organization.application.DepartmentApplicationService;
 import com.procurement.order.api.BuyerReceiptController;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.CreateReceiptRequest;
@@ -139,7 +142,8 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerWorkspaceController.class,
     SupplierWorkspaceController.class,
     AttachmentController.class,
-    BuyerNotificationController.class
+    BuyerNotificationController.class,
+    DepartmentController.class
 })
 @Import({
     SecurityConfig.class,
@@ -224,6 +228,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private NotificationApplicationService notificationApplicationService;
+
+  @MockBean
+  private DepartmentApplicationService departmentApplicationService;
 
   @Test
   void viteLocalhostPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
@@ -428,6 +435,42 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.invoices").isArray())
         .andExpect(jsonPath("$.data.pendingApprovals").isArray())
         .andExpect(jsonPath("$.data.auditLogs").isArray());
+  }
+
+  @Test
+  void buyerCanListCurrentTenantDepartmentsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/departments")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(departmentApplicationService.listCurrentTenantDepartments()).thenReturn(List.of(
+        new DepartmentResponse("dept-it", "tenant-acme", "信息化部", null, "active")));
+
+    mockMvc.perform(get("/api/v1/buyer/departments")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data[0].id").value("dept-it"))
+        .andExpect(jsonPath("$.data[0].tenantId").value("tenant-acme"))
+        .andExpect(jsonPath("$.data[0].name").value("信息化部"))
+        .andExpect(jsonPath("$.data[0].status").value("active"));
   }
 
   @Test

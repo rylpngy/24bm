@@ -74,10 +74,11 @@ const main = async () => {
     requestJson('/api/v1/platform/tenants', { headers: platformHeaders }),
     requestJson('/api/v1/platform/enterprise-reviews', { headers: platformHeaders }),
   ]);
-  const [buyerWorkspace, suppliers, materials, users, demands, orders, invoices, auditLogs] = await Promise.all([
+  const [buyerWorkspace, suppliers, materials, departments, users, demands, orders, invoices, auditLogs] = await Promise.all([
     requestJson('/api/v1/buyer/workspace', { headers: authHeaders }),
     requestJson('/api/v1/buyer/suppliers', { headers: authHeaders }),
     requestJson('/api/v1/buyer/materials', { headers: authHeaders }),
+    requestJson('/api/v1/buyer/departments', { headers: authHeaders }),
     requestJson('/api/v1/buyer/users', { headers: authHeaders }),
     requestJson('/api/v1/buyer/demands', { headers: authHeaders }),
     requestJson('/api/v1/buyer/orders', { headers: authHeaders }),
@@ -95,6 +96,7 @@ const main = async () => {
 
   requireItem(suppliers, (item) => item.supplierId === 'supplier-tech', 'supplier-tech');
   requireItem(materials, (item) => item.id === 'mat-laptop', 'mat-laptop');
+  requireItem(departments, (item) => item.id === 'dept-it', 'dept-it');
   requireItem(users, (item) => item.id === 'user-buyer-owner', 'user-buyer-owner');
   requireItem(demands, (item) => item.id === 'dem-local-laptop', 'dem-local-laptop');
   requireItem(platformTenants, (item) => item.id === 'tenant-acme', 'tenant-acme');

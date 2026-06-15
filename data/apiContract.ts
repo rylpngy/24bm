@@ -65,7 +65,7 @@ export const apiModules: ApiModule[] = [
     key: 'buyer',
     label: '采购方后台',
     responsibilities: ['组织用户与权限', '供应商私域关系', '采购需求', '询价比价', '订单履约', '发票付款状态'],
-    resources: ['PurchaseDemand', 'MaterialItem', 'SupplierRelation', 'RFQ', 'AwardDecision', 'PurchaseOrder', 'Receipt', 'Invoice'],
+    resources: ['PurchaseDemand', 'Department', 'MaterialItem', 'SupplierRelation', 'RFQ', 'AwardDecision', 'PurchaseOrder', 'Receipt', 'Invoice'],
   },
   {
     key: 'supplier',
@@ -193,6 +193,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     action: '创建采购方物料/服务',
     requestSchema: 'CreateMaterialRequest',
     responseSchema: 'Material',
+  },
+  {
+    method: 'GET',
+    path: '/buyer/departments',
+    audience: 'buyer',
+    action: '加载采购方组织部门列表',
+    requestSchema: 'DepartmentListRequest',
+    responseSchema: 'DepartmentList',
   },
   {
     method: 'GET',
@@ -480,6 +488,12 @@ export const databaseTables: DatabaseTable[] = [
     tenantScoped: true,
     purpose: '租户内角色和权限集合；平台角色 tenant_id 为空并按 scope 区分。',
     requiredColumns: ['id', 'tenant_id', 'scope', 'name', 'permissions'],
+  },
+  {
+    name: 'departments',
+    tenantScoped: true,
+    purpose: '采购方租户内组织部门，供需求归属、审批和后续数据权限使用。',
+    requiredColumns: ['id', 'tenant_id', 'name', 'parent_id', 'status'],
   },
   {
     name: 'materials',

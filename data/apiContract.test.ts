@@ -24,6 +24,7 @@ describe('procurement SaaS API contract draft', () => {
       'POST /buyer/suppliers/{relationId}/approval',
       'GET /buyer/materials',
       'POST /buyer/materials',
+      'GET /buyer/departments',
       'GET /buyer/users',
       'POST /buyer/users',
       'GET /buyer/demands',
@@ -73,6 +74,7 @@ describe('procurement SaaS API contract draft', () => {
     expect(openApi.info.title).toBe('24Bid Multi-tenant Procurement API');
     expect(openApi.paths['/platform/overview'].get.tags).toContain('platform');
     expect(openApi.paths['/buyer/approvals/pending'].get.tags).toContain('buyer');
+    expect(openApi.paths['/buyer/departments'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/audit-logs'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/attachments'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/notifications'].get.tags).toContain('buyer');
@@ -100,6 +102,7 @@ describe('procurement SaaS API contract draft', () => {
     expect(json).toContain('"POST /buyer/demands"');
     expect(json).toContain('"GET /buyer/approvals/pending"');
     expect(json).toContain('"GET /buyer/audit-logs"');
+    expect(json).toContain('"GET /buyer/departments"');
     expect(json).toContain('"POST /supplier/orders/{orderId}/confirm"');
     expect(JSON.parse(json).paths['/buyer/orders'].post.summary).toBe('根据定标结果生成采购订单');
   });
