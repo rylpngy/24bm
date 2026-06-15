@@ -14,6 +14,8 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.application.BuyerUserApplicationService;
+import com.procurement.notification.api.NotificationResponse;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.api.RfqResponse;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class BuyerWorkspaceApplicationService {
   private static final int AUDIT_LOG_LIMIT = 50;
+  private static final int NOTIFICATION_LIMIT = 50;
   private static final String RFQ_QUOTING_STATUS = "报价中";
   private static final String ORDER_SHIPPED_STATUS = "已发货";
   private static final String INVOICE_PENDING_PAYMENT_STATUS = "待付款";
@@ -40,6 +43,7 @@ public class BuyerWorkspaceApplicationService {
   private final PaymentApplicationService paymentApplicationService;
   private final ApprovalInboxApplicationService approvalInboxApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public BuyerWorkspaceApplicationService(
       BuyerSupplierApplicationService buyerSupplierApplicationService,
@@ -50,7 +54,8 @@ public class BuyerWorkspaceApplicationService {
       PurchaseOrderApplicationService purchaseOrderApplicationService,
       PaymentApplicationService paymentApplicationService,
       ApprovalInboxApplicationService approvalInboxApplicationService,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.buyerSupplierApplicationService = buyerSupplierApplicationService;
     this.materialApplicationService = materialApplicationService;
     this.buyerUserApplicationService = buyerUserApplicationService;
@@ -60,6 +65,7 @@ public class BuyerWorkspaceApplicationService {
     this.paymentApplicationService = paymentApplicationService;
     this.approvalInboxApplicationService = approvalInboxApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   public BuyerWorkspaceResponse load() {
@@ -71,6 +77,9 @@ public class BuyerWorkspaceApplicationService {
     List<PurchaseOrderResponse> orders = purchaseOrderApplicationService.listCurrentTenantOrders();
     List<InvoiceResponse> invoices = paymentApplicationService.listCurrentTenantInvoices();
     List<PendingApprovalTaskResponse> pendingApprovals = approvalInboxApplicationService.listPending();
+    List<PendingApprovalTaskResponse> recentApprovals = approvalInboxApplicationService.listRecentReviewed();
+    List<NotificationResponse> notifications =
+        notificationApplicationService.listCurrentUserNotifications(NOTIFICATION_LIMIT);
     List<AuditLogResponse> auditLogs = auditLogApplicationService.listCurrentTenantAuditLogs(AUDIT_LOG_LIMIT);
 
     return new BuyerWorkspaceResponse(
@@ -83,6 +92,8 @@ public class BuyerWorkspaceApplicationService {
         orders,
         invoices,
         pendingApprovals,
+        recentApprovals,
+        notifications,
         auditLogs);
   }
 

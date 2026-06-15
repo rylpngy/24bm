@@ -151,7 +151,7 @@ Buyer payment registration creates in-app notifications for active supplier user
 
 ## Buyer Master Data APIs
 
-`GET /api/v1/buyer/workspace` returns the buyer first-screen aggregate. Buyer workspace includes `todoSummary` counts for pending approvals, pending awards, pending receipts, and pending payments.
+`GET /api/v1/buyer/workspace` returns the buyer first-screen aggregate. Buyer workspace includes `todoSummary` counts for pending approvals, pending awards, pending receipts, and pending payments. Buyer workspace also includes recent reviewed approvals and in-app notifications so the buyer portal can refresh approval results without extra first-screen requests.
 
 The first buyer-side master data endpoints are:
 

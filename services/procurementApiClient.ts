@@ -1093,18 +1093,14 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 };
 
 export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient): Promise<JavaBuyerMasterData> => {
-  const [workspace, roles, recentApprovals, notifications, approvalTemplates] = await Promise.all([
+  const [workspace, roles, approvalTemplates] = await Promise.all([
     client.getBuyerWorkspace(),
     client.listBuyerRoles(),
-    client.listBuyerRecentApprovals(),
-    client.listBuyerNotifications(),
     client.listBuyerApprovalTemplates(),
   ]);
   return {
     ...workspace,
     roles,
-    recentApprovals,
-    notifications,
     approvalTemplates,
   };
 };

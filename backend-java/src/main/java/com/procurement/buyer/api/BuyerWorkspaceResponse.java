@@ -6,6 +6,7 @@ import com.procurement.catalog.api.MaterialResponse;
 import com.procurement.demand.api.PurchaseDemandResponse;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.identity.api.BuyerUserResponse;
+import com.procurement.notification.api.NotificationResponse;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.supplier.api.BuyerSupplierResponse;
@@ -21,5 +22,7 @@ public record BuyerWorkspaceResponse(
     List<PurchaseOrderResponse> orders,
     List<InvoiceResponse> invoices,
     List<PendingApprovalTaskResponse> pendingApprovals,
+    List<PendingApprovalTaskResponse> recentApprovals,
+    List<NotificationResponse> notifications,
     List<AuditLogResponse> auditLogs) {
 }

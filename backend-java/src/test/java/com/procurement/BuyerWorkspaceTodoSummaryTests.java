@@ -13,6 +13,8 @@ import com.procurement.demand.application.PurchaseDemandApplicationService;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.identity.application.BuyerUserApplicationService;
+import com.procurement.notification.api.NotificationResponse;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.api.RfqResponse;
@@ -44,6 +46,8 @@ class BuyerWorkspaceTodoSummaryTests {
       org.mockito.Mockito.mock(ApprovalInboxApplicationService.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final BuyerWorkspaceApplicationService buyerWorkspaceApplicationService =
       new BuyerWorkspaceApplicationService(
           buyerSupplierApplicationService,
@@ -54,7 +58,8 @@ class BuyerWorkspaceTodoSummaryTests {
           purchaseOrderApplicationService,
           paymentApplicationService,
           approvalInboxApplicationService,
-          auditLogApplicationService);
+          auditLogApplicationService,
+          notificationApplicationService);
 
   @Test
   void buyerWorkspaceSummarizesActionableTodos() {
@@ -75,7 +80,9 @@ class BuyerWorkspaceTodoSummaryTests {
     when(approvalInboxApplicationService.listPending()).thenReturn(List.of(
         approval("approval-demand"),
         approval("approval-award")));
+    when(approvalInboxApplicationService.listRecentReviewed()).thenReturn(List.of(reviewedApproval("approval-reviewed")));
     when(auditLogApplicationService.listCurrentTenantAuditLogs(50)).thenReturn(List.of());
+    when(notificationApplicationService.listCurrentUserNotifications(50)).thenReturn(List.of(notification("notice-approval")));
 
     BuyerWorkspaceResponse response = buyerWorkspaceApplicationService.load();
 
@@ -83,6 +90,10 @@ class BuyerWorkspaceTodoSummaryTests {
     assertThat(response.todoSummary().pendingAwardCount()).isEqualTo(1);
     assertThat(response.todoSummary().pendingReceiptCount()).isEqualTo(1);
     assertThat(response.todoSummary().pendingPaymentCount()).isEqualTo(2);
+    assertThat(response.recentApprovals()).extracting(PendingApprovalTaskResponse::id)
+        .containsExactly("approval-reviewed");
+    assertThat(response.notifications()).extracting(NotificationResponse::title)
+        .containsExactly("需求审批已通过");
   }
 
   private RfqResponse rfq(String id, String status) {
@@ -145,5 +156,38 @@ class BuyerWorkspaceTodoSummaryTests {
         "待审批",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         null);
+  }
+
+  private PendingApprovalTaskResponse reviewedApproval(String id) {
+    return new PendingApprovalTaskResponse(
+        id,
+        "tenant-1",
+        "purchase_demand",
+        "demand-1",
+        null,
+        "办公电脑采购",
+        "已通过",
+        70,
+        "requester-1",
+        "需求申请人",
+        BigDecimal.valueOf(100),
+        "supplier-1",
+        "晨光科技供应商",
+        "buyer-user",
+        "已通过",
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"));
+  }
+
+  private NotificationResponse notification(String id) {
+    return new NotificationResponse(
+        id,
+        "tenant-1",
+        "buyer-user",
+        "需求审批已通过",
+        "办公电脑采购审批已通过",
+        false,
+        null,
+        OffsetDateTime.parse("2026-06-15T11:01:00+08:00"));
   }
 }

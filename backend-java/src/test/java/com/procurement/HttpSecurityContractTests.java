@@ -680,6 +680,8 @@ class HttpSecurityContractTests {
         List.of(),
         List.of(),
         List.of(),
+        List.of(),
+        List.of(),
         List.of()));
 
     mockMvc.perform(get("/api/v1/buyer/workspace")
@@ -695,6 +697,8 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.orders").isArray())
         .andExpect(jsonPath("$.data.invoices").isArray())
         .andExpect(jsonPath("$.data.pendingApprovals").isArray())
+        .andExpect(jsonPath("$.data.recentApprovals").isArray())
+        .andExpect(jsonPath("$.data.notifications").isArray())
         .andExpect(jsonPath("$.data.auditLogs").isArray());
   }
 

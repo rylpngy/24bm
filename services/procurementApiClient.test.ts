@@ -409,6 +409,26 @@ describe('procurement API clients', () => {
             orders: [],
             invoices: [],
             pendingApprovals: [],
+            recentApprovals: [{
+              id: 'approval-reviewed',
+              tenantId: 'tenant-acme',
+              bizType: 'purchase_demand',
+              bizId: 'demand-java-001',
+              summaryTitle: 'Java 采购需求',
+              status: '已通过',
+              createdAt: '2026-06-15T11:00:00+08:00',
+              actedAt: '2026-06-15T12:00:00+08:00',
+            }],
+            notifications: [{
+              id: 'notice-approval-reviewed',
+              tenantId: 'tenant-acme',
+              recipientId: 'user-buyer-owner',
+              title: '需求审批已通过',
+              content: '采购 20 台电脑审批已通过',
+              read: false,
+              readAt: null,
+              createdAt: '2026-06-15T12:01:00+08:00',
+            }],
             auditLogs: [{
               id: 'audit-java-001',
               tenantId: 'tenant-acme',
@@ -431,40 +451,6 @@ describe('procurement API clients', () => {
             tenantId: 'tenant-acme',
             name: '采购负责人',
             permissions: ['buyer:approval:review'],
-          }],
-          message: '',
-        });
-      }
-      if (input === 'http://java.test/api/v1/buyer/approvals/recent') {
-        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
-        return Response.json({
-          success: true,
-          data: [{
-            id: 'approval-reviewed',
-            tenantId: 'tenant-acme',
-            bizType: 'purchase_demand',
-            bizId: 'demand-java-001',
-            summaryTitle: 'Java 采购需求',
-            status: '已通过',
-            createdAt: '2026-06-15T11:00:00+08:00',
-            actedAt: '2026-06-15T12:00:00+08:00',
-          }],
-          message: '',
-        });
-      }
-      if (input === 'http://java.test/api/v1/buyer/notifications') {
-        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
-        return Response.json({
-          success: true,
-          data: [{
-            id: 'notice-approval-reviewed',
-            tenantId: 'tenant-acme',
-            recipientId: 'user-buyer-owner',
-            title: '需求审批已通过',
-            content: '采购 20 台电脑审批已通过',
-            read: false,
-            readAt: null,
-            createdAt: '2026-06-15T12:01:00+08:00',
           }],
           message: '',
         });
@@ -508,8 +494,6 @@ describe('procurement API clients', () => {
       'http://java.test/api/v1/auth/login',
       'http://java.test/api/v1/buyer/workspace',
       'http://java.test/api/v1/buyer/roles',
-      'http://java.test/api/v1/buyer/approvals/recent',
-      'http://java.test/api/v1/buyer/notifications',
       'http://java.test/api/v1/buyer/approvals/templates',
     ]);
   });

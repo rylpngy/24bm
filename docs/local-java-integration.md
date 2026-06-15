@@ -93,7 +93,7 @@ The backend accepts `GET`, `POST`, and `OPTIONS`, including the `Authorization` 
 1. Open the Vite URL.
 2. Go to the platform workspace and confirm tenant count, active tenant count, public supplier count, pending review count, platform operation summary, and tenant rows are loaded through the Java platform workspace overlay.
 3. Go to the buyer workspace.
-4. Confirm the private supplier relation cards, material-backed sections, buyer users, buyer todo summary, purchase demand cards, RFQ cards, order sections, and invoice/payment sections are loaded through the Java buyer workspace overlay.
+4. Confirm the private supplier relation cards, material-backed sections, buyer users, buyer todo summary, buyer approval history and in-app notifications, purchase demand cards, RFQ cards, order sections, and invoice/payment sections are loaded through the Java buyer workspace overlay.
 5. Go to the supplier workspace and confirm supplier profile, RFQ opportunities, quotes, sales orders, todo summary, receivables, and recent in-app notifications are loaded through the Java supplier workspace overlay.
 6. In the buyer workspace, confirm Java approval tasks appear in `审批待办` when pending demand, supplier admission, or award approval tasks exist.
 7. Click approval actions in `审批待办` and confirm the page refreshes Java buyer data after the review result.
