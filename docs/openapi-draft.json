@@ -699,6 +699,40 @@
         }
       }
     },
+    "/buyer/suppliers/{relationId}/performance": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "维护供应商绩效评分",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerSupplier"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/materials": {
       "get": {
         "tags": [
@@ -2191,6 +2225,10 @@
         "type": "object",
         "additionalProperties": true
       },
+      "ChangeBuyerSupplierPerformanceRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "SubmitSupplierAdmissionRequest": {
         "type": "object",
         "additionalProperties": true
@@ -2481,6 +2519,7 @@
     "POST /buyer/suppliers/{relationId}/approval",
     "POST /buyer/suppliers/{relationId}/status",
     "POST /buyer/suppliers/{relationId}/profile",
+    "POST /buyer/suppliers/{relationId}/performance",
     "GET /buyer/materials",
     "POST /buyer/materials",
     "GET /buyer/departments",

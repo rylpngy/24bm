@@ -1,6 +1,7 @@
 package com.procurement.supplier.infrastructure;
 
 import com.procurement.supplier.domain.BuyerSupplierRelation;
+import java.math.BigDecimal;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -110,4 +111,16 @@ public interface BuyerSupplierRelationMapper {
       @Param("id") String id,
       @Param("level") String level,
       @Param("categoriesJson") String categoriesJson);
+
+  @Update("""
+      update buyer_supplier_relations
+      set performance_score = #{performanceScore},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+      """)
+  void updatePerformanceScore(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("performanceScore") BigDecimal performanceScore);
 }

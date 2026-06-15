@@ -9,6 +9,7 @@ import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.supplier.api.ChangeBuyerSupplierPerformanceRequest;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
@@ -16,6 +17,7 @@ import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,7 @@ public class BuyerSupplierApplicationService {
   private static final String SUPPLIER_ADMISSION_APPROVED_ACTION = "buyer_supplier_admission.approved";
   private static final String SUPPLIER_ADMISSION_REJECTED_ACTION = "buyer_supplier_admission.rejected";
   private static final String SUPPLIER_RELATION_PROFILE_UPDATED_ACTION = "buyer_supplier_relation.profile_updated";
+  private static final String SUPPLIER_RELATION_PERFORMANCE_UPDATED_ACTION = "buyer_supplier_relation.performance_updated";
   private static final String SUPPLIER_RELATION_STATUS_CHANGED_ACTION = "buyer_supplier_relation.status_changed";
 
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
@@ -212,6 +215,25 @@ public class BuyerSupplierApplicationService {
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
   }
 
+  @Transactional
+  public BuyerSupplierResponse changeRelationPerformance(
+      String relationId,
+      ChangeBuyerSupplierPerformanceRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
+    requirePerformanceScore(request.performanceScore());
+    requireRelation(tenantId, relationId);
+    buyerSupplierRelationMapper.updatePerformanceScore(
+        tenantId,
+        relationId,
+        request.performanceScore());
+    auditLogApplicationService.recordTenantAction(
+        SUPPLIER_RELATION_PERFORMANCE_UPDATED_ACTION,
+        BUYER_SUPPLIER_RELATION_TARGET_TYPE,
+        relationId);
+
+    return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
+  }
+
   private BuyerSupplierResponse toResponse(BuyerSupplierRelation relation) {
     return new BuyerSupplierResponse(
         relation.id(),
@@ -257,6 +279,14 @@ public class BuyerSupplierApplicationService {
         && !BLACKLISTED_STATUS.equals(currentStatus)
         && !REJECTED_STATUS.equals(currentStatus)) {
       throw new IllegalStateException("Only blacklisted or rejected supplier relations can be restored to pending admission: " + relationId);
+    }
+  }
+
+  private void requirePerformanceScore(BigDecimal performanceScore) {
+    if (performanceScore == null
+        || performanceScore.compareTo(BigDecimal.ZERO) < 0
+        || performanceScore.compareTo(BigDecimal.valueOf(100)) > 0) {
+      throw new IllegalArgumentException("Supplier performance score must be between 0 and 100.");
     }
   }
 

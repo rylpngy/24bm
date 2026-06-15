@@ -160,6 +160,7 @@ Authorization: Bearer <accessToken>
 - `material.created`：采购方创建物料/服务目录项。
 - `buyer_supplier_relation.created`：采购方创建私域供应商关系。
 - `buyer_supplier_relation.profile_updated`：采购方维护供应商分级和授权品类。
+- `buyer_supplier_relation.performance_updated`：采购方维护供应商绩效评分。
 - `buyer_supplier_relation.status_changed`：采购方拉黑供应商或恢复到待准入状态。
 - `buyer_supplier_admission.submitted`：采购方提交供应商准入审批。
 - `buyer_supplier_admission.approved` / `buyer_supplier_admission.rejected`：采购方审批供应商准入。
@@ -321,6 +322,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `POST /api/v1/buyer/suppliers/{relationId}/approval`：审批供应商准入。
 - `POST /api/v1/buyer/suppliers/{relationId}/status`：拉黑供应商，或将黑名单/驳回关系恢复为待准入。
 - `POST /api/v1/buyer/suppliers/{relationId}/profile`：维护私域供应商分级和授权品类。
+- `POST /api/v1/buyer/suppliers/{relationId}/performance`：维护私域供应商绩效评分。
 - `POST /api/v1/buyer/rfqs/{rfqId}/award/approval`：审批定标结果。
 
 当前审批类型：
@@ -337,6 +339,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `黑名单` 或 `已驳回` 可恢复为 `待准入`，之后重新提交准入审批。
 - `准入审批中` 关系不允许手工变更，避免与审批任务状态冲突。
 - 分级和授权品类维护始终按当前采购方 `tenantId` 过滤关系，只更新 `level` 和 `categories`，不改变准入状态。
+- 绩效评分维护始终按当前采购方 `tenantId` 过滤关系，只更新 `performance_score`，评分范围为 `0` 到 `100`。
 
 后端通过 `ApprovalTaskApplicationService` 统一从当前租户 `approval_templates` 表解析 active 审批模板并创建待审批任务，固定使用 `待审批` 初始状态。当前默认审批人按模板配置的 `default_approver_role_id`，从当前租户 active 用户的 `user_roles` 关系中解析；后续可替换为组织角色或可配置审批流。采购需求提交、供应商准入提交和定标提交只负责各自业务状态流转、审计和通知，不再直接写入 `approval_tasks`。
 

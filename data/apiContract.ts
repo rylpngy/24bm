@@ -269,6 +269,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'BuyerSupplier',
   },
   {
+    method: 'POST',
+    path: '/buyer/suppliers/{relationId}/performance',
+    audience: 'buyer',
+    action: '维护供应商绩效评分',
+    requestSchema: 'ChangeBuyerSupplierPerformanceRequest',
+    responseSchema: 'BuyerSupplier',
+  },
+  {
     method: 'GET',
     path: '/buyer/materials',
     audience: 'buyer',
@@ -920,6 +928,7 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'BuyerSupplierList',
           'CreateBuyerSupplierRequest',
           'BuyerSupplier',
+          'ChangeBuyerSupplierPerformanceRequest',
           'SubmitSupplierAdmissionRequest',
           'ReviewApprovalRequest',
           'MaterialListRequest',

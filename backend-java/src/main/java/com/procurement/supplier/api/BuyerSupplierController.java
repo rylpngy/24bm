@@ -68,4 +68,11 @@ public class BuyerSupplierController {
       @Valid @RequestBody ChangeBuyerSupplierProfileRequest request) {
     return ApiResponse.ok(buyerSupplierApplicationService.changeRelationProfile(relationId, request));
   }
+
+  @PostMapping("/{relationId}/performance")
+  public ApiResponse<BuyerSupplierResponse> changePerformance(
+      @PathVariable String relationId,
+      @Valid @RequestBody ChangeBuyerSupplierPerformanceRequest request) {
+    return ApiResponse.ok(buyerSupplierApplicationService.changeRelationPerformance(relationId, request));
+  }
 }

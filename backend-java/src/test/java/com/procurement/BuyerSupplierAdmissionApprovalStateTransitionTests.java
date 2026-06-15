@@ -15,7 +15,9 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
+import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
+import com.procurement.supplier.api.ChangeBuyerSupplierPerformanceRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
@@ -185,6 +187,47 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         "buyer_supplier_relation.profile_updated",
         "buyer_supplier_relation",
         "rel-1");
+  }
+
+  @Test
+  void changeSupplierRelationPerformanceUpdatesScoreInCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
+        .thenReturn(relation("rel-1", "tenant-1", "已准入"))
+        .thenReturn(new BuyerSupplierRelation(
+            "rel-1",
+            "tenant-1",
+            "supplier-1",
+            "晨光供应商",
+            "已准入",
+            "A",
+            "[\"办公设备\"]",
+            BigDecimal.valueOf(96.50)));
+
+    BuyerSupplierResponse response = buyerSupplierApplicationService.changeRelationPerformance(
+        "rel-1",
+        new ChangeBuyerSupplierPerformanceRequest(BigDecimal.valueOf(96.50)));
+
+    assertThat(response.performanceScore()).isEqualByComparingTo("96.50");
+    verify(buyerSupplierRelationMapper).updatePerformanceScore(
+        "tenant-1",
+        "rel-1",
+        BigDecimal.valueOf(96.50));
+    verify(auditLogApplicationService).recordTenantAction(
+        "buyer_supplier_relation.performance_updated",
+        "buyer_supplier_relation",
+        "rel-1");
+  }
+
+  @Test
+  void changeSupplierRelationPerformanceRejectsScoreOutsideRange() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+
+    assertThatThrownBy(() -> buyerSupplierApplicationService.changeRelationPerformance(
+        "rel-1",
+        new ChangeBuyerSupplierPerformanceRequest(BigDecimal.valueOf(120))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Supplier performance score must be between 0 and 100");
   }
 
   @Test
