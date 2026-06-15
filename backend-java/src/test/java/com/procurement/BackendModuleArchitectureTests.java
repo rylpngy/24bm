@@ -20,6 +20,7 @@ class BackendModuleArchitectureTests {
       Map.entry("catalog", "物料目录"),
       Map.entry("demand", "采购需求"),
       Map.entry("approval", "审批任务"),
+      Map.entry("buyer", "采购方工作台"),
       Map.entry("sourcing", "询价比价"),
       Map.entry("order", "订单履约"),
       Map.entry("finance", "财务协同"),
