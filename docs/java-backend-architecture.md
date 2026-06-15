@@ -47,6 +47,8 @@ Controller
 
 供应商工作台采用同样边界：`SupplierWorkspaceApplicationService` 只聚合供应商档案、商机、报价、订单、发票和通知；报价、确认订单、发货和应收等展示型待办规则由 `SupplierTodoSummaryAssembler` 承接。
 
+工作台待办汇总使用业务域状态常量：RFQ 状态在 `RfqStatus`，采购订单状态在 `PurchaseOrderStatus`，发票付款状态在 `InvoicePaymentStatus`。后续状态机服务也应逐步迁移到这些常量，避免中文状态值散落在应用服务中。
+
 ## 多租户策略
 
 MVP 采用共享数据库、共享 Schema、`tenant_id` 字段隔离。平台数据、供应商公共企业档案和采购方私域关系分开建模。所有组织部门、采购需求、询价、报价、订单、收货、发票、审批任务、附件和审计数据必须带租户上下文。

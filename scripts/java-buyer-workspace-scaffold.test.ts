@@ -24,9 +24,9 @@ describe('Java buyer workspace scaffold', () => {
     expect(summary).toContain('pendingPaymentCount');
     expect(service).toContain('BuyerTodoSummaryAssembler');
     expect(service).toContain('buyerTodoSummaryAssembler.summarize');
-    expect(assembler).toContain('RFQ_QUOTING_STATUS');
-    expect(assembler).toContain('ORDER_SHIPPED_STATUS');
-    expect(assembler).toContain('INVOICE_PARTIAL_PAYMENT_STATUS');
+    expect(assembler).toContain('RfqStatus.QUOTING');
+    expect(assembler).toContain('PurchaseOrderStatus.SHIPPED');
+    expect(assembler).toContain('InvoicePaymentStatus.PARTIAL_PAID');
     expect(service).toContain('listRecentReviewed()');
     expect(service).toContain('listCurrentUserNotifications(NOTIFICATION_LIMIT)');
     expect(readme).toContain('Buyer workspace includes `todoSummary` counts');

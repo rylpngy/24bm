@@ -72,8 +72,8 @@ describe('Java supplier workspace scaffold', () => {
     expect(supplierWorkspaceService).toContain('listCurrentSupplierUserNotifications(WORKSPACE_NOTIFICATION_LIMIT)');
     expect(supplierWorkspaceService).toContain('SupplierTodoSummaryAssembler');
     expect(supplierWorkspaceService).toContain('supplierTodoSummaryAssembler.summarize');
-    expect(supplierTodoSummaryAssembler).toContain('ORDER_PENDING_CONFIRMATION_STATUS');
-    expect(supplierTodoSummaryAssembler).toContain('INVOICE_PARTIAL_PAYMENT_STATUS');
+    expect(supplierTodoSummaryAssembler).toContain('PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION');
+    expect(supplierTodoSummaryAssembler).toContain('InvoicePaymentStatus.PARTIAL_PAID');
     expect(supplierWorkspaceResponse).toContain('SupplierTodoSummaryResponse todoSummary');
     expect(supplierWorkspaceResponse).toContain('List<NotificationResponse> notifications');
   });

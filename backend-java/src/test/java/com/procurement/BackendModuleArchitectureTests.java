@@ -79,4 +79,36 @@ class BackendModuleArchitectureTests {
       }
     }
   }
+
+  @Test
+  void workspaceTodoAssemblersUseDomainStatusConstants() throws IOException {
+    Path rfqStatus = SOURCE_ROOT.resolve("sourcing/domain/RfqStatus.java");
+    Path purchaseOrderStatus = SOURCE_ROOT.resolve("order/domain/PurchaseOrderStatus.java");
+    Path invoicePaymentStatus = SOURCE_ROOT.resolve("finance/domain/InvoicePaymentStatus.java");
+    Path buyerAssembler = SOURCE_ROOT.resolve("buyer/application/BuyerTodoSummaryAssembler.java");
+    Path supplierAssembler = SOURCE_ROOT.resolve("supplier/application/SupplierTodoSummaryAssembler.java");
+
+    assertThat(rfqStatus).exists();
+    assertThat(purchaseOrderStatus).exists();
+    assertThat(invoicePaymentStatus).exists();
+
+    String buyerSource = Files.readString(buyerAssembler);
+    String supplierSource = Files.readString(supplierAssembler);
+
+    assertThat(buyerSource)
+        .contains("RfqStatus.QUOTING")
+        .contains("PurchaseOrderStatus.SHIPPED")
+        .contains("InvoicePaymentStatus.PENDING_PAYMENT")
+        .contains("InvoicePaymentStatus.PARTIAL_PAID")
+        .doesNotContain("private static final String RFQ_QUOTING_STATUS")
+        .doesNotContain("private static final String ORDER_SHIPPED_STATUS");
+    assertThat(supplierSource)
+        .contains("RfqStatus.QUOTING")
+        .contains("PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION")
+        .contains("PurchaseOrderStatus.PENDING_SHIPMENT")
+        .contains("InvoicePaymentStatus.PENDING_PAYMENT")
+        .contains("InvoicePaymentStatus.PARTIAL_PAID")
+        .doesNotContain("private static final String RFQ_QUOTING_STATUS")
+        .doesNotContain("private static final String ORDER_PENDING_CONFIRMATION_STATUS");
+  }
 }
