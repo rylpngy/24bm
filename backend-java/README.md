@@ -263,6 +263,14 @@ Buyer and supplier announcement read endpoints are:
 
 Buyer users can read active announcements with audience `all` or `buyer`; supplier users can read active announcements with audience `all` or `supplier`.
 
+## Shared Dictionary API
+
+Authenticated platform, buyer, and supplier users can read shared dictionary entries:
+
+- `GET /api/v1/dictionaries?type=payment_status`
+
+Dictionary entries are global rather than tenant scoped, stored in `dictionaries`, and ordered by `sort_order`. MVP seed data includes `payment_status`, `announcement_audience`, `supplier_user_status`, and `attachment_visibility`.
+
 ## RFQ APIs
 
 The first sourcing module exposes buyer-side RFQ APIs:

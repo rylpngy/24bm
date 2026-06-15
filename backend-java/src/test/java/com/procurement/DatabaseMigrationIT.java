@@ -46,6 +46,7 @@ class DatabaseMigrationIT {
             'materials',
             'purchase_demands',
             'purchase_demand_items',
+            'dictionaries',
             'rfqs',
             'purchase_orders',
             'invoices'
@@ -54,6 +55,7 @@ class DatabaseMigrationIT {
         """, String.class);
 
     assertThat(tableNames).containsExactly(
+        "dictionaries",
         "invoices",
         "materials",
         "purchase_demand_items",

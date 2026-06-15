@@ -92,6 +92,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/dictionaries',
+    audience: 'shared',
+    action: '按类型加载公共数据字典',
+    requestSchema: 'DictionaryListRequest',
+    responseSchema: 'DictionaryEntryList',
+  },
+  {
+    method: 'GET',
     path: '/platform/workspace',
     audience: 'platform',
     action: '加载平台工作台聚合数据',
@@ -660,6 +668,12 @@ export const databaseTables: DatabaseTable[] = [
     tenantScoped: false,
     purpose: '平台运营方发布的公共公告，面向全部、采购方或供应商。',
     requiredColumns: ['id', 'title', 'content', 'audience', 'status', 'published_by', 'created_at'],
+  },
+  {
+    name: 'dictionaries',
+    tenantScoped: false,
+    purpose: '平台共享数据字典，提供状态、受众和可见性等枚举项。',
+    requiredColumns: ['type', 'code', 'label', 'sort_order', 'status'],
   },
   {
     name: 'supplier_qualifications',

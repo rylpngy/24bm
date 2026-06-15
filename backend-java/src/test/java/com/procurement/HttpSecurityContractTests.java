@@ -32,6 +32,9 @@ import com.procurement.attachment.application.AttachmentApplicationService;
 import com.procurement.demand.api.PurchaseDemandController;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.demand.application.PurchaseDemandApplicationService;
+import com.procurement.dictionary.api.DictionaryController;
+import com.procurement.dictionary.api.DictionaryEntryResponse;
+import com.procurement.dictionary.application.DictionaryApplicationService;
 import com.procurement.identity.SecurityConfig;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.api.AuthController;
@@ -145,6 +148,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 @WebMvcTest(controllers = {
     HealthController.class,
+    DictionaryController.class,
     AuthController.class,
     ApprovalInboxController.class,
     PurchaseDemandController.class,
@@ -199,6 +203,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private PurchaseDemandApplicationService purchaseDemandApplicationService;
+
+  @MockBean
+  private DictionaryApplicationService dictionaryApplicationService;
 
   @MockBean
   private ApprovalInboxApplicationService approvalInboxApplicationService;
@@ -731,6 +738,33 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.supplierId").value("ent-supplier-sunrise"))
         .andExpect(jsonPath("$.data.tenantId").doesNotExist())
         .andExpect(jsonPath("$.data.roles[0]").value(not("BUYER_OWNER")));
+  }
+
+  @Test
+  void authenticatedUsersCanReadSharedDictionaries() throws Exception {
+    mockMvc.perform(get("/api/v1/dictionaries")
+            .param("type", "payment_status"))
+        .andExpect(status().isForbidden());
+
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    when(dictionaryApplicationService.listByType("payment_status")).thenReturn(List.of(
+        new DictionaryEntryResponse("payment_status", "pending", "待付款", 10),
+        new DictionaryEntryResponse("payment_status", "paid", "已付款", 20)));
+
+    mockMvc.perform(get("/api/v1/dictionaries")
+            .param("type", "payment_status")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].code").value("pending"))
+        .andExpect(jsonPath("$.data[1].label").value("已付款"));
   }
 
   @Test

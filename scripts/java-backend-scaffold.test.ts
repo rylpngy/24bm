@@ -36,6 +36,7 @@ describe('Java backend scaffold', () => {
       'notification',
       'attachment',
       'audit',
+      'dictionary',
       'common',
     ];
 
@@ -54,6 +55,7 @@ describe('Java backend scaffold', () => {
   it('moves the initial PostgreSQL schema into Flyway migrations', () => {
     const migration = read('backend-java/src/main/resources/db/migration/V1__initial_schema.sql');
     const supplierQualificationMigration = read('backend-java/src/main/resources/db/migration/V3__supplier_qualifications.sql');
+    const dictionaryMigration = read('backend-java/src/main/resources/db/migration/V5__dictionaries.sql');
 
     expect(migration).toContain('create table tenants');
     expect(migration).toContain('create table departments');
@@ -61,6 +63,7 @@ describe('Java backend scaffold', () => {
     expect(migration).toContain('create table rfqs');
     expect(migration).toContain('create table purchase_orders');
     expect(supplierQualificationMigration).toContain('create table supplier_qualifications');
+    expect(dictionaryMigration).toContain('create table dictionaries');
   });
 
   it('documents and pins the local Maven verification entrypoint', () => {
@@ -186,6 +189,26 @@ describe('Java backend scaffold', () => {
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/PurchaseOrderNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/DeliveryNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/ReceiptNotificationTests.java'))).toBe(true);
+  });
+
+  it('documents and exposes shared dictionary APIs', () => {
+    const architecture = read('docs/java-backend-architecture.md');
+    const readme = read('backend-java/README.md');
+    const controller = read('backend-java/src/main/java/com/procurement/dictionary/api/DictionaryController.java');
+    const service = read('backend-java/src/main/java/com/procurement/dictionary/application/DictionaryApplicationService.java');
+    const mapper = read('backend-java/src/main/java/com/procurement/dictionary/infrastructure/DictionaryMapper.java');
+    const migration = read('backend-java/src/main/resources/db/migration/V5__dictionaries.sql');
+    const securityTests = read('backend-java/src/test/java/com/procurement/HttpSecurityContractTests.java');
+
+    expect(architecture).toContain('数据字典 Java API');
+    expect(architecture).toContain('GET /api/v1/dictionaries?type=payment_status');
+    expect(readme).toContain('Shared Dictionary API');
+    expect(readme).toContain('GET /api/v1/dictionaries?type=payment_status');
+    expect(controller).toContain('@RequestMapping("/api/v1/dictionaries")');
+    expect(service).toContain('listByType');
+    expect(mapper).toContain('listActiveByType');
+    expect(migration).toContain('payment_status');
+    expect(securityTests).toContain('authenticatedUsersCanReadSharedDictionaries');
   });
 
   it('guards buyer master data creation audit coverage', () => {

@@ -27,6 +27,7 @@
 - `notification`：站内通知，邮件和短信预留接口。
 - `attachment`：资质、需求、报价、发票附件。
 - `audit`：操作日志、数据变更留痕。
+- `dictionary`：公共数据字典。
 - `common`：统一响应、异常、租户上下文、基础工具。
 
 ## 分层
@@ -199,6 +200,23 @@ Authorization: Bearer <accessToken>
 
 - `platform_announcements`
 - `audit_logs`
+
+## 数据字典 Java API
+
+公共数据字典接口落在 `dictionary` 模块：
+
+- `GET /api/v1/dictionaries?type=payment_status`：按字典类型读取 active 字典项。
+
+当前边界：
+
+- 字典是共享底座资源，不绑定采购方 `tenant_id` 或供应商 `supplier_id`。
+- 所有已登录平台、采购方、供应商用户均可读取；匿名用户不能读取。
+- 查询结果按 `sort_order, code` 排序。
+- MVP 初始内置 `payment_status`、`announcement_audience`、`supplier_user_status`、`attachment_visibility`。
+
+对应数据库表：
+
+- `dictionaries`
 
 ## RFQ 询价 Java API
 

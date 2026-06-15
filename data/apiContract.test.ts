@@ -11,6 +11,7 @@ describe('procurement SaaS API contract draft', () => {
   it('defines the first-phase inquiry-to-payment flow endpoints in order', () => {
     expect(mvpFlowEndpoints.map((endpoint) => `${endpoint.method} ${endpoint.path}`)).toEqual([
       'POST /auth/login',
+      'GET /dictionaries',
       'GET /platform/workspace',
       'GET /platform/overview',
       'GET /platform/tenants',
@@ -84,6 +85,8 @@ describe('procurement SaaS API contract draft', () => {
 
   it('declares tenant-scoped database tables and public supplier identity tables', () => {
     expect(databaseTables.find((table) => table.name === 'supplier_enterprises')?.tenantScoped).toBe(false);
+    expect(databaseTables.find((table) => table.name === 'dictionaries')?.tenantScoped).toBe(false);
+    expect(databaseTables.find((table) => table.name === 'dictionaries')?.requiredColumns).toContain('sort_order');
     expect(databaseTables.find((table) => table.name === 'platform_announcements')?.tenantScoped).toBe(false);
     expect(databaseTables.find((table) => table.name === 'platform_announcements')?.requiredColumns).toContain('audience');
     expect(databaseTables.find((table) => table.name === 'supplier_qualifications')?.tenantScoped).toBe(false);
@@ -106,6 +109,7 @@ describe('procurement SaaS API contract draft', () => {
 
     expect(openApi.openapi).toBe('3.1.0');
     expect(openApi.info.title).toBe('24Bid Multi-tenant Procurement API');
+    expect(openApi.paths['/dictionaries'].get.tags).toContain('shared');
     expect(openApi.paths['/platform/overview'].get.tags).toContain('platform');
     expect(openApi.paths['/platform/announcements'].post.tags).toContain('platform');
     expect(openApi.paths['/buyer/approvals/pending'].get.tags).toContain('buyer');
@@ -139,6 +143,7 @@ describe('procurement SaaS API contract draft', () => {
     const json = serializeOpenApiDraft();
 
     expect(json).toContain('"openapi": "3.1.0"');
+    expect(json).toContain('"GET /dictionaries"');
     expect(json).toContain('"POST /buyer/demands"');
     expect(json).toContain('"GET /buyer/approvals/pending"');
     expect(json).toContain('"GET /buyer/audit-logs"');
