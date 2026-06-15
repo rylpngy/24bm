@@ -222,11 +222,16 @@ describe('Java backend scaffold', () => {
     expect(architecture).toContain('buyer_user.created');
     expect(architecture).toContain('material.created');
     expect(architecture).toContain('buyer_supplier_relation.created');
+    expect(architecture).toContain('buyer_supplier_relation.profile_updated');
     expect(architecture).toContain('buyer_supplier_relation.status_changed');
     expect(readme).toContain('Creating buyer users, materials, and private supplier relations records audit log actions');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/status');
+    expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/profile');
     expect(controller).toContain('@PostMapping("/{relationId}/status")');
+    expect(controller).toContain('@PostMapping("/{relationId}/profile")');
+    expect(service).toContain('buyer_supplier_relation.profile_updated');
     expect(service).toContain('buyer_supplier_relation.status_changed');
+    expect(service).toContain('changeRelationProfile');
     expect(service).toContain('BLACKLISTED_STATUS');
     expect(service).toContain('requireManualStatusTransition');
     expect(auditTests).toContain('buyerUserCreationRecordsAuditLog');

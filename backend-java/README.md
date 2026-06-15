@@ -266,8 +266,11 @@ Buyer users can read active announcements with audience `all` or `buyer`; suppli
 Buyer supplier relation maintenance also supports:
 
 - `POST /api/v1/buyer/suppliers/{relationId}/status`
+- `POST /api/v1/buyer/suppliers/{relationId}/profile`
 
 Manual status changes are deliberately narrow in the MVP: buyers can move a relation to `黑名单`, or restore a `黑名单`/`已驳回` relation to `待准入`. The endpoint does not allow bypassing supplier admission approval by setting `已准入` directly, and records `buyer_supplier_relation.status_changed`.
+
+Profile maintenance updates the private supplier relation's `level` and authorized `categories` inside the current buyer tenant and records `buyer_supplier_relation.profile_updated`.
 
 ## Shared Dictionary API
 

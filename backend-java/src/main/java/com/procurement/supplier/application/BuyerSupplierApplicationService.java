@@ -10,6 +10,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.supplier.api.BuyerSupplierResponse;
+import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
@@ -34,6 +35,7 @@ public class BuyerSupplierApplicationService {
   private static final String SUPPLIER_ADMISSION_SUBMITTED_ACTION = "buyer_supplier_admission.submitted";
   private static final String SUPPLIER_ADMISSION_APPROVED_ACTION = "buyer_supplier_admission.approved";
   private static final String SUPPLIER_ADMISSION_REJECTED_ACTION = "buyer_supplier_admission.rejected";
+  private static final String SUPPLIER_RELATION_PROFILE_UPDATED_ACTION = "buyer_supplier_relation.profile_updated";
   private static final String SUPPLIER_RELATION_STATUS_CHANGED_ACTION = "buyer_supplier_relation.status_changed";
 
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
@@ -173,6 +175,23 @@ public class BuyerSupplierApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         SUPPLIER_RELATION_STATUS_CHANGED_ACTION,
+        BUYER_SUPPLIER_RELATION_TARGET_TYPE,
+        relationId);
+
+    return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
+  }
+
+  @Transactional
+  public BuyerSupplierResponse changeRelationProfile(String relationId, ChangeBuyerSupplierProfileRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
+    requireRelation(tenantId, relationId);
+    buyerSupplierRelationMapper.updateProfile(
+        tenantId,
+        relationId,
+        request.level(),
+        writeCategories(request.categories()));
+    auditLogApplicationService.recordTenantAction(
+        SUPPLIER_RELATION_PROFILE_UPDATED_ACTION,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
 

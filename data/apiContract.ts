@@ -259,6 +259,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'BuyerSupplier',
   },
   {
+    method: 'POST',
+    path: '/buyer/suppliers/{relationId}/profile',
+    audience: 'buyer',
+    action: '维护供应商分级和授权品类',
+    requestSchema: 'ChangeBuyerSupplierProfileRequest',
+    responseSchema: 'BuyerSupplier',
+  },
+  {
     method: 'GET',
     path: '/buyer/materials',
     audience: 'buyer',

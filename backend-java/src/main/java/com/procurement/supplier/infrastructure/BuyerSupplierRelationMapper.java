@@ -83,4 +83,18 @@ public interface BuyerSupplierRelationMapper {
       @Param("id") String id,
       @Param("currentStatus") String currentStatus,
       @Param("status") String status);
+
+  @Update("""
+      update buyer_supplier_relations
+      set level = #{level},
+          categories = #{categoriesJson}::jsonb,
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+      """)
+  void updateProfile(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("level") String level,
+      @Param("categoriesJson") String categoriesJson);
 }

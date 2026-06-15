@@ -52,4 +52,11 @@ public class BuyerSupplierController {
       @Valid @RequestBody ChangeBuyerSupplierStatusRequest request) {
     return ApiResponse.ok(buyerSupplierApplicationService.changeRelationStatus(relationId, request));
   }
+
+  @PostMapping("/{relationId}/profile")
+  public ApiResponse<BuyerSupplierResponse> changeProfile(
+      @PathVariable String relationId,
+      @Valid @RequestBody ChangeBuyerSupplierProfileRequest request) {
+    return ApiResponse.ok(buyerSupplierApplicationService.changeRelationProfile(relationId, request));
+  }
 }

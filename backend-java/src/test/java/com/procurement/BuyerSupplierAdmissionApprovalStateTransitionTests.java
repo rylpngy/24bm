@@ -15,6 +15,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
+import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
@@ -154,6 +155,36 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         new ChangeBuyerSupplierStatusRequest("已准入")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unsupported buyer supplier relation target status");
+  }
+
+  @Test
+  void changeSupplierRelationProfileUpdatesLevelAndCategoriesInCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
+        .thenReturn(relation("rel-1", "tenant-1", "已准入"))
+        .thenReturn(new BuyerSupplierRelation(
+            "rel-1",
+            "tenant-1",
+            "supplier-1",
+            "晨光供应商",
+            "已准入",
+            "S",
+            "[\"办公设备\",\"电脑整机\"]",
+            BigDecimal.valueOf(90)));
+
+    buyerSupplierApplicationService.changeRelationProfile(
+        "rel-1",
+        new ChangeBuyerSupplierProfileRequest("S", java.util.List.of("办公设备", "电脑整机")));
+
+    verify(buyerSupplierRelationMapper).updateProfile(
+        "tenant-1",
+        "rel-1",
+        "S",
+        "[\"办公设备\",\"电脑整机\"]");
+    verify(auditLogApplicationService).recordTenantAction(
+        "buyer_supplier_relation.profile_updated",
+        "buyer_supplier_relation",
+        "rel-1");
   }
 
   private BuyerSupplierRelation relation(String id, String tenantId, String status) {

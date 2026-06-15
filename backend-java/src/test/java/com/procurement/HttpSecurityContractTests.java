@@ -113,6 +113,7 @@ import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.supplier.api.BuyerSupplierController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
+import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.ChangeSupplierUserStatusRequest;
@@ -1974,6 +1975,43 @@ class HttpSecurityContractTests {
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.status").value("黑名单"));
+
+    mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/profile")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "level": "S",
+                  "categories": ["服务", "办公设备"]
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(buyerSupplierApplicationService.changeRelationProfile(
+        org.mockito.ArgumentMatchers.eq("rel-created"),
+        org.mockito.ArgumentMatchers.any(ChangeBuyerSupplierProfileRequest.class)))
+        .thenReturn(new BuyerSupplierResponse(
+            "rel-created",
+            "tenant-acme",
+            "ent-supplier-ocean",
+            "远洋供应商",
+            "黑名单",
+            "S",
+            List.of("服务", "办公设备"),
+            BigDecimal.ZERO));
+
+    mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/profile")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "level": "S",
+                  "categories": ["服务", "办公设备"]
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.level").value("S"))
+        .andExpect(jsonPath("$.data.categories[1]").value("办公设备"));
 
     when(materialApplicationService.listCurrentTenantMaterials()).thenReturn(List.of(new MaterialResponse(
         "mat-laptop",
