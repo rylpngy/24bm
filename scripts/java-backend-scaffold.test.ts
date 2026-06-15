@@ -252,12 +252,15 @@ describe('Java backend scaffold', () => {
 
   it('keeps the Java architecture handoff aligned with implemented MVP flow stages', () => {
     const architecture = read('docs/java-backend-architecture.md');
+    const checklist = read('docs/java-backend-stage-checklist.md');
 
     expect(architecture).toContain('比价定标基于 `quotes` 表中 `已提交` 报价生成 `award_decisions`');
     expect(architecture).toContain('订单模块基于已通过的 `award_decisions` 生成 `purchase_orders`');
     expect(architecture).toContain('履约模块从供应商确认订单开始，已串起发货、采购方收货验收、发票登记和付款状态');
     expect(architecture).toContain('收货模块基于 `purchase_orders` 和 `deliveries` 创建 `receipts`');
     expect(architecture).toContain('财务协同模块在订单已收货后接入发票登记和付款状态');
+    expect(architecture).toContain('docs/java-backend-stage-checklist.md');
+    expect(checklist).toContain('后续迭代入口');
     expect(architecture).not.toContain('供应商报价、报价比价、定标和订单生成在后续阶段继续补齐');
     expect(architecture).not.toContain('后续履约模块从供应商确认订单开始');
     expect(architecture).not.toContain('后续财务协同模块会在订单已收货后接入发票登记');
