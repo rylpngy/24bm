@@ -139,6 +139,7 @@ Authorization: Bearer <accessToken>
 - 请求中的所有 `demandIds` 必须属于当前 `tenantId`。
 - 需求状态必须是 `已通过`。
 - 请求中的所有 `invitedSupplierIds` 必须在 `buyer_supplier_relations` 中处于 `已准入`。
+- 当前租户必须启用 `rfq` 功能开关，否则不能创建 RFQ。
 - 创建后的 RFQ 状态为 `报价中`。
 
 对应数据库表：

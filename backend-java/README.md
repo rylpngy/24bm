@@ -218,6 +218,8 @@ The first sourcing module exposes buyer-side RFQ APIs:
 - `GET /api/v1/buyer/rfqs`
 - `POST /api/v1/buyer/rfqs`
 
+RFQ creation requires the current buyer tenant to have the `rfq` feature enabled.
+
 Example creation payload:
 
 ```json

@@ -12,6 +12,7 @@ import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -25,12 +26,15 @@ class RfqCreationStateTransitionTests {
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper = org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
+  private final TenantFeatureApplicationService tenantFeatureApplicationService =
+      org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final RfqApplicationService rfqApplicationService = new RfqApplicationService(
       rfqMapper,
       rfqDemandMapper,
       rfqInviteMapper,
       purchaseDemandMapper,
-      buyerSupplierRelationMapper);
+      buyerSupplierRelationMapper,
+      tenantFeatureApplicationService);
 
   @AfterEach
   void clearTenantContext() {

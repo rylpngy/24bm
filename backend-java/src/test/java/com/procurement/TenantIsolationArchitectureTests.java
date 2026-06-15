@@ -18,7 +18,8 @@ class TenantIsolationArchitectureTests {
   private static final Set<String> SHARED_SCOPE_MAPPERS = Set.of(
       "platform/infrastructure/PlatformTenantMapper.java",
       "platform/infrastructure/PlatformEnterpriseMapper.java",
-      "supplier/infrastructure/SupplierProfileMapper.java");
+      "supplier/infrastructure/SupplierProfileMapper.java",
+      "tenant/infrastructure/TenantFeatureMapper.java");
 
   @Test
   void applicationServicesUseCentralTenantAccessGuardInsteadOfLocalThreadLocalReads() throws IOException {

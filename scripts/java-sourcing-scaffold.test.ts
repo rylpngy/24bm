@@ -49,6 +49,8 @@ describe('Java RFQ sourcing scaffold', () => {
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantAccessGuard.requireUserId');
+    expect(service).toContain('TenantFeatureApplicationService');
+    expect(service).toContain('requireEnabled(tenantId, RFQ_FEATURE)');
     expect(service).toContain('已通过');
     expect(service).toContain('已准入');
     expect(service).toContain('报价中');
@@ -60,7 +62,9 @@ describe('Java RFQ sourcing scaffold', () => {
 
     expect(readme).toContain('GET /api/v1/buyer/rfqs');
     expect(readme).toContain('POST /api/v1/buyer/rfqs');
+    expect(readme).toContain('RFQ creation requires the current buyer tenant to have the `rfq` feature enabled');
     expect(architecture).toContain('RFQ 询价 Java API');
+    expect(architecture).toContain('当前租户必须启用 `rfq` 功能开关');
   });
 
   it('keeps source files under sourcing and supplier module boundaries', () => {

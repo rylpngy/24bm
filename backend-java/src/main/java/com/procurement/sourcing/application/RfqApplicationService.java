@@ -10,6 +10,7 @@ import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -21,24 +22,28 @@ public class RfqApplicationService {
   private static final String APPROVED_SUPPLIER_STATUS = "已准入";
   private static final String QUOTING_STATUS = "报价中";
   private static final String INVITED_STATUS = "已邀请";
+  private static final String RFQ_FEATURE = "rfq";
 
   private final RfqMapper rfqMapper;
   private final RfqDemandMapper rfqDemandMapper;
   private final RfqInviteMapper rfqInviteMapper;
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
+  private final TenantFeatureApplicationService tenantFeatureApplicationService;
 
   public RfqApplicationService(
       RfqMapper rfqMapper,
       RfqDemandMapper rfqDemandMapper,
       RfqInviteMapper rfqInviteMapper,
       PurchaseDemandMapper purchaseDemandMapper,
-      BuyerSupplierRelationMapper buyerSupplierRelationMapper) {
+      BuyerSupplierRelationMapper buyerSupplierRelationMapper,
+      TenantFeatureApplicationService tenantFeatureApplicationService) {
     this.rfqMapper = rfqMapper;
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
+    this.tenantFeatureApplicationService = tenantFeatureApplicationService;
   }
 
   public List<RfqResponse> listCurrentTenantRfqs() {
@@ -52,6 +57,7 @@ public class RfqApplicationService {
   public RfqResponse create(CreateRfqRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
     String userId = TenantAccessGuard.requireUserId("buyer RFQ APIs");
+    tenantFeatureApplicationService.requireEnabled(tenantId, RFQ_FEATURE);
     validateDemands(tenantId, request.demandIds());
     validateSuppliers(tenantId, request.invitedSupplierIds());
 
