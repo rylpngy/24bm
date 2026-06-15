@@ -40,6 +40,22 @@ public interface BuyerUserMapper {
       """)
   int countByTenant(@Param("tenantId") String tenantId);
 
+  @Select("""
+      select u.id
+      from users u
+      join user_roles ur on ur.user_id = u.id
+      join roles r on r.id = ur.role_id
+      where u.tenant_id = #{tenantId}
+        and u.status = 'active'
+        and r.id = #{roleId}
+        and r.scope = 'buyer'
+      order by u.created_at asc
+      limit 1
+      """)
+  String findDefaultApproverId(
+      @Param("tenantId") String tenantId,
+      @Param("roleId") String roleId);
+
   @Insert("""
       insert into users (id, tenant_id, name, mobile, email, status)
       values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status})

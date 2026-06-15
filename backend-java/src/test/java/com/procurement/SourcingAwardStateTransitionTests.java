@@ -12,6 +12,7 @@ import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
+import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.sourcing.api.AwardDecisionResponse;
 import com.procurement.sourcing.api.AwardRfqRequest;
 import com.procurement.sourcing.api.ReviewAwardApprovalRequest;
@@ -34,8 +35,9 @@ class SourcingAwardStateTransitionTests {
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
-      new ApprovalTaskApplicationService(approvalTaskMapper);
+      new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
@@ -102,6 +104,8 @@ class SourcingAwardStateTransitionTests {
         .thenReturn(awardDecision("award-1", "tenant-1", "rfq-1", "quote-1", "supplier-1", "待审批"));
     when(approvalTaskMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.any()))
         .thenReturn(task("approval-1", "tenant-1", "award-1", "待审批"));
+    when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
+        .thenReturn("user-buyer-owner");
 
     AwardDecisionResponse response = awardApplicationService.award("rfq-1", new AwardRfqRequest("quote-1", "最低价"));
 
@@ -120,7 +124,7 @@ class SourcingAwardStateTransitionTests {
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.eq("rfq_award"),
         org.mockito.ArgumentMatchers.any(),
-        org.mockito.ArgumentMatchers.eq("buyer-owner"),
+        org.mockito.ArgumentMatchers.eq("user-buyer-owner"),
         org.mockito.ArgumentMatchers.eq("待审批"));
     verify(auditLogApplicationService).recordTenantAction(
         org.mockito.ArgumentMatchers.eq("rfq_award.submitted"),

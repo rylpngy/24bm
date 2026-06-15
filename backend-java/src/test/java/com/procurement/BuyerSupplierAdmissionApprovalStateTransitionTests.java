@@ -12,6 +12,7 @@ import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
@@ -26,8 +27,9 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
-      new ApprovalTaskApplicationService(approvalTaskMapper);
+      new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final BuyerSupplierApplicationService buyerSupplierApplicationService =
       new BuyerSupplierApplicationService(
@@ -51,6 +53,8 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         .thenReturn(1);
     when(approvalTaskMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.any()))
         .thenReturn(task("approval-1", "tenant-1", "rel-1", "待审批"));
+    when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
+        .thenReturn("user-buyer-owner");
 
     ApprovalTaskResponse response = buyerSupplierApplicationService.submitAdmission("rel-1");
 
@@ -62,7 +66,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.eq("buyer_supplier_admission"),
         org.mockito.ArgumentMatchers.eq("rel-1"),
-        org.mockito.ArgumentMatchers.eq("buyer-owner"),
+        org.mockito.ArgumentMatchers.eq("user-buyer-owner"),
         org.mockito.ArgumentMatchers.eq("待审批"));
     verify(auditLogApplicationService).recordTenantAction(
         "buyer_supplier_admission.submitted",

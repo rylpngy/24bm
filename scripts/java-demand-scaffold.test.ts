@@ -36,6 +36,9 @@ describe('Java purchase demand scaffold', () => {
     const itemMapper = read('backend-java/src/main/java/com/procurement/demand/infrastructure/PurchaseDemandItemMapper.java');
     const approvalMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTaskMapper.java');
     const approvalService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java');
+    const buyerUserMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerUserMapper.java');
+    const migration = read('backend-java/src/main/resources/db/migration/V1__initial_schema.sql');
+    const localSeed = read('backend-java/src/main/resources/db/dev/V100__local_demo_seed.sql');
 
     expect(demandMapper).toContain('@Mapper');
     expect(demandMapper).toContain('purchase_demands');
@@ -49,8 +52,13 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalService).toContain('TPL_PURCHASE_DEMAND');
     expect(approvalService).toContain('TPL_SUPPLIER_ADMISSION');
     expect(approvalService).toContain('TPL_RFQ_AWARD');
-    expect(approvalService).toContain('buyer-owner');
+    expect(approvalService).toContain('role-buyer-owner');
+    expect(approvalService).toContain('findDefaultApproverId');
     expect(approvalService).toContain('Unsupported approval biz type');
+    expect(buyerUserMapper).toContain('findDefaultApproverId');
+    expect(buyerUserMapper).toContain('user_roles');
+    expect(migration).toContain('create table user_roles');
+    expect(localSeed).toContain("('user-buyer-owner', 'role-buyer-owner')");
   });
 
   it('centralizes pending approval task creation behind the approval application service', () => {

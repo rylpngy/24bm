@@ -55,6 +55,13 @@ create table roles (
   permissions jsonb not null default '[]'::jsonb
 );
 
+create table user_roles (
+  user_id text not null references users(id),
+  role_id text not null references roles(id),
+  created_at timestamptz not null default now(),
+  primary key (user_id, role_id)
+);
+
 create table buyer_supplier_relations (
   id text primary key,
   tenant_id text not null references tenants(id),

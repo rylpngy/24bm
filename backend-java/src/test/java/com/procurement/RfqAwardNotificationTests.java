@@ -32,12 +32,12 @@ class RfqAwardNotificationTests {
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
-      new ApprovalTaskApplicationService(approvalTaskMapper);
+      new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationMapper notificationMapper = org.mockito.Mockito.mock(NotificationMapper.class);
-  private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final NotificationApplicationService notificationApplicationService =
       new NotificationApplicationService(notificationMapper, buyerUserMapper);
   private final AwardApplicationService awardApplicationService = new AwardApplicationService(
@@ -67,6 +67,8 @@ class RfqAwardNotificationTests {
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> awardDecision(invocation.getArgument(1)));
+    when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
+        .thenReturn("user-buyer-owner");
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
         new BuyerUser("approver-1", "tenant-1", "审批人", "13800000001", "approver@example.com", "启用"),
         new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用")));

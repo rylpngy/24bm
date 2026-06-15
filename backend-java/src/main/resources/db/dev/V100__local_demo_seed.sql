@@ -57,6 +57,13 @@ on conflict (id) do update set
   name = excluded.name,
   permissions = excluded.permissions;
 
+insert into user_roles (user_id, role_id)
+values
+  ('user-buyer-owner', 'role-buyer-owner'),
+  ('user-supplier-sales', 'role-supplier-sales'),
+  ('user-platform-admin', 'role-platform-admin')
+on conflict (user_id, role_id) do nothing;
+
 insert into buyer_supplier_relations (id, tenant_id, supplier_id, status, level, categories, performance_score)
 values
   ('rel-acme-sunrise', 'tenant-acme', 'ent-supplier-sunrise', '已准入', 'A', '["办公设备","电脑整机"]'::jsonb, 94.50),

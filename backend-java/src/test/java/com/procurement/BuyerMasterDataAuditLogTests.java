@@ -96,12 +96,13 @@ class BuyerMasterDataAuditLogTests {
     BuyerSupplierRelationMapper buyerSupplierRelationMapper =
         org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
     ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+    BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
     BuyerSupplierApplicationService buyerSupplierApplicationService =
         new BuyerSupplierApplicationService(
             buyerSupplierRelationMapper,
             new ObjectMapper(),
             approvalTaskMapper,
-            new ApprovalTaskApplicationService(approvalTaskMapper),
+            new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper),
             auditLogApplicationService);
     when(buyerSupplierRelationMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),

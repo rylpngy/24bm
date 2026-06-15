@@ -7,14 +7,16 @@ import static org.mockito.Mockito.when;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.identity.infrastructure.BuyerUserMapper;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 
 class ApprovalTaskCreationServiceTests {
 
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
-      new ApprovalTaskApplicationService(approvalTaskMapper);
+      new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
 
   @Test
   void createPendingTaskUsesUnifiedPendingStatusAndReturnsPersistedTask() {
@@ -41,6 +43,8 @@ class ApprovalTaskCreationServiceTests {
 
   @Test
   void createPendingTaskResolvesFixedTemplateDefaultAssigneeWhenMissing() {
+    when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
+        .thenReturn("user-approver");
     when(approvalTaskMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -49,7 +53,7 @@ class ApprovalTaskCreationServiceTests {
             "tenant-1",
             "buyer_supplier_admission",
             "relation-1",
-            "buyer-owner",
+            "user-approver",
             "待审批",
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
 
@@ -59,7 +63,7 @@ class ApprovalTaskCreationServiceTests {
         "relation-1",
         null);
 
-    assertThat(task.assigneeId()).isEqualTo("buyer-owner");
+    assertThat(task.assigneeId()).isEqualTo("user-approver");
     assertThat(approvalTaskApplicationService.resolveTemplate("buyer_supplier_admission").templateCode())
         .isEqualTo("TPL_SUPPLIER_ADMISSION");
     verify(approvalTaskMapper).insert(
@@ -67,7 +71,7 @@ class ApprovalTaskCreationServiceTests {
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.eq("buyer_supplier_admission"),
         org.mockito.ArgumentMatchers.eq("relation-1"),
-        org.mockito.ArgumentMatchers.eq("buyer-owner"),
+        org.mockito.ArgumentMatchers.eq("user-approver"),
         org.mockito.ArgumentMatchers.eq("待审批"));
   }
 

@@ -39,7 +39,7 @@
 - `enterprises`：平台企业身份总表。
 - `supplier_enterprises`：供应商公共企业档案和认证状态。
 - `buyer_supplier_relations`：采购方私域供应商关系。
-- `users`、`roles`：账号、角色、权限。
+- `users`、`roles`、`user_roles`：账号、角色、权限和用户角色关系。
 - `materials`：采购方物料/服务目录。
 - `purchase_demands`：采购需求。
 - `approval_tasks`：固定审批模板下的审批任务和记录。

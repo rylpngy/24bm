@@ -29,11 +29,11 @@ class PurchaseDemandNotificationTests {
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
   private final PurchaseDemandItemMapper purchaseDemandItemMapper = org.mockito.Mockito.mock(PurchaseDemandItemMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
-      new ApprovalTaskApplicationService(approvalTaskMapper);
+      new ApprovalTaskApplicationService(approvalTaskMapper, buyerUserMapper);
   private final AuditLogMapper auditLogMapper = org.mockito.Mockito.mock(AuditLogMapper.class);
   private final NotificationMapper notificationMapper = org.mockito.Mockito.mock(NotificationMapper.class);
-  private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = new AuditLogApplicationService(auditLogMapper);
   private final NotificationApplicationService notificationApplicationService =
       new NotificationApplicationService(notificationMapper, buyerUserMapper);
@@ -59,6 +59,8 @@ class PurchaseDemandNotificationTests {
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> approvalTask(invocation.getArgument(1)));
+    when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
+        .thenReturn("user-buyer-owner");
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
         new BuyerUser("approver-1", "tenant-1", "审批人", "13800000001", "approver@example.com", "启用"),
         new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用")));
