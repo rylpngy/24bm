@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface BuyerUserMapper {
@@ -49,6 +50,18 @@ public interface BuyerUserMapper {
       where tenant_id = #{tenantId}
       """)
   int countByTenant(@Param("tenantId") String tenantId);
+
+  @Select("""
+      select exists(
+        select 1
+        from users
+        where tenant_id = #{tenantId}
+          and id = #{id}
+      )
+      """)
+  boolean existsByTenantAndId(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id);
 
   @Select("""
       select u.id
@@ -97,6 +110,30 @@ public interface BuyerUserMapper {
       values (#{userId}, #{roleId})
       """)
   void assignRole(
+      @Param("userId") String userId,
+      @Param("roleId") String roleId);
+
+  @Update("""
+      with deleted as (
+        delete from user_roles ur
+        using users u, roles r
+        where ur.user_id = u.id
+          and ur.role_id = r.id
+          and u.tenant_id = #{tenantId}
+          and u.id = #{userId}
+          and r.scope = 'buyer'
+      )
+      insert into user_roles (user_id, role_id)
+      select u.id, r.id
+      from users u
+      join roles r on r.id = #{roleId}
+      where u.tenant_id = #{tenantId}
+        and u.id = #{userId}
+        and r.tenant_id = #{tenantId}
+        and r.scope = 'buyer'
+      """)
+  void replaceRole(
+      @Param("tenantId") String tenantId,
       @Param("userId") String userId,
       @Param("roleId") String roleId);
 }

@@ -232,6 +232,28 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/users/user-buyer-owner/role') {
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(init?.method).toBe('POST');
+        expect(JSON.parse(String(init.body))).toEqual({ roleId: 'role-buyer-requester' });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'user-buyer-owner',
+            tenantId: 'tenant-acme',
+            name: '采购负责人',
+            mobile: '13800000000',
+            email: 'buyer@example.com',
+            status: 'active',
+            departmentId: 'dept-it',
+            roleId: 'role-buyer-requester',
+          },
+          message: '',
+        });
+      }
       if (input === 'http://java.test/api/v1/buyer/orders') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
         return Response.json({
@@ -308,6 +330,7 @@ describe('procurement API clients', () => {
     const disabledDepartment = await client.disableBuyerDepartment('dept-old');
     const roles = await client.listBuyerRoles();
     const users = await client.listBuyerUsers();
+    const changedUser = await client.changeBuyerUserRole('user-buyer-owner', 'role-buyer-requester');
     const orders = await client.listBuyerOrders();
     const invoices = await client.listBuyerInvoices();
     const auditLogs = await client.listBuyerAuditLogs();
@@ -321,6 +344,7 @@ describe('procurement API clients', () => {
     expect(users[0].email).toBe('buyer@example.com');
     expect(users[0].departmentId).toBe('dept-it');
     expect(users[0].roleId).toBe('role-buyer-owner');
+    expect(changedUser.roleId).toBe('role-buyer-requester');
     expect(orders[0].status).toBe('已收货');
     expect(invoices[0].paymentStatus).toBe('已付款');
     expect(auditLogs[0].action).toBe('purchase_order.created');

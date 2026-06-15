@@ -35,6 +35,7 @@ import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.api.AuthController;
 import com.procurement.identity.api.BuyerRoleController;
 import com.procurement.identity.api.BuyerRoleResponse;
+import com.procurement.identity.api.ChangeBuyerUserRoleRequest;
 import com.procurement.identity.api.BuyerUserController;
 import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.application.AuthenticationApplicationService;
@@ -1450,6 +1451,41 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.id").value("user-buyer-new"))
         .andExpect(jsonPath("$.data.departmentId").value("dept-it"))
         .andExpect(jsonPath("$.data.roleId").value("role-buyer-requester"));
+
+    mockMvc.perform(post("/api/v1/buyer/users/user-buyer-new/role")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "roleId": "role-buyer-requester"
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(buyerUserApplicationService.changeUserRole(
+        org.mockito.ArgumentMatchers.eq("user-buyer-new"),
+        org.mockito.ArgumentMatchers.any(ChangeBuyerUserRoleRequest.class)))
+        .thenReturn(new BuyerUserResponse(
+            "user-buyer-new",
+            "tenant-acme",
+            "需求申请人",
+            "13900000000",
+            "requester@example.com",
+            "active",
+            "dept-it",
+            "role-buyer-owner"));
+
+    mockMvc.perform(post("/api/v1/buyer/users/user-buyer-new/role")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "roleId": "role-buyer-owner"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("user-buyer-new"))
+        .andExpect(jsonPath("$.data.roleId").value("role-buyer-owner"));
 
     mockMvc.perform(get("/api/v1/buyer/roles")
             .header("Authorization", "Bearer " + supplierToken))
