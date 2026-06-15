@@ -2677,6 +2677,9 @@ class HttpSecurityContractTests {
             .contentType(MediaType.APPLICATION_JSON)
             .content(validReceiptPayload()))
         .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/receipts")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
     mockMvc.perform(get("/api/v1/buyer/invoices")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isForbidden());
@@ -2709,6 +2712,16 @@ class HttpSecurityContractTests {
             "user-buyer-owner",
             "验收通过",
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+    when(receiptApplicationService.listCurrentTenantReceipts(
+        org.mockito.ArgumentMatchers.eq("po-demo"),
+        org.mockito.ArgumentMatchers.eq("user-buyer-owner")))
+        .thenReturn(List.of(new ReceiptResponse(
+            "receipt-demo",
+            "tenant-acme",
+            "po-demo",
+            "user-buyer-owner",
+            "验收通过",
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
     when(paymentApplicationService.listCurrentTenantInvoices(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull(),
@@ -2747,6 +2760,12 @@ class HttpSecurityContractTests {
             .content(validReceiptPayload()))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.result").value("验收通过"));
+    mockMvc.perform(get("/api/v1/buyer/receipts")
+            .queryParam("orderId", "po-demo")
+            .queryParam("receiverId", "user-buyer-owner")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("receipt-demo"));
     mockMvc.perform(get("/api/v1/buyer/invoices")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())

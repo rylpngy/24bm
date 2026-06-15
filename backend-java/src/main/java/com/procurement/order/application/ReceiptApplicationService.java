@@ -10,6 +10,7 @@ import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,17 @@ public class ReceiptApplicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+  }
+
+  public List<ReceiptResponse> listCurrentTenantReceipts(String orderId, String receiverId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer receipt APIs");
+    return receiptMapper.listByTenantFiltered(
+            tenantId,
+            blankToNull(orderId),
+            blankToNull(receiverId))
+        .stream()
+        .map(this::toResponse)
+        .toList();
   }
 
   @Transactional
@@ -85,5 +97,9 @@ public class ReceiptApplicationService {
 
   private String newId(String prefix) {
     return prefix + "-" + UUID.randomUUID();
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

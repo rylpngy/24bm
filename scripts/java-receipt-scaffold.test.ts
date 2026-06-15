@@ -7,11 +7,12 @@ const root = process.cwd();
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
 describe('Java buyer receipt scaffold', () => {
-  it('exposes buyer receipt creation endpoint', () => {
+  it('exposes buyer receipt list and creation endpoints', () => {
     const controller = read('backend-java/src/main/java/com/procurement/order/api/BuyerReceiptController.java');
 
-    expect(controller).toContain('@RequestMapping("/api/v1/buyer/orders")');
-    expect(controller).toContain('@PostMapping("/{orderId}/receipts")');
+    expect(controller).toContain('@RequestMapping("/api/v1/buyer")');
+    expect(controller).toContain('@GetMapping("/receipts")');
+    expect(controller).toContain('@PostMapping("/orders/{orderId}/receipts")');
     expect(controller).toContain('CreateReceiptRequest');
   });
 
@@ -33,6 +34,7 @@ describe('Java buyer receipt scaffold', () => {
     expect(mapper).toContain('receipts');
     expect(mapper).toContain('receiver_id');
     expect(mapper).toContain('received_at');
+    expect(mapper).toContain('listByTenantFiltered');
   });
 
   it('keeps receipt creation tenant scoped and updates order status', () => {
@@ -40,6 +42,8 @@ describe('Java buyer receipt scaffold', () => {
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantAccessGuard.requireUserId');
+    expect(service).toContain('listCurrentTenantReceipts');
+    expect(service).toContain('listByTenantFiltered');
     expect(service).toContain('已发货');
     expect(service).toContain('已收货');
     expect(service).toContain('findByTenantAndId');
@@ -50,7 +54,9 @@ describe('Java buyer receipt scaffold', () => {
     const readme = read('backend-java/README.md');
     const architecture = read('docs/java-backend-architecture.md');
 
+    expect(readme).toContain('GET /api/v1/buyer/receipts');
     expect(readme).toContain('POST /api/v1/buyer/orders/{orderId}/receipts');
+    expect(readme).toContain('The buyer receipt list accepts optional `orderId` and `receiverId` filters');
     expect(architecture).toContain('采购方收货验收 Java API');
   });
 });

@@ -433,11 +433,13 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 
 第八批 Java 业务接口继续落在 `order` 模块：
 
+- `GET /api/v1/buyer/receipts`：采购方查看收货记录列表。
 - `POST /api/v1/buyer/orders/{orderId}/receipts`：采购方对已发货订单进行收货验收。
 
 收货验收的关键校验：
 
 - 采购方身份来自 JWT 中的 `tenantId`。
+- 采购方收货记录列表始终按当前 `tenantId` 过滤，并支持可选 `orderId`、`receiverId` 查询条件。
 - 验收人来自 JWT 中的 `userId`。
 - 订单必须属于当前采购方租户。
 - 当前租户必须启用 `order` 功能开关。

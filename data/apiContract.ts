@@ -654,6 +654,15 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'Delivery',
   },
   {
+    method: 'GET',
+    path: '/buyer/receipts',
+    audience: 'buyer',
+    action: '加载采购方收货记录列表，支持按订单和验收人筛选',
+    requestSchema: 'BuyerReceiptListRequest',
+    responseSchema: 'BuyerReceiptList',
+    queryParameters: ['orderId', 'receiverId'],
+  },
+  {
     method: 'POST',
     path: '/buyer/orders/{orderId}/receipts',
     audience: 'buyer',

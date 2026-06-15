@@ -478,7 +478,10 @@ Delivery creation uses the supplier identity from `Authorization: Bearer <access
 
 The buyer-side receipt endpoint is:
 
+- `GET /api/v1/buyer/receipts`
 - `POST /api/v1/buyer/orders/{orderId}/receipts`
+
+The buyer receipt list accepts optional `orderId` and `receiverId` filters inside the current buyer tenant.
 
 Example receipt payload:
 

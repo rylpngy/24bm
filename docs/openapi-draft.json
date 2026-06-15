@@ -2193,6 +2193,48 @@
         }
       }
     },
+    "/buyer/receipts": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方收货记录列表，支持按订单和验收人筛选",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "receiverId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerReceiptList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/orders/{orderId}/receipts": {
       "post": {
         "tags": [
@@ -2836,6 +2878,7 @@
     "GET /supplier/orders",
     "POST /supplier/orders/{orderId}/confirm",
     "POST /supplier/orders/{orderId}/deliveries",
+    "GET /buyer/receipts",
     "POST /buyer/orders/{orderId}/receipts",
     "GET /buyer/invoices",
     "GET /supplier/quotes",

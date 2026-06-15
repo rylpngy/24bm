@@ -26,6 +26,7 @@ import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -178,6 +179,24 @@ class OrderFulfillmentStateTransitionTests {
     service.listCurrentSupplierOrders("待发货", "rfq-1");
 
     verify(purchaseOrderMapper).listBySupplierFiltered("supplier-1", "待发货", "rfq-1");
+  }
+
+  @Test
+  void listBuyerReceiptsAppliesFiltersInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "user-buyer");
+    when(receiptMapper.listByTenantFiltered("tenant-1", "po-1", "user-buyer"))
+        .thenReturn(List.of());
+
+    ReceiptApplicationService service = new ReceiptApplicationService(
+        purchaseOrderMapper,
+        receiptMapper,
+        auditLogApplicationService,
+        notificationApplicationService,
+        tenantFeatureApplicationService);
+
+    service.listCurrentTenantReceipts("po-1", "user-buyer");
+
+    verify(receiptMapper).listByTenantFiltered("tenant-1", "po-1", "user-buyer");
   }
 
   @Test
