@@ -39,6 +39,17 @@ public class QuoteApplicationService {
         .toList();
   }
 
+  public List<RfqResponse> listSupplierRfqs(String status, String keyword) {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    return rfqMapper.listBySupplierInviteFiltered(
+            supplierId,
+            blankToNull(status),
+            blankToNull(keyword))
+        .stream()
+        .map(this::toRfqResponse)
+        .toList();
+  }
+
   public List<QuoteResponse> listSupplierQuotes() {
     String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
     return quoteMapper.listBySupplier(supplierId).stream()
@@ -117,5 +128,9 @@ public class QuoteApplicationService {
 
   private String newId(String prefix) {
     return prefix + "-" + UUID.randomUUID();
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

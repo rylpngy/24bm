@@ -1103,7 +1103,25 @@ class HttpSecurityContractTests {
             "supplier.finance@example.com",
             "inactive",
             "role-supplier-sales"));
-    when(quoteApplicationService.listSupplierRfqs()).thenReturn(List.of());
+    when(quoteApplicationService.listSupplierRfqs(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of());
+    when(quoteApplicationService.listSupplierRfqs(
+        org.mockito.ArgumentMatchers.eq("报价中"),
+        org.mockito.ArgumentMatchers.eq("电脑")))
+        .thenReturn(List.of(new RfqResponse(
+            "rfq-demo",
+            "tenant-acme",
+            "办公电脑 RFQ",
+            "报价中",
+            OffsetDateTime.parse("2026-06-20T18:00:00+08:00"),
+            "buyer-user-1",
+            null,
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            List.of("demand-demo"),
+            List.of("ent-supplier-sunrise"))));
     when(quoteApplicationService.listSupplierQuotes()).thenReturn(List.of());
     when(purchaseOrderApplicationService.listCurrentSupplierOrders()).thenReturn(List.of());
     when(purchaseOrderApplicationService.confirmCurrentSupplierOrder("po-demo"))
@@ -1227,6 +1245,12 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").isArray());
+    mockMvc.perform(get("/api/v1/supplier/rfqs")
+            .queryParam("status", "报价中")
+            .queryParam("keyword", "电脑")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].title").value("办公电脑 RFQ"));
     mockMvc.perform(get("/api/v1/supplier/quotes")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())

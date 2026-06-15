@@ -374,6 +374,8 @@ The supplier-side sourcing endpoints are:
 - `GET /api/v1/supplier/quotes`
 - `POST /api/v1/supplier/rfqs/{rfqId}/quotes`
 
+The supplier RFQ invitation list accepts optional `status` and `keyword` filters inside the current supplier enterprise. `keyword` matches the RFQ title.
+
 Example submission payload:
 
 ```json

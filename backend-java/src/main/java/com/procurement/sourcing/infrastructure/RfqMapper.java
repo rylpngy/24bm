@@ -102,6 +102,29 @@ public interface RfqMapper {
   })
   List<Rfq> listBySupplierInvite(@Param("supplierId") String supplierId);
 
+  @Select("""
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at
+      from rfqs r
+      join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
+      where i.supplier_id = #{supplierId}
+        and i.invite_status = '已邀请'
+        and (#{status} is null or r.status = #{status})
+        and (#{keyword} is null or r.title ilike concat('%', #{keyword}, '%'))
+      order by r.created_at desc
+      """)
+  @Results(id = "supplierRfqFilteredListResults", value = {
+      @Result(column = "tenant_id", property = "tenantId"),
+      @Result(column = "deadline_at", property = "deadlineAt"),
+      @Result(column = "owner_id", property = "ownerId"),
+      @Result(column = "awarded_supplier_id", property = "awardedSupplierId"),
+      @Result(column = "created_at", property = "createdAt"),
+      @Result(column = "updated_at", property = "updatedAt")
+  })
+  List<Rfq> listBySupplierInviteFiltered(
+      @Param("supplierId") String supplierId,
+      @Param("status") String status,
+      @Param("keyword") String keyword);
+
   @Insert("""
       insert into rfqs (id, tenant_id, title, status, deadline_at, owner_id)
       values (#{id}, #{tenantId}, #{title}, #{status}, #{deadlineAt}, #{ownerId})

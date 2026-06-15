@@ -1871,8 +1871,25 @@
         "tags": [
           "supplier"
         ],
-        "summary": "加载供应商询价邀请",
-        "parameters": [],
+        "summary": "加载供应商询价邀请，支持按状态和关键词筛选",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []

@@ -582,9 +582,10 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     method: 'GET',
     path: '/supplier/rfqs',
     audience: 'supplier',
-    action: '加载供应商询价邀请',
+    action: '加载供应商询价邀请，支持按状态和关键词筛选',
     requestSchema: 'SupplierRfqListRequest',
     responseSchema: 'SupplierRfqList',
+    queryParameters: ['status', 'keyword'],
   },
   {
     method: 'POST',
