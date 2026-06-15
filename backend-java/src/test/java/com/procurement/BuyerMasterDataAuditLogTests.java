@@ -136,6 +136,18 @@ class BuyerMasterDataAuditLogTests {
   }
 
   @Test
+  void listMaterialsAppliesFiltersInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-admin");
+    MaterialMapper materialMapper = org.mockito.Mockito.mock(MaterialMapper.class);
+    MaterialApplicationService materialApplicationService =
+        new MaterialApplicationService(materialMapper, auditLogApplicationService);
+
+    materialApplicationService.listCurrentTenantMaterials("办公家具", "椅");
+
+    verify(materialMapper).listByTenant("tenant-1", "办公家具", "椅");
+  }
+
+  @Test
   void buyerSupplierRelationCreationRecordsAuditLog() {
     TenantContext.set("tenant-1", null, "buyer-admin");
     BuyerSupplierRelationMapper buyerSupplierRelationMapper =

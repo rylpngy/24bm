@@ -18,13 +18,22 @@ public interface MaterialMapper {
       select id, tenant_id, code, name, category, unit, reference_price
       from materials
       where tenant_id = #{tenantId}
+        and (#{category} is null or category = #{category})
+        and (
+          #{keyword} is null
+          or code ilike concat('%', #{keyword}, '%')
+          or name ilike concat('%', #{keyword}, '%')
+        )
       order by code asc
       """)
   @Results(id = "materialResults", value = {
       @Result(column = "tenant_id", property = "tenantId"),
       @Result(column = "reference_price", property = "referencePrice")
   })
-  List<Material> listByTenant(@Param("tenantId") String tenantId);
+  List<Material> listByTenant(
+      @Param("tenantId") String tenantId,
+      @Param("category") String category,
+      @Param("keyword") String keyword);
 
   @Select("""
       select id, tenant_id, code, name, category, unit, reference_price

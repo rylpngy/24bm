@@ -2158,7 +2158,10 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.performanceScore").value(96.5));
 
-    when(materialApplicationService.listCurrentTenantMaterials()).thenReturn(List.of(new MaterialResponse(
+    when(materialApplicationService.listCurrentTenantMaterials(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(new MaterialResponse(
         "mat-laptop",
         "tenant-acme",
         "IT-LAPTOP",
@@ -2171,6 +2174,25 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].code").value("IT-LAPTOP"));
+
+    when(materialApplicationService.listCurrentTenantMaterials(
+        org.mockito.ArgumentMatchers.eq("办公设备"),
+        org.mockito.ArgumentMatchers.eq("电脑")))
+        .thenReturn(List.of(new MaterialResponse(
+            "mat-laptop",
+            "tenant-acme",
+            "IT-LAPTOP",
+            "办公电脑",
+            "办公设备",
+            "台",
+            BigDecimal.valueOf(6000))));
+
+    mockMvc.perform(get("/api/v1/buyer/materials")
+            .queryParam("category", "办公设备")
+            .queryParam("keyword", "电脑")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].name").value("办公电脑"));
 
     when(materialApplicationService.createMaterial(
         org.mockito.ArgumentMatchers.any(CreateMaterialRequest.class)))

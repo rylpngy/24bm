@@ -28,8 +28,12 @@ public class MaterialApplicationService {
   }
 
   public List<MaterialResponse> listCurrentTenantMaterials() {
+    return listCurrentTenantMaterials(null, null);
+  }
+
+  public List<MaterialResponse> listCurrentTenantMaterials(String category, String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer material APIs");
-    return materialMapper.listByTenant(tenantId).stream()
+    return materialMapper.listByTenant(tenantId, blankToNull(category), blankToNull(keyword)).stream()
         .map(this::toResponse)
         .toList();
   }
@@ -81,5 +85,9 @@ public class MaterialApplicationService {
         material.category(),
         material.unit(),
         material.referencePrice());
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

@@ -229,6 +229,7 @@ describe('Java backend scaffold', () => {
     expect(architecture).toContain('supplier_profile.updated');
     expect(readme).toContain('Creating buyer users, materials, and private supplier relations records audit log actions');
     expect(readme).toContain('POST /api/v1/buyer/materials/{materialId}');
+    expect(readme).toContain('optional `category` and `keyword` filters');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/status');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/profile');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/performance');

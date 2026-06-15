@@ -280,9 +280,10 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     method: 'GET',
     path: '/buyer/materials',
     audience: 'buyer',
-    action: '加载采购方物料/服务目录',
+    action: '加载采购方物料/服务目录，支持按分类和关键词筛选',
     requestSchema: 'MaterialListRequest',
     responseSchema: 'MaterialList',
+    queryParameters: ['category', 'keyword'],
   },
   {
     method: 'POST',
