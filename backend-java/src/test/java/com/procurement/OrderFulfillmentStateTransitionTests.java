@@ -22,6 +22,7 @@ import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -37,6 +38,8 @@ class OrderFulfillmentStateTransitionTests {
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
+  private final TenantFeatureApplicationService tenantFeatureApplicationService =
+      org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
 
   @AfterEach
   void clearTenantContext() {
@@ -57,7 +60,8 @@ class OrderFulfillmentStateTransitionTests {
         awardDecisionMapper,
         purchaseOrderMapper,
         auditLogApplicationService,
-        notificationApplicationService);
+        notificationApplicationService,
+        tenantFeatureApplicationService);
 
     org.assertj.core.api.Assertions.assertThat(service.confirmCurrentSupplierOrder("po-1").status())
         .isEqualTo("待发货");
@@ -76,7 +80,8 @@ class OrderFulfillmentStateTransitionTests {
         awardDecisionMapper,
         purchaseOrderMapper,
         auditLogApplicationService,
-        notificationApplicationService);
+        notificationApplicationService,
+        tenantFeatureApplicationService);
 
     assertThatThrownBy(() -> service.confirmCurrentSupplierOrder("po-1"))
         .isInstanceOf(IllegalStateException.class)
@@ -95,7 +100,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         auditLogApplicationService,
-        notificationApplicationService);
+        notificationApplicationService,
+        tenantFeatureApplicationService);
 
     assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123")))
         .isInstanceOf(IllegalStateException.class)
@@ -127,7 +133,8 @@ class OrderFulfillmentStateTransitionTests {
         awardDecisionMapper,
         purchaseOrderMapper,
         auditLogApplicationService,
-        notificationApplicationService);
+        notificationApplicationService,
+        tenantFeatureApplicationService);
 
     service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
 
@@ -161,7 +168,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         auditLogApplicationService,
-        notificationApplicationService);
+        notificationApplicationService,
+        tenantFeatureApplicationService);
 
     service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123"));
 
@@ -184,7 +192,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         receiptMapper,
         auditLogApplicationService,
-        notificationApplicationService);
+        notificationApplicationService,
+        tenantFeatureApplicationService);
 
     assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
         .isInstanceOf(IllegalStateException.class)
@@ -215,7 +224,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         receiptMapper,
         auditLogApplicationService,
-        notificationApplicationService);
+        notificationApplicationService,
+        tenantFeatureApplicationService);
 
     service.create("po-1", new CreateReceiptRequest("验收通过"));
 

@@ -11,6 +11,7 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.AfterEach;
@@ -20,9 +21,12 @@ class FinancePaymentStateTransitionTests {
 
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final TenantFeatureApplicationService tenantFeatureApplicationService =
+      org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
-      auditLogApplicationService);
+      auditLogApplicationService,
+      tenantFeatureApplicationService);
 
   @AfterEach
   void clearTenantContext() {

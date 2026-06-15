@@ -9,6 +9,7 @@ import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,21 +21,25 @@ public class DeliveryApplicationService {
   private static final String PURCHASE_ORDER_SHIPPED_ACTION = "purchase_order.shipped";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_SHIPPED_NOTIFICATION_TITLE = "采购订单已发货";
+  private static final String ORDER_FEATURE = "order";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final DeliveryMapper deliveryMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final TenantFeatureApplicationService tenantFeatureApplicationService;
 
   public DeliveryApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
       DeliveryMapper deliveryMapper,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      TenantFeatureApplicationService tenantFeatureApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.deliveryMapper = deliveryMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.tenantFeatureApplicationService = tenantFeatureApplicationService;
   }
 
   @Transactional
@@ -47,6 +52,7 @@ public class DeliveryApplicationService {
     if (!READY_TO_SHIP_STATUS.equals(order.status())) {
       throw new IllegalStateException("Only ready-to-ship orders can be shipped: " + orderId);
     }
+    tenantFeatureApplicationService.requireEnabled(order.tenantId(), ORDER_FEATURE);
 
     String deliveryId = newId("delivery");
     deliveryMapper.insert(

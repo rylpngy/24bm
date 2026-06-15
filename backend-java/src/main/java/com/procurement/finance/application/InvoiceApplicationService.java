@@ -8,6 +8,7 @@ import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -19,18 +20,22 @@ public class InvoiceApplicationService {
   private static final String PENDING_PAYMENT_STATUS = "待付款";
   private static final String INVOICE_CREATED_ACTION = "invoice.created";
   private static final String INVOICE_TARGET_TYPE = "invoice";
+  private static final String FINANCE_FEATURE = "finance";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final InvoiceMapper invoiceMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final TenantFeatureApplicationService tenantFeatureApplicationService;
 
   public InvoiceApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
       InvoiceMapper invoiceMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      TenantFeatureApplicationService tenantFeatureApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.invoiceMapper = invoiceMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.tenantFeatureApplicationService = tenantFeatureApplicationService;
   }
 
   public List<InvoiceResponse> listCurrentSupplierInvoices() {
@@ -50,6 +55,7 @@ public class InvoiceApplicationService {
     if (!RECEIVED_STATUS.equals(order.status())) {
       throw new IllegalStateException("Only received purchase orders can be invoiced: " + orderId);
     }
+    tenantFeatureApplicationService.requireEnabled(order.tenantId(), FINANCE_FEATURE);
 
     String invoiceId = newId("invoice");
     invoiceMapper.insert(

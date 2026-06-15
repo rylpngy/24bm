@@ -47,10 +47,14 @@ describe('Java finance invoice and payment scaffold', () => {
     const paymentService = read('backend-java/src/main/java/com/procurement/finance/application/PaymentApplicationService.java');
 
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
+    expect(invoiceService).toContain('TenantFeatureApplicationService');
+    expect(invoiceService).toContain('FINANCE_FEATURE');
+    expect(invoiceService).toContain('requireEnabled(order.tenantId(), FINANCE_FEATURE)');
     expect(invoiceService).toContain('已收货');
     expect(invoiceService).toContain('待付款');
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
+    expect(paymentService).toContain('requireEnabled(tenantId, FINANCE_FEATURE)');
     expect(paymentService).toContain('listCurrentTenantInvoices');
     expect(paymentService).toContain('updatePaymentStatus');
   });
@@ -62,6 +66,8 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(readme).toContain('POST /api/v1/supplier/orders/{orderId}/invoices');
     expect(readme).toContain('GET /api/v1/buyer/invoices');
     expect(readme).toContain('POST /api/v1/buyer/invoices/{invoiceId}/payments');
+    expect(readme).toContain('`finance` feature enabled');
     expect(architecture).toContain('财务协同 Java API');
+    expect(architecture).toContain('当前租户必须启用 `finance` 功能开关');
   });
 });

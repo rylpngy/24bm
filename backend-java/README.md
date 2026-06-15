@@ -307,7 +307,7 @@ Example order payload:
 }
 ```
 
-Order creation requires an approved award decision in the current tenant. It creates a `purchase_orders` row with status `待供应商确认`. If an order already exists for the same tenant, RFQ, and supplier, the existing order is returned.
+Order creation requires the current tenant to have the `order` feature enabled and an approved award decision in the current tenant. It creates a `purchase_orders` row with status `待供应商确认`. If an order already exists for the same tenant, RFQ, and supplier, the existing order is returned.
 
 ## Supplier Order Fulfillment APIs
 
@@ -317,7 +317,7 @@ The supplier-side order fulfillment endpoints are:
 - `POST /api/v1/supplier/orders/{orderId}/confirm`
 - `POST /api/v1/supplier/orders/{orderId}/deliveries`
 
-Order confirmation uses the supplier identity from `Authorization: Bearer <accessToken>`. The order must belong to the current supplier and be `待供应商确认`. Confirmation updates the purchase order status to `待发货`.
+Order confirmation uses the supplier identity from `Authorization: Bearer <accessToken>`. The order must belong to the current supplier, its buyer tenant must have the `order` feature enabled, and it must be `待供应商确认`. Confirmation updates the purchase order status to `待发货`.
 
 Example delivery payload:
 
@@ -328,7 +328,7 @@ Example delivery payload:
 }
 ```
 
-Delivery creation uses the supplier identity from `Authorization: Bearer <accessToken>`. The order must belong to the current supplier and be `待发货`. Creation stores a `deliveries` row with status `已发货` and updates the purchase order status to `已发货`.
+Delivery creation uses the supplier identity from `Authorization: Bearer <accessToken>`. The order must belong to the current supplier, its buyer tenant must have the `order` feature enabled, and it must be `待发货`. Creation stores a `deliveries` row with status `已发货` and updates the purchase order status to `已发货`.
 
 ## Buyer Receipt APIs
 
@@ -344,7 +344,7 @@ Example receipt payload:
 }
 ```
 
-Receipt creation uses the buyer tenant and receiver identity from `Authorization: Bearer <accessToken>`. The order must belong to the current tenant and be `已发货`. Creation stores a `receipts` row and updates the purchase order status to `已收货`.
+Receipt creation uses the buyer tenant and receiver identity from `Authorization: Bearer <accessToken>`. The current tenant must have the `order` feature enabled, and the order must belong to the current tenant and be `已发货`. Creation stores a `receipts` row and updates the purchase order status to `已收货`.
 
 ## Finance APIs
 
@@ -375,7 +375,7 @@ Example payment payload:
 }
 ```
 
-Invoice creation requires the order to belong to the current supplier and be `已收货`. New invoices are stored with `payment_status = 待付款`. Payment registration is tenant scoped and updates `invoices.payment_status`.
+Invoice creation requires the order to belong to the current supplier, be `已收货`, and have the `finance` feature enabled for its buyer tenant. New invoices are stored with `payment_status = 待付款`. Payment registration requires the current tenant to have the `finance` feature enabled, is tenant scoped, and updates `invoices.payment_status`.
 
 ## Local Commands
 

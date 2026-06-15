@@ -9,6 +9,7 @@ import com.procurement.order.domain.Receipt;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,21 +21,25 @@ public class ReceiptApplicationService {
   private static final String PURCHASE_ORDER_RECEIVED_ACTION = "purchase_order.received";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_RECEIVED_NOTIFICATION_TITLE = "采购订单已收货";
+  private static final String ORDER_FEATURE = "order";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final ReceiptMapper receiptMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final TenantFeatureApplicationService tenantFeatureApplicationService;
 
   public ReceiptApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
       ReceiptMapper receiptMapper,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      TenantFeatureApplicationService tenantFeatureApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.receiptMapper = receiptMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.tenantFeatureApplicationService = tenantFeatureApplicationService;
   }
 
   @Transactional
@@ -48,6 +53,7 @@ public class ReceiptApplicationService {
     if (!SHIPPED_STATUS.equals(order.status())) {
       throw new IllegalStateException("Only shipped purchase orders can be received: " + orderId);
     }
+    tenantFeatureApplicationService.requireEnabled(tenantId, ORDER_FEATURE);
 
     String receiptId = newId("receipt");
     receiptMapper.insert(receiptId, tenantId, orderId, userId, request.result());

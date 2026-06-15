@@ -16,6 +16,7 @@ import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -33,11 +34,14 @@ class DeliveryNotificationTests {
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final NotificationApplicationService notificationApplicationService =
       new NotificationApplicationService(notificationMapper, buyerUserMapper);
+  private final TenantFeatureApplicationService tenantFeatureApplicationService =
+      org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final DeliveryApplicationService deliveryApplicationService = new DeliveryApplicationService(
       purchaseOrderMapper,
       deliveryMapper,
       auditLogApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+      tenantFeatureApplicationService);
 
   @AfterEach
   void clearTenantContext() {

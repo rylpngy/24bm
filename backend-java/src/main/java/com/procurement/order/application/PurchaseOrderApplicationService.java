@@ -9,6 +9,7 @@ import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -23,21 +24,25 @@ public class PurchaseOrderApplicationService {
   private static final String PURCHASE_ORDER_CREATED_ACTION = "purchase_order.created";
   private static final String PURCHASE_ORDER_CONFIRMED_ACTION = "purchase_order.confirmed";
   private static final String PURCHASE_ORDER_CONFIRMED_NOTIFICATION_TITLE = "采购订单已确认";
+  private static final String ORDER_FEATURE = "order";
 
   private final AwardDecisionMapper awardDecisionMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final TenantFeatureApplicationService tenantFeatureApplicationService;
 
   public PurchaseOrderApplicationService(
       AwardDecisionMapper awardDecisionMapper,
       PurchaseOrderMapper purchaseOrderMapper,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      TenantFeatureApplicationService tenantFeatureApplicationService) {
     this.awardDecisionMapper = awardDecisionMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.tenantFeatureApplicationService = tenantFeatureApplicationService;
   }
 
   public List<PurchaseOrderResponse> listCurrentTenantOrders() {
@@ -64,6 +69,7 @@ public class PurchaseOrderApplicationService {
     if (!PENDING_SUPPLIER_CONFIRM_STATUS.equals(order.status())) {
       throw new IllegalStateException("Only pending supplier confirmation orders can be confirmed: " + orderId);
     }
+    tenantFeatureApplicationService.requireEnabled(order.tenantId(), ORDER_FEATURE);
 
     int updated = purchaseOrderMapper.updateStatus(
         order.tenantId(),
@@ -89,6 +95,7 @@ public class PurchaseOrderApplicationService {
   @Transactional
   public PurchaseOrderResponse createFromAward(CreatePurchaseOrderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    tenantFeatureApplicationService.requireEnabled(tenantId, ORDER_FEATURE);
     AwardDecision award = awardDecisionMapper.findApprovedForOrder(tenantId, request.awardId(), APPROVED_STATUS);
     if (award == null) {
       throw new IllegalArgumentException("Approved award decision not found in tenant scope: " + request.awardId());

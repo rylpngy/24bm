@@ -50,6 +50,9 @@ describe('Java purchase order scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/order/application/PurchaseOrderApplicationService.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
+    expect(service).toContain('TenantFeatureApplicationService');
+    expect(service).toContain('ORDER_FEATURE');
+    expect(service).toContain('requireEnabled(tenantId, ORDER_FEATURE)');
     expect(service).toContain('listCurrentTenantOrders');
     expect(service).toContain('待供应商确认');
     expect(service).toContain('findApprovedForOrder');
@@ -63,7 +66,9 @@ describe('Java purchase order scaffold', () => {
 
     expect(readme).toContain('POST /api/v1/buyer/orders');
     expect(readme).toContain('GET /api/v1/buyer/orders');
+    expect(readme).toContain('current tenant to have the `order` feature enabled');
     expect(architecture).toContain('采购订单 Java API');
+    expect(architecture).toContain('当前租户必须启用 `order` 功能开关');
   });
 
   it('keeps source files under the order module boundary', () => {

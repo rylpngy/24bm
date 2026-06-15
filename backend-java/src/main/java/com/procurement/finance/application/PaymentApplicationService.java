@@ -6,6 +6,7 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +19,19 @@ public class PaymentApplicationService {
   private static final String INVOICE_TARGET_TYPE = "invoice";
   private static final String INVOICE_PAID_ACTION = "invoice.paid";
   private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
+  private static final String FINANCE_FEATURE = "finance";
 
   private final InvoiceMapper invoiceMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final TenantFeatureApplicationService tenantFeatureApplicationService;
 
-  public PaymentApplicationService(InvoiceMapper invoiceMapper, AuditLogApplicationService auditLogApplicationService) {
+  public PaymentApplicationService(
+      InvoiceMapper invoiceMapper,
+      AuditLogApplicationService auditLogApplicationService,
+      TenantFeatureApplicationService tenantFeatureApplicationService) {
     this.invoiceMapper = invoiceMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.tenantFeatureApplicationService = tenantFeatureApplicationService;
   }
 
   public List<InvoiceResponse> listCurrentTenantInvoices() {
@@ -37,6 +44,7 @@ public class PaymentApplicationService {
   @Transactional
   public InvoiceResponse register(String invoiceId, RegisterPaymentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
+    tenantFeatureApplicationService.requireEnabled(tenantId, FINANCE_FEATURE);
     Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);

@@ -14,6 +14,7 @@ import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
+import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -31,11 +32,14 @@ class PurchaseOrderNotificationTests {
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final NotificationApplicationService notificationApplicationService =
       new NotificationApplicationService(notificationMapper, buyerUserMapper);
+  private final TenantFeatureApplicationService tenantFeatureApplicationService =
+      org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final PurchaseOrderApplicationService purchaseOrderApplicationService = new PurchaseOrderApplicationService(
       awardDecisionMapper,
       purchaseOrderMapper,
       auditLogApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+      tenantFeatureApplicationService);
 
   @AfterEach
   void clearTenantContext() {
