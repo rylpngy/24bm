@@ -94,6 +94,14 @@ public interface InvoiceMapper {
       @Param("paymentStatus") String paymentStatus,
       @Param("orderId") String orderId);
 
+  @Select("""
+      select count(1)
+      from invoices
+      where tenant_id = #{tenantId}
+        and order_id = #{orderId}
+      """)
+  int countByTenantAndOrder(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
+
   @Insert("""
       insert into invoices (id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status)
       values (#{id}, #{tenantId}, #{supplierId}, #{orderId}, #{amount}, #{invoiceNo}, #{paymentStatus})

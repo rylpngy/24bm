@@ -114,6 +114,30 @@ class FinanceInvoiceAuditLogTests {
         org.mockito.ArgumentMatchers.anyString());
   }
 
+  @Test
+  void supplierInvoiceCreationRejectsDuplicateInvoiceForSameOrderBeforeInsert() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))
+        .thenReturn(order());
+    when(invoiceMapper.countByTenantAndOrder("tenant-1", "po-1"))
+        .thenReturn(1);
+
+    assertThatThrownBy(() -> invoiceApplicationService.create(
+        "po-1",
+        new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Purchase order already has an invoice");
+
+    verify(invoiceMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
   private PurchaseOrder order() {
     return new PurchaseOrder(
         "po-1",

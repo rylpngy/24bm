@@ -87,6 +87,9 @@ public class InvoiceApplicationService {
     if (request.amount().compareTo(order.amount()) != 0) {
       throw new IllegalArgumentException("Invoice amount must equal purchase order amount: " + orderId);
     }
+    if (invoiceMapper.countByTenantAndOrder(order.tenantId(), order.id()) > 0) {
+      throw new IllegalStateException("Purchase order already has an invoice: " + orderId);
+    }
 
     String invoiceId = newId("invoice");
     invoiceMapper.insert(

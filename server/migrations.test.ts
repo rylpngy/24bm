@@ -21,4 +21,8 @@ describe('Java Flyway database migrations', () => {
     expect(migrationSql).toContain('idx_orders_tenant_status');
     expect(migrationSql).toContain('idx_invoices_tenant_payment');
   });
+
+  it('prevents duplicate invoices for the same purchase order in a tenant', () => {
+    expect(migrationSql).toContain('unique (tenant_id, order_id)');
+  });
 });

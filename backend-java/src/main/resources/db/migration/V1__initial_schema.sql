@@ -237,7 +237,8 @@ create table invoices (
   invoice_no text,
   payment_status text not null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (tenant_id, order_id)
 );
 
 create table attachments (
