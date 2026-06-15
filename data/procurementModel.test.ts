@@ -41,6 +41,15 @@ describe('multi-tenant procurement MVP model', () => {
     expect(workspace.invoices[0].paymentStatus).toBe('待付款');
   });
 
+  it('exposes tenant-scoped audit logs in the buyer workspace', () => {
+    const model = buildProcurementMvpModel();
+    const workspace = getBuyerWorkspace(model, 'tenant-acme');
+
+    expect(workspace.auditLogs.map((log) => log.action)).toContain('purchase_order.created');
+    expect(workspace.auditLogs.every((log) => log.tenantId === 'tenant-acme')).toBe(true);
+    expect(workspace.auditLogs.map((log) => log.targetId)).not.toContain('po-nova-1');
+  });
+
   it('shows a supplier only its own opportunities, quotes, orders, and invoices across buyers', () => {
     const model = buildProcurementMvpModel();
     const supplier = getSupplierWorkspace(model, 'supplier-orbit');

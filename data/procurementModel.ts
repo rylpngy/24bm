@@ -121,6 +121,16 @@ export interface InvoiceRecord {
   paymentStatus: PaymentStatus;
 }
 
+export interface AuditLogRecord {
+  id: string;
+  tenantId: string;
+  actorId: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  createdAt: string;
+}
+
 export interface WorkflowStep {
   key: string;
   label: string;
@@ -139,6 +149,7 @@ export interface ProcurementMvpModel {
   orders: PurchaseOrder[];
   deliveries: Delivery[];
   invoices: InvoiceRecord[];
+  auditLogs: AuditLogRecord[];
   workflow: WorkflowStep[];
 }
 
@@ -154,6 +165,7 @@ export interface BuyerWorkspace {
   orders: PurchaseOrder[];
   deliveries: Delivery[];
   invoices: InvoiceRecord[];
+  auditLogs: AuditLogRecord[];
   workflow: WorkflowStep[];
 }
 
@@ -386,6 +398,36 @@ export const buildProcurementMvpModel = (): ProcurementMvpModel => {
     { id: 'inv-nova-1', tenantId: 'tenant-nova', supplierId: 'supplier-orbit', orderId: 'po-nova-1', amount: 33600, paymentStatus: '待付款' },
   ];
 
+  const auditLogs: AuditLogRecord[] = [
+    {
+      id: 'audit-acme-1',
+      tenantId: 'tenant-acme',
+      actorId: 'u-acme-admin',
+      action: 'purchase_order.created',
+      targetType: 'purchase_order',
+      targetId: 'po-acme-1',
+      createdAt: '2026-06-15T10:20:00+08:00',
+    },
+    {
+      id: 'audit-acme-2',
+      tenantId: 'tenant-acme',
+      actorId: 'u-orbit-sales',
+      action: 'purchase_order.shipped',
+      targetType: 'purchase_order',
+      targetId: 'po-acme-1',
+      createdAt: '2026-06-15T14:35:00+08:00',
+    },
+    {
+      id: 'audit-nova-1',
+      tenantId: 'tenant-nova',
+      actorId: 'u-nova-admin',
+      action: 'purchase_order.created',
+      targetType: 'purchase_order',
+      targetId: 'po-nova-1',
+      createdAt: '2026-06-15T11:10:00+08:00',
+    },
+  ];
+
   return {
     tenants,
     enterprises,
@@ -397,6 +439,7 @@ export const buildProcurementMvpModel = (): ProcurementMvpModel => {
     orders,
     deliveries,
     invoices,
+    auditLogs,
     workflow,
   };
 };
@@ -427,6 +470,7 @@ export const getBuyerWorkspace = (model: ProcurementMvpModel, tenantId: string):
     orders: byTenant(model.orders, tenantId),
     deliveries: byTenant(model.deliveries, tenantId),
     invoices: byTenant(model.invoices, tenantId),
+    auditLogs: byTenant(model.auditLogs, tenantId),
     workflow: model.workflow,
   };
 };

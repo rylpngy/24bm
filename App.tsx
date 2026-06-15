@@ -57,6 +57,41 @@ const currency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
+const auditActionLabels: Record<string, string> = {
+  'purchase_demand.created': '需求创建',
+  'purchase_demand.approved': '需求通过',
+  'purchase_demand.rejected': '需求驳回',
+  'buyer_supplier_admission.submitted': '供应商准入提交',
+  'buyer_supplier_admission.approved': '供应商准入通过',
+  'buyer_supplier_admission.rejected': '供应商准入驳回',
+  'rfq_award.submitted': '定标提交',
+  'rfq_award.approved': '定标通过',
+  'rfq_award.rejected': '定标驳回',
+  'purchase_order.created': '订单创建',
+  'purchase_order.confirmed': '订单确认',
+  'purchase_order.shipped': '供应商发货',
+  'purchase_order.received': '采购收货',
+  'invoice.created': '发票登记',
+  'invoice.paid': '付款完成',
+  'invoice.partial_paid': '部分付款',
+};
+
+const auditTargetLabels: Record<string, string> = {
+  purchase_demand: '需求',
+  buyer_supplier_relation: '供应商关系',
+  rfq_award: '定标',
+  purchase_order: '订单',
+  invoice: '发票',
+};
+
+const formatAuditTime = (value: string) =>
+  new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+
 const runtimeEnv = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
 
 const javaApiClient = runtimeEnv.VITE_JAVA_API_BASE_URL
@@ -655,8 +690,53 @@ const BuyerWorkspaceView: React.FC<{
         />
       </Panel>
     </div>
+
+    <Panel title="最近操作日志" icon={ShieldCheck}>
+      <AuditLogList workspace={workspace} />
+    </Panel>
   </>
 );
+
+const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) => {
+  const logs = [...workspace.auditLogs]
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 6);
+
+  if (logs.length === 0) {
+    return (
+      <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
+        暂无审计记录
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {logs.map((log) => {
+        const actor = workspace.users.find((user) => user.id === log.actorId);
+        const targetLabel = auditTargetLabels[log.targetType] ?? log.targetType;
+        return (
+          <div key={log.id} className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-slate-950">
+                  {auditActionLabels[log.action] ?? log.action}
+                </p>
+                <p className="mt-1 truncate text-xs font-bold text-slate-500">
+                  {targetLabel} · {log.targetId}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
+                {formatAuditTime(log.createdAt)}
+              </span>
+            </div>
+            <p className="mt-3 truncate text-xs font-bold text-blue-700">{actor?.name ?? log.actorId}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const SupplierWorkspaceView: React.FC<{ workspace: SupplierWorkspace }> = ({ workspace }) => (
   <>

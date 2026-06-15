@@ -1120,6 +1120,16 @@ describe('procurement API clients', () => {
         amount: 118000,
         paymentStatus: '已付款',
       }],
+      pendingApprovals: [],
+      auditLogs: [{
+        id: 'audit-java-001',
+        tenantId: 'tenant-acme',
+        actorId: 'user-buyer-owner',
+        action: 'purchase_order.created',
+        targetType: 'purchase_order',
+        targetId: 'po-java-001',
+        createdAt: '2026-06-15T15:20:00+08:00',
+      }],
     });
 
     expect(nextWorkspace).not.toBe(buyer.workspace);
@@ -1182,6 +1192,15 @@ describe('procurement API clients', () => {
       orderId: 'po-java-001',
       amount: 118000,
       paymentStatus: '已付款',
+    }]);
+    expect(nextWorkspace.auditLogs).toEqual([{
+      id: 'audit-java-001',
+      tenantId: 'tenant-acme',
+      actorId: 'user-buyer-owner',
+      action: 'purchase_order.created',
+      targetType: 'purchase_order',
+      targetId: 'po-java-001',
+      createdAt: '2026-06-15T15:20:00+08:00',
     }]);
   });
 

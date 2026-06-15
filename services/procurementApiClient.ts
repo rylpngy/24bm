@@ -3,6 +3,7 @@ import {
   getBuyerWorkspace,
   getSupplierWorkspace,
   getTenantKpis,
+  type AuditLogRecord,
   type BuyerWorkspace,
   type Delivery,
   type Enterprise,
@@ -390,15 +391,7 @@ export interface JavaEnterpriseReviewDto {
   reviewStatus: string;
 }
 
-export interface JavaAuditLogDto {
-  id: string;
-  tenantId: string;
-  actorId: string;
-  action: string;
-  targetType: string;
-  targetId: string;
-  createdAt: string;
-}
+export interface JavaAuditLogDto extends AuditLogRecord {}
 
 export interface JavaProcurementApiClient {
   loginPlatform(): Promise<JavaLoginResponse>;
@@ -987,6 +980,7 @@ export const applyJavaBuyerMasterData = (
     rfqs: masterData.rfqs,
     orders: masterData.orders,
     invoices: masterData.invoices,
+    auditLogs: masterData.auditLogs,
     privateSupplierRelations,
     suppliers,
     materials,
