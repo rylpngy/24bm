@@ -13,9 +13,12 @@ describe('buyer approval inbox UI', () => {
     expect(apiClient).toContain('submittedByName?: string');
     expect(apiClient).toContain('actedAt?: string | null');
     expect(apiClient).toContain('listBuyerRecentApprovals');
+    expect(apiClient).toContain('listBuyerNotifications');
     expect(apiClient).toContain('/api/v1/buyer/approvals/recent');
+    expect(apiClient).toContain('/api/v1/buyer/notifications');
     expect(app).toContain('sortedPendingApprovals');
     expect(app).toContain('recentApprovals');
+    expect(app).toContain('buyerNotifications');
     expect(app).toContain('approval.businessStatus');
     expect(app).toContain('approval.priority');
     expect(app).toContain('approval.submittedByName');
@@ -25,5 +28,7 @@ describe('buyer approval inbox UI', () => {
     expect(app).toContain('提交人');
     expect(app).toContain('最近审批记录');
     expect(app).toContain('处理时间');
+    expect(app).toContain('审批结果通知');
+    expect(app).toContain('未读');
   });
 });

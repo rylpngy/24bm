@@ -345,6 +345,17 @@ export interface JavaApprovalTemplateDto {
   status: string;
 }
 
+export interface JavaNotificationDto {
+  id: string;
+  tenantId: string;
+  recipientId: string;
+  title: string;
+  content: string;
+  read: boolean;
+  readAt?: string | null;
+  createdAt: string;
+}
+
 export interface UpdateApprovalTemplatePayload {
   defaultApproverRoleId: string;
   status: 'active' | 'inactive';
@@ -484,6 +495,7 @@ export interface JavaProcurementApiClient {
   submitBuyerDemand(demandId: string): Promise<JavaApprovalTaskDto>;
   listBuyerPendingApprovals(): Promise<JavaApprovalTaskDto[]>;
   listBuyerRecentApprovals(): Promise<JavaApprovalTaskDto[]>;
+  listBuyerNotifications(): Promise<JavaNotificationDto[]>;
   listBuyerApprovalTemplates(): Promise<JavaApprovalTemplateDto[]>;
   updateBuyerApprovalTemplate(
     templateCode: string,
@@ -524,6 +536,7 @@ export interface JavaBuyerMasterData {
   invoices: InvoiceRecord[];
   pendingApprovals: JavaApprovalTaskDto[];
   recentApprovals: JavaApprovalTaskDto[];
+  notifications: JavaNotificationDto[];
   approvalTemplates: JavaApprovalTemplateDto[];
   auditLogs: JavaAuditLogDto[];
 }
@@ -919,6 +932,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     listBuyerRecentApprovals() {
       return buyerRequest<JavaApprovalTaskDto[]>('/api/v1/buyer/approvals/recent');
     },
+    listBuyerNotifications() {
+      return buyerRequest<JavaNotificationDto[]>('/api/v1/buyer/notifications');
+    },
     listBuyerApprovalTemplates() {
       return buyerRequest<JavaApprovalTemplateDto[]>('/api/v1/buyer/approvals/templates');
     },
@@ -1077,16 +1093,18 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 };
 
 export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient): Promise<JavaBuyerMasterData> => {
-  const [workspace, roles, recentApprovals, approvalTemplates] = await Promise.all([
+  const [workspace, roles, recentApprovals, notifications, approvalTemplates] = await Promise.all([
     client.getBuyerWorkspace(),
     client.listBuyerRoles(),
     client.listBuyerRecentApprovals(),
+    client.listBuyerNotifications(),
     client.listBuyerApprovalTemplates(),
   ]);
   return {
     ...workspace,
     roles,
     recentApprovals,
+    notifications,
     approvalTemplates,
   };
 };

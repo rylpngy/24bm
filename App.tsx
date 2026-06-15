@@ -48,6 +48,7 @@ import {
   type PlatformWorkspaceData,
   type JavaApprovalTaskDto,
   type JavaApprovalTemplateDto,
+  type JavaNotificationDto,
   type BuyerRoleDto,
 } from './services/procurementApiClient';
 
@@ -131,6 +132,7 @@ const App: React.FC = () => {
     kpis: TenantKpis;
     pendingApprovals: JavaApprovalTaskDto[];
     recentApprovals: JavaApprovalTaskDto[];
+    buyerNotifications: JavaNotificationDto[];
     approvalTemplates: JavaApprovalTemplateDto[];
     roles: BuyerRoleDto[];
   } | null>(null);
@@ -153,6 +155,7 @@ const App: React.FC = () => {
       workspace: applyJavaBuyerMasterData(currentBuyerData.workspace, javaBuyerMasterData),
       pendingApprovals: javaBuyerMasterData.pendingApprovals,
       recentApprovals: javaBuyerMasterData.recentApprovals,
+      buyerNotifications: javaBuyerMasterData.notifications,
       approvalTemplates: javaBuyerMasterData.approvalTemplates,
       roles: javaBuyerMasterData.roles,
       kpis: {
@@ -190,6 +193,7 @@ const App: React.FC = () => {
           : nextBuyer.workspace;
         const pendingApprovals = javaBuyerMasterData?.pendingApprovals ?? [];
         const recentApprovals = javaBuyerMasterData?.recentApprovals ?? [];
+        const buyerNotifications = javaBuyerMasterData?.notifications ?? [];
         const approvalTemplates = javaBuyerMasterData?.approvalTemplates ?? [];
         const roles = javaBuyerMasterData?.roles ?? [];
         setBuyerData({
@@ -197,6 +201,7 @@ const App: React.FC = () => {
           workspace: buyerWorkspace,
           pendingApprovals,
           recentApprovals,
+          buyerNotifications,
           approvalTemplates,
           roles,
           kpis: {
@@ -456,6 +461,7 @@ const App: React.FC = () => {
                 kpis={buyerData.kpis}
                 pendingApprovals={buyerData.pendingApprovals}
                 recentApprovals={buyerData.recentApprovals}
+                buyerNotifications={buyerData.buyerNotifications}
                 approvalTemplates={buyerData.approvalTemplates}
                 roles={buyerData.roles}
                 approvalBusyId={approvalBusyId}
@@ -704,6 +710,7 @@ const BuyerWorkspaceView: React.FC<{
   kpis: TenantKpis;
   pendingApprovals: JavaApprovalTaskDto[];
   recentApprovals: JavaApprovalTaskDto[];
+  buyerNotifications: JavaNotificationDto[];
   approvalTemplates: JavaApprovalTemplateDto[];
   roles: BuyerRoleDto[];
   approvalBusyId: string | null;
@@ -726,6 +733,7 @@ const BuyerWorkspaceView: React.FC<{
   kpis,
   pendingApprovals,
   recentApprovals,
+  buyerNotifications,
   approvalTemplates,
   roles,
   approvalBusyId,
@@ -750,6 +758,10 @@ const BuyerWorkspaceView: React.FC<{
     const rightTime = new Date(right.actedAt ?? right.createdAt).getTime();
     return rightTime - leftTime;
   });
+  const sortedBuyerNotifications = [...buyerNotifications]
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 6);
+  const unreadBuyerNotificationCount = buyerNotifications.filter((notification) => !notification.read).length;
 
   return (
     <>
@@ -851,34 +863,68 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {javaEnabled && (
-      <Panel title="最近审批记录" icon={ShieldCheck}>
-        {sortedRecentApprovals.length > 0 ? (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {sortedRecentApprovals.map((approval) => (
-              <div key={approval.id} className="rounded-lg border border-slate-200 bg-white p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-slate-950">
-                      {approval.summaryTitle || approval.bizId}
-                    </p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">{approvalTypeLabel(approval.bizType)}</p>
+      <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+        <Panel title="最近审批记录" icon={ShieldCheck}>
+          {sortedRecentApprovals.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {sortedRecentApprovals.map((approval) => (
+                <div key={approval.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-950">
+                        {approval.summaryTitle || approval.bizId}
+                      </p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">{approvalTypeLabel(approval.bizType)}</p>
+                    </div>
+                    <StatusPill label={approval.status} />
                   </div>
-                  <StatusPill label={approval.status} />
+                  <div className="mt-3 space-y-2 text-xs font-bold text-slate-500">
+                    {approval.businessStatus && <p>业务状态：{approval.businessStatus}</p>}
+                    {approval.submittedByName && <p>提交人：{approval.submittedByName}</p>}
+                    <p>处理时间：{formatAuditTime(approval.actedAt ?? approval.createdAt)}</p>
+                  </div>
                 </div>
-                <div className="mt-3 space-y-2 text-xs font-bold text-slate-500">
-                  {approval.businessStatus && <p>业务状态：{approval.businessStatus}</p>}
-                  {approval.submittedByName && <p>提交人：{approval.submittedByName}</p>}
-                  <p>处理时间：{formatAuditTime(approval.actedAt ?? approval.createdAt)}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
+              暂无已处理审批记录
+            </p>
+          )}
+        </Panel>
+
+        <Panel title="审批结果通知" icon={Bell}>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm font-bold text-slate-500">未读 {unreadBuyerNotificationCount} 条</p>
           </div>
-        ) : (
-          <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
-            暂无已处理审批记录
-          </p>
-        )}
-      </Panel>
+          {sortedBuyerNotifications.length > 0 ? (
+            <div className="space-y-3">
+              {sortedBuyerNotifications.map((notification) => (
+                <div key={notification.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-950">{notification.title}</p>
+                      <p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-slate-500">
+                        {notification.content}
+                      </p>
+                    </div>
+                    {!notification.read && (
+                      <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
+                        未读
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-3 text-xs font-bold text-slate-400">{formatAuditTime(notification.createdAt)}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
+              暂无审批结果通知
+            </p>
+          )}
+        </Panel>
+      </div>
     )}
 
     <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
