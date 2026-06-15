@@ -132,6 +132,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/buyer/workspace',
+    audience: 'buyer',
+    action: '加载采购方工作台聚合数据',
+    requestSchema: 'BuyerWorkspaceRequest',
+    responseSchema: 'BuyerWorkspace',
+  },
+  {
+    method: 'GET',
     path: '/buyer/suppliers',
     audience: 'buyer',
     action: '加载采购方私域供应商库',
@@ -578,6 +586,8 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'Tenant',
           'EnterpriseReviewRequest',
           'EnterpriseReview',
+          'BuyerWorkspaceRequest',
+          'BuyerWorkspace',
           'BuyerSupplierListRequest',
           'BuyerSupplierList',
           'CreateBuyerSupplierRequest',

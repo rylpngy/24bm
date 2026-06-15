@@ -7,6 +7,7 @@ import {
   applyJavaSupplierWorkspaceData,
   createHttpApiClient,
   createJavaProcurementApiClient,
+  loadJavaBuyerMasterData,
   loadJavaPlatformWorkspaceData,
   loadJavaSupplierWorkspaceData,
   mockApiClient,
@@ -237,6 +238,76 @@ describe('procurement API clients', () => {
     expect(invoices[0].paymentStatus).toBe('已付款');
     expect(auditLogs[0].action).toBe('purchase_order.created');
     expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);
+  });
+
+  it('loads Java buyer master data from the aggregated workspace endpoint', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: {
+            accessToken: 'buyer-token',
+            tokenType: 'Bearer',
+            expiresIn: 7200,
+            userId: 'user-buyer-owner',
+            displayName: '采购负责人',
+            scope: 'BUYER',
+            tenantId: 'tenant-acme',
+            supplierId: null,
+            roles: ['BUYER_OWNER'],
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/workspace') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: {
+            suppliers: [],
+            materials: [],
+            users: [],
+            demands: [],
+            rfqs: [],
+            orders: [],
+            invoices: [],
+            pendingApprovals: [],
+            auditLogs: [{
+              id: 'audit-java-001',
+              tenantId: 'tenant-acme',
+              actorId: 'user-buyer-owner',
+              action: 'purchase_order.created',
+              targetType: 'purchase_order',
+              targetId: 'po-java-001',
+              createdAt: '2026-06-15T13:00:00+08:00',
+            }],
+          },
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      buyerLogin: {
+        account: 'buyer',
+        password: 'demo123456',
+        scope: 'BUYER',
+        tenantId: 'tenant-acme',
+      },
+    });
+
+    const masterData = await loadJavaBuyerMasterData(client);
+
+    expect(masterData.auditLogs[0].action).toBe('purchase_order.created');
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/buyer/workspace',
+    ]);
   });
 
   it('uses the Java API client to authenticate and load platform workspace data with bearer tokens', async () => {

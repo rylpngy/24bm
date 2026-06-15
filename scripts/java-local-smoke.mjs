@@ -73,7 +73,8 @@ const main = async () => {
     requestJson('/api/v1/platform/tenants', { headers: platformHeaders }),
     requestJson('/api/v1/platform/enterprise-reviews', { headers: platformHeaders }),
   ]);
-  const [suppliers, materials, users, demands, orders, invoices, auditLogs] = await Promise.all([
+  const [buyerWorkspace, suppliers, materials, users, demands, orders, invoices, auditLogs] = await Promise.all([
+    requestJson('/api/v1/buyer/workspace', { headers: authHeaders }),
     requestJson('/api/v1/buyer/suppliers', { headers: authHeaders }),
     requestJson('/api/v1/buyer/materials', { headers: authHeaders }),
     requestJson('/api/v1/buyer/users', { headers: authHeaders }),
@@ -100,6 +101,9 @@ const main = async () => {
   }
   if (supplierProfile.id !== 'ent-supplier-sunrise') {
     throw new Error(`Unexpected Java supplier profile: ${supplierProfile.id}`);
+  }
+  if (!Array.isArray(buyerWorkspace.suppliers) || !Array.isArray(buyerWorkspace.auditLogs)) {
+    throw new Error('Unexpected Java buyer workspace aggregate payload');
   }
 
   const rfq = await requestJson('/api/v1/buyer/rfqs', {
@@ -185,6 +189,7 @@ const main = async () => {
   console.log(`Logged in as ${buyerLogin.displayName} for tenant ${buyerLogin.tenantId}`);
   console.log(`Loaded ${platformTenants.length} tenants, ${platformOverview.publicSupplierCount} public suppliers, ${platformEnterpriseReviews.length} pending enterprise reviews`);
   console.log(`Loaded ${suppliers.length} suppliers, ${materials.length} materials, ${users.length} buyer users`);
+  console.log(`Loaded buyer workspace aggregate with ${buyerWorkspace.suppliers.length} suppliers and ${buyerWorkspace.auditLogs.length} audit logs`);
   console.log(`Loaded ${demands.length} purchase demands`);
   console.log(`Loaded ${orders.length} purchase orders, ${invoices.length} invoices, ${auditLogs.length} audit logs`);
   console.log(`Loaded supplier ${supplierProfile.name}, ${supplierRfqs.length} RFQs, ${supplierQuotes.length} quotes, ${supplierOrders.length} orders, ${supplierInvoices.length} invoices`);

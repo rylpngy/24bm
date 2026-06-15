@@ -19,6 +19,7 @@ describe('Java local smoke command', () => {
     expect(script).toContain("requestJson('/api/v1/platform/overview'");
     expect(script).toContain("requestJson('/api/v1/platform/tenants'");
     expect(script).toContain("requestJson('/api/v1/platform/enterprise-reviews'");
+    expect(script).toContain("requestJson('/api/v1/buyer/workspace'");
     expect(script).toContain('/api/v1/buyer/suppliers');
     expect(script).toContain('/api/v1/buyer/materials');
     expect(script).toContain('/api/v1/buyer/users');

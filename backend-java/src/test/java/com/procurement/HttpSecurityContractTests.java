@@ -17,6 +17,9 @@ import com.procurement.catalog.api.CreateMaterialRequest;
 import com.procurement.catalog.api.MaterialController;
 import com.procurement.catalog.api.MaterialResponse;
 import com.procurement.catalog.application.MaterialApplicationService;
+import com.procurement.buyer.api.BuyerWorkspaceController;
+import com.procurement.buyer.api.BuyerWorkspaceResponse;
+import com.procurement.buyer.application.BuyerWorkspaceApplicationService;
 import com.procurement.approval.api.ApprovalInboxController;
 import com.procurement.approval.api.PendingApprovalTaskResponse;
 import com.procurement.approval.application.ApprovalInboxApplicationService;
@@ -95,7 +98,8 @@ import org.springframework.test.web.servlet.MvcResult;
     RfqAwardController.class,
     SupplierOrderController.class,
     SupplierReceivableController.class,
-    AuditLogController.class
+    AuditLogController.class,
+    BuyerWorkspaceController.class
 })
 @Import({
     SecurityConfig.class,
@@ -153,6 +157,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private AuditLogApplicationService auditLogApplicationService;
+
+  @MockBean
+  private BuyerWorkspaceApplicationService buyerWorkspaceApplicationService;
 
   @Test
   void viteLocalhostPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
@@ -308,6 +315,55 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data[0].tenantId").value("tenant-acme"))
         .andExpect(jsonPath("$.data[0].action").value("purchase_order.created"));
+  }
+
+  @Test
+  void buyerCanLoadAggregatedWorkspaceButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/workspace")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(buyerWorkspaceApplicationService.load()).thenReturn(new BuyerWorkspaceResponse(
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of()));
+
+    mockMvc.perform(get("/api/v1/buyer/workspace")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.suppliers").isArray())
+        .andExpect(jsonPath("$.data.materials").isArray())
+        .andExpect(jsonPath("$.data.users").isArray())
+        .andExpect(jsonPath("$.data.demands").isArray())
+        .andExpect(jsonPath("$.data.rfqs").isArray())
+        .andExpect(jsonPath("$.data.orders").isArray())
+        .andExpect(jsonPath("$.data.invoices").isArray())
+        .andExpect(jsonPath("$.data.pendingApprovals").isArray())
+        .andExpect(jsonPath("$.data.auditLogs").isArray());
   }
 
   @Test

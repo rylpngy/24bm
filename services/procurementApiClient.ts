@@ -400,6 +400,7 @@ export interface JavaProcurementApiClient {
   getPlatformOverview(): Promise<JavaPlatformOverviewDto>;
   listPlatformTenants(): Promise<JavaPlatformTenantDto[]>;
   listPlatformEnterpriseReviews(): Promise<JavaEnterpriseReviewDto[]>;
+  getBuyerWorkspace(): Promise<JavaBuyerMasterData>;
   listBuyerSuppliers(): Promise<BuyerSupplierRelationDto[]>;
   listBuyerMaterials(): Promise<MaterialDto[]>;
   listBuyerUsers(): Promise<BuyerUserDto[]>;
@@ -753,6 +754,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     listPlatformEnterpriseReviews() {
       return platformRequest<JavaEnterpriseReviewDto[]>('/api/v1/platform/enterprise-reviews');
     },
+    getBuyerWorkspace() {
+      return buyerRequest<JavaBuyerMasterData>('/api/v1/buyer/workspace');
+    },
     listBuyerSuppliers() {
       return buyerRequest<BuyerSupplierRelationDto[]>('/api/v1/buyer/suppliers');
     },
@@ -919,18 +923,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 };
 
 export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient): Promise<JavaBuyerMasterData> => {
-  const [suppliers, materials, users, demands, rfqs, orders, invoices, pendingApprovals, auditLogs] = await Promise.all([
-    client.listBuyerSuppliers(),
-    client.listBuyerMaterials(),
-    client.listBuyerUsers(),
-    client.listBuyerDemands(),
-    client.listBuyerRfqs(),
-    client.listBuyerOrders(),
-    client.listBuyerInvoices(),
-    client.listBuyerPendingApprovals(),
-    client.listBuyerAuditLogs(),
-  ]);
-  return { suppliers, materials, users, demands, rfqs, orders, invoices, pendingApprovals, auditLogs };
+  return client.getBuyerWorkspace();
 };
 
 export const applyJavaBuyerMasterData = (

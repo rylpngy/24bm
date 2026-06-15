@@ -175,6 +175,31 @@
         }
       }
     },
+    "/buyer/workspace": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方工作台聚合数据",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerWorkspace"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/suppliers": {
       "get": {
         "tags": [
@@ -1105,6 +1130,14 @@
         "type": "object",
         "additionalProperties": true
       },
+      "BuyerWorkspaceRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerWorkspace": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "BuyerSupplierListRequest": {
         "type": "object",
         "additionalProperties": true
@@ -1346,6 +1379,7 @@
     "POST /platform/tenants/{tenantId}/features",
     "GET /platform/enterprise-reviews",
     "POST /platform/enterprise-reviews/{enterpriseId}",
+    "GET /buyer/workspace",
     "GET /buyer/suppliers",
     "POST /buyer/suppliers",
     "POST /buyer/suppliers/{relationId}/submit",
