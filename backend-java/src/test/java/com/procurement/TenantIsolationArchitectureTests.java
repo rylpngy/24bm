@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,10 @@ class TenantIsolationArchitectureTests {
 
   private static final Path SOURCE_ROOT = Path.of("src/main/java/com/procurement");
   private static final Path TEST_ROOT = Path.of("src/test/java/com/procurement");
+  private static final Set<String> SHARED_SCOPE_MAPPERS = Set.of(
+      "platform/infrastructure/PlatformTenantMapper.java",
+      "platform/infrastructure/PlatformEnterpriseMapper.java",
+      "supplier/infrastructure/SupplierProfileMapper.java");
 
   @Test
   void applicationServicesUseCentralTenantAccessGuardInsteadOfLocalThreadLocalReads() throws IOException {
@@ -167,5 +172,36 @@ class TenantIsolationArchitectureTests {
           .as(controller + " should be covered by HttpSecurityContractTests")
           .contains(controller);
     }
+  }
+
+  @Test
+  void tenantBusinessMappersKeepWhereClausesScopedByTenantOrSupplier() throws IOException {
+    List<Path> mapperFiles;
+    try (var stream = Files.walk(SOURCE_ROOT)) {
+      mapperFiles = stream
+          .filter(path -> path.toString().endsWith("Mapper.java"))
+          .filter(path -> !isSharedScopeMapper(path))
+          .toList();
+    }
+
+    assertThat(mapperFiles).isNotEmpty();
+    for (Path mapperFile : mapperFiles) {
+      String source = Files.readString(mapperFile);
+      Matcher sqlMatcher = Pattern.compile("@(?:Select|Update|Delete)\\(\"\"\"(?<sql>.*?)\"\"\"\\)", Pattern.DOTALL)
+          .matcher(source);
+      while (sqlMatcher.find()) {
+        String sql = sqlMatcher.group("sql").toLowerCase();
+        if (sql.contains(" where ")) {
+          assertThat(sql)
+              .as(mapperFile + " SQL with where clauses must stay tenant or supplier scoped: " + sql.strip())
+              .matches("(?s).*(tenant_id\\s*=|supplier_id\\s*=).*");
+        }
+      }
+    }
+  }
+
+  private boolean isSharedScopeMapper(Path mapperFile) {
+    String relativePath = SOURCE_ROOT.relativize(mapperFile).toString();
+    return SHARED_SCOPE_MAPPERS.contains(relativePath);
   }
 }
