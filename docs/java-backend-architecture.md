@@ -91,8 +91,22 @@ Authorization: Bearer <accessToken>
 - `purchase_demands`
 - `purchase_demand_items`
 - `approval_tasks`
+- `audit_logs`
 
-该模块从 `TenantContext.tenantId()` 和 `TenantContext.userId()` 获取租户与用户上下文，不接受前端在请求体中直接传入租户归属。
+该模块通过 `TenantAccessGuard` 读取 JWT 派生的租户与用户上下文，不接受前端在请求体中直接传入租户归属。创建采购需求成功后会写入 `audit_logs`，当前动作为 `purchase_demand.created`，目标类型为 `purchase_demand`。
+
+## 操作审计 Java 能力
+
+审计能力落在 `audit` 模块：
+
+- `AuditLogApplicationService`：统一记录租户内业务操作。
+- `AuditLogMapper`：写入 `audit_logs` 表。
+
+当前已接入的审计动作：
+
+- `purchase_demand.created`：采购方创建采购需求。
+
+后续应优先把供应商准入提交、需求审批、定标提交、订单创建、供应商确认、发货、收货、发票登记和付款状态登记纳入同一审计入口。
 
 ## RFQ 询价 Java API
 

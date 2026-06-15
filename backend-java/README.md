@@ -90,7 +90,7 @@ Example creation payload:
 }
 ```
 
-Demand creation stores `草稿`; submit changes it to `审批中` and creates an `approval_tasks` row with `biz_type = purchase_demand`.
+Demand creation stores `草稿` and records an `audit_logs` row with action `purchase_demand.created`. Submit changes the demand to `审批中` and creates an `approval_tasks` row with `biz_type = purchase_demand`.
 
 ## Buyer Master Data APIs
 

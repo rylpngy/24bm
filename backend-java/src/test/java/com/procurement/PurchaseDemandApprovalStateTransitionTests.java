@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.demand.api.ReviewPurchaseDemandRequest;
@@ -24,10 +25,12 @@ class PurchaseDemandApprovalStateTransitionTests {
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
   private final PurchaseDemandItemMapper purchaseDemandItemMapper = org.mockito.Mockito.mock(PurchaseDemandItemMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
+  private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final PurchaseDemandApplicationService purchaseDemandApplicationService = new PurchaseDemandApplicationService(
       purchaseDemandMapper,
       purchaseDemandItemMapper,
-      approvalTaskMapper);
+      approvalTaskMapper,
+      auditLogApplicationService);
 
   @AfterEach
   void clearTenantContext() {

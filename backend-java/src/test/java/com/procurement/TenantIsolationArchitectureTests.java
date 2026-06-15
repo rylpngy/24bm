@@ -56,6 +56,23 @@ class TenantIsolationArchitectureTests {
   }
 
   @Test
+  void auditLogWriterUsesTenantAccessGuardAndWritesAuditLogsTable() throws IOException {
+    Path servicePath = SOURCE_ROOT.resolve("audit/application/AuditLogApplicationService.java");
+    Path mapperPath = SOURCE_ROOT.resolve("audit/infrastructure/AuditLogMapper.java");
+
+    assertThat(servicePath).exists();
+    assertThat(mapperPath).exists();
+    assertThat(Files.readString(servicePath))
+        .contains("TenantAccessGuard.requireTenantId")
+        .contains("TenantAccessGuard.requireUserId");
+    assertThat(Files.readString(mapperPath))
+        .contains("insert into audit_logs")
+        .contains("tenant_id")
+        .contains("actor_id")
+        .contains("target_id");
+  }
+
+  @Test
   void supplierWorkspaceOnlyListsApprovedBuyerRelationships() throws IOException {
     Path mapperPath = SOURCE_ROOT.resolve("supplier/infrastructure/SupplierProfileMapper.java");
     String mapperSource = Files.readString(mapperPath);

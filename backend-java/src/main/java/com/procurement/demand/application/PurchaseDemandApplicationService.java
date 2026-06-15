@@ -2,6 +2,7 @@ package com.procurement.demand.application;
 
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.demand.api.CreatePurchaseDemandRequest;
@@ -25,18 +26,22 @@ public class PurchaseDemandApplicationService {
   private static final String APPROVED_STATUS = "已通过";
   private static final String REJECTED_STATUS = "已驳回";
   private static final String PURCHASE_DEMAND_BIZ_TYPE = "purchase_demand";
+  private static final String PURCHASE_DEMAND_CREATED_ACTION = "purchase_demand.created";
 
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
+  private final AuditLogApplicationService auditLogApplicationService;
 
   public PurchaseDemandApplicationService(
       PurchaseDemandMapper purchaseDemandMapper,
       PurchaseDemandItemMapper purchaseDemandItemMapper,
-      ApprovalTaskMapper approvalTaskMapper) {
+      ApprovalTaskMapper approvalTaskMapper,
+      AuditLogApplicationService auditLogApplicationService) {
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
+    this.auditLogApplicationService = auditLogApplicationService;
   }
 
   public List<PurchaseDemandResponse> listCurrentTenantDemands() {
@@ -69,6 +74,10 @@ public class PurchaseDemandApplicationService {
           lineItem.materialId(),
           lineItem.quantity());
     }
+    auditLogApplicationService.recordTenantAction(
+        PURCHASE_DEMAND_CREATED_ACTION,
+        PURCHASE_DEMAND_BIZ_TYPE,
+        demandId);
 
     return toResponse(purchaseDemandMapper.findByTenantAndId(tenantId, demandId));
   }
