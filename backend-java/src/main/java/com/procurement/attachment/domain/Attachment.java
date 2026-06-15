@@ -10,5 +10,7 @@ public record Attachment(
     String fileName,
     String storageKey,
     String uploadedBy,
+    String visibility,
+    String status,
     OffsetDateTime createdAt) {
 }

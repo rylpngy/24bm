@@ -114,11 +114,12 @@ Example metadata registration payload:
   "ownerType": "purchase_demand",
   "ownerId": "demand-demo",
   "fileName": "需求规格书.pdf",
-  "storageKey": "tenant-acme/purchase_demand/demand-demo/spec.pdf"
+  "storageKey": "tenant-acme/purchase_demand/demand-demo/spec.pdf",
+  "visibility": "tenant"
 }
 ```
 
-The API records metadata only. The current buyer tenant and uploader are read from JWT claims, and registration writes an `audit_logs` row with action `attachment.created`.
+The API records metadata only. The current buyer tenant and uploader are read from JWT claims, and registration writes an `audit_logs` row with action `attachment.created`. `visibility` is optional and defaults to `tenant`; supported values are `tenant`, `buyer_internal`, and `supplier_shared`. New attachments are stored as `active`, and list queries only return active metadata.
 
 ## Buyer Notification APIs
 

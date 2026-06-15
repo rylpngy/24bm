@@ -109,6 +109,9 @@ describe('Java backend scaffold', () => {
   it('documents the buyer attachment metadata API handoff', () => {
     const architecture = read('docs/java-backend-architecture.md');
     const readme = read('backend-java/README.md');
+    const migration = read('backend-java/src/main/resources/db/migration/V1__initial_schema.sql');
+    const attachmentService = read('backend-java/src/main/java/com/procurement/attachment/application/AttachmentApplicationService.java');
+    const attachmentTests = read('backend-java/src/test/java/com/procurement/AttachmentMetadataLifecycleTests.java');
 
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/attachment/api/AttachmentController.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/attachment/application/AttachmentApplicationService.java'))).toBe(true);
@@ -118,6 +121,13 @@ describe('Java backend scaffold', () => {
     expect(architecture).toContain('attachment.created');
     expect(readme).toContain('Buyer Attachment Metadata APIs');
     expect(readme).toContain('POST /api/v1/buyer/attachments');
+    expect(readme).toContain('visibility');
+    expect(readme).toContain('active');
+    expect(migration).toContain('visibility text not null default');
+    expect(migration).toContain('status text not null default');
+    expect(attachmentService).toContain('SUPPORTED_VISIBILITIES');
+    expect(attachmentService).toContain('listActiveByTenantAndOwner');
+    expect(attachmentTests).toContain('createAttachmentRecordsVisibilityAndActiveStatusFromServerContext');
   });
 
   it('documents the buyer notification API handoff', () => {

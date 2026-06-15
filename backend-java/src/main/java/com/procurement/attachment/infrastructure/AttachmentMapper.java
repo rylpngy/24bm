@@ -13,11 +13,12 @@ import org.apache.ibatis.annotations.Select;
 public interface AttachmentMapper {
 
   @Select("""
-      select id, tenant_id, owner_type, owner_id, file_name, storage_key, uploaded_by, created_at
+      select id, tenant_id, owner_type, owner_id, file_name, storage_key, uploaded_by, visibility, status, created_at
       from attachments
       where tenant_id = #{tenantId}
         and owner_type = #{ownerType}
         and owner_id = #{ownerId}
+        and status = 'active'
       order by created_at desc
       """)
   @Results(id = "attachmentResults", value = {
@@ -29,13 +30,13 @@ public interface AttachmentMapper {
       @Result(column = "uploaded_by", property = "uploadedBy"),
       @Result(column = "created_at", property = "createdAt")
   })
-  List<Attachment> listByTenantAndOwner(
+  List<Attachment> listActiveByTenantAndOwner(
       @Param("tenantId") String tenantId,
       @Param("ownerType") String ownerType,
       @Param("ownerId") String ownerId);
 
   @Select("""
-      select id, tenant_id, owner_type, owner_id, file_name, storage_key, uploaded_by, created_at
+      select id, tenant_id, owner_type, owner_id, file_name, storage_key, uploaded_by, visibility, status, created_at
       from attachments
       where tenant_id = #{tenantId} and id = #{id}
       """)
@@ -51,8 +52,8 @@ public interface AttachmentMapper {
   Attachment findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Insert("""
-      insert into attachments (id, tenant_id, owner_type, owner_id, file_name, storage_key, uploaded_by)
-      values (#{id}, #{tenantId}, #{ownerType}, #{ownerId}, #{fileName}, #{storageKey}, #{uploadedBy})
+      insert into attachments (id, tenant_id, owner_type, owner_id, file_name, storage_key, uploaded_by, visibility, status)
+      values (#{id}, #{tenantId}, #{ownerType}, #{ownerId}, #{fileName}, #{storageKey}, #{uploadedBy}, #{visibility}, #{status})
       """)
   void insert(
       @Param("id") String id,
@@ -61,5 +62,7 @@ public interface AttachmentMapper {
       @Param("ownerId") String ownerId,
       @Param("fileName") String fileName,
       @Param("storageKey") String storageKey,
-      @Param("uploadedBy") String uploadedBy);
+      @Param("uploadedBy") String uploadedBy,
+      @Param("visibility") String visibility,
+      @Param("status") String status);
 }

@@ -6,5 +6,6 @@ public record CreateAttachmentRequest(
     @NotBlank String ownerType,
     @NotBlank String ownerId,
     @NotBlank String fileName,
-    @NotBlank String storageKey) {
+    @NotBlank String storageKey,
+    String visibility) {
 }

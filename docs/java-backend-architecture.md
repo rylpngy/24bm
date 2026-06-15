@@ -373,7 +373,9 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 当前边界：
 
 - 采购方身份来自 JWT 中的 `tenantId`，上传人来自 JWT 中的 `userId`。
-- 请求体只接收 `ownerType`、`ownerId`、`fileName` 和 `storageKey`，不接受前端传入 `tenantId` 或 `uploadedBy`。
+- 请求体只接收 `ownerType`、`ownerId`、`fileName`、`storageKey` 和可选 `visibility`，不接受前端传入 `tenantId`、`uploadedBy` 或 `status`。
+- `visibility` 不传时默认 `tenant`，当前支持 `tenant`、`buyer_internal`、`supplier_shared`；新增附件状态由服务端固定为 `active`。
+- 查询附件时始终按当前租户和业务对象过滤，并只返回 `active` 状态的附件元数据。
 - 当前实现登记附件元数据，不直接处理对象存储直传、病毒扫描、文件预览或下载签名。
 - 新增附件会写入 `audit_logs`，动作为 `attachment.created`，目标类型为附件关联的 `ownerType`。
 

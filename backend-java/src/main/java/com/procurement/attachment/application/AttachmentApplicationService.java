@@ -13,6 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AttachmentApplicationService {
+  private static final String ACTIVE_STATUS = "active";
+  private static final String DEFAULT_VISIBILITY = "tenant";
+  private static final List<String> SUPPORTED_VISIBILITIES = List.of("tenant", "buyer_internal", "supplier_shared");
+
   private final AttachmentMapper attachmentMapper;
   private final AuditLogMapper auditLogMapper;
 
@@ -23,7 +27,7 @@ public class AttachmentApplicationService {
 
   public List<AttachmentResponse> listCurrentTenantAttachments(String ownerType, String ownerId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
-    return attachmentMapper.listByTenantAndOwner(tenantId, ownerType, ownerId).stream()
+    return attachmentMapper.listActiveByTenantAndOwner(tenantId, ownerType, ownerId).stream()
         .map(this::toResponse)
         .toList();
   }
@@ -33,6 +37,7 @@ public class AttachmentApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
     String userId = TenantAccessGuard.requireUserId("buyer attachment APIs");
     String attachmentId = "att-" + UUID.randomUUID();
+    String visibility = normalizeVisibility(request.visibility());
     attachmentMapper.insert(
         attachmentId,
         tenantId,
@@ -40,7 +45,9 @@ public class AttachmentApplicationService {
         request.ownerId(),
         request.fileName(),
         request.storageKey(),
-        userId);
+        userId,
+        visibility,
+        ACTIVE_STATUS);
     auditLogMapper.insert(
         "audit-" + UUID.randomUUID(),
         tenantId,
@@ -60,6 +67,16 @@ public class AttachmentApplicationService {
         attachment.fileName(),
         attachment.storageKey(),
         attachment.uploadedBy(),
+        attachment.visibility(),
+        attachment.status(),
         attachment.createdAt());
+  }
+
+  private String normalizeVisibility(String visibility) {
+    String safeVisibility = visibility == null || visibility.isBlank() ? DEFAULT_VISIBILITY : visibility;
+    if (!SUPPORTED_VISIBILITIES.contains(safeVisibility)) {
+      throw new IllegalArgumentException("Unsupported attachment visibility: " + visibility);
+    }
+    return safeVisibility;
   }
 }

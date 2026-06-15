@@ -215,6 +215,8 @@ create table attachments (
   file_name text not null,
   storage_key text not null,
   uploaded_by text not null references users(id),
+  visibility text not null default 'tenant',
+  status text not null default 'active',
   created_at timestamptz not null default now()
 );
 

@@ -997,6 +997,8 @@ class HttpSecurityContractTests {
             "需求规格书.pdf",
             "tenant-acme/purchase_demand/demand-demo/spec.pdf",
             "user-buyer-owner",
+            "tenant",
+            "active",
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"))));
 
     mockMvc.perform(get("/api/v1/buyer/attachments")
@@ -1013,7 +1015,9 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data[0].id").value("att-demand-spec"))
         .andExpect(jsonPath("$.data[0].ownerType").value("purchase_demand"))
         .andExpect(jsonPath("$.data[0].fileName").value("需求规格书.pdf"))
-        .andExpect(jsonPath("$.data[0].uploadedBy").value("user-buyer-owner"));
+        .andExpect(jsonPath("$.data[0].uploadedBy").value("user-buyer-owner"))
+        .andExpect(jsonPath("$.data[0].visibility").value("tenant"))
+        .andExpect(jsonPath("$.data[0].status").value("active"));
 
     when(attachmentApplicationService.createCurrentTenantAttachment(
         org.mockito.ArgumentMatchers.any(CreateAttachmentRequest.class)))
@@ -1025,6 +1029,8 @@ class HttpSecurityContractTests {
             "报价单.xlsx",
             "tenant-acme/quote/quote-demo/quote.xlsx",
             "user-buyer-owner",
+            "supplier_shared",
+            "active",
             OffsetDateTime.parse("2026-06-15T11:00:00+08:00")));
 
     mockMvc.perform(post("/api/v1/buyer/attachments")
@@ -1035,12 +1041,15 @@ class HttpSecurityContractTests {
                   "ownerType": "quote",
                   "ownerId": "quote-demo",
                   "fileName": "报价单.xlsx",
-                  "storageKey": "tenant-acme/quote/quote-demo/quote.xlsx"
+                  "storageKey": "tenant-acme/quote/quote-demo/quote.xlsx",
+                  "visibility": "supplier_shared"
                 }
                 """))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.id").value("att-quote-file"))
-        .andExpect(jsonPath("$.data.storageKey").value("tenant-acme/quote/quote-demo/quote.xlsx"));
+        .andExpect(jsonPath("$.data.storageKey").value("tenant-acme/quote/quote-demo/quote.xlsx"))
+        .andExpect(jsonPath("$.data.visibility").value("supplier_shared"))
+        .andExpect(jsonPath("$.data.status").value("active"));
   }
 
   @Test
