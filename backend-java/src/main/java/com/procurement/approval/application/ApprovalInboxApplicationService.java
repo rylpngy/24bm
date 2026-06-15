@@ -58,6 +58,7 @@ public class ApprovalInboxApplicationService {
         task.bizId(),
         summary.parentBizId(),
         summary.title(),
+        summary.businessStatus(),
         summary.amount(),
         summary.counterpartyId(),
         summary.counterpartyName(),
@@ -80,7 +81,7 @@ public class ApprovalInboxApplicationService {
     if (demand == null) {
       return ApprovalTaskSummary.empty();
     }
-    return new ApprovalTaskSummary(null, demand.title(), demand.budget(), null, null);
+    return new ApprovalTaskSummary(null, demand.title(), demand.status(), demand.budget(), null, null);
   }
 
   private ApprovalTaskSummary buyerSupplierAdmissionSummary(ApprovalTask task) {
@@ -91,6 +92,7 @@ public class ApprovalInboxApplicationService {
     return new ApprovalTaskSummary(
         null,
         relation.supplierName(),
+        relation.status(),
         null,
         relation.supplierId(),
         relation.supplierName());
@@ -105,6 +107,7 @@ public class ApprovalInboxApplicationService {
     return new ApprovalTaskSummary(
         awardDecision.rfqId(),
         rfq == null ? "" : rfq.title(),
+        rfq == null ? "" : rfq.status(),
         awardDecision.amount(),
         awardDecision.supplierId(),
         null);
@@ -113,11 +116,12 @@ public class ApprovalInboxApplicationService {
   private record ApprovalTaskSummary(
       String parentBizId,
       String title,
+      String businessStatus,
       BigDecimal amount,
       String counterpartyId,
       String counterpartyName) {
     private static ApprovalTaskSummary empty() {
-      return new ApprovalTaskSummary(null, "", null, null, null);
+      return new ApprovalTaskSummary(null, "", "", null, null, null);
     }
   }
 }

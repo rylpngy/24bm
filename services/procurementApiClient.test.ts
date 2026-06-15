@@ -764,6 +764,7 @@ describe('procurement API clients', () => {
             bizId: 'dem-java-new',
             parentBizId: null,
             summaryTitle: '新建 Java 需求',
+            businessStatus: '审批中',
             amount: 66000,
             counterpartyId: null,
             counterpartyName: null,
@@ -856,6 +857,7 @@ describe('procurement API clients', () => {
       id: 'approval-001',
       bizType: 'purchase_demand',
       summaryTitle: '新建 Java 需求',
+      businessStatus: '审批中',
       amount: 66000,
     });
     expect(approvalTemplates[0]).toMatchObject({

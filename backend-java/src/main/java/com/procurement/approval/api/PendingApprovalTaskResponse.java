@@ -10,6 +10,7 @@ public record PendingApprovalTaskResponse(
     String bizId,
     String parentBizId,
     String summaryTitle,
+    String businessStatus,
     BigDecimal amount,
     String counterpartyId,
     String counterpartyName,

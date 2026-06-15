@@ -70,6 +70,8 @@ class ApprovalTaskInboxTests {
         .containsExactly("rfq-1", null);
     assertThat(responses).extracting(PendingApprovalTaskResponse::amount)
         .containsExactly(BigDecimal.valueOf(98000), BigDecimal.valueOf(120000));
+    assertThat(responses).extracting(PendingApprovalTaskResponse::businessStatus)
+        .containsExactly("定标审批中", "审批中");
     verify(approvalTaskMapper).listByTenantAndStatus("tenant-1", "待审批");
   }
 
@@ -87,6 +89,7 @@ class ApprovalTaskInboxTests {
     assertThat(responses).singleElement()
         .satisfies(response -> {
           assertThat(response.summaryTitle()).isEqualTo("晨光供应商");
+          assertThat(response.businessStatus()).isEqualTo("准入审批中");
           assertThat(response.counterpartyName()).isEqualTo("晨光供应商");
           assertThat(response.amount()).isNull();
         });

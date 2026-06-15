@@ -324,6 +324,7 @@ export interface JavaApprovalTaskDto {
   bizId: string;
   parentBizId?: string | null;
   summaryTitle?: string;
+  businessStatus?: string;
   amount?: number | null;
   counterpartyId?: string | null;
   counterpartyName?: string | null;
