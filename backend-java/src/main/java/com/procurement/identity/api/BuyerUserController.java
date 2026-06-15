@@ -39,4 +39,11 @@ public class BuyerUserController {
       @Valid @RequestBody ChangeBuyerUserRoleRequest request) {
     return ApiResponse.ok(buyerUserApplicationService.changeUserRole(userId, request));
   }
+
+  @PostMapping("/{userId}/status")
+  public ApiResponse<BuyerUserResponse> changeStatus(
+      @PathVariable String userId,
+      @Valid @RequestBody ChangeBuyerUserStatusRequest request) {
+    return ApiResponse.ok(buyerUserApplicationService.changeUserStatus(userId, request));
+  }
 }

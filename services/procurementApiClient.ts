@@ -459,6 +459,7 @@ export interface JavaProcurementApiClient {
   listBuyerRoles(): Promise<BuyerRoleDto[]>;
   listBuyerUsers(): Promise<BuyerUserDto[]>;
   changeBuyerUserRole(userId: string, roleId: string): Promise<BuyerUserDto>;
+  changeBuyerUserStatus(userId: string, status: 'active' | 'inactive'): Promise<BuyerUserDto>;
   listBuyerDemands(): Promise<PurchaseDemand[]>;
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
   submitBuyerDemand(demandId: string): Promise<JavaApprovalTaskDto>;
@@ -848,6 +849,13 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ roleId }),
+      });
+    },
+    changeBuyerUserStatus(userId: string, status: 'active' | 'inactive') {
+      return buyerRequest<BuyerUserDto>(`/api/v1/buyer/users/${userId}/status`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status }),
       });
     },
     async listBuyerDemands() {

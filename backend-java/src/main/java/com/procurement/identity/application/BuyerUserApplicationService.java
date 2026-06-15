@@ -4,6 +4,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.api.ChangeBuyerUserRoleRequest;
+import com.procurement.identity.api.ChangeBuyerUserStatusRequest;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
@@ -16,8 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BuyerUserApplicationService {
+  private static final String ACTIVE_STATUS = "active";
+  private static final String INACTIVE_STATUS = "inactive";
   private static final String BUYER_USER_CREATED_ACTION = "buyer_user.created";
   private static final String BUYER_USER_ROLE_CHANGED_ACTION = "buyer_user.role_changed";
+  private static final String BUYER_USER_STATUS_CHANGED_ACTION = "buyer_user.status_changed";
   private static final String BUYER_USER_TARGET_TYPE = "buyer_user";
 
   private final BuyerUserMapper buyerUserMapper;
@@ -73,6 +77,16 @@ public class BuyerUserApplicationService {
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 
+  @Transactional
+  public BuyerUserResponse changeUserStatus(String userId, ChangeBuyerUserStatusRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
+    requireBuyerUser(tenantId, userId);
+    requireSupportedStatus(request.status());
+    buyerUserMapper.updateStatus(tenantId, userId, request.status());
+    auditLogApplicationService.recordTenantAction(BUYER_USER_STATUS_CHANGED_ACTION, BUYER_USER_TARGET_TYPE, userId);
+    return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
+  }
+
   private void requireActiveDepartment(String tenantId, String departmentId) {
     if (!departmentMapper.existsActiveByTenantAndId(tenantId, departmentId)) {
       throw new IllegalArgumentException("Department not found in tenant scope: " + departmentId);
@@ -88,6 +102,12 @@ public class BuyerUserApplicationService {
   private void requireBuyerUser(String tenantId, String userId) {
     if (!buyerUserMapper.existsByTenantAndId(tenantId, userId)) {
       throw new IllegalArgumentException("Buyer user not found in tenant scope: " + userId);
+    }
+  }
+
+  private void requireSupportedStatus(String status) {
+    if (!ACTIVE_STATUS.equals(status) && !INACTIVE_STATUS.equals(status)) {
+      throw new IllegalArgumentException("Unsupported buyer user status: " + status);
     }
   }
 

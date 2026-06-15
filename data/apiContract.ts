@@ -251,6 +251,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'BuyerUser',
   },
   {
+    method: 'POST',
+    path: '/buyer/users/{userId}/status',
+    audience: 'buyer',
+    action: '启用或停用采购方用户',
+    requestSchema: 'ChangeBuyerUserStatusRequest',
+    responseSchema: 'BuyerUser',
+  },
+  {
     method: 'GET',
     path: '/buyer/demands',
     audience: 'buyer',

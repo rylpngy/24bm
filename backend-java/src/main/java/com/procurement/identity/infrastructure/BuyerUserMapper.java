@@ -136,4 +136,16 @@ public interface BuyerUserMapper {
       @Param("tenantId") String tenantId,
       @Param("userId") String userId,
       @Param("roleId") String roleId);
+
+  @Update("""
+      update users
+      set status = #{status},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{userId}
+      """)
+  void updateStatus(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId,
+      @Param("status") String status);
 }
