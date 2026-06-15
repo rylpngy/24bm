@@ -32,6 +32,8 @@ public class PurchaseDemandApplicationService {
   private static final String PURCHASE_DEMAND_APPROVED_ACTION = "purchase_demand.approved";
   private static final String PURCHASE_DEMAND_REJECTED_ACTION = "purchase_demand.rejected";
   private static final String PURCHASE_DEMAND_PENDING_NOTIFICATION_TITLE = "采购需求待审批";
+  private static final String PURCHASE_DEMAND_APPROVED_NOTIFICATION_TITLE = "采购需求审批已通过";
+  private static final String PURCHASE_DEMAND_REJECTED_NOTIFICATION_TITLE = "采购需求审批已驳回";
 
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
@@ -181,6 +183,12 @@ public class PurchaseDemandApplicationService {
         Boolean.TRUE.equals(request.approved()) ? PURCHASE_DEMAND_APPROVED_ACTION : PURCHASE_DEMAND_REJECTED_ACTION,
         PURCHASE_DEMAND_BIZ_TYPE,
         demandId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId,
+        Boolean.TRUE.equals(request.approved())
+            ? PURCHASE_DEMAND_APPROVED_NOTIFICATION_TITLE
+            : PURCHASE_DEMAND_REJECTED_NOTIFICATION_TITLE,
+        "采购需求已审批" + (Boolean.TRUE.equals(request.approved()) ? "通过" : "驳回") + "。");
 
     ApprovalTask reviewedTask = approvalTaskMapper.findByTenantAndId(tenantId, approvalTask.id());
     return new ApprovalTaskResponse(
