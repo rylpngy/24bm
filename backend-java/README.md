@@ -185,7 +185,8 @@ Example buyer user payload:
   "email": "requester@example.com",
   "status": "active",
   "departmentId": "dept-it",
-  "roleId": "role-buyer-requester"
+  "roleId": "role-buyer-requester",
+  "initialPassword": "requester-password"
 }
 ```
 
@@ -193,7 +194,7 @@ Buyer master data APIs use the buyer tenant from the JWT and reject supplier or 
 
 Department listing returns only active departments from the current buyer tenant and is used by purchase demand creation to choose a valid `departmentId`. Department creation uses the buyer tenant from the JWT, stores new rows as `active`, allows a blank `parentId` for top-level departments, validates non-blank parents inside the current active tenant organization, and records `department.created` audit logs. Department disable is a soft status change to `inactive`, rejects departments referenced by purchase demands, and records `department.disabled`.
 
-Buyer user creation is limited by the current tenant's `user_limit`; when the current buyer-user count reaches the plan limit, the API rejects the new user before insert. New buyer users must also reference an active `departmentId` and a buyer `roleId` in the current tenant, then the backend writes the `user_roles` relation in the same transaction. Buyer user role changes validate both the target user and target `roleId` inside the current buyer tenant, replace the buyer role relation, and record `buyer_user.role_changed`. Buyer user status changes only accept `active` or `inactive`, update the current tenant user row, and record `buyer_user.status_changed`.
+Buyer user creation is limited by the current tenant's `user_limit`; when the current buyer-user count reaches the plan limit, the API rejects the new user before insert. New buyer users must also reference an active `departmentId` and a buyer `roleId` in the current tenant, then the backend hashes `initialPassword`, writes `users.password_hash`, and writes the `user_roles` relation in the same transaction. Buyer user role changes validate both the target user and target `roleId` inside the current buyer tenant, replace the buyer role relation, and record `buyer_user.role_changed`. Buyer user status changes only accept `active` or `inactive`, update the current tenant user row, and record `buyer_user.status_changed`.
 
 Creating buyer users, materials, and private supplier relations records audit log actions `buyer_user.created`, `material.created`, and `buyer_supplier_relation.created`.
 

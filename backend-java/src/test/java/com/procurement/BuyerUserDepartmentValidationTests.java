@@ -17,6 +17,7 @@ import com.procurement.tenant.application.TenantEntitlementApplicationService;
 import com.procurement.tenant.infrastructure.TenantEntitlementMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class BuyerUserDepartmentValidationTests {
 
@@ -28,12 +29,14 @@ class BuyerUserDepartmentValidationTests {
       new TenantEntitlementApplicationService(tenantEntitlementMapper);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
   private final BuyerUserApplicationService buyerUserApplicationService =
       new BuyerUserApplicationService(
           buyerUserMapper,
           departmentMapper,
           tenantEntitlementApplicationService,
-          auditLogApplicationService);
+          auditLogApplicationService,
+          passwordEncoder);
 
   @AfterEach
   void clearTenantContext() {
@@ -53,11 +56,13 @@ class BuyerUserDepartmentValidationTests {
         "new.user@example.com",
         "active",
         "dept-other",
-        "role-buyer-requester")))
+        "role-buyer-requester",
+        "new-password")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Department not found in tenant scope: dept-other");
 
     verify(buyerUserMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
@@ -74,6 +79,7 @@ class BuyerUserDepartmentValidationTests {
     when(buyerUserMapper.countByTenant("tenant-1")).thenReturn(1);
     when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
     when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-buyer-requester")).thenReturn(true);
+    when(passwordEncoder.encode("new-password")).thenReturn("{bcrypt}new-user-hash");
     when(buyerUserMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -85,7 +91,8 @@ class BuyerUserDepartmentValidationTests {
         "new.user@example.com",
         "active",
         "dept-it",
-        "role-buyer-requester"));
+        "role-buyer-requester",
+        "new-password"));
 
     assertThat(response.departmentId()).isEqualTo("dept-it");
     verify(buyerUserMapper).insert(
@@ -95,7 +102,8 @@ class BuyerUserDepartmentValidationTests {
         org.mockito.ArgumentMatchers.eq("13900000000"),
         org.mockito.ArgumentMatchers.eq("new.user@example.com"),
         org.mockito.ArgumentMatchers.eq("active"),
-        org.mockito.ArgumentMatchers.eq("dept-it"));
+        org.mockito.ArgumentMatchers.eq("dept-it"),
+        org.mockito.ArgumentMatchers.eq("{bcrypt}new-user-hash"));
   }
 
   private BuyerUser user(String id) {

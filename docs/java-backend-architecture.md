@@ -96,6 +96,7 @@ Authorization: Bearer <accessToken>
 - 当前用户数达到或超过 `user_limit` 时拒绝创建，避免租户超出套餐人数。
 - 用户所属 `departmentId` 必须命中当前租户下 `active` 状态的组织部门，防止采购方用户挂靠到跨租户或停用部门。
 - 用户角色 `roleId` 必须命中当前租户下 `buyer` 范围的角色，创建成功后写入 `user_roles`，防止采购方用户绑定平台、供应商或其他租户角色。
+- 用户创建必须提交 `initialPassword`，后端使用 `PasswordEncoder` 写入 `users.password_hash`，不保存明文密码。
 - 角色列表只返回当前租户 `roles.scope = buyer` 的记录和 `permissions`，用于采购方用户创建和后续用户角色维护。
 - 角色变更会先校验目标用户属于当前租户，再校验目标角色属于当前租户 `buyer` 范围，随后替换该用户的采购方角色关系并记录 `buyer_user.role_changed` 审计动作。
 - 状态变更会先校验目标用户属于当前租户，只允许 `active` 或 `inactive`，随后更新 `users.status` 并记录 `buyer_user.status_changed` 审计动作。

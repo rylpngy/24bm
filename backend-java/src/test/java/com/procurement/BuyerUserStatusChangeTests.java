@@ -17,6 +17,7 @@ import com.procurement.tenant.application.TenantEntitlementApplicationService;
 import com.procurement.tenant.infrastructure.TenantEntitlementMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class BuyerUserStatusChangeTests {
 
@@ -28,12 +29,14 @@ class BuyerUserStatusChangeTests {
       new TenantEntitlementApplicationService(tenantEntitlementMapper);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
   private final BuyerUserApplicationService buyerUserApplicationService =
       new BuyerUserApplicationService(
           buyerUserMapper,
           departmentMapper,
           tenantEntitlementApplicationService,
-          auditLogApplicationService);
+          auditLogApplicationService,
+          passwordEncoder);
 
   @AfterEach
   void clearTenantContext() {

@@ -15,6 +15,7 @@ import com.procurement.tenant.application.TenantEntitlementApplicationService;
 import com.procurement.tenant.infrastructure.TenantEntitlementMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class BuyerUserLimitTests {
 
@@ -26,12 +27,14 @@ class BuyerUserLimitTests {
       new TenantEntitlementApplicationService(tenantEntitlementMapper);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
   private final BuyerUserApplicationService buyerUserApplicationService =
       new BuyerUserApplicationService(
           buyerUserMapper,
           departmentMapper,
           tenantEntitlementApplicationService,
-          auditLogApplicationService);
+          auditLogApplicationService,
+          passwordEncoder);
 
   @AfterEach
   void clearTenantContext() {
@@ -50,11 +53,13 @@ class BuyerUserLimitTests {
         "new.user@example.com",
         "active",
         "dept-it",
-        "role-buyer-requester")))
+        "role-buyer-requester",
+        "new-password")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Tenant user limit reached: 2");
 
     verify(buyerUserMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
@@ -75,11 +80,13 @@ class BuyerUserLimitTests {
         "new.user@example.com",
         "active",
         "dept-it",
-        "role-buyer-requester")))
+        "role-buyer-requester",
+        "new-password")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Tenant user limit reached: 0");
 
     verify(buyerUserMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),

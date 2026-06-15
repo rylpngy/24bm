@@ -1593,7 +1593,8 @@ class HttpSecurityContractTests {
                   "email": "requester@example.com",
                   "status": "active",
                   "departmentId": "dept-it",
-                  "roleId": "role-buyer-requester"
+                  "roleId": "role-buyer-requester",
+                  "initialPassword": "requester-password"
                 }
                 """))
         .andExpect(status().isCreated())

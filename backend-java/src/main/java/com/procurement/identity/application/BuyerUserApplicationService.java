@@ -12,6 +12,7 @@ import com.procurement.organization.infrastructure.DepartmentMapper;
 import com.procurement.tenant.application.TenantEntitlementApplicationService;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,16 +29,19 @@ public class BuyerUserApplicationService {
   private final DepartmentMapper departmentMapper;
   private final TenantEntitlementApplicationService tenantEntitlementApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final PasswordEncoder passwordEncoder;
 
   public BuyerUserApplicationService(
       BuyerUserMapper buyerUserMapper,
       DepartmentMapper departmentMapper,
       TenantEntitlementApplicationService tenantEntitlementApplicationService,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      PasswordEncoder passwordEncoder) {
     this.buyerUserMapper = buyerUserMapper;
     this.departmentMapper = departmentMapper;
     this.tenantEntitlementApplicationService = tenantEntitlementApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.passwordEncoder = passwordEncoder;
   }
 
   public List<BuyerUserResponse> listCurrentTenantUsers() {
@@ -61,7 +65,8 @@ public class BuyerUserApplicationService {
         request.mobile(),
         request.email(),
         request.status(),
-        request.departmentId());
+        request.departmentId(),
+        passwordEncoder.encode(request.initialPassword()));
     buyerUserMapper.assignRole(userId, request.roleId());
     auditLogApplicationService.recordTenantAction(BUYER_USER_CREATED_ACTION, BUYER_USER_TARGET_TYPE, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));

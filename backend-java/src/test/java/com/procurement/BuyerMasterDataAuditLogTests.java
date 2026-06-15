@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class BuyerMasterDataAuditLogTests {
 
@@ -45,15 +46,18 @@ class BuyerMasterDataAuditLogTests {
     DepartmentMapper departmentMapper = org.mockito.Mockito.mock(DepartmentMapper.class);
     TenantEntitlementApplicationService tenantEntitlementApplicationService =
         org.mockito.Mockito.mock(TenantEntitlementApplicationService.class);
+    PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
     BuyerUserApplicationService buyerUserApplicationService =
         new BuyerUserApplicationService(
             buyerUserMapper,
             departmentMapper,
             tenantEntitlementApplicationService,
-            auditLogApplicationService);
+            auditLogApplicationService,
+            passwordEncoder);
     when(buyerUserMapper.countByTenant("tenant-1")).thenReturn(3);
     when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
     when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-buyer-requester")).thenReturn(true);
+    when(passwordEncoder.encode("new-password")).thenReturn("{bcrypt}new-user-hash");
     when(buyerUserMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -65,7 +69,8 @@ class BuyerMasterDataAuditLogTests {
         "buyer@example.com",
         "active",
         "dept-it",
-        "role-buyer-requester"));
+        "role-buyer-requester",
+        "new-password"));
 
     verify(tenantEntitlementApplicationService).requireUserCapacity("tenant-1", 3);
     verify(auditLogApplicationService).recordTenantAction(

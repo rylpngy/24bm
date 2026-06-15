@@ -93,8 +93,8 @@ public interface BuyerUserMapper {
       @Param("roleId") String roleId);
 
   @Insert("""
-      insert into users (id, tenant_id, name, mobile, email, status, department_id)
-      values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status}, #{departmentId})
+      insert into users (id, tenant_id, name, mobile, email, status, department_id, password_hash)
+      values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status}, #{departmentId}, #{passwordHash})
       """)
   void insert(
       @Param("id") String id,
@@ -103,7 +103,8 @@ public interface BuyerUserMapper {
       @Param("mobile") String mobile,
       @Param("email") String email,
       @Param("status") String status,
-      @Param("departmentId") String departmentId);
+      @Param("departmentId") String departmentId,
+      @Param("passwordHash") String passwordHash);
 
   @Insert("""
       insert into user_roles (user_id, role_id)

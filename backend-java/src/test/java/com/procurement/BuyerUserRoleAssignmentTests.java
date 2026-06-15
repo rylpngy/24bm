@@ -17,6 +17,7 @@ import com.procurement.tenant.application.TenantEntitlementApplicationService;
 import com.procurement.tenant.infrastructure.TenantEntitlementMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class BuyerUserRoleAssignmentTests {
 
@@ -28,12 +29,14 @@ class BuyerUserRoleAssignmentTests {
       new TenantEntitlementApplicationService(tenantEntitlementMapper);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
   private final BuyerUserApplicationService buyerUserApplicationService =
       new BuyerUserApplicationService(
           buyerUserMapper,
           departmentMapper,
           tenantEntitlementApplicationService,
-          auditLogApplicationService);
+          auditLogApplicationService,
+          passwordEncoder);
 
   @AfterEach
   void clearTenantContext() {
@@ -54,11 +57,13 @@ class BuyerUserRoleAssignmentTests {
         "new.user@example.com",
         "active",
         "dept-it",
-        "role-other")))
+        "role-other",
+        "new-password")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Buyer role not found in tenant scope: role-other");
 
     verify(buyerUserMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
@@ -75,6 +80,7 @@ class BuyerUserRoleAssignmentTests {
     when(buyerUserMapper.countByTenant("tenant-1")).thenReturn(1);
     when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
     when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-buyer-requester")).thenReturn(true);
+    when(passwordEncoder.encode("new-password")).thenReturn("{bcrypt}new-user-hash");
     when(buyerUserMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -86,9 +92,19 @@ class BuyerUserRoleAssignmentTests {
         "new.user@example.com",
         "active",
         "dept-it",
-        "role-buyer-requester"));
+        "role-buyer-requester",
+        "new-password"));
 
     assertThat(response.roleId()).isEqualTo("role-buyer-requester");
+    verify(buyerUserMapper).insert(
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("user-")),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("新增用户"),
+        org.mockito.ArgumentMatchers.eq("13900000000"),
+        org.mockito.ArgumentMatchers.eq("new.user@example.com"),
+        org.mockito.ArgumentMatchers.eq("active"),
+        org.mockito.ArgumentMatchers.eq("dept-it"),
+        org.mockito.ArgumentMatchers.eq("{bcrypt}new-user-hash"));
     verify(buyerUserMapper).assignRole(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("user-")),
         org.mockito.ArgumentMatchers.eq("role-buyer-requester"));

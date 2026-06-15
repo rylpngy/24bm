@@ -9,5 +9,6 @@ public record CreateBuyerUserRequest(
     @Email String email,
     @NotBlank String status,
     @NotBlank String departmentId,
-    @NotBlank String roleId) {
+    @NotBlank String roleId,
+    @NotBlank String initialPassword) {
 }
