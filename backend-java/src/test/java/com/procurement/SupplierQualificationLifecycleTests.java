@@ -8,6 +8,7 @@ import com.procurement.supplier.api.ChangeSupplierQualificationStatusRequest;
 import com.procurement.supplier.api.CreateSupplierQualificationRequest;
 import com.procurement.supplier.application.SupplierQualificationApplicationService;
 import com.procurement.supplier.domain.SupplierQualification;
+import com.procurement.supplier.domain.SupplierQualificationStatusTransition;
 import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -19,7 +20,9 @@ class SupplierQualificationLifecycleTests {
   private final SupplierQualificationMapper supplierQualificationMapper =
       org.mockito.Mockito.mock(SupplierQualificationMapper.class);
   private final SupplierQualificationApplicationService supplierQualificationApplicationService =
-      new SupplierQualificationApplicationService(supplierQualificationMapper);
+      new SupplierQualificationApplicationService(
+          supplierQualificationMapper,
+          new SupplierQualificationStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

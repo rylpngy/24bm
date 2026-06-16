@@ -189,6 +189,33 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void supplierQualificationApplicationServiceDelegatesStatusTransitions() throws IOException {
+    Path status = SOURCE_ROOT.resolve("supplier/domain/SupplierQualificationStatus.java");
+    Path transition = SOURCE_ROOT.resolve("supplier/domain/SupplierQualificationStatusTransition.java");
+    Path qualificationService =
+        SOURCE_ROOT.resolve("supplier/application/SupplierQualificationApplicationService.java");
+
+    assertThat(status).exists();
+    assertThat(transition).exists();
+
+    assertThat(Files.readString(status))
+        .contains("ACTIVE = \"active\"")
+        .contains("INACTIVE = \"inactive\"");
+    assertThat(Files.readString(transition))
+        .contains("void requireSupportedTarget")
+        .contains("SupplierQualificationStatus.ACTIVE")
+        .contains("SupplierQualificationStatus.INACTIVE")
+        .contains("Unsupported supplier qualification status");
+    assertThat(Files.readString(qualificationService))
+        .contains("SupplierQualificationStatus.ACTIVE")
+        .contains("SupplierQualificationStatusTransition")
+        .contains("supplierQualificationStatusTransition.requireSupportedTarget")
+        .doesNotContain("private static final String ACTIVE_STATUS")
+        .doesNotContain("private static final String INACTIVE_STATUS")
+        .doesNotContain("Unsupported supplier qualification status");
+  }
+
+  @Test
   void rfqOrderAndInvoiceApplicationServicesUseDomainStatusConstants() throws IOException {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java"),

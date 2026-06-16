@@ -42,6 +42,8 @@ describe('Java supplier workspace scaffold', () => {
     const supplierTodoSummaryAssembler = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierTodoSummaryAssembler.java');
     const supplierWorkspaceResponse = read('backend-java/src/main/java/com/procurement/supplier/api/SupplierWorkspaceResponse.java');
     const qualificationService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierQualificationApplicationService.java');
+    const supplierQualificationStatus = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierQualificationStatus.java');
+    const supplierQualificationStatusTransition = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierQualificationStatusTransition.java');
     const userService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierUserApplicationService.java');
     const supplierUserStatus = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierUserStatus.java');
     const supplierUserStatusTransition = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierUserStatusTransition.java');
@@ -53,6 +55,14 @@ describe('Java supplier workspace scaffold', () => {
     expect(qualificationService).toContain('TenantAccessGuard.requireSupplierId');
     expect(qualificationService).toContain('listActiveBySupplier');
     expect(qualificationService).toContain('listBySupplierFiltered');
+    expect(qualificationService).toContain('SupplierQualificationStatus.ACTIVE');
+    expect(qualificationService).toContain('SupplierQualificationStatusTransition');
+    expect(qualificationService).toContain('supplierQualificationStatusTransition.requireSupportedTarget');
+    expect(supplierQualificationStatus).toContain('ACTIVE = "active"');
+    expect(supplierQualificationStatus).toContain('INACTIVE = "inactive"');
+    expect(supplierQualificationStatusTransition).toContain('Unsupported supplier qualification status');
+    expect(supplierQualificationStatusTransition).toContain('SupplierQualificationStatus.ACTIVE');
+    expect(supplierQualificationStatusTransition).toContain('SupplierQualificationStatus.INACTIVE');
     expect(userService).toContain('TenantAccessGuard.requireSupplierId');
     expect(userService).toContain('passwordEncoder.encode');
     expect(userService).toContain('supplier_user.created');

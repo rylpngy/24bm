@@ -5,6 +5,8 @@ import com.procurement.supplier.api.ChangeSupplierQualificationStatusRequest;
 import com.procurement.supplier.api.CreateSupplierQualificationRequest;
 import com.procurement.supplier.api.SupplierQualificationResponse;
 import com.procurement.supplier.domain.SupplierQualification;
+import com.procurement.supplier.domain.SupplierQualificationStatus;
+import com.procurement.supplier.domain.SupplierQualificationStatusTransition;
 import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
 import java.util.List;
 import java.util.UUID;
@@ -13,13 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SupplierQualificationApplicationService {
-  private static final String ACTIVE_STATUS = "active";
-  private static final String INACTIVE_STATUS = "inactive";
-
   private final SupplierQualificationMapper supplierQualificationMapper;
+  private final SupplierQualificationStatusTransition supplierQualificationStatusTransition;
 
-  public SupplierQualificationApplicationService(SupplierQualificationMapper supplierQualificationMapper) {
+  public SupplierQualificationApplicationService(
+      SupplierQualificationMapper supplierQualificationMapper,
+      SupplierQualificationStatusTransition supplierQualificationStatusTransition) {
     this.supplierQualificationMapper = supplierQualificationMapper;
+    this.supplierQualificationStatusTransition = supplierQualificationStatusTransition;
   }
 
   public List<SupplierQualificationResponse> listCurrentSupplierQualifications() {
@@ -34,7 +37,7 @@ public class SupplierQualificationApplicationService {
     String normalizedStatus = blankToNull(status);
     return supplierQualificationMapper.listBySupplierFiltered(
             supplierId,
-            normalizedStatus == null ? ACTIVE_STATUS : normalizedStatus,
+            normalizedStatus == null ? SupplierQualificationStatus.ACTIVE : normalizedStatus,
             blankToNull(keyword))
         .stream()
         .map(this::toResponse)
@@ -53,7 +56,7 @@ public class SupplierQualificationApplicationService {
         request.expiresAt(),
         request.fileName(),
         request.storageKey(),
-        ACTIVE_STATUS);
+        SupplierQualificationStatus.ACTIVE);
     return toResponse(supplierQualificationMapper.findBySupplierAndId(supplierId, qualificationId));
   }
 
@@ -62,16 +65,10 @@ public class SupplierQualificationApplicationService {
       String qualificationId,
       ChangeSupplierQualificationStatusRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
-    requireSupportedStatus(request.status());
+    supplierQualificationStatusTransition.requireSupportedTarget(request.status());
     requireQualification(supplierId, qualificationId);
     supplierQualificationMapper.updateStatus(supplierId, qualificationId, request.status());
     return toResponse(supplierQualificationMapper.findBySupplierAndId(supplierId, qualificationId));
-  }
-
-  private void requireSupportedStatus(String status) {
-    if (!ACTIVE_STATUS.equals(status) && !INACTIVE_STATUS.equals(status)) {
-      throw new IllegalArgumentException("Unsupported supplier qualification status: " + status);
-    }
   }
 
   private String blankToNull(String value) {
