@@ -318,8 +318,7 @@ class BackendModuleArchitectureTests {
         List.of(
             "BuyerSupplierRelationStatus.PENDING_ADMISSION",
             "BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL",
-            "BuyerSupplierRelationStatus.ADMITTED",
-            "BuyerSupplierRelationStatus.REJECTED",
+            "BuyerSupplierAdmissionStatusTransition",
             "BuyerSupplierRelationStatus.BLACKLISTED",
             "ApprovalStatus.APPROVED",
             "ApprovalStatus.REJECTED"),
@@ -330,6 +329,32 @@ class BackendModuleArchitectureTests {
             "private static final String REJECTED_STATUS",
             "private static final String BLACKLISTED_STATUS",
             "private static final String APPROVED_STATUS"));
+  }
+
+  @Test
+  void buyerSupplierApplicationServiceDelegatesAdmissionStatusTransitions() throws IOException {
+    Path transition = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierAdmissionStatusTransition.java");
+    Path supplierService = SOURCE_ROOT.resolve("supplier/application/BuyerSupplierApplicationService.java");
+
+    assertThat(transition).exists();
+
+    String transitionSource = Files.readString(transition);
+    assertThat(transitionSource)
+        .contains("void requireAdmissionSubmission")
+        .contains("void requireAdmissionReview")
+        .contains("String reviewTargetStatus")
+        .contains("BuyerSupplierRelationStatus.PENDING_ADMISSION")
+        .contains("BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL")
+        .contains("BuyerSupplierRelationStatus.ADMITTED")
+        .contains("BuyerSupplierRelationStatus.REJECTED");
+
+    assertThat(Files.readString(supplierService))
+        .contains("BuyerSupplierAdmissionStatusTransition")
+        .contains("buyerSupplierAdmissionStatusTransition.requireAdmissionSubmission")
+        .contains("buyerSupplierAdmissionStatusTransition.requireAdmissionReview")
+        .contains("buyerSupplierAdmissionStatusTransition.reviewTargetStatus")
+        .doesNotContain("Only pending supplier relations can be submitted for admission")
+        .doesNotContain("Only supplier relations in admission approval can be reviewed");
   }
 
   @Test

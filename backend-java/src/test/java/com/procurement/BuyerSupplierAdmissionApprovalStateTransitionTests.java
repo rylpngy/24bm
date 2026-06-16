@@ -23,6 +23,7 @@ import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
+import com.procurement.supplier.domain.BuyerSupplierAdmissionStatusTransition;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -48,7 +49,8 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
           approvalTaskMapper,
           approvalTaskApplicationService,
           auditLogApplicationService,
-          notificationApplicationService);
+          notificationApplicationService,
+          new BuyerSupplierAdmissionStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

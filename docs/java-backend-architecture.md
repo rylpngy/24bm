@@ -59,6 +59,8 @@ RFQ 寻源准入状态由 `RfqSourcingStatusTransition` 承接，集中判断采
 
 采购需求审批状态流转由 `PurchaseDemandApprovalStatusTransition` 承接，集中判断 `草稿` 才能提交审批、`审批中` 才能复核，以及审批通过落到 `已通过`、驳回落到 `已驳回`。`PurchaseDemandApplicationService` 保留部门校验、明细写入、审批任务、审计和通知编排。
 
+供应商准入审批状态流转由 `BuyerSupplierAdmissionStatusTransition` 承接，集中判断 `待准入` 才能提交准入审批、`准入审批中` 才能复核，以及审批通过落到 `已准入`、驳回落到 `已驳回`。`BuyerSupplierApplicationService` 保留供应商关系资料、手动拉黑/恢复、绩效、审批任务、审计和通知编排。
+
 ## 多租户策略
 
 MVP 采用共享数据库、共享 Schema、`tenant_id` 字段隔离。平台数据、供应商公共企业档案和采购方私域关系分开建模。所有组织部门、采购需求、询价、报价、订单、收货、发票、审批任务、附件和审计数据必须带租户上下文。

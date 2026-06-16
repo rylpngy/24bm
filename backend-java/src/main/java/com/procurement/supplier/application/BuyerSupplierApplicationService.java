@@ -18,6 +18,7 @@ import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
+import com.procurement.supplier.domain.BuyerSupplierAdmissionStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import java.math.BigDecimal;
@@ -46,6 +47,7 @@ public class BuyerSupplierApplicationService {
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition;
 
   public BuyerSupplierApplicationService(
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
@@ -53,13 +55,15 @@ public class BuyerSupplierApplicationService {
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition) {
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.objectMapper = objectMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.buyerSupplierAdmissionStatusTransition = buyerSupplierAdmissionStatusTransition;
   }
 
   public List<BuyerSupplierResponse> listCurrentTenantSuppliers() {
@@ -105,9 +109,7 @@ public class BuyerSupplierApplicationService {
   public ApprovalTaskResponse submitAdmission(String relationId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
-    if (!BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(relation.status())) {
-      throw new IllegalStateException("Only pending supplier relations can be submitted for admission: " + relationId);
-    }
+    buyerSupplierAdmissionStatusTransition.requireAdmissionSubmission(relation.status(), relationId);
 
     int updated = buyerSupplierRelationMapper.updateStatus(
         tenantId,
@@ -136,9 +138,7 @@ public class BuyerSupplierApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
     String userId = TenantAccessGuard.requireUserId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
-    if (!BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL.equals(relation.status())) {
-      throw new IllegalStateException("Only supplier relations in admission approval can be reviewed: " + relationId);
-    }
+    buyerSupplierAdmissionStatusTransition.requireAdmissionReview(relation.status(), relationId);
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,
@@ -150,9 +150,8 @@ public class BuyerSupplierApplicationService {
     }
 
     String approvalStatus = Boolean.TRUE.equals(request.approved()) ? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED;
-    String relationStatus = Boolean.TRUE.equals(request.approved())
-        ? BuyerSupplierRelationStatus.ADMITTED
-        : BuyerSupplierRelationStatus.REJECTED;
+    boolean approved = Boolean.TRUE.equals(request.approved());
+    String relationStatus = buyerSupplierAdmissionStatusTransition.reviewTargetStatus(approved);
     int approvalUpdated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
@@ -172,15 +171,15 @@ public class BuyerSupplierApplicationService {
       throw new IllegalStateException("Supplier relation status changed before admission review could be applied: " + relationId);
     }
     auditLogApplicationService.recordTenantAction(
-        Boolean.TRUE.equals(request.approved()) ? SUPPLIER_ADMISSION_APPROVED_ACTION : SUPPLIER_ADMISSION_REJECTED_ACTION,
+        approved ? SUPPLIER_ADMISSION_APPROVED_ACTION : SUPPLIER_ADMISSION_REJECTED_ACTION,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
-        Boolean.TRUE.equals(request.approved())
+        approved
             ? SUPPLIER_ADMISSION_APPROVED_NOTIFICATION_TITLE
             : SUPPLIER_ADMISSION_REJECTED_NOTIFICATION_TITLE,
-        relation.supplierName() + "准入审批已" + (Boolean.TRUE.equals(request.approved()) ? "通过" : "驳回") + "。");
+        relation.supplierName() + "准入审批已" + (approved ? "通过" : "驳回") + "。");
 
     return toApprovalTaskResponse(approvalTaskMapper.findByTenantAndId(tenantId, approvalTask.id()));
   }

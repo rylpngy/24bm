@@ -21,6 +21,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
+import com.procurement.supplier.domain.BuyerSupplierAdmissionStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantEntitlementApplicationService;
@@ -165,7 +166,8 @@ class BuyerMasterDataAuditLogTests {
             approvalTaskMapper,
             new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper),
             auditLogApplicationService,
-            notificationApplicationService);
+            notificationApplicationService,
+            new BuyerSupplierAdmissionStatusTransition());
     when(buyerSupplierRelationMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
