@@ -9,6 +9,7 @@ import com.procurement.platform.api.FeatureToggleRequest;
 import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.api.UpdateTenantPlanRequest;
 import com.procurement.platform.domain.PlatformTenant;
+import com.procurement.platform.domain.PlatformTenantAuditAction;
 import com.procurement.platform.domain.PlatformTenantStatus;
 import com.procurement.platform.infrastructure.PlatformTenantMapper;
 import java.util.List;
@@ -20,11 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PlatformTenantApplicationService {
   private static final String BUYER_OWNER_ROLE_NAME = "采购管理员";
   private static final String BUYER_OWNER_PERMISSIONS = "[\"buyer:*\"]";
-  private static final String TENANT_CREATED_ACTION = "tenant.created";
-  private static final String TENANT_DISABLED_ACTION = "tenant.disabled";
-  private static final String TENANT_ENABLED_ACTION = "tenant.enabled";
-  private static final String TENANT_FEATURES_UPDATED_ACTION = "tenant.features.updated";
-  private static final String TENANT_PLAN_UPDATED_ACTION = "tenant.plan_updated";
   private static final String TENANT_TARGET_TYPE = "tenant";
 
   private final PlatformTenantMapper platformTenantMapper;
@@ -91,7 +87,7 @@ public class PlatformTenantApplicationService {
     insertDefaultApprovalTemplates(request.tenantId(), buyerOwnerRoleId);
     auditLogApplicationService.recordTenantAction(
         request.tenantId(),
-        TENANT_CREATED_ACTION,
+        PlatformTenantAuditAction.CREATED,
         TENANT_TARGET_TYPE,
         request.tenantId());
     return toResponse(platformTenantMapper.findById(request.tenantId()));
@@ -105,7 +101,7 @@ public class PlatformTenantApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         tenantId,
-        TENANT_FEATURES_UPDATED_ACTION,
+        PlatformTenantAuditAction.FEATURES_UPDATED,
         TENANT_TARGET_TYPE,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));
@@ -119,7 +115,7 @@ public class PlatformTenantApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         tenantId,
-        TENANT_PLAN_UPDATED_ACTION,
+        PlatformTenantAuditAction.PLAN_UPDATED,
         TENANT_TARGET_TYPE,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));
@@ -133,7 +129,7 @@ public class PlatformTenantApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         tenantId,
-        TENANT_ENABLED_ACTION,
+        PlatformTenantAuditAction.ENABLED,
         TENANT_TARGET_TYPE,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));
@@ -147,7 +143,7 @@ public class PlatformTenantApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         tenantId,
-        TENANT_DISABLED_ACTION,
+        PlatformTenantAuditAction.DISABLED,
         TENANT_TARGET_TYPE,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));

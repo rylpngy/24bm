@@ -349,6 +349,7 @@ class BackendModuleArchitectureTests {
   @Test
   void platformTenantServicesUseDomainTenantStatus() throws IOException {
     Path status = SOURCE_ROOT.resolve("platform/domain/PlatformTenantStatus.java");
+    Path auditAction = SOURCE_ROOT.resolve("platform/domain/PlatformTenantAuditAction.java");
     Path tenantService = SOURCE_ROOT.resolve("platform/application/PlatformTenantApplicationService.java");
     Path workspaceService = SOURCE_ROOT.resolve("platform/application/PlatformWorkspaceApplicationService.java");
 
@@ -356,11 +357,28 @@ class BackendModuleArchitectureTests {
     assertThat(Files.readString(status))
         .contains("ACTIVE = \"active\"")
         .contains("INACTIVE = \"inactive\"");
+    assertThat(auditAction).exists();
+    assertThat(Files.readString(auditAction))
+        .contains("CREATED = \"tenant.created\"")
+        .contains("FEATURES_UPDATED = \"tenant.features.updated\"")
+        .contains("PLAN_UPDATED = \"tenant.plan_updated\"")
+        .contains("ENABLED = \"tenant.enabled\"")
+        .contains("DISABLED = \"tenant.disabled\"");
     assertThat(Files.readString(tenantService))
         .contains("PlatformTenantStatus.ACTIVE")
         .contains("PlatformTenantStatus.INACTIVE")
+        .contains("PlatformTenantAuditAction.CREATED")
+        .contains("PlatformTenantAuditAction.FEATURES_UPDATED")
+        .contains("PlatformTenantAuditAction.PLAN_UPDATED")
+        .contains("PlatformTenantAuditAction.ENABLED")
+        .contains("PlatformTenantAuditAction.DISABLED")
         .doesNotContain("private static final String ACTIVE_STATUS")
-        .doesNotContain("private static final String INACTIVE_STATUS");
+        .doesNotContain("private static final String INACTIVE_STATUS")
+        .doesNotContain("private static final String TENANT_CREATED_ACTION")
+        .doesNotContain("private static final String TENANT_DISABLED_ACTION")
+        .doesNotContain("private static final String TENANT_ENABLED_ACTION")
+        .doesNotContain("private static final String TENANT_FEATURES_UPDATED_ACTION")
+        .doesNotContain("private static final String TENANT_PLAN_UPDATED_ACTION");
     assertThat(Files.readString(workspaceService))
         .contains("PlatformTenantStatus.ACTIVE")
         .doesNotContain("private static final String ACTIVE_TENANT_STATUS");

@@ -308,6 +308,7 @@ describe('Java backend scaffold', () => {
     const tenantController = read('backend-java/src/main/java/com/procurement/platform/api/PlatformTenantController.java');
     const tenantService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformTenantApplicationService.java');
     const tenantStatus = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantStatus.java');
+    const tenantAuditAction = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantAuditAction.java');
     const auditTests = read('backend-java/src/test/java/com/procurement/PlatformAuditLogTests.java');
     const localSeed = read('backend-java/src/main/resources/db/dev/V100__local_demo_seed.sql');
 
@@ -329,8 +330,18 @@ describe('Java backend scaffold', () => {
     expect(tenantService).toContain('getTenant');
     expect(tenantService).toContain('PlatformTenantStatus.ACTIVE');
     expect(tenantService).toContain('PlatformTenantStatus.INACTIVE');
+    expect(tenantService).toContain('PlatformTenantAuditAction.CREATED');
+    expect(tenantService).toContain('PlatformTenantAuditAction.FEATURES_UPDATED');
+    expect(tenantService).toContain('PlatformTenantAuditAction.PLAN_UPDATED');
+    expect(tenantService).toContain('PlatformTenantAuditAction.ENABLED');
+    expect(tenantService).toContain('PlatformTenantAuditAction.DISABLED');
     expect(tenantStatus).toContain('ACTIVE = "active"');
     expect(tenantStatus).toContain('INACTIVE = "inactive"');
+    expect(tenantAuditAction).toContain('CREATED = "tenant.created"');
+    expect(tenantAuditAction).toContain('FEATURES_UPDATED = "tenant.features.updated"');
+    expect(tenantAuditAction).toContain('PLAN_UPDATED = "tenant.plan_updated"');
+    expect(tenantAuditAction).toContain('ENABLED = "tenant.enabled"');
+    expect(tenantAuditAction).toContain('DISABLED = "tenant.disabled"');
     expect(auditTests).toContain('tenantFeatureToggleUpdateRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantPlanUpdateRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantEnableRecordsAuditLogInTargetTenant');

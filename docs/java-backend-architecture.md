@@ -211,6 +211,7 @@ Authorization: Bearer <accessToken>
 - `platform_announcement.published`：平台运营方发布公告，审计记录为平台级操作，`tenant_id` 为空。
 
 平台租户创建、启用、停用和运营汇总统一使用 `PlatformTenantStatus.ACTIVE` / `PlatformTenantStatus.INACTIVE`，避免平台应用服务继续散落租户状态字符串。
+平台租户创建、功能开关、套餐调整、启用和停用审计动作统一由 `PlatformTenantAuditAction` 定义，避免平台租户应用服务散落审计 action 字符串。
 
 ## 平台公告 Java API
 
