@@ -17,6 +17,7 @@ import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
+import com.procurement.supplier.domain.BuyerSupplierAuditAction;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.domain.BuyerSupplierAdmissionStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierManualStatusTransition;
@@ -32,13 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class BuyerSupplierApplicationService {
   private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE = "buyer_supplier_admission";
   private static final String BUYER_SUPPLIER_RELATION_TARGET_TYPE = "buyer_supplier_relation";
-  private static final String SUPPLIER_RELATION_CREATED_ACTION = "buyer_supplier_relation.created";
-  private static final String SUPPLIER_ADMISSION_SUBMITTED_ACTION = "buyer_supplier_admission.submitted";
-  private static final String SUPPLIER_ADMISSION_APPROVED_ACTION = "buyer_supplier_admission.approved";
-  private static final String SUPPLIER_ADMISSION_REJECTED_ACTION = "buyer_supplier_admission.rejected";
-  private static final String SUPPLIER_RELATION_PROFILE_UPDATED_ACTION = "buyer_supplier_relation.profile_updated";
-  private static final String SUPPLIER_RELATION_PERFORMANCE_UPDATED_ACTION = "buyer_supplier_relation.performance_updated";
-  private static final String SUPPLIER_RELATION_STATUS_CHANGED_ACTION = "buyer_supplier_relation.status_changed";
   private static final String SUPPLIER_ADMISSION_APPROVED_NOTIFICATION_TITLE = "供应商准入审批已通过";
   private static final String SUPPLIER_ADMISSION_REJECTED_NOTIFICATION_TITLE = "供应商准入审批已驳回";
 
@@ -103,7 +97,7 @@ public class BuyerSupplierApplicationService {
         request.level(),
         writeCategories(request.categories()));
     auditLogApplicationService.recordTenantAction(
-        SUPPLIER_RELATION_CREATED_ACTION,
+        BuyerSupplierAuditAction.RELATION_CREATED,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
@@ -130,7 +124,7 @@ public class BuyerSupplierApplicationService {
         relationId,
         null);
     auditLogApplicationService.recordTenantAction(
-        SUPPLIER_ADMISSION_SUBMITTED_ACTION,
+        BuyerSupplierAuditAction.ADMISSION_SUBMITTED,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
 
@@ -175,7 +169,7 @@ public class BuyerSupplierApplicationService {
       throw new IllegalStateException("Supplier relation status changed before admission review could be applied: " + relationId);
     }
     auditLogApplicationService.recordTenantAction(
-        approved ? SUPPLIER_ADMISSION_APPROVED_ACTION : SUPPLIER_ADMISSION_REJECTED_ACTION,
+        approved ? BuyerSupplierAuditAction.ADMISSION_APPROVED : BuyerSupplierAuditAction.ADMISSION_REJECTED,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
     notificationApplicationService.notifyActiveTenantUsers(
@@ -204,7 +198,7 @@ public class BuyerSupplierApplicationService {
       throw new IllegalStateException("Supplier relation status changed before manual update could be applied: " + relationId);
     }
     auditLogApplicationService.recordTenantAction(
-        SUPPLIER_RELATION_STATUS_CHANGED_ACTION,
+        BuyerSupplierAuditAction.RELATION_STATUS_CHANGED,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
 
@@ -221,7 +215,7 @@ public class BuyerSupplierApplicationService {
         request.level(),
         writeCategories(request.categories()));
     auditLogApplicationService.recordTenantAction(
-        SUPPLIER_RELATION_PROFILE_UPDATED_ACTION,
+        BuyerSupplierAuditAction.RELATION_PROFILE_UPDATED,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
 
@@ -240,7 +234,7 @@ public class BuyerSupplierApplicationService {
         relationId,
         request.performanceScore());
     auditLogApplicationService.recordTenantAction(
-        SUPPLIER_RELATION_PERFORMANCE_UPDATED_ACTION,
+        BuyerSupplierAuditAction.RELATION_PERFORMANCE_UPDATED,
         BUYER_SUPPLIER_RELATION_TARGET_TYPE,
         relationId);
 

@@ -681,10 +681,21 @@ class BackendModuleArchitectureTests {
 
   @Test
   void buyerSupplierApplicationServiceDelegatesAdmissionStatusTransitions() throws IOException {
+    Path auditAction = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierAuditAction.java");
     Path transition = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierAdmissionStatusTransition.java");
     Path supplierService = SOURCE_ROOT.resolve("supplier/application/BuyerSupplierApplicationService.java");
 
+    assertThat(auditAction).exists();
     assertThat(transition).exists();
+
+    assertThat(Files.readString(auditAction))
+        .contains("RELATION_CREATED = \"buyer_supplier_relation.created\"")
+        .contains("RELATION_PROFILE_UPDATED = \"buyer_supplier_relation.profile_updated\"")
+        .contains("RELATION_PERFORMANCE_UPDATED = \"buyer_supplier_relation.performance_updated\"")
+        .contains("RELATION_STATUS_CHANGED = \"buyer_supplier_relation.status_changed\"")
+        .contains("ADMISSION_SUBMITTED = \"buyer_supplier_admission.submitted\"")
+        .contains("ADMISSION_APPROVED = \"buyer_supplier_admission.approved\"")
+        .contains("ADMISSION_REJECTED = \"buyer_supplier_admission.rejected\"");
 
     String transitionSource = Files.readString(transition);
     assertThat(transitionSource)
@@ -698,9 +709,23 @@ class BackendModuleArchitectureTests {
 
     assertThat(Files.readString(supplierService))
         .contains("BuyerSupplierAdmissionStatusTransition")
+        .contains("BuyerSupplierAuditAction.RELATION_CREATED")
+        .contains("BuyerSupplierAuditAction.RELATION_PROFILE_UPDATED")
+        .contains("BuyerSupplierAuditAction.RELATION_PERFORMANCE_UPDATED")
+        .contains("BuyerSupplierAuditAction.RELATION_STATUS_CHANGED")
+        .contains("BuyerSupplierAuditAction.ADMISSION_SUBMITTED")
+        .contains("BuyerSupplierAuditAction.ADMISSION_APPROVED")
+        .contains("BuyerSupplierAuditAction.ADMISSION_REJECTED")
         .contains("buyerSupplierAdmissionStatusTransition.requireAdmissionSubmission")
         .contains("buyerSupplierAdmissionStatusTransition.requireAdmissionReview")
         .contains("buyerSupplierAdmissionStatusTransition.reviewTargetStatus")
+        .doesNotContain("private static final String SUPPLIER_RELATION_CREATED_ACTION")
+        .doesNotContain("private static final String SUPPLIER_ADMISSION_SUBMITTED_ACTION")
+        .doesNotContain("private static final String SUPPLIER_ADMISSION_APPROVED_ACTION")
+        .doesNotContain("private static final String SUPPLIER_ADMISSION_REJECTED_ACTION")
+        .doesNotContain("private static final String SUPPLIER_RELATION_PROFILE_UPDATED_ACTION")
+        .doesNotContain("private static final String SUPPLIER_RELATION_PERFORMANCE_UPDATED_ACTION")
+        .doesNotContain("private static final String SUPPLIER_RELATION_STATUS_CHANGED_ACTION")
         .doesNotContain("Only pending supplier relations can be submitted for admission")
         .doesNotContain("Only supplier relations in admission approval can be reviewed");
   }

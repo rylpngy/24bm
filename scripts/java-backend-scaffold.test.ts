@@ -251,6 +251,7 @@ describe('Java backend scaffold', () => {
     const materialService = read('backend-java/src/main/java/com/procurement/catalog/application/MaterialApplicationService.java');
     const materialAuditAction = read('backend-java/src/main/java/com/procurement/catalog/domain/MaterialAuditAction.java');
     const service = read('backend-java/src/main/java/com/procurement/supplier/application/BuyerSupplierApplicationService.java');
+    const buyerSupplierAuditAction = read('backend-java/src/main/java/com/procurement/supplier/domain/BuyerSupplierAuditAction.java');
     const auditTests = read('backend-java/src/test/java/com/procurement/BuyerMasterDataAuditLogTests.java');
     const admissionTests = read('backend-java/src/test/java/com/procurement/BuyerSupplierAdmissionApprovalStateTransitionTests.java');
 
@@ -277,9 +278,20 @@ describe('Java backend scaffold', () => {
     expect(readme).toContain('status`, `level`, `category`, and `keyword`');
     expect(controller).toContain('@PostMapping("/{relationId}/status")');
     expect(controller).toContain('@PostMapping("/{relationId}/profile")');
-    expect(service).toContain('buyer_supplier_relation.profile_updated');
-    expect(service).toContain('buyer_supplier_relation.performance_updated');
-    expect(service).toContain('buyer_supplier_relation.status_changed');
+    expect(service).toContain('BuyerSupplierAuditAction.RELATION_CREATED');
+    expect(service).toContain('BuyerSupplierAuditAction.RELATION_PROFILE_UPDATED');
+    expect(service).toContain('BuyerSupplierAuditAction.RELATION_PERFORMANCE_UPDATED');
+    expect(service).toContain('BuyerSupplierAuditAction.RELATION_STATUS_CHANGED');
+    expect(service).toContain('BuyerSupplierAuditAction.ADMISSION_SUBMITTED');
+    expect(service).toContain('BuyerSupplierAuditAction.ADMISSION_APPROVED');
+    expect(service).toContain('BuyerSupplierAuditAction.ADMISSION_REJECTED');
+    expect(buyerSupplierAuditAction).toContain('RELATION_CREATED = "buyer_supplier_relation.created"');
+    expect(buyerSupplierAuditAction).toContain('RELATION_PROFILE_UPDATED = "buyer_supplier_relation.profile_updated"');
+    expect(buyerSupplierAuditAction).toContain('RELATION_PERFORMANCE_UPDATED = "buyer_supplier_relation.performance_updated"');
+    expect(buyerSupplierAuditAction).toContain('RELATION_STATUS_CHANGED = "buyer_supplier_relation.status_changed"');
+    expect(buyerSupplierAuditAction).toContain('ADMISSION_SUBMITTED = "buyer_supplier_admission.submitted"');
+    expect(buyerSupplierAuditAction).toContain('ADMISSION_APPROVED = "buyer_supplier_admission.approved"');
+    expect(buyerSupplierAuditAction).toContain('ADMISSION_REJECTED = "buyer_supplier_admission.rejected"');
     expect(service).toContain('changeRelationProfile');
     expect(service).toContain('BuyerSupplierManualStatusTransition');
     expect(service).toContain('buyerSupplierManualStatusTransition.requireTransition');
