@@ -176,10 +176,13 @@ describe('Java backend scaffold', () => {
   it('documents the notification API handoff', () => {
     const architecture = read('docs/java-backend-architecture.md');
     const readme = read('backend-java/README.md');
+    const notificationService = read('backend-java/src/main/java/com/procurement/notification/application/NotificationApplicationService.java');
+    const recipientStatus = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationRecipientStatus.java');
 
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/api/BuyerNotificationController.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/api/SupplierNotificationController.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/application/NotificationApplicationService.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/domain/NotificationRecipientStatus.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/notification/infrastructure/NotificationMapper.java'))).toBe(true);
     expect(architecture).toContain('站内通知 Java API');
     expect(architecture).toContain('GET /api/v1/buyer/notifications');
@@ -203,6 +206,8 @@ describe('Java backend scaffold', () => {
     expect(readme).toContain('Buyer receipt creates in-app notifications');
     expect(readme).toContain('Supplier invoice creation creates in-app notifications');
     expect(readme).toContain('Buyer payment registration creates in-app notifications');
+    expect(notificationService).toContain('NotificationRecipientStatus.ENABLED');
+    expect(recipientStatus).toContain('ENABLED = "启用"');
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/PurchaseDemandNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/RfqAwardNotificationTests.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/test/java/com/procurement/PurchaseOrderNotificationTests.java'))).toBe(true);

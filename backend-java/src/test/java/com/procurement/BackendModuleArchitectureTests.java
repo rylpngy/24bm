@@ -110,6 +110,18 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void notificationApplicationServiceUsesDomainRecipientStatus() throws IOException {
+    Path status = SOURCE_ROOT.resolve("notification/domain/NotificationRecipientStatus.java");
+    Path notificationService = SOURCE_ROOT.resolve("notification/application/NotificationApplicationService.java");
+
+    assertThat(status).exists();
+    assertThat(Files.readString(status)).contains("ENABLED = \"启用\"");
+    assertThat(Files.readString(notificationService))
+        .contains("NotificationRecipientStatus.ENABLED")
+        .doesNotContain("private static final String ENABLED_STATUS");
+  }
+
+  @Test
   void workspaceTodoAssemblersUseDomainStatusConstants() throws IOException {
     Path rfqStatus = SOURCE_ROOT.resolve("sourcing/domain/RfqStatus.java");
     Path purchaseOrderStatus = SOURCE_ROOT.resolve("order/domain/PurchaseOrderStatus.java");

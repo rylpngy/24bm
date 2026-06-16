@@ -4,6 +4,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.domain.Notification;
+import com.procurement.notification.domain.NotificationRecipientStatus;
 import com.procurement.notification.infrastructure.NotificationMapper;
 import com.procurement.supplier.infrastructure.SupplierUserMapper;
 import java.util.List;
@@ -16,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationApplicationService {
   private static final int DEFAULT_LIMIT = 50;
   private static final int MAX_LIMIT = 200;
-  private static final String ENABLED_STATUS = "启用";
 
   private final NotificationMapper notificationMapper;
   private final BuyerUserMapper buyerUserMapper;
@@ -61,7 +61,7 @@ public class NotificationApplicationService {
   @Transactional
   public void notifyActiveTenantUsers(String tenantId, String title, String content) {
     buyerUserMapper.listByTenant(tenantId).stream()
-        .filter(user -> ENABLED_STATUS.equals(user.status()))
+        .filter(user -> NotificationRecipientStatus.ENABLED.equals(user.status()))
         .forEach(user -> notificationMapper.insert(
             "notice-" + UUID.randomUUID(),
             tenantId,
@@ -73,7 +73,7 @@ public class NotificationApplicationService {
   @Transactional
   public void notifyActiveSupplierUsers(String tenantId, String supplierId, String title, String content) {
     supplierUserMapper.listBySupplier(supplierId).stream()
-        .filter(user -> ENABLED_STATUS.equals(user.status()))
+        .filter(user -> NotificationRecipientStatus.ENABLED.equals(user.status()))
         .forEach(user -> notificationMapper.insert(
             "notice-" + UUID.randomUUID(),
             tenantId,
