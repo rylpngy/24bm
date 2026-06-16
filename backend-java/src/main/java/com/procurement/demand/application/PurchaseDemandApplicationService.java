@@ -12,6 +12,7 @@ import com.procurement.demand.api.PurchaseDemandLineItemResponse;
 import com.procurement.demand.api.PurchaseDemandResponse;
 import com.procurement.demand.api.ReviewPurchaseDemandRequest;
 import com.procurement.demand.domain.PurchaseDemand;
+import com.procurement.demand.domain.PurchaseDemandApprovalStatusTransition;
 import com.procurement.demand.domain.PurchaseDemandItem;
 import com.procurement.demand.domain.PurchaseDemandStatus;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
@@ -40,6 +41,7 @@ public class PurchaseDemandApplicationService {
   private final DepartmentMapper departmentMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition;
 
   public PurchaseDemandApplicationService(
       PurchaseDemandMapper purchaseDemandMapper,
@@ -48,7 +50,8 @@ public class PurchaseDemandApplicationService {
       ApprovalTaskApplicationService approvalTaskApplicationService,
       DepartmentMapper departmentMapper,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition) {
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
@@ -56,6 +59,7 @@ public class PurchaseDemandApplicationService {
     this.departmentMapper = departmentMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.purchaseDemandApprovalStatusTransition = purchaseDemandApprovalStatusTransition;
   }
 
   public List<PurchaseDemandResponse> listCurrentTenantDemands() {
@@ -119,9 +123,7 @@ public class PurchaseDemandApplicationService {
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
-    if (!PurchaseDemandStatus.DRAFT.equals(demand.status())) {
-      throw new IllegalStateException("Only draft purchase demands can be submitted: " + demandId);
-    }
+    purchaseDemandApprovalStatusTransition.requireSubmission(demand.status(), demandId);
 
     purchaseDemandMapper.updateStatus(tenantId, demandId, PurchaseDemandStatus.IN_APPROVAL);
 
@@ -153,9 +155,7 @@ public class PurchaseDemandApplicationService {
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
-    if (!PurchaseDemandStatus.IN_APPROVAL.equals(demand.status())) {
-      throw new IllegalStateException("Only in-approval purchase demands can be reviewed: " + demandId);
-    }
+    purchaseDemandApprovalStatusTransition.requireReview(demand.status(), demandId);
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,
@@ -167,9 +167,8 @@ public class PurchaseDemandApplicationService {
     }
 
     String approvalStatus = Boolean.TRUE.equals(request.approved()) ? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED;
-    String demandStatus = Boolean.TRUE.equals(request.approved())
-        ? PurchaseDemandStatus.APPROVED
-        : PurchaseDemandStatus.REJECTED;
+    boolean approved = Boolean.TRUE.equals(request.approved());
+    String demandStatus = purchaseDemandApprovalStatusTransition.reviewTargetStatus(approved);
     int updated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
@@ -181,15 +180,15 @@ public class PurchaseDemandApplicationService {
     }
     purchaseDemandMapper.updateStatus(tenantId, demandId, demandStatus);
     auditLogApplicationService.recordTenantAction(
-        Boolean.TRUE.equals(request.approved()) ? PURCHASE_DEMAND_APPROVED_ACTION : PURCHASE_DEMAND_REJECTED_ACTION,
+        approved ? PURCHASE_DEMAND_APPROVED_ACTION : PURCHASE_DEMAND_REJECTED_ACTION,
         PURCHASE_DEMAND_BIZ_TYPE,
         demandId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
-        Boolean.TRUE.equals(request.approved())
+        approved
             ? PURCHASE_DEMAND_APPROVED_NOTIFICATION_TITLE
             : PURCHASE_DEMAND_REJECTED_NOTIFICATION_TITLE,
-        "采购需求已审批" + (Boolean.TRUE.equals(request.approved()) ? "通过" : "驳回") + "。");
+        "采购需求已审批" + (approved ? "通过" : "驳回") + "。");
 
     ApprovalTask reviewedTask = approvalTaskMapper.findByTenantAndId(tenantId, approvalTask.id());
     return new ApprovalTaskResponse(

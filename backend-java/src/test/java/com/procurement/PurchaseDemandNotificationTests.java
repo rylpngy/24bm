@@ -14,6 +14,7 @@ import com.procurement.audit.infrastructure.AuditLogMapper;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.application.PurchaseDemandApplicationService;
 import com.procurement.demand.domain.PurchaseDemand;
+import com.procurement.demand.domain.PurchaseDemandApprovalStatusTransition;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.identity.domain.BuyerUser;
@@ -49,7 +50,8 @@ class PurchaseDemandNotificationTests {
       approvalTaskApplicationService,
       departmentMapper,
       auditLogApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+      new PurchaseDemandApprovalStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

@@ -114,7 +114,12 @@ describe('Java purchase demand scaffold', () => {
     expect(service).toContain('listByTenantFiltered');
     expect(service).toContain('PurchaseDemandStatus.DRAFT');
     expect(service).toContain('PurchaseDemandStatus.IN_APPROVAL');
+    expect(service).toContain('PurchaseDemandApprovalStatusTransition');
+    expect(service).toContain('reviewTargetStatus');
     expect(service).toContain('purchase_demand');
+    const transition = read('backend-java/src/main/java/com/procurement/demand/domain/PurchaseDemandApprovalStatusTransition.java');
+    expect(transition).toContain('PurchaseDemandStatus.APPROVED');
+    expect(transition).toContain('PurchaseDemandStatus.REJECTED');
   });
 
   it('documents the first Java business API handoff', () => {

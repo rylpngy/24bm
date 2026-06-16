@@ -305,8 +305,7 @@ class BackendModuleArchitectureTests {
         List.of(
             "PurchaseDemandStatus.DRAFT",
             "PurchaseDemandStatus.IN_APPROVAL",
-            "PurchaseDemandStatus.APPROVED",
-            "PurchaseDemandStatus.REJECTED",
+            "PurchaseDemandApprovalStatusTransition",
             "ApprovalStatus.APPROVED",
             "ApprovalStatus.REJECTED"),
         List.of(
@@ -331,6 +330,32 @@ class BackendModuleArchitectureTests {
             "private static final String REJECTED_STATUS",
             "private static final String BLACKLISTED_STATUS",
             "private static final String APPROVED_STATUS"));
+  }
+
+  @Test
+  void purchaseDemandApplicationServiceDelegatesApprovalStatusTransitions() throws IOException {
+    Path transition = SOURCE_ROOT.resolve("demand/domain/PurchaseDemandApprovalStatusTransition.java");
+    Path demandService = SOURCE_ROOT.resolve("demand/application/PurchaseDemandApplicationService.java");
+
+    assertThat(transition).exists();
+
+    String transitionSource = Files.readString(transition);
+    assertThat(transitionSource)
+        .contains("void requireSubmission")
+        .contains("void requireReview")
+        .contains("String reviewTargetStatus")
+        .contains("PurchaseDemandStatus.DRAFT")
+        .contains("PurchaseDemandStatus.IN_APPROVAL")
+        .contains("PurchaseDemandStatus.APPROVED")
+        .contains("PurchaseDemandStatus.REJECTED");
+
+    assertThat(Files.readString(demandService))
+        .contains("PurchaseDemandApprovalStatusTransition")
+        .contains("purchaseDemandApprovalStatusTransition.requireSubmission")
+        .contains("purchaseDemandApprovalStatusTransition.requireReview")
+        .contains("purchaseDemandApprovalStatusTransition.reviewTargetStatus")
+        .doesNotContain("Only draft purchase demands can be submitted")
+        .doesNotContain("Only in-approval purchase demands can be reviewed");
   }
 
   private void assertSourceUsesStatusConstants(
