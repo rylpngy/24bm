@@ -4,6 +4,7 @@ import com.procurement.attachment.api.AttachmentResponse;
 import com.procurement.attachment.api.CreateAttachmentRequest;
 import com.procurement.attachment.domain.Attachment;
 import com.procurement.attachment.domain.AttachmentStatus;
+import com.procurement.attachment.domain.AttachmentVisibility;
 import com.procurement.attachment.infrastructure.AttachmentMapper;
 import com.procurement.audit.infrastructure.AuditLogMapper;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -14,9 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AttachmentApplicationService {
-  private static final String DEFAULT_VISIBILITY = "tenant";
-  private static final List<String> SUPPORTED_VISIBILITIES = List.of("tenant", "buyer_internal", "supplier_shared");
-
   private final AttachmentMapper attachmentMapper;
   private final AuditLogMapper auditLogMapper;
 
@@ -37,7 +35,7 @@ public class AttachmentApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
     String userId = TenantAccessGuard.requireUserId("buyer attachment APIs");
     String attachmentId = "att-" + UUID.randomUUID();
-    String visibility = normalizeVisibility(request.visibility());
+    String visibility = AttachmentVisibility.normalize(request.visibility());
     attachmentMapper.insert(
         attachmentId,
         tenantId,
@@ -72,11 +70,4 @@ public class AttachmentApplicationService {
         attachment.createdAt());
   }
 
-  private String normalizeVisibility(String visibility) {
-    String safeVisibility = visibility == null || visibility.isBlank() ? DEFAULT_VISIBILITY : visibility;
-    if (!SUPPORTED_VISIBILITIES.contains(safeVisibility)) {
-      throw new IllegalArgumentException("Unsupported attachment visibility: " + visibility);
-    }
-    return safeVisibility;
-  }
 }

@@ -567,6 +567,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - 新增附件会写入 `audit_logs`，动作为 `attachment.created`，目标类型为附件关联的 `ownerType`。
 
 新增附件状态统一使用 `AttachmentStatus.ACTIVE`，避免附件应用服务散落附件状态字符串。
+附件可见性默认值和支持范围统一由 `AttachmentVisibility` 定义，当前覆盖 `tenant`、`buyer_internal` 和 `supplier_shared`，避免附件应用服务散落 visibility 字符串。
 
 对应数据库表：
 

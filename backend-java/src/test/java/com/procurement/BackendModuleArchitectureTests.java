@@ -125,13 +125,24 @@ class BackendModuleArchitectureTests {
   @Test
   void attachmentApplicationServiceUsesDomainAttachmentStatus() throws IOException {
     Path status = SOURCE_ROOT.resolve("attachment/domain/AttachmentStatus.java");
+    Path visibility = SOURCE_ROOT.resolve("attachment/domain/AttachmentVisibility.java");
     Path attachmentService = SOURCE_ROOT.resolve("attachment/application/AttachmentApplicationService.java");
 
     assertThat(status).exists();
     assertThat(Files.readString(status)).contains("ACTIVE = \"active\"");
+    assertThat(visibility).exists();
+    assertThat(Files.readString(visibility))
+        .contains("TENANT = \"tenant\"")
+        .contains("BUYER_INTERNAL = \"buyer_internal\"")
+        .contains("SUPPLIER_SHARED = \"supplier_shared\"")
+        .contains("Unsupported attachment visibility");
     assertThat(Files.readString(attachmentService))
         .contains("AttachmentStatus.ACTIVE")
-        .doesNotContain("private static final String ACTIVE_STATUS");
+        .contains("AttachmentVisibility.normalize")
+        .doesNotContain("private static final String ACTIVE_STATUS")
+        .doesNotContain("DEFAULT_VISIBILITY")
+        .doesNotContain("SUPPORTED_VISIBILITIES")
+        .doesNotContain("Unsupported attachment visibility");
   }
 
   @Test
