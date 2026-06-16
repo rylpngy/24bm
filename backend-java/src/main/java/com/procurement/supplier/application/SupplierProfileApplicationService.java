@@ -5,13 +5,13 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.supplier.api.SupplierProfileResponse;
 import com.procurement.supplier.api.UpdateSupplierProfileRequest;
 import com.procurement.supplier.domain.SupplierProfile;
+import com.procurement.supplier.domain.SupplierProfileAuditAction;
 import com.procurement.supplier.infrastructure.SupplierProfileMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SupplierProfileApplicationService {
-  private static final String SUPPLIER_PROFILE_UPDATED_ACTION = "supplier_profile.updated";
   private static final String SUPPLIER_PROFILE_TARGET_TYPE = "supplier_profile";
 
   private final SupplierProfileMapper supplierProfileMapper;
@@ -43,7 +43,7 @@ public class SupplierProfileApplicationService {
         request.legalPerson());
     auditLogApplicationService.recordTenantAction(
         null,
-        SUPPLIER_PROFILE_UPDATED_ACTION,
+        SupplierProfileAuditAction.UPDATED,
         SUPPLIER_PROFILE_TARGET_TYPE,
         supplierId);
     return loadCurrentSupplierProfile(supplierId);

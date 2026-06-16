@@ -731,6 +731,19 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void supplierProfileApplicationServiceUsesDomainAuditActions() throws IOException {
+    Path auditAction = SOURCE_ROOT.resolve("supplier/domain/SupplierProfileAuditAction.java");
+    Path supplierProfileService =
+        SOURCE_ROOT.resolve("supplier/application/SupplierProfileApplicationService.java");
+
+    assertThat(auditAction).exists();
+    assertThat(Files.readString(auditAction)).contains("UPDATED = \"supplier_profile.updated\"");
+    assertThat(Files.readString(supplierProfileService))
+        .contains("SupplierProfileAuditAction.UPDATED")
+        .doesNotContain("private static final String SUPPLIER_PROFILE_UPDATED_ACTION");
+  }
+
+  @Test
   void buyerSupplierApplicationServiceDelegatesManualStatusTransitions() throws IOException {
     Path transition = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierManualStatusTransition.java");
     Path supplierService = SOURCE_ROOT.resolve("supplier/application/BuyerSupplierApplicationService.java");

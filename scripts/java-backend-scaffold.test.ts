@@ -252,6 +252,8 @@ describe('Java backend scaffold', () => {
     const materialAuditAction = read('backend-java/src/main/java/com/procurement/catalog/domain/MaterialAuditAction.java');
     const service = read('backend-java/src/main/java/com/procurement/supplier/application/BuyerSupplierApplicationService.java');
     const buyerSupplierAuditAction = read('backend-java/src/main/java/com/procurement/supplier/domain/BuyerSupplierAuditAction.java');
+    const supplierProfileService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierProfileApplicationService.java');
+    const supplierProfileAuditAction = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierProfileAuditAction.java');
     const auditTests = read('backend-java/src/test/java/com/procurement/BuyerMasterDataAuditLogTests.java');
     const admissionTests = read('backend-java/src/test/java/com/procurement/BuyerSupplierAdmissionApprovalStateTransitionTests.java');
 
@@ -292,6 +294,8 @@ describe('Java backend scaffold', () => {
     expect(buyerSupplierAuditAction).toContain('ADMISSION_SUBMITTED = "buyer_supplier_admission.submitted"');
     expect(buyerSupplierAuditAction).toContain('ADMISSION_APPROVED = "buyer_supplier_admission.approved"');
     expect(buyerSupplierAuditAction).toContain('ADMISSION_REJECTED = "buyer_supplier_admission.rejected"');
+    expect(supplierProfileService).toContain('SupplierProfileAuditAction.UPDATED');
+    expect(supplierProfileAuditAction).toContain('UPDATED = "supplier_profile.updated"');
     expect(service).toContain('changeRelationProfile');
     expect(service).toContain('BuyerSupplierManualStatusTransition');
     expect(service).toContain('buyerSupplierManualStatusTransition.requireTransition');
