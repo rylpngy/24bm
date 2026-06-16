@@ -49,12 +49,12 @@ describe('Java purchase order scaffold', () => {
   it('keeps order creation tenant scoped and idempotent', () => {
     const service = read('backend-java/src/main/java/com/procurement/order/application/PurchaseOrderApplicationService.java');
     const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
+    const tenantFeatureKey = read('backend-java/src/main/java/com/procurement/tenant/domain/TenantFeatureKey.java');
     const auditAction = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderAuditAction.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantFeatureApplicationService');
-    expect(service).toContain('ORDER_FEATURE');
-    expect(service).toContain('requireEnabled(tenantId, ORDER_FEATURE)');
+    expect(service).toContain('requireEnabled(tenantId, TenantFeatureKey.ORDER)');
     expect(service).toContain('listCurrentTenantOrders');
     expect(service).toContain('listByTenantFiltered');
     expect(service).toContain('PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION');
@@ -69,6 +69,7 @@ describe('Java purchase order scaffold', () => {
     expect(auditAction).toContain('CREATED = "purchase_order.created"');
     expect(auditAction).toContain('CONFIRMED = "purchase_order.confirmed"');
     expect(auditTargetType).toContain('PURCHASE_ORDER = "purchase_order"');
+    expect(tenantFeatureKey).toContain('ORDER = "order"');
   });
 
   it('documents the purchase order Java API handoff', () => {

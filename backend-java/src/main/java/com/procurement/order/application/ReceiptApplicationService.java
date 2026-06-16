@@ -15,6 +15,7 @@ import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
+import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ReceiptApplicationService {
   private static final String PURCHASE_ORDER_RECEIVED_NOTIFICATION_TITLE = "采购订单已收货";
-  private static final String ORDER_FEATURE = "order";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final DeliveryMapper deliveryMapper;
@@ -70,7 +70,7 @@ public class ReceiptApplicationService {
       throw new IllegalArgumentException("Purchase order not found in tenant scope: " + orderId);
     }
     purchaseOrderStatusTransition.requireReceipt(order.status(), orderId);
-    tenantFeatureApplicationService.requireEnabled(tenantId, ORDER_FEATURE);
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
     if (deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, PurchaseOrderStatus.SHIPPED) == 0) {
       throw new IllegalStateException("Shipped delivery not found for receipt: " + orderId);
     }

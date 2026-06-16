@@ -15,6 +15,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
+import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PurchaseOrderApplicationService {
   private static final String PURCHASE_ORDER_CONFIRMED_NOTIFICATION_TITLE = "采购订单已确认";
-  private static final String ORDER_FEATURE = "order";
 
   private final AwardDecisionMapper awardDecisionMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
@@ -92,7 +92,7 @@ public class PurchaseOrderApplicationService {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
     purchaseOrderStatusTransition.requireSupplierConfirmation(order.status(), orderId);
-    tenantFeatureApplicationService.requireEnabled(order.tenantId(), ORDER_FEATURE);
+    tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.ORDER);
 
     int updated = purchaseOrderMapper.updateStatus(
         order.tenantId(),
@@ -118,7 +118,7 @@ public class PurchaseOrderApplicationService {
   @Transactional
   public PurchaseOrderResponse createFromAward(CreatePurchaseOrderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
-    tenantFeatureApplicationService.requireEnabled(tenantId, ORDER_FEATURE);
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
     AwardDecision award = awardDecisionMapper.findApprovedForOrder(tenantId, request.awardId(), ApprovalStatus.APPROVED);
     if (award == null) {
       throw new IllegalArgumentException("Approved award decision not found in tenant scope: " + request.awardId());

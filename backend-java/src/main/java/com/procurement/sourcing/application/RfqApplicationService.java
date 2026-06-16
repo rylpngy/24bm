@@ -15,6 +15,7 @@ import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
+import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -22,8 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RfqApplicationService {
-  private static final String RFQ_FEATURE = "rfq";
-
   private final RfqMapper rfqMapper;
   private final RfqDemandMapper rfqDemandMapper;
   private final RfqInviteMapper rfqInviteMapper;
@@ -71,7 +70,7 @@ public class RfqApplicationService {
   public RfqResponse create(CreateRfqRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
     String userId = TenantAccessGuard.requireUserId("buyer RFQ APIs");
-    tenantFeatureApplicationService.requireEnabled(tenantId, RFQ_FEATURE);
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.RFQ);
     validateDemands(tenantId, request.demandIds());
     validateSuppliers(tenantId, request.invitedSupplierIds());
 

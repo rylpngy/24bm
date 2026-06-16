@@ -14,6 +14,7 @@ import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
+import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class DeliveryApplicationService {
   private static final String PURCHASE_ORDER_SHIPPED_NOTIFICATION_TITLE = "采购订单已发货";
-  private static final String ORDER_FEATURE = "order";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final DeliveryMapper deliveryMapper;
@@ -65,7 +65,7 @@ public class DeliveryApplicationService {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
     purchaseOrderStatusTransition.requireShipment(order.status(), orderId);
-    tenantFeatureApplicationService.requireEnabled(order.tenantId(), ORDER_FEATURE);
+    tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.ORDER);
     if (deliveryMapper.countByTenantAndOrder(order.tenantId(), order.id()) > 0) {
       throw new IllegalStateException("Purchase order already has a delivery: " + orderId);
     }

@@ -46,12 +46,14 @@ describe('Java RFQ sourcing scaffold', () => {
 
   it('keeps RFQ creation isolated to the current tenant and approved inputs', () => {
     const service = read('backend-java/src/main/java/com/procurement/sourcing/application/RfqApplicationService.java');
+    const tenantFeatureKey = read('backend-java/src/main/java/com/procurement/tenant/domain/TenantFeatureKey.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantAccessGuard.requireUserId');
     expect(service).toContain('TenantFeatureApplicationService');
     expect(service).toContain('listByTenantFiltered');
-    expect(service).toContain('requireEnabled(tenantId, RFQ_FEATURE)');
+    expect(service).toContain('requireEnabled(tenantId, TenantFeatureKey.RFQ)');
+    expect(tenantFeatureKey).toContain('RFQ = "rfq"');
     expect(service).toContain('RfqSourcingStatusTransition');
     expect(service).toContain('requireApprovedDemandForRfq');
     expect(service).toContain('BuyerSupplierRelationStatus.ADMITTED');

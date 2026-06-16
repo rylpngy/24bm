@@ -51,12 +51,12 @@ describe('Java finance invoice and payment scaffold', () => {
     const paymentService = read('backend-java/src/main/java/com/procurement/finance/application/PaymentApplicationService.java');
     const invoiceAuditAction = read('backend-java/src/main/java/com/procurement/finance/domain/InvoiceAuditAction.java');
     const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
+    const tenantFeatureKey = read('backend-java/src/main/java/com/procurement/tenant/domain/TenantFeatureKey.java');
     const auditService = read('backend-java/src/main/java/com/procurement/audit/application/AuditLogApplicationService.java');
 
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
     expect(invoiceService).toContain('TenantFeatureApplicationService');
-    expect(invoiceService).toContain('FINANCE_FEATURE');
-    expect(invoiceService).toContain('requireEnabled(order.tenantId(), FINANCE_FEATURE)');
+    expect(invoiceService).toContain('requireEnabled(order.tenantId(), TenantFeatureKey.FINANCE)');
     expect(invoiceService).toContain('PurchaseOrderStatus.RECEIVED');
     expect(invoiceService).toContain('InvoicePaymentStatus.PENDING_PAYMENT');
     expect(invoiceService).toContain('compareTo(order.amount())');
@@ -70,7 +70,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
     expect(paymentService).toContain('BuyerSupplierRelationMapper');
     expect(paymentService).toContain('PurchaseOrderMapper');
-    expect(paymentService).toContain('requireEnabled(tenantId, FINANCE_FEATURE)');
+    expect(paymentService).toContain('requireEnabled(tenantId, TenantFeatureKey.FINANCE)');
     expect(paymentService).toContain('BuyerSupplierRelationStatus.BLACKLISTED');
     expect(paymentService).toContain('requireInvoiceAmountMatchesOrder');
     expect(paymentService).toContain('countByTenantSupplierAndStatus');
@@ -92,6 +92,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceAuditAction).toContain('PAID = "invoice.paid"');
     expect(invoiceAuditAction).toContain('PARTIAL_PAID = "invoice.partial_paid"');
     expect(auditTargetType).toContain('INVOICE = "invoice"');
+    expect(tenantFeatureKey).toContain('FINANCE = "finance"');
     expect(auditService).toContain('listCurrentTenantTargetActions');
   });
 

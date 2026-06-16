@@ -463,6 +463,36 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void applicationServicesUseDomainTenantFeatureKeys() throws IOException {
+    Path featureKey = SOURCE_ROOT.resolve("tenant/domain/TenantFeatureKey.java");
+
+    assertThat(featureKey).exists();
+    assertThat(Files.readString(featureKey))
+        .contains("RFQ = \"rfq\"")
+        .contains("ORDER = \"order\"")
+        .contains("FINANCE = \"finance\"");
+
+    Map.ofEntries(
+            Map.entry("sourcing/application/RfqApplicationService.java", "TenantFeatureKey.RFQ"),
+            Map.entry("order/application/PurchaseOrderApplicationService.java", "TenantFeatureKey.ORDER"),
+            Map.entry("order/application/DeliveryApplicationService.java", "TenantFeatureKey.ORDER"),
+            Map.entry("order/application/ReceiptApplicationService.java", "TenantFeatureKey.ORDER"),
+            Map.entry("finance/application/InvoiceApplicationService.java", "TenantFeatureKey.FINANCE"),
+            Map.entry("finance/application/PaymentApplicationService.java", "TenantFeatureKey.FINANCE"))
+        .forEach((sourcePath, expectedFeatureKey) -> {
+          try {
+            assertThat(Files.readString(SOURCE_ROOT.resolve(sourcePath)))
+                .contains(expectedFeatureKey)
+                .doesNotContain("RFQ_FEATURE")
+                .doesNotContain("ORDER_FEATURE")
+                .doesNotContain("FINANCE_FEATURE");
+          } catch (IOException exception) {
+            throw new IllegalStateException(exception);
+          }
+        });
+  }
+
+  @Test
   void platformEnterpriseApplicationServiceUsesDomainAuditActions() throws IOException {
     Path auditAction = SOURCE_ROOT.resolve("platform/domain/PlatformEnterpriseAuditAction.java");
     Path enterpriseService =

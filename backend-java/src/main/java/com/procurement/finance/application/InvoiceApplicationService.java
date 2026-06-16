@@ -15,6 +15,7 @@ import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
+import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InvoiceApplicationService {
-  private static final String FINANCE_FEATURE = "finance";
   private static final String INVOICE_CREATED_NOTIFICATION_TITLE = "供应商已登记发票";
 
   private final PurchaseOrderMapper purchaseOrderMapper;
@@ -86,7 +86,7 @@ public class InvoiceApplicationService {
     if (!PurchaseOrderStatus.RECEIVED.equals(order.status())) {
       throw new IllegalStateException("Only received purchase orders can be invoiced: " + orderId);
     }
-    tenantFeatureApplicationService.requireEnabled(order.tenantId(), FINANCE_FEATURE);
+    tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.FINANCE);
     if (request.amount().compareTo(order.amount()) != 0) {
       throw new IllegalArgumentException("Invoice amount must equal purchase order amount: " + orderId);
     }

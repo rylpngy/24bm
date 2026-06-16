@@ -17,13 +17,13 @@ import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
+import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PaymentApplicationService {
-  private static final String FINANCE_FEATURE = "finance";
   private static final String INVOICE_PAID_NOTIFICATION_TITLE = "发票已付款";
   private static final String INVOICE_PARTIAL_PAID_NOTIFICATION_TITLE = "发票部分付款";
 
@@ -82,7 +82,7 @@ public class PaymentApplicationService {
   @Transactional
   public InvoiceResponse register(String invoiceId, RegisterPaymentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
-    tenantFeatureApplicationService.requireEnabled(tenantId, FINANCE_FEATURE);
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
