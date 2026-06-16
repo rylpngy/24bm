@@ -5,6 +5,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.order.api.CreateReceiptRequest;
 import com.procurement.order.api.ReceiptResponse;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderAuditAction;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.domain.Receipt;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ReceiptApplicationService {
-  private static final String PURCHASE_ORDER_RECEIVED_ACTION = "purchase_order.received";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_RECEIVED_NOTIFICATION_TITLE = "采购订单已收货";
   private static final String ORDER_FEATURE = "order";
@@ -89,7 +89,7 @@ public class ReceiptApplicationService {
       throw new IllegalStateException("Purchase order status changed before receipt could be recorded: " + orderId);
     }
     auditLogApplicationService.recordTenantAction(
-        PURCHASE_ORDER_RECEIVED_ACTION,
+        PurchaseOrderAuditAction.RECEIVED,
         PURCHASE_ORDER_TARGET_TYPE,
         orderId);
     notificationApplicationService.notifyActiveTenantUsers(

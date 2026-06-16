@@ -539,12 +539,20 @@ class BackendModuleArchitectureTests {
 
   @Test
   void orderFulfillmentServicesDelegatePurchaseOrderStatusTransitions() throws IOException {
+    Path auditAction = SOURCE_ROOT.resolve("order/domain/PurchaseOrderAuditAction.java");
     Path transition = SOURCE_ROOT.resolve("order/domain/PurchaseOrderStatusTransition.java");
     Path purchaseOrderService = SOURCE_ROOT.resolve("order/application/PurchaseOrderApplicationService.java");
     Path deliveryService = SOURCE_ROOT.resolve("order/application/DeliveryApplicationService.java");
     Path receiptService = SOURCE_ROOT.resolve("order/application/ReceiptApplicationService.java");
 
+    assertThat(auditAction).exists();
     assertThat(transition).exists();
+
+    assertThat(Files.readString(auditAction))
+        .contains("CREATED = \"purchase_order.created\"")
+        .contains("CONFIRMED = \"purchase_order.confirmed\"")
+        .contains("SHIPPED = \"purchase_order.shipped\"")
+        .contains("RECEIVED = \"purchase_order.received\"");
 
     String transitionSource = Files.readString(transition);
     assertThat(transitionSource)
@@ -557,15 +565,23 @@ class BackendModuleArchitectureTests {
 
     assertThat(Files.readString(purchaseOrderService))
         .contains("PurchaseOrderStatusTransition")
+        .contains("PurchaseOrderAuditAction.CREATED")
+        .contains("PurchaseOrderAuditAction.CONFIRMED")
         .contains("purchaseOrderStatusTransition.requireSupplierConfirmation")
+        .doesNotContain("private static final String PURCHASE_ORDER_CREATED_ACTION")
+        .doesNotContain("private static final String PURCHASE_ORDER_CONFIRMED_ACTION")
         .doesNotContain("Only pending supplier confirmation orders can be confirmed");
     assertThat(Files.readString(deliveryService))
         .contains("PurchaseOrderStatusTransition")
+        .contains("PurchaseOrderAuditAction.SHIPPED")
         .contains("purchaseOrderStatusTransition.requireShipment")
+        .doesNotContain("private static final String PURCHASE_ORDER_SHIPPED_ACTION")
         .doesNotContain("Only ready-to-ship orders can be shipped");
     assertThat(Files.readString(receiptService))
         .contains("PurchaseOrderStatusTransition")
+        .contains("PurchaseOrderAuditAction.RECEIVED")
         .contains("purchaseOrderStatusTransition.requireReceipt")
+        .doesNotContain("private static final String PURCHASE_ORDER_RECEIVED_ACTION")
         .doesNotContain("Only shipped purchase orders can be received");
   }
 

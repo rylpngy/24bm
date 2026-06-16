@@ -40,6 +40,7 @@ describe('Java buyer receipt scaffold', () => {
 
   it('keeps receipt creation tenant scoped and updates order status', () => {
     const service = read('backend-java/src/main/java/com/procurement/order/application/ReceiptApplicationService.java');
+    const auditAction = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderAuditAction.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantAccessGuard.requireUserId');
@@ -49,11 +50,13 @@ describe('Java buyer receipt scaffold', () => {
     expect(service).toContain('PurchaseOrderStatus.SHIPPED');
     expect(service).toContain('PurchaseOrderStatus.RECEIVED');
     expect(service).toContain('PurchaseOrderStatusTransition');
+    expect(service).toContain('PurchaseOrderAuditAction.RECEIVED');
     expect(service).toContain('requireReceipt');
     expect(service).toContain('countByTenantOrderAndStatus');
     expect(service).toContain('countByTenantAndOrder');
     expect(service).toContain('findByTenantAndId');
     expect(service).toContain('updateStatus');
+    expect(auditAction).toContain('RECEIVED = "purchase_order.received"');
   });
 
   it('documents the buyer receipt Java API handoff', () => {

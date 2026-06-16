@@ -6,6 +6,7 @@ import com.procurement.order.api.CreateDeliveryRequest;
 import com.procurement.order.api.DeliveryResponse;
 import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderAuditAction;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.DeliveryMapper;
@@ -19,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DeliveryApplicationService {
-  private static final String PURCHASE_ORDER_SHIPPED_ACTION = "purchase_order.shipped";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_SHIPPED_NOTIFICATION_TITLE = "采购订单已发货";
   private static final String ORDER_FEATURE = "order";
@@ -89,7 +89,7 @@ public class DeliveryApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
-        PURCHASE_ORDER_SHIPPED_ACTION,
+        PurchaseOrderAuditAction.SHIPPED,
         PURCHASE_ORDER_TARGET_TYPE,
         order.id());
     notificationApplicationService.notifyActiveTenantUsers(

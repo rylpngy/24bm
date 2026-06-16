@@ -6,6 +6,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderAuditAction;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -21,8 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PurchaseOrderApplicationService {
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
-  private static final String PURCHASE_ORDER_CREATED_ACTION = "purchase_order.created";
-  private static final String PURCHASE_ORDER_CONFIRMED_ACTION = "purchase_order.confirmed";
   private static final String PURCHASE_ORDER_CONFIRMED_NOTIFICATION_TITLE = "采购订单已确认";
   private static final String ORDER_FEATURE = "order";
 
@@ -105,7 +104,7 @@ public class PurchaseOrderApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
-        PURCHASE_ORDER_CONFIRMED_ACTION,
+        PurchaseOrderAuditAction.CONFIRMED,
         PURCHASE_ORDER_TARGET_TYPE,
         order.id());
     notificationApplicationService.notifyActiveTenantUsers(
@@ -140,7 +139,7 @@ public class PurchaseOrderApplicationService {
         PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
         request.expectedReceiptDate());
     auditLogApplicationService.recordTenantAction(
-        PURCHASE_ORDER_CREATED_ACTION,
+        PurchaseOrderAuditAction.CREATED,
         PURCHASE_ORDER_TARGET_TYPE,
         orderId);
 
