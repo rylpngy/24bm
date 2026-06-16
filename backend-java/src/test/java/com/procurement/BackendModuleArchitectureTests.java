@@ -428,6 +428,7 @@ class BackendModuleArchitectureTests {
   void platformTenantServicesUseDomainTenantStatus() throws IOException {
     Path status = SOURCE_ROOT.resolve("platform/domain/PlatformTenantStatus.java");
     Path auditAction = SOURCE_ROOT.resolve("platform/domain/PlatformTenantAuditAction.java");
+    Path buyerRoleDefaults = SOURCE_ROOT.resolve("platform/domain/PlatformBuyerRoleDefaults.java");
     Path tenantService = SOURCE_ROOT.resolve("platform/application/PlatformTenantApplicationService.java");
     Path workspaceService = SOURCE_ROOT.resolve("platform/application/PlatformWorkspaceApplicationService.java");
 
@@ -442,6 +443,10 @@ class BackendModuleArchitectureTests {
         .contains("PLAN_UPDATED = \"tenant.plan_updated\"")
         .contains("ENABLED = \"tenant.enabled\"")
         .contains("DISABLED = \"tenant.disabled\"");
+    assertThat(buyerRoleDefaults).exists();
+    assertThat(Files.readString(buyerRoleDefaults))
+        .contains("OWNER_ROLE_NAME = \"采购管理员\"")
+        .contains("OWNER_PERMISSIONS_JSON = \"[\\\"buyer:*\\\"]\"");
     assertThat(Files.readString(tenantService))
         .contains("PlatformTenantStatus.ACTIVE")
         .contains("PlatformTenantStatus.INACTIVE")
@@ -450,8 +455,12 @@ class BackendModuleArchitectureTests {
         .contains("PlatformTenantAuditAction.PLAN_UPDATED")
         .contains("PlatformTenantAuditAction.ENABLED")
         .contains("PlatformTenantAuditAction.DISABLED")
+        .contains("PlatformBuyerRoleDefaults.OWNER_ROLE_NAME")
+        .contains("PlatformBuyerRoleDefaults.OWNER_PERMISSIONS_JSON")
         .doesNotContain("private static final String ACTIVE_STATUS")
         .doesNotContain("private static final String INACTIVE_STATUS")
+        .doesNotContain("private static final String BUYER_OWNER_ROLE_NAME")
+        .doesNotContain("private static final String BUYER_OWNER_PERMISSIONS")
         .doesNotContain("private static final String TENANT_CREATED_ACTION")
         .doesNotContain("private static final String TENANT_DISABLED_ACTION")
         .doesNotContain("private static final String TENANT_ENABLED_ACTION")

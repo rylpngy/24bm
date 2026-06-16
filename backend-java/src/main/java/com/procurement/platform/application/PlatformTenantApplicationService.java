@@ -9,6 +9,7 @@ import com.procurement.platform.api.CreateTenantRequest;
 import com.procurement.platform.api.FeatureToggleRequest;
 import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.api.UpdateTenantPlanRequest;
+import com.procurement.platform.domain.PlatformBuyerRoleDefaults;
 import com.procurement.platform.domain.PlatformTenant;
 import com.procurement.platform.domain.PlatformTenantAuditAction;
 import com.procurement.platform.domain.PlatformTenantStatus;
@@ -20,9 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlatformTenantApplicationService {
-  private static final String BUYER_OWNER_ROLE_NAME = "采购管理员";
-  private static final String BUYER_OWNER_PERMISSIONS = "[\"buyer:*\"]";
-
   private final PlatformTenantMapper platformTenantMapper;
   private final ObjectMapper objectMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -73,8 +71,8 @@ public class PlatformTenantApplicationService {
     platformTenantMapper.insertBuyerAdminRole(
         buyerOwnerRoleId,
         request.tenantId(),
-        BUYER_OWNER_ROLE_NAME,
-        BUYER_OWNER_PERMISSIONS);
+        PlatformBuyerRoleDefaults.OWNER_ROLE_NAME,
+        PlatformBuyerRoleDefaults.OWNER_PERMISSIONS_JSON);
     platformTenantMapper.insertInitialBuyerAdminUser(
         buyerOwnerUserId,
         request.tenantId(),
