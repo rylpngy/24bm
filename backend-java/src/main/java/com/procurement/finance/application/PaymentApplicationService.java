@@ -12,6 +12,7 @@ import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
@@ -24,9 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PaymentApplicationService {
-  private static final String INVOICE_PAID_NOTIFICATION_TITLE = "发票已付款";
-  private static final String INVOICE_PARTIAL_PAID_NOTIFICATION_TITLE = "发票部分付款";
-
   private final InvoiceMapper invoiceMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
@@ -115,8 +113,8 @@ public class PaymentApplicationService {
         tenantId,
         invoice.supplierId(),
         InvoicePaymentStatus.PAID.equals(request.paymentStatus())
-            ? INVOICE_PAID_NOTIFICATION_TITLE
-            : INVOICE_PARTIAL_PAID_NOTIFICATION_TITLE,
+            ? NotificationTitle.INVOICE_PAID
+            : NotificationTitle.INVOICE_PARTIAL_PAID,
         "采购方已登记发票 " + invoice.invoiceNo() + " 的付款状态：" + request.paymentStatus() + "。");
     return toResponse(invoiceMapper.findByTenantAndId(tenantId, invoiceId));
   }

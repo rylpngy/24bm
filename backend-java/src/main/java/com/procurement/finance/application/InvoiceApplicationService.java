@@ -11,6 +11,7 @@ import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -23,8 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InvoiceApplicationService {
-  private static final String INVOICE_CREATED_NOTIFICATION_TITLE = "供应商已登记发票";
-
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final InvoiceMapper invoiceMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -110,7 +109,7 @@ public class InvoiceApplicationService {
         invoiceId);
     notificationApplicationService.notifyActiveTenantUsers(
         order.tenantId(),
-        INVOICE_CREATED_NOTIFICATION_TITLE,
+        NotificationTitle.INVOICE_CREATED,
         "采购订单 " + order.id() + " 已登记发票 " + request.invoiceNo() + "，金额：" + request.amount() + "。");
 
     return toResponse(invoiceMapper.findByTenantAndId(order.tenantId(), invoiceId));

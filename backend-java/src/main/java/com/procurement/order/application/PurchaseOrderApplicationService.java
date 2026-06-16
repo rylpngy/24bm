@@ -4,6 +4,7 @@ import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
+import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.domain.PurchaseOrder;
@@ -23,8 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseOrderApplicationService {
-  private static final String PURCHASE_ORDER_CONFIRMED_NOTIFICATION_TITLE = "采购订单已确认";
-
   private final AwardDecisionMapper awardDecisionMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -109,7 +108,7 @@ public class PurchaseOrderApplicationService {
         order.id());
     notificationApplicationService.notifyActiveTenantUsers(
         order.tenantId(),
-        PURCHASE_ORDER_CONFIRMED_NOTIFICATION_TITLE,
+        NotificationTitle.PURCHASE_ORDER_CONFIRMED,
         "采购订单 " + order.id() + " 已由供应商确认，进入待发货。");
 
     return toResponse(purchaseOrderMapper.findByTenantAndId(order.tenantId(), order.id()));

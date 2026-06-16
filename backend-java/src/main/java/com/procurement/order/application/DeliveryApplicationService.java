@@ -13,6 +13,7 @@ import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
@@ -22,8 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DeliveryApplicationService {
-  private static final String PURCHASE_ORDER_SHIPPED_NOTIFICATION_TITLE = "采购订单已发货";
-
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final DeliveryMapper deliveryMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -94,7 +93,7 @@ public class DeliveryApplicationService {
         order.id());
     notificationApplicationService.notifyActiveTenantUsers(
         order.tenantId(),
-        PURCHASE_ORDER_SHIPPED_NOTIFICATION_TITLE,
+        NotificationTitle.PURCHASE_ORDER_SHIPPED,
         "采购订单 " + order.id() + " 已发货，物流：" + request.carrier() + " " + request.trackingNo() + "。");
 
     return toResponse(deliveryMapper.findByTenantAndId(order.tenantId(), deliveryId));

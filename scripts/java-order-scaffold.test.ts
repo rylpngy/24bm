@@ -51,6 +51,7 @@ describe('Java purchase order scaffold', () => {
     const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const tenantFeatureKey = read('backend-java/src/main/java/com/procurement/tenant/domain/TenantFeatureKey.java');
     const auditAction = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderAuditAction.java');
+    const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantFeatureApplicationService');
@@ -62,6 +63,7 @@ describe('Java purchase order scaffold', () => {
     expect(service).toContain('PurchaseOrderAuditAction.CREATED');
     expect(service).toContain('PurchaseOrderAuditAction.CONFIRMED');
     expect(service).toContain('AuditTargetType.PURCHASE_ORDER');
+    expect(service).toContain('NotificationTitle.PURCHASE_ORDER_CONFIRMED');
     expect(service).toContain('requireSupplierConfirmation');
     expect(service).toContain('findApprovedForOrder');
     expect(service).toContain('findByAwardSource');
@@ -70,6 +72,7 @@ describe('Java purchase order scaffold', () => {
     expect(auditAction).toContain('CONFIRMED = "purchase_order.confirmed"');
     expect(auditTargetType).toContain('PURCHASE_ORDER = "purchase_order"');
     expect(tenantFeatureKey).toContain('ORDER = "order"');
+    expect(notificationTitle).toContain('PURCHASE_ORDER_CONFIRMED = "采购订单已确认"');
   });
 
   it('documents the purchase order Java API handoff', () => {

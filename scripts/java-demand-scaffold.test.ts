@@ -120,6 +120,7 @@ describe('Java purchase demand scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/demand/application/PurchaseDemandApplicationService.java');
     const approvalBusinessType = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalBusinessType.java');
     const auditAction = read('backend-java/src/main/java/com/procurement/demand/domain/PurchaseDemandAuditAction.java');
+    const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantAccessGuard.requireUserId');
@@ -134,10 +135,14 @@ describe('Java purchase demand scaffold', () => {
     expect(service).toContain('PurchaseDemandAuditAction.REJECTED');
     expect(service).toContain('reviewTargetStatus');
     expect(service).toContain('ApprovalBusinessType.PURCHASE_DEMAND');
+    expect(service).toContain('NotificationTitle.PURCHASE_DEMAND_PENDING_APPROVAL');
+    expect(service).toContain('NotificationTitle.PURCHASE_DEMAND_APPROVED');
+    expect(service).toContain('NotificationTitle.PURCHASE_DEMAND_REJECTED');
     expect(approvalBusinessType).toContain('PURCHASE_DEMAND = "purchase_demand"');
     expect(auditAction).toContain('CREATED = "purchase_demand.created"');
     expect(auditAction).toContain('APPROVED = "purchase_demand.approved"');
     expect(auditAction).toContain('REJECTED = "purchase_demand.rejected"');
+    expect(notificationTitle).toContain('PURCHASE_DEMAND_PENDING_APPROVAL = "采购需求待审批"');
     const transition = read('backend-java/src/main/java/com/procurement/demand/domain/PurchaseDemandApprovalStatusTransition.java');
     expect(transition).toContain('PurchaseDemandStatus.APPROVED');
     expect(transition).toContain('PurchaseDemandStatus.REJECTED');

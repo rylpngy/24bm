@@ -259,6 +259,7 @@ describe('Java backend scaffold', () => {
     const buyerSupplierAuditAction = read('backend-java/src/main/java/com/procurement/supplier/domain/BuyerSupplierAuditAction.java');
     const supplierProfileService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierProfileApplicationService.java');
     const supplierProfileAuditAction = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierProfileAuditAction.java');
+    const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
     const auditTests = read('backend-java/src/test/java/com/procurement/BuyerMasterDataAuditLogTests.java');
     const admissionTests = read('backend-java/src/test/java/com/procurement/BuyerSupplierAdmissionApprovalStateTransitionTests.java');
 
@@ -295,6 +296,8 @@ describe('Java backend scaffold', () => {
     expect(service).toContain('BuyerSupplierAuditAction.ADMISSION_REJECTED');
     expect(service).toContain('ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION');
     expect(service).toContain('AuditTargetType.BUYER_SUPPLIER_RELATION');
+    expect(service).toContain('NotificationTitle.SUPPLIER_ADMISSION_APPROVED');
+    expect(service).toContain('NotificationTitle.SUPPLIER_ADMISSION_REJECTED');
     expect(approvalBusinessType).toContain('BUYER_SUPPLIER_ADMISSION = "buyer_supplier_admission"');
     expect(auditTargetType).toContain('MATERIAL = "material"');
     expect(auditTargetType).toContain('BUYER_SUPPLIER_RELATION = "buyer_supplier_relation"');
@@ -315,6 +318,7 @@ describe('Java backend scaffold', () => {
     const manualTransition = read('backend-java/src/main/java/com/procurement/supplier/domain/BuyerSupplierManualStatusTransition.java');
     expect(manualTransition).toContain('BuyerSupplierRelationStatus.BLACKLISTED');
     expect(manualTransition).toContain('requireSupportedTarget');
+    expect(notificationTitle).toContain('SUPPLIER_ADMISSION_APPROVED = "供应商准入审批已通过"');
     expect(auditTests).toContain('buyerUserCreationRecordsAuditLog');
     expect(auditTests).toContain('materialCreationRecordsAuditLog');
     expect(auditTests).toContain('buyerSupplierRelationCreationRecordsAuditLog');

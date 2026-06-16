@@ -20,6 +20,7 @@ import com.procurement.demand.domain.PurchaseDemandStatus;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import java.util.List;
 import java.util.UUID;
@@ -28,10 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseDemandApplicationService {
-  private static final String PURCHASE_DEMAND_PENDING_NOTIFICATION_TITLE = "采购需求待审批";
-  private static final String PURCHASE_DEMAND_APPROVED_NOTIFICATION_TITLE = "采购需求审批已通过";
-  private static final String PURCHASE_DEMAND_REJECTED_NOTIFICATION_TITLE = "采购需求审批已驳回";
-
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
@@ -132,7 +129,7 @@ public class PurchaseDemandApplicationService {
         null);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
-        PURCHASE_DEMAND_PENDING_NOTIFICATION_TITLE,
+        NotificationTitle.PURCHASE_DEMAND_PENDING_APPROVAL,
         demand.title() + "已提交审批，请及时处理。");
 
     return new ApprovalTaskResponse(
@@ -184,8 +181,8 @@ public class PurchaseDemandApplicationService {
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         approved
-            ? PURCHASE_DEMAND_APPROVED_NOTIFICATION_TITLE
-            : PURCHASE_DEMAND_REJECTED_NOTIFICATION_TITLE,
+            ? NotificationTitle.PURCHASE_DEMAND_APPROVED
+            : NotificationTitle.PURCHASE_DEMAND_REJECTED,
         "采购需求已审批" + (approved ? "通过" : "驳回") + "。");
 
     ApprovalTask reviewedTask = approvalTaskMapper.findByTenantAndId(tenantId, approvalTask.id());

@@ -50,6 +50,7 @@ describe('Java RFQ award scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/sourcing/application/AwardApplicationService.java');
     const approvalBusinessType = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalBusinessType.java');
     const auditAction = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqAwardAuditAction.java');
+    const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('QuoteStatus.SUBMITTED');
@@ -61,12 +62,16 @@ describe('Java RFQ award scaffold', () => {
     expect(service).toContain('RfqAwardAuditAction.REJECTED');
     expect(service).toContain('ApprovalBusinessType.RFQ_AWARD');
     expect(service).toContain('ApprovalStatus.APPROVED');
+    expect(service).toContain('NotificationTitle.RFQ_AWARD_PENDING_APPROVAL');
+    expect(service).toContain('NotificationTitle.RFQ_AWARD_APPROVED');
+    expect(service).toContain('NotificationTitle.RFQ_AWARD_REJECTED');
     expect(service).toContain('findSubmittedQuoteForAward');
     expect(service).toContain('updateAward');
     expect(approvalBusinessType).toContain('RFQ_AWARD = "rfq_award"');
     expect(auditAction).toContain('SUBMITTED = "rfq_award.submitted"');
     expect(auditAction).toContain('APPROVED = "rfq_award.approved"');
     expect(auditAction).toContain('REJECTED = "rfq_award.rejected"');
+    expect(notificationTitle).toContain('RFQ_AWARD_PENDING_APPROVAL = "定标结果待审批"');
     const transition = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqAwardStatusTransition.java');
     expect(transition).toContain('RfqStatus.AWARDED');
   });

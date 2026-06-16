@@ -53,6 +53,7 @@ describe('Java finance invoice and payment scaffold', () => {
     const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const tenantFeatureKey = read('backend-java/src/main/java/com/procurement/tenant/domain/TenantFeatureKey.java');
     const auditService = read('backend-java/src/main/java/com/procurement/audit/application/AuditLogApplicationService.java');
+    const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
 
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
     expect(invoiceService).toContain('TenantFeatureApplicationService');
@@ -67,6 +68,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('InvoiceAuditAction.PAID');
     expect(invoiceService).toContain('InvoiceAuditAction.PARTIAL_PAID');
     expect(invoiceService).toContain('AuditTargetType.INVOICE');
+    expect(invoiceService).toContain('NotificationTitle.INVOICE_CREATED');
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
     expect(paymentService).toContain('BuyerSupplierRelationMapper');
     expect(paymentService).toContain('PurchaseOrderMapper');
@@ -85,6 +87,8 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('isIdempotentRegistration');
     expect(paymentService).toContain('requireTransition');
     expect(paymentService).toContain('notifyActiveSupplierUsers');
+    expect(paymentService).toContain('NotificationTitle.INVOICE_PAID');
+    expect(paymentService).toContain('NotificationTitle.INVOICE_PARTIAL_PAID');
     const paymentTransition = read('backend-java/src/main/java/com/procurement/finance/domain/InvoicePaymentStatusTransition.java');
     expect(paymentTransition).toContain('isIdempotentRegistration');
     expect(paymentTransition).toContain('Paid invoices cannot be changed');
@@ -94,6 +98,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(auditTargetType).toContain('INVOICE = "invoice"');
     expect(tenantFeatureKey).toContain('FINANCE = "finance"');
     expect(auditService).toContain('listCurrentTenantTargetActions');
+    expect(notificationTitle).toContain('INVOICE_CREATED = "供应商已登记发票"');
   });
 
   it('documents the finance Java API handoff', () => {

@@ -493,6 +493,47 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void applicationServicesUseDomainNotificationTitles() throws IOException {
+    Path notificationTitle = SOURCE_ROOT.resolve("notification/domain/NotificationTitle.java");
+
+    assertThat(notificationTitle).exists();
+    assertThat(Files.readString(notificationTitle))
+        .contains("PURCHASE_DEMAND_PENDING_APPROVAL = \"采购需求待审批\"")
+        .contains("PURCHASE_DEMAND_APPROVED = \"采购需求审批已通过\"")
+        .contains("PURCHASE_DEMAND_REJECTED = \"采购需求审批已驳回\"")
+        .contains("SUPPLIER_ADMISSION_APPROVED = \"供应商准入审批已通过\"")
+        .contains("SUPPLIER_ADMISSION_REJECTED = \"供应商准入审批已驳回\"")
+        .contains("RFQ_AWARD_PENDING_APPROVAL = \"定标结果待审批\"")
+        .contains("RFQ_AWARD_APPROVED = \"定标审批已通过\"")
+        .contains("RFQ_AWARD_REJECTED = \"定标审批已驳回\"")
+        .contains("PURCHASE_ORDER_CONFIRMED = \"采购订单已确认\"")
+        .contains("PURCHASE_ORDER_SHIPPED = \"采购订单已发货\"")
+        .contains("PURCHASE_ORDER_RECEIVED = \"采购订单已收货\"")
+        .contains("INVOICE_CREATED = \"供应商已登记发票\"")
+        .contains("INVOICE_PAID = \"发票已付款\"")
+        .contains("INVOICE_PARTIAL_PAID = \"发票部分付款\"");
+
+    Map.ofEntries(
+            Map.entry("demand/application/PurchaseDemandApplicationService.java", "NotificationTitle.PURCHASE_DEMAND_PENDING_APPROVAL"),
+            Map.entry("supplier/application/BuyerSupplierApplicationService.java", "NotificationTitle.SUPPLIER_ADMISSION_APPROVED"),
+            Map.entry("sourcing/application/AwardApplicationService.java", "NotificationTitle.RFQ_AWARD_PENDING_APPROVAL"),
+            Map.entry("order/application/PurchaseOrderApplicationService.java", "NotificationTitle.PURCHASE_ORDER_CONFIRMED"),
+            Map.entry("order/application/DeliveryApplicationService.java", "NotificationTitle.PURCHASE_ORDER_SHIPPED"),
+            Map.entry("order/application/ReceiptApplicationService.java", "NotificationTitle.PURCHASE_ORDER_RECEIVED"),
+            Map.entry("finance/application/InvoiceApplicationService.java", "NotificationTitle.INVOICE_CREATED"),
+            Map.entry("finance/application/PaymentApplicationService.java", "NotificationTitle.INVOICE_PAID"))
+        .forEach((sourcePath, expectedTitle) -> {
+          try {
+            assertThat(Files.readString(SOURCE_ROOT.resolve(sourcePath)))
+                .contains(expectedTitle)
+                .doesNotContain("NOTIFICATION_TITLE");
+          } catch (IOException exception) {
+            throw new IllegalStateException(exception);
+          }
+        });
+  }
+
+  @Test
   void platformEnterpriseApplicationServiceUsesDomainAuditActions() throws IOException {
     Path auditAction = SOURCE_ROOT.resolve("platform/domain/PlatformEnterpriseAuditAction.java");
     Path enterpriseService =

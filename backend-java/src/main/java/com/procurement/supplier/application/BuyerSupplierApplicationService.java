@@ -13,6 +13,7 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.supplier.api.ChangeBuyerSupplierPerformanceRequest;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
@@ -33,9 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BuyerSupplierApplicationService {
-  private static final String SUPPLIER_ADMISSION_APPROVED_NOTIFICATION_TITLE = "供应商准入审批已通过";
-  private static final String SUPPLIER_ADMISSION_REJECTED_NOTIFICATION_TITLE = "供应商准入审批已驳回";
-
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final ObjectMapper objectMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
@@ -175,8 +173,8 @@ public class BuyerSupplierApplicationService {
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         approved
-            ? SUPPLIER_ADMISSION_APPROVED_NOTIFICATION_TITLE
-            : SUPPLIER_ADMISSION_REJECTED_NOTIFICATION_TITLE,
+            ? NotificationTitle.SUPPLIER_ADMISSION_APPROVED
+            : NotificationTitle.SUPPLIER_ADMISSION_REJECTED,
         relation.supplierName() + "准入审批已" + (approved ? "通过" : "驳回") + "。");
 
     return toApprovalTaskResponse(approvalTaskMapper.findByTenantAndId(tenantId, approvalTask.id()));

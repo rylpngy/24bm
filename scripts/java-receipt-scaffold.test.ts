@@ -42,6 +42,7 @@ describe('Java buyer receipt scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/order/application/ReceiptApplicationService.java');
     const auditAction = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderAuditAction.java');
     const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
+    const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantAccessGuard.requireUserId');
@@ -53,6 +54,7 @@ describe('Java buyer receipt scaffold', () => {
     expect(service).toContain('PurchaseOrderStatusTransition');
     expect(service).toContain('PurchaseOrderAuditAction.RECEIVED');
     expect(service).toContain('AuditTargetType.PURCHASE_ORDER');
+    expect(service).toContain('NotificationTitle.PURCHASE_ORDER_RECEIVED');
     expect(service).toContain('requireReceipt');
     expect(service).toContain('countByTenantOrderAndStatus');
     expect(service).toContain('countByTenantAndOrder');
@@ -60,6 +62,7 @@ describe('Java buyer receipt scaffold', () => {
     expect(service).toContain('updateStatus');
     expect(auditAction).toContain('RECEIVED = "purchase_order.received"');
     expect(auditTargetType).toContain('PURCHASE_ORDER = "purchase_order"');
+    expect(notificationTitle).toContain('PURCHASE_ORDER_RECEIVED = "采购订单已收货"');
   });
 
   it('documents the buyer receipt Java API handoff', () => {

@@ -14,6 +14,7 @@ import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
@@ -23,8 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ReceiptApplicationService {
-  private static final String PURCHASE_ORDER_RECEIVED_NOTIFICATION_TITLE = "采购订单已收货";
-
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final DeliveryMapper deliveryMapper;
   private final ReceiptMapper receiptMapper;
@@ -94,7 +93,7 @@ public class ReceiptApplicationService {
         orderId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
-        PURCHASE_ORDER_RECEIVED_NOTIFICATION_TITLE,
+        NotificationTitle.PURCHASE_ORDER_RECEIVED,
         "采购订单 " + order.id() + " 已完成收货验收，结果：" + request.result() + "。");
 
     return toResponse(receiptMapper.findByTenantAndId(tenantId, receiptId));

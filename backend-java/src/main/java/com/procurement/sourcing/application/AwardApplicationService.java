@@ -21,16 +21,13 @@ import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AwardApplicationService {
-  private static final String RFQ_AWARD_PENDING_NOTIFICATION_TITLE = "定标结果待审批";
-  private static final String RFQ_AWARD_APPROVED_NOTIFICATION_TITLE = "定标审批已通过";
-  private static final String RFQ_AWARD_REJECTED_NOTIFICATION_TITLE = "定标审批已驳回";
-
   private final RfqMapper rfqMapper;
   private final QuoteMapper quoteMapper;
   private final AwardDecisionMapper awardDecisionMapper;
@@ -104,7 +101,7 @@ public class AwardApplicationService {
         awardId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
-        RFQ_AWARD_PENDING_NOTIFICATION_TITLE,
+        NotificationTitle.RFQ_AWARD_PENDING_APPROVAL,
         rfq.title() + "已提交定标审批，请及时处理。");
 
     return toResponse(awardDecisionMapper.findByTenantAndId(tenantId, awardId));
@@ -186,8 +183,8 @@ public class AwardApplicationService {
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         Boolean.TRUE.equals(request.approved())
-            ? RFQ_AWARD_APPROVED_NOTIFICATION_TITLE
-            : RFQ_AWARD_REJECTED_NOTIFICATION_TITLE,
+            ? NotificationTitle.RFQ_AWARD_APPROVED
+            : NotificationTitle.RFQ_AWARD_REJECTED,
         rfq.title() + "定标审批已" + (Boolean.TRUE.equals(request.approved()) ? "通过" : "驳回") + "。");
 
     return toResponse(awardDecisionMapper.findByTenantAndId(tenantId, request.awardId()));
