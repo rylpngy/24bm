@@ -2,6 +2,7 @@ package com.procurement.demand.application;
 
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
@@ -27,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseDemandApplicationService {
-  private static final String PURCHASE_DEMAND_BIZ_TYPE = "purchase_demand";
   private static final String PURCHASE_DEMAND_PENDING_NOTIFICATION_TITLE = "采购需求待审批";
   private static final String PURCHASE_DEMAND_APPROVED_NOTIFICATION_TITLE = "采购需求审批已通过";
   private static final String PURCHASE_DEMAND_REJECTED_NOTIFICATION_TITLE = "采购需求审批已驳回";
@@ -108,7 +108,7 @@ public class PurchaseDemandApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         PurchaseDemandAuditAction.CREATED,
-        PURCHASE_DEMAND_BIZ_TYPE,
+        ApprovalBusinessType.PURCHASE_DEMAND,
         demandId);
 
     return toResponse(purchaseDemandMapper.findByTenantAndId(tenantId, demandId));
@@ -127,7 +127,7 @@ public class PurchaseDemandApplicationService {
 
     ApprovalTask approvalTask = approvalTaskApplicationService.createPendingTask(
         tenantId,
-        PURCHASE_DEMAND_BIZ_TYPE,
+        ApprovalBusinessType.PURCHASE_DEMAND,
         demandId,
         null);
     notificationApplicationService.notifyActiveTenantUsers(
@@ -157,7 +157,7 @@ public class PurchaseDemandApplicationService {
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,
-        PURCHASE_DEMAND_BIZ_TYPE,
+        ApprovalBusinessType.PURCHASE_DEMAND,
         demandId,
         ApprovalStatus.PENDING);
     if (approvalTask == null) {
@@ -179,7 +179,7 @@ public class PurchaseDemandApplicationService {
     purchaseDemandMapper.updateStatus(tenantId, demandId, demandStatus);
     auditLogApplicationService.recordTenantAction(
         approved ? PurchaseDemandAuditAction.APPROVED : PurchaseDemandAuditAction.REJECTED,
-        PURCHASE_DEMAND_BIZ_TYPE,
+        ApprovalBusinessType.PURCHASE_DEMAND,
         demandId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,

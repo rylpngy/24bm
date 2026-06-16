@@ -118,6 +118,7 @@ describe('Java purchase demand scaffold', () => {
 
   it('keeps tenant isolation in the demand application service', () => {
     const service = read('backend-java/src/main/java/com/procurement/demand/application/PurchaseDemandApplicationService.java');
+    const approvalBusinessType = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalBusinessType.java');
     const auditAction = read('backend-java/src/main/java/com/procurement/demand/domain/PurchaseDemandAuditAction.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
@@ -132,7 +133,8 @@ describe('Java purchase demand scaffold', () => {
     expect(service).toContain('PurchaseDemandAuditAction.APPROVED');
     expect(service).toContain('PurchaseDemandAuditAction.REJECTED');
     expect(service).toContain('reviewTargetStatus');
-    expect(service).toContain('purchase_demand');
+    expect(service).toContain('ApprovalBusinessType.PURCHASE_DEMAND');
+    expect(approvalBusinessType).toContain('PURCHASE_DEMAND = "purchase_demand"');
     expect(auditAction).toContain('CREATED = "purchase_demand.created"');
     expect(auditAction).toContain('APPROVED = "purchase_demand.approved"');
     expect(auditAction).toContain('REJECTED = "purchase_demand.rejected"');

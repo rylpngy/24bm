@@ -149,9 +149,15 @@ class BackendModuleArchitectureTests {
   @Test
   void approvalApplicationServicesUseDomainApprovalStatus() throws IOException {
     Path status = SOURCE_ROOT.resolve("approval/domain/ApprovalStatus.java");
+    Path businessType = SOURCE_ROOT.resolve("approval/domain/ApprovalBusinessType.java");
     Path taskService = SOURCE_ROOT.resolve("approval/application/ApprovalTaskApplicationService.java");
     Path inboxService = SOURCE_ROOT.resolve("approval/application/ApprovalInboxApplicationService.java");
 
+    assertThat(businessType).exists();
+    assertThat(Files.readString(businessType))
+        .contains("PURCHASE_DEMAND = \"purchase_demand\"")
+        .contains("BUYER_SUPPLIER_ADMISSION = \"buyer_supplier_admission\"")
+        .contains("RFQ_AWARD = \"rfq_award\"");
     assertThat(Files.readString(status))
         .contains("PENDING = \"待审批\"")
         .contains("APPROVED = \"已通过\"")
@@ -161,6 +167,12 @@ class BackendModuleArchitectureTests {
         .doesNotContain("PENDING_APPROVAL_STATUS");
     assertThat(Files.readString(inboxService))
         .contains("ApprovalStatus.PENDING")
+        .contains("ApprovalBusinessType.PURCHASE_DEMAND")
+        .contains("ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION")
+        .contains("ApprovalBusinessType.RFQ_AWARD")
+        .doesNotContain("private static final String PURCHASE_DEMAND_BIZ_TYPE")
+        .doesNotContain("private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE")
+        .doesNotContain("private static final String RFQ_AWARD_BIZ_TYPE")
         .doesNotContain("PENDING_APPROVAL_STATUS");
   }
 
@@ -567,9 +579,11 @@ class BackendModuleArchitectureTests {
         .contains("RfqAwardAuditAction.SUBMITTED")
         .contains("RfqAwardAuditAction.APPROVED")
         .contains("RfqAwardAuditAction.REJECTED")
+        .contains("ApprovalBusinessType.RFQ_AWARD")
         .contains("rfqAwardStatusTransition.requireAwardSubmission")
         .contains("rfqAwardStatusTransition.requireAwardReview")
         .contains("rfqAwardStatusTransition.reviewTargetStatus")
+        .doesNotContain("private static final String RFQ_AWARD_BIZ_TYPE")
         .doesNotContain("private static final String RFQ_AWARD_SUBMITTED_ACTION")
         .doesNotContain("private static final String RFQ_AWARD_APPROVED_ACTION")
         .doesNotContain("private static final String RFQ_AWARD_REJECTED_ACTION")
@@ -670,6 +684,7 @@ class BackendModuleArchitectureTests {
             "PurchaseDemandAuditAction.CREATED",
             "PurchaseDemandAuditAction.APPROVED",
             "PurchaseDemandAuditAction.REJECTED",
+            "ApprovalBusinessType.PURCHASE_DEMAND",
             "ApprovalStatus.APPROVED",
             "ApprovalStatus.REJECTED"),
         List.of(
@@ -677,6 +692,7 @@ class BackendModuleArchitectureTests {
             "private static final String IN_APPROVAL_STATUS",
             "private static final String APPROVED_STATUS",
             "private static final String REJECTED_STATUS",
+            "private static final String PURCHASE_DEMAND_BIZ_TYPE",
             "private static final String PURCHASE_DEMAND_CREATED_ACTION",
             "private static final String PURCHASE_DEMAND_APPROVED_ACTION",
             "private static final String PURCHASE_DEMAND_REJECTED_ACTION"));
@@ -687,6 +703,7 @@ class BackendModuleArchitectureTests {
             "BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL",
             "BuyerSupplierAdmissionStatusTransition",
             "BuyerSupplierManualStatusTransition",
+            "ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION",
             "ApprovalStatus.APPROVED",
             "ApprovalStatus.REJECTED"),
         List.of(
@@ -695,6 +712,7 @@ class BackendModuleArchitectureTests {
             "private static final String ADMITTED_STATUS",
             "private static final String REJECTED_STATUS",
             "private static final String BLACKLISTED_STATUS",
+            "private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE",
             "private static final String APPROVED_STATUS"));
   }
 
@@ -735,9 +753,11 @@ class BackendModuleArchitectureTests {
         .contains("BuyerSupplierAuditAction.ADMISSION_SUBMITTED")
         .contains("BuyerSupplierAuditAction.ADMISSION_APPROVED")
         .contains("BuyerSupplierAuditAction.ADMISSION_REJECTED")
+        .contains("ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION")
         .contains("buyerSupplierAdmissionStatusTransition.requireAdmissionSubmission")
         .contains("buyerSupplierAdmissionStatusTransition.requireAdmissionReview")
         .contains("buyerSupplierAdmissionStatusTransition.reviewTargetStatus")
+        .doesNotContain("private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE")
         .doesNotContain("private static final String SUPPLIER_RELATION_CREATED_ACTION")
         .doesNotContain("private static final String SUPPLIER_ADMISSION_SUBMITTED_ACTION")
         .doesNotContain("private static final String SUPPLIER_ADMISSION_APPROVED_ACTION")

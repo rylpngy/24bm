@@ -1,6 +1,7 @@
 package com.procurement.approval.application;
 
 import com.procurement.approval.api.PendingApprovalTaskResponse;
+import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
@@ -21,9 +22,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ApprovalInboxApplicationService {
-  private static final String PURCHASE_DEMAND_BIZ_TYPE = "purchase_demand";
-  private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE = "buyer_supplier_admission";
-  private static final String RFQ_AWARD_BIZ_TYPE = "rfq_award";
   private static final int RECENT_REVIEW_LIMIT = 10;
 
   private final ApprovalTaskMapper approvalTaskMapper;
@@ -86,18 +84,18 @@ public class ApprovalInboxApplicationService {
 
   private ApprovalTaskSummary summaryFor(ApprovalTask task) {
     return switch (task.bizType()) {
-      case PURCHASE_DEMAND_BIZ_TYPE -> purchaseDemandSummary(task);
-      case BUYER_SUPPLIER_ADMISSION_BIZ_TYPE -> buyerSupplierAdmissionSummary(task);
-      case RFQ_AWARD_BIZ_TYPE -> rfqAwardSummary(task);
+      case ApprovalBusinessType.PURCHASE_DEMAND -> purchaseDemandSummary(task);
+      case ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION -> buyerSupplierAdmissionSummary(task);
+      case ApprovalBusinessType.RFQ_AWARD -> rfqAwardSummary(task);
       default -> ApprovalTaskSummary.empty();
     };
   }
 
   private Integer priorityFor(String bizType) {
     return switch (bizType) {
-      case RFQ_AWARD_BIZ_TYPE -> 90;
-      case BUYER_SUPPLIER_ADMISSION_BIZ_TYPE -> 80;
-      case PURCHASE_DEMAND_BIZ_TYPE -> 70;
+      case ApprovalBusinessType.RFQ_AWARD -> 90;
+      case ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION -> 80;
+      case ApprovalBusinessType.PURCHASE_DEMAND -> 70;
       default -> 50;
     };
   }

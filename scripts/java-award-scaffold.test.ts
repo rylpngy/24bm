@@ -48,6 +48,7 @@ describe('Java RFQ award scaffold', () => {
 
   it('keeps award creation isolated to buyer tenant and submitted quote rules', () => {
     const service = read('backend-java/src/main/java/com/procurement/sourcing/application/AwardApplicationService.java');
+    const approvalBusinessType = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalBusinessType.java');
     const auditAction = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqAwardAuditAction.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
@@ -58,9 +59,11 @@ describe('Java RFQ award scaffold', () => {
     expect(service).toContain('RfqAwardAuditAction.SUBMITTED');
     expect(service).toContain('RfqAwardAuditAction.APPROVED');
     expect(service).toContain('RfqAwardAuditAction.REJECTED');
+    expect(service).toContain('ApprovalBusinessType.RFQ_AWARD');
     expect(service).toContain('ApprovalStatus.APPROVED');
     expect(service).toContain('findSubmittedQuoteForAward');
     expect(service).toContain('updateAward');
+    expect(approvalBusinessType).toContain('RFQ_AWARD = "rfq_award"');
     expect(auditAction).toContain('SUBMITTED = "rfq_award.submitted"');
     expect(auditAction).toContain('APPROVED = "rfq_award.approved"');
     expect(auditAction).toContain('REJECTED = "rfq_award.rejected"');

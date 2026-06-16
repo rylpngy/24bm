@@ -2,6 +2,7 @@ package com.procurement.sourcing.application;
 
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
@@ -26,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AwardApplicationService {
-  private static final String RFQ_AWARD_BIZ_TYPE = "rfq_award";
   private static final String RFQ_AWARD_PENDING_NOTIFICATION_TITLE = "定标结果待审批";
   private static final String RFQ_AWARD_APPROVED_NOTIFICATION_TITLE = "定标审批已通过";
   private static final String RFQ_AWARD_REJECTED_NOTIFICATION_TITLE = "定标审批已驳回";
@@ -95,10 +95,13 @@ public class AwardApplicationService {
 
     approvalTaskApplicationService.createPendingTask(
         tenantId,
-        RFQ_AWARD_BIZ_TYPE,
+        ApprovalBusinessType.RFQ_AWARD,
         awardId,
         null);
-    auditLogApplicationService.recordTenantAction(RfqAwardAuditAction.SUBMITTED, RFQ_AWARD_BIZ_TYPE, awardId);
+    auditLogApplicationService.recordTenantAction(
+        RfqAwardAuditAction.SUBMITTED,
+        ApprovalBusinessType.RFQ_AWARD,
+        awardId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         RFQ_AWARD_PENDING_NOTIFICATION_TITLE,
@@ -127,7 +130,7 @@ public class AwardApplicationService {
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,
-        RFQ_AWARD_BIZ_TYPE,
+        ApprovalBusinessType.RFQ_AWARD,
         request.awardId(),
         ApprovalStatus.PENDING);
     if (approvalTask == null) {
@@ -178,7 +181,7 @@ public class AwardApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         Boolean.TRUE.equals(request.approved()) ? RfqAwardAuditAction.APPROVED : RfqAwardAuditAction.REJECTED,
-        RFQ_AWARD_BIZ_TYPE,
+        ApprovalBusinessType.RFQ_AWARD,
         request.awardId());
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,

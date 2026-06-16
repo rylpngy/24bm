@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
@@ -31,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BuyerSupplierApplicationService {
-  private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE = "buyer_supplier_admission";
   private static final String BUYER_SUPPLIER_RELATION_TARGET_TYPE = "buyer_supplier_relation";
   private static final String SUPPLIER_ADMISSION_APPROVED_NOTIFICATION_TITLE = "供应商准入审批已通过";
   private static final String SUPPLIER_ADMISSION_REJECTED_NOTIFICATION_TITLE = "供应商准入审批已驳回";
@@ -120,7 +120,7 @@ public class BuyerSupplierApplicationService {
 
     ApprovalTask approvalTask = approvalTaskApplicationService.createPendingTask(
         tenantId,
-        BUYER_SUPPLIER_ADMISSION_BIZ_TYPE,
+        ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,
         relationId,
         null);
     auditLogApplicationService.recordTenantAction(
@@ -140,7 +140,7 @@ public class BuyerSupplierApplicationService {
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,
-        BUYER_SUPPLIER_ADMISSION_BIZ_TYPE,
+        ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,
         relationId,
         ApprovalStatus.PENDING);
     if (approvalTask == null) {
