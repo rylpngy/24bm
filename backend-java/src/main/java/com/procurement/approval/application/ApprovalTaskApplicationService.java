@@ -3,6 +3,7 @@ package com.procurement.approval.application;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.domain.ApprovalTemplate;
+import com.procurement.approval.domain.ApprovalTemplateCode;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
@@ -45,12 +46,7 @@ public class ApprovalTaskApplicationService {
   }
 
   public ApprovalTemplate resolveTemplate(String tenantId, String bizType) {
-    String expectedTemplateCode = switch (bizType) {
-      case "purchase_demand" -> "TPL_PURCHASE_DEMAND";
-      case "buyer_supplier_admission" -> "TPL_SUPPLIER_ADMISSION";
-      case "rfq_award" -> "TPL_RFQ_AWARD";
-      default -> throw new IllegalArgumentException("Unsupported approval biz type: " + bizType);
-    };
+    String expectedTemplateCode = ApprovalTemplateCode.requireByBusinessType(bizType);
     ApprovalTemplate template = approvalTemplateMapper.findActiveByTenantAndBizType(tenantId, bizType);
     if (template == null) {
       throw new IllegalStateException("Active approval template not found: " + expectedTemplateCode);

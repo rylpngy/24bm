@@ -150,6 +150,7 @@ class BackendModuleArchitectureTests {
   void approvalApplicationServicesUseDomainApprovalStatus() throws IOException {
     Path status = SOURCE_ROOT.resolve("approval/domain/ApprovalStatus.java");
     Path businessType = SOURCE_ROOT.resolve("approval/domain/ApprovalBusinessType.java");
+    Path templateCode = SOURCE_ROOT.resolve("approval/domain/ApprovalTemplateCode.java");
     Path taskService = SOURCE_ROOT.resolve("approval/application/ApprovalTaskApplicationService.java");
     Path inboxService = SOURCE_ROOT.resolve("approval/application/ApprovalInboxApplicationService.java");
 
@@ -162,9 +163,25 @@ class BackendModuleArchitectureTests {
         .contains("PENDING = \"待审批\"")
         .contains("APPROVED = \"已通过\"")
         .contains("REJECTED = \"已驳回\"");
+    assertThat(templateCode).exists();
+    assertThat(Files.readString(templateCode))
+        .contains("PURCHASE_DEMAND = \"TPL_PURCHASE_DEMAND\"")
+        .contains("SUPPLIER_ADMISSION = \"TPL_SUPPLIER_ADMISSION\"")
+        .contains("RFQ_AWARD = \"TPL_RFQ_AWARD\"")
+        .contains("ApprovalBusinessType.PURCHASE_DEMAND")
+        .contains("ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION")
+        .contains("ApprovalBusinessType.RFQ_AWARD")
+        .contains("Unsupported approval biz type");
     assertThat(Files.readString(taskService))
         .contains("ApprovalStatus.PENDING")
-        .doesNotContain("PENDING_APPROVAL_STATUS");
+        .contains("ApprovalTemplateCode.requireByBusinessType")
+        .doesNotContain("PENDING_APPROVAL_STATUS")
+        .doesNotContain("\"TPL_PURCHASE_DEMAND\"")
+        .doesNotContain("\"TPL_SUPPLIER_ADMISSION\"")
+        .doesNotContain("\"TPL_RFQ_AWARD\"")
+        .doesNotContain("case \"purchase_demand\"")
+        .doesNotContain("case \"buyer_supplier_admission\"")
+        .doesNotContain("case \"rfq_award\"");
     assertThat(Files.readString(inboxService))
         .contains("ApprovalStatus.PENDING")
         .contains("ApprovalBusinessType.PURCHASE_DEMAND")
@@ -451,6 +468,9 @@ class BackendModuleArchitectureTests {
     assertThat(defaultApprovalTemplate).exists();
     assertThat(Files.readString(defaultApprovalTemplate))
         .contains("BUYER_TEMPLATES")
+        .contains("ApprovalTemplateCode.PURCHASE_DEMAND")
+        .contains("ApprovalTemplateCode.SUPPLIER_ADMISSION")
+        .contains("ApprovalTemplateCode.RFQ_AWARD")
         .contains("ApprovalBusinessType.PURCHASE_DEMAND")
         .contains("ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION")
         .contains("ApprovalBusinessType.RFQ_AWARD")

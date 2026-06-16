@@ -395,7 +395,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - 分级和授权品类维护始终按当前采购方 `tenantId` 过滤关系，只更新 `level` 和 `categories`，不改变准入状态。
 - 绩效评分维护始终按当前采购方 `tenantId` 过滤关系，只更新 `performance_score`，评分范围为 `0` 到 `100`。
 
-后端通过 `ApprovalTaskApplicationService` 统一从当前租户 `approval_templates` 表解析 active 审批模板并创建待审批任务，初始状态统一使用 `ApprovalStatus.PENDING`，当前对应状态值 `待审批`。当前默认审批人按模板配置的 `default_approver_role_id`，从当前租户 active 用户的 `user_roles` 关系中解析；后续可替换为组织角色或可配置审批流。采购需求提交、供应商准入提交和定标提交只负责各自业务状态流转、审计和通知，不再直接写入 `approval_tasks`。审批业务类型统一由 `ApprovalBusinessType` 定义，当前覆盖 `purchase_demand`、`buyer_supplier_admission` 和 `rfq_award`。
+后端通过 `ApprovalTaskApplicationService` 统一从当前租户 `approval_templates` 表解析 active 审批模板并创建待审批任务，初始状态统一使用 `ApprovalStatus.PENDING`，当前对应状态值 `待审批`。当前默认审批人按模板配置的 `default_approver_role_id`，从当前租户 active 用户的 `user_roles` 关系中解析；后续可替换为组织角色或可配置审批流。采购需求提交、供应商准入提交和定标提交只负责各自业务状态流转、审计和通知，不再直接写入 `approval_tasks`。审批业务类型统一由 `ApprovalBusinessType` 定义，当前覆盖 `purchase_demand`、`buyer_supplier_admission` 和 `rfq_award`；固定审批模板 code 与业务类型映射统一由 `ApprovalTemplateCode` 定义。
 
 `ApprovalTemplateApplicationService` 从当前租户 `approval_templates` 表读取模板和状态，MVP seed 先内置 `TPL_PURCHASE_DEMAND`、`TPL_SUPPLIER_ADMISSION`、`TPL_RFQ_AWARD` 三类模板。租户管理员可更新模板默认审批角色和 `active`/`inactive` 状态，模板状态目标规则由 `ApprovalTemplateStatusTransition` 承接，服务端校验角色必须属于当前采购方租户，并记录 `approval_template.config_updated` 审计日志，为后续审批流可视化配置预留 API 边界。
 

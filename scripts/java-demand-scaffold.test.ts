@@ -38,6 +38,7 @@ describe('Java purchase demand scaffold', () => {
     const approvalMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTaskMapper.java');
     const approvalService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java');
     const approvalStatus = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalStatus.java');
+    const approvalTemplateCode = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalTemplateCode.java');
     const approvalTemplateService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTemplateApplicationService.java');
     const approvalTemplateStatus = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalTemplateStatus.java');
     const approvalTemplateStatusTransition = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalTemplateStatusTransition.java');
@@ -60,15 +61,16 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalService).toContain('createPendingTask');
     expect(approvalService).toContain('resolveTemplate');
     expect(approvalService).toContain('ApprovalStatus.PENDING');
+    expect(approvalService).toContain('ApprovalTemplateCode.requireByBusinessType');
     expect(approvalService).not.toContain('PENDING_APPROVAL_STATUS');
     expect(approvalStatus).toContain('PENDING = "待审批"');
-    expect(approvalService).toContain('TPL_PURCHASE_DEMAND');
-    expect(approvalService).toContain('TPL_SUPPLIER_ADMISSION');
-    expect(approvalService).toContain('TPL_RFQ_AWARD');
+    expect(approvalTemplateCode).toContain('PURCHASE_DEMAND = "TPL_PURCHASE_DEMAND"');
+    expect(approvalTemplateCode).toContain('SUPPLIER_ADMISSION = "TPL_SUPPLIER_ADMISSION"');
+    expect(approvalTemplateCode).toContain('RFQ_AWARD = "TPL_RFQ_AWARD"');
     expect(approvalService).not.toContain('DEFAULT_BUYER_APPROVER_ROLE_ID');
     expect(approvalService).toContain('findActiveByTenantAndBizType');
     expect(approvalService).toContain('findDefaultApproverId');
-    expect(approvalService).toContain('Unsupported approval biz type');
+    expect(approvalTemplateCode).toContain('Unsupported approval biz type');
     expect(approvalTemplateService).toContain('listTemplates');
     expect(approvalTemplateService).toContain('updateTemplate');
     expect(approvalTemplateService).toContain('approval_template.config_updated');

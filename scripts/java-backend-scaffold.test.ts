@@ -395,6 +395,9 @@ describe('Java backend scaffold', () => {
     expect(buyerRoleDefaults).toContain('OWNER_ROLE_NAME = "采购管理员"');
     expect(buyerRoleDefaults).toContain('OWNER_PERMISSIONS_JSON = "[\\"buyer:*\\"]"');
     expect(defaultApprovalTemplate).toContain('BUYER_TEMPLATES');
+    expect(defaultApprovalTemplate).toContain('ApprovalTemplateCode.PURCHASE_DEMAND');
+    expect(defaultApprovalTemplate).toContain('ApprovalTemplateCode.SUPPLIER_ADMISSION');
+    expect(defaultApprovalTemplate).toContain('ApprovalTemplateCode.RFQ_AWARD');
     expect(defaultApprovalTemplate).toContain('ApprovalBusinessType.PURCHASE_DEMAND');
     expect(defaultApprovalTemplate).toContain('ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION');
     expect(defaultApprovalTemplate).toContain('ApprovalBusinessType.RFQ_AWARD');
