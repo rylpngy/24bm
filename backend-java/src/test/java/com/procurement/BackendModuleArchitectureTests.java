@@ -703,6 +703,7 @@ class BackendModuleArchitectureTests {
         SOURCE_ROOT.resolve("finance/application/PaymentApplicationService.java"),
         List.of(
             "InvoiceAmountPolicy.requirePaymentAmountStillMatchesOrder",
+            "BuyerSupplierPaymentPolicy.requirePayable",
             "InvoicePaymentStatus.PAID",
             "InvoicePaymentStatusTransition",
             "InvoiceAuditAction.PAID",
@@ -716,7 +717,8 @@ class BackendModuleArchitectureTests {
             "private static final String INVOICE_PARTIAL_PAID_ACTION",
             "private static final String BLACKLISTED_SUPPLIER_STATUS",
             "invoice.amount().compareTo",
-            "Invoice amount no longer matches purchase order amount"));
+            "Invoice amount no longer matches purchase order amount",
+            "Blacklisted supplier cannot be paid"));
     Path invoiceAmountPolicy = SOURCE_ROOT.resolve("finance/domain/InvoiceAmountPolicy.java");
     assertThat(invoiceAmountPolicy).exists();
     assertThat(Files.readString(invoiceAmountPolicy))
@@ -733,6 +735,11 @@ class BackendModuleArchitectureTests {
         .contains("Purchase order already has a delivery")
         .contains("Purchase order already has a receipt")
         .contains("Purchase order already has an invoice");
+    Path paymentPolicy = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierPaymentPolicy.java");
+    assertThat(paymentPolicy).exists();
+    assertThat(Files.readString(paymentPolicy))
+        .contains("requirePayable")
+        .contains("Blacklisted supplier cannot be paid");
   }
 
   @Test

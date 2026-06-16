@@ -56,6 +56,7 @@ describe('Java finance invoice and payment scaffold', () => {
     const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
     const invoiceAmountPolicy = read('backend-java/src/main/java/com/procurement/finance/domain/InvoiceAmountPolicy.java');
     const documentUniquenessPolicy = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderDocumentUniquenessPolicy.java');
+    const paymentPolicy = read('backend-java/src/main/java/com/procurement/supplier/domain/BuyerSupplierPaymentPolicy.java');
 
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
     expect(invoiceService).toContain('TenantFeatureApplicationService');
@@ -77,6 +78,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('PurchaseOrderMapper');
     expect(paymentService).toContain('requireEnabled(tenantId, TenantFeatureKey.FINANCE)');
     expect(paymentService).toContain('BuyerSupplierRelationStatus.BLACKLISTED');
+    expect(paymentService).toContain('BuyerSupplierPaymentPolicy.requirePayable');
     expect(paymentService).toContain('requireInvoiceAmountMatchesOrder');
     expect(paymentService).toContain('InvoiceAmountPolicy.requirePaymentAmountStillMatchesOrder');
     expect(paymentService).toContain('countByTenantSupplierAndStatus');
@@ -106,6 +108,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceAmountPolicy).toContain('Invoice amount must equal purchase order amount');
     expect(invoiceAmountPolicy).toContain('Invoice amount no longer matches purchase order amount');
     expect(documentUniquenessPolicy).toContain('Purchase order already has an invoice');
+    expect(paymentPolicy).toContain('Blacklisted supplier cannot be paid');
   });
 
   it('documents the finance Java API handoff', () => {

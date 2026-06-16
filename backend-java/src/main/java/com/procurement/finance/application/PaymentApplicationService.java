@@ -16,6 +16,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.supplier.domain.BuyerSupplierPaymentPolicy;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
@@ -134,13 +135,12 @@ public class PaymentApplicationService {
   }
 
   private void requireSupplierPayable(String tenantId, Invoice invoice) {
-    int blacklistedRelations = buyerSupplierRelationMapper.countByTenantSupplierAndStatus(
-        tenantId,
-        invoice.supplierId(),
-        BuyerSupplierRelationStatus.BLACKLISTED);
-    if (blacklistedRelations > 0) {
-      throw new IllegalStateException("Blacklisted supplier cannot be paid: " + invoice.supplierId());
-    }
+    BuyerSupplierPaymentPolicy.requirePayable(
+        buyerSupplierRelationMapper.countByTenantSupplierAndStatus(
+            tenantId,
+            invoice.supplierId(),
+            BuyerSupplierRelationStatus.BLACKLISTED),
+        invoice.supplierId());
   }
 
   private void requireInvoiceAmountMatchesOrder(String tenantId, Invoice invoice) {
