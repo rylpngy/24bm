@@ -55,7 +55,7 @@ Controller
 
 定标审批状态流转由 `RfqAwardStatusTransition` 承接，集中判断 `报价中` 才能提交定标、`定标审批中` 才能复核，以及审批通过落到 `已定标`、驳回回到 `报价中`。`AwardApplicationService` 保留报价有效性、审批任务、定标记录、原子更新、审计和通知编排。
 
-RFQ 寻源准入状态由 `RfqSourcingStatusTransition` 承接，集中判断采购需求必须 `已通过` 才能创建 RFQ、RFQ 必须 `报价中` 才能接收供应商报价。供应商重复报价规则由 `RfqQuoteSubmissionPolicy` 承接，应用服务只负责查询当前 RFQ 下该供应商已提交报价数量。`RfqApplicationService` 和 `QuoteApplicationService` 保留租户/供应商上下文、功能开关、供应商准入、邀请关系和单据写入编排。
+RFQ 寻源准入状态由 `RfqSourcingStatusTransition` 承接，集中判断采购需求必须 `已通过` 才能创建 RFQ、RFQ 必须 `报价中` 才能接收供应商报价。采购需求重复关联 RFQ 规则由 `RfqDemandLinkPolicy` 承接，供应商重复报价规则由 `RfqQuoteSubmissionPolicy` 承接，应用服务只负责查询当前需求或当前供应商已有业务单据数量。`RfqApplicationService` 和 `QuoteApplicationService` 保留租户/供应商上下文、功能开关、供应商准入、邀请关系和单据写入编排。
 
 采购需求审批状态流转由 `PurchaseDemandApprovalStatusTransition` 承接，集中判断 `草稿` 才能提交审批、`审批中` 才能复核，以及审批通过落到 `已通过`、驳回落到 `已驳回`。`PurchaseDemandApplicationService` 保留部门校验、明细写入、审批任务、审计和通知编排。
 

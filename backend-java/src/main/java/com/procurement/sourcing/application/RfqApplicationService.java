@@ -6,6 +6,7 @@ import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqDemandLinkPolicy;
 import com.procurement.sourcing.domain.RfqInviteStatus;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.domain.RfqStatus;
@@ -95,9 +96,9 @@ public class RfqApplicationService {
         throw new IllegalArgumentException("Purchase demand not found in tenant scope: " + demandId);
       }
       rfqSourcingStatusTransition.requireApprovedDemandForRfq(demand.status(), demandId);
-      if (rfqDemandMapper.countByTenantAndDemand(tenantId, demandId) > 0) {
-        throw new IllegalStateException("Purchase demand already linked to an RFQ: " + demandId);
-      }
+      RfqDemandLinkPolicy.requireUnlinkedDemand(
+          rfqDemandMapper.countByTenantAndDemand(tenantId, demandId),
+          demandId);
     }
   }
 
