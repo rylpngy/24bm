@@ -43,6 +43,8 @@ describe('Java supplier workspace scaffold', () => {
     const supplierWorkspaceResponse = read('backend-java/src/main/java/com/procurement/supplier/api/SupplierWorkspaceResponse.java');
     const qualificationService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierQualificationApplicationService.java');
     const userService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierUserApplicationService.java');
+    const supplierUserStatus = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierUserStatus.java');
+    const supplierUserStatusTransition = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierUserStatusTransition.java');
     const quoteService = read('backend-java/src/main/java/com/procurement/sourcing/application/QuoteApplicationService.java');
     const orderService = read('backend-java/src/main/java/com/procurement/order/application/PurchaseOrderApplicationService.java');
     const invoiceService = read('backend-java/src/main/java/com/procurement/finance/application/InvoiceApplicationService.java');
@@ -59,6 +61,13 @@ describe('Java supplier workspace scaffold', () => {
     expect(userService).toContain('updatePasswordHash');
     expect(userService).toContain('updateStatus');
     expect(userService).toContain('listBySupplierFiltered');
+    expect(userService).toContain('SupplierUserStatusTransition');
+    expect(userService).toContain('supplierUserStatusTransition.requireSupportedTarget');
+    expect(supplierUserStatus).toContain('ACTIVE = "active"');
+    expect(supplierUserStatus).toContain('INACTIVE = "inactive"');
+    expect(supplierUserStatusTransition).toContain('Unsupported supplier user status');
+    expect(supplierUserStatusTransition).toContain('SupplierUserStatus.ACTIVE');
+    expect(supplierUserStatusTransition).toContain('SupplierUserStatus.INACTIVE');
     expect(quoteService).toContain('listSupplierRfqs');
     expect(quoteService).toContain('listBySupplierInviteFiltered');
     expect(quoteService).toContain('listSupplierQuotes');

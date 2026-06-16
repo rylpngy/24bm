@@ -7,6 +7,7 @@ import com.procurement.supplier.api.CreateSupplierUserRequest;
 import com.procurement.supplier.api.ResetSupplierUserPasswordRequest;
 import com.procurement.supplier.api.SupplierUserResponse;
 import com.procurement.supplier.domain.SupplierUser;
+import com.procurement.supplier.domain.SupplierUserStatusTransition;
 import com.procurement.supplier.infrastructure.SupplierUserMapper;
 import java.util.List;
 import java.util.UUID;
@@ -16,8 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SupplierUserApplicationService {
-  private static final String ACTIVE_STATUS = "active";
-  private static final String INACTIVE_STATUS = "inactive";
   private static final String SUPPLIER_USER_CREATED_ACTION = "supplier_user.created";
   private static final String SUPPLIER_USER_PASSWORD_RESET_ACTION = "supplier_user.password_reset";
   private static final String SUPPLIER_USER_STATUS_CHANGED_ACTION = "supplier_user.status_changed";
@@ -26,14 +25,17 @@ public class SupplierUserApplicationService {
   private final SupplierUserMapper supplierUserMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final PasswordEncoder passwordEncoder;
+  private final SupplierUserStatusTransition supplierUserStatusTransition;
 
   public SupplierUserApplicationService(
       SupplierUserMapper supplierUserMapper,
       AuditLogApplicationService auditLogApplicationService,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder,
+      SupplierUserStatusTransition supplierUserStatusTransition) {
     this.supplierUserMapper = supplierUserMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.passwordEncoder = passwordEncoder;
+    this.supplierUserStatusTransition = supplierUserStatusTransition;
   }
 
   public List<SupplierUserResponse> listCurrentSupplierUsers() {
@@ -57,7 +59,7 @@ public class SupplierUserApplicationService {
   @Transactional
   public SupplierUserResponse createCurrentSupplierUser(CreateSupplierUserRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier user APIs");
-    requireSupportedStatus(request.status());
+    supplierUserStatusTransition.requireSupportedTarget(request.status());
     String supplierRoleId = requireDefaultSupplierRoleId(supplierId);
     String userId = "user-" + UUID.randomUUID();
     supplierUserMapper.insert(
@@ -97,7 +99,7 @@ public class SupplierUserApplicationService {
   public SupplierUserResponse changeUserStatus(String userId, ChangeSupplierUserStatusRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier user APIs");
     requireSupplierUser(supplierId, userId);
-    requireSupportedStatus(request.status());
+    supplierUserStatusTransition.requireSupportedTarget(request.status());
     supplierUserMapper.updateStatus(supplierId, userId, request.status());
     auditLogApplicationService.recordTenantAction(
         null,
@@ -113,12 +115,6 @@ public class SupplierUserApplicationService {
       throw new IllegalStateException("Default supplier role not found.");
     }
     return roleId;
-  }
-
-  private void requireSupportedStatus(String status) {
-    if (!ACTIVE_STATUS.equals(status) && !INACTIVE_STATUS.equals(status)) {
-      throw new IllegalArgumentException("Unsupported supplier user status: " + status);
-    }
   }
 
   private String blankToNull(String value) {

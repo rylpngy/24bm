@@ -10,6 +10,7 @@ import com.procurement.supplier.api.CreateSupplierUserRequest;
 import com.procurement.supplier.api.ResetSupplierUserPasswordRequest;
 import com.procurement.supplier.application.SupplierUserApplicationService;
 import com.procurement.supplier.domain.SupplierUser;
+import com.procurement.supplier.domain.SupplierUserStatusTransition;
 import com.procurement.supplier.infrastructure.SupplierUserMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -23,7 +24,11 @@ class SupplierUserLifecycleTests {
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
   private final SupplierUserApplicationService supplierUserApplicationService =
-      new SupplierUserApplicationService(supplierUserMapper, auditLogApplicationService, passwordEncoder);
+      new SupplierUserApplicationService(
+          supplierUserMapper,
+          auditLogApplicationService,
+          passwordEncoder,
+          new SupplierUserStatusTransition());
 
   @AfterEach
   void clearTenantContext() {
