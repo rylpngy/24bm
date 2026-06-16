@@ -46,8 +46,8 @@ describe('Java buyer receipt scaffold', () => {
     expect(service).toContain('DeliveryMapper');
     expect(service).toContain('listCurrentTenantReceipts');
     expect(service).toContain('listByTenantFiltered');
-    expect(service).toContain('已发货');
-    expect(service).toContain('已收货');
+    expect(service).toContain('PurchaseOrderStatus.SHIPPED');
+    expect(service).toContain('PurchaseOrderStatus.RECEIVED');
     expect(service).toContain('countByTenantOrderAndStatus');
     expect(service).toContain('countByTenantAndOrder');
     expect(service).toContain('findByTenantAndId');

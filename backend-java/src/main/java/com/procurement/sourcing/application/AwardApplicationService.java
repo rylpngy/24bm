@@ -11,6 +11,7 @@ import com.procurement.sourcing.api.ReviewAwardApprovalRequest;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
@@ -21,10 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AwardApplicationService {
-  private static final String QUOTING_RFQ_STATUS = "报价中";
-  private static final String AWARD_APPROVAL_RFQ_STATUS = "定标审批中";
   private static final String SUBMITTED_QUOTE_STATUS = "已提交";
-  private static final String AWARDED_RFQ_STATUS = "已定标";
   private static final String APPROVED_STATUS = "已通过";
   private static final String REJECTED_STATUS = "已驳回";
   private static final String RFQ_AWARD_BIZ_TYPE = "rfq_award";
@@ -67,7 +65,7 @@ public class AwardApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
-    if (!QUOTING_RFQ_STATUS.equals(rfq.status())) {
+    if (!RfqStatus.QUOTING.equals(rfq.status())) {
       throw new IllegalStateException("Only quoting RFQs can be awarded: " + rfqId);
     }
 
@@ -79,8 +77,8 @@ public class AwardApplicationService {
     int updated = rfqMapper.updateStatus(
         tenantId,
         rfqId,
-        QUOTING_RFQ_STATUS,
-        AWARD_APPROVAL_RFQ_STATUS);
+        RfqStatus.QUOTING,
+        RfqStatus.AWARD_APPROVAL);
     if (updated == 0) {
       throw new IllegalStateException("RFQ status changed before award approval could be submitted: " + rfqId);
     }
@@ -126,7 +124,7 @@ public class AwardApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
-    if (!AWARD_APPROVAL_RFQ_STATUS.equals(rfq.status())) {
+    if (!RfqStatus.AWARD_APPROVAL.equals(rfq.status())) {
       throw new IllegalStateException("Only RFQs in award approval can be reviewed: " + rfqId);
     }
 
@@ -163,8 +161,8 @@ public class AwardApplicationService {
       int rfqUpdated = rfqMapper.updateAward(
           tenantId,
           rfqId,
-          AWARD_APPROVAL_RFQ_STATUS,
-          AWARDED_RFQ_STATUS,
+          RfqStatus.AWARD_APPROVAL,
+          RfqStatus.AWARDED,
           awardDecision.supplierId());
       if (rfqUpdated == 0) {
         throw new IllegalStateException("RFQ status changed before award could be finalized: " + rfqId);
@@ -173,8 +171,8 @@ public class AwardApplicationService {
       int rfqUpdated = rfqMapper.updateStatus(
           tenantId,
           rfqId,
-          AWARD_APPROVAL_RFQ_STATUS,
-          QUOTING_RFQ_STATUS);
+          RfqStatus.AWARD_APPROVAL,
+          RfqStatus.QUOTING);
       if (rfqUpdated == 0) {
         throw new IllegalStateException("RFQ status changed before award rejection could be applied: " + rfqId);
       }

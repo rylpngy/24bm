@@ -47,7 +47,7 @@ Controller
 
 供应商工作台采用同样边界：`SupplierWorkspaceApplicationService` 只聚合供应商档案、商机、报价、订单、发票和通知；报价、确认订单、发货和应收等展示型待办规则由 `SupplierTodoSummaryAssembler` 承接。
 
-工作台待办汇总使用业务域状态常量：RFQ 状态在 `RfqStatus`，采购订单状态在 `PurchaseOrderStatus`，发票付款状态在 `InvoicePaymentStatus`。后续状态机服务也应逐步迁移到这些常量，避免中文状态值散落在应用服务中。
+工作台待办汇总和已落地的 RFQ、订单、发票状态机服务使用业务域状态常量：RFQ 状态在 `RfqStatus`，采购订单状态在 `PurchaseOrderStatus`，发票付款状态在 `InvoicePaymentStatus`。后续新增状态流转时应优先扩展这些常量，避免中文状态值重新散落在应用服务中。
 
 ## 多租户策略
 

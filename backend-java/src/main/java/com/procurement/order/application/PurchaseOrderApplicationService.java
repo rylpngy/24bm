@@ -5,6 +5,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
@@ -18,8 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PurchaseOrderApplicationService {
   private static final String APPROVED_STATUS = "已通过";
-  private static final String PENDING_SUPPLIER_CONFIRM_STATUS = "待供应商确认";
-  private static final String READY_TO_SHIP_STATUS = "待发货";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_CREATED_ACTION = "purchase_order.created";
   private static final String PURCHASE_ORDER_CONFIRMED_ACTION = "purchase_order.confirmed";
@@ -89,7 +88,7 @@ public class PurchaseOrderApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
-    if (!PENDING_SUPPLIER_CONFIRM_STATUS.equals(order.status())) {
+    if (!PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION.equals(order.status())) {
       throw new IllegalStateException("Only pending supplier confirmation orders can be confirmed: " + orderId);
     }
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), ORDER_FEATURE);
@@ -97,8 +96,8 @@ public class PurchaseOrderApplicationService {
     int updated = purchaseOrderMapper.updateStatus(
         order.tenantId(),
         order.id(),
-        PENDING_SUPPLIER_CONFIRM_STATUS,
-        READY_TO_SHIP_STATUS);
+        PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
+        PurchaseOrderStatus.PENDING_SHIPMENT);
     if (updated == 0) {
       throw new IllegalStateException("Purchase order status changed before supplier confirmation could be recorded: " + orderId);
     }
@@ -136,7 +135,7 @@ public class PurchaseOrderApplicationService {
         award.rfqId(),
         award.supplierId(),
         award.amount(),
-        PENDING_SUPPLIER_CONFIRM_STATUS,
+        PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
         request.expectedReceiptDate());
     auditLogApplicationService.recordTenantAction(
         PURCHASE_ORDER_CREATED_ACTION,

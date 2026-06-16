@@ -51,7 +51,7 @@ describe('Java RFQ award scaffold', () => {
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('已提交');
-    expect(service).toContain('已定标');
+    expect(service).toContain('RfqStatus.AWARDED');
     expect(service).toContain('已通过');
     expect(service).toContain('findSubmittedQuoteForAward');
     expect(service).toContain('updateAward');

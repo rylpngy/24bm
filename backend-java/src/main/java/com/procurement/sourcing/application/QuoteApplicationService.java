@@ -6,6 +6,7 @@ import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.api.SubmitQuoteRequest;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
@@ -17,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class QuoteApplicationService {
-  private static final String QUOTING_STATUS = "报价中";
   private static final String SUBMITTED_STATUS = "已提交";
 
   private final RfqMapper rfqMapper;
@@ -72,7 +72,7 @@ public class QuoteApplicationService {
   public QuoteResponse submit(String rfqId, SubmitQuoteRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
     Rfq rfq = findRfqForInvitedSupplier(rfqId, supplierId);
-    if (!QUOTING_STATUS.equals(rfq.status())) {
+    if (!RfqStatus.QUOTING.equals(rfq.status())) {
       throw new IllegalStateException("RFQ is not open for quotes: " + rfqId);
     }
 

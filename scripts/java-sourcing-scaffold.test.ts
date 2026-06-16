@@ -54,7 +54,7 @@ describe('Java RFQ sourcing scaffold', () => {
     expect(service).toContain('requireEnabled(tenantId, RFQ_FEATURE)');
     expect(service).toContain('已通过');
     expect(service).toContain('已准入');
-    expect(service).toContain('报价中');
+    expect(service).toContain('RfqStatus.QUOTING');
   });
 
   it('documents the RFQ Java API handoff', () => {

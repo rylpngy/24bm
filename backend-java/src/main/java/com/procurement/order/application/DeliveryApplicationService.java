@@ -6,6 +6,7 @@ import com.procurement.order.api.CreateDeliveryRequest;
 import com.procurement.order.api.DeliveryResponse;
 import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -17,8 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DeliveryApplicationService {
-  private static final String READY_TO_SHIP_STATUS = "待发货";
-  private static final String SHIPPED_STATUS = "已发货";
   private static final String PURCHASE_ORDER_SHIPPED_ACTION = "purchase_order.shipped";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_SHIPPED_NOTIFICATION_TITLE = "采购订单已发货";
@@ -61,7 +60,7 @@ public class DeliveryApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
-    if (!READY_TO_SHIP_STATUS.equals(order.status())) {
+    if (!PurchaseOrderStatus.PENDING_SHIPMENT.equals(order.status())) {
       throw new IllegalStateException("Only ready-to-ship orders can be shipped: " + orderId);
     }
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), ORDER_FEATURE);
@@ -77,12 +76,12 @@ public class DeliveryApplicationService {
         supplierId,
         request.carrier(),
         request.trackingNo(),
-        SHIPPED_STATUS);
+        PurchaseOrderStatus.SHIPPED);
     int updated = purchaseOrderMapper.updateStatus(
         order.tenantId(),
         order.id(),
-        READY_TO_SHIP_STATUS,
-        SHIPPED_STATUS);
+        PurchaseOrderStatus.PENDING_SHIPMENT,
+        PurchaseOrderStatus.SHIPPED);
     if (updated == 0) {
       throw new IllegalStateException("Purchase order status changed before delivery could be recorded: " + orderId);
     }

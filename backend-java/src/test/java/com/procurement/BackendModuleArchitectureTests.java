@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -110,5 +111,78 @@ class BackendModuleArchitectureTests {
         .contains("InvoicePaymentStatus.PARTIAL_PAID")
         .doesNotContain("private static final String RFQ_QUOTING_STATUS")
         .doesNotContain("private static final String ORDER_PENDING_CONFIRMATION_STATUS");
+  }
+
+  @Test
+  void rfqOrderAndInvoiceApplicationServicesUseDomainStatusConstants() throws IOException {
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java"),
+        List.of("RfqStatus.QUOTING"),
+        List.of("private static final String QUOTING_STATUS"));
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("sourcing/application/AwardApplicationService.java"),
+        List.of("RfqStatus.QUOTING", "RfqStatus.AWARD_APPROVAL", "RfqStatus.AWARDED"),
+        List.of(
+            "private static final String QUOTING_RFQ_STATUS",
+            "private static final String AWARD_APPROVAL_RFQ_STATUS",
+            "private static final String AWARDED_RFQ_STATUS"));
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("sourcing/application/QuoteApplicationService.java"),
+        List.of("RfqStatus.QUOTING"),
+        List.of("private static final String QUOTING_STATUS"));
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("order/application/PurchaseOrderApplicationService.java"),
+        List.of(
+            "PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION",
+            "PurchaseOrderStatus.PENDING_SHIPMENT"),
+        List.of(
+            "private static final String PENDING_SUPPLIER_CONFIRM_STATUS",
+            "private static final String READY_TO_SHIP_STATUS"));
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("order/application/DeliveryApplicationService.java"),
+        List.of("PurchaseOrderStatus.PENDING_SHIPMENT", "PurchaseOrderStatus.SHIPPED"),
+        List.of(
+            "private static final String READY_TO_SHIP_STATUS",
+            "private static final String SHIPPED_STATUS"));
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("order/application/ReceiptApplicationService.java"),
+        List.of("PurchaseOrderStatus.SHIPPED", "PurchaseOrderStatus.RECEIVED"),
+        List.of(
+            "private static final String SHIPPED_STATUS",
+            "private static final String RECEIVED_STATUS"));
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("finance/application/InvoiceApplicationService.java"),
+        List.of("PurchaseOrderStatus.RECEIVED", "InvoicePaymentStatus.PENDING_PAYMENT"),
+        List.of(
+            "private static final String RECEIVED_STATUS",
+            "private static final String PENDING_PAYMENT_STATUS"));
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("finance/application/PaymentApplicationService.java"),
+        List.of(
+            "InvoicePaymentStatus.PENDING_PAYMENT",
+            "InvoicePaymentStatus.PAID",
+            "InvoicePaymentStatus.PARTIAL_PAID"),
+        List.of(
+            "private static final String PENDING_PAYMENT_STATUS",
+            "private static final String PAID_STATUS",
+            "private static final String PARTIAL_PAID_STATUS"));
+  }
+
+  private void assertSourceUsesStatusConstants(
+      Path sourcePath,
+      List<String> expectedReferences,
+      List<String> forbiddenLocalConstants) throws IOException {
+    String source = Files.readString(sourcePath);
+
+    for (String expectedReference : expectedReferences) {
+      assertThat(source)
+          .as(sourcePath + " should use " + expectedReference)
+          .contains(expectedReference);
+    }
+    for (String forbiddenLocalConstant : forbiddenLocalConstants) {
+      assertThat(source)
+          .as(sourcePath + " should not redefine " + forbiddenLocalConstant)
+          .doesNotContain(forbiddenLocalConstant);
+    }
   }
 }

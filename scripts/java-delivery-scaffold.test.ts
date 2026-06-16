@@ -53,8 +53,8 @@ describe('Java supplier delivery scaffold', () => {
     expect(service).toContain('TenantAccessGuard.requireSupplierId');
     expect(service).toContain('listCurrentSupplierDeliveries');
     expect(service).toContain('listBySupplierFiltered');
-    expect(service).toContain('待发货');
-    expect(service).toContain('已发货');
+    expect(service).toContain('PurchaseOrderStatus.PENDING_SHIPMENT');
+    expect(service).toContain('PurchaseOrderStatus.SHIPPED');
     expect(service).toContain('Only ready-to-ship orders can be shipped');
     expect(service).toContain('countByTenantAndOrder');
     expect(service).toContain('findBySupplierAndId');

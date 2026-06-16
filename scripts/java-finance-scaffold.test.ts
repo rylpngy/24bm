@@ -55,8 +55,8 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('TenantFeatureApplicationService');
     expect(invoiceService).toContain('FINANCE_FEATURE');
     expect(invoiceService).toContain('requireEnabled(order.tenantId(), FINANCE_FEATURE)');
-    expect(invoiceService).toContain('已收货');
-    expect(invoiceService).toContain('待付款');
+    expect(invoiceService).toContain('PurchaseOrderStatus.RECEIVED');
+    expect(invoiceService).toContain('InvoicePaymentStatus.PENDING_PAYMENT');
     expect(invoiceService).toContain('compareTo(order.amount())');
     expect(invoiceService).toContain('countByTenantAndOrder');
     expect(invoiceService).toContain('findBySupplierAndId');

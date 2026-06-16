@@ -41,7 +41,7 @@ describe('Java supplier quote scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/sourcing/application/QuoteApplicationService.java');
 
     expect(service).toContain('TenantAccessGuard.requireSupplierId');
-    expect(service).toContain('报价中');
+    expect(service).toContain('RfqStatus.QUOTING');
     expect(service).toContain('已提交');
     expect(service).toContain('isSupplierInvited');
     expect(service).toContain('countSubmittedBySupplier');

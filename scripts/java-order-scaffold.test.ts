@@ -55,7 +55,7 @@ describe('Java purchase order scaffold', () => {
     expect(service).toContain('requireEnabled(tenantId, ORDER_FEATURE)');
     expect(service).toContain('listCurrentTenantOrders');
     expect(service).toContain('listByTenantFiltered');
-    expect(service).toContain('待供应商确认');
+    expect(service).toContain('PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION');
     expect(service).toContain('findApprovedForOrder');
     expect(service).toContain('findByAwardSource');
     expect(service).toContain('return toResponse(existingOrder)');

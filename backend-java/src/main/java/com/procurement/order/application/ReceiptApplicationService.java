@@ -5,6 +5,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.order.api.CreateReceiptRequest;
 import com.procurement.order.api.ReceiptResponse;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.domain.Receipt;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -18,8 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ReceiptApplicationService {
-  private static final String SHIPPED_STATUS = "已发货";
-  private static final String RECEIVED_STATUS = "已收货";
   private static final String PURCHASE_ORDER_RECEIVED_ACTION = "purchase_order.received";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_RECEIVED_NOTIFICATION_TITLE = "采购订单已收货";
@@ -66,11 +65,11 @@ public class ReceiptApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found in tenant scope: " + orderId);
     }
-    if (!SHIPPED_STATUS.equals(order.status())) {
+    if (!PurchaseOrderStatus.SHIPPED.equals(order.status())) {
       throw new IllegalStateException("Only shipped purchase orders can be received: " + orderId);
     }
     tenantFeatureApplicationService.requireEnabled(tenantId, ORDER_FEATURE);
-    if (deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, SHIPPED_STATUS) == 0) {
+    if (deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, PurchaseOrderStatus.SHIPPED) == 0) {
       throw new IllegalStateException("Shipped delivery not found for receipt: " + orderId);
     }
     if (receiptMapper.countByTenantAndOrder(tenantId, orderId) > 0) {
@@ -79,7 +78,11 @@ public class ReceiptApplicationService {
 
     String receiptId = newId("receipt");
     receiptMapper.insert(receiptId, tenantId, orderId, userId, request.result());
-    int updated = purchaseOrderMapper.updateStatus(tenantId, orderId, SHIPPED_STATUS, RECEIVED_STATUS);
+    int updated = purchaseOrderMapper.updateStatus(
+        tenantId,
+        orderId,
+        PurchaseOrderStatus.SHIPPED,
+        PurchaseOrderStatus.RECEIVED);
     if (updated == 0) {
       throw new IllegalStateException("Purchase order status changed before receipt could be recorded: " + orderId);
     }

@@ -6,6 +6,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.domain.Invoice;
+import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
@@ -18,9 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PaymentApplicationService {
-  private static final String PENDING_PAYMENT_STATUS = "待付款";
-  private static final String PAID_STATUS = "已付款";
-  private static final String PARTIAL_PAID_STATUS = "部分付款";
   private static final String INVOICE_TARGET_TYPE = "invoice";
   private static final String INVOICE_PAID_ACTION = "invoice.paid";
   private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
@@ -105,13 +103,13 @@ public class PaymentApplicationService {
       throw new IllegalStateException("Invoice status changed before payment could be recorded: " + invoiceId);
     }
     auditLogApplicationService.recordTenantAction(
-        PAID_STATUS.equals(request.paymentStatus()) ? INVOICE_PAID_ACTION : INVOICE_PARTIAL_PAID_ACTION,
+        InvoicePaymentStatus.PAID.equals(request.paymentStatus()) ? INVOICE_PAID_ACTION : INVOICE_PARTIAL_PAID_ACTION,
         INVOICE_TARGET_TYPE,
         invoiceId);
     notificationApplicationService.notifyActiveSupplierUsers(
         tenantId,
         invoice.supplierId(),
-        PAID_STATUS.equals(request.paymentStatus())
+        InvoicePaymentStatus.PAID.equals(request.paymentStatus())
             ? INVOICE_PAID_NOTIFICATION_TITLE
             : INVOICE_PARTIAL_PAID_NOTIFICATION_TITLE,
         "采购方已登记发票 " + invoice.invoiceNo() + " 的付款状态：" + request.paymentStatus() + "。");
@@ -132,22 +130,25 @@ public class PaymentApplicationService {
   }
 
   private boolean isSupportedPaymentTarget(String paymentStatus) {
-    return PAID_STATUS.equals(paymentStatus) || PARTIAL_PAID_STATUS.equals(paymentStatus);
+    return InvoicePaymentStatus.PAID.equals(paymentStatus)
+        || InvoicePaymentStatus.PARTIAL_PAID.equals(paymentStatus);
   }
 
   private boolean isIdempotentPaymentRegistration(String currentStatus, String targetStatus) {
     return currentStatus.equals(targetStatus)
-        && (PAID_STATUS.equals(currentStatus) || PARTIAL_PAID_STATUS.equals(currentStatus));
+        && (InvoicePaymentStatus.PAID.equals(currentStatus)
+            || InvoicePaymentStatus.PARTIAL_PAID.equals(currentStatus));
   }
 
   private void requirePaymentTransition(String currentStatus, String targetStatus, String invoiceId) {
-    if (PENDING_PAYMENT_STATUS.equals(currentStatus)) {
+    if (InvoicePaymentStatus.PENDING_PAYMENT.equals(currentStatus)) {
       return;
     }
-    if (PARTIAL_PAID_STATUS.equals(currentStatus) && PAID_STATUS.equals(targetStatus)) {
+    if (InvoicePaymentStatus.PARTIAL_PAID.equals(currentStatus)
+        && InvoicePaymentStatus.PAID.equals(targetStatus)) {
       return;
     }
-    if (PAID_STATUS.equals(currentStatus)) {
+    if (InvoicePaymentStatus.PAID.equals(currentStatus)) {
       throw new IllegalStateException("Paid invoices cannot be changed: " + invoiceId);
     }
     throw new IllegalStateException(

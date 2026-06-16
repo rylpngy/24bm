@@ -6,6 +6,7 @@ import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class RfqApplicationService {
   private static final String APPROVED_DEMAND_STATUS = "已通过";
   private static final String APPROVED_SUPPLIER_STATUS = "已准入";
-  private static final String QUOTING_STATUS = "报价中";
   private static final String INVITED_STATUS = "已邀请";
   private static final String RFQ_FEATURE = "rfq";
 
@@ -73,7 +73,7 @@ public class RfqApplicationService {
     validateSuppliers(tenantId, request.invitedSupplierIds());
 
     String rfqId = newId("rfq");
-    rfqMapper.insert(rfqId, tenantId, request.title(), QUOTING_STATUS, request.deadlineAt(), userId);
+    rfqMapper.insert(rfqId, tenantId, request.title(), RfqStatus.QUOTING, request.deadlineAt(), userId);
 
     for (String demandId : request.demandIds()) {
       rfqDemandMapper.insert(newId("rfq-demand"), tenantId, rfqId, demandId);

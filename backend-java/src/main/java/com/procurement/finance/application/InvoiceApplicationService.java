@@ -6,9 +6,11 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.domain.Invoice;
+import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.List;
@@ -18,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InvoiceApplicationService {
-  private static final String RECEIVED_STATUS = "已收货";
-  private static final String PENDING_PAYMENT_STATUS = "待付款";
   private static final String INVOICE_CREATED_ACTION = "invoice.created";
   private static final String INVOICE_TARGET_TYPE = "invoice";
   private static final String INVOICE_PAID_ACTION = "invoice.paid";
@@ -85,7 +85,7 @@ public class InvoiceApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
-    if (!RECEIVED_STATUS.equals(order.status())) {
+    if (!PurchaseOrderStatus.RECEIVED.equals(order.status())) {
       throw new IllegalStateException("Only received purchase orders can be invoiced: " + orderId);
     }
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), FINANCE_FEATURE);
@@ -104,7 +104,7 @@ public class InvoiceApplicationService {
         order.id(),
         request.amount(),
         request.invoiceNo(),
-        PENDING_PAYMENT_STATUS);
+        InvoicePaymentStatus.PENDING_PAYMENT);
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
         INVOICE_CREATED_ACTION,
