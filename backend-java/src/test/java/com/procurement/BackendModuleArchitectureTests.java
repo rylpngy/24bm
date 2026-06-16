@@ -139,6 +139,31 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void approvalTemplateApplicationServiceDelegatesStatusTransitions() throws IOException {
+    Path status = SOURCE_ROOT.resolve("approval/domain/ApprovalTemplateStatus.java");
+    Path transition = SOURCE_ROOT.resolve("approval/domain/ApprovalTemplateStatusTransition.java");
+    Path templateService = SOURCE_ROOT.resolve("approval/application/ApprovalTemplateApplicationService.java");
+
+    assertThat(status).exists();
+    assertThat(transition).exists();
+
+    assertThat(Files.readString(status))
+        .contains("ACTIVE = \"active\"")
+        .contains("INACTIVE = \"inactive\"");
+    assertThat(Files.readString(transition))
+        .contains("void requireSupportedTarget")
+        .contains("ApprovalTemplateStatus.ACTIVE")
+        .contains("ApprovalTemplateStatus.INACTIVE")
+        .contains("Unsupported approval template status");
+    assertThat(Files.readString(templateService))
+        .contains("ApprovalTemplateStatusTransition")
+        .contains("approvalTemplateStatusTransition.requireSupportedTarget")
+        .doesNotContain("private static final String ACTIVE_STATUS")
+        .doesNotContain("private static final String INACTIVE_STATUS")
+        .doesNotContain("Unsupported approval template status");
+  }
+
+  @Test
   void rfqOrderAndInvoiceApplicationServicesUseDomainStatusConstants() throws IOException {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java"),

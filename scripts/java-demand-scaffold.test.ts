@@ -38,6 +38,8 @@ describe('Java purchase demand scaffold', () => {
     const approvalMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTaskMapper.java');
     const approvalService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java');
     const approvalTemplateService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTemplateApplicationService.java');
+    const approvalTemplateStatus = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalTemplateStatus.java');
+    const approvalTemplateStatusTransition = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalTemplateStatusTransition.java');
     const approvalTemplateMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTemplateMapper.java');
     const approvalTemplateResponse = read('backend-java/src/main/java/com/procurement/approval/api/ApprovalTemplateResponse.java');
     const approvalController = read('backend-java/src/main/java/com/procurement/approval/api/ApprovalInboxController.java');
@@ -68,6 +70,13 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalTemplateService).toContain('updateTemplate');
     expect(approvalTemplateService).toContain('approval_template.config_updated');
     expect(approvalTemplateService).toContain('ApprovalTemplateMapper');
+    expect(approvalTemplateService).toContain('ApprovalTemplateStatusTransition');
+    expect(approvalTemplateService).toContain('approvalTemplateStatusTransition.requireSupportedTarget');
+    expect(approvalTemplateStatus).toContain('ACTIVE = "active"');
+    expect(approvalTemplateStatus).toContain('INACTIVE = "inactive"');
+    expect(approvalTemplateStatusTransition).toContain('Unsupported approval template status');
+    expect(approvalTemplateStatusTransition).toContain('ApprovalTemplateStatus.ACTIVE');
+    expect(approvalTemplateStatusTransition).toContain('ApprovalTemplateStatus.INACTIVE');
     expect(approvalTemplateService).toContain('buyer approval template APIs');
     expect(approvalTemplateMapper).toContain('approval_templates');
     expect(approvalTemplateMapper).toContain('tenant_id = #{tenantId}');

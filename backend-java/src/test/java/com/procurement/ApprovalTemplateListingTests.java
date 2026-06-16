@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.procurement.approval.api.UpdateApprovalTemplateRequest;
 import com.procurement.approval.domain.ApprovalTemplate;
+import com.procurement.approval.domain.ApprovalTemplateStatusTransition;
 import com.procurement.approval.application.ApprovalTemplateApplicationService;
 import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
@@ -22,7 +23,10 @@ class ApprovalTemplateListingTests {
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final ApprovalTemplateApplicationService approvalTemplateApplicationService =
-      new ApprovalTemplateApplicationService(approvalTemplateMapper, auditLogApplicationService);
+      new ApprovalTemplateApplicationService(
+          approvalTemplateMapper,
+          auditLogApplicationService,
+          new ApprovalTemplateStatusTransition());
 
   @AfterEach
   void clearTenantContext() {
