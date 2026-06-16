@@ -143,9 +143,11 @@ describe('Java backend scaffold', () => {
     const localSmoke = read('scripts/java-local-smoke.mjs');
     const apiClient = read('services/procurementApiClient.ts');
     const departmentService = read('backend-java/src/main/java/com/procurement/organization/application/DepartmentApplicationService.java');
+    const departmentStatus = read('backend-java/src/main/java/com/procurement/organization/domain/DepartmentStatus.java');
 
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/api/DepartmentController.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/application/DepartmentApplicationService.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/domain/DepartmentStatus.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/infrastructure/DepartmentMapper.java'))).toBe(true);
     expect(architecture).toContain('采购方组织部门 Java API');
     expect(architecture).toContain('GET /api/v1/buyer/departments');
@@ -161,6 +163,10 @@ describe('Java backend scaffold', () => {
     expect(departmentService).toContain('requireActiveParentDepartment');
     expect(departmentService).toContain('existsActiveByTenantAndId');
     expect(departmentService).toContain('countByTenantAndDepartment');
+    expect(departmentService).toContain('DepartmentStatus.ACTIVE');
+    expect(departmentService).toContain('DepartmentStatus.INACTIVE');
+    expect(departmentStatus).toContain('ACTIVE = "active"');
+    expect(departmentStatus).toContain('INACTIVE = "inactive"');
   });
 
   it('documents the notification API handoff', () => {

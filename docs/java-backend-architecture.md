@@ -143,6 +143,8 @@ Authorization: Bearer <accessToken>
 - 停用部门只允许从 `active` 更新为 `inactive`；若当前租户下已有 `purchase_demands.department_id` 引用该部门，则拒绝停用；停用成功写入 `audit_logs`，动作为 `department.disabled`。
 - 供应商和平台 token 不能访问该 buyer 侧接口。
 
+部门创建、父级校验和停用状态更新统一使用 `DepartmentStatus.ACTIVE` / `DepartmentStatus.INACTIVE`，避免组织应用服务散落部门状态字符串。
+
 ## 采购需求 Java API
 
 第一批 Java 业务接口落在 `demand` 模块：

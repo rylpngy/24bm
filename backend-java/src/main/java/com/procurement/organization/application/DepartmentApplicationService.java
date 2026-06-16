@@ -6,6 +6,7 @@ import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.organization.api.CreateDepartmentRequest;
 import com.procurement.organization.api.DepartmentResponse;
 import com.procurement.organization.domain.Department;
+import com.procurement.organization.domain.DepartmentStatus;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import java.util.List;
 import java.util.UUID;
@@ -14,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DepartmentApplicationService {
-  private static final String ACTIVE_STATUS = "active";
-  private static final String INACTIVE_STATUS = "inactive";
   private static final String DEPARTMENT_CREATED_ACTION = "department.created";
   private static final String DEPARTMENT_DISABLED_ACTION = "department.disabled";
   private static final String DEPARTMENT_TARGET_TYPE = "department";
@@ -50,7 +49,7 @@ public class DepartmentApplicationService {
         tenantId,
         request.name(),
         request.parentId(),
-        ACTIVE_STATUS);
+        DepartmentStatus.ACTIVE);
     auditLogApplicationService.recordTenantAction(
         DEPARTMENT_CREATED_ACTION,
         DEPARTMENT_TARGET_TYPE,
@@ -68,7 +67,11 @@ public class DepartmentApplicationService {
     if (referencedDemands > 0) {
       throw new IllegalStateException("Department is referenced by purchase demands: " + departmentId);
     }
-    int updated = departmentMapper.updateStatus(tenantId, departmentId, ACTIVE_STATUS, INACTIVE_STATUS);
+    int updated = departmentMapper.updateStatus(
+        tenantId,
+        departmentId,
+        DepartmentStatus.ACTIVE,
+        DepartmentStatus.INACTIVE);
     if (updated == 0) {
       throw new IllegalStateException("Department status changed before disable could be recorded: " + departmentId);
     }
