@@ -28,6 +28,15 @@ import {
 } from 'lucide-react';
 import { approvalResultMessage, approvalTypeLabel } from './data/approvalUi';
 import {
+  adminRoleNavigation,
+  defaultAdminModulesByRole,
+  defaultAdminRole,
+  type AdminRole,
+  type BuyerAdminModule,
+  type PlatformAdminModule,
+  type SupplierAdminModule,
+} from './data/adminNavigation';
+import {
   type BuyerWorkspace,
   type ProcurementMvpModel,
   type Rfq,
@@ -51,8 +60,6 @@ import {
   type JavaNotificationDto,
   type BuyerRoleDto,
 } from './services/procurementApiClient';
-
-type WorkspaceMode = 'platform' | 'buyer' | 'supplier';
 
 const currency = (value: number) =>
   new Intl.NumberFormat('zh-CN', {
@@ -123,9 +130,11 @@ const javaApiClient = appDataSource.mode === 'java'
   : null;
 
 const App: React.FC = () => {
-  const [mode, setMode] = useState<WorkspaceMode>('buyer');
+  const [activeRole, setActiveRole] = useState<AdminRole>(defaultAdminRole);
+  const [activeModules, setActiveModules] = useState<Record<AdminRole, string>>(defaultAdminModulesByRole);
   const [tenantId, setTenantId] = useState('tenant-acme');
   const [supplierId, setSupplierId] = useState('supplier-orbit');
+  const [refreshKey, setRefreshKey] = useState(0);
   const [platformData, setPlatformData] = useState<PlatformWorkspaceData | null>(null);
   const [buyerData, setBuyerData] = useState<{
     workspace: BuyerWorkspace;
@@ -223,7 +232,7 @@ const App: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [configurationError, tenantId, supplierId]);
+  }, [configurationError, tenantId, supplierId, refreshKey]);
 
   const runJavaWorkflow = async () => {
     if (!javaApiClient || !buyerData) return;
@@ -492,23 +501,48 @@ const App: React.FC = () => {
     );
   }
 
+  const activeModule = activeModules[activeRole];
+  const setActiveRoleModule = (role: AdminRole, moduleId: string) => {
+    setActiveRole(role);
+    setActiveModules((current) => ({
+      ...current,
+      [role]: moduleId,
+    }));
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900">
-      <AppSidebar mode={mode} setMode={setMode} />
+      <AppSidebar
+        activeRole={activeRole}
+        activeModules={activeModules}
+        onSelectRole={setActiveRole}
+        onSelectModule={setActiveRoleModule}
+      />
       <main className="flex min-w-0 flex-1 flex-col">
         <AppHeader
-          mode={mode}
+          activeRole={activeRole}
+          activeModule={activeModule}
           model={platformData.model}
           tenantId={tenantId}
           supplierId={supplierId}
           setTenantId={setTenantId}
           setSupplierId={setSupplierId}
+          javaEnabled={Boolean(javaApiClient)}
+          workflowBusy={workflowBusy}
+          onRefresh={() => setRefreshKey((value) => value + 1)}
+          onRunJavaWorkflow={runJavaWorkflow}
         />
         <section className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-7xl space-y-6 p-6">
-            {mode === 'platform' && <PlatformWorkspace data={platformData} />}
-            {mode === 'buyer' && (
+            {activeRole === 'platform' && (
+              <PlatformWorkspace
+                data={platformData}
+                activeModule={activeModule as PlatformAdminModule}
+              />
+            )}
+            {activeRole === 'buyer' && (
               <BuyerWorkspaceView
+                activeModule={activeModule as BuyerAdminModule}
                 workspace={buyerData.workspace}
                 kpis={buyerData.kpis}
                 pendingApprovals={buyerData.pendingApprovals}
@@ -534,8 +568,9 @@ const App: React.FC = () => {
                 onUpdateApprovalTemplate={updateApprovalTemplate}
               />
             )}
-            {mode === 'supplier' && (
+            {activeRole === 'supplier' && (
               <SupplierWorkspaceView
+                activeModule={activeModule as SupplierAdminModule}
                 workspace={supplierData}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowStatus={workflowStatus}
@@ -554,15 +589,11 @@ const App: React.FC = () => {
 };
 
 const AppSidebar: React.FC<{
-  mode: WorkspaceMode;
-  setMode: (mode: WorkspaceMode) => void;
-}> = ({ mode, setMode }) => {
-  const navItems = [
-    { id: 'platform' as const, label: '平台运营台', desc: '租户 / 套餐 / 审核', icon: Layers3 },
-    { id: 'buyer' as const, label: '采购方工作台', desc: '需求到付款闭环', icon: ShoppingCart },
-    { id: 'supplier' as const, label: '供应商工作台', desc: '报价 / 交付 / 发票', icon: Truck },
-  ];
-
+  activeRole: AdminRole;
+  activeModules: Record<AdminRole, string>;
+  onSelectRole: (role: AdminRole) => void;
+  onSelectModule: (role: AdminRole, moduleId: string) => void;
+}> = ({ activeRole, activeModules, onSelectRole, onSelectModule }) => {
   return (
     <aside className="flex w-72 shrink-0 flex-col bg-slate-950 text-white">
       <div className="border-b border-white/10 p-6">
@@ -581,24 +612,49 @@ const AppSidebar: React.FC<{
         </div>
       </div>
 
-      <nav className="flex-1 space-y-2 p-4">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = mode === item.id;
+      <nav className="flex-1 space-y-5 overflow-y-auto p-4">
+        {adminRoleNavigation.map((role) => {
+          const roleActive = activeRole === role.id;
+          const roleIcon = role.id === 'platform' ? Layers3 : role.id === 'buyer' ? ShoppingCart : Truck;
+          const RoleIcon = roleIcon;
           return (
-            <button
-              key={item.id}
-              onClick={() => setMode(item.id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition ${
-                active ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30' : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <Icon size={19} />
-              <span>
-                <span className="block text-sm font-bold">{item.label}</span>
-                <span className={`block text-xs ${active ? 'text-blue-100' : 'text-slate-500'}`}>{item.desc}</span>
-              </span>
-            </button>
+            <div key={role.id} className="space-y-2">
+              <button
+                type="button"
+                onClick={() => onSelectRole(role.id)}
+                className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition ${
+                  roleActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30' : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <RoleIcon size={19} />
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold">{role.label}</span>
+                  <span className={`block truncate text-xs ${roleActive ? 'text-blue-100' : 'text-slate-500'}`}>{role.desc}</span>
+                </span>
+              </button>
+              {roleActive && (
+                <div className="ml-3 space-y-1 border-l border-white/10 pl-3">
+                  {role.modules.map((module) => {
+                    const moduleActive = activeModules[role.id] === module.id;
+                    return (
+                      <button
+                        key={`${role.id}:${module.id}`}
+                        type="button"
+                        onClick={() => onSelectModule(role.id, module.id)}
+                        className={`w-full rounded-lg px-3 py-2 text-left transition ${
+                          moduleActive ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        <span className="block text-sm font-black">{module.label}</span>
+                        <span className={`mt-0.5 block truncate text-xs ${moduleActive ? 'text-slate-500' : 'text-slate-600'}`}>
+                          {module.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
@@ -617,19 +673,38 @@ const AppSidebar: React.FC<{
 };
 
 const AppHeader: React.FC<{
-  mode: WorkspaceMode;
+  activeRole: AdminRole;
+  activeModule: string;
   model: ProcurementMvpModel;
   tenantId: string;
   supplierId: string;
   setTenantId: (id: string) => void;
   setSupplierId: (id: string) => void;
-}> = ({ mode, model, tenantId, supplierId, setTenantId, setSupplierId }) => {
+  javaEnabled: boolean;
+  workflowBusy: boolean;
+  onRefresh: () => void;
+  onRunJavaWorkflow: () => void;
+}> = ({
+  activeRole,
+  activeModule,
+  model,
+  tenantId,
+  supplierId,
+  setTenantId,
+  setSupplierId,
+  javaEnabled,
+  workflowBusy,
+  onRefresh,
+  onRunJavaWorkflow,
+}) => {
   const buyerTenants = model.tenants;
   const suppliers = model.enterprises.filter((enterprise) => enterprise.type === 'supplier');
+  const roleNavigation = adminRoleNavigation.find((role) => role.id === activeRole);
+  const moduleNavigation = roleNavigation?.modules.find((module) => module.id === activeModule);
   const title =
-    mode === 'platform'
+    activeRole === 'platform'
       ? '平台运营总览'
-      : mode === 'buyer'
+      : activeRole === 'buyer'
         ? buyerTenants.find((tenant) => tenant.id === tenantId)?.name
         : suppliers.find((supplier) => supplier.id === supplierId)?.name;
 
@@ -639,11 +714,14 @@ const AppHeader: React.FC<{
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400">当前工作区</p>
           <h1 className="truncate text-lg font-black text-slate-900">{title}</h1>
+          <p className="mt-0.5 text-xs font-bold text-slate-500">
+            {roleNavigation?.shortLabel} / {moduleNavigation?.label}
+          </p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        {mode === 'buyer' && (
+        {activeRole === 'buyer' && (
           <Select value={tenantId} onChange={setTenantId}>
             {buyerTenants.map((tenant) => (
               <option key={tenant.id} value={tenant.id}>
@@ -652,7 +730,7 @@ const AppHeader: React.FC<{
             ))}
           </Select>
         )}
-        {mode === 'supplier' && (
+        {activeRole === 'supplier' && (
           <Select value={supplierId} onChange={setSupplierId}>
             {suppliers.map((supplier) => (
               <option key={supplier.id} value={supplier.id}>
@@ -668,6 +746,24 @@ const AppHeader: React.FC<{
             placeholder="搜索企业、询价、订单、供应商"
           />
         </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 hover:bg-slate-50"
+        >
+          刷新
+        </button>
+        {javaEnabled && activeRole === 'buyer' && (
+          <button
+            type="button"
+            onClick={onRunJavaWorkflow}
+            disabled={workflowBusy}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            <Send size={16} />
+            {workflowBusy ? '执行中' : '跑通主流程'}
+          </button>
+        )}
         <button className="relative rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50" title="通知">
           <Bell size={18} />
           <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
@@ -696,7 +792,10 @@ const Select: React.FC<{
   </label>
 );
 
-const PlatformWorkspace: React.FC<{ data: PlatformWorkspaceData }> = ({ data }) => {
+const PlatformWorkspace: React.FC<{
+  data: PlatformWorkspaceData;
+  activeModule: PlatformAdminModule;
+}> = ({ data, activeModule }) => {
   const { model, platformOverview } = data;
   const supplierCount = platformOverview?.publicSupplierCount
     ?? model.enterprises.filter((enterprise) => enterprise.type === 'supplier').length;
@@ -704,23 +803,52 @@ const PlatformWorkspace: React.FC<{ data: PlatformWorkspaceData }> = ({ data }) 
     ?? model.enterprises.filter((enterprise) => enterprise.type === 'buyer').length;
   const pendingTenantCount = platformOverview?.pendingEnterpriseReviews
     ?? model.tenants.filter((tenant) => tenant.status === '待审核').length;
+  const enterpriseReviews = model.enterprises.map((enterprise) => ({
+    id: enterprise.id,
+    name: enterprise.name,
+    type: enterprise.type,
+    industry: enterprise.industry,
+    status: enterprise.verified ? '已认证' : '待审核',
+  }));
+  const announcements = [
+    {
+      id: 'platform-announcement-stage3',
+      title: '阶段三后台化改造进行中',
+      targetScope: 'all',
+      publishedAt: new Date().toISOString(),
+    },
+  ];
 
   return (
     <>
-      <HeroBand
-        eyebrow="SaaS 平台底座"
-        title="管理多采购企业入驻、套餐开关和公共供应商企业档案"
-        desc="平台方提供账号、租户、权限、审计和运营能力，不直接参与采购业务定标。"
-      />
-      <div className="grid gap-4 md:grid-cols-4">
-        <MetricCard icon={Building2} label="采购租户" value={`${buyerCount} 家`} tone="blue" />
-        <MetricCard icon={Users} label="公共供应商" value={`${supplierCount} 家`} tone="green" />
-        <MetricCard icon={Settings} label="启用套餐" value={`${model.tenants.length} 个`} tone="slate" />
-        <MetricCard icon={ClipboardCheck} label="待审核企业" value={`${pendingTenantCount} 个`} tone="amber" />
-      </div>
+      {activeModule === 'overview' && (
+        <>
+          <HeroBand
+            eyebrow="SaaS 平台底座"
+            title="管理多采购企业入驻、套餐开关和公共供应商企业档案"
+            desc="平台方提供账号、租户、权限、审计和运营能力，不直接参与采购业务定标。"
+          />
+          <div className="grid gap-4 md:grid-cols-4">
+            <MetricCard icon={Building2} label="采购租户" value={`${buyerCount} 家`} tone="blue" />
+            <MetricCard icon={Users} label="公共供应商" value={`${supplierCount} 家`} tone="green" />
+            <MetricCard icon={Settings} label="启用套餐" value={`${model.tenants.length} 个`} tone="slate" />
+            <MetricCard icon={ClipboardCheck} label="待审核企业" value={`${pendingTenantCount} 个`} tone="amber" />
+          </div>
+          <Panel title="平台能力边界" icon={ShieldCheck}>
+            <CapabilityList
+              items={[
+                '租户隔离、企业认证、套餐与功能开关',
+                '公共供应商企业身份，不暴露采购方私域评价',
+                '站内通知、附件中心、操作日志和审计底座',
+                '后续开放 API、Webhook、ERP/OA/财务集成',
+              ]}
+            />
+          </Panel>
+        </>
+      )}
 
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <Panel title="租户运营台" icon={Layers3}>
+      {activeModule === 'tenants' && (
+        <Panel title="租户列表" icon={Layers3}>
           <div className="overflow-hidden rounded-lg border border-slate-200">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
@@ -746,23 +874,41 @@ const PlatformWorkspace: React.FC<{ data: PlatformWorkspaceData }> = ({ data }) 
             </table>
           </div>
         </Panel>
+      )}
 
-        <Panel title="平台能力边界" icon={ShieldCheck}>
-          <CapabilityList
-            items={[
-              '租户隔离、企业认证、套餐与功能开关',
-              '公共供应商企业身份，不暴露采购方私域评价',
-              '站内通知、附件中心、操作日志和审计底座',
-              '后续开放 API、Webhook、ERP/OA/财务集成',
-            ]}
+      {activeModule === 'reviews' && (
+        <Panel title="企业审核" icon={ClipboardCheck}>
+          <SimpleList
+            rows={enterpriseReviews.map((review) => ({
+              id: review.id,
+              title: review.name,
+              meta: `${review.type} · ${review.industry}`,
+              value: review.status,
+              status: review.status,
+            }))}
           />
         </Panel>
-      </div>
+      )}
+
+      {activeModule === 'announcements' && (
+        <Panel title="平台公告" icon={Bell}>
+          <SimpleList
+            rows={announcements.map((announcement) => ({
+              id: announcement.id,
+              title: announcement.title,
+              meta: `发布范围 ${announcement.targetScope}`,
+              value: formatAuditTime(announcement.publishedAt),
+              status: '已发布',
+            }))}
+          />
+        </Panel>
+      )}
     </>
   );
 };
 
 const BuyerWorkspaceView: React.FC<{
+  activeModule: BuyerAdminModule;
   workspace: BuyerWorkspace;
   kpis: TenantKpis;
   pendingApprovals: JavaApprovalTaskDto[];
@@ -791,6 +937,7 @@ const BuyerWorkspaceView: React.FC<{
     status: 'active' | 'inactive',
   ) => void;
 }> = ({
+  activeModule,
   workspace,
   kpis,
   pendingApprovals,
@@ -838,37 +985,38 @@ const BuyerWorkspaceView: React.FC<{
       desc="采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。"
     />
 
-    {javaEnabled && (
-      <div className="flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50 p-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-sm font-black text-blue-950">Java MVP 主流程联调</p>
-          {workflowStatus && <p className="mt-1 text-sm font-bold text-blue-700">{workflowStatus}</p>}
-        </div>
-        <button
-          type="button"
-          onClick={onRunJavaWorkflow}
-          disabled={workflowBusy}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-        >
-          <Send size={16} />
-          {workflowBusy ? '执行中' : '跑通主流程'}
-        </button>
+    {workflowStatus && (
+      <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-700">
+        {workflowStatus}
       </div>
     )}
 
-    <div className="grid gap-4 md:grid-cols-5">
-      <MetricCard icon={WalletCards} label="采购金额" value={currency(kpis.totalSpend)} tone="blue" />
-      <MetricCard icon={ClipboardCheck} label="待审批需求" value={`${kpis.pendingApprovals} 条`} tone="amber" />
-      <MetricCard icon={Send} label="进行中询价" value={`${kpis.activeRfqs} 个`} tone="green" />
-      <MetricCard icon={Truck} label="履约进度" value={`${kpis.fulfillmentRate}%`} tone="slate" />
-      <MetricCard icon={Users} label="私域供应商" value={`${kpis.supplierCount} 家`} tone="blue" />
-    </div>
+    {javaEnabled && activeModule === 'dashboard' && (
+      <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+        <div>
+          <p className="text-sm font-black text-blue-950">Java MVP 主流程联调</p>
+          <p className="mt-1 text-sm font-bold text-blue-700">顶部按钮可随时执行完整询价比价闭环</p>
+        </div>
+      </div>
+    )}
 
-    <Panel title="MVP 业务主线" icon={Activity}>
-      <WorkflowRail steps={workspace.workflow} />
-    </Panel>
+    {activeModule === 'dashboard' && (
+      <div className="grid gap-4 md:grid-cols-5">
+        <MetricCard icon={WalletCards} label="采购金额" value={currency(kpis.totalSpend)} tone="blue" />
+        <MetricCard icon={ClipboardCheck} label="待审批需求" value={`${kpis.pendingApprovals} 条`} tone="amber" />
+        <MetricCard icon={Send} label="进行中询价" value={`${kpis.activeRfqs} 个`} tone="green" />
+        <MetricCard icon={Truck} label="履约进度" value={`${kpis.fulfillmentRate}%`} tone="slate" />
+        <MetricCard icon={Users} label="私域供应商" value={`${kpis.supplierCount} 家`} tone="blue" />
+      </div>
+    )}
 
-    {javaEnabled && (
+    {activeModule === 'dashboard' && (
+      <Panel title="MVP 业务主线" icon={Activity}>
+        <WorkflowRail steps={workspace.workflow} />
+      </Panel>
+    )}
+
+    {javaEnabled && activeModule === 'approvals' && (
       <div className="grid gap-6 xl:grid-cols-[1fr_0.85fr]">
         <Panel title="审批待办" icon={ClipboardCheck}>
           {sortedPendingApprovals.length > 0 ? (
@@ -929,7 +1077,7 @@ const BuyerWorkspaceView: React.FC<{
       </div>
     )}
 
-    {javaEnabled && (
+    {javaEnabled && activeModule === 'approvals' && (
       <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
         <Panel title="最近审批记录" icon={ShieldCheck}>
           {sortedRecentApprovals.length > 0 ? (
@@ -994,7 +1142,9 @@ const BuyerWorkspaceView: React.FC<{
       </div>
     )}
 
-    <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+    {(activeModule === 'demands' || activeModule === 'rfqs' || activeModule === 'quotes') && (
+    <div className={`grid gap-6 ${activeModule === 'demands' ? '' : 'lg:grid-cols-[0.95fr_1.05fr]'}`}>
+      {activeModule === 'demands' && (
       <Panel title="采购需求与物料目录" icon={Database}>
         <div className="space-y-3">
           {workspace.demands.map((demand) => (
@@ -1027,7 +1177,41 @@ const BuyerWorkspaceView: React.FC<{
           ))}
         </div>
       </Panel>
+      )}
 
+      {activeModule === 'rfqs' && (
+        <Panel title="询价项目" icon={Send}>
+          <div className="overflow-hidden rounded-lg border border-slate-200">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">询价项目</th>
+                  <th className="px-4 py-3">邀请供应商</th>
+                  <th className="px-4 py-3">报价数</th>
+                  <th className="px-4 py-3">截止时间</th>
+                  <th className="px-4 py-3">状态</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {workspace.rfqs.map((rfq) => (
+                  <tr key={rfq.id}>
+                    <td className="px-4 py-4">
+                      <p className="font-black text-slate-900">{rfq.title}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-400">{rfq.id}</p>
+                    </td>
+                    <td className="px-4 py-4 font-mono font-bold text-slate-700">{rfq.invitedSupplierIds.length}</td>
+                    <td className="px-4 py-4 font-mono font-bold text-slate-700">{rfq.quotes.length}</td>
+                    <td className="px-4 py-4 text-slate-600">{rfq.deadline}</td>
+                    <td className="px-4 py-4"><StatusPill label={rfq.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      )}
+
+      {activeModule === 'quotes' && (
       <Panel title="询价比价与定标" icon={BarChart3}>
         <div className="space-y-4">
           {workspace.rfqs.map((rfq) => {
@@ -1049,9 +1233,27 @@ const BuyerWorkspaceView: React.FC<{
           })}
         </div>
       </Panel>
+      )}
     </div>
+    )}
 
-    <div className="grid gap-6 lg:grid-cols-3">
+    {activeModule === 'materials' && (
+      <Panel title="物料目录" icon={Database}>
+        <SimpleList
+          rows={workspace.materials.map((material) => ({
+            id: material.id,
+            title: material.name,
+            meta: `${material.code} · ${material.category} · ${material.unit}`,
+            value: currency(material.referencePrice),
+            status: '启用',
+          }))}
+        />
+      </Panel>
+    )}
+
+    {(activeModule === 'suppliers' || activeModule === 'orders' || activeModule === 'invoices' || activeModule === 'receipts') && (
+    <div className={`grid gap-6 ${activeModule === 'suppliers' ? '' : 'lg:grid-cols-2'}`}>
+      {activeModule === 'suppliers' && (
       <Panel title="私域供应商关系" icon={Users}>
         <div className="space-y-3">
           {workspace.privateSupplierRelations.map((relation) => {
@@ -1085,7 +1287,9 @@ const BuyerWorkspaceView: React.FC<{
           })}
         </div>
       </Panel>
+      )}
 
+      {activeModule === 'orders' && (
       <Panel title="订单履约" icon={PackageCheck}>
         <div className="space-y-3">
           {workspace.orders.map((order) => {
@@ -1120,7 +1324,46 @@ const BuyerWorkspaceView: React.FC<{
           })}
         </div>
       </Panel>
+      )}
 
+      {activeModule === 'receipts' && (
+        <Panel title="收货验收" icon={PackageCheck}>
+          <div className="space-y-3">
+            {workspace.orders
+              .filter((order) => order.status === '已发货' || order.status === '待收货')
+              .map((order) => {
+                const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
+                const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
+                const receiptBusy = buyerFulfillmentBusyId === `receipt:${order.id}`;
+                return (
+                  <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black text-slate-900">{order.id}</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {supplier?.name} · {delivery?.carrier ?? '待物流'} {delivery?.trackingNo ?? ''}
+                        </p>
+                      </div>
+                      <StatusPill label={order.status} />
+                    </div>
+                    {javaEnabled && order.status === '已发货' && (
+                      <button
+                        type="button"
+                        onClick={() => onCreateReceipt(order.id)}
+                        disabled={receiptBusy}
+                        className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      >
+                        {receiptBusy ? '登记中' : '登记收货'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </Panel>
+      )}
+
+      {activeModule === 'invoices' && (
       <Panel title="发票付款" icon={Receipt}>
         <div className="space-y-3">
           {workspace.invoices.map((invoice) => {
@@ -1152,11 +1395,15 @@ const BuyerWorkspaceView: React.FC<{
           })}
         </div>
       </Panel>
+      )}
     </div>
+    )}
 
-    <Panel title="最近操作日志" icon={ShieldCheck}>
-      <AuditLogList workspace={workspace} />
-    </Panel>
+    {activeModule === 'audit' && (
+      <Panel title="最近操作日志" icon={ShieldCheck}>
+        <AuditLogList workspace={workspace} />
+      </Panel>
+    )}
     </>
   );
 };
@@ -1321,6 +1568,7 @@ const ApprovalTemplateSettings: React.FC<{
 };
 
 const SupplierWorkspaceView: React.FC<{
+  activeModule: SupplierAdminModule;
   workspace: SupplierWorkspace;
   javaEnabled: boolean;
   workflowStatus: string | null;
@@ -1330,6 +1578,7 @@ const SupplierWorkspaceView: React.FC<{
   onCreateDelivery: (orderId: string) => void;
   onCreateInvoice: (orderId: string, amount: number) => void;
 }> = ({
+  activeModule,
   workspace,
   javaEnabled,
   workflowStatus,
@@ -1352,14 +1601,18 @@ const SupplierWorkspaceView: React.FC<{
       </div>
     )}
 
-    <div className="grid gap-4 md:grid-cols-4">
-      <MetricCard icon={Building2} label="合作采购方" value={`${workspace.connectedBuyerNames.length} 家`} tone="blue" />
-      <MetricCard icon={Send} label="询价邀请" value={`${workspace.opportunities.length} 个`} tone="green" />
-      <MetricCard icon={ShoppingCart} label="销售订单" value={`${workspace.orders.length} 单`} tone="slate" />
-      <MetricCard icon={CreditCard} label="待回款发票" value={`${workspace.invoices.filter((invoice) => invoice.paymentStatus !== '已付款').length} 张`} tone="amber" />
-    </div>
+    {activeModule === 'overview' && (
+      <div className="grid gap-4 md:grid-cols-4">
+        <MetricCard icon={Building2} label="合作采购方" value={`${workspace.connectedBuyerNames.length} 家`} tone="blue" />
+        <MetricCard icon={Send} label="询价邀请" value={`${workspace.opportunities.length} 个`} tone="green" />
+        <MetricCard icon={ShoppingCart} label="销售订单" value={`${workspace.orders.length} 单`} tone="slate" />
+        <MetricCard icon={CreditCard} label="待回款发票" value={`${workspace.invoices.filter((invoice) => invoice.paymentStatus !== '已付款').length} 张`} tone="amber" />
+      </div>
+    )}
 
-    <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+    {(activeModule === 'opportunities' || activeModule === 'quotes' || activeModule === 'profile') && (
+    <div className={`grid gap-6 ${activeModule === 'profile' ? '' : 'lg:grid-cols-[1fr_0.9fr]'}`}>
+      {activeModule === 'opportunities' && (
       <Panel title="商机与报价" icon={Send}>
         <div className="space-y-4">
           {workspace.opportunities.map((rfq) => {
@@ -1401,7 +1654,23 @@ const SupplierWorkspaceView: React.FC<{
           })}
         </div>
       </Panel>
+      )}
 
+      {activeModule === 'quotes' && (
+        <Panel title="报价记录" icon={BarChart3}>
+          <SimpleList
+            rows={workspace.quotes.map((quote) => ({
+              id: quote.id,
+              title: `报价 ${quote.rfqId}`,
+              meta: `${quote.deliveryDays} 天交付 · 税率 ${quote.taxRate}%`,
+              value: currency(quote.amount),
+              status: quote.status,
+            }))}
+          />
+        </Panel>
+      )}
+
+      {activeModule === 'profile' && (
       <Panel title="供应商企业档案" icon={BadgeCheck}>
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <div className="flex items-center gap-4">
@@ -1425,8 +1694,11 @@ const SupplierWorkspaceView: React.FC<{
           </div>
         </div>
       </Panel>
+      )}
     </div>
+    )}
 
+    {activeModule === 'orders' && (
     <div className="grid gap-6 lg:grid-cols-2">
       <Panel title="销售订单与发货" icon={Truck}>
         <div className="space-y-3">
@@ -1485,6 +1757,10 @@ const SupplierWorkspaceView: React.FC<{
           })}
         </div>
       </Panel>
+    </div>
+    )}
+
+    {activeModule === 'invoices' && (
       <Panel title="发票与应收" icon={Receipt}>
         <SimpleList
           rows={workspace.invoices.map((invoice) => ({
@@ -1496,7 +1772,7 @@ const SupplierWorkspaceView: React.FC<{
           }))}
         />
       </Panel>
-    </div>
+    )}
   </>
 );
 
