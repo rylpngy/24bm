@@ -642,10 +642,14 @@ class BackendModuleArchitectureTests {
             "private static final String REJECTED_STATUS"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/QuoteApplicationService.java"),
-        List.of("RfqSourcingStatusTransition", "QuoteStatus.SUBMITTED"),
+        List.of(
+            "RfqSourcingStatusTransition",
+            "RfqQuoteSubmissionPolicy.requireNoSubmittedQuote",
+            "QuoteStatus.SUBMITTED"),
         List.of(
             "private static final String QUOTING_STATUS",
-            "private static final String SUBMITTED_STATUS"));
+            "private static final String SUBMITTED_STATUS",
+            "Supplier has already submitted a quote"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("order/application/PurchaseOrderApplicationService.java"),
         List.of(
@@ -798,10 +802,12 @@ class BackendModuleArchitectureTests {
   @Test
   void rfqAndQuoteApplicationServicesDelegateSourcingStatusTransitions() throws IOException {
     Path transition = SOURCE_ROOT.resolve("sourcing/domain/RfqSourcingStatusTransition.java");
+    Path quoteSubmissionPolicy = SOURCE_ROOT.resolve("sourcing/domain/RfqQuoteSubmissionPolicy.java");
     Path rfqService = SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java");
     Path quoteService = SOURCE_ROOT.resolve("sourcing/application/QuoteApplicationService.java");
 
     assertThat(transition).exists();
+    assertThat(quoteSubmissionPolicy).exists();
 
     String transitionSource = Files.readString(transition);
     assertThat(transitionSource)
@@ -809,6 +815,9 @@ class BackendModuleArchitectureTests {
         .contains("void requireQuotingForQuoteSubmission")
         .contains("PurchaseDemandStatus.APPROVED")
         .contains("RfqStatus.QUOTING");
+    assertThat(Files.readString(quoteSubmissionPolicy))
+        .contains("void requireNoSubmittedQuote")
+        .contains("Supplier has already submitted a quote");
 
     assertThat(Files.readString(rfqService))
         .contains("RfqSourcingStatusTransition")
@@ -817,8 +826,11 @@ class BackendModuleArchitectureTests {
         .doesNotContain("PurchaseDemandStatus.APPROVED");
     assertThat(Files.readString(quoteService))
         .contains("RfqSourcingStatusTransition")
+        .contains("RfqQuoteSubmissionPolicy")
         .contains("rfqSourcingStatusTransition.requireQuotingForQuoteSubmission")
+        .contains("RfqQuoteSubmissionPolicy.requireNoSubmittedQuote")
         .doesNotContain("RFQ is not open for quotes")
+        .doesNotContain("Supplier has already submitted a quote")
         .doesNotContain("RfqStatus.QUOTING");
   }
 

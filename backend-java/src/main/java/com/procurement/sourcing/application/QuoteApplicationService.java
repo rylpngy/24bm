@@ -7,6 +7,7 @@ import com.procurement.sourcing.api.SubmitQuoteRequest;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqQuoteSubmissionPolicy;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
@@ -85,9 +86,7 @@ public class QuoteApplicationService {
         rfqId,
         supplierId,
         QuoteStatus.SUBMITTED);
-    if (submittedCount > 0) {
-      throw new IllegalStateException("Supplier has already submitted a quote: " + rfqId);
-    }
+    RfqQuoteSubmissionPolicy.requireNoSubmittedQuote(submittedCount, rfqId);
 
     String quoteId = newId("quote");
     quoteMapper.insert(
