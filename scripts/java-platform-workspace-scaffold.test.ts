@@ -36,6 +36,7 @@ describe('Java platform workspace scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/platform/application/PlatformAnnouncementApplicationService.java');
     const audience = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformAnnouncementAudience.java');
     const audiencePolicy = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformAnnouncementAudiencePolicy.java');
+    const auditAction = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformAnnouncementAuditAction.java');
     const status = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformAnnouncementStatus.java');
     const mapper = read('backend-java/src/main/java/com/procurement/platform/infrastructure/PlatformAnnouncementMapper.java');
     const migration = read('backend-java/src/main/resources/db/migration/V4__platform_announcements.sql');
@@ -49,7 +50,7 @@ describe('Java platform workspace scaffold', () => {
     expect(service).toContain('TenantAccessGuard.requireUserId');
     expect(service).toContain('listBuyerVisible');
     expect(service).toContain('listSupplierVisible');
-    expect(service).toContain('platform_announcement.published');
+    expect(service).toContain('PlatformAnnouncementAuditAction.PUBLISHED');
     expect(service).toContain('PlatformAnnouncementAudiencePolicy');
     expect(service).toContain('platformAnnouncementAudiencePolicy.requireSupported');
     expect(service).toContain('PlatformAnnouncementAudience.ALL');
@@ -60,6 +61,7 @@ describe('Java platform workspace scaffold', () => {
     expect(audience).toContain('BUYER = "buyer"');
     expect(audience).toContain('SUPPLIER = "supplier"');
     expect(audiencePolicy).toContain('Unsupported platform announcement audience');
+    expect(auditAction).toContain('PUBLISHED = "platform_announcement.published"');
     expect(status).toContain('ACTIVE = "active"');
     expect(mapper).toContain('platform_announcements');
     expect(migration).toContain('create table platform_announcements');

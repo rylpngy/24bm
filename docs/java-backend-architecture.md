@@ -237,6 +237,7 @@ Authorization: Bearer <accessToken>
 - 采购方只读取 `all`/`buyer`，供应商只读取 `all`/`supplier`。
 - 新公告状态由服务端固定为 `active`，发布人来自 JWT 中的 `userId`。
 - 发布公告写入 `audit_logs`，动作为 `platform_announcement.published`，且 `tenant_id` 为空。
+- 平台公告发布审计动作统一由 `PlatformAnnouncementAuditAction` 定义，避免平台公告应用服务散落审计 action 字符串。
 
 对应数据库表：
 

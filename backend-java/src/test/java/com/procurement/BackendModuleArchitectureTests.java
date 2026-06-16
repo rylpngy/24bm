@@ -329,12 +329,14 @@ class BackendModuleArchitectureTests {
   void platformAnnouncementApplicationServiceDelegatesAudiencePolicy() throws IOException {
     Path audience = SOURCE_ROOT.resolve("platform/domain/PlatformAnnouncementAudience.java");
     Path status = SOURCE_ROOT.resolve("platform/domain/PlatformAnnouncementStatus.java");
+    Path auditAction = SOURCE_ROOT.resolve("platform/domain/PlatformAnnouncementAuditAction.java");
     Path policy = SOURCE_ROOT.resolve("platform/domain/PlatformAnnouncementAudiencePolicy.java");
     Path announcementService =
         SOURCE_ROOT.resolve("platform/application/PlatformAnnouncementApplicationService.java");
 
     assertThat(audience).exists();
     assertThat(status).exists();
+    assertThat(auditAction).exists();
     assertThat(policy).exists();
 
     assertThat(Files.readString(audience))
@@ -342,6 +344,8 @@ class BackendModuleArchitectureTests {
         .contains("BUYER = \"buyer\"")
         .contains("SUPPLIER = \"supplier\"");
     assertThat(Files.readString(status)).contains("ACTIVE = \"active\"");
+    assertThat(Files.readString(auditAction))
+        .contains("PUBLISHED = \"platform_announcement.published\"");
     assertThat(Files.readString(policy))
         .contains("void requireSupported")
         .contains("PlatformAnnouncementAudience.ALL")
@@ -355,7 +359,9 @@ class BackendModuleArchitectureTests {
         .contains("PlatformAnnouncementAudience.BUYER")
         .contains("PlatformAnnouncementAudience.SUPPLIER")
         .contains("PlatformAnnouncementStatus.ACTIVE")
+        .contains("PlatformAnnouncementAuditAction.PUBLISHED")
         .doesNotContain("private static final String ACTIVE_STATUS")
+        .doesNotContain("private static final String PLATFORM_ANNOUNCEMENT_PUBLISHED_ACTION")
         .doesNotContain("private static final String ALL_AUDIENCE")
         .doesNotContain("private static final String BUYER_AUDIENCE")
         .doesNotContain("private static final String SUPPLIER_AUDIENCE")
