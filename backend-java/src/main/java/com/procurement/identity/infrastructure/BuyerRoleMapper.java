@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Select;
 public interface BuyerRoleMapper {
 
   @Select("""
-      select id, tenant_id, name, permissions
+      select id, tenant_id, name, permissions::text as permissions_json
       from roles
       where tenant_id = #{tenantId}
         and scope = 'buyer'

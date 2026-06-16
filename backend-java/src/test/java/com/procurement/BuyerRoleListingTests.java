@@ -31,7 +31,7 @@ class BuyerRoleListingTests {
             "role-buyer-requester",
             "tenant-1",
             "需求申请人",
-            List.of("buyer:demand:create", "buyer:demand:read"))));
+            "[\"buyer:demand:create\",\"buyer:demand:read\"]")));
 
     var roles = buyerRoleApplicationService.listCurrentTenantRoles();
 

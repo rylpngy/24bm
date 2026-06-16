@@ -856,7 +856,19 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       return platformRequest<JavaEnterpriseReviewDto[]>('/api/v1/platform/enterprise-reviews');
     },
     getBuyerWorkspace() {
-      return buyerRequest<JavaBuyerMasterData>('/api/v1/buyer/workspace');
+      return buyerRequest<Omit<JavaBuyerMasterData, 'demands' | 'rfqs' | 'orders' | 'invoices'> & {
+        demands: JavaPurchaseDemandDto[];
+        rfqs: JavaRfqDto[];
+        orders: JavaPurchaseOrderDto[];
+        invoices: JavaInvoiceDto[];
+      }>('/api/v1/buyer/workspace')
+        .then((workspace) => ({
+          ...workspace,
+          demands: workspace.demands.map(toPurchaseDemand),
+          rfqs: workspace.rfqs.map(toRfq),
+          orders: workspace.orders.map(toPurchaseOrder),
+          invoices: workspace.invoices.map(toInvoice),
+        }));
     },
     listBuyerSuppliers() {
       return buyerRequest<BuyerSupplierRelationDto[]>('/api/v1/buyer/suppliers');
