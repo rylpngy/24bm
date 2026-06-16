@@ -171,12 +171,48 @@ const main = async () => {
     }
   }
 
+  const smokeDemand = await requestJson('/api/v1/buyer/demands', {
+    method: 'POST',
+    headers: { ...authHeaders, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      title: `本地联调采购需求 ${Date.now()}`,
+      departmentId: 'dept-it',
+      budget: 120000,
+      lineItems: [
+        {
+          materialId: 'mat-laptop',
+          quantity: 10,
+        },
+      ],
+    }),
+  });
+  if (smokeDemand.status !== '草稿') {
+    throw new Error(`Unexpected Java smoke demand status: ${smokeDemand.status}`);
+  }
+
+  const submittedDemand = await requestJson(`/api/v1/buyer/demands/${smokeDemand.id}/submit`, {
+    method: 'POST',
+    headers: authHeaders,
+  });
+  if (submittedDemand.bizType !== 'purchase_demand' || submittedDemand.bizId !== smokeDemand.id) {
+    throw new Error('Unexpected Java purchase demand submission payload');
+  }
+
+  const demandApproval = await requestJson(`/api/v1/buyer/demands/${smokeDemand.id}/approval`, {
+    method: 'POST',
+    headers: { ...authHeaders, 'content-type': 'application/json' },
+    body: JSON.stringify({ approved: true }),
+  });
+  if (demandApproval.status !== '已通过') {
+    throw new Error(`Unexpected Java purchase demand approval status: ${demandApproval.status}`);
+  }
+
   const rfq = await requestJson('/api/v1/buyer/rfqs', {
     method: 'POST',
     headers: { ...authHeaders, 'content-type': 'application/json' },
     body: JSON.stringify({
       title: `本地联调 RFQ ${Date.now()}`,
-      demandIds: ['dem-local-laptop'],
+      demandIds: [smokeDemand.id],
       invitedSupplierIds: ['ent-supplier-sunrise'],
       deadlineAt: futureDeadline(),
     }),
@@ -201,11 +237,23 @@ const main = async () => {
     }),
   });
 
-  const order = await requestJson('/api/v1/buyer/orders', {
+  const approvedAward = await requestJson(`/api/v1/buyer/rfqs/${rfq.id}/award/approval`, {
     method: 'POST',
     headers: { ...authHeaders, 'content-type': 'application/json' },
     body: JSON.stringify({
       awardId: award.id,
+      approved: true,
+    }),
+  });
+  if (approvedAward.approvedStatus !== '已通过') {
+    throw new Error(`Unexpected Java award approval status: ${approvedAward.approvedStatus}`);
+  }
+
+  const order = await requestJson('/api/v1/buyer/orders', {
+    method: 'POST',
+    headers: { ...authHeaders, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      awardId: approvedAward.id,
       expectedReceiptDate: futureDate(),
     }),
   });
@@ -265,7 +313,7 @@ const main = async () => {
   console.log(`Loaded ${orders.length} purchase orders, ${invoices.length} invoices, ${auditLogs.length} audit logs`);
   console.log(`Loaded supplier ${supplierProfile.name}, ${supplierRfqs.length} RFQs, ${supplierQuotes.length} quotes, ${supplierOrders.length} orders, ${supplierInvoices.length} invoices`);
   console.log(`Loaded supplier workspace aggregate with ${supplierWorkspace.opportunities.length} opportunities and ${supplierWorkspace.orders.length} orders`);
-  console.log(`Created RFQ ${rfq.id}, quote ${quote.id}, award ${award.id}, order ${order.id}, confirmed status ${confirmedOrder.status}`);
+  console.log(`Created demand ${smokeDemand.id}, RFQ ${rfq.id}, quote ${quote.id}, approved award ${approvedAward.id}, order ${order.id}, confirmed status ${confirmedOrder.status}`);
   console.log(`Created delivery ${delivery.id}, receipt ${receipt.id}`);
   console.log(`Created invoice ${invoice.id}, payment status ${paidInvoice.paymentStatus}`);
 };

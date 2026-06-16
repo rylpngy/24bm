@@ -5,8 +5,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -88,10 +86,6 @@ public interface PlatformTenantMapper {
       from tenants
       order by created_at desc
       """)
-  @Results(id = "platformTenantResults", value = {
-      @Result(column = "enabled_features_json", property = "enabledFeaturesJson"),
-      @Result(column = "user_limit", property = "userLimit")
-  })
   List<PlatformTenant> listAll();
 
   @Select("""
@@ -105,10 +99,6 @@ public interface PlatformTenantMapper {
       from tenants
       where id = #{tenantId}
       """)
-  @Results(id = "singlePlatformTenantResults", value = {
-      @Result(column = "enabled_features_json", property = "enabledFeaturesJson"),
-      @Result(column = "user_limit", property = "userLimit")
-  })
   PlatformTenant findById(@Param("tenantId") String tenantId);
 
   @Update("""

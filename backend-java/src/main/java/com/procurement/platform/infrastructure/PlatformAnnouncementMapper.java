@@ -5,8 +5,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 
 @Mapper
@@ -18,10 +16,6 @@ public interface PlatformAnnouncementMapper {
       where status = 'active'
       order by created_at desc
       """)
-  @Results(id = "platformAnnouncementResults", value = {
-      @Result(column = "published_by", property = "publishedBy"),
-      @Result(column = "created_at", property = "createdAt")
-  })
   List<PlatformAnnouncement> listActive();
 
   @Select("""
@@ -31,10 +25,6 @@ public interface PlatformAnnouncementMapper {
         and audience in (#{sharedAudience}, #{specificAudience})
       order by created_at desc
       """)
-  @Results(id = "visiblePlatformAnnouncementResults", value = {
-      @Result(column = "published_by", property = "publishedBy"),
-      @Result(column = "created_at", property = "createdAt")
-  })
   List<PlatformAnnouncement> listActiveForAudiences(
       @Param("sharedAudience") String sharedAudience,
       @Param("specificAudience") String specificAudience);
@@ -44,10 +34,6 @@ public interface PlatformAnnouncementMapper {
       from platform_announcements
       where id = #{id}
       """)
-  @Results(id = "singlePlatformAnnouncementResults", value = {
-      @Result(column = "published_by", property = "publishedBy"),
-      @Result(column = "created_at", property = "createdAt")
-  })
   PlatformAnnouncement findById(@Param("id") String id);
 
   @Insert("""

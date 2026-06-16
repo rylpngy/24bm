@@ -5,8 +5,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -20,10 +18,6 @@ public interface DepartmentMapper {
         and status = 'active'
       order by created_at asc
       """)
-  @Results(id = "departmentResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "parent_id", property = "parentId")
-  })
   List<Department> listActiveByTenant(@Param("tenantId") String tenantId);
 
   @Select("""
@@ -31,7 +25,7 @@ public interface DepartmentMapper {
         select 1
         from departments
         where tenant_id = #{tenantId}
-          and id = #{departmentId}
+          and id = #{departmentId,jdbcType=VARCHAR}
           and status = 'active'
       )
       """)
@@ -45,15 +39,11 @@ public interface DepartmentMapper {
       where tenant_id = #{tenantId}
         and id = #{id}
       """)
-  @Results(id = "singleDepartmentResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "parent_id", property = "parentId")
-  })
   Department findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Insert("""
       insert into departments (id, tenant_id, name, parent_id, status)
-      values (#{id}, #{tenantId}, #{name}, #{parentId}, #{status})
+      values (#{id}, #{tenantId}, #{name}, #{parentId}, #{status,jdbcType=VARCHAR})
       """)
   void insert(
       @Param("id") String id,

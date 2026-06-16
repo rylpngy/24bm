@@ -5,8 +5,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -15,7 +13,7 @@ public interface ApprovalTaskMapper {
 
   @Insert("""
       insert into approval_tasks (id, tenant_id, biz_type, biz_id, assignee_id, status)
-      values (#{id}, #{tenantId}, #{bizType}, #{bizId}, #{assigneeId}, #{status})
+      values (#{id}, #{tenantId}, #{bizType}, #{bizId}, #{assigneeId}, #{status,jdbcType=VARCHAR})
       """)
   void insert(
       @Param("id") String id,
@@ -30,14 +28,6 @@ public interface ApprovalTaskMapper {
       from approval_tasks
       where tenant_id = #{tenantId} and id = #{id}
       """)
-  @Results(id = "approvalTaskResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "biz_type", property = "bizType"),
-      @Result(column = "biz_id", property = "bizId"),
-      @Result(column = "assignee_id", property = "assigneeId"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "acted_at", property = "actedAt")
-  })
   ApprovalTask findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
@@ -46,18 +36,10 @@ public interface ApprovalTaskMapper {
       where tenant_id = #{tenantId}
         and biz_type = #{bizType}
         and biz_id = #{bizId}
-        and status = #{status}
+        and status = #{status,jdbcType=VARCHAR}
       order by created_at desc
       limit 1
       """)
-  @Results(id = "pendingApprovalTaskResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "biz_type", property = "bizType"),
-      @Result(column = "biz_id", property = "bizId"),
-      @Result(column = "assignee_id", property = "assigneeId"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "acted_at", property = "actedAt")
-  })
   ApprovalTask findPendingByBiz(
       @Param("tenantId") String tenantId,
       @Param("bizType") String bizType,
@@ -68,17 +50,9 @@ public interface ApprovalTaskMapper {
       select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at, acted_at
       from approval_tasks
       where tenant_id = #{tenantId}
-        and status = #{status}
+        and status = #{status,jdbcType=VARCHAR}
       order by created_at desc
       """)
-  @Results(id = "approvalTaskListResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "biz_type", property = "bizType"),
-      @Result(column = "biz_id", property = "bizId"),
-      @Result(column = "assignee_id", property = "assigneeId"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "acted_at", property = "actedAt")
-  })
   List<ApprovalTask> listByTenantAndStatus(
       @Param("tenantId") String tenantId,
       @Param("status") String status);
@@ -91,14 +65,6 @@ public interface ApprovalTaskMapper {
       order by acted_at desc nulls last, created_at desc
       limit #{limit}
       """)
-  @Results(id = "recentReviewedApprovalTaskResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "biz_type", property = "bizType"),
-      @Result(column = "biz_id", property = "bizId"),
-      @Result(column = "assignee_id", property = "assigneeId"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "acted_at", property = "actedAt")
-  })
   List<ApprovalTask> listRecentReviewedByTenant(
       @Param("tenantId") String tenantId,
       @Param("limit") int limit);

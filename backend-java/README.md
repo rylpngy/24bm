@@ -563,11 +563,12 @@ The project includes `.mvn/settings.xml` and `.mvn/maven.config` so Maven uses t
 
 `mvn verify -Pintegration` runs PostgreSQL integration tests through Testcontainers. Keep Docker running when you want to execute the database smoke tests locally; regular unit tests stay on `mvn test`.
 
-To run the Java backend for local frontend integration, start PostgreSQL and the `local` Spring profile:
+To run the Java backend for local frontend integration, start PostgreSQL from this `backend-java/` directory and then run the `local` Spring profile:
 
 ```bash
+cd backend-java
 docker compose up -d
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn clean spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 The `local` profile loads Flyway migrations from `db/migration` plus demo seed data from `db/dev`, including `tenant-acme`, buyer users, suppliers, supplier relations, and materials used by the Vite Java adapter.

@@ -94,7 +94,7 @@ describe('Java backend scaffold', () => {
     expect(existsSync(join(root, docPath))).toBe(true);
 
     const doc = read(docPath);
-    expect(doc).toContain('mvn spring-boot:run');
+    expect(doc).toContain('mvn clean spring-boot:run');
     expect(doc).toContain('npm run dev:java');
     expect(doc).toContain('POST /api/v1/auth/login');
     expect(doc).toContain('Authorization: Bearer');
@@ -450,8 +450,8 @@ describe('Java backend scaffold', () => {
     expect(localSeed).toContain('user-platform-admin');
 
     expect(readme).toContain('docker compose up -d');
-    expect(readme).toContain('mvn spring-boot:run -Dspring-boot.run.profiles=local');
+    expect(readme).toContain('mvn clean spring-boot:run -Dspring-boot.run.profiles=local');
     expect(integrationDoc).toContain('docker compose up -d');
-    expect(integrationDoc).toContain('mvn spring-boot:run -Dspring-boot.run.profiles=local');
+    expect(integrationDoc).toContain('mvn clean spring-boot:run -Dspring-boot.run.profiles=local');
   });
 });

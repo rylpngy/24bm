@@ -6,8 +6,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -15,28 +13,30 @@ import org.apache.ibatis.annotations.Update;
 public interface BuyerSupplierRelationMapper {
 
   @Select("""
+      <script>
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
              r.categories::text as categories_json, r.performance_score
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
       where r.tenant_id = #{tenantId}
-        and (#{status} is null or r.status = #{status})
-        and (#{level} is null or r.level = #{level})
-        and (#{category} is null or jsonb_exists(r.categories, #{category}))
+        <if test="status != null and status != ''">
+        and r.status = #{status}
+        </if>
+        <if test="level != null and level != ''">
+        and r.level = #{level}
+        </if>
+        <if test="category != null and category != ''">
+        and jsonb_exists(r.categories, #{category})
+        </if>
+        <if test="keyword != null and keyword != ''">
         and (
-          #{keyword} is null
-          or e.name ilike concat('%', #{keyword}, '%')
+          e.name ilike concat('%', #{keyword}, '%')
           or r.supplier_id ilike concat('%', #{keyword}, '%')
         )
+        </if>
       order by r.created_at desc
+      </script>
       """)
-  @Results(id = "buyerSupplierRelationResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "supplier_name", property = "supplierName"),
-      @Result(column = "categories_json", property = "categoriesJson"),
-      @Result(column = "performance_score", property = "performanceScore")
-  })
   List<BuyerSupplierRelation> listByTenant(
       @Param("tenantId") String tenantId,
       @Param("status") String status,
@@ -51,13 +51,6 @@ public interface BuyerSupplierRelationMapper {
       join enterprises e on e.id = r.supplier_id
       where r.tenant_id = #{tenantId} and r.id = #{id}
       """)
-  @Results(id = "singleBuyerSupplierRelationResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "supplier_name", property = "supplierName"),
-      @Result(column = "categories_json", property = "categoriesJson"),
-      @Result(column = "performance_score", property = "performanceScore")
-  })
   BuyerSupplierRelation findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Insert("""
@@ -76,8 +69,8 @@ public interface BuyerSupplierRelationMapper {
       select count(1)
       from buyer_supplier_relations
       where tenant_id = #{tenantId}
-        and supplier_id = #{supplierId}
-        and status = #{status}
+        and supplier_id = #{supplierId,jdbcType=VARCHAR}
+        and status = #{status,jdbcType=VARCHAR}
       """)
   int countByTenantSupplierAndStatus(
       @Param("tenantId") String tenantId,

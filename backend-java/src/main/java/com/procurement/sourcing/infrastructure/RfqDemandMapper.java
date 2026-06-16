@@ -12,7 +12,7 @@ public interface RfqDemandMapper {
   @Select("""
       select demand_id
       from rfq_demands
-      where tenant_id = #{tenantId} and rfq_id = #{rfqId}
+      where tenant_id = #{tenantId} and rfq_id = #{rfqId,jdbcType=VARCHAR}
       order by id
       """)
   List<String> listDemandIds(@Param("tenantId") String tenantId, @Param("rfqId") String rfqId);

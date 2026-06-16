@@ -5,8 +5,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -18,38 +16,35 @@ public interface SupplierUserMapper {
       from users u
       left join user_roles ur on ur.user_id = u.id
       left join roles r on r.id = ur.role_id and r.scope = 'supplier'
-      where u.supplier_id = #{supplierId}
+      where u.supplier_id = #{supplierId,jdbcType=VARCHAR}
         and u.tenant_id is null
       group by u.id, u.supplier_id, u.name, u.mobile, u.email, u.status, u.created_at
       order by u.created_at desc
       """)
-  @Results(id = "supplierUserResults", value = {
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "role_id", property = "roleId")
-  })
   List<SupplierUser> listBySupplier(@Param("supplierId") String supplierId);
 
   @Select("""
+      <script>
       select u.id, u.supplier_id, u.name, u.mobile, u.email, u.status, min(r.id) as role_id
       from users u
       left join user_roles ur on ur.user_id = u.id
       left join roles r on r.id = ur.role_id and r.scope = 'supplier'
-      where u.supplier_id = #{supplierId}
+      where u.supplier_id = #{supplierId,jdbcType=VARCHAR}
         and u.tenant_id is null
-        and (#{status} is null or u.status = #{status})
+        <if test="status != null and status != ''">
+        and u.status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
         and (
-          #{keyword} is null
-          or u.name ilike concat('%', #{keyword}, '%')
+          u.name ilike concat('%', #{keyword}, '%')
           or u.mobile ilike concat('%', #{keyword}, '%')
           or u.email ilike concat('%', #{keyword}, '%')
         )
+        </if>
       group by u.id, u.supplier_id, u.name, u.mobile, u.email, u.status, u.created_at
       order by u.created_at desc
+      </script>
       """)
-  @Results(id = "supplierUserFilteredResults", value = {
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "role_id", property = "roleId")
-  })
   List<SupplierUser> listBySupplierFiltered(
       @Param("supplierId") String supplierId,
       @Param("status") String status,
@@ -60,15 +55,11 @@ public interface SupplierUserMapper {
       from users u
       left join user_roles ur on ur.user_id = u.id
       left join roles r on r.id = ur.role_id and r.scope = 'supplier'
-      where u.supplier_id = #{supplierId}
+      where u.supplier_id = #{supplierId,jdbcType=VARCHAR}
         and u.tenant_id is null
         and u.id = #{id}
       group by u.id, u.supplier_id, u.name, u.mobile, u.email, u.status
       """)
-  @Results(id = "singleSupplierUserResults", value = {
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "role_id", property = "roleId")
-  })
   SupplierUser findBySupplierAndId(
       @Param("supplierId") String supplierId,
       @Param("id") String id);
@@ -77,7 +68,7 @@ public interface SupplierUserMapper {
       select exists(
         select 1
         from users
-        where supplier_id = #{supplierId}
+        where supplier_id = #{supplierId,jdbcType=VARCHAR}
           and tenant_id is null
           and id = #{id}
       )
@@ -94,7 +85,7 @@ public interface SupplierUserMapper {
         and exists (
           select 1
           from users u
-          where u.supplier_id = #{supplierId}
+          where u.supplier_id = #{supplierId,jdbcType=VARCHAR}
             and u.tenant_id is null
         )
       order by r.id
@@ -127,7 +118,7 @@ public interface SupplierUserMapper {
       update users
       set password_hash = #{passwordHash},
           updated_at = now()
-      where supplier_id = #{supplierId}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
         and tenant_id is null
         and id = #{userId}
       """)
@@ -140,7 +131,7 @@ public interface SupplierUserMapper {
       update users
       set status = #{status},
           updated_at = now()
-      where supplier_id = #{supplierId}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
         and tenant_id is null
         and id = #{userId}
       """)

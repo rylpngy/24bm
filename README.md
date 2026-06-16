@@ -23,7 +23,7 @@ cd backend-java
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 export PATH=/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:$PATH
 docker compose up -d
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn clean spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 Start the frontend against Java:

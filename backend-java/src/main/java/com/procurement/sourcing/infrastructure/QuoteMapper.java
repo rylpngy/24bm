@@ -6,8 +6,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 
 @Mapper
@@ -17,9 +15,9 @@ public interface QuoteMapper {
       select count(1)
       from quotes
       where tenant_id = #{tenantId}
-        and rfq_id = #{rfqId}
-        and supplier_id = #{supplierId}
-        and status = #{status}
+        and rfq_id = #{rfqId,jdbcType=VARCHAR}
+        and supplier_id = #{supplierId,jdbcType=VARCHAR}
+        and status = #{status,jdbcType=VARCHAR}
       """)
   int countSubmittedBySupplier(
       @Param("tenantId") String tenantId,
@@ -29,7 +27,7 @@ public interface QuoteMapper {
 
   @Insert("""
       insert into quotes (id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status)
-      values (#{id}, #{tenantId}, #{rfqId}, #{supplierId}, #{amount}, #{taxRate}, #{deliveryDays}, #{status})
+      values (#{id}, #{tenantId}, #{rfqId}, #{supplierId}, #{amount}, #{taxRate}, #{deliveryDays}, #{status,jdbcType=VARCHAR})
       """)
   void insert(
       @Param("id") String id,
@@ -46,48 +44,30 @@ public interface QuoteMapper {
       from quotes
       where tenant_id = #{tenantId} and id = #{id}
       """)
-  @Results(id = "quoteResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "tax_rate", property = "taxRate"),
-      @Result(column = "delivery_days", property = "deliveryDays"),
-      @Result(column = "submitted_at", property = "submittedAt")
-  })
   Quote findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
       select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
       from quotes
-      where supplier_id = #{supplierId}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
       order by submitted_at desc
       """)
-  @Results(id = "supplierQuoteListResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "tax_rate", property = "taxRate"),
-      @Result(column = "delivery_days", property = "deliveryDays"),
-      @Result(column = "submitted_at", property = "submittedAt")
-  })
   List<Quote> listBySupplier(@Param("supplierId") String supplierId);
 
   @Select("""
+      <script>
       select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
       from quotes
-      where supplier_id = #{supplierId}
-        and (#{rfqId} is null or rfq_id = #{rfqId})
-        and (#{status} is null or status = #{status})
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
+        <if test="rfqId != null and rfqId != ''">
+        and rfq_id = #{rfqId}
+        </if>
+        <if test="status != null and status != ''">
+        and status = #{status}
+        </if>
       order by submitted_at desc
+      </script>
       """)
-  @Results(id = "supplierQuoteFilteredListResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "tax_rate", property = "taxRate"),
-      @Result(column = "delivery_days", property = "deliveryDays"),
-      @Result(column = "submitted_at", property = "submittedAt")
-  })
   List<Quote> listBySupplierFiltered(
       @Param("supplierId") String supplierId,
       @Param("rfqId") String rfqId,
@@ -97,18 +77,10 @@ public interface QuoteMapper {
       select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
       from quotes
       where tenant_id = #{tenantId}
-        and rfq_id = #{rfqId}
+        and rfq_id = #{rfqId,jdbcType=VARCHAR}
         and id = #{quoteId}
-        and status = #{status}
+        and status = #{status,jdbcType=VARCHAR}
       """)
-  @Results(id = "submittedQuoteForAwardResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "tax_rate", property = "taxRate"),
-      @Result(column = "delivery_days", property = "deliveryDays"),
-      @Result(column = "submitted_at", property = "submittedAt")
-  })
   Quote findSubmittedQuoteForAward(
       @Param("tenantId") String tenantId,
       @Param("rfqId") String rfqId,

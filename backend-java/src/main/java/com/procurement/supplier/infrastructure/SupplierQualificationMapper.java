@@ -6,8 +6,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -18,44 +16,29 @@ public interface SupplierQualificationMapper {
       select id, supplier_id, qualification_type, certificate_no, expires_at,
              file_name, storage_key, status, created_at
       from supplier_qualifications
-      where supplier_id = #{supplierId}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
         and status = 'active'
       order by created_at desc
       """)
-  @Results(id = "supplierQualificationResults", value = {
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "qualification_type", property = "qualificationType"),
-      @Result(column = "certificate_no", property = "certificateNo"),
-      @Result(column = "expires_at", property = "expiresAt"),
-      @Result(column = "file_name", property = "fileName"),
-      @Result(column = "storage_key", property = "storageKey"),
-      @Result(column = "created_at", property = "createdAt")
-  })
   List<SupplierQualification> listActiveBySupplier(@Param("supplierId") String supplierId);
 
   @Select("""
+      <script>
       select id, supplier_id, qualification_type, certificate_no, expires_at,
              file_name, storage_key, status, created_at
       from supplier_qualifications
-      where supplier_id = #{supplierId}
-        and status = #{status}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
+        and status = #{status,jdbcType=VARCHAR}
+        <if test="keyword != null and keyword != ''">
         and (
-          #{keyword} is null
-          or qualification_type ilike concat('%', #{keyword}, '%')
+          qualification_type ilike concat('%', #{keyword}, '%')
           or certificate_no ilike concat('%', #{keyword}, '%')
           or file_name ilike concat('%', #{keyword}, '%')
         )
+        </if>
       order by created_at desc
+      </script>
       """)
-  @Results(id = "supplierQualificationFilteredResults", value = {
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "qualification_type", property = "qualificationType"),
-      @Result(column = "certificate_no", property = "certificateNo"),
-      @Result(column = "expires_at", property = "expiresAt"),
-      @Result(column = "file_name", property = "fileName"),
-      @Result(column = "storage_key", property = "storageKey"),
-      @Result(column = "created_at", property = "createdAt")
-  })
   List<SupplierQualification> listBySupplierFiltered(
       @Param("supplierId") String supplierId,
       @Param("status") String status,
@@ -65,18 +48,9 @@ public interface SupplierQualificationMapper {
       select id, supplier_id, qualification_type, certificate_no, expires_at,
              file_name, storage_key, status, created_at
       from supplier_qualifications
-      where supplier_id = #{supplierId}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
         and id = #{id}
       """)
-  @Results(id = "singleSupplierQualificationResults", value = {
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "qualification_type", property = "qualificationType"),
-      @Result(column = "certificate_no", property = "certificateNo"),
-      @Result(column = "expires_at", property = "expiresAt"),
-      @Result(column = "file_name", property = "fileName"),
-      @Result(column = "storage_key", property = "storageKey"),
-      @Result(column = "created_at", property = "createdAt")
-  })
   SupplierQualification findBySupplierAndId(
       @Param("supplierId") String supplierId,
       @Param("id") String id);
@@ -86,7 +60,7 @@ public interface SupplierQualificationMapper {
         id, supplier_id, qualification_type, certificate_no, expires_at, file_name, storage_key, status
       )
       values (
-        #{id}, #{supplierId}, #{qualificationType}, #{certificateNo}, #{expiresAt}, #{fileName}, #{storageKey}, #{status}
+        #{id}, #{supplierId}, #{qualificationType}, #{certificateNo}, #{expiresAt}, #{fileName}, #{storageKey}, #{status,jdbcType=VARCHAR}
       )
       """)
   void insert(
@@ -101,8 +75,8 @@ public interface SupplierQualificationMapper {
 
   @Update("""
       update supplier_qualifications
-      set status = #{status}
-      where supplier_id = #{supplierId}
+      set status = #{status,jdbcType=VARCHAR}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
         and id = #{id}
       """)
   void updateStatus(

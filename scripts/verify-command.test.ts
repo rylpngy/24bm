@@ -17,7 +17,7 @@ describe('local verification command', () => {
     expect(verifier).toContain("['run', 'openapi:check']");
     expect(verifier).toContain("['test']");
     expect(verifier).toContain("['run', 'build']");
-    expect(verifier).toContain("['test']");
+    expect(verifier).toContain("['clean', 'test']");
     expect(verifier).toContain("run('mvn'");
     expect(verifier).toContain('backend-java');
 

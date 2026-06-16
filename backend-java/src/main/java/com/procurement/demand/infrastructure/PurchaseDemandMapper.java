@@ -6,8 +6,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -20,31 +18,25 @@ public interface PurchaseDemandMapper {
       where tenant_id = #{tenantId}
       order by created_at desc
       """)
-  @Results(id = "purchaseDemandResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "department_id", property = "departmentId"),
-      @Result(column = "requester_id", property = "requesterId"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<PurchaseDemand> listByTenant(@Param("tenantId") String tenantId);
 
   @Select("""
+      <script>
       select id, tenant_id, title, department_id, requester_id, budget, status, created_at, updated_at
       from purchase_demands
       where tenant_id = #{tenantId}
-        and (#{status} is null or status = #{status})
-        and (#{departmentId} is null or department_id = #{departmentId})
-        and (#{keyword} is null or title ilike concat('%', #{keyword}, '%'))
+        <if test="status != null and status != ''">
+        and status = #{status}
+        </if>
+        <if test="departmentId != null and departmentId != ''">
+        and department_id = #{departmentId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+        and title ilike concat('%', #{keyword}, '%')
+        </if>
       order by created_at desc
+      </script>
       """)
-  @Results(id = "purchaseDemandFilteredResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "department_id", property = "departmentId"),
-      @Result(column = "requester_id", property = "requesterId"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<PurchaseDemand> listByTenantFiltered(
       @Param("tenantId") String tenantId,
       @Param("status") String status,
@@ -56,18 +48,11 @@ public interface PurchaseDemandMapper {
       from purchase_demands
       where tenant_id = #{tenantId} and id = #{id}
       """)
-  @Results(id = "singlePurchaseDemandResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "department_id", property = "departmentId"),
-      @Result(column = "requester_id", property = "requesterId"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   PurchaseDemand findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Insert("""
       insert into purchase_demands (id, tenant_id, title, department_id, requester_id, budget, status)
-      values (#{id}, #{tenantId}, #{title}, #{departmentId}, #{requesterId}, #{budget}, #{status})
+      values (#{id}, #{tenantId}, #{title}, #{departmentId}, #{requesterId}, #{budget}, #{status,jdbcType=VARCHAR})
       """)
   void insert(
       @Param("id") String id,
@@ -89,7 +74,7 @@ public interface PurchaseDemandMapper {
       select count(*)
       from purchase_demands
       where tenant_id = #{tenantId}
-        and department_id = #{departmentId}
+        and department_id = #{departmentId,jdbcType=VARCHAR}
       """)
   int countByTenantAndDepartment(
       @Param("tenantId") String tenantId,

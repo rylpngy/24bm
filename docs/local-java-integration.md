@@ -40,7 +40,7 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 export PATH=/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:$PATH
 mvn test
 docker compose up -d
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn clean spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 The default backend URL is:
@@ -145,7 +145,7 @@ npm run verify
 - `npm run openapi:check`
 - `npm test`
 - `npm run build`
-- `mvn test` in `backend-java/`
+- `mvn clean test` in `backend-java/`
 
 Use the lower-level commands when you need a narrower check:
 

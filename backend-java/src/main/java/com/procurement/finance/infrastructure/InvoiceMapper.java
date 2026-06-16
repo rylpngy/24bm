@@ -6,8 +6,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -20,35 +18,25 @@ public interface InvoiceMapper {
       where tenant_id = #{tenantId}
       order by created_at desc
       """)
-  @Results(id = "listInvoiceResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "order_id", property = "orderId"),
-      @Result(column = "invoice_no", property = "invoiceNo"),
-      @Result(column = "payment_status", property = "paymentStatus"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<Invoice> listByTenant(@Param("tenantId") String tenantId);
 
   @Select("""
+      <script>
       select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
       from invoices
       where tenant_id = #{tenantId}
-        and (#{paymentStatus} is null or payment_status = #{paymentStatus})
-        and (#{supplierId} is null or supplier_id = #{supplierId})
-        and (#{orderId} is null or order_id = #{orderId})
+        <if test="paymentStatus != null and paymentStatus != ''">
+        and payment_status = #{paymentStatus}
+        </if>
+        <if test="supplierId != null and supplierId != ''">
+        and supplier_id = #{supplierId}
+        </if>
+        <if test="orderId != null and orderId != ''">
+        and order_id = #{orderId}
+        </if>
       order by created_at desc
+      </script>
       """)
-  @Results(id = "filteredInvoiceResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "order_id", property = "orderId"),
-      @Result(column = "invoice_no", property = "invoiceNo"),
-      @Result(column = "payment_status", property = "paymentStatus"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<Invoice> listByTenantFiltered(
       @Param("tenantId") String tenantId,
       @Param("paymentStatus") String paymentStatus,
@@ -58,37 +46,25 @@ public interface InvoiceMapper {
   @Select("""
       select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
       from invoices
-      where supplier_id = #{supplierId}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
       order by created_at desc
       """)
-  @Results(id = "supplierInvoiceListResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "order_id", property = "orderId"),
-      @Result(column = "invoice_no", property = "invoiceNo"),
-      @Result(column = "payment_status", property = "paymentStatus"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<Invoice> listBySupplier(@Param("supplierId") String supplierId);
 
   @Select("""
+      <script>
       select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
       from invoices
-      where supplier_id = #{supplierId}
-        and (#{paymentStatus} is null or payment_status = #{paymentStatus})
-        and (#{orderId} is null or order_id = #{orderId})
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
+        <if test="paymentStatus != null and paymentStatus != ''">
+        and payment_status = #{paymentStatus}
+        </if>
+        <if test="orderId != null and orderId != ''">
+        and order_id = #{orderId}
+        </if>
       order by created_at desc
+      </script>
       """)
-  @Results(id = "supplierInvoiceFilteredListResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "order_id", property = "orderId"),
-      @Result(column = "invoice_no", property = "invoiceNo"),
-      @Result(column = "payment_status", property = "paymentStatus"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<Invoice> listBySupplierFiltered(
       @Param("supplierId") String supplierId,
       @Param("paymentStatus") String paymentStatus,
@@ -98,13 +74,13 @@ public interface InvoiceMapper {
       select count(1)
       from invoices
       where tenant_id = #{tenantId}
-        and order_id = #{orderId}
+        and order_id = #{orderId,jdbcType=VARCHAR}
       """)
   int countByTenantAndOrder(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
 
   @Insert("""
       insert into invoices (id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status)
-      values (#{id}, #{tenantId}, #{supplierId}, #{orderId}, #{amount}, #{invoiceNo}, #{paymentStatus})
+      values (#{id}, #{tenantId}, #{supplierId}, #{orderId}, #{amount}, #{invoiceNo}, #{paymentStatus,jdbcType=VARCHAR})
       """)
   void insert(
       @Param("id") String id,
@@ -120,31 +96,13 @@ public interface InvoiceMapper {
       from invoices
       where tenant_id = #{tenantId} and id = #{id}
       """)
-  @Results(id = "invoiceResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "order_id", property = "orderId"),
-      @Result(column = "invoice_no", property = "invoiceNo"),
-      @Result(column = "payment_status", property = "paymentStatus"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   Invoice findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
       select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
       from invoices
-      where supplier_id = #{supplierId} and id = #{id}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR} and id = #{id}
       """)
-  @Results(id = "supplierInvoiceResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "order_id", property = "orderId"),
-      @Result(column = "invoice_no", property = "invoiceNo"),
-      @Result(column = "payment_status", property = "paymentStatus"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   Invoice findBySupplierAndId(@Param("supplierId") String supplierId, @Param("id") String id);
 
   @Update("""

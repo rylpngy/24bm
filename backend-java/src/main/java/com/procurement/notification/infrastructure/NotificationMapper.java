@@ -5,9 +5,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.ResultMap;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -33,12 +30,6 @@ public interface NotificationMapper {
       order by created_at desc
       limit #{limit}
       """)
-  @Results(id = "notificationResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "recipient_id", property = "recipientId"),
-      @Result(column = "read_at", property = "readAt"),
-      @Result(column = "created_at", property = "createdAt")
-  })
   List<Notification> listByTenantAndRecipient(
       @Param("tenantId") String tenantId,
       @Param("recipientId") String recipientId,
@@ -48,13 +39,12 @@ public interface NotificationMapper {
       select n.id, n.tenant_id, n.recipient_id, n.title, n.content, n.read_at, n.created_at
       from notifications n
       join users u on u.id = n.recipient_id
-      where u.supplier_id = #{supplierId}
+      where u.supplier_id = #{supplierId,jdbcType=VARCHAR}
         and u.tenant_id is null
         and n.recipient_id = #{recipientId}
       order by n.created_at desc
       limit #{limit}
       """)
-  @ResultMap("notificationResults")
   List<Notification> listBySupplierAndRecipient(
       @Param("supplierId") String supplierId,
       @Param("recipientId") String recipientId,
@@ -67,12 +57,6 @@ public interface NotificationMapper {
         and recipient_id = #{recipientId}
         and id = #{id}
       """)
-  @Results(id = "singleNotificationResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "recipient_id", property = "recipientId"),
-      @Result(column = "read_at", property = "readAt"),
-      @Result(column = "created_at", property = "createdAt")
-  })
   Notification findByTenantRecipientAndId(
       @Param("tenantId") String tenantId,
       @Param("recipientId") String recipientId,
@@ -82,12 +66,11 @@ public interface NotificationMapper {
       select n.id, n.tenant_id, n.recipient_id, n.title, n.content, n.read_at, n.created_at
       from notifications n
       join users u on u.id = n.recipient_id
-      where u.supplier_id = #{supplierId}
+      where u.supplier_id = #{supplierId,jdbcType=VARCHAR}
         and u.tenant_id is null
         and n.recipient_id = #{recipientId}
         and n.id = #{id}
       """)
-  @ResultMap("singleNotificationResults")
   Notification findBySupplierRecipientAndId(
       @Param("supplierId") String supplierId,
       @Param("recipientId") String recipientId,
@@ -114,7 +97,7 @@ public interface NotificationMapper {
           select 1
           from users u
           where u.id = n.recipient_id
-            and u.supplier_id = #{supplierId}
+            and u.supplier_id = #{supplierId,jdbcType=VARCHAR}
             and u.tenant_id is null
         )
       """)

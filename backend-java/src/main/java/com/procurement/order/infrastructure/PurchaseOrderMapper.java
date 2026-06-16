@@ -7,8 +7,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -21,33 +19,25 @@ public interface PurchaseOrderMapper {
       where tenant_id = #{tenantId}
       order by created_at desc
       """)
-  @Results(id = "listPurchaseOrderResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "expected_receipt_date", property = "expectedReceiptDate"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<PurchaseOrder> listByTenant(@Param("tenantId") String tenantId);
 
   @Select("""
+      <script>
       select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
       from purchase_orders
       where tenant_id = #{tenantId}
-        and (#{status} is null or status = #{status})
-        and (#{supplierId} is null or supplier_id = #{supplierId})
-        and (#{rfqId} is null or rfq_id = #{rfqId})
+        <if test="status != null and status != ''">
+        and status = #{status}
+        </if>
+        <if test="supplierId != null and supplierId != ''">
+        and supplier_id = #{supplierId}
+        </if>
+        <if test="rfqId != null and rfqId != ''">
+        and rfq_id = #{rfqId}
+        </if>
       order by created_at desc
+      </script>
       """)
-  @Results(id = "filteredPurchaseOrderResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "expected_receipt_date", property = "expectedReceiptDate"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<PurchaseOrder> listByTenantFiltered(
       @Param("tenantId") String tenantId,
       @Param("status") String status,
@@ -58,17 +48,9 @@ public interface PurchaseOrderMapper {
       select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
       from purchase_orders
       where tenant_id = #{tenantId}
-        and rfq_id = #{rfqId}
-        and supplier_id = #{supplierId}
+        and rfq_id = #{rfqId,jdbcType=VARCHAR}
+        and supplier_id = #{supplierId,jdbcType=VARCHAR}
       """)
-  @Results(id = "purchaseOrderResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "expected_receipt_date", property = "expectedReceiptDate"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   PurchaseOrder findByAwardSource(
       @Param("tenantId") String tenantId,
       @Param("rfqId") String rfqId,
@@ -79,63 +61,37 @@ public interface PurchaseOrderMapper {
       from purchase_orders
       where tenant_id = #{tenantId} and id = #{id}
       """)
-  @Results(id = "singlePurchaseOrderResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "expected_receipt_date", property = "expectedReceiptDate"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   PurchaseOrder findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
       select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
       from purchase_orders
-      where id = #{id} and supplier_id = #{supplierId}
+      where id = #{id} and supplier_id = #{supplierId,jdbcType=VARCHAR}
       """)
-  @Results(id = "supplierPurchaseOrderResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "expected_receipt_date", property = "expectedReceiptDate"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   PurchaseOrder findBySupplierAndId(@Param("supplierId") String supplierId, @Param("id") String id);
 
   @Select("""
       select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
       from purchase_orders
-      where supplier_id = #{supplierId}
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
       order by created_at desc
       """)
-  @Results(id = "supplierPurchaseOrderListResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "expected_receipt_date", property = "expectedReceiptDate"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<PurchaseOrder> listBySupplier(@Param("supplierId") String supplierId);
 
   @Select("""
+      <script>
       select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
       from purchase_orders
-      where supplier_id = #{supplierId}
-        and (#{status} is null or status = #{status})
-        and (#{rfqId} is null or rfq_id = #{rfqId})
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
+        <if test="status != null and status != ''">
+        and status = #{status}
+        </if>
+        <if test="rfqId != null and rfqId != ''">
+        and rfq_id = #{rfqId}
+        </if>
       order by created_at desc
+      </script>
       """)
-  @Results(id = "supplierPurchaseOrderFilteredListResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "rfq_id", property = "rfqId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "expected_receipt_date", property = "expectedReceiptDate"),
-      @Result(column = "created_at", property = "createdAt"),
-      @Result(column = "updated_at", property = "updatedAt")
-  })
   List<PurchaseOrder> listBySupplierFiltered(
       @Param("supplierId") String supplierId,
       @Param("status") String status,

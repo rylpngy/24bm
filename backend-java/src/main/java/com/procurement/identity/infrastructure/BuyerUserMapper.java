@@ -5,8 +5,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -22,35 +20,32 @@ public interface BuyerUserMapper {
       group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, u.created_at
       order by u.created_at desc
       """)
-  @Results(id = "buyerUserResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "department_id", property = "departmentId"),
-      @Result(column = "role_id", property = "roleId")
-  })
   List<BuyerUser> listByTenant(@Param("tenantId") String tenantId);
 
   @Select("""
+      <script>
       select u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, min(r.id) as role_id
       from users u
       left join user_roles ur on ur.user_id = u.id
       left join roles r on r.id = ur.role_id and r.scope = 'buyer'
       where u.tenant_id = #{tenantId}
-        and (#{status} is null or u.status = #{status})
-        and (#{departmentId} is null or u.department_id = #{departmentId})
+        <if test="status != null and status != ''">
+        and u.status = #{status}
+        </if>
+        <if test="departmentId != null and departmentId != ''">
+        and u.department_id = #{departmentId}
+        </if>
+        <if test="keyword != null and keyword != ''">
         and (
-          #{keyword} is null
-          or u.name ilike concat('%', #{keyword}, '%')
+          u.name ilike concat('%', #{keyword}, '%')
           or u.mobile ilike concat('%', #{keyword}, '%')
           or u.email ilike concat('%', #{keyword}, '%')
         )
+        </if>
       group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, u.created_at
       order by u.created_at desc
+      </script>
       """)
-  @Results(id = "buyerUserFilteredResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "department_id", property = "departmentId"),
-      @Result(column = "role_id", property = "roleId")
-  })
   List<BuyerUser> listByTenantFiltered(
       @Param("tenantId") String tenantId,
       @Param("status") String status,
@@ -65,11 +60,6 @@ public interface BuyerUserMapper {
       where u.tenant_id = #{tenantId} and u.id = #{id}
       group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id
       """)
-  @Results(id = "singleBuyerUserResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "department_id", property = "departmentId"),
-      @Result(column = "role_id", property = "roleId")
-  })
   BuyerUser findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""

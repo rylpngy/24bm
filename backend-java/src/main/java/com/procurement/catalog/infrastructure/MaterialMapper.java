@@ -6,8 +6,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -15,21 +13,22 @@ import org.apache.ibatis.annotations.Update;
 public interface MaterialMapper {
 
   @Select("""
+      <script>
       select id, tenant_id, code, name, category, unit, reference_price
       from materials
       where tenant_id = #{tenantId}
-        and (#{category} is null or category = #{category})
+        <if test="category != null and category != ''">
+        and category = #{category}
+        </if>
+        <if test="keyword != null and keyword != ''">
         and (
-          #{keyword} is null
-          or code ilike concat('%', #{keyword}, '%')
+          code ilike concat('%', #{keyword}, '%')
           or name ilike concat('%', #{keyword}, '%')
         )
+        </if>
       order by code asc
+      </script>
       """)
-  @Results(id = "materialResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "reference_price", property = "referencePrice")
-  })
   List<Material> listByTenant(
       @Param("tenantId") String tenantId,
       @Param("category") String category,
@@ -40,10 +39,6 @@ public interface MaterialMapper {
       from materials
       where tenant_id = #{tenantId} and id = #{id}
       """)
-  @Results(id = "singleMaterialResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "reference_price", property = "referencePrice")
-  })
   Material findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Insert("""

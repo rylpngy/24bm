@@ -4,8 +4,6 @@ import com.procurement.platform.domain.EnterpriseReview;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -21,9 +19,6 @@ public interface PlatformEnterpriseMapper {
          or coalesce(s.verified_status, 'pending') = 'pending'
       order by e.created_at desc
       """)
-  @Results(id = "enterpriseReviewResults", value = {
-      @Result(column = "review_status", property = "reviewStatus")
-  })
   List<EnterpriseReview> listPendingReviews();
 
   @Select("""
@@ -40,9 +35,6 @@ public interface PlatformEnterpriseMapper {
       left join supplier_enterprises s on s.enterprise_id = e.id
       where e.id = #{enterpriseId}
       """)
-  @Results(id = "singleEnterpriseReviewResults", value = {
-      @Result(column = "review_status", property = "reviewStatus")
-  })
   EnterpriseReview findById(@Param("enterpriseId") String enterpriseId);
 
   @Update("""

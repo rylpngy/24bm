@@ -32,7 +32,7 @@ const javaEnv = {
 await run('npm', ['run', 'openapi:check']);
 await run('npm', ['test']);
 await run('npm', ['run', 'build']);
-await run('mvn', ['test'], {
+await run('mvn', ['clean', 'test'], {
   cwd: resolve(root, 'backend-java'),
   env: javaEnv,
 });

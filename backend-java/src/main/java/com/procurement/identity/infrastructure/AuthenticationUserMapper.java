@@ -2,10 +2,10 @@ package com.procurement.identity.infrastructure;
 
 import com.procurement.identity.domain.AuthenticatedUser;
 import java.util.List;
+import org.apache.ibatis.annotations.Arg;
+import org.apache.ibatis.annotations.ConstructorArgs;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 
 @Mapper
@@ -20,16 +20,16 @@ public interface AuthenticationUserMapper {
         and (
           (#{scope} = 'PLATFORM' and u.tenant_id is null and u.supplier_id is null)
           or (#{scope} = 'BUYER' and u.tenant_id = #{tenantId} and u.supplier_id is null)
-          or (#{scope} = 'SUPPLIER' and u.supplier_id = #{supplierId} and u.tenant_id is null)
+          or (#{scope} = 'SUPPLIER' and u.supplier_id = #{supplierId,jdbcType=VARCHAR} and u.tenant_id is null)
         )
       limit 1
       """)
-  @Results(id = "authenticatedUserResults", value = {
-      @Result(column = "user_id", property = "userId"),
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "supplier_id", property = "supplierId"),
-      @Result(column = "display_name", property = "displayName"),
-      @Result(column = "password_hash", property = "passwordHash")
+  @ConstructorArgs({
+      @Arg(column = "user_id", javaType = String.class),
+      @Arg(column = "tenant_id", javaType = String.class),
+      @Arg(column = "supplier_id", javaType = String.class),
+      @Arg(column = "display_name", javaType = String.class),
+      @Arg(column = "password_hash", javaType = String.class)
   })
   AuthenticatedUser findActiveUser(
       @Param("account") String account,

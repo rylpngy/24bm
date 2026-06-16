@@ -6,8 +6,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 
 @Mapper
@@ -19,11 +17,6 @@ public interface PurchaseDemandItemMapper {
       where tenant_id = #{tenantId} and demand_id = #{demandId}
       order by id
       """)
-  @Results(id = "purchaseDemandItemResults", value = {
-      @Result(column = "tenant_id", property = "tenantId"),
-      @Result(column = "demand_id", property = "demandId"),
-      @Result(column = "material_id", property = "materialId")
-  })
   List<PurchaseDemandItem> listByDemand(@Param("tenantId") String tenantId, @Param("demandId") String demandId);
 
   @Insert("""
