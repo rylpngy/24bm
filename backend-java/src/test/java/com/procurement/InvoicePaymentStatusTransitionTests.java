@@ -21,6 +21,17 @@ class InvoicePaymentStatusTransitionTests {
   }
 
   @Test
+  void requiresSupportedPaymentTarget() {
+    assertThatCode(() -> transition.requireSupportedTarget(InvoicePaymentStatus.PARTIAL_PAID))
+        .doesNotThrowAnyException();
+    assertThatCode(() -> transition.requireSupportedTarget(InvoicePaymentStatus.PAID))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> transition.requireSupportedTarget("已作废"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Unsupported payment status: 已作废");
+  }
+
+  @Test
   void treatsRepeatedFinalOrPartialPaymentAsIdempotent() {
     assertThat(transition.isIdempotentRegistration(
         InvoicePaymentStatus.PARTIAL_PAID,

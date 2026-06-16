@@ -10,6 +10,12 @@ public class InvoicePaymentStatusTransition {
         || InvoicePaymentStatus.PARTIAL_PAID.equals(paymentStatus);
   }
 
+  public void requireSupportedTarget(String paymentStatus) {
+    if (!isSupportedTarget(paymentStatus)) {
+      throw new IllegalArgumentException("Unsupported payment status: " + paymentStatus);
+    }
+  }
+
   public boolean isIdempotentRegistration(String currentStatus, String targetStatus) {
     return currentStatus.equals(targetStatus)
         && (InvoicePaymentStatus.PAID.equals(currentStatus)

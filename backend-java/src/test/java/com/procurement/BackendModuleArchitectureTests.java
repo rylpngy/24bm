@@ -764,15 +764,19 @@ class BackendModuleArchitectureTests {
     String transitionSource = Files.readString(transition);
     assertThat(transitionSource)
         .contains("boolean isSupportedTarget")
+        .contains("void requireSupportedTarget")
         .contains("boolean isIdempotentRegistration")
         .contains("void requireTransition")
+        .contains("Unsupported payment status")
         .contains("InvoicePaymentStatus.PENDING_PAYMENT")
         .contains("InvoicePaymentStatus.PARTIAL_PAID")
         .contains("InvoicePaymentStatus.PAID");
 
     assertThat(Files.readString(paymentService))
         .contains("InvoicePaymentStatusTransition")
+        .contains("invoicePaymentStatusTransition.requireSupportedTarget")
         .contains("invoicePaymentStatusTransition.requireTransition")
+        .doesNotContain("Unsupported payment status")
         .doesNotContain("private boolean isSupportedPaymentTarget")
         .doesNotContain("private boolean isIdempotentPaymentRegistration")
         .doesNotContain("private void requirePaymentTransition");

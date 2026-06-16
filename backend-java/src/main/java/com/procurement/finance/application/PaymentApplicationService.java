@@ -87,9 +87,7 @@ public class PaymentApplicationService {
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
     }
-    if (!invoicePaymentStatusTransition.isSupportedTarget(request.paymentStatus())) {
-      throw new IllegalArgumentException("Unsupported payment status: " + request.paymentStatus());
-    }
+    invoicePaymentStatusTransition.requireSupportedTarget(request.paymentStatus());
     if (invoicePaymentStatusTransition.isIdempotentRegistration(invoice.paymentStatus(), request.paymentStatus())) {
       return toResponse(invoice);
     }
