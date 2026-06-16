@@ -49,6 +49,7 @@ describe('Java finance invoice and payment scaffold', () => {
   it('keeps invoice creation supplier scoped and payment tenant scoped', () => {
     const invoiceService = read('backend-java/src/main/java/com/procurement/finance/application/InvoiceApplicationService.java');
     const paymentService = read('backend-java/src/main/java/com/procurement/finance/application/PaymentApplicationService.java');
+    const invoiceAuditAction = read('backend-java/src/main/java/com/procurement/finance/domain/InvoiceAuditAction.java');
     const auditService = read('backend-java/src/main/java/com/procurement/audit/application/AuditLogApplicationService.java');
 
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
@@ -61,6 +62,9 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('countByTenantAndOrder');
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
+    expect(invoiceService).toContain('InvoiceAuditAction.CREATED');
+    expect(invoiceService).toContain('InvoiceAuditAction.PAID');
+    expect(invoiceService).toContain('InvoiceAuditAction.PARTIAL_PAID');
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
     expect(paymentService).toContain('BuyerSupplierRelationMapper');
     expect(paymentService).toContain('PurchaseOrderMapper');
@@ -70,7 +74,8 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('countByTenantSupplierAndStatus');
     expect(paymentService).toContain('listCurrentTenantInvoices');
     expect(paymentService).toContain('listCurrentTenantPaymentAuditLogs');
-    expect(paymentService).toContain('invoice.partial_paid');
+    expect(paymentService).toContain('InvoiceAuditAction.PAID');
+    expect(paymentService).toContain('InvoiceAuditAction.PARTIAL_PAID');
     expect(paymentService).toContain('listByTenantFiltered');
     expect(paymentService).toContain('updatePaymentStatus');
     expect(paymentService).toContain('InvoicePaymentStatusTransition');
@@ -80,6 +85,9 @@ describe('Java finance invoice and payment scaffold', () => {
     const paymentTransition = read('backend-java/src/main/java/com/procurement/finance/domain/InvoicePaymentStatusTransition.java');
     expect(paymentTransition).toContain('isIdempotentRegistration');
     expect(paymentTransition).toContain('Paid invoices cannot be changed');
+    expect(invoiceAuditAction).toContain('CREATED = "invoice.created"');
+    expect(invoiceAuditAction).toContain('PAID = "invoice.paid"');
+    expect(invoiceAuditAction).toContain('PARTIAL_PAID = "invoice.partial_paid"');
     expect(auditService).toContain('listCurrentTenantTargetActions');
   });
 

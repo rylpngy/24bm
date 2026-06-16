@@ -386,6 +386,13 @@ class BackendModuleArchitectureTests {
 
   @Test
   void rfqOrderAndInvoiceApplicationServicesUseDomainStatusConstants() throws IOException {
+    Path invoiceAuditAction = SOURCE_ROOT.resolve("finance/domain/InvoiceAuditAction.java");
+    assertThat(invoiceAuditAction).exists();
+    assertThat(Files.readString(invoiceAuditAction))
+        .contains("CREATED = \"invoice.created\"")
+        .contains("PAID = \"invoice.paid\"")
+        .contains("PARTIAL_PAID = \"invoice.partial_paid\"");
+
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java"),
         List.of(
@@ -444,20 +451,32 @@ class BackendModuleArchitectureTests {
             "private static final String RECEIVED_STATUS"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("finance/application/InvoiceApplicationService.java"),
-        List.of("PurchaseOrderStatus.RECEIVED", "InvoicePaymentStatus.PENDING_PAYMENT"),
+        List.of(
+            "PurchaseOrderStatus.RECEIVED",
+            "InvoicePaymentStatus.PENDING_PAYMENT",
+            "InvoiceAuditAction.CREATED",
+            "InvoiceAuditAction.PAID",
+            "InvoiceAuditAction.PARTIAL_PAID"),
         List.of(
             "private static final String RECEIVED_STATUS",
-            "private static final String PENDING_PAYMENT_STATUS"));
+            "private static final String PENDING_PAYMENT_STATUS",
+            "private static final String INVOICE_CREATED_ACTION",
+            "private static final String INVOICE_PAID_ACTION",
+            "private static final String INVOICE_PARTIAL_PAID_ACTION"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("finance/application/PaymentApplicationService.java"),
         List.of(
             "InvoicePaymentStatus.PAID",
             "InvoicePaymentStatusTransition",
+            "InvoiceAuditAction.PAID",
+            "InvoiceAuditAction.PARTIAL_PAID",
             "BuyerSupplierRelationStatus.BLACKLISTED"),
         List.of(
             "private static final String PENDING_PAYMENT_STATUS",
             "private static final String PAID_STATUS",
             "private static final String PARTIAL_PAID_STATUS",
+            "private static final String INVOICE_PAID_ACTION",
+            "private static final String INVOICE_PARTIAL_PAID_ACTION",
             "private static final String BLACKLISTED_SUPPLIER_STATUS"));
   }
 

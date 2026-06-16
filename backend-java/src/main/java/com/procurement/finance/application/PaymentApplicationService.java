@@ -6,6 +6,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.domain.Invoice;
+import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
@@ -22,8 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PaymentApplicationService {
   private static final String INVOICE_TARGET_TYPE = "invoice";
-  private static final String INVOICE_PAID_ACTION = "invoice.paid";
-  private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
   private static final String FINANCE_FEATURE = "finance";
   private static final String INVOICE_PAID_NOTIFICATION_TITLE = "发票已付款";
   private static final String INVOICE_PARTIAL_PAID_NOTIFICATION_TITLE = "发票部分付款";
@@ -76,7 +75,7 @@ public class PaymentApplicationService {
     return auditLogApplicationService.listCurrentTenantTargetActions(
         INVOICE_TARGET_TYPE,
         invoiceId,
-        List.of(INVOICE_PAID_ACTION, INVOICE_PARTIAL_PAID_ACTION),
+        List.of(InvoiceAuditAction.PAID, InvoiceAuditAction.PARTIAL_PAID),
         50);
   }
 
@@ -107,7 +106,9 @@ public class PaymentApplicationService {
       throw new IllegalStateException("Invoice status changed before payment could be recorded: " + invoiceId);
     }
     auditLogApplicationService.recordTenantAction(
-        InvoicePaymentStatus.PAID.equals(request.paymentStatus()) ? INVOICE_PAID_ACTION : INVOICE_PARTIAL_PAID_ACTION,
+        InvoicePaymentStatus.PAID.equals(request.paymentStatus())
+            ? InvoiceAuditAction.PAID
+            : InvoiceAuditAction.PARTIAL_PAID,
         INVOICE_TARGET_TYPE,
         invoiceId);
     notificationApplicationService.notifyActiveSupplierUsers(

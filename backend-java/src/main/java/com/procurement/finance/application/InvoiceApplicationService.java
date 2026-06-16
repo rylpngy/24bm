@@ -6,6 +6,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.domain.Invoice;
+import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -20,10 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InvoiceApplicationService {
-  private static final String INVOICE_CREATED_ACTION = "invoice.created";
   private static final String INVOICE_TARGET_TYPE = "invoice";
-  private static final String INVOICE_PAID_ACTION = "invoice.paid";
-  private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
   private static final String FINANCE_FEATURE = "finance";
   private static final String INVOICE_CREATED_NOTIFICATION_TITLE = "供应商已登记发票";
 
@@ -74,7 +72,7 @@ public class InvoiceApplicationService {
         invoice.tenantId(),
         INVOICE_TARGET_TYPE,
         invoiceId,
-        List.of(INVOICE_PAID_ACTION, INVOICE_PARTIAL_PAID_ACTION),
+        List.of(InvoiceAuditAction.PAID, InvoiceAuditAction.PARTIAL_PAID),
         50);
   }
 
@@ -107,7 +105,7 @@ public class InvoiceApplicationService {
         InvoicePaymentStatus.PENDING_PAYMENT);
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
-        INVOICE_CREATED_ACTION,
+        InvoiceAuditAction.CREATED,
         INVOICE_TARGET_TYPE,
         invoiceId);
     notificationApplicationService.notifyActiveTenantUsers(
