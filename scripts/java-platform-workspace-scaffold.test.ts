@@ -13,6 +13,7 @@ describe('Java platform workspace scaffold', () => {
     const workspaceService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformWorkspaceApplicationService.java');
     const workspaceResponse = read('backend-java/src/main/java/com/procurement/platform/api/PlatformWorkspaceResponse.java');
     const operationSummary = read('backend-java/src/main/java/com/procurement/platform/api/PlatformOperationSummaryResponse.java');
+    const tenantStatus = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantStatus.java');
 
     expect(controller).toContain('PlatformOverviewApplicationService');
     expect(controller).toContain('platformOverviewApplicationService.overview()');
@@ -23,7 +24,9 @@ describe('Java platform workspace scaffold', () => {
     expect(operationSummary).toContain('activeTenantCount');
     expect(operationSummary).toContain('pendingEnterpriseReviewCount');
     expect(workspaceService).toContain('summarizeOperations');
-    expect(workspaceService).toContain('ACTIVE_TENANT_STATUS');
+    expect(workspaceService).toContain('PlatformTenantStatus.ACTIVE');
+    expect(tenantStatus).toContain('ACTIVE = "active"');
+    expect(tenantStatus).toContain('INACTIVE = "inactive"');
   });
 
   it('exposes platform announcement publishing as a platform scoped API', () => {

@@ -253,6 +253,26 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void platformTenantServicesUseDomainTenantStatus() throws IOException {
+    Path status = SOURCE_ROOT.resolve("platform/domain/PlatformTenantStatus.java");
+    Path tenantService = SOURCE_ROOT.resolve("platform/application/PlatformTenantApplicationService.java");
+    Path workspaceService = SOURCE_ROOT.resolve("platform/application/PlatformWorkspaceApplicationService.java");
+
+    assertThat(status).exists();
+    assertThat(Files.readString(status))
+        .contains("ACTIVE = \"active\"")
+        .contains("INACTIVE = \"inactive\"");
+    assertThat(Files.readString(tenantService))
+        .contains("PlatformTenantStatus.ACTIVE")
+        .contains("PlatformTenantStatus.INACTIVE")
+        .doesNotContain("private static final String ACTIVE_STATUS")
+        .doesNotContain("private static final String INACTIVE_STATUS");
+    assertThat(Files.readString(workspaceService))
+        .contains("PlatformTenantStatus.ACTIVE")
+        .doesNotContain("private static final String ACTIVE_TENANT_STATUS");
+  }
+
+  @Test
   void rfqOrderAndInvoiceApplicationServicesUseDomainStatusConstants() throws IOException {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java"),

@@ -286,6 +286,7 @@ describe('Java backend scaffold', () => {
     const readme = read('backend-java/README.md');
     const tenantController = read('backend-java/src/main/java/com/procurement/platform/api/PlatformTenantController.java');
     const tenantService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformTenantApplicationService.java');
+    const tenantStatus = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantStatus.java');
     const auditTests = read('backend-java/src/test/java/com/procurement/PlatformAuditLogTests.java');
     const localSeed = read('backend-java/src/main/resources/db/dev/V100__local_demo_seed.sql');
 
@@ -305,6 +306,10 @@ describe('Java backend scaffold', () => {
     expect(readme).toContain('platform_announcement.published');
     expect(tenantController).toContain('@GetMapping("/{tenantId}")');
     expect(tenantService).toContain('getTenant');
+    expect(tenantService).toContain('PlatformTenantStatus.ACTIVE');
+    expect(tenantService).toContain('PlatformTenantStatus.INACTIVE');
+    expect(tenantStatus).toContain('ACTIVE = "active"');
+    expect(tenantStatus).toContain('INACTIVE = "inactive"');
     expect(auditTests).toContain('tenantFeatureToggleUpdateRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantPlanUpdateRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantEnableRecordsAuditLogInTargetTenant');

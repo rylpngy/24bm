@@ -5,13 +5,12 @@ import com.procurement.platform.api.PlatformOperationSummaryResponse;
 import com.procurement.platform.api.PlatformOverviewResponse;
 import com.procurement.platform.api.PlatformWorkspaceResponse;
 import com.procurement.platform.api.TenantResponse;
+import com.procurement.platform.domain.PlatformTenantStatus;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PlatformWorkspaceApplicationService {
-  private static final String ACTIVE_TENANT_STATUS = "active";
-
   private final PlatformOverviewApplicationService platformOverviewApplicationService;
   private final PlatformTenantApplicationService platformTenantApplicationService;
   private final PlatformEnterpriseApplicationService platformEnterpriseApplicationService;
@@ -44,7 +43,7 @@ public class PlatformWorkspaceApplicationService {
     return new PlatformOperationSummaryResponse(
         overview.tenantCount(),
         tenants.stream()
-            .filter(tenant -> ACTIVE_TENANT_STATUS.equals(tenant.status()))
+            .filter(tenant -> PlatformTenantStatus.ACTIVE.equals(tenant.status()))
             .count(),
         overview.publicSupplierCount(),
         enterpriseReviews.size());

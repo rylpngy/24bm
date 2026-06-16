@@ -9,6 +9,7 @@ import com.procurement.platform.api.FeatureToggleRequest;
 import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.api.UpdateTenantPlanRequest;
 import com.procurement.platform.domain.PlatformTenant;
+import com.procurement.platform.domain.PlatformTenantStatus;
 import com.procurement.platform.infrastructure.PlatformTenantMapper;
 import java.util.List;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlatformTenantApplicationService {
-  private static final String ACTIVE_STATUS = "active";
   private static final String BUYER_OWNER_ROLE_NAME = "采购管理员";
   private static final String BUYER_OWNER_PERMISSIONS = "[\"buyer:*\"]";
   private static final String TENANT_CREATED_ACTION = "tenant.created";
@@ -26,7 +26,6 @@ public class PlatformTenantApplicationService {
   private static final String TENANT_FEATURES_UPDATED_ACTION = "tenant.features.updated";
   private static final String TENANT_PLAN_UPDATED_ACTION = "tenant.plan_updated";
   private static final String TENANT_TARGET_TYPE = "tenant";
-  private static final String INACTIVE_STATUS = "inactive";
 
   private final PlatformTenantMapper platformTenantMapper;
   private final ObjectMapper objectMapper;
@@ -67,7 +66,7 @@ public class PlatformTenantApplicationService {
         request.tenantId(),
         request.name(),
         request.plan(),
-        ACTIVE_STATUS,
+        PlatformTenantStatus.ACTIVE,
         enabledFeaturesJson,
         request.userLimit());
     platformTenantMapper.insertBuyerEnterprise(
@@ -86,7 +85,7 @@ public class PlatformTenantApplicationService {
         request.adminName(),
         request.adminMobile(),
         request.adminEmail(),
-        ACTIVE_STATUS,
+        PlatformTenantStatus.ACTIVE,
         passwordEncoder.encode(request.adminPassword()));
     platformTenantMapper.assignUserRole(buyerOwnerUserId, buyerOwnerRoleId);
     insertDefaultApprovalTemplates(request.tenantId(), buyerOwnerRoleId);
@@ -128,7 +127,7 @@ public class PlatformTenantApplicationService {
 
   @Transactional
   public TenantResponse enableTenant(String tenantId) {
-    int updated = platformTenantMapper.updateStatus(tenantId, ACTIVE_STATUS);
+    int updated = platformTenantMapper.updateStatus(tenantId, PlatformTenantStatus.ACTIVE);
     if (updated == 0) {
       throw new IllegalArgumentException("Tenant not found: " + tenantId);
     }
@@ -142,7 +141,7 @@ public class PlatformTenantApplicationService {
 
   @Transactional
   public TenantResponse disableTenant(String tenantId) {
-    int updated = platformTenantMapper.updateStatus(tenantId, INACTIVE_STATUS);
+    int updated = platformTenantMapper.updateStatus(tenantId, PlatformTenantStatus.INACTIVE);
     if (updated == 0) {
       throw new IllegalArgumentException("Tenant not found: " + tenantId);
     }
@@ -190,7 +189,7 @@ public class PlatformTenantApplicationService {
         "purchase_demand",
         "需求审批",
         buyerOwnerRoleId,
-        ACTIVE_STATUS,
+        PlatformTenantStatus.ACTIVE,
         10);
     platformTenantMapper.insertApprovalTemplate(
         "TPL_SUPPLIER_ADMISSION",
@@ -198,7 +197,7 @@ public class PlatformTenantApplicationService {
         "buyer_supplier_admission",
         "供应商准入",
         buyerOwnerRoleId,
-        ACTIVE_STATUS,
+        PlatformTenantStatus.ACTIVE,
         20);
     platformTenantMapper.insertApprovalTemplate(
         "TPL_RFQ_AWARD",
@@ -206,7 +205,7 @@ public class PlatformTenantApplicationService {
         "rfq_award",
         "定标审批",
         buyerOwnerRoleId,
-        ACTIVE_STATUS,
+        PlatformTenantStatus.ACTIVE,
         30);
   }
 
