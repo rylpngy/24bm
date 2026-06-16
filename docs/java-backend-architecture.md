@@ -55,6 +55,8 @@ Controller
 
 定标审批状态流转由 `RfqAwardStatusTransition` 承接，集中判断 `报价中` 才能提交定标、`定标审批中` 才能复核，以及审批通过落到 `已定标`、驳回回到 `报价中`。`AwardApplicationService` 保留报价有效性、审批任务、定标记录、原子更新、审计和通知编排。
 
+RFQ 寻源准入状态由 `RfqSourcingStatusTransition` 承接，集中判断采购需求必须 `已通过` 才能创建 RFQ、RFQ 必须 `报价中` 才能接收供应商报价。`RfqApplicationService` 和 `QuoteApplicationService` 保留租户/供应商上下文、功能开关、供应商准入、邀请关系、重复报价和单据写入编排。
+
 ## 多租户策略
 
 MVP 采用共享数据库、共享 Schema、`tenant_id` 字段隔离。平台数据、供应商公共企业档案和采购方私域关系分开建模。所有组织部门、采购需求、询价、报价、订单、收货、发票、审批任务、附件和审计数据必须带租户上下文。

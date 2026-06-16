@@ -9,6 +9,7 @@ import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.application.RfqApplicationService;
+import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
@@ -35,7 +36,8 @@ class RfqCreationStateTransitionTests {
       rfqInviteMapper,
       purchaseDemandMapper,
       buyerSupplierRelationMapper,
-      tenantFeatureApplicationService);
+      tenantFeatureApplicationService,
+      new RfqSourcingStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

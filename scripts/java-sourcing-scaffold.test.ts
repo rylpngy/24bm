@@ -52,9 +52,12 @@ describe('Java RFQ sourcing scaffold', () => {
     expect(service).toContain('TenantFeatureApplicationService');
     expect(service).toContain('listByTenantFiltered');
     expect(service).toContain('requireEnabled(tenantId, RFQ_FEATURE)');
-    expect(service).toContain('PurchaseDemandStatus.APPROVED');
+    expect(service).toContain('RfqSourcingStatusTransition');
+    expect(service).toContain('requireApprovedDemandForRfq');
     expect(service).toContain('BuyerSupplierRelationStatus.ADMITTED');
     expect(service).toContain('RfqStatus.QUOTING');
+    const transition = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqSourcingStatusTransition.java');
+    expect(transition).toContain('PurchaseDemandStatus.APPROVED');
   });
 
   it('documents the RFQ Java API handoff', () => {

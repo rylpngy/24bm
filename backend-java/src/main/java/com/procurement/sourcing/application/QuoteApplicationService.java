@@ -7,7 +7,7 @@ import com.procurement.sourcing.api.SubmitQuoteRequest;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
-import com.procurement.sourcing.domain.RfqStatus;
+import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
@@ -23,12 +23,19 @@ public class QuoteApplicationService {
   private final RfqDemandMapper rfqDemandMapper;
   private final RfqInviteMapper rfqInviteMapper;
   private final QuoteMapper quoteMapper;
+  private final RfqSourcingStatusTransition rfqSourcingStatusTransition;
 
-  public QuoteApplicationService(RfqMapper rfqMapper, RfqDemandMapper rfqDemandMapper, RfqInviteMapper rfqInviteMapper, QuoteMapper quoteMapper) {
+  public QuoteApplicationService(
+      RfqMapper rfqMapper,
+      RfqDemandMapper rfqDemandMapper,
+      RfqInviteMapper rfqInviteMapper,
+      QuoteMapper quoteMapper,
+      RfqSourcingStatusTransition rfqSourcingStatusTransition) {
     this.rfqMapper = rfqMapper;
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.quoteMapper = quoteMapper;
+    this.rfqSourcingStatusTransition = rfqSourcingStatusTransition;
   }
 
   public List<RfqResponse> listSupplierRfqs() {
@@ -71,9 +78,7 @@ public class QuoteApplicationService {
   public QuoteResponse submit(String rfqId, SubmitQuoteRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
     Rfq rfq = findRfqForInvitedSupplier(rfqId, supplierId);
-    if (!RfqStatus.QUOTING.equals(rfq.status())) {
-      throw new IllegalStateException("RFQ is not open for quotes: " + rfqId);
-    }
+    rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfqId);
 
     int submittedCount = quoteMapper.countSubmittedBySupplier(
         rfq.tenantId(),

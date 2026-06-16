@@ -2,12 +2,12 @@ package com.procurement.sourcing.application;
 
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.domain.PurchaseDemand;
-import com.procurement.demand.domain.PurchaseDemandStatus;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqInviteStatus;
+import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
@@ -30,6 +30,7 @@ public class RfqApplicationService {
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
+  private final RfqSourcingStatusTransition rfqSourcingStatusTransition;
 
   public RfqApplicationService(
       RfqMapper rfqMapper,
@@ -37,13 +38,15 @@ public class RfqApplicationService {
       RfqInviteMapper rfqInviteMapper,
       PurchaseDemandMapper purchaseDemandMapper,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
-      TenantFeatureApplicationService tenantFeatureApplicationService) {
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      RfqSourcingStatusTransition rfqSourcingStatusTransition) {
     this.rfqMapper = rfqMapper;
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+    this.rfqSourcingStatusTransition = rfqSourcingStatusTransition;
   }
 
   public List<RfqResponse> listCurrentTenantRfqs() {
@@ -92,9 +95,7 @@ public class RfqApplicationService {
       if (demand == null) {
         throw new IllegalArgumentException("Purchase demand not found in tenant scope: " + demandId);
       }
-      if (!PurchaseDemandStatus.APPROVED.equals(demand.status())) {
-        throw new IllegalStateException("RFQ can only use approved purchase demands: " + demandId);
-      }
+      rfqSourcingStatusTransition.requireApprovedDemandForRfq(demand.status(), demandId);
       if (rfqDemandMapper.countByTenantAndDemand(tenantId, demandId) > 0) {
         throw new IllegalStateException("Purchase demand already linked to an RFQ: " + demandId);
       }

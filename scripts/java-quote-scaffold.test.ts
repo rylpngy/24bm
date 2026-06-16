@@ -41,10 +41,13 @@ describe('Java supplier quote scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/sourcing/application/QuoteApplicationService.java');
 
     expect(service).toContain('TenantAccessGuard.requireSupplierId');
-    expect(service).toContain('RfqStatus.QUOTING');
+    expect(service).toContain('RfqSourcingStatusTransition');
+    expect(service).toContain('requireQuotingForQuoteSubmission');
     expect(service).toContain('QuoteStatus.SUBMITTED');
     expect(service).toContain('isSupplierInvited');
     expect(service).toContain('countSubmittedBySupplier');
+    const transition = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqSourcingStatusTransition.java');
+    expect(transition).toContain('RfqStatus.QUOTING');
   });
 
   it('extends RFQ invite mapper with supplier invitation lookup', () => {

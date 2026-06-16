@@ -119,7 +119,7 @@ class BackendModuleArchitectureTests {
         SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java"),
         List.of(
             "RfqStatus.QUOTING",
-            "PurchaseDemandStatus.APPROVED",
+            "RfqSourcingStatusTransition",
             "BuyerSupplierRelationStatus.ADMITTED",
             "RfqInviteStatus.INVITED"),
         List.of(
@@ -145,7 +145,7 @@ class BackendModuleArchitectureTests {
             "private static final String REJECTED_STATUS"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/QuoteApplicationService.java"),
-        List.of("RfqStatus.QUOTING", "QuoteStatus.SUBMITTED"),
+        List.of("RfqSourcingStatusTransition", "QuoteStatus.SUBMITTED"),
         List.of(
             "private static final String QUOTING_STATUS",
             "private static final String SUBMITTED_STATUS"));
@@ -237,6 +237,33 @@ class BackendModuleArchitectureTests {
         .contains("rfqAwardStatusTransition.reviewTargetStatus")
         .doesNotContain("Only quoting RFQs can be awarded")
         .doesNotContain("Only RFQs in award approval can be reviewed");
+  }
+
+  @Test
+  void rfqAndQuoteApplicationServicesDelegateSourcingStatusTransitions() throws IOException {
+    Path transition = SOURCE_ROOT.resolve("sourcing/domain/RfqSourcingStatusTransition.java");
+    Path rfqService = SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java");
+    Path quoteService = SOURCE_ROOT.resolve("sourcing/application/QuoteApplicationService.java");
+
+    assertThat(transition).exists();
+
+    String transitionSource = Files.readString(transition);
+    assertThat(transitionSource)
+        .contains("void requireApprovedDemandForRfq")
+        .contains("void requireQuotingForQuoteSubmission")
+        .contains("PurchaseDemandStatus.APPROVED")
+        .contains("RfqStatus.QUOTING");
+
+    assertThat(Files.readString(rfqService))
+        .contains("RfqSourcingStatusTransition")
+        .contains("rfqSourcingStatusTransition.requireApprovedDemandForRfq")
+        .doesNotContain("RFQ can only use approved purchase demands")
+        .doesNotContain("PurchaseDemandStatus.APPROVED");
+    assertThat(Files.readString(quoteService))
+        .contains("RfqSourcingStatusTransition")
+        .contains("rfqSourcingStatusTransition.requireQuotingForQuoteSubmission")
+        .doesNotContain("RFQ is not open for quotes")
+        .doesNotContain("RfqStatus.QUOTING");
   }
 
   @Test
