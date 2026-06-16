@@ -12,6 +12,7 @@ import com.procurement.demand.api.PurchaseDemandLineItemResponse;
 import com.procurement.demand.api.PurchaseDemandResponse;
 import com.procurement.demand.api.ReviewPurchaseDemandRequest;
 import com.procurement.demand.domain.PurchaseDemand;
+import com.procurement.demand.domain.PurchaseDemandAuditAction;
 import com.procurement.demand.domain.PurchaseDemandApprovalStatusTransition;
 import com.procurement.demand.domain.PurchaseDemandItem;
 import com.procurement.demand.domain.PurchaseDemandStatus;
@@ -27,9 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PurchaseDemandApplicationService {
   private static final String PURCHASE_DEMAND_BIZ_TYPE = "purchase_demand";
-  private static final String PURCHASE_DEMAND_CREATED_ACTION = "purchase_demand.created";
-  private static final String PURCHASE_DEMAND_APPROVED_ACTION = "purchase_demand.approved";
-  private static final String PURCHASE_DEMAND_REJECTED_ACTION = "purchase_demand.rejected";
   private static final String PURCHASE_DEMAND_PENDING_NOTIFICATION_TITLE = "采购需求待审批";
   private static final String PURCHASE_DEMAND_APPROVED_NOTIFICATION_TITLE = "采购需求审批已通过";
   private static final String PURCHASE_DEMAND_REJECTED_NOTIFICATION_TITLE = "采购需求审批已驳回";
@@ -109,7 +107,7 @@ public class PurchaseDemandApplicationService {
           lineItem.quantity());
     }
     auditLogApplicationService.recordTenantAction(
-        PURCHASE_DEMAND_CREATED_ACTION,
+        PurchaseDemandAuditAction.CREATED,
         PURCHASE_DEMAND_BIZ_TYPE,
         demandId);
 
@@ -180,7 +178,7 @@ public class PurchaseDemandApplicationService {
     }
     purchaseDemandMapper.updateStatus(tenantId, demandId, demandStatus);
     auditLogApplicationService.recordTenantAction(
-        approved ? PURCHASE_DEMAND_APPROVED_ACTION : PURCHASE_DEMAND_REJECTED_ACTION,
+        approved ? PurchaseDemandAuditAction.APPROVED : PurchaseDemandAuditAction.REJECTED,
         PURCHASE_DEMAND_BIZ_TYPE,
         demandId);
     notificationApplicationService.notifyActiveTenantUsers(

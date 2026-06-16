@@ -571,19 +571,32 @@ class BackendModuleArchitectureTests {
 
   @Test
   void demandAndSupplierApplicationServicesUseDomainStatusConstants() throws IOException {
+    Path demandAuditAction = SOURCE_ROOT.resolve("demand/domain/PurchaseDemandAuditAction.java");
+    assertThat(demandAuditAction).exists();
+    assertThat(Files.readString(demandAuditAction))
+        .contains("CREATED = \"purchase_demand.created\"")
+        .contains("APPROVED = \"purchase_demand.approved\"")
+        .contains("REJECTED = \"purchase_demand.rejected\"");
+
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("demand/application/PurchaseDemandApplicationService.java"),
         List.of(
             "PurchaseDemandStatus.DRAFT",
             "PurchaseDemandStatus.IN_APPROVAL",
             "PurchaseDemandApprovalStatusTransition",
+            "PurchaseDemandAuditAction.CREATED",
+            "PurchaseDemandAuditAction.APPROVED",
+            "PurchaseDemandAuditAction.REJECTED",
             "ApprovalStatus.APPROVED",
             "ApprovalStatus.REJECTED"),
         List.of(
             "private static final String DRAFT_STATUS",
             "private static final String IN_APPROVAL_STATUS",
             "private static final String APPROVED_STATUS",
-            "private static final String REJECTED_STATUS"));
+            "private static final String REJECTED_STATUS",
+            "private static final String PURCHASE_DEMAND_CREATED_ACTION",
+            "private static final String PURCHASE_DEMAND_APPROVED_ACTION",
+            "private static final String PURCHASE_DEMAND_REJECTED_ACTION"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("supplier/application/BuyerSupplierApplicationService.java"),
         List.of(
