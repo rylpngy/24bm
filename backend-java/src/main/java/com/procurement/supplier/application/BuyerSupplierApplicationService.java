@@ -19,6 +19,7 @@ import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.domain.BuyerSupplierAdmissionStatusTransition;
+import com.procurement.supplier.domain.BuyerSupplierManualStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import java.math.BigDecimal;
@@ -48,6 +49,7 @@ public class BuyerSupplierApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition;
+  private final BuyerSupplierManualStatusTransition buyerSupplierManualStatusTransition;
 
   public BuyerSupplierApplicationService(
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
@@ -56,7 +58,8 @@ public class BuyerSupplierApplicationService {
       ApprovalTaskApplicationService approvalTaskApplicationService,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
-      BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition) {
+      BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition,
+      BuyerSupplierManualStatusTransition buyerSupplierManualStatusTransition) {
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.objectMapper = objectMapper;
     this.approvalTaskMapper = approvalTaskMapper;
@@ -64,6 +67,7 @@ public class BuyerSupplierApplicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.buyerSupplierAdmissionStatusTransition = buyerSupplierAdmissionStatusTransition;
+    this.buyerSupplierManualStatusTransition = buyerSupplierManualStatusTransition;
   }
 
   public List<BuyerSupplierResponse> listCurrentTenantSuppliers() {
@@ -188,8 +192,8 @@ public class BuyerSupplierApplicationService {
   public BuyerSupplierResponse changeRelationStatus(String relationId, ChangeBuyerSupplierStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
-    requireSupportedManualTargetStatus(request.status());
-    requireManualStatusTransition(relation.status(), request.status(), relationId);
+    buyerSupplierManualStatusTransition.requireSupportedTarget(request.status());
+    buyerSupplierManualStatusTransition.requireTransition(relation.status(), request.status(), relationId);
 
     int updated = buyerSupplierRelationMapper.updateStatus(
         tenantId,
@@ -272,24 +276,6 @@ public class BuyerSupplierApplicationService {
         approvalTask.assigneeId(),
         approvalTask.status(),
         approvalTask.createdAt());
-  }
-
-  private void requireSupportedManualTargetStatus(String status) {
-    if (!BuyerSupplierRelationStatus.BLACKLISTED.equals(status)
-        && !BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(status)) {
-      throw new IllegalArgumentException("Unsupported buyer supplier relation target status: " + status);
-    }
-  }
-
-  private void requireManualStatusTransition(String currentStatus, String targetStatus, String relationId) {
-    if (BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL.equals(currentStatus)) {
-      throw new IllegalStateException("Supplier relations in admission approval cannot be manually changed: " + relationId);
-    }
-    if (BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(targetStatus)
-        && !BuyerSupplierRelationStatus.BLACKLISTED.equals(currentStatus)
-        && !BuyerSupplierRelationStatus.REJECTED.equals(currentStatus)) {
-      throw new IllegalStateException("Only blacklisted or rejected supplier relations can be restored to pending admission: " + relationId);
-    }
   }
 
   private void requirePerformanceScore(BigDecimal performanceScore) {

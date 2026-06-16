@@ -319,7 +319,7 @@ class BackendModuleArchitectureTests {
             "BuyerSupplierRelationStatus.PENDING_ADMISSION",
             "BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL",
             "BuyerSupplierAdmissionStatusTransition",
-            "BuyerSupplierRelationStatus.BLACKLISTED",
+            "BuyerSupplierManualStatusTransition",
             "ApprovalStatus.APPROVED",
             "ApprovalStatus.REJECTED"),
         List.of(
@@ -355,6 +355,31 @@ class BackendModuleArchitectureTests {
         .contains("buyerSupplierAdmissionStatusTransition.reviewTargetStatus")
         .doesNotContain("Only pending supplier relations can be submitted for admission")
         .doesNotContain("Only supplier relations in admission approval can be reviewed");
+  }
+
+  @Test
+  void buyerSupplierApplicationServiceDelegatesManualStatusTransitions() throws IOException {
+    Path transition = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierManualStatusTransition.java");
+    Path supplierService = SOURCE_ROOT.resolve("supplier/application/BuyerSupplierApplicationService.java");
+
+    assertThat(transition).exists();
+
+    String transitionSource = Files.readString(transition);
+    assertThat(transitionSource)
+        .contains("void requireSupportedTarget")
+        .contains("void requireTransition")
+        .contains("BuyerSupplierRelationStatus.BLACKLISTED")
+        .contains("BuyerSupplierRelationStatus.PENDING_ADMISSION")
+        .contains("BuyerSupplierRelationStatus.REJECTED")
+        .contains("BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL");
+
+    assertThat(Files.readString(supplierService))
+        .contains("BuyerSupplierManualStatusTransition")
+        .contains("buyerSupplierManualStatusTransition.requireSupportedTarget")
+        .contains("buyerSupplierManualStatusTransition.requireTransition")
+        .doesNotContain("Unsupported buyer supplier relation target status")
+        .doesNotContain("Supplier relations in admission approval cannot be manually changed")
+        .doesNotContain("Only blacklisted or rejected supplier relations can be restored to pending admission");
   }
 
   @Test
