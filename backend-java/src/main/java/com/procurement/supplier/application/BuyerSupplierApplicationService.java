@@ -24,6 +24,7 @@ import com.procurement.supplier.domain.BuyerSupplierAuditAction;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.domain.BuyerSupplierAdmissionStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierManualStatusTransition;
+import com.procurement.supplier.domain.BuyerSupplierPerformanceScore;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import java.math.BigDecimal;
@@ -271,11 +272,7 @@ public class BuyerSupplierApplicationService {
   }
 
   private void requirePerformanceScore(BigDecimal performanceScore) {
-    if (performanceScore == null
-        || performanceScore.compareTo(BigDecimal.ZERO) < 0
-        || performanceScore.compareTo(BigDecimal.valueOf(100)) > 0) {
-      throw new IllegalArgumentException("Supplier performance score must be between 0 and 100.");
-    }
+    BuyerSupplierPerformanceScore.requireValid(performanceScore);
   }
 
   private List<String> readCategories(String categoriesJson) {

@@ -892,10 +892,12 @@ class BackendModuleArchitectureTests {
   void buyerSupplierApplicationServiceDelegatesAdmissionStatusTransitions() throws IOException {
     Path auditAction = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierAuditAction.java");
     Path transition = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierAdmissionStatusTransition.java");
+    Path performanceScore = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierPerformanceScore.java");
     Path supplierService = SOURCE_ROOT.resolve("supplier/application/BuyerSupplierApplicationService.java");
 
     assertThat(auditAction).exists();
     assertThat(transition).exists();
+    assertThat(performanceScore).exists();
 
     assertThat(Files.readString(auditAction))
         .contains("RELATION_CREATED = \"buyer_supplier_relation.created\"")
@@ -915,9 +917,15 @@ class BackendModuleArchitectureTests {
         .contains("BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL")
         .contains("BuyerSupplierRelationStatus.ADMITTED")
         .contains("BuyerSupplierRelationStatus.REJECTED");
+    assertThat(Files.readString(performanceScore))
+        .contains("requireValid")
+        .contains("BigDecimal.ZERO")
+        .contains("BigDecimal.valueOf(100)")
+        .contains("Supplier performance score must be between 0 and 100");
 
     assertThat(Files.readString(supplierService))
         .contains("BuyerSupplierAdmissionStatusTransition")
+        .contains("BuyerSupplierPerformanceScore.requireValid")
         .contains("BuyerSupplierAuditAction.RELATION_CREATED")
         .contains("BuyerSupplierAuditAction.RELATION_PROFILE_UPDATED")
         .contains("BuyerSupplierAuditAction.RELATION_PERFORMANCE_UPDATED")
@@ -938,7 +946,8 @@ class BackendModuleArchitectureTests {
         .doesNotContain("private static final String SUPPLIER_RELATION_PERFORMANCE_UPDATED_ACTION")
         .doesNotContain("private static final String SUPPLIER_RELATION_STATUS_CHANGED_ACTION")
         .doesNotContain("Only pending supplier relations can be submitted for admission")
-        .doesNotContain("Only supplier relations in admission approval can be reviewed");
+        .doesNotContain("Only supplier relations in admission approval can be reviewed")
+        .doesNotContain("Supplier performance score must be between 0 and 100");
   }
 
   @Test

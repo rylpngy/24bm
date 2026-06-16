@@ -262,6 +262,7 @@ describe('Java backend scaffold', () => {
     const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const service = read('backend-java/src/main/java/com/procurement/supplier/application/BuyerSupplierApplicationService.java');
     const buyerSupplierAuditAction = read('backend-java/src/main/java/com/procurement/supplier/domain/BuyerSupplierAuditAction.java');
+    const buyerSupplierPerformanceScore = read('backend-java/src/main/java/com/procurement/supplier/domain/BuyerSupplierPerformanceScore.java');
     const supplierProfileService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierProfileApplicationService.java');
     const supplierProfileAuditAction = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierProfileAuditAction.java');
     const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
@@ -303,6 +304,7 @@ describe('Java backend scaffold', () => {
     expect(service).toContain('AuditTargetType.BUYER_SUPPLIER_RELATION');
     expect(service).toContain('NotificationTitle.SUPPLIER_ADMISSION_APPROVED');
     expect(service).toContain('NotificationTitle.SUPPLIER_ADMISSION_REJECTED');
+    expect(service).toContain('BuyerSupplierPerformanceScore.requireValid');
     expect(approvalBusinessType).toContain('BUYER_SUPPLIER_ADMISSION = "buyer_supplier_admission"');
     expect(auditTargetType).toContain('MATERIAL = "material"');
     expect(auditTargetType).toContain('BUYER_SUPPLIER_RELATION = "buyer_supplier_relation"');
@@ -313,6 +315,8 @@ describe('Java backend scaffold', () => {
     expect(buyerSupplierAuditAction).toContain('ADMISSION_SUBMITTED = "buyer_supplier_admission.submitted"');
     expect(buyerSupplierAuditAction).toContain('ADMISSION_APPROVED = "buyer_supplier_admission.approved"');
     expect(buyerSupplierAuditAction).toContain('ADMISSION_REJECTED = "buyer_supplier_admission.rejected"');
+    expect(buyerSupplierPerformanceScore).toContain('BigDecimal.valueOf(100)');
+    expect(buyerSupplierPerformanceScore).toContain('Supplier performance score must be between 0 and 100');
     expect(supplierProfileService).toContain('SupplierProfileAuditAction.UPDATED');
     expect(supplierProfileService).toContain('AuditTargetType.SUPPLIER_PROFILE');
     expect(supplierProfileAuditAction).toContain('UPDATED = "supplier_profile.updated"');

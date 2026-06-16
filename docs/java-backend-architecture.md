@@ -393,7 +393,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - `黑名单` 或 `已驳回` 可恢复为 `待准入`，之后重新提交准入审批。
 - `准入审批中` 关系不允许手工变更，避免与审批任务状态冲突。
 - 分级和授权品类维护始终按当前采购方 `tenantId` 过滤关系，只更新 `level` 和 `categories`，不改变准入状态。
-- 绩效评分维护始终按当前采购方 `tenantId` 过滤关系，只更新 `performance_score`，评分范围为 `0` 到 `100`。
+- 绩效评分维护始终按当前采购方 `tenantId` 过滤关系，只更新 `performance_score`，评分范围由 `BuyerSupplierPerformanceScore` 统一校验，当前为 `0` 到 `100`。
 
 后端通过 `ApprovalTaskApplicationService` 统一从当前租户 `approval_templates` 表解析 active 审批模板并创建待审批任务，初始状态统一使用 `ApprovalStatus.PENDING`，当前对应状态值 `待审批`。当前默认审批人按模板配置的 `default_approver_role_id`，从当前租户 active 用户的 `user_roles` 关系中解析；后续可替换为组织角色或可配置审批流。采购需求提交、供应商准入提交和定标提交只负责各自业务状态流转、审计和通知，不再直接写入 `approval_tasks`。审批业务类型统一由 `ApprovalBusinessType` 定义，当前覆盖 `purchase_demand`、`buyer_supplier_admission` 和 `rfq_award`；固定审批模板 code 与业务类型映射统一由 `ApprovalTemplateCode` 定义。
 
