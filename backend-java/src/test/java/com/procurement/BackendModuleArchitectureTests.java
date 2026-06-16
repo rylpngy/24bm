@@ -98,6 +98,18 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void attachmentApplicationServiceUsesDomainAttachmentStatus() throws IOException {
+    Path status = SOURCE_ROOT.resolve("attachment/domain/AttachmentStatus.java");
+    Path attachmentService = SOURCE_ROOT.resolve("attachment/application/AttachmentApplicationService.java");
+
+    assertThat(status).exists();
+    assertThat(Files.readString(status)).contains("ACTIVE = \"active\"");
+    assertThat(Files.readString(attachmentService))
+        .contains("AttachmentStatus.ACTIVE")
+        .doesNotContain("private static final String ACTIVE_STATUS");
+  }
+
+  @Test
   void workspaceTodoAssemblersUseDomainStatusConstants() throws IOException {
     Path rfqStatus = SOURCE_ROOT.resolve("sourcing/domain/RfqStatus.java");
     Path purchaseOrderStatus = SOURCE_ROOT.resolve("order/domain/PurchaseOrderStatus.java");

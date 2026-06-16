@@ -118,10 +118,12 @@ describe('Java backend scaffold', () => {
     const readme = read('backend-java/README.md');
     const migration = read('backend-java/src/main/resources/db/migration/V1__initial_schema.sql');
     const attachmentService = read('backend-java/src/main/java/com/procurement/attachment/application/AttachmentApplicationService.java');
+    const attachmentStatus = read('backend-java/src/main/java/com/procurement/attachment/domain/AttachmentStatus.java');
     const attachmentTests = read('backend-java/src/test/java/com/procurement/AttachmentMetadataLifecycleTests.java');
 
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/attachment/api/AttachmentController.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/attachment/application/AttachmentApplicationService.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/attachment/domain/AttachmentStatus.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/attachment/infrastructure/AttachmentMapper.java'))).toBe(true);
     expect(architecture).toContain('附件元数据 Java API');
     expect(architecture).toContain('GET /api/v1/buyer/attachments');
@@ -134,6 +136,8 @@ describe('Java backend scaffold', () => {
     expect(migration).toContain('status text not null default');
     expect(attachmentService).toContain('SUPPORTED_VISIBILITIES');
     expect(attachmentService).toContain('listActiveByTenantAndOwner');
+    expect(attachmentService).toContain('AttachmentStatus.ACTIVE');
+    expect(attachmentStatus).toContain('ACTIVE = "active"');
     expect(attachmentTests).toContain('createAttachmentRecordsVisibilityAndActiveStatusFromServerContext');
   });
 

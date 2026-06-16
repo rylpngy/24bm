@@ -548,6 +548,8 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 - 当前实现登记附件元数据，不直接处理对象存储直传、病毒扫描、文件预览或下载签名。
 - 新增附件会写入 `audit_logs`，动作为 `attachment.created`，目标类型为附件关联的 `ownerType`。
 
+新增附件状态统一使用 `AttachmentStatus.ACTIVE`，避免附件应用服务散落附件状态字符串。
+
 对应数据库表：
 
 - `attachments`
