@@ -1,6 +1,7 @@
 package com.procurement.approval.application;
 
 import com.procurement.approval.api.PendingApprovalTaskResponse;
+import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ApprovalInboxApplicationService {
-  private static final String PENDING_APPROVAL_STATUS = "待审批";
   private static final String PURCHASE_DEMAND_BIZ_TYPE = "purchase_demand";
   private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE = "buyer_supplier_admission";
   private static final String RFQ_AWARD_BIZ_TYPE = "rfq_award";
@@ -50,7 +50,7 @@ public class ApprovalInboxApplicationService {
 
   public List<PendingApprovalTaskResponse> listPending() {
     String tenantId = TenantAccessGuard.requireTenantId("buyer approval inbox APIs");
-    return approvalTaskMapper.listByTenantAndStatus(tenantId, PENDING_APPROVAL_STATUS).stream()
+    return approvalTaskMapper.listByTenantAndStatus(tenantId, ApprovalStatus.PENDING).stream()
         .map(this::toResponse)
         .toList();
   }

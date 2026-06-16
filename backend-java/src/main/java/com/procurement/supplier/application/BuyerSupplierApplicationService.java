@@ -148,7 +148,7 @@ public class BuyerSupplierApplicationService {
         tenantId,
         BUYER_SUPPLIER_ADMISSION_BIZ_TYPE,
         relationId,
-        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS);
+        ApprovalStatus.PENDING);
     if (approvalTask == null) {
       throw new IllegalStateException("Pending approval task not found for supplier admission: " + relationId);
     }
@@ -159,7 +159,7 @@ public class BuyerSupplierApplicationService {
     int approvalUpdated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
-        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS,
+        ApprovalStatus.PENDING,
         approvalStatus,
         userId);
     if (approvalUpdated == 0) {

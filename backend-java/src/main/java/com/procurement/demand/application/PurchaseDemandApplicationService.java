@@ -161,7 +161,7 @@ public class PurchaseDemandApplicationService {
         tenantId,
         PURCHASE_DEMAND_BIZ_TYPE,
         demandId,
-        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS);
+        ApprovalStatus.PENDING);
     if (approvalTask == null) {
       throw new IllegalStateException("Pending approval task not found for purchase demand: " + demandId);
     }
@@ -172,7 +172,7 @@ public class PurchaseDemandApplicationService {
     int updated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
-        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS,
+        ApprovalStatus.PENDING,
         approvalStatus,
         userId);
     if (updated == 0) {

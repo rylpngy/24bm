@@ -93,7 +93,7 @@ public class AwardApplicationService {
         quote.supplierId(),
         quote.amount(),
         request.reason(),
-        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS);
+        ApprovalStatus.PENDING);
 
     approvalTaskApplicationService.createPendingTask(
         tenantId,
@@ -117,7 +117,7 @@ public class AwardApplicationService {
     if (awardDecision == null || !rfqId.equals(awardDecision.rfqId())) {
       throw new IllegalArgumentException("Pending award decision not found in RFQ scope: " + request.awardId());
     }
-    if (!ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS.equals(awardDecision.approvedStatus())) {
+    if (!ApprovalStatus.PENDING.equals(awardDecision.approvedStatus())) {
       throw new IllegalStateException("Only pending award decisions can be reviewed: " + request.awardId());
     }
 
@@ -131,7 +131,7 @@ public class AwardApplicationService {
         tenantId,
         RFQ_AWARD_BIZ_TYPE,
         request.awardId(),
-        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS);
+        ApprovalStatus.PENDING);
     if (approvalTask == null) {
       throw new IllegalStateException("Pending approval task not found for RFQ award: " + request.awardId());
     }
@@ -140,7 +140,7 @@ public class AwardApplicationService {
     int approvalUpdated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
-        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS,
+        ApprovalStatus.PENDING,
         approvalStatus,
         userId);
     if (approvalUpdated == 0) {
@@ -150,7 +150,7 @@ public class AwardApplicationService {
     int awardUpdated = awardDecisionMapper.updateApprovedStatus(
         tenantId,
         request.awardId(),
-        ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS,
+        ApprovalStatus.PENDING,
         approvalStatus);
     if (awardUpdated == 0) {
       throw new IllegalStateException("Award decision status changed before review could be applied: " + request.awardId());

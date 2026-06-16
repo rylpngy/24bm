@@ -37,6 +37,7 @@ describe('Java purchase demand scaffold', () => {
     const departmentMapper = read('backend-java/src/main/java/com/procurement/organization/infrastructure/DepartmentMapper.java');
     const approvalMapper = read('backend-java/src/main/java/com/procurement/approval/infrastructure/ApprovalTaskMapper.java');
     const approvalService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java');
+    const approvalStatus = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalStatus.java');
     const approvalTemplateService = read('backend-java/src/main/java/com/procurement/approval/application/ApprovalTemplateApplicationService.java');
     const approvalTemplateStatus = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalTemplateStatus.java');
     const approvalTemplateStatusTransition = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalTemplateStatusTransition.java');
@@ -58,7 +59,9 @@ describe('Java purchase demand scaffold', () => {
     expect(approvalMapper).toContain('approval_tasks');
     expect(approvalService).toContain('createPendingTask');
     expect(approvalService).toContain('resolveTemplate');
-    expect(approvalService).toContain('PENDING_APPROVAL_STATUS');
+    expect(approvalService).toContain('ApprovalStatus.PENDING');
+    expect(approvalService).not.toContain('PENDING_APPROVAL_STATUS');
+    expect(approvalStatus).toContain('PENDING = "待审批"');
     expect(approvalService).toContain('TPL_PURCHASE_DEMAND');
     expect(approvalService).toContain('TPL_SUPPLIER_ADMISSION');
     expect(approvalService).toContain('TPL_RFQ_AWARD');

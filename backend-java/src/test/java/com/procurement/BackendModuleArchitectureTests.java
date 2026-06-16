@@ -122,6 +122,24 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void approvalApplicationServicesUseDomainApprovalStatus() throws IOException {
+    Path status = SOURCE_ROOT.resolve("approval/domain/ApprovalStatus.java");
+    Path taskService = SOURCE_ROOT.resolve("approval/application/ApprovalTaskApplicationService.java");
+    Path inboxService = SOURCE_ROOT.resolve("approval/application/ApprovalInboxApplicationService.java");
+
+    assertThat(Files.readString(status))
+        .contains("PENDING = \"待审批\"")
+        .contains("APPROVED = \"已通过\"")
+        .contains("REJECTED = \"已驳回\"");
+    assertThat(Files.readString(taskService))
+        .contains("ApprovalStatus.PENDING")
+        .doesNotContain("PENDING_APPROVAL_STATUS");
+    assertThat(Files.readString(inboxService))
+        .contains("ApprovalStatus.PENDING")
+        .doesNotContain("PENDING_APPROVAL_STATUS");
+  }
+
+  @Test
   void workspaceTodoAssemblersUseDomainStatusConstants() throws IOException {
     Path rfqStatus = SOURCE_ROOT.resolve("sourcing/domain/RfqStatus.java");
     Path purchaseOrderStatus = SOURCE_ROOT.resolve("order/domain/PurchaseOrderStatus.java");

@@ -1,6 +1,7 @@
 package com.procurement.approval.application;
 
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.domain.ApprovalTemplate;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
@@ -10,8 +11,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ApprovalTaskApplicationService {
-  public static final String PENDING_APPROVAL_STATUS = "待审批";
-
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTemplateMapper approvalTemplateMapper;
   private final BuyerUserMapper buyerUserMapper;
@@ -41,7 +40,7 @@ public class ApprovalTaskApplicationService {
         bizType,
         bizId,
         resolvedAssigneeId,
-        PENDING_APPROVAL_STATUS);
+        ApprovalStatus.PENDING);
     return approvalTaskMapper.findByTenantAndId(tenantId, approvalTaskId);
   }
 
