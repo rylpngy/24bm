@@ -18,6 +18,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.sourcing.domain.AwardDecision;
@@ -50,7 +51,8 @@ class OrderFinanceFeatureToggleTests {
       purchaseOrderMapper,
       auditLogApplicationService,
       notificationApplicationService,
-      tenantFeatureApplicationService);
+      tenantFeatureApplicationService,
+      new PurchaseOrderStatusTransition());
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
       invoiceMapper,

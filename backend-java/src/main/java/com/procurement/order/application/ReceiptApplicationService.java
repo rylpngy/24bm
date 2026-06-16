@@ -6,6 +6,7 @@ import com.procurement.order.api.CreateReceiptRequest;
 import com.procurement.order.api.ReceiptResponse;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderStatus;
+import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.domain.Receipt;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -30,6 +31,7 @@ public class ReceiptApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
+  private final PurchaseOrderStatusTransition purchaseOrderStatusTransition;
 
   public ReceiptApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
@@ -37,13 +39,15 @@ public class ReceiptApplicationService {
       ReceiptMapper receiptMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
-      TenantFeatureApplicationService tenantFeatureApplicationService) {
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      PurchaseOrderStatusTransition purchaseOrderStatusTransition) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.deliveryMapper = deliveryMapper;
     this.receiptMapper = receiptMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+    this.purchaseOrderStatusTransition = purchaseOrderStatusTransition;
   }
 
   public List<ReceiptResponse> listCurrentTenantReceipts(String orderId, String receiverId) {
@@ -65,9 +69,7 @@ public class ReceiptApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found in tenant scope: " + orderId);
     }
-    if (!PurchaseOrderStatus.SHIPPED.equals(order.status())) {
-      throw new IllegalStateException("Only shipped purchase orders can be received: " + orderId);
-    }
+    purchaseOrderStatusTransition.requireReceipt(order.status(), orderId);
     tenantFeatureApplicationService.requireEnabled(tenantId, ORDER_FEATURE);
     if (deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, PurchaseOrderStatus.SHIPPED) == 0) {
       throw new IllegalStateException("Shipped delivery not found for receipt: " + orderId);

@@ -55,10 +55,13 @@ describe('Java supplier delivery scaffold', () => {
     expect(service).toContain('listBySupplierFiltered');
     expect(service).toContain('PurchaseOrderStatus.PENDING_SHIPMENT');
     expect(service).toContain('PurchaseOrderStatus.SHIPPED');
-    expect(service).toContain('Only ready-to-ship orders can be shipped');
+    expect(service).toContain('PurchaseOrderStatusTransition');
+    expect(service).toContain('requireShipment');
     expect(service).toContain('countByTenantAndOrder');
     expect(service).toContain('findBySupplierAndId');
     expect(service).toContain('updateStatus');
+    const transition = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderStatusTransition.java');
+    expect(transition).toContain('Only ready-to-ship orders can be shipped');
   });
 
   it('documents the supplier delivery Java API handoff', () => {

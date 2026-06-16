@@ -48,6 +48,8 @@ describe('Java buyer receipt scaffold', () => {
     expect(service).toContain('listByTenantFiltered');
     expect(service).toContain('PurchaseOrderStatus.SHIPPED');
     expect(service).toContain('PurchaseOrderStatus.RECEIVED');
+    expect(service).toContain('PurchaseOrderStatusTransition');
+    expect(service).toContain('requireReceipt');
     expect(service).toContain('countByTenantOrderAndStatus');
     expect(service).toContain('countByTenantAndOrder');
     expect(service).toContain('findByTenantAndId');

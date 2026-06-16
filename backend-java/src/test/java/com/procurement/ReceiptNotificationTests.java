@@ -13,6 +13,7 @@ import com.procurement.notification.infrastructure.NotificationMapper;
 import com.procurement.order.api.CreateReceiptRequest;
 import com.procurement.order.application.ReceiptApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.domain.Receipt;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -44,7 +45,8 @@ class ReceiptNotificationTests {
       receiptMapper,
       auditLogApplicationService,
       notificationApplicationService,
-      tenantFeatureApplicationService);
+      tenantFeatureApplicationService,
+      new PurchaseOrderStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

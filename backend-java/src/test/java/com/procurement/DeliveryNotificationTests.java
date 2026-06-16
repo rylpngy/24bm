@@ -14,6 +14,7 @@ import com.procurement.order.api.CreateDeliveryRequest;
 import com.procurement.order.application.DeliveryApplicationService;
 import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
@@ -41,7 +42,8 @@ class DeliveryNotificationTests {
       deliveryMapper,
       auditLogApplicationService,
       notificationApplicationService,
-      tenantFeatureApplicationService);
+      tenantFeatureApplicationService,
+      new PurchaseOrderStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

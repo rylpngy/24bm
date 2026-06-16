@@ -15,6 +15,7 @@ import com.procurement.order.application.DeliveryApplicationService;
 import com.procurement.order.application.ReceiptApplicationService;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.domain.Receipt;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -62,7 +63,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     org.assertj.core.api.Assertions.assertThat(service.confirmCurrentSupplierOrder("po-1").status())
         .isEqualTo("待发货");
@@ -82,7 +84,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     assertThatThrownBy(() -> service.confirmCurrentSupplierOrder("po-1"))
         .isInstanceOf(IllegalStateException.class)
@@ -102,7 +105,8 @@ class OrderFulfillmentStateTransitionTests {
         deliveryMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123")))
         .isInstanceOf(IllegalStateException.class)
@@ -122,7 +126,8 @@ class OrderFulfillmentStateTransitionTests {
         deliveryMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123")))
         .isInstanceOf(IllegalStateException.class)
@@ -164,7 +169,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
 
@@ -185,7 +191,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     service.listCurrentTenantOrders("待供应商确认", "supplier-1", "rfq-1");
 
@@ -203,7 +210,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     service.listCurrentSupplierOrders("待发货", "rfq-1");
 
@@ -222,7 +230,8 @@ class OrderFulfillmentStateTransitionTests {
         receiptMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     service.listCurrentTenantReceipts("po-1", "user-buyer");
 
@@ -240,7 +249,8 @@ class OrderFulfillmentStateTransitionTests {
         deliveryMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     service.listCurrentSupplierDeliveries("已发货", "po-1");
 
@@ -272,7 +282,8 @@ class OrderFulfillmentStateTransitionTests {
         deliveryMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123"));
 
@@ -299,7 +310,8 @@ class OrderFulfillmentStateTransitionTests {
         receiptMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
         .isInstanceOf(IllegalStateException.class)
@@ -322,7 +334,8 @@ class OrderFulfillmentStateTransitionTests {
         receiptMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
         .isInstanceOf(IllegalStateException.class)
@@ -352,7 +365,8 @@ class OrderFulfillmentStateTransitionTests {
         receiptMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
         .isInstanceOf(IllegalStateException.class)
@@ -392,7 +406,8 @@ class OrderFulfillmentStateTransitionTests {
         receiptMapper,
         auditLogApplicationService,
         notificationApplicationService,
-        tenantFeatureApplicationService);
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
 
     service.create("po-1", new CreateReceiptRequest("验收通过"));
 

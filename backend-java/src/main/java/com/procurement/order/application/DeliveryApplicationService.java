@@ -7,6 +7,7 @@ import com.procurement.order.api.DeliveryResponse;
 import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderStatus;
+import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -28,18 +29,21 @@ public class DeliveryApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
+  private final PurchaseOrderStatusTransition purchaseOrderStatusTransition;
 
   public DeliveryApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
       DeliveryMapper deliveryMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
-      TenantFeatureApplicationService tenantFeatureApplicationService) {
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      PurchaseOrderStatusTransition purchaseOrderStatusTransition) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.deliveryMapper = deliveryMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+    this.purchaseOrderStatusTransition = purchaseOrderStatusTransition;
   }
 
   public List<DeliveryResponse> listCurrentSupplierDeliveries(String status, String orderId) {
@@ -60,9 +64,7 @@ public class DeliveryApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
-    if (!PurchaseOrderStatus.PENDING_SHIPMENT.equals(order.status())) {
-      throw new IllegalStateException("Only ready-to-ship orders can be shipped: " + orderId);
-    }
+    purchaseOrderStatusTransition.requireShipment(order.status(), orderId);
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), ORDER_FEATURE);
     if (deliveryMapper.countByTenantAndOrder(order.tenantId(), order.id()) > 0) {
       throw new IllegalStateException("Purchase order already has a delivery: " + orderId);

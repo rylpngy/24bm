@@ -7,6 +7,7 @@ import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderStatus;
+import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
@@ -30,18 +31,21 @@ public class PurchaseOrderApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
+  private final PurchaseOrderStatusTransition purchaseOrderStatusTransition;
 
   public PurchaseOrderApplicationService(
       AwardDecisionMapper awardDecisionMapper,
       PurchaseOrderMapper purchaseOrderMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
-      TenantFeatureApplicationService tenantFeatureApplicationService) {
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      PurchaseOrderStatusTransition purchaseOrderStatusTransition) {
     this.awardDecisionMapper = awardDecisionMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+    this.purchaseOrderStatusTransition = purchaseOrderStatusTransition;
   }
 
   public List<PurchaseOrderResponse> listCurrentTenantOrders() {
@@ -88,9 +92,7 @@ public class PurchaseOrderApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
-    if (!PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION.equals(order.status())) {
-      throw new IllegalStateException("Only pending supplier confirmation orders can be confirmed: " + orderId);
-    }
+    purchaseOrderStatusTransition.requireSupplierConfirmation(order.status(), orderId);
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), ORDER_FEATURE);
 
     int updated = purchaseOrderMapper.updateStatus(

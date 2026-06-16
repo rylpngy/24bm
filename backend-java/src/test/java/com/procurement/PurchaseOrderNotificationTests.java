@@ -12,6 +12,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.infrastructure.NotificationMapper;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
@@ -39,7 +40,8 @@ class PurchaseOrderNotificationTests {
       purchaseOrderMapper,
       auditLogApplicationService,
       notificationApplicationService,
-      tenantFeatureApplicationService);
+      tenantFeatureApplicationService,
+      new PurchaseOrderStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

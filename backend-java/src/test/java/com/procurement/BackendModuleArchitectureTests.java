@@ -215,6 +215,38 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void orderFulfillmentServicesDelegatePurchaseOrderStatusTransitions() throws IOException {
+    Path transition = SOURCE_ROOT.resolve("order/domain/PurchaseOrderStatusTransition.java");
+    Path purchaseOrderService = SOURCE_ROOT.resolve("order/application/PurchaseOrderApplicationService.java");
+    Path deliveryService = SOURCE_ROOT.resolve("order/application/DeliveryApplicationService.java");
+    Path receiptService = SOURCE_ROOT.resolve("order/application/ReceiptApplicationService.java");
+
+    assertThat(transition).exists();
+
+    String transitionSource = Files.readString(transition);
+    assertThat(transitionSource)
+        .contains("void requireSupplierConfirmation")
+        .contains("void requireShipment")
+        .contains("void requireReceipt")
+        .contains("PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION")
+        .contains("PurchaseOrderStatus.PENDING_SHIPMENT")
+        .contains("PurchaseOrderStatus.SHIPPED");
+
+    assertThat(Files.readString(purchaseOrderService))
+        .contains("PurchaseOrderStatusTransition")
+        .contains("purchaseOrderStatusTransition.requireSupplierConfirmation")
+        .doesNotContain("Only pending supplier confirmation orders can be confirmed");
+    assertThat(Files.readString(deliveryService))
+        .contains("PurchaseOrderStatusTransition")
+        .contains("purchaseOrderStatusTransition.requireShipment")
+        .doesNotContain("Only ready-to-ship orders can be shipped");
+    assertThat(Files.readString(receiptService))
+        .contains("PurchaseOrderStatusTransition")
+        .contains("purchaseOrderStatusTransition.requireReceipt")
+        .doesNotContain("Only shipped purchase orders can be received");
+  }
+
+  @Test
   void demandAndSupplierApplicationServicesUseDomainStatusConstants() throws IOException {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("demand/application/PurchaseDemandApplicationService.java"),
