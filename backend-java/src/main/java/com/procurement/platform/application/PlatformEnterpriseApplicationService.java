@@ -4,6 +4,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.platform.api.EnterpriseReviewRequest;
 import com.procurement.platform.api.EnterpriseReviewResponse;
 import com.procurement.platform.domain.EnterpriseReview;
+import com.procurement.platform.domain.PlatformEnterpriseAuditAction;
 import com.procurement.platform.infrastructure.PlatformEnterpriseMapper;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -11,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlatformEnterpriseApplicationService {
-  private static final String ENTERPRISE_REVIEWED_ACTION = "enterprise.reviewed";
   private static final String ENTERPRISE_TARGET_TYPE = "enterprise";
 
   private final PlatformEnterpriseMapper platformEnterpriseMapper;
@@ -39,7 +39,7 @@ public class PlatformEnterpriseApplicationService {
     platformEnterpriseMapper.updateSupplierReviewStatus(enterpriseId, request.reviewStatus());
     auditLogApplicationService.recordTenantAction(
         null,
-        ENTERPRISE_REVIEWED_ACTION,
+        PlatformEnterpriseAuditAction.REVIEWED,
         ENTERPRISE_TARGET_TYPE,
         enterpriseId);
     return toResponse(platformEnterpriseMapper.findById(enterpriseId));

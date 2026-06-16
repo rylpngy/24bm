@@ -331,6 +331,8 @@ describe('Java backend scaffold', () => {
     const tenantService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformTenantApplicationService.java');
     const tenantStatus = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantStatus.java');
     const tenantAuditAction = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantAuditAction.java');
+    const enterpriseService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformEnterpriseApplicationService.java');
+    const enterpriseAuditAction = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformEnterpriseAuditAction.java');
     const announcementService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformAnnouncementApplicationService.java');
     const announcementAuditAction = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformAnnouncementAuditAction.java');
     const auditTests = read('backend-java/src/test/java/com/procurement/PlatformAuditLogTests.java');
@@ -366,6 +368,8 @@ describe('Java backend scaffold', () => {
     expect(tenantAuditAction).toContain('PLAN_UPDATED = "tenant.plan_updated"');
     expect(tenantAuditAction).toContain('ENABLED = "tenant.enabled"');
     expect(tenantAuditAction).toContain('DISABLED = "tenant.disabled"');
+    expect(enterpriseService).toContain('PlatformEnterpriseAuditAction.REVIEWED');
+    expect(enterpriseAuditAction).toContain('REVIEWED = "enterprise.reviewed"');
     expect(announcementService).toContain('PlatformAnnouncementAuditAction.PUBLISHED');
     expect(announcementAuditAction).toContain('PUBLISHED = "platform_announcement.published"');
     expect(auditTests).toContain('tenantFeatureToggleUpdateRecordsAuditLogInTargetTenant');

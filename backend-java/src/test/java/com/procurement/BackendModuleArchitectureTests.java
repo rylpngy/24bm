@@ -407,6 +407,19 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void platformEnterpriseApplicationServiceUsesDomainAuditActions() throws IOException {
+    Path auditAction = SOURCE_ROOT.resolve("platform/domain/PlatformEnterpriseAuditAction.java");
+    Path enterpriseService =
+        SOURCE_ROOT.resolve("platform/application/PlatformEnterpriseApplicationService.java");
+
+    assertThat(auditAction).exists();
+    assertThat(Files.readString(auditAction)).contains("REVIEWED = \"enterprise.reviewed\"");
+    assertThat(Files.readString(enterpriseService))
+        .contains("PlatformEnterpriseAuditAction.REVIEWED")
+        .doesNotContain("private static final String ENTERPRISE_REVIEWED_ACTION");
+  }
+
+  @Test
   void rfqOrderAndInvoiceApplicationServicesUseDomainStatusConstants() throws IOException {
     Path invoiceAuditAction = SOURCE_ROOT.resolve("finance/domain/InvoiceAuditAction.java");
     assertThat(invoiceAuditAction).exists();
