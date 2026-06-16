@@ -13,6 +13,7 @@ import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqAwardStatusTransition;
 import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
@@ -39,6 +40,7 @@ public class AwardApplicationService {
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final RfqAwardStatusTransition rfqAwardStatusTransition;
 
   public AwardApplicationService(
       RfqMapper rfqMapper,
@@ -47,7 +49,8 @@ public class AwardApplicationService {
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      RfqAwardStatusTransition rfqAwardStatusTransition) {
     this.rfqMapper = rfqMapper;
     this.quoteMapper = quoteMapper;
     this.awardDecisionMapper = awardDecisionMapper;
@@ -55,6 +58,7 @@ public class AwardApplicationService {
     this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.rfqAwardStatusTransition = rfqAwardStatusTransition;
   }
 
   @Transactional
@@ -64,9 +68,7 @@ public class AwardApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
-    if (!RfqStatus.QUOTING.equals(rfq.status())) {
-      throw new IllegalStateException("Only quoting RFQs can be awarded: " + rfqId);
-    }
+    rfqAwardStatusTransition.requireAwardSubmission(rfq.status(), rfqId);
 
     Quote quote = quoteMapper.findSubmittedQuoteForAward(tenantId, rfqId, request.quoteId(), QuoteStatus.SUBMITTED);
     if (quote == null) {
@@ -123,9 +125,7 @@ public class AwardApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
-    if (!RfqStatus.AWARD_APPROVAL.equals(rfq.status())) {
-      throw new IllegalStateException("Only RFQs in award approval can be reviewed: " + rfqId);
-    }
+    rfqAwardStatusTransition.requireAwardReview(rfq.status(), rfqId);
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,
@@ -156,12 +156,14 @@ public class AwardApplicationService {
       throw new IllegalStateException("Award decision status changed before review could be applied: " + request.awardId());
     }
 
-    if (Boolean.TRUE.equals(request.approved())) {
+    boolean approved = Boolean.TRUE.equals(request.approved());
+    String targetRfqStatus = rfqAwardStatusTransition.reviewTargetStatus(approved);
+    if (approved) {
       int rfqUpdated = rfqMapper.updateAward(
           tenantId,
           rfqId,
           RfqStatus.AWARD_APPROVAL,
-          RfqStatus.AWARDED,
+          targetRfqStatus,
           awardDecision.supplierId());
       if (rfqUpdated == 0) {
         throw new IllegalStateException("RFQ status changed before award could be finalized: " + rfqId);
@@ -171,7 +173,7 @@ public class AwardApplicationService {
           tenantId,
           rfqId,
           RfqStatus.AWARD_APPROVAL,
-          RfqStatus.QUOTING);
+          targetRfqStatus);
       if (rfqUpdated == 0) {
         throw new IllegalStateException("RFQ status changed before award rejection could be applied: " + rfqId);
       }

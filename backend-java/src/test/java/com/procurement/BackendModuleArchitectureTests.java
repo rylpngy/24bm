@@ -132,7 +132,7 @@ class BackendModuleArchitectureTests {
         List.of(
             "RfqStatus.QUOTING",
             "RfqStatus.AWARD_APPROVAL",
-            "RfqStatus.AWARDED",
+            "RfqAwardStatusTransition",
             "QuoteStatus.SUBMITTED",
             "ApprovalStatus.APPROVED",
             "ApprovalStatus.REJECTED"),
@@ -212,6 +212,31 @@ class BackendModuleArchitectureTests {
         .doesNotContain("private boolean isSupportedPaymentTarget")
         .doesNotContain("private boolean isIdempotentPaymentRegistration")
         .doesNotContain("private void requirePaymentTransition");
+  }
+
+  @Test
+  void awardApplicationServiceDelegatesRfqAwardStatusTransitions() throws IOException {
+    Path transition = SOURCE_ROOT.resolve("sourcing/domain/RfqAwardStatusTransition.java");
+    Path awardService = SOURCE_ROOT.resolve("sourcing/application/AwardApplicationService.java");
+
+    assertThat(transition).exists();
+
+    String transitionSource = Files.readString(transition);
+    assertThat(transitionSource)
+        .contains("void requireAwardSubmission")
+        .contains("void requireAwardReview")
+        .contains("String reviewTargetStatus")
+        .contains("RfqStatus.QUOTING")
+        .contains("RfqStatus.AWARD_APPROVAL")
+        .contains("RfqStatus.AWARDED");
+
+    assertThat(Files.readString(awardService))
+        .contains("RfqAwardStatusTransition")
+        .contains("rfqAwardStatusTransition.requireAwardSubmission")
+        .contains("rfqAwardStatusTransition.requireAwardReview")
+        .contains("rfqAwardStatusTransition.reviewTargetStatus")
+        .doesNotContain("Only quoting RFQs can be awarded")
+        .doesNotContain("Only RFQs in award approval can be reviewed");
   }
 
   @Test

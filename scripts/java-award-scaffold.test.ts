@@ -51,10 +51,14 @@ describe('Java RFQ award scaffold', () => {
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('QuoteStatus.SUBMITTED');
-    expect(service).toContain('RfqStatus.AWARDED');
+    expect(service).toContain('RfqAwardStatusTransition');
+    expect(service).toContain('requireAwardSubmission');
+    expect(service).toContain('reviewTargetStatus');
     expect(service).toContain('ApprovalStatus.APPROVED');
     expect(service).toContain('findSubmittedQuoteForAward');
     expect(service).toContain('updateAward');
+    const transition = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqAwardStatusTransition.java');
+    expect(transition).toContain('RfqStatus.AWARDED');
   });
 
   it('documents the award Java API handoff', () => {

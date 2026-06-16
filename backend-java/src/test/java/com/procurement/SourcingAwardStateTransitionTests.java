@@ -23,6 +23,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqAwardStatusTransition;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
@@ -51,7 +52,8 @@ class SourcingAwardStateTransitionTests {
       approvalTaskMapper,
       approvalTaskApplicationService,
       auditLogApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+      new RfqAwardStatusTransition());
 
   @AfterEach
   void clearTenantContext() {
