@@ -7,6 +7,7 @@ import com.procurement.supplier.api.CreateSupplierUserRequest;
 import com.procurement.supplier.api.ResetSupplierUserPasswordRequest;
 import com.procurement.supplier.api.SupplierUserResponse;
 import com.procurement.supplier.domain.SupplierUser;
+import com.procurement.supplier.domain.SupplierUserAuditAction;
 import com.procurement.supplier.domain.SupplierUserStatusTransition;
 import com.procurement.supplier.infrastructure.SupplierUserMapper;
 import java.util.List;
@@ -17,9 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SupplierUserApplicationService {
-  private static final String SUPPLIER_USER_CREATED_ACTION = "supplier_user.created";
-  private static final String SUPPLIER_USER_PASSWORD_RESET_ACTION = "supplier_user.password_reset";
-  private static final String SUPPLIER_USER_STATUS_CHANGED_ACTION = "supplier_user.status_changed";
   private static final String SUPPLIER_USER_TARGET_TYPE = "supplier_user";
 
   private final SupplierUserMapper supplierUserMapper;
@@ -73,7 +71,7 @@ public class SupplierUserApplicationService {
     supplierUserMapper.assignRole(userId, supplierRoleId);
     auditLogApplicationService.recordTenantAction(
         null,
-        SUPPLIER_USER_CREATED_ACTION,
+        SupplierUserAuditAction.CREATED,
         SUPPLIER_USER_TARGET_TYPE,
         userId);
     return toResponse(supplierUserMapper.findBySupplierAndId(supplierId, userId));
@@ -89,7 +87,7 @@ public class SupplierUserApplicationService {
         passwordEncoder.encode(request.newPassword()));
     auditLogApplicationService.recordTenantAction(
         null,
-        SUPPLIER_USER_PASSWORD_RESET_ACTION,
+        SupplierUserAuditAction.PASSWORD_RESET,
         SUPPLIER_USER_TARGET_TYPE,
         userId);
     return toResponse(supplierUserMapper.findBySupplierAndId(supplierId, userId));
@@ -103,7 +101,7 @@ public class SupplierUserApplicationService {
     supplierUserMapper.updateStatus(supplierId, userId, request.status());
     auditLogApplicationService.recordTenantAction(
         null,
-        SUPPLIER_USER_STATUS_CHANGED_ACTION,
+        SupplierUserAuditAction.STATUS_CHANGED,
         SUPPLIER_USER_TARGET_TYPE,
         userId);
     return toResponse(supplierUserMapper.findBySupplierAndId(supplierId, userId));

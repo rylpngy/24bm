@@ -240,22 +240,34 @@ class BackendModuleArchitectureTests {
   void supplierUserApplicationServiceDelegatesStatusTransitions() throws IOException {
     Path status = SOURCE_ROOT.resolve("supplier/domain/SupplierUserStatus.java");
     Path transition = SOURCE_ROOT.resolve("supplier/domain/SupplierUserStatusTransition.java");
+    Path auditAction = SOURCE_ROOT.resolve("supplier/domain/SupplierUserAuditAction.java");
     Path userService = SOURCE_ROOT.resolve("supplier/application/SupplierUserApplicationService.java");
 
     assertThat(status).exists();
     assertThat(transition).exists();
+    assertThat(auditAction).exists();
 
     assertThat(Files.readString(status))
         .contains("ACTIVE = \"active\"")
         .contains("INACTIVE = \"inactive\"");
+    assertThat(Files.readString(auditAction))
+        .contains("CREATED = \"supplier_user.created\"")
+        .contains("PASSWORD_RESET = \"supplier_user.password_reset\"")
+        .contains("STATUS_CHANGED = \"supplier_user.status_changed\"");
     assertThat(Files.readString(transition))
         .contains("void requireSupportedTarget")
         .contains("SupplierUserStatus.ACTIVE")
         .contains("SupplierUserStatus.INACTIVE")
         .contains("Unsupported supplier user status");
     assertThat(Files.readString(userService))
+        .contains("SupplierUserAuditAction.CREATED")
+        .contains("SupplierUserAuditAction.PASSWORD_RESET")
+        .contains("SupplierUserAuditAction.STATUS_CHANGED")
         .contains("SupplierUserStatusTransition")
         .contains("supplierUserStatusTransition.requireSupportedTarget")
+        .doesNotContain("private static final String SUPPLIER_USER_CREATED_ACTION")
+        .doesNotContain("private static final String SUPPLIER_USER_PASSWORD_RESET_ACTION")
+        .doesNotContain("private static final String SUPPLIER_USER_STATUS_CHANGED_ACTION")
         .doesNotContain("private static final String ACTIVE_STATUS")
         .doesNotContain("private static final String INACTIVE_STATUS")
         .doesNotContain("Unsupported supplier user status");
