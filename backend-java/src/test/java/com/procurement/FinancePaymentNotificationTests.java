@@ -9,6 +9,7 @@ import com.procurement.common.tenant.TenantContext;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.Invoice;
+import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -47,7 +48,8 @@ class FinancePaymentNotificationTests {
       buyerSupplierRelationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+      new InvoicePaymentStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

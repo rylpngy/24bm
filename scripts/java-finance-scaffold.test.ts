@@ -73,9 +73,13 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('invoice.partial_paid');
     expect(paymentService).toContain('listByTenantFiltered');
     expect(paymentService).toContain('updatePaymentStatus');
-    expect(paymentService).toContain('isIdempotentPaymentRegistration');
-    expect(paymentService).toContain('Paid invoices cannot be changed');
+    expect(paymentService).toContain('InvoicePaymentStatusTransition');
+    expect(paymentService).toContain('isIdempotentRegistration');
+    expect(paymentService).toContain('requireTransition');
     expect(paymentService).toContain('notifyActiveSupplierUsers');
+    const paymentTransition = read('backend-java/src/main/java/com/procurement/finance/domain/InvoicePaymentStatusTransition.java');
+    expect(paymentTransition).toContain('isIdempotentRegistration');
+    expect(paymentTransition).toContain('Paid invoices cannot be changed');
     expect(auditService).toContain('listCurrentTenantTargetActions');
   });
 

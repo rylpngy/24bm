@@ -180,15 +180,38 @@ class BackendModuleArchitectureTests {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("finance/application/PaymentApplicationService.java"),
         List.of(
-            "InvoicePaymentStatus.PENDING_PAYMENT",
             "InvoicePaymentStatus.PAID",
-            "InvoicePaymentStatus.PARTIAL_PAID",
+            "InvoicePaymentStatusTransition",
             "BuyerSupplierRelationStatus.BLACKLISTED"),
         List.of(
             "private static final String PENDING_PAYMENT_STATUS",
             "private static final String PAID_STATUS",
             "private static final String PARTIAL_PAID_STATUS",
             "private static final String BLACKLISTED_SUPPLIER_STATUS"));
+  }
+
+  @Test
+  void paymentApplicationServiceDelegatesInvoicePaymentStatusTransitions() throws IOException {
+    Path transition = SOURCE_ROOT.resolve("finance/domain/InvoicePaymentStatusTransition.java");
+    Path paymentService = SOURCE_ROOT.resolve("finance/application/PaymentApplicationService.java");
+
+    assertThat(transition).exists();
+
+    String transitionSource = Files.readString(transition);
+    assertThat(transitionSource)
+        .contains("boolean isSupportedTarget")
+        .contains("boolean isIdempotentRegistration")
+        .contains("void requireTransition")
+        .contains("InvoicePaymentStatus.PENDING_PAYMENT")
+        .contains("InvoicePaymentStatus.PARTIAL_PAID")
+        .contains("InvoicePaymentStatus.PAID");
+
+    assertThat(Files.readString(paymentService))
+        .contains("InvoicePaymentStatusTransition")
+        .contains("invoicePaymentStatusTransition.requireTransition")
+        .doesNotContain("private boolean isSupportedPaymentTarget")
+        .doesNotContain("private boolean isIdempotentPaymentRegistration")
+        .doesNotContain("private void requirePaymentTransition");
   }
 
   @Test

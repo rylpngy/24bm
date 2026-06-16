@@ -12,6 +12,7 @@ import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
+import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
@@ -62,7 +63,8 @@ class OrderFinanceFeatureToggleTests {
       buyerSupplierRelationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+      new InvoicePaymentStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

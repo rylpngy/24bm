@@ -7,6 +7,7 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoicePaymentStatus;
+import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
@@ -33,6 +34,7 @@ public class PaymentApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final InvoicePaymentStatusTransition invoicePaymentStatusTransition;
 
   public PaymentApplicationService(
       InvoiceMapper invoiceMapper,
@@ -40,13 +42,15 @@ public class PaymentApplicationService {
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      InvoicePaymentStatusTransition invoicePaymentStatusTransition) {
     this.invoiceMapper = invoiceMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.invoicePaymentStatusTransition = invoicePaymentStatusTransition;
   }
 
   public List<InvoiceResponse> listCurrentTenantInvoices() {
@@ -84,13 +88,13 @@ public class PaymentApplicationService {
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
     }
-    if (!isSupportedPaymentTarget(request.paymentStatus())) {
+    if (!invoicePaymentStatusTransition.isSupportedTarget(request.paymentStatus())) {
       throw new IllegalArgumentException("Unsupported payment status: " + request.paymentStatus());
     }
-    if (isIdempotentPaymentRegistration(invoice.paymentStatus(), request.paymentStatus())) {
+    if (invoicePaymentStatusTransition.isIdempotentRegistration(invoice.paymentStatus(), request.paymentStatus())) {
       return toResponse(invoice);
     }
-    requirePaymentTransition(invoice.paymentStatus(), request.paymentStatus(), invoiceId);
+    invoicePaymentStatusTransition.requireTransition(invoice.paymentStatus(), request.paymentStatus(), invoiceId);
     requireInvoiceAmountMatchesOrder(tenantId, invoice);
     requireSupplierPayable(tenantId, invoice);
 
@@ -127,32 +131,6 @@ public class PaymentApplicationService {
         invoice.paymentStatus(),
         invoice.createdAt(),
         invoice.updatedAt());
-  }
-
-  private boolean isSupportedPaymentTarget(String paymentStatus) {
-    return InvoicePaymentStatus.PAID.equals(paymentStatus)
-        || InvoicePaymentStatus.PARTIAL_PAID.equals(paymentStatus);
-  }
-
-  private boolean isIdempotentPaymentRegistration(String currentStatus, String targetStatus) {
-    return currentStatus.equals(targetStatus)
-        && (InvoicePaymentStatus.PAID.equals(currentStatus)
-            || InvoicePaymentStatus.PARTIAL_PAID.equals(currentStatus));
-  }
-
-  private void requirePaymentTransition(String currentStatus, String targetStatus, String invoiceId) {
-    if (InvoicePaymentStatus.PENDING_PAYMENT.equals(currentStatus)) {
-      return;
-    }
-    if (InvoicePaymentStatus.PARTIAL_PAID.equals(currentStatus)
-        && InvoicePaymentStatus.PAID.equals(targetStatus)) {
-      return;
-    }
-    if (InvoicePaymentStatus.PAID.equals(currentStatus)) {
-      throw new IllegalStateException("Paid invoices cannot be changed: " + invoiceId);
-    }
-    throw new IllegalStateException(
-        "Unsupported payment status transition: " + currentStatus + " -> " + targetStatus);
   }
 
   private void requireSupplierPayable(String tenantId, Invoice invoice) {

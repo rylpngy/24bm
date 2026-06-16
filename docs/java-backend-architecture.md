@@ -49,6 +49,8 @@ Controller
 
 工作台待办汇总和已落地的 RFQ、订单、发票状态机服务使用业务域状态常量：RFQ 状态在 `RfqStatus`，采购订单状态在 `PurchaseOrderStatus`，发票付款状态在 `InvoicePaymentStatus`。后续新增状态流转时应优先扩展这些常量，避免中文状态值重新散落在应用服务中。
 
+发票付款状态流转由 `InvoicePaymentStatusTransition` 承接，集中判断支持的付款目标、幂等登记和 `待付款 -> 部分付款/已付款 -> 已付款` 的合法路径。`PaymentApplicationService` 只编排租户校验、功能开关、金额匹配、供应商黑名单、审计和通知。
+
 ## 多租户策略
 
 MVP 采用共享数据库、共享 Schema、`tenant_id` 字段隔离。平台数据、供应商公共企业档案和采购方私域关系分开建模。所有组织部门、采购需求、询价、报价、订单、收货、发票、审批任务、附件和审计数据必须带租户上下文。
