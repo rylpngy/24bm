@@ -10,6 +10,7 @@ import com.procurement.sourcing.domain.RfqDemandLinkPolicy;
 import com.procurement.sourcing.domain.RfqInviteStatus;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.domain.RfqStatus;
+import com.procurement.sourcing.domain.RfqSupplierInvitationPolicy;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
@@ -104,13 +105,12 @@ public class RfqApplicationService {
 
   private void validateSuppliers(String tenantId, List<String> supplierIds) {
     for (String supplierId : supplierIds) {
-      int count = buyerSupplierRelationMapper.countByTenantSupplierAndStatus(
-          tenantId,
-          supplierId,
-          BuyerSupplierRelationStatus.ADMITTED);
-      if (count == 0) {
-        throw new IllegalStateException("Supplier is not approved for tenant RFQ: " + supplierId);
-      }
+      RfqSupplierInvitationPolicy.requireAdmittedSupplier(
+          buyerSupplierRelationMapper.countByTenantSupplierAndStatus(
+              tenantId,
+              supplierId,
+              BuyerSupplierRelationStatus.ADMITTED),
+          supplierId);
     }
   }
 

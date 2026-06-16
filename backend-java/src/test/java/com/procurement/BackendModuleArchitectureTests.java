@@ -618,6 +618,7 @@ class BackendModuleArchitectureTests {
             "RfqStatus.QUOTING",
             "RfqSourcingStatusTransition",
             "RfqDemandLinkPolicy.requireUnlinkedDemand",
+            "RfqSupplierInvitationPolicy.requireAdmittedSupplier",
             "BuyerSupplierRelationStatus.ADMITTED",
             "RfqInviteStatus.INVITED"),
         List.of(
@@ -625,7 +626,8 @@ class BackendModuleArchitectureTests {
             "private static final String APPROVED_DEMAND_STATUS",
             "private static final String APPROVED_SUPPLIER_STATUS",
             "private static final String INVITED_STATUS",
-            "Purchase demand already linked to an RFQ"));
+            "Purchase demand already linked to an RFQ",
+            "Supplier is not approved for tenant RFQ"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/AwardApplicationService.java"),
         List.of(
@@ -820,12 +822,14 @@ class BackendModuleArchitectureTests {
   void rfqAndQuoteApplicationServicesDelegateSourcingStatusTransitions() throws IOException {
     Path transition = SOURCE_ROOT.resolve("sourcing/domain/RfqSourcingStatusTransition.java");
     Path demandLinkPolicy = SOURCE_ROOT.resolve("sourcing/domain/RfqDemandLinkPolicy.java");
+    Path supplierInvitationPolicy = SOURCE_ROOT.resolve("sourcing/domain/RfqSupplierInvitationPolicy.java");
     Path quoteSubmissionPolicy = SOURCE_ROOT.resolve("sourcing/domain/RfqQuoteSubmissionPolicy.java");
     Path rfqService = SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java");
     Path quoteService = SOURCE_ROOT.resolve("sourcing/application/QuoteApplicationService.java");
 
     assertThat(transition).exists();
     assertThat(demandLinkPolicy).exists();
+    assertThat(supplierInvitationPolicy).exists();
     assertThat(quoteSubmissionPolicy).exists();
 
     String transitionSource = Files.readString(transition);
@@ -840,14 +844,20 @@ class BackendModuleArchitectureTests {
     assertThat(Files.readString(demandLinkPolicy))
         .contains("void requireUnlinkedDemand")
         .contains("Purchase demand already linked to an RFQ");
+    assertThat(Files.readString(supplierInvitationPolicy))
+        .contains("void requireAdmittedSupplier")
+        .contains("Supplier is not approved for tenant RFQ");
 
     assertThat(Files.readString(rfqService))
         .contains("RfqSourcingStatusTransition")
         .contains("RfqDemandLinkPolicy")
+        .contains("RfqSupplierInvitationPolicy")
         .contains("rfqSourcingStatusTransition.requireApprovedDemandForRfq")
         .contains("RfqDemandLinkPolicy.requireUnlinkedDemand")
+        .contains("RfqSupplierInvitationPolicy.requireAdmittedSupplier")
         .doesNotContain("RFQ can only use approved purchase demands")
         .doesNotContain("Purchase demand already linked to an RFQ")
+        .doesNotContain("Supplier is not approved for tenant RFQ")
         .doesNotContain("PurchaseDemandStatus.APPROVED");
     assertThat(Files.readString(quoteService))
         .contains("RfqSourcingStatusTransition")

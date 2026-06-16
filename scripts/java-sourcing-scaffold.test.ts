@@ -48,6 +48,7 @@ describe('Java RFQ sourcing scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/sourcing/application/RfqApplicationService.java');
     const tenantFeatureKey = read('backend-java/src/main/java/com/procurement/tenant/domain/TenantFeatureKey.java');
     const demandLinkPolicy = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqDemandLinkPolicy.java');
+    const supplierInvitationPolicy = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqSupplierInvitationPolicy.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
     expect(service).toContain('TenantAccessGuard.requireUserId');
@@ -58,9 +59,11 @@ describe('Java RFQ sourcing scaffold', () => {
     expect(service).toContain('RfqSourcingStatusTransition');
     expect(service).toContain('requireApprovedDemandForRfq');
     expect(service).toContain('RfqDemandLinkPolicy.requireUnlinkedDemand');
+    expect(service).toContain('RfqSupplierInvitationPolicy.requireAdmittedSupplier');
     expect(service).toContain('BuyerSupplierRelationStatus.ADMITTED');
     expect(service).toContain('RfqStatus.QUOTING');
     expect(demandLinkPolicy).toContain('Purchase demand already linked to an RFQ');
+    expect(supplierInvitationPolicy).toContain('Supplier is not approved for tenant RFQ');
     const transition = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqSourcingStatusTransition.java');
     expect(transition).toContain('PurchaseDemandStatus.APPROVED');
   });
