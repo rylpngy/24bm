@@ -823,6 +823,7 @@ class BackendModuleArchitectureTests {
     Path transition = SOURCE_ROOT.resolve("sourcing/domain/RfqSourcingStatusTransition.java");
     Path demandLinkPolicy = SOURCE_ROOT.resolve("sourcing/domain/RfqDemandLinkPolicy.java");
     Path supplierInvitationPolicy = SOURCE_ROOT.resolve("sourcing/domain/RfqSupplierInvitationPolicy.java");
+    Path quoteInvitationPolicy = SOURCE_ROOT.resolve("sourcing/domain/RfqQuoteInvitationPolicy.java");
     Path quoteSubmissionPolicy = SOURCE_ROOT.resolve("sourcing/domain/RfqQuoteSubmissionPolicy.java");
     Path rfqService = SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java");
     Path quoteService = SOURCE_ROOT.resolve("sourcing/application/QuoteApplicationService.java");
@@ -830,6 +831,7 @@ class BackendModuleArchitectureTests {
     assertThat(transition).exists();
     assertThat(demandLinkPolicy).exists();
     assertThat(supplierInvitationPolicy).exists();
+    assertThat(quoteInvitationPolicy).exists();
     assertThat(quoteSubmissionPolicy).exists();
 
     String transitionSource = Files.readString(transition);
@@ -847,6 +849,9 @@ class BackendModuleArchitectureTests {
     assertThat(Files.readString(supplierInvitationPolicy))
         .contains("void requireAdmittedSupplier")
         .contains("Supplier is not approved for tenant RFQ");
+    assertThat(Files.readString(quoteInvitationPolicy))
+        .contains("void requireInvitedSupplier")
+        .contains("Supplier is not invited to RFQ");
 
     assertThat(Files.readString(rfqService))
         .contains("RfqSourcingStatusTransition")
@@ -861,10 +866,13 @@ class BackendModuleArchitectureTests {
         .doesNotContain("PurchaseDemandStatus.APPROVED");
     assertThat(Files.readString(quoteService))
         .contains("RfqSourcingStatusTransition")
+        .contains("RfqQuoteInvitationPolicy")
         .contains("RfqQuoteSubmissionPolicy")
         .contains("rfqSourcingStatusTransition.requireQuotingForQuoteSubmission")
+        .contains("RfqQuoteInvitationPolicy.requireInvitedSupplier")
         .contains("RfqQuoteSubmissionPolicy.requireNoSubmittedQuote")
         .doesNotContain("RFQ is not open for quotes")
+        .doesNotContain("Supplier is not invited to RFQ")
         .doesNotContain("Supplier has already submitted a quote")
         .doesNotContain("RfqStatus.QUOTING");
   }

@@ -39,15 +39,18 @@ describe('Java supplier quote scaffold', () => {
 
   it('checks supplier context, RFQ status, invitation, and duplicate quote rules', () => {
     const service = read('backend-java/src/main/java/com/procurement/sourcing/application/QuoteApplicationService.java');
+    const quoteInvitationPolicy = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqQuoteInvitationPolicy.java');
     const quoteSubmissionPolicy = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqQuoteSubmissionPolicy.java');
 
     expect(service).toContain('TenantAccessGuard.requireSupplierId');
     expect(service).toContain('RfqSourcingStatusTransition');
     expect(service).toContain('requireQuotingForQuoteSubmission');
+    expect(service).toContain('RfqQuoteInvitationPolicy.requireInvitedSupplier');
     expect(service).toContain('RfqQuoteSubmissionPolicy.requireNoSubmittedQuote');
     expect(service).toContain('QuoteStatus.SUBMITTED');
     expect(service).toContain('isSupplierInvited');
     expect(service).toContain('countSubmittedBySupplier');
+    expect(quoteInvitationPolicy).toContain('Supplier is not invited to RFQ');
     expect(quoteSubmissionPolicy).toContain('Supplier has already submitted a quote');
     const transition = read('backend-java/src/main/java/com/procurement/sourcing/domain/RfqSourcingStatusTransition.java');
     expect(transition).toContain('RfqStatus.QUOTING');

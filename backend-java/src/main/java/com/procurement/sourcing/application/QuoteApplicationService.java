@@ -7,6 +7,7 @@ import com.procurement.sourcing.api.SubmitQuoteRequest;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqQuoteInvitationPolicy;
 import com.procurement.sourcing.domain.RfqQuoteSubmissionPolicy;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
@@ -109,9 +110,7 @@ public class QuoteApplicationService {
     }
 
     int inviteCount = rfqInviteMapper.isSupplierInvited(rfq.tenantId(), rfqId, supplierId);
-    if (inviteCount == 0) {
-      throw new IllegalStateException("Supplier is not invited to RFQ: " + rfqId);
-    }
+    RfqQuoteInvitationPolicy.requireInvitedSupplier(inviteCount, rfqId);
 
     return rfq;
   }
