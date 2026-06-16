@@ -71,9 +71,9 @@ public class ReceiptApplicationService {
     }
     purchaseOrderStatusTransition.requireReceipt(order.status(), orderId);
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
-    if (deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, PurchaseOrderStatus.SHIPPED) == 0) {
-      throw new IllegalStateException("Shipped delivery not found for receipt: " + orderId);
-    }
+    purchaseOrderStatusTransition.requireShippedDelivery(
+        deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, PurchaseOrderStatus.SHIPPED),
+        orderId);
     PurchaseOrderDocumentUniquenessPolicy.requireNoReceipt(
         receiptMapper.countByTenantAndOrder(tenantId, orderId),
         orderId);

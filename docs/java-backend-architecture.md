@@ -51,7 +51,7 @@ Controller
 
 发票付款状态流转由 `InvoicePaymentStatusTransition` 承接，集中判断支持的付款目标、幂等登记和 `待付款 -> 部分付款/已付款 -> 已付款` 的合法路径。开票订单状态准入由 `InvoiceCreationStatusPolicy` 承接，发票金额与采购订单金额一致性由 `InvoiceAmountPolicy` 承接，黑名单供应商付款拦截由 `BuyerSupplierPaymentPolicy` 承接。`InvoiceApplicationService` 和 `PaymentApplicationService` 只编排租户/供应商校验、功能开关、金额匹配、供应商关系查询、审计和通知，不直接承载付款状态规则。
 
-订单履约动作的状态准入由 `PurchaseOrderStatusTransition` 承接，集中判断供应商确认、供应商发货和采购方收货对应的当前状态要求。订单发货、收货和发票登记的一单一据规则由 `PurchaseOrderDocumentUniquenessPolicy` 承接，应用服务只负责查询当前订单已有单据数量。`PurchaseOrderApplicationService`、`DeliveryApplicationService`、`ReceiptApplicationService` 保留租户/供应商范围、功能开关、原子状态更新、审计和通知编排。
+订单履约动作的状态准入由 `PurchaseOrderStatusTransition` 承接，集中判断供应商确认、供应商发货、采购方收货对应的当前状态要求，以及收货前必须存在已发货记录的业务前置条件。订单发货、收货和发票登记的一单一据规则由 `PurchaseOrderDocumentUniquenessPolicy` 承接，应用服务只负责查询当前订单已有单据数量和已发货记录数量。`PurchaseOrderApplicationService`、`DeliveryApplicationService`、`ReceiptApplicationService` 保留租户/供应商范围、功能开关、原子状态更新、审计和通知编排。
 
 定标审批状态流转由 `RfqAwardStatusTransition` 承接，集中判断 `报价中` 才能提交定标、`定标审批中` 才能复核，以及审批通过落到 `已定标`、驳回回到 `报价中`。`AwardApplicationService` 保留报价有效性、审批任务、定标记录、原子更新、审计和通知编排。
 

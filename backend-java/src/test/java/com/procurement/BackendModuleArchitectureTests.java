@@ -903,9 +903,11 @@ class BackendModuleArchitectureTests {
         .contains("void requireSupplierConfirmation")
         .contains("void requireShipment")
         .contains("void requireReceipt")
+        .contains("void requireShippedDelivery")
         .contains("PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION")
         .contains("PurchaseOrderStatus.PENDING_SHIPMENT")
-        .contains("PurchaseOrderStatus.SHIPPED");
+        .contains("PurchaseOrderStatus.SHIPPED")
+        .contains("Shipped delivery not found for receipt");
 
     assertThat(Files.readString(purchaseOrderService))
         .contains("PurchaseOrderStatusTransition")
@@ -925,8 +927,10 @@ class BackendModuleArchitectureTests {
         .contains("PurchaseOrderStatusTransition")
         .contains("PurchaseOrderAuditAction.RECEIVED")
         .contains("purchaseOrderStatusTransition.requireReceipt")
+        .contains("purchaseOrderStatusTransition.requireShippedDelivery")
         .doesNotContain("private static final String PURCHASE_ORDER_RECEIVED_ACTION")
-        .doesNotContain("Only shipped purchase orders can be received");
+        .doesNotContain("Only shipped purchase orders can be received")
+        .doesNotContain("Shipped delivery not found for receipt");
   }
 
   @Test

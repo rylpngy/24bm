@@ -1,5 +1,6 @@
 package com.procurement;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -141,6 +142,17 @@ class OrderFulfillmentStateTransitionTests {
         anyString(),
         anyString(),
         anyString());
+  }
+
+  @Test
+  void receiptRequiresShippedDeliveryBeforeReceiving() {
+    PurchaseOrderStatusTransition transition = new PurchaseOrderStatusTransition();
+
+    assertThatCode(() -> transition.requireShippedDelivery(1, "po-1"))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> transition.requireShippedDelivery(0, "po-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Shipped delivery not found for receipt: po-1");
   }
 
   @Test

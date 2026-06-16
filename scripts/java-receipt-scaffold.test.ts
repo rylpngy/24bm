@@ -58,6 +58,7 @@ describe('Java buyer receipt scaffold', () => {
     expect(service).toContain('AuditTargetType.PURCHASE_ORDER');
     expect(service).toContain('NotificationTitle.PURCHASE_ORDER_RECEIVED');
     expect(service).toContain('requireReceipt');
+    expect(service).toContain('requireShippedDelivery');
     expect(service).toContain('countByTenantOrderAndStatus');
     expect(service).toContain('countByTenantAndOrder');
     expect(service).toContain('findByTenantAndId');
@@ -65,6 +66,8 @@ describe('Java buyer receipt scaffold', () => {
     expect(auditAction).toContain('RECEIVED = "purchase_order.received"');
     expect(auditTargetType).toContain('PURCHASE_ORDER = "purchase_order"');
     expect(notificationTitle).toContain('PURCHASE_ORDER_RECEIVED = "采购订单已收货"');
+    const transition = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderStatusTransition.java');
+    expect(transition).toContain('Shipped delivery not found for receipt');
     expect(documentUniquenessPolicy).toContain('Purchase order already has a receipt');
   });
 

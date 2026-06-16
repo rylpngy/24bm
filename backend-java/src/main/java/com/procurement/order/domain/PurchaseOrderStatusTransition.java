@@ -22,4 +22,10 @@ public class PurchaseOrderStatusTransition {
       throw new IllegalStateException("Only shipped purchase orders can be received: " + orderId);
     }
   }
+
+  public void requireShippedDelivery(int shippedDeliveryCount, String orderId) {
+    if (shippedDeliveryCount == 0) {
+      throw new IllegalStateException("Shipped delivery not found for receipt: " + orderId);
+    }
+  }
 }
