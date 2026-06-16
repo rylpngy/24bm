@@ -126,6 +126,7 @@ Authorization: Bearer <accessToken>
 - 角色变更会先校验目标用户属于当前租户，再校验目标角色属于当前租户 `buyer` 范围，随后替换该用户的采购方角色关系并记录 `buyer_user.role_changed` 审计动作。
 - 密码重置会先校验目标用户属于当前租户，再使用 `PasswordEncoder` 更新 `users.password_hash` 并记录 `buyer_user.password_reset` 审计动作。
 - 状态变更会先校验目标用户属于当前租户，目标状态规则由 `BuyerUserStatusTransition` 承接，只允许 `active` 或 `inactive`，随后更新 `users.status` 并记录 `buyer_user.status_changed` 审计动作。
+- 采购方用户创建、角色变更、密码重置和状态变更的审计动作统一由 `BuyerUserAuditAction` 定义，避免身份应用服务散落审计 action 字符串。
 
 ## 采购方组织部门 Java API
 

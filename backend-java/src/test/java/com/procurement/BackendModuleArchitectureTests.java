@@ -175,22 +175,37 @@ class BackendModuleArchitectureTests {
   void buyerUserApplicationServiceDelegatesStatusTransitions() throws IOException {
     Path status = SOURCE_ROOT.resolve("identity/domain/BuyerUserStatus.java");
     Path transition = SOURCE_ROOT.resolve("identity/domain/BuyerUserStatusTransition.java");
+    Path auditAction = SOURCE_ROOT.resolve("identity/domain/BuyerUserAuditAction.java");
     Path userService = SOURCE_ROOT.resolve("identity/application/BuyerUserApplicationService.java");
 
     assertThat(status).exists();
     assertThat(transition).exists();
+    assertThat(auditAction).exists();
 
     assertThat(Files.readString(status))
         .contains("ACTIVE = \"active\"")
         .contains("INACTIVE = \"inactive\"");
+    assertThat(Files.readString(auditAction))
+        .contains("CREATED = \"buyer_user.created\"")
+        .contains("ROLE_CHANGED = \"buyer_user.role_changed\"")
+        .contains("STATUS_CHANGED = \"buyer_user.status_changed\"")
+        .contains("PASSWORD_RESET = \"buyer_user.password_reset\"");
     assertThat(Files.readString(transition))
         .contains("void requireSupportedTarget")
         .contains("BuyerUserStatus.ACTIVE")
         .contains("BuyerUserStatus.INACTIVE")
         .contains("Unsupported buyer user status");
     assertThat(Files.readString(userService))
+        .contains("BuyerUserAuditAction.CREATED")
+        .contains("BuyerUserAuditAction.ROLE_CHANGED")
+        .contains("BuyerUserAuditAction.STATUS_CHANGED")
+        .contains("BuyerUserAuditAction.PASSWORD_RESET")
         .contains("BuyerUserStatusTransition")
         .contains("buyerUserStatusTransition.requireSupportedTarget")
+        .doesNotContain("private static final String BUYER_USER_CREATED_ACTION")
+        .doesNotContain("private static final String BUYER_USER_ROLE_CHANGED_ACTION")
+        .doesNotContain("private static final String BUYER_USER_STATUS_CHANGED_ACTION")
+        .doesNotContain("private static final String BUYER_USER_PASSWORD_RESET_ACTION")
         .doesNotContain("private static final String ACTIVE_STATUS")
         .doesNotContain("private static final String INACTIVE_STATUS")
         .doesNotContain("Unsupported buyer user status");

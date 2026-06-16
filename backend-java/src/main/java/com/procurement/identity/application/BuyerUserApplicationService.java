@@ -8,6 +8,7 @@ import com.procurement.identity.api.ChangeBuyerUserStatusRequest;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.api.ResetBuyerUserPasswordRequest;
 import com.procurement.identity.domain.BuyerUser;
+import com.procurement.identity.domain.BuyerUserAuditAction;
 import com.procurement.identity.domain.BuyerUserStatusTransition;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.organization.infrastructure.DepartmentMapper;
@@ -20,10 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BuyerUserApplicationService {
-  private static final String BUYER_USER_CREATED_ACTION = "buyer_user.created";
-  private static final String BUYER_USER_ROLE_CHANGED_ACTION = "buyer_user.role_changed";
-  private static final String BUYER_USER_STATUS_CHANGED_ACTION = "buyer_user.status_changed";
-  private static final String BUYER_USER_PASSWORD_RESET_ACTION = "buyer_user.password_reset";
   private static final String BUYER_USER_TARGET_TYPE = "buyer_user";
 
   private final BuyerUserMapper buyerUserMapper;
@@ -81,7 +78,7 @@ public class BuyerUserApplicationService {
         request.departmentId(),
         passwordEncoder.encode(request.initialPassword()));
     buyerUserMapper.assignRole(userId, request.roleId());
-    auditLogApplicationService.recordTenantAction(BUYER_USER_CREATED_ACTION, BUYER_USER_TARGET_TYPE, userId);
+    auditLogApplicationService.recordTenantAction(BuyerUserAuditAction.CREATED, BUYER_USER_TARGET_TYPE, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 
@@ -90,7 +87,7 @@ public class BuyerUserApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
     requireBuyerUser(tenantId, userId);
     buyerUserMapper.updatePasswordHash(tenantId, userId, passwordEncoder.encode(request.newPassword()));
-    auditLogApplicationService.recordTenantAction(BUYER_USER_PASSWORD_RESET_ACTION, BUYER_USER_TARGET_TYPE, userId);
+    auditLogApplicationService.recordTenantAction(BuyerUserAuditAction.PASSWORD_RESET, BUYER_USER_TARGET_TYPE, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 
@@ -100,7 +97,7 @@ public class BuyerUserApplicationService {
     requireBuyerUser(tenantId, userId);
     requireBuyerRole(tenantId, request.roleId());
     buyerUserMapper.replaceRole(tenantId, userId, request.roleId());
-    auditLogApplicationService.recordTenantAction(BUYER_USER_ROLE_CHANGED_ACTION, BUYER_USER_TARGET_TYPE, userId);
+    auditLogApplicationService.recordTenantAction(BuyerUserAuditAction.ROLE_CHANGED, BUYER_USER_TARGET_TYPE, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 
@@ -110,7 +107,7 @@ public class BuyerUserApplicationService {
     requireBuyerUser(tenantId, userId);
     buyerUserStatusTransition.requireSupportedTarget(request.status());
     buyerUserMapper.updateStatus(tenantId, userId, request.status());
-    auditLogApplicationService.recordTenantAction(BUYER_USER_STATUS_CHANGED_ACTION, BUYER_USER_TARGET_TYPE, userId);
+    auditLogApplicationService.recordTenantAction(BuyerUserAuditAction.STATUS_CHANGED, BUYER_USER_TARGET_TYPE, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 

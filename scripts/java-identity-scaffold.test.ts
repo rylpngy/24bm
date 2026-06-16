@@ -48,6 +48,7 @@ describe('Java identity and JWT scaffold', () => {
 
   it('enforces buyer tenant user limits from SaaS plan entitlements', () => {
     const service = read('backend-java/src/main/java/com/procurement/identity/application/BuyerUserApplicationService.java');
+    const auditAction = read('backend-java/src/main/java/com/procurement/identity/domain/BuyerUserAuditAction.java');
     const statusTransition = read('backend-java/src/main/java/com/procurement/identity/domain/BuyerUserStatusTransition.java');
     const userStatus = read('backend-java/src/main/java/com/procurement/identity/domain/BuyerUserStatus.java');
     const roleService = read('backend-java/src/main/java/com/procurement/identity/application/BuyerRoleApplicationService.java');
@@ -74,13 +75,17 @@ describe('Java identity and JWT scaffold', () => {
     expect(service).toContain('requireBuyerRole');
     expect(service).toContain('assignRole');
     expect(service).toContain('changeUserRole');
-    expect(service).toContain('buyer_user.role_changed');
+    expect(service).toContain('BuyerUserAuditAction.ROLE_CHANGED');
     expect(service).toContain('resetUserPassword');
-    expect(service).toContain('buyer_user.password_reset');
+    expect(service).toContain('BuyerUserAuditAction.PASSWORD_RESET');
     expect(service).toContain('changeUserStatus');
-    expect(service).toContain('buyer_user.status_changed');
+    expect(service).toContain('BuyerUserAuditAction.STATUS_CHANGED');
     expect(service).toContain('BuyerUserStatusTransition');
     expect(service).toContain('buyerUserStatusTransition.requireSupportedTarget');
+    expect(auditAction).toContain('CREATED = "buyer_user.created"');
+    expect(auditAction).toContain('ROLE_CHANGED = "buyer_user.role_changed"');
+    expect(auditAction).toContain('STATUS_CHANGED = "buyer_user.status_changed"');
+    expect(auditAction).toContain('PASSWORD_RESET = "buyer_user.password_reset"');
     expect(statusTransition).toContain('Unsupported buyer user status');
     expect(statusTransition).toContain('BuyerUserStatus.ACTIVE');
     expect(statusTransition).toContain('BuyerUserStatus.INACTIVE');
