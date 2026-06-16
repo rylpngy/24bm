@@ -672,6 +672,7 @@ class BackendModuleArchitectureTests {
         SOURCE_ROOT.resolve("finance/application/InvoiceApplicationService.java"),
         List.of(
             "PurchaseOrderStatus.RECEIVED",
+            "InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder",
             "InvoicePaymentStatus.PENDING_PAYMENT",
             "InvoiceAuditAction.CREATED",
             "InvoiceAuditAction.PAID",
@@ -681,10 +682,13 @@ class BackendModuleArchitectureTests {
             "private static final String PENDING_PAYMENT_STATUS",
             "private static final String INVOICE_CREATED_ACTION",
             "private static final String INVOICE_PAID_ACTION",
-            "private static final String INVOICE_PARTIAL_PAID_ACTION"));
+            "private static final String INVOICE_PARTIAL_PAID_ACTION",
+            "compareTo(order.amount())",
+            "Invoice amount must equal purchase order amount"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("finance/application/PaymentApplicationService.java"),
         List.of(
+            "InvoiceAmountPolicy.requirePaymentAmountStillMatchesOrder",
             "InvoicePaymentStatus.PAID",
             "InvoicePaymentStatusTransition",
             "InvoiceAuditAction.PAID",
@@ -696,7 +700,16 @@ class BackendModuleArchitectureTests {
             "private static final String PARTIAL_PAID_STATUS",
             "private static final String INVOICE_PAID_ACTION",
             "private static final String INVOICE_PARTIAL_PAID_ACTION",
-            "private static final String BLACKLISTED_SUPPLIER_STATUS"));
+            "private static final String BLACKLISTED_SUPPLIER_STATUS",
+            "invoice.amount().compareTo",
+            "Invoice amount no longer matches purchase order amount"));
+    Path invoiceAmountPolicy = SOURCE_ROOT.resolve("finance/domain/InvoiceAmountPolicy.java");
+    assertThat(invoiceAmountPolicy).exists();
+    assertThat(Files.readString(invoiceAmountPolicy))
+        .contains("requireInvoiceCreationAmountMatchesOrder")
+        .contains("requirePaymentAmountStillMatchesOrder")
+        .contains("Invoice amount must equal purchase order amount")
+        .contains("Invoice amount no longer matches purchase order amount");
   }
 
   @Test

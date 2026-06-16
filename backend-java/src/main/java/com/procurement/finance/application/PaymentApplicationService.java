@@ -7,6 +7,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.domain.Invoice;
+import com.procurement.finance.domain.InvoiceAmountPolicy;
 import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
@@ -147,9 +148,7 @@ public class PaymentApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for invoice payment: " + invoice.orderId());
     }
-    if (invoice.amount().compareTo(order.amount()) != 0) {
-      throw new IllegalStateException("Invoice amount no longer matches purchase order amount: " + invoice.id());
-    }
+    InvoiceAmountPolicy.requirePaymentAmountStillMatchesOrder(invoice.amount(), order.amount(), invoice.id());
   }
 
   private String blankToNull(String value) {

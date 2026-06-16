@@ -7,6 +7,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.domain.Invoice;
+import com.procurement.finance.domain.InvoiceAmountPolicy;
 import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.infrastructure.InvoiceMapper;
@@ -86,9 +87,7 @@ public class InvoiceApplicationService {
       throw new IllegalStateException("Only received purchase orders can be invoiced: " + orderId);
     }
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.FINANCE);
-    if (request.amount().compareTo(order.amount()) != 0) {
-      throw new IllegalArgumentException("Invoice amount must equal purchase order amount: " + orderId);
-    }
+    InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder(request.amount(), order.amount(), orderId);
     if (invoiceMapper.countByTenantAndOrder(order.tenantId(), order.id()) > 0) {
       throw new IllegalStateException("Purchase order already has an invoice: " + orderId);
     }

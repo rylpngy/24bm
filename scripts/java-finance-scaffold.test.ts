@@ -54,13 +54,14 @@ describe('Java finance invoice and payment scaffold', () => {
     const tenantFeatureKey = read('backend-java/src/main/java/com/procurement/tenant/domain/TenantFeatureKey.java');
     const auditService = read('backend-java/src/main/java/com/procurement/audit/application/AuditLogApplicationService.java');
     const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
+    const invoiceAmountPolicy = read('backend-java/src/main/java/com/procurement/finance/domain/InvoiceAmountPolicy.java');
 
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
     expect(invoiceService).toContain('TenantFeatureApplicationService');
     expect(invoiceService).toContain('requireEnabled(order.tenantId(), TenantFeatureKey.FINANCE)');
     expect(invoiceService).toContain('PurchaseOrderStatus.RECEIVED');
     expect(invoiceService).toContain('InvoicePaymentStatus.PENDING_PAYMENT');
-    expect(invoiceService).toContain('compareTo(order.amount())');
+    expect(invoiceService).toContain('InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder');
     expect(invoiceService).toContain('countByTenantAndOrder');
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
@@ -75,6 +76,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('requireEnabled(tenantId, TenantFeatureKey.FINANCE)');
     expect(paymentService).toContain('BuyerSupplierRelationStatus.BLACKLISTED');
     expect(paymentService).toContain('requireInvoiceAmountMatchesOrder');
+    expect(paymentService).toContain('InvoiceAmountPolicy.requirePaymentAmountStillMatchesOrder');
     expect(paymentService).toContain('countByTenantSupplierAndStatus');
     expect(paymentService).toContain('listCurrentTenantInvoices');
     expect(paymentService).toContain('listCurrentTenantPaymentAuditLogs');
@@ -99,6 +101,8 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(tenantFeatureKey).toContain('FINANCE = "finance"');
     expect(auditService).toContain('listCurrentTenantTargetActions');
     expect(notificationTitle).toContain('INVOICE_CREATED = "供应商已登记发票"');
+    expect(invoiceAmountPolicy).toContain('Invoice amount must equal purchase order amount');
+    expect(invoiceAmountPolicy).toContain('Invoice amount no longer matches purchase order amount');
   });
 
   it('documents the finance Java API handoff', () => {
