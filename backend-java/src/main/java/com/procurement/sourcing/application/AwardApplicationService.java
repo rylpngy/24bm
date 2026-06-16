@@ -13,6 +13,7 @@ import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqAwardAuditAction;
 import com.procurement.sourcing.domain.RfqAwardStatusTransition;
 import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
@@ -26,9 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AwardApplicationService {
   private static final String RFQ_AWARD_BIZ_TYPE = "rfq_award";
-  private static final String RFQ_AWARD_SUBMITTED_ACTION = "rfq_award.submitted";
-  private static final String RFQ_AWARD_APPROVED_ACTION = "rfq_award.approved";
-  private static final String RFQ_AWARD_REJECTED_ACTION = "rfq_award.rejected";
   private static final String RFQ_AWARD_PENDING_NOTIFICATION_TITLE = "定标结果待审批";
   private static final String RFQ_AWARD_APPROVED_NOTIFICATION_TITLE = "定标审批已通过";
   private static final String RFQ_AWARD_REJECTED_NOTIFICATION_TITLE = "定标审批已驳回";
@@ -100,7 +98,7 @@ public class AwardApplicationService {
         RFQ_AWARD_BIZ_TYPE,
         awardId,
         null);
-    auditLogApplicationService.recordTenantAction(RFQ_AWARD_SUBMITTED_ACTION, RFQ_AWARD_BIZ_TYPE, awardId);
+    auditLogApplicationService.recordTenantAction(RfqAwardAuditAction.SUBMITTED, RFQ_AWARD_BIZ_TYPE, awardId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         RFQ_AWARD_PENDING_NOTIFICATION_TITLE,
@@ -179,7 +177,7 @@ public class AwardApplicationService {
       }
     }
     auditLogApplicationService.recordTenantAction(
-        Boolean.TRUE.equals(request.approved()) ? RFQ_AWARD_APPROVED_ACTION : RFQ_AWARD_REJECTED_ACTION,
+        Boolean.TRUE.equals(request.approved()) ? RfqAwardAuditAction.APPROVED : RfqAwardAuditAction.REJECTED,
         RFQ_AWARD_BIZ_TYPE,
         request.awardId());
     notificationApplicationService.notifyActiveTenantUsers(
