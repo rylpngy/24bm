@@ -350,6 +350,18 @@ class HttpSecurityContractTests {
   }
 
   @Test
+  void vitePort3000PreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
+    mockMvc.perform(options("/api/v1/buyer/suppliers")
+            .header("Origin", "http://localhost:3000")
+            .header("Access-Control-Request-Method", "GET")
+            .header("Access-Control-Request-Headers", "authorization"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+        .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+        .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
+  }
+
+  @Test
   void healthAndLoginArePublicButBuyerApisRequireBuyerRole() throws Exception {
     mockMvc.perform(get("/api/v1/health"))
         .andExpect(status().isOk())
