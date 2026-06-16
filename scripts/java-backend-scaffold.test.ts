@@ -148,10 +148,12 @@ describe('Java backend scaffold', () => {
     const apiClient = read('services/procurementApiClient.ts');
     const departmentService = read('backend-java/src/main/java/com/procurement/organization/application/DepartmentApplicationService.java');
     const departmentStatus = read('backend-java/src/main/java/com/procurement/organization/domain/DepartmentStatus.java');
+    const departmentAuditAction = read('backend-java/src/main/java/com/procurement/organization/domain/DepartmentAuditAction.java');
 
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/api/DepartmentController.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/application/DepartmentApplicationService.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/domain/DepartmentStatus.java'))).toBe(true);
+    expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/domain/DepartmentAuditAction.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/infrastructure/DepartmentMapper.java'))).toBe(true);
     expect(architecture).toContain('采购方组织部门 Java API');
     expect(architecture).toContain('GET /api/v1/buyer/departments');
@@ -169,8 +171,12 @@ describe('Java backend scaffold', () => {
     expect(departmentService).toContain('countByTenantAndDepartment');
     expect(departmentService).toContain('DepartmentStatus.ACTIVE');
     expect(departmentService).toContain('DepartmentStatus.INACTIVE');
+    expect(departmentService).toContain('DepartmentAuditAction.CREATED');
+    expect(departmentService).toContain('DepartmentAuditAction.DISABLED');
     expect(departmentStatus).toContain('ACTIVE = "active"');
     expect(departmentStatus).toContain('INACTIVE = "inactive"');
+    expect(departmentAuditAction).toContain('CREATED = "department.created"');
+    expect(departmentAuditAction).toContain('DISABLED = "department.disabled"');
   });
 
   it('documents the notification API handoff', () => {

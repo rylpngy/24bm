@@ -6,6 +6,7 @@ import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.organization.api.CreateDepartmentRequest;
 import com.procurement.organization.api.DepartmentResponse;
 import com.procurement.organization.domain.Department;
+import com.procurement.organization.domain.DepartmentAuditAction;
 import com.procurement.organization.domain.DepartmentStatus;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import java.util.List;
@@ -15,8 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DepartmentApplicationService {
-  private static final String DEPARTMENT_CREATED_ACTION = "department.created";
-  private static final String DEPARTMENT_DISABLED_ACTION = "department.disabled";
   private static final String DEPARTMENT_TARGET_TYPE = "department";
 
   private final DepartmentMapper departmentMapper;
@@ -51,7 +50,7 @@ public class DepartmentApplicationService {
         request.parentId(),
         DepartmentStatus.ACTIVE);
     auditLogApplicationService.recordTenantAction(
-        DEPARTMENT_CREATED_ACTION,
+        DepartmentAuditAction.CREATED,
         DEPARTMENT_TARGET_TYPE,
         departmentId);
     return toResponse(departmentMapper.findByTenantAndId(tenantId, departmentId));
@@ -76,7 +75,7 @@ public class DepartmentApplicationService {
       throw new IllegalStateException("Department status changed before disable could be recorded: " + departmentId);
     }
     auditLogApplicationService.recordTenantAction(
-        DEPARTMENT_DISABLED_ACTION,
+        DepartmentAuditAction.DISABLED,
         DEPARTMENT_TARGET_TYPE,
         departmentId);
     return toResponse(departmentMapper.findByTenantAndId(tenantId, departmentId));

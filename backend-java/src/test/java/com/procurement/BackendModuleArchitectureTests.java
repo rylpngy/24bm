@@ -84,17 +84,26 @@ class BackendModuleArchitectureTests {
   @Test
   void departmentApplicationServiceUsesDomainDepartmentStatus() throws IOException {
     Path status = SOURCE_ROOT.resolve("organization/domain/DepartmentStatus.java");
+    Path auditAction = SOURCE_ROOT.resolve("organization/domain/DepartmentAuditAction.java");
     Path departmentService = SOURCE_ROOT.resolve("organization/application/DepartmentApplicationService.java");
 
     assertThat(status).exists();
     assertThat(Files.readString(status))
         .contains("ACTIVE = \"active\"")
         .contains("INACTIVE = \"inactive\"");
+    assertThat(auditAction).exists();
+    assertThat(Files.readString(auditAction))
+        .contains("CREATED = \"department.created\"")
+        .contains("DISABLED = \"department.disabled\"");
     assertThat(Files.readString(departmentService))
         .contains("DepartmentStatus.ACTIVE")
         .contains("DepartmentStatus.INACTIVE")
+        .contains("DepartmentAuditAction.CREATED")
+        .contains("DepartmentAuditAction.DISABLED")
         .doesNotContain("private static final String ACTIVE_STATUS")
-        .doesNotContain("private static final String INACTIVE_STATUS");
+        .doesNotContain("private static final String INACTIVE_STATUS")
+        .doesNotContain("private static final String DEPARTMENT_CREATED_ACTION")
+        .doesNotContain("private static final String DEPARTMENT_DISABLED_ACTION");
   }
 
   @Test

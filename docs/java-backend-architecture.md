@@ -145,6 +145,7 @@ Authorization: Bearer <accessToken>
 - 供应商和平台 token 不能访问该 buyer 侧接口。
 
 部门创建、父级校验和停用状态更新统一使用 `DepartmentStatus.ACTIVE` / `DepartmentStatus.INACTIVE`，避免组织应用服务散落部门状态字符串。
+部门创建和停用审计动作统一由 `DepartmentAuditAction` 定义，避免组织应用服务散落审计 action 字符串。
 
 ## 采购需求 Java API
 
