@@ -54,6 +54,7 @@ describe('Java finance invoice and payment scaffold', () => {
     const tenantFeatureKey = read('backend-java/src/main/java/com/procurement/tenant/domain/TenantFeatureKey.java');
     const auditService = read('backend-java/src/main/java/com/procurement/audit/application/AuditLogApplicationService.java');
     const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
+    const invoiceCreationStatusPolicy = read('backend-java/src/main/java/com/procurement/finance/domain/InvoiceCreationStatusPolicy.java');
     const invoiceAmountPolicy = read('backend-java/src/main/java/com/procurement/finance/domain/InvoiceAmountPolicy.java');
     const documentUniquenessPolicy = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderDocumentUniquenessPolicy.java');
     const paymentPolicy = read('backend-java/src/main/java/com/procurement/supplier/domain/BuyerSupplierPaymentPolicy.java');
@@ -61,7 +62,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
     expect(invoiceService).toContain('TenantFeatureApplicationService');
     expect(invoiceService).toContain('requireEnabled(order.tenantId(), TenantFeatureKey.FINANCE)');
-    expect(invoiceService).toContain('PurchaseOrderStatus.RECEIVED');
+    expect(invoiceService).toContain('InvoiceCreationStatusPolicy.requireReceivedOrder');
     expect(invoiceService).toContain('InvoicePaymentStatus.PENDING_PAYMENT');
     expect(invoiceService).toContain('InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder');
     expect(invoiceService).toContain('PurchaseOrderDocumentUniquenessPolicy.requireNoInvoice');
@@ -105,6 +106,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(tenantFeatureKey).toContain('FINANCE = "finance"');
     expect(auditService).toContain('listCurrentTenantTargetActions');
     expect(notificationTitle).toContain('INVOICE_CREATED = "供应商已登记发票"');
+    expect(invoiceCreationStatusPolicy).toContain('Only received purchase orders can be invoiced');
     expect(invoiceAmountPolicy).toContain('Invoice amount must equal purchase order amount');
     expect(invoiceAmountPolicy).toContain('Invoice amount no longer matches purchase order amount');
     expect(documentUniquenessPolicy).toContain('Purchase order already has an invoice');
@@ -122,6 +124,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(readme).toContain('GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs');
     expect(readme).toContain('The buyer payment audit log list returns current-tenant `invoice.paid` and `invoice.partial_paid` audit entries');
     expect(readme).toContain('Payment registration rejects invoices whose current-tenant supplier relation is `黑名单`');
+    expect(readme).toContain('Invoice creation requires the order to belong to the current supplier, be `已收货`');
     expect(readme).toContain('Invoice creation requires `amount` to equal the purchase order amount');
     expect(readme).toContain('MVP invoice creation allows only one invoice per purchase order');
     expect(readme).toContain('Payment registration rechecks that the invoice amount still equals the purchase order amount');

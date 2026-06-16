@@ -9,13 +9,13 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoiceAmountPolicy;
 import com.procurement.finance.domain.InvoiceAuditAction;
+import com.procurement.finance.domain.InvoiceCreationStatusPolicy;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderDocumentUniquenessPolicy;
-import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
@@ -84,9 +84,7 @@ public class InvoiceApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
-    if (!PurchaseOrderStatus.RECEIVED.equals(order.status())) {
-      throw new IllegalStateException("Only received purchase orders can be invoiced: " + orderId);
-    }
+    InvoiceCreationStatusPolicy.requireReceivedOrder(order.status(), orderId);
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.FINANCE);
     InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder(request.amount(), order.amount(), orderId);
     PurchaseOrderDocumentUniquenessPolicy.requireNoInvoice(

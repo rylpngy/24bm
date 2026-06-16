@@ -683,7 +683,7 @@ class BackendModuleArchitectureTests {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("finance/application/InvoiceApplicationService.java"),
         List.of(
-            "PurchaseOrderStatus.RECEIVED",
+            "InvoiceCreationStatusPolicy.requireReceivedOrder",
             "InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder",
             "PurchaseOrderDocumentUniquenessPolicy.requireNoInvoice",
             "InvoicePaymentStatus.PENDING_PAYMENT",
@@ -696,9 +696,17 @@ class BackendModuleArchitectureTests {
             "private static final String INVOICE_CREATED_ACTION",
             "private static final String INVOICE_PAID_ACTION",
             "private static final String INVOICE_PARTIAL_PAID_ACTION",
+            "PurchaseOrderStatus.RECEIVED",
             "compareTo(order.amount())",
             "Invoice amount must equal purchase order amount",
+            "Only received purchase orders can be invoiced",
             "Purchase order already has an invoice"));
+    Path invoiceCreationStatusPolicy = SOURCE_ROOT.resolve("finance/domain/InvoiceCreationStatusPolicy.java");
+    assertThat(invoiceCreationStatusPolicy).exists();
+    assertThat(Files.readString(invoiceCreationStatusPolicy))
+        .contains("requireReceivedOrder")
+        .contains("PurchaseOrderStatus.RECEIVED")
+        .contains("Only received purchase orders can be invoiced");
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("finance/application/PaymentApplicationService.java"),
         List.of(
