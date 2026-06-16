@@ -216,6 +216,7 @@ Authorization: Bearer <accessToken>
 订单生成、供应商确认、发货和收货审计动作统一由 `PurchaseOrderAuditAction` 定义，避免订单履约应用服务散落审计 action 字符串。
 发票登记、已付款和部分付款审计动作统一由 `InvoiceAuditAction` 定义，避免财务应用服务散落审计 action 字符串。
 定标提交、审批通过和审批驳回审计动作统一由 `RfqAwardAuditAction` 定义，避免定标应用服务散落审计 action 字符串。
+物料/服务目录创建和维护审计动作统一由 `MaterialAuditAction` 定义，避免目录应用服务散落审计 action 字符串。
 
 ## 平台公告 Java API
 

@@ -248,6 +248,8 @@ describe('Java backend scaffold', () => {
     const architecture = read('docs/java-backend-architecture.md');
     const readme = read('backend-java/README.md');
     const controller = read('backend-java/src/main/java/com/procurement/supplier/api/BuyerSupplierController.java');
+    const materialService = read('backend-java/src/main/java/com/procurement/catalog/application/MaterialApplicationService.java');
+    const materialAuditAction = read('backend-java/src/main/java/com/procurement/catalog/domain/MaterialAuditAction.java');
     const service = read('backend-java/src/main/java/com/procurement/supplier/application/BuyerSupplierApplicationService.java');
     const auditTests = read('backend-java/src/test/java/com/procurement/BuyerMasterDataAuditLogTests.java');
     const admissionTests = read('backend-java/src/test/java/com/procurement/BuyerSupplierAdmissionApprovalStateTransitionTests.java');
@@ -263,6 +265,10 @@ describe('Java backend scaffold', () => {
     expect(readme).toContain('Creating buyer users, materials, and private supplier relations records audit log actions');
     expect(readme).toContain('POST /api/v1/buyer/materials/{materialId}');
     expect(readme).toContain('optional `category` and `keyword` filters');
+    expect(materialService).toContain('MaterialAuditAction.CREATED');
+    expect(materialService).toContain('MaterialAuditAction.UPDATED');
+    expect(materialAuditAction).toContain('CREATED = "material.created"');
+    expect(materialAuditAction).toContain('UPDATED = "material.updated"');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/status');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/profile');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/performance');

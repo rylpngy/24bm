@@ -3,6 +3,7 @@ package com.procurement.catalog.application;
 import com.procurement.catalog.api.CreateMaterialRequest;
 import com.procurement.catalog.api.MaterialResponse;
 import com.procurement.catalog.domain.Material;
+import com.procurement.catalog.domain.MaterialAuditAction;
 import com.procurement.catalog.infrastructure.MaterialMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -13,8 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MaterialApplicationService {
-  private static final String MATERIAL_CREATED_ACTION = "material.created";
-  private static final String MATERIAL_UPDATED_ACTION = "material.updated";
   private static final String MATERIAL_TARGET_TYPE = "material";
 
   private final MaterialMapper materialMapper;
@@ -50,7 +49,7 @@ public class MaterialApplicationService {
         request.category(),
         request.unit(),
         request.referencePrice());
-    auditLogApplicationService.recordTenantAction(MATERIAL_CREATED_ACTION, MATERIAL_TARGET_TYPE, materialId);
+    auditLogApplicationService.recordTenantAction(MaterialAuditAction.CREATED, MATERIAL_TARGET_TYPE, materialId);
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
   }
 
@@ -66,7 +65,7 @@ public class MaterialApplicationService {
         request.category(),
         request.unit(),
         request.referencePrice());
-    auditLogApplicationService.recordTenantAction(MATERIAL_UPDATED_ACTION, MATERIAL_TARGET_TYPE, materialId);
+    auditLogApplicationService.recordTenantAction(MaterialAuditAction.UPDATED, MATERIAL_TARGET_TYPE, materialId);
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
   }
 

@@ -82,6 +82,22 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void materialApplicationServiceUsesDomainAuditActions() throws IOException {
+    Path auditAction = SOURCE_ROOT.resolve("catalog/domain/MaterialAuditAction.java");
+    Path materialService = SOURCE_ROOT.resolve("catalog/application/MaterialApplicationService.java");
+
+    assertThat(auditAction).exists();
+    assertThat(Files.readString(auditAction))
+        .contains("CREATED = \"material.created\"")
+        .contains("UPDATED = \"material.updated\"");
+    assertThat(Files.readString(materialService))
+        .contains("MaterialAuditAction.CREATED")
+        .contains("MaterialAuditAction.UPDATED")
+        .doesNotContain("private static final String MATERIAL_CREATED_ACTION")
+        .doesNotContain("private static final String MATERIAL_UPDATED_ACTION");
+  }
+
+  @Test
   void departmentApplicationServiceUsesDomainDepartmentStatus() throws IOException {
     Path status = SOURCE_ROOT.resolve("organization/domain/DepartmentStatus.java");
     Path auditAction = SOURCE_ROOT.resolve("organization/domain/DepartmentAuditAction.java");
