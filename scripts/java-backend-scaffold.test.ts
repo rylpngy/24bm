@@ -349,6 +349,7 @@ describe('Java backend scaffold', () => {
     const tenantStatus = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantStatus.java');
     const tenantAuditAction = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantAuditAction.java');
     const buyerRoleDefaults = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformBuyerRoleDefaults.java');
+    const defaultApprovalTemplate = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformDefaultApprovalTemplate.java');
     const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const enterpriseService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformEnterpriseApplicationService.java');
     const enterpriseAuditAction = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformEnterpriseAuditAction.java');
@@ -382,6 +383,7 @@ describe('Java backend scaffold', () => {
     expect(tenantService).toContain('PlatformTenantAuditAction.DISABLED');
     expect(tenantService).toContain('PlatformBuyerRoleDefaults.OWNER_ROLE_NAME');
     expect(tenantService).toContain('PlatformBuyerRoleDefaults.OWNER_PERMISSIONS_JSON');
+    expect(tenantService).toContain('PlatformDefaultApprovalTemplate.BUYER_TEMPLATES');
     expect(tenantService).toContain('AuditTargetType.TENANT');
     expect(tenantStatus).toContain('ACTIVE = "active"');
     expect(tenantStatus).toContain('INACTIVE = "inactive"');
@@ -392,6 +394,10 @@ describe('Java backend scaffold', () => {
     expect(tenantAuditAction).toContain('DISABLED = "tenant.disabled"');
     expect(buyerRoleDefaults).toContain('OWNER_ROLE_NAME = "采购管理员"');
     expect(buyerRoleDefaults).toContain('OWNER_PERMISSIONS_JSON = "[\\"buyer:*\\"]"');
+    expect(defaultApprovalTemplate).toContain('BUYER_TEMPLATES');
+    expect(defaultApprovalTemplate).toContain('ApprovalBusinessType.PURCHASE_DEMAND');
+    expect(defaultApprovalTemplate).toContain('ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION');
+    expect(defaultApprovalTemplate).toContain('ApprovalBusinessType.RFQ_AWARD');
     expect(enterpriseService).toContain('PlatformEnterpriseAuditAction.REVIEWED');
     expect(enterpriseService).toContain('AuditTargetType.ENTERPRISE');
     expect(enterpriseAuditAction).toContain('REVIEWED = "enterprise.reviewed"');

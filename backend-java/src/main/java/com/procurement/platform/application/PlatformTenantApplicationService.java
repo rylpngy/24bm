@@ -10,6 +10,7 @@ import com.procurement.platform.api.FeatureToggleRequest;
 import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.api.UpdateTenantPlanRequest;
 import com.procurement.platform.domain.PlatformBuyerRoleDefaults;
+import com.procurement.platform.domain.PlatformDefaultApprovalTemplate;
 import com.procurement.platform.domain.PlatformTenant;
 import com.procurement.platform.domain.PlatformTenantAuditAction;
 import com.procurement.platform.domain.PlatformTenantStatus;
@@ -177,30 +178,16 @@ public class PlatformTenantApplicationService {
   }
 
   private void insertDefaultApprovalTemplates(String tenantId, String buyerOwnerRoleId) {
-    platformTenantMapper.insertApprovalTemplate(
-        "TPL_PURCHASE_DEMAND",
-        tenantId,
-        "purchase_demand",
-        "需求审批",
-        buyerOwnerRoleId,
-        PlatformTenantStatus.ACTIVE,
-        10);
-    platformTenantMapper.insertApprovalTemplate(
-        "TPL_SUPPLIER_ADMISSION",
-        tenantId,
-        "buyer_supplier_admission",
-        "供应商准入",
-        buyerOwnerRoleId,
-        PlatformTenantStatus.ACTIVE,
-        20);
-    platformTenantMapper.insertApprovalTemplate(
-        "TPL_RFQ_AWARD",
-        tenantId,
-        "rfq_award",
-        "定标审批",
-        buyerOwnerRoleId,
-        PlatformTenantStatus.ACTIVE,
-        30);
+    for (PlatformDefaultApprovalTemplate template : PlatformDefaultApprovalTemplate.BUYER_TEMPLATES) {
+      platformTenantMapper.insertApprovalTemplate(
+          template.code(),
+          tenantId,
+          template.businessType(),
+          template.name(),
+          buyerOwnerRoleId,
+          PlatformTenantStatus.ACTIVE,
+          template.sortOrder());
+    }
   }
 
   private String buyerOwnerRoleId(String tenantId) {

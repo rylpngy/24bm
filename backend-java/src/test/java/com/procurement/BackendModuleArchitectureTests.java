@@ -429,6 +429,7 @@ class BackendModuleArchitectureTests {
     Path status = SOURCE_ROOT.resolve("platform/domain/PlatformTenantStatus.java");
     Path auditAction = SOURCE_ROOT.resolve("platform/domain/PlatformTenantAuditAction.java");
     Path buyerRoleDefaults = SOURCE_ROOT.resolve("platform/domain/PlatformBuyerRoleDefaults.java");
+    Path defaultApprovalTemplate = SOURCE_ROOT.resolve("platform/domain/PlatformDefaultApprovalTemplate.java");
     Path tenantService = SOURCE_ROOT.resolve("platform/application/PlatformTenantApplicationService.java");
     Path workspaceService = SOURCE_ROOT.resolve("platform/application/PlatformWorkspaceApplicationService.java");
 
@@ -447,6 +448,15 @@ class BackendModuleArchitectureTests {
     assertThat(Files.readString(buyerRoleDefaults))
         .contains("OWNER_ROLE_NAME = \"采购管理员\"")
         .contains("OWNER_PERMISSIONS_JSON = \"[\\\"buyer:*\\\"]\"");
+    assertThat(defaultApprovalTemplate).exists();
+    assertThat(Files.readString(defaultApprovalTemplate))
+        .contains("BUYER_TEMPLATES")
+        .contains("ApprovalBusinessType.PURCHASE_DEMAND")
+        .contains("ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION")
+        .contains("ApprovalBusinessType.RFQ_AWARD")
+        .contains("\"需求审批\"")
+        .contains("\"供应商准入\"")
+        .contains("\"定标审批\"");
     assertThat(Files.readString(tenantService))
         .contains("PlatformTenantStatus.ACTIVE")
         .contains("PlatformTenantStatus.INACTIVE")
@@ -457,10 +467,17 @@ class BackendModuleArchitectureTests {
         .contains("PlatformTenantAuditAction.DISABLED")
         .contains("PlatformBuyerRoleDefaults.OWNER_ROLE_NAME")
         .contains("PlatformBuyerRoleDefaults.OWNER_PERMISSIONS_JSON")
+        .contains("PlatformDefaultApprovalTemplate.BUYER_TEMPLATES")
         .doesNotContain("private static final String ACTIVE_STATUS")
         .doesNotContain("private static final String INACTIVE_STATUS")
         .doesNotContain("private static final String BUYER_OWNER_ROLE_NAME")
         .doesNotContain("private static final String BUYER_OWNER_PERMISSIONS")
+        .doesNotContain("\"TPL_PURCHASE_DEMAND\"")
+        .doesNotContain("\"TPL_SUPPLIER_ADMISSION\"")
+        .doesNotContain("\"TPL_RFQ_AWARD\"")
+        .doesNotContain("\"需求审批\"")
+        .doesNotContain("\"供应商准入\"")
+        .doesNotContain("\"定标审批\"")
         .doesNotContain("private static final String TENANT_CREATED_ACTION")
         .doesNotContain("private static final String TENANT_DISABLED_ACTION")
         .doesNotContain("private static final String TENANT_ENABLED_ACTION")

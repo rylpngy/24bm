@@ -214,6 +214,7 @@ Authorization: Bearer <accessToken>
 平台租户创建、启用、停用和运营汇总统一使用 `PlatformTenantStatus.ACTIVE` / `PlatformTenantStatus.INACTIVE`，避免平台应用服务继续散落租户状态字符串。
 平台租户创建、功能开关、套餐调整、启用和停用审计动作统一由 `PlatformTenantAuditAction` 定义，避免平台租户应用服务散落审计 action 字符串。
 平台租户开通时的默认采购管理员角色名和权限 JSON 统一由 `PlatformBuyerRoleDefaults` 定义，避免租户开通应用服务散落初始化角色配置。
+平台租户开通时的固定审批模板统一由 `PlatformDefaultApprovalTemplate.BUYER_TEMPLATES` 定义，并复用 `ApprovalBusinessType`，避免租户开通应用服务散落模板 code、业务类型和排序。
 企业入驻审核审计动作统一由 `PlatformEnterpriseAuditAction` 定义，避免企业审核应用服务散落审计 action 字符串。
 订单生成、供应商确认、发货和收货审计动作统一由 `PurchaseOrderAuditAction` 定义，避免订单履约应用服务散落审计 action 字符串。
 发票登记、已付款和部分付款审计动作统一由 `InvoiceAuditAction` 定义，避免财务应用服务散落审计 action 字符串。
