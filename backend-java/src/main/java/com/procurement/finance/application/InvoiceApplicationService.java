@@ -14,6 +14,7 @@ import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.PurchaseOrderDocumentUniquenessPolicy;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
@@ -88,9 +89,9 @@ public class InvoiceApplicationService {
     }
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.FINANCE);
     InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder(request.amount(), order.amount(), orderId);
-    if (invoiceMapper.countByTenantAndOrder(order.tenantId(), order.id()) > 0) {
-      throw new IllegalStateException("Purchase order already has an invoice: " + orderId);
-    }
+    PurchaseOrderDocumentUniquenessPolicy.requireNoInvoice(
+        invoiceMapper.countByTenantAndOrder(order.tenantId(), order.id()),
+        orderId);
 
     String invoiceId = newId("invoice");
     invoiceMapper.insert(

@@ -7,6 +7,7 @@ import com.procurement.order.api.CreateReceiptRequest;
 import com.procurement.order.api.ReceiptResponse;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderAuditAction;
+import com.procurement.order.domain.PurchaseOrderDocumentUniquenessPolicy;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.domain.Receipt;
@@ -73,9 +74,9 @@ public class ReceiptApplicationService {
     if (deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, PurchaseOrderStatus.SHIPPED) == 0) {
       throw new IllegalStateException("Shipped delivery not found for receipt: " + orderId);
     }
-    if (receiptMapper.countByTenantAndOrder(tenantId, orderId) > 0) {
-      throw new IllegalStateException("Purchase order already has a receipt: " + orderId);
-    }
+    PurchaseOrderDocumentUniquenessPolicy.requireNoReceipt(
+        receiptMapper.countByTenantAndOrder(tenantId, orderId),
+        orderId);
 
     String receiptId = newId("receipt");
     receiptMapper.insert(receiptId, tenantId, orderId, userId, request.result());

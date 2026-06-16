@@ -658,21 +658,30 @@ class BackendModuleArchitectureTests {
             "private static final String READY_TO_SHIP_STATUS"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("order/application/DeliveryApplicationService.java"),
-        List.of("PurchaseOrderStatus.PENDING_SHIPMENT", "PurchaseOrderStatus.SHIPPED"),
+        List.of(
+            "PurchaseOrderStatus.PENDING_SHIPMENT",
+            "PurchaseOrderStatus.SHIPPED",
+            "PurchaseOrderDocumentUniquenessPolicy.requireNoDelivery"),
         List.of(
             "private static final String READY_TO_SHIP_STATUS",
-            "private static final String SHIPPED_STATUS"));
+            "private static final String SHIPPED_STATUS",
+            "Purchase order already has a delivery"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("order/application/ReceiptApplicationService.java"),
-        List.of("PurchaseOrderStatus.SHIPPED", "PurchaseOrderStatus.RECEIVED"),
+        List.of(
+            "PurchaseOrderStatus.SHIPPED",
+            "PurchaseOrderStatus.RECEIVED",
+            "PurchaseOrderDocumentUniquenessPolicy.requireNoReceipt"),
         List.of(
             "private static final String SHIPPED_STATUS",
-            "private static final String RECEIVED_STATUS"));
+            "private static final String RECEIVED_STATUS",
+            "Purchase order already has a receipt"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("finance/application/InvoiceApplicationService.java"),
         List.of(
             "PurchaseOrderStatus.RECEIVED",
             "InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder",
+            "PurchaseOrderDocumentUniquenessPolicy.requireNoInvoice",
             "InvoicePaymentStatus.PENDING_PAYMENT",
             "InvoiceAuditAction.CREATED",
             "InvoiceAuditAction.PAID",
@@ -684,7 +693,8 @@ class BackendModuleArchitectureTests {
             "private static final String INVOICE_PAID_ACTION",
             "private static final String INVOICE_PARTIAL_PAID_ACTION",
             "compareTo(order.amount())",
-            "Invoice amount must equal purchase order amount"));
+            "Invoice amount must equal purchase order amount",
+            "Purchase order already has an invoice"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("finance/application/PaymentApplicationService.java"),
         List.of(
@@ -710,6 +720,15 @@ class BackendModuleArchitectureTests {
         .contains("requirePaymentAmountStillMatchesOrder")
         .contains("Invoice amount must equal purchase order amount")
         .contains("Invoice amount no longer matches purchase order amount");
+    Path documentUniquenessPolicy = SOURCE_ROOT.resolve("order/domain/PurchaseOrderDocumentUniquenessPolicy.java");
+    assertThat(documentUniquenessPolicy).exists();
+    assertThat(Files.readString(documentUniquenessPolicy))
+        .contains("requireNoDelivery")
+        .contains("requireNoReceipt")
+        .contains("requireNoInvoice")
+        .contains("Purchase order already has a delivery")
+        .contains("Purchase order already has a receipt")
+        .contains("Purchase order already has an invoice");
   }
 
   @Test

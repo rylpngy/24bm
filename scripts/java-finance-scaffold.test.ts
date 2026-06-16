@@ -55,6 +55,7 @@ describe('Java finance invoice and payment scaffold', () => {
     const auditService = read('backend-java/src/main/java/com/procurement/audit/application/AuditLogApplicationService.java');
     const notificationTitle = read('backend-java/src/main/java/com/procurement/notification/domain/NotificationTitle.java');
     const invoiceAmountPolicy = read('backend-java/src/main/java/com/procurement/finance/domain/InvoiceAmountPolicy.java');
+    const documentUniquenessPolicy = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderDocumentUniquenessPolicy.java');
 
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
     expect(invoiceService).toContain('TenantFeatureApplicationService');
@@ -62,6 +63,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('PurchaseOrderStatus.RECEIVED');
     expect(invoiceService).toContain('InvoicePaymentStatus.PENDING_PAYMENT');
     expect(invoiceService).toContain('InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder');
+    expect(invoiceService).toContain('PurchaseOrderDocumentUniquenessPolicy.requireNoInvoice');
     expect(invoiceService).toContain('countByTenantAndOrder');
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
@@ -103,6 +105,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(notificationTitle).toContain('INVOICE_CREATED = "供应商已登记发票"');
     expect(invoiceAmountPolicy).toContain('Invoice amount must equal purchase order amount');
     expect(invoiceAmountPolicy).toContain('Invoice amount no longer matches purchase order amount');
+    expect(documentUniquenessPolicy).toContain('Purchase order already has an invoice');
   });
 
   it('documents the finance Java API handoff', () => {

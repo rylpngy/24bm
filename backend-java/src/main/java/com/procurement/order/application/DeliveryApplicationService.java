@@ -8,6 +8,7 @@ import com.procurement.order.api.DeliveryResponse;
 import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderAuditAction;
+import com.procurement.order.domain.PurchaseOrderDocumentUniquenessPolicy;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.DeliveryMapper;
@@ -65,9 +66,9 @@ public class DeliveryApplicationService {
     }
     purchaseOrderStatusTransition.requireShipment(order.status(), orderId);
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.ORDER);
-    if (deliveryMapper.countByTenantAndOrder(order.tenantId(), order.id()) > 0) {
-      throw new IllegalStateException("Purchase order already has a delivery: " + orderId);
-    }
+    PurchaseOrderDocumentUniquenessPolicy.requireNoDelivery(
+        deliveryMapper.countByTenantAndOrder(order.tenantId(), order.id()),
+        orderId);
 
     String deliveryId = newId("delivery");
     deliveryMapper.insert(
