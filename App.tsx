@@ -61,6 +61,29 @@ import {
   type BuyerRoleDto,
 } from './services/procurementApiClient';
 
+const moduleIcon = (moduleId: string): React.ElementType => {
+  const icons: Record<string, React.ElementType> = {
+    overview: LayoutDashboard,
+    dashboard: LayoutDashboard,
+    tenants: Building2,
+    reviews: ClipboardCheck,
+    announcements: Bell,
+    demands: FileText,
+    approvals: ShieldCheck,
+    suppliers: Users,
+    materials: Database,
+    rfqs: Send,
+    quotes: BarChart3,
+    orders: ShoppingCart,
+    receipts: PackageCheck,
+    invoices: Receipt,
+    audit: Activity,
+    opportunities: Send,
+    profile: BadgeCheck,
+  };
+  return icons[moduleId] ?? FileText;
+};
+
 const currency = (value: number) =>
   new Intl.NumberFormat('zh-CN', {
     style: 'currency',
@@ -556,9 +579,7 @@ const App: React.FC = () => {
                 orderCreateBusy={orderCreateBusy}
                 buyerFulfillmentBusyId={buyerFulfillmentBusyId}
                 javaEnabled={Boolean(javaApiClient)}
-                workflowBusy={workflowBusy}
                 workflowStatus={workflowStatus}
-                onRunJavaWorkflow={runJavaWorkflow}
                 onReviewApproval={reviewApprovalTask}
                 onSubmitSupplierAdmission={submitSupplierAdmission}
                 onCreateRfqFromDemand={createBuyerRfqFromDemand}
@@ -595,24 +616,24 @@ const AppSidebar: React.FC<{
   onSelectModule: (role: AdminRole, moduleId: string) => void;
 }> = ({ activeRole, activeModules, onSelectRole, onSelectModule }) => {
   return (
-    <aside className="flex w-72 shrink-0 flex-col bg-slate-950 text-white">
-      <div className="border-b border-white/10 p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 text-lg font-black shadow-lg shadow-blue-950/40">
+    <aside className="flex w-24 shrink-0 flex-col bg-slate-950 text-white lg:w-72">
+      <div className="border-b border-white/10 p-3 lg:p-6">
+        <div className="flex items-center justify-center gap-3 lg:justify-start">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-lg font-black shadow-lg shadow-blue-950/40 lg:h-11 lg:w-11">
             24
           </div>
-          <div>
+          <div className="hidden lg:block">
             <p className="text-lg font-black leading-none">24Bid</p>
             <p className="mt-1 text-xs font-bold uppercase tracking-widest text-blue-300">Procurement SaaS</p>
           </div>
         </div>
-        <div className="mt-5 rounded-lg border border-blue-400/20 bg-blue-500/10 p-3">
+        <div className="mt-5 hidden rounded-lg border border-blue-400/20 bg-blue-500/10 p-3 lg:block">
           <p className="text-xs font-bold text-blue-200">MVP 主线</p>
           <p className="mt-1 text-sm font-semibold text-white">需求申请 - 询价比价 - 订单履约 - 发票付款</p>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-5 overflow-y-auto p-4">
+      <nav className="flex-1 space-y-4 overflow-y-auto p-2 lg:space-y-5 lg:p-4">
         {adminRoleNavigation.map((role) => {
           const roleActive = activeRole === role.id;
           const roleIcon = role.id === 'platform' ? Layers3 : role.id === 'buyer' ? ShoppingCart : Truck;
@@ -622,32 +643,39 @@ const AppSidebar: React.FC<{
               <button
                 type="button"
                 onClick={() => onSelectRole(role.id)}
-                className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition ${
+                title={role.label}
+                className={`flex w-full flex-col items-center gap-1 rounded-lg px-2 py-3 text-center transition lg:flex-row lg:gap-3 lg:px-4 lg:text-left ${
                   roleActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                <RoleIcon size={19} />
+                <RoleIcon size={19} className="shrink-0" />
                 <span className="min-w-0">
-                  <span className="block text-sm font-bold">{role.label}</span>
-                  <span className={`block truncate text-xs ${roleActive ? 'text-blue-100' : 'text-slate-500'}`}>{role.desc}</span>
+                  <span className="block text-[11px] font-bold lg:hidden">{role.shortLabel}</span>
+                  <span className="hidden text-sm font-bold lg:block">{role.label}</span>
+                  <span className={`hidden truncate text-xs lg:block ${roleActive ? 'text-blue-100' : 'text-slate-500'}`}>{role.desc}</span>
                 </span>
               </button>
               {roleActive && (
-                <div className="ml-3 space-y-1 border-l border-white/10 pl-3">
+                <div className="space-y-1 lg:ml-3 lg:border-l lg:border-white/10 lg:pl-3">
                   {role.modules.map((module) => {
                     const moduleActive = activeModules[role.id] === module.id;
+                    const ModuleIcon = moduleIcon(module.id);
                     return (
                       <button
                         key={`${role.id}:${module.id}`}
                         type="button"
                         onClick={() => onSelectModule(role.id, module.id)}
-                        className={`w-full rounded-lg px-3 py-2 text-left transition ${
+                        title={`${module.label}：${module.desc}`}
+                        className={`flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 text-center transition lg:flex-row lg:items-start lg:gap-2 lg:px-3 lg:text-left ${
                           moduleActive ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                         }`}
                       >
-                        <span className="block text-sm font-black">{module.label}</span>
-                        <span className={`mt-0.5 block truncate text-xs ${moduleActive ? 'text-slate-500' : 'text-slate-600'}`}>
-                          {module.desc}
+                        <ModuleIcon size={15} className={`mt-0.5 shrink-0 ${moduleActive ? 'text-blue-600' : 'text-slate-500'}`} />
+                        <span className="min-w-0">
+                          <span className="block text-[11px] font-black leading-tight lg:text-sm">{module.label}</span>
+                          <span className={`mt-0.5 hidden truncate text-xs lg:block ${moduleActive ? 'text-slate-500' : 'text-slate-600'}`}>
+                            {module.desc}
+                          </span>
                         </span>
                       </button>
                     );
@@ -659,13 +687,13 @@ const AppSidebar: React.FC<{
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
-        <div className="rounded-lg bg-white/5 p-4">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+      <div className="border-t border-white/10 p-2 lg:p-4">
+        <div className="rounded-lg bg-white/5 p-2 lg:p-4">
+          <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-400 lg:justify-start">
             <LockKeyhole size={14} />
-            多租户隔离
+            <span className="hidden lg:inline">多租户隔离</span>
           </div>
-          <p className="mt-2 text-sm text-slate-300">采购数据、供应商私域关系、订单和财务记录按采购企业隔离。</p>
+          <p className="mt-2 hidden text-sm text-slate-300 lg:block">采购数据、供应商私域关系、订单和财务记录按采购企业隔离。</p>
         </div>
       </div>
     </aside>
@@ -709,18 +737,18 @@ const AppHeader: React.FC<{
         : suppliers.find((supplier) => supplier.id === supplierId)?.name;
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
+    <header className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-6">
       <div className="flex min-w-0 items-center gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400">当前工作区</p>
-          <h1 className="truncate text-lg font-black text-slate-900">{title}</h1>
+          <h1 className="max-w-[220px] truncate text-lg font-black text-slate-900 sm:max-w-none">{title}</h1>
           <p className="mt-0.5 text-xs font-bold text-slate-500">
             {roleNavigation?.shortLabel} / {moduleNavigation?.label}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 lg:justify-end lg:gap-3">
         {activeRole === 'buyer' && (
           <Select value={tenantId} onChange={setTenantId}>
             {buyerTenants.map((tenant) => (
@@ -739,7 +767,7 @@ const AppHeader: React.FC<{
             ))}
           </Select>
         )}
-        <div className="relative hidden w-80 md:block">
+        <div className="relative hidden w-64 xl:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
           <input
             className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -749,7 +777,7 @@ const AppHeader: React.FC<{
         <button
           type="button"
           onClick={onRefresh}
-          className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 hover:bg-slate-50"
+          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 hover:bg-slate-50"
         >
           刷新
         </button>
@@ -758,7 +786,7 @@ const AppHeader: React.FC<{
             type="button"
             onClick={onRunJavaWorkflow}
             disabled={workflowBusy}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400 sm:px-4"
           >
             <Send size={16} />
             {workflowBusy ? '执行中' : '跑通主流程'}
@@ -849,8 +877,8 @@ const PlatformWorkspace: React.FC<{
 
       {activeModule === 'tenants' && (
         <Panel title="租户列表" icon={Layers3}>
-          <div className="overflow-hidden rounded-lg border border-slate-200">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="min-w-[720px] w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
                 <tr>
                   <th className="px-4 py-3">企业</th>
@@ -922,9 +950,7 @@ const BuyerWorkspaceView: React.FC<{
   orderCreateBusy: string | null;
   buyerFulfillmentBusyId: string | null;
   javaEnabled: boolean;
-  workflowBusy: boolean;
   workflowStatus: string | null;
-  onRunJavaWorkflow: () => void;
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
   onSubmitSupplierAdmission: (relationId: string) => void;
   onCreateRfqFromDemand: (demandId: string) => void;
@@ -951,9 +977,7 @@ const BuyerWorkspaceView: React.FC<{
   orderCreateBusy,
   buyerFulfillmentBusyId,
   javaEnabled,
-  workflowBusy,
   workflowStatus,
-  onRunJavaWorkflow,
   onReviewApproval,
   onSubmitSupplierAdmission,
   onCreateRfqFromDemand,
@@ -1181,8 +1205,8 @@ const BuyerWorkspaceView: React.FC<{
 
       {activeModule === 'rfqs' && (
         <Panel title="询价项目" icon={Send}>
-          <div className="overflow-hidden rounded-lg border border-slate-200">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="min-w-[760px] w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
                 <tr>
                   <th className="px-4 py-3">询价项目</th>
@@ -1782,18 +1806,18 @@ const HeroBand: React.FC<{
   desc: string;
 }> = ({ eyebrow, title, desc }) => (
   <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-    <div className="grid gap-5 p-6 lg:grid-cols-[1fr_320px] lg:items-center">
+    <div className="grid gap-4 p-5 lg:grid-cols-[1fr_280px] lg:items-center">
       <div>
         <p className="text-xs font-black uppercase tracking-widest text-blue-600">{eyebrow}</p>
-        <h2 className="mt-3 max-w-3xl text-2xl font-black leading-tight text-slate-950">{title}</h2>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">{desc}</p>
+        <h2 className="mt-2 max-w-3xl text-xl font-black leading-tight text-slate-950 lg:text-2xl">{title}</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{desc}</p>
       </div>
-      <div className="rounded-lg bg-slate-950 p-4 text-white">
+      <div className="rounded-lg bg-slate-950 p-3 text-white">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-300">
           <CheckCircle2 size={15} />
           Phase 1 MVP
         </div>
-        <div className="mt-4 space-y-2 text-sm font-semibold">
+        <div className="mt-3 grid gap-2 text-sm font-semibold sm:grid-cols-2 lg:grid-cols-1">
           {['多企业 SaaS', '平台公共库 + 私域关系', '询价比价闭环', '站内通知与附件'].map((item) => (
             <div key={item} className="flex items-center gap-2">
               <ArrowRight size={14} className="text-blue-300" />
@@ -1941,24 +1965,34 @@ const SimpleList: React.FC<{
     value: string;
     status: string;
   }>;
-}> = ({ rows }) => (
-  <div className="space-y-3">
-    {rows.map((row) => (
-      <div key={row.id} className="rounded-lg border border-slate-200 bg-white p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="font-black text-slate-900">{row.title}</p>
-            <p className="mt-1 text-sm text-slate-500">{row.meta}</p>
-          </div>
-          <p className="font-mono font-black text-slate-900">{row.value}</p>
-        </div>
-        <div className="mt-3">
-          <StatusPill label={row.status} />
-        </div>
+}> = ({ rows }) => {
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-sm font-bold text-slate-500">
+        暂无数据
       </div>
-    ))}
-  </div>
-);
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {rows.map((row) => (
+        <div key={row.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="truncate font-black text-slate-900">{row.title}</p>
+              <p className="mt-1 text-sm text-slate-500">{row.meta}</p>
+            </div>
+            <p className="shrink-0 font-mono font-black text-slate-900">{row.value}</p>
+          </div>
+          <div className="mt-3">
+            <StatusPill label={row.status} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const CapabilityList: React.FC<{ items: string[] }> = ({ items }) => (
   <div className="space-y-3">
