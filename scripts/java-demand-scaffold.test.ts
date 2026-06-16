@@ -112,8 +112,8 @@ describe('Java purchase demand scaffold', () => {
     expect(service).toContain('requireActiveDepartment');
     expect(service).toContain('existsActiveByTenantAndId');
     expect(service).toContain('listByTenantFiltered');
-    expect(service).toContain('草稿');
-    expect(service).toContain('审批中');
+    expect(service).toContain('PurchaseDemandStatus.DRAFT');
+    expect(service).toContain('PurchaseDemandStatus.IN_APPROVAL');
     expect(service).toContain('purchase_demand');
   });
 

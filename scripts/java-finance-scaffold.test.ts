@@ -65,7 +65,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('BuyerSupplierRelationMapper');
     expect(paymentService).toContain('PurchaseOrderMapper');
     expect(paymentService).toContain('requireEnabled(tenantId, FINANCE_FEATURE)');
-    expect(paymentService).toContain('BLACKLISTED_SUPPLIER_STATUS');
+    expect(paymentService).toContain('BuyerSupplierRelationStatus.BLACKLISTED');
     expect(paymentService).toContain('requireInvoiceAmountMatchesOrder');
     expect(paymentService).toContain('countByTenantSupplierAndStatus');
     expect(paymentService).toContain('listCurrentTenantInvoices');

@@ -50,9 +50,9 @@ describe('Java RFQ award scaffold', () => {
     const service = read('backend-java/src/main/java/com/procurement/sourcing/application/AwardApplicationService.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
-    expect(service).toContain('已提交');
+    expect(service).toContain('QuoteStatus.SUBMITTED');
     expect(service).toContain('RfqStatus.AWARDED');
-    expect(service).toContain('已通过');
+    expect(service).toContain('ApprovalStatus.APPROVED');
     expect(service).toContain('findSubmittedQuoteForAward');
     expect(service).toContain('updateAward');
   });

@@ -42,7 +42,7 @@ describe('Java supplier quote scaffold', () => {
 
     expect(service).toContain('TenantAccessGuard.requireSupplierId');
     expect(service).toContain('RfqStatus.QUOTING');
-    expect(service).toContain('已提交');
+    expect(service).toContain('QuoteStatus.SUBMITTED');
     expect(service).toContain('isSupplierInvited');
     expect(service).toContain('countSubmittedBySupplier');
   });

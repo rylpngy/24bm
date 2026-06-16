@@ -52,8 +52,8 @@ describe('Java RFQ sourcing scaffold', () => {
     expect(service).toContain('TenantFeatureApplicationService');
     expect(service).toContain('listByTenantFiltered');
     expect(service).toContain('requireEnabled(tenantId, RFQ_FEATURE)');
-    expect(service).toContain('已通过');
-    expect(service).toContain('已准入');
+    expect(service).toContain('PurchaseDemandStatus.APPROVED');
+    expect(service).toContain('BuyerSupplierRelationStatus.ADMITTED');
     expect(service).toContain('RfqStatus.QUOTING');
   });
 

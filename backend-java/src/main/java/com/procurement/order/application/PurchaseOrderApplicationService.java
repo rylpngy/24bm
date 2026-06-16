@@ -1,5 +1,6 @@
 package com.procurement.order.application;
 
+import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
@@ -18,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseOrderApplicationService {
-  private static final String APPROVED_STATUS = "已通过";
   private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_CREATED_ACTION = "purchase_order.created";
   private static final String PURCHASE_ORDER_CONFIRMED_ACTION = "purchase_order.confirmed";
@@ -118,7 +118,7 @@ public class PurchaseOrderApplicationService {
   public PurchaseOrderResponse createFromAward(CreatePurchaseOrderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, ORDER_FEATURE);
-    AwardDecision award = awardDecisionMapper.findApprovedForOrder(tenantId, request.awardId(), APPROVED_STATUS);
+    AwardDecision award = awardDecisionMapper.findApprovedForOrder(tenantId, request.awardId(), ApprovalStatus.APPROVED);
     if (award == null) {
       throw new IllegalArgumentException("Approved award decision not found in tenant scope: " + request.awardId());
     }

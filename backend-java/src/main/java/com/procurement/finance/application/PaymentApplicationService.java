@@ -11,6 +11,7 @@ import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.List;
@@ -23,7 +24,6 @@ public class PaymentApplicationService {
   private static final String INVOICE_PAID_ACTION = "invoice.paid";
   private static final String INVOICE_PARTIAL_PAID_ACTION = "invoice.partial_paid";
   private static final String FINANCE_FEATURE = "finance";
-  private static final String BLACKLISTED_SUPPLIER_STATUS = "黑名单";
   private static final String INVOICE_PAID_NOTIFICATION_TITLE = "发票已付款";
   private static final String INVOICE_PARTIAL_PAID_NOTIFICATION_TITLE = "发票部分付款";
 
@@ -159,7 +159,7 @@ public class PaymentApplicationService {
     int blacklistedRelations = buyerSupplierRelationMapper.countByTenantSupplierAndStatus(
         tenantId,
         invoice.supplierId(),
-        BLACKLISTED_SUPPLIER_STATUS);
+        BuyerSupplierRelationStatus.BLACKLISTED);
     if (blacklistedRelations > 0) {
       throw new IllegalStateException("Blacklisted supplier cannot be paid: " + invoice.supplierId());
     }

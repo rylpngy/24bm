@@ -2,6 +2,7 @@ package com.procurement.sourcing.application;
 
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -10,6 +11,7 @@ import com.procurement.sourcing.api.AwardRfqRequest;
 import com.procurement.sourcing.api.ReviewAwardApprovalRequest;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.domain.Quote;
+import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
@@ -22,9 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AwardApplicationService {
-  private static final String SUBMITTED_QUOTE_STATUS = "已提交";
-  private static final String APPROVED_STATUS = "已通过";
-  private static final String REJECTED_STATUS = "已驳回";
   private static final String RFQ_AWARD_BIZ_TYPE = "rfq_award";
   private static final String RFQ_AWARD_SUBMITTED_ACTION = "rfq_award.submitted";
   private static final String RFQ_AWARD_APPROVED_ACTION = "rfq_award.approved";
@@ -69,7 +68,7 @@ public class AwardApplicationService {
       throw new IllegalStateException("Only quoting RFQs can be awarded: " + rfqId);
     }
 
-    Quote quote = quoteMapper.findSubmittedQuoteForAward(tenantId, rfqId, request.quoteId(), SUBMITTED_QUOTE_STATUS);
+    Quote quote = quoteMapper.findSubmittedQuoteForAward(tenantId, rfqId, request.quoteId(), QuoteStatus.SUBMITTED);
     if (quote == null) {
       throw new IllegalStateException("Award requires a submitted quote: " + request.quoteId());
     }
@@ -137,7 +136,7 @@ public class AwardApplicationService {
       throw new IllegalStateException("Pending approval task not found for RFQ award: " + request.awardId());
     }
 
-    String approvalStatus = Boolean.TRUE.equals(request.approved()) ? APPROVED_STATUS : REJECTED_STATUS;
+    String approvalStatus = Boolean.TRUE.equals(request.approved()) ? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED;
     int approvalUpdated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),

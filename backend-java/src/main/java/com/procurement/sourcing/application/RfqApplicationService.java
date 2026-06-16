@@ -2,14 +2,17 @@ package com.procurement.sourcing.application;
 
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.domain.PurchaseDemand;
+import com.procurement.demand.domain.PurchaseDemandStatus;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqInviteStatus;
 import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
+import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.util.List;
@@ -19,9 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RfqApplicationService {
-  private static final String APPROVED_DEMAND_STATUS = "已通过";
-  private static final String APPROVED_SUPPLIER_STATUS = "已准入";
-  private static final String INVITED_STATUS = "已邀请";
   private static final String RFQ_FEATURE = "rfq";
 
   private final RfqMapper rfqMapper;
@@ -80,7 +80,7 @@ public class RfqApplicationService {
     }
 
     for (String supplierId : request.invitedSupplierIds()) {
-      rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, INVITED_STATUS);
+      rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
     }
 
     return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
@@ -92,7 +92,7 @@ public class RfqApplicationService {
       if (demand == null) {
         throw new IllegalArgumentException("Purchase demand not found in tenant scope: " + demandId);
       }
-      if (!APPROVED_DEMAND_STATUS.equals(demand.status())) {
+      if (!PurchaseDemandStatus.APPROVED.equals(demand.status())) {
         throw new IllegalStateException("RFQ can only use approved purchase demands: " + demandId);
       }
       if (rfqDemandMapper.countByTenantAndDemand(tenantId, demandId) > 0) {
@@ -103,7 +103,10 @@ public class RfqApplicationService {
 
   private void validateSuppliers(String tenantId, List<String> supplierIds) {
     for (String supplierId : supplierIds) {
-      int count = buyerSupplierRelationMapper.countByTenantSupplierAndStatus(tenantId, supplierId, APPROVED_SUPPLIER_STATUS);
+      int count = buyerSupplierRelationMapper.countByTenantSupplierAndStatus(
+          tenantId,
+          supplierId,
+          BuyerSupplierRelationStatus.ADMITTED);
       if (count == 0) {
         throw new IllegalStateException("Supplier is not approved for tenant RFQ: " + supplierId);
       }

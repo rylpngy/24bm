@@ -2,6 +2,7 @@ package com.procurement.demand.application;
 
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -12,6 +13,7 @@ import com.procurement.demand.api.PurchaseDemandResponse;
 import com.procurement.demand.api.ReviewPurchaseDemandRequest;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.domain.PurchaseDemandItem;
+import com.procurement.demand.domain.PurchaseDemandStatus;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -23,10 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseDemandApplicationService {
-  private static final String DRAFT_STATUS = "草稿";
-  private static final String IN_APPROVAL_STATUS = "审批中";
-  private static final String APPROVED_STATUS = "已通过";
-  private static final String REJECTED_STATUS = "已驳回";
   private static final String PURCHASE_DEMAND_BIZ_TYPE = "purchase_demand";
   private static final String PURCHASE_DEMAND_CREATED_ACTION = "purchase_demand.created";
   private static final String PURCHASE_DEMAND_APPROVED_ACTION = "purchase_demand.approved";
@@ -96,7 +94,7 @@ public class PurchaseDemandApplicationService {
         request.departmentId(),
         userId,
         request.budget(),
-        DRAFT_STATUS);
+        PurchaseDemandStatus.DRAFT);
 
     for (var lineItem : request.lineItems()) {
       purchaseDemandItemMapper.insert(
@@ -121,11 +119,11 @@ public class PurchaseDemandApplicationService {
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
-    if (!DRAFT_STATUS.equals(demand.status())) {
+    if (!PurchaseDemandStatus.DRAFT.equals(demand.status())) {
       throw new IllegalStateException("Only draft purchase demands can be submitted: " + demandId);
     }
 
-    purchaseDemandMapper.updateStatus(tenantId, demandId, IN_APPROVAL_STATUS);
+    purchaseDemandMapper.updateStatus(tenantId, demandId, PurchaseDemandStatus.IN_APPROVAL);
 
     ApprovalTask approvalTask = approvalTaskApplicationService.createPendingTask(
         tenantId,
@@ -155,7 +153,7 @@ public class PurchaseDemandApplicationService {
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
-    if (!IN_APPROVAL_STATUS.equals(demand.status())) {
+    if (!PurchaseDemandStatus.IN_APPROVAL.equals(demand.status())) {
       throw new IllegalStateException("Only in-approval purchase demands can be reviewed: " + demandId);
     }
 
@@ -168,17 +166,20 @@ public class PurchaseDemandApplicationService {
       throw new IllegalStateException("Pending approval task not found for purchase demand: " + demandId);
     }
 
-    String reviewedStatus = Boolean.TRUE.equals(request.approved()) ? APPROVED_STATUS : REJECTED_STATUS;
+    String approvalStatus = Boolean.TRUE.equals(request.approved()) ? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED;
+    String demandStatus = Boolean.TRUE.equals(request.approved())
+        ? PurchaseDemandStatus.APPROVED
+        : PurchaseDemandStatus.REJECTED;
     int updated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
         ApprovalTaskApplicationService.PENDING_APPROVAL_STATUS,
-        reviewedStatus,
+        approvalStatus,
         userId);
     if (updated == 0) {
       throw new IllegalStateException("Approval task status changed before review could be recorded: " + approvalTask.id());
     }
-    purchaseDemandMapper.updateStatus(tenantId, demandId, reviewedStatus);
+    purchaseDemandMapper.updateStatus(tenantId, demandId, demandStatus);
     auditLogApplicationService.recordTenantAction(
         Boolean.TRUE.equals(request.approved()) ? PURCHASE_DEMAND_APPROVED_ACTION : PURCHASE_DEMAND_REJECTED_ACTION,
         PURCHASE_DEMAND_BIZ_TYPE,

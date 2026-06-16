@@ -117,25 +117,46 @@ class BackendModuleArchitectureTests {
   void rfqOrderAndInvoiceApplicationServicesUseDomainStatusConstants() throws IOException {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java"),
-        List.of("RfqStatus.QUOTING"),
-        List.of("private static final String QUOTING_STATUS"));
+        List.of(
+            "RfqStatus.QUOTING",
+            "PurchaseDemandStatus.APPROVED",
+            "BuyerSupplierRelationStatus.ADMITTED",
+            "RfqInviteStatus.INVITED"),
+        List.of(
+            "private static final String QUOTING_STATUS",
+            "private static final String APPROVED_DEMAND_STATUS",
+            "private static final String APPROVED_SUPPLIER_STATUS",
+            "private static final String INVITED_STATUS"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/AwardApplicationService.java"),
-        List.of("RfqStatus.QUOTING", "RfqStatus.AWARD_APPROVAL", "RfqStatus.AWARDED"),
+        List.of(
+            "RfqStatus.QUOTING",
+            "RfqStatus.AWARD_APPROVAL",
+            "RfqStatus.AWARDED",
+            "QuoteStatus.SUBMITTED",
+            "ApprovalStatus.APPROVED",
+            "ApprovalStatus.REJECTED"),
         List.of(
             "private static final String QUOTING_RFQ_STATUS",
             "private static final String AWARD_APPROVAL_RFQ_STATUS",
-            "private static final String AWARDED_RFQ_STATUS"));
+            "private static final String AWARDED_RFQ_STATUS",
+            "private static final String SUBMITTED_QUOTE_STATUS",
+            "private static final String APPROVED_STATUS",
+            "private static final String REJECTED_STATUS"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/QuoteApplicationService.java"),
-        List.of("RfqStatus.QUOTING"),
-        List.of("private static final String QUOTING_STATUS"));
+        List.of("RfqStatus.QUOTING", "QuoteStatus.SUBMITTED"),
+        List.of(
+            "private static final String QUOTING_STATUS",
+            "private static final String SUBMITTED_STATUS"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("order/application/PurchaseOrderApplicationService.java"),
         List.of(
             "PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION",
-            "PurchaseOrderStatus.PENDING_SHIPMENT"),
+            "PurchaseOrderStatus.PENDING_SHIPMENT",
+            "ApprovalStatus.APPROVED"),
         List.of(
+            "private static final String APPROVED_STATUS",
             "private static final String PENDING_SUPPLIER_CONFIRM_STATUS",
             "private static final String READY_TO_SHIP_STATUS"));
     assertSourceUsesStatusConstants(
@@ -161,11 +182,48 @@ class BackendModuleArchitectureTests {
         List.of(
             "InvoicePaymentStatus.PENDING_PAYMENT",
             "InvoicePaymentStatus.PAID",
-            "InvoicePaymentStatus.PARTIAL_PAID"),
+            "InvoicePaymentStatus.PARTIAL_PAID",
+            "BuyerSupplierRelationStatus.BLACKLISTED"),
         List.of(
             "private static final String PENDING_PAYMENT_STATUS",
             "private static final String PAID_STATUS",
-            "private static final String PARTIAL_PAID_STATUS"));
+            "private static final String PARTIAL_PAID_STATUS",
+            "private static final String BLACKLISTED_SUPPLIER_STATUS"));
+  }
+
+  @Test
+  void demandAndSupplierApplicationServicesUseDomainStatusConstants() throws IOException {
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("demand/application/PurchaseDemandApplicationService.java"),
+        List.of(
+            "PurchaseDemandStatus.DRAFT",
+            "PurchaseDemandStatus.IN_APPROVAL",
+            "PurchaseDemandStatus.APPROVED",
+            "PurchaseDemandStatus.REJECTED",
+            "ApprovalStatus.APPROVED",
+            "ApprovalStatus.REJECTED"),
+        List.of(
+            "private static final String DRAFT_STATUS",
+            "private static final String IN_APPROVAL_STATUS",
+            "private static final String APPROVED_STATUS",
+            "private static final String REJECTED_STATUS"));
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("supplier/application/BuyerSupplierApplicationService.java"),
+        List.of(
+            "BuyerSupplierRelationStatus.PENDING_ADMISSION",
+            "BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL",
+            "BuyerSupplierRelationStatus.ADMITTED",
+            "BuyerSupplierRelationStatus.REJECTED",
+            "BuyerSupplierRelationStatus.BLACKLISTED",
+            "ApprovalStatus.APPROVED",
+            "ApprovalStatus.REJECTED"),
+        List.of(
+            "private static final String PENDING_ADMISSION_STATUS",
+            "private static final String IN_ADMISSION_APPROVAL_STATUS",
+            "private static final String ADMITTED_STATUS",
+            "private static final String REJECTED_STATUS",
+            "private static final String BLACKLISTED_STATUS",
+            "private static final String APPROVED_STATUS"));
   }
 
   private void assertSourceUsesStatusConstants(

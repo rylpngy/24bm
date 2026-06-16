@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -17,6 +18,7 @@ import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
+import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,12 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BuyerSupplierApplicationService {
-  private static final String PENDING_ADMISSION_STATUS = "待准入";
-  private static final String IN_ADMISSION_APPROVAL_STATUS = "准入审批中";
-  private static final String ADMITTED_STATUS = "已准入";
-  private static final String REJECTED_STATUS = "已驳回";
-  private static final String BLACKLISTED_STATUS = "黑名单";
-  private static final String APPROVED_STATUS = "已通过";
   private static final String BUYER_SUPPLIER_ADMISSION_BIZ_TYPE = "buyer_supplier_admission";
   private static final String BUYER_SUPPLIER_RELATION_TARGET_TYPE = "buyer_supplier_relation";
   private static final String SUPPLIER_RELATION_CREATED_ACTION = "buyer_supplier_relation.created";
@@ -109,15 +105,15 @@ public class BuyerSupplierApplicationService {
   public ApprovalTaskResponse submitAdmission(String relationId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
-    if (!PENDING_ADMISSION_STATUS.equals(relation.status())) {
+    if (!BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(relation.status())) {
       throw new IllegalStateException("Only pending supplier relations can be submitted for admission: " + relationId);
     }
 
     int updated = buyerSupplierRelationMapper.updateStatus(
         tenantId,
         relationId,
-        PENDING_ADMISSION_STATUS,
-        IN_ADMISSION_APPROVAL_STATUS);
+        BuyerSupplierRelationStatus.PENDING_ADMISSION,
+        BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL);
     if (updated == 0) {
       throw new IllegalStateException("Supplier relation status changed before admission could be submitted: " + relationId);
     }
@@ -140,7 +136,7 @@ public class BuyerSupplierApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
     String userId = TenantAccessGuard.requireUserId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
-    if (!IN_ADMISSION_APPROVAL_STATUS.equals(relation.status())) {
+    if (!BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL.equals(relation.status())) {
       throw new IllegalStateException("Only supplier relations in admission approval can be reviewed: " + relationId);
     }
 
@@ -153,8 +149,10 @@ public class BuyerSupplierApplicationService {
       throw new IllegalStateException("Pending approval task not found for supplier admission: " + relationId);
     }
 
-    String approvalStatus = Boolean.TRUE.equals(request.approved()) ? APPROVED_STATUS : REJECTED_STATUS;
-    String relationStatus = Boolean.TRUE.equals(request.approved()) ? ADMITTED_STATUS : REJECTED_STATUS;
+    String approvalStatus = Boolean.TRUE.equals(request.approved()) ? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED;
+    String relationStatus = Boolean.TRUE.equals(request.approved())
+        ? BuyerSupplierRelationStatus.ADMITTED
+        : BuyerSupplierRelationStatus.REJECTED;
     int approvalUpdated = approvalTaskMapper.updateStatus(
         tenantId,
         approvalTask.id(),
@@ -168,7 +166,7 @@ public class BuyerSupplierApplicationService {
     int relationUpdated = buyerSupplierRelationMapper.updateStatus(
         tenantId,
         relationId,
-        IN_ADMISSION_APPROVAL_STATUS,
+        BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL,
         relationStatus);
     if (relationUpdated == 0) {
       throw new IllegalStateException("Supplier relation status changed before admission review could be applied: " + relationId);
@@ -278,18 +276,19 @@ public class BuyerSupplierApplicationService {
   }
 
   private void requireSupportedManualTargetStatus(String status) {
-    if (!BLACKLISTED_STATUS.equals(status) && !PENDING_ADMISSION_STATUS.equals(status)) {
+    if (!BuyerSupplierRelationStatus.BLACKLISTED.equals(status)
+        && !BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(status)) {
       throw new IllegalArgumentException("Unsupported buyer supplier relation target status: " + status);
     }
   }
 
   private void requireManualStatusTransition(String currentStatus, String targetStatus, String relationId) {
-    if (IN_ADMISSION_APPROVAL_STATUS.equals(currentStatus)) {
+    if (BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL.equals(currentStatus)) {
       throw new IllegalStateException("Supplier relations in admission approval cannot be manually changed: " + relationId);
     }
-    if (PENDING_ADMISSION_STATUS.equals(targetStatus)
-        && !BLACKLISTED_STATUS.equals(currentStatus)
-        && !REJECTED_STATUS.equals(currentStatus)) {
+    if (BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(targetStatus)
+        && !BuyerSupplierRelationStatus.BLACKLISTED.equals(currentStatus)
+        && !BuyerSupplierRelationStatus.REJECTED.equals(currentStatus)) {
       throw new IllegalStateException("Only blacklisted or rejected supplier relations can be restored to pending admission: " + relationId);
     }
   }

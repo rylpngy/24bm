@@ -254,7 +254,7 @@ describe('Java backend scaffold', () => {
     expect(service).toContain('buyer_supplier_relation.performance_updated');
     expect(service).toContain('buyer_supplier_relation.status_changed');
     expect(service).toContain('changeRelationProfile');
-    expect(service).toContain('BLACKLISTED_STATUS');
+    expect(service).toContain('BuyerSupplierRelationStatus.BLACKLISTED');
     expect(service).toContain('requireManualStatusTransition');
     expect(auditTests).toContain('buyerUserCreationRecordsAuditLog');
     expect(auditTests).toContain('materialCreationRecordsAuditLog');
