@@ -219,7 +219,7 @@ Authorization: Bearer <accessToken>
 
 - 平台身份来自 JWT 中的 `scope = PLATFORM`，采购方和供应商 token 不能访问。
 - 公告是平台公共资源，不绑定采购方 `tenant_id`。
-- `audience` 当前支持 `all`、`buyer`、`supplier`。
+- `audience` 目标规则由 `PlatformAnnouncementAudiencePolicy` 承接，当前支持 `all`、`buyer`、`supplier`。
 - 采购方只读取 `all`/`buyer`，供应商只读取 `all`/`supplier`。
 - 新公告状态由服务端固定为 `active`，发布人来自 JWT 中的 `userId`。
 - 发布公告写入 `audit_logs`，动作为 `platform_announcement.published`，且 `tenant_id` 为空。

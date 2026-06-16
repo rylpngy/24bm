@@ -216,6 +216,43 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void platformAnnouncementApplicationServiceDelegatesAudiencePolicy() throws IOException {
+    Path audience = SOURCE_ROOT.resolve("platform/domain/PlatformAnnouncementAudience.java");
+    Path status = SOURCE_ROOT.resolve("platform/domain/PlatformAnnouncementStatus.java");
+    Path policy = SOURCE_ROOT.resolve("platform/domain/PlatformAnnouncementAudiencePolicy.java");
+    Path announcementService =
+        SOURCE_ROOT.resolve("platform/application/PlatformAnnouncementApplicationService.java");
+
+    assertThat(audience).exists();
+    assertThat(status).exists();
+    assertThat(policy).exists();
+
+    assertThat(Files.readString(audience))
+        .contains("ALL = \"all\"")
+        .contains("BUYER = \"buyer\"")
+        .contains("SUPPLIER = \"supplier\"");
+    assertThat(Files.readString(status)).contains("ACTIVE = \"active\"");
+    assertThat(Files.readString(policy))
+        .contains("void requireSupported")
+        .contains("PlatformAnnouncementAudience.ALL")
+        .contains("PlatformAnnouncementAudience.BUYER")
+        .contains("PlatformAnnouncementAudience.SUPPLIER")
+        .contains("Unsupported platform announcement audience");
+    assertThat(Files.readString(announcementService))
+        .contains("PlatformAnnouncementAudiencePolicy")
+        .contains("platformAnnouncementAudiencePolicy.requireSupported")
+        .contains("PlatformAnnouncementAudience.ALL")
+        .contains("PlatformAnnouncementAudience.BUYER")
+        .contains("PlatformAnnouncementAudience.SUPPLIER")
+        .contains("PlatformAnnouncementStatus.ACTIVE")
+        .doesNotContain("private static final String ACTIVE_STATUS")
+        .doesNotContain("private static final String ALL_AUDIENCE")
+        .doesNotContain("private static final String BUYER_AUDIENCE")
+        .doesNotContain("private static final String SUPPLIER_AUDIENCE")
+        .doesNotContain("Unsupported platform announcement audience");
+  }
+
+  @Test
   void rfqOrderAndInvoiceApplicationServicesUseDomainStatusConstants() throws IOException {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java"),

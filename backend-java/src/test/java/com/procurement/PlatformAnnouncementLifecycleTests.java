@@ -8,6 +8,7 @@ import com.procurement.common.tenant.TenantContext;
 import com.procurement.platform.api.CreatePlatformAnnouncementRequest;
 import com.procurement.platform.application.PlatformAnnouncementApplicationService;
 import com.procurement.platform.domain.PlatformAnnouncement;
+import com.procurement.platform.domain.PlatformAnnouncementAudiencePolicy;
 import com.procurement.platform.infrastructure.PlatformAnnouncementMapper;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.AfterEach;
@@ -20,7 +21,10 @@ class PlatformAnnouncementLifecycleTests {
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final PlatformAnnouncementApplicationService platformAnnouncementApplicationService =
-      new PlatformAnnouncementApplicationService(platformAnnouncementMapper, auditLogApplicationService);
+      new PlatformAnnouncementApplicationService(
+          platformAnnouncementMapper,
+          auditLogApplicationService,
+          new PlatformAnnouncementAudiencePolicy());
 
   @AfterEach
   void clearTenantContext() {
