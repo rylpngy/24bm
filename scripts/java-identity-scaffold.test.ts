@@ -48,6 +48,8 @@ describe('Java identity and JWT scaffold', () => {
 
   it('enforces buyer tenant user limits from SaaS plan entitlements', () => {
     const service = read('backend-java/src/main/java/com/procurement/identity/application/BuyerUserApplicationService.java');
+    const statusTransition = read('backend-java/src/main/java/com/procurement/identity/domain/BuyerUserStatusTransition.java');
+    const userStatus = read('backend-java/src/main/java/com/procurement/identity/domain/BuyerUserStatus.java');
     const roleService = read('backend-java/src/main/java/com/procurement/identity/application/BuyerRoleApplicationService.java');
     const userMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerUserMapper.java');
     const roleMapper = read('backend-java/src/main/java/com/procurement/identity/infrastructure/BuyerRoleMapper.java');
@@ -77,7 +79,13 @@ describe('Java identity and JWT scaffold', () => {
     expect(service).toContain('buyer_user.password_reset');
     expect(service).toContain('changeUserStatus');
     expect(service).toContain('buyer_user.status_changed');
-    expect(service).toContain('Unsupported buyer user status');
+    expect(service).toContain('BuyerUserStatusTransition');
+    expect(service).toContain('buyerUserStatusTransition.requireSupportedTarget');
+    expect(statusTransition).toContain('Unsupported buyer user status');
+    expect(statusTransition).toContain('BuyerUserStatus.ACTIVE');
+    expect(statusTransition).toContain('BuyerUserStatus.INACTIVE');
+    expect(userStatus).toContain('ACTIVE = "active"');
+    expect(userStatus).toContain('INACTIVE = "inactive"');
     expect(roleService).toContain('listCurrentTenantRoles');
     expect(roleService).toContain('buyer role APIs');
     expect(roleMapper).toContain("scope = 'buyer'");

@@ -125,7 +125,7 @@ Authorization: Bearer <accessToken>
 - 角色列表只返回当前租户 `roles.scope = buyer` 的记录和 `permissions`，用于采购方用户创建和后续用户角色维护。
 - 角色变更会先校验目标用户属于当前租户，再校验目标角色属于当前租户 `buyer` 范围，随后替换该用户的采购方角色关系并记录 `buyer_user.role_changed` 审计动作。
 - 密码重置会先校验目标用户属于当前租户，再使用 `PasswordEncoder` 更新 `users.password_hash` 并记录 `buyer_user.password_reset` 审计动作。
-- 状态变更会先校验目标用户属于当前租户，只允许 `active` 或 `inactive`，随后更新 `users.status` 并记录 `buyer_user.status_changed` 审计动作。
+- 状态变更会先校验目标用户属于当前租户，目标状态规则由 `BuyerUserStatusTransition` 承接，只允许 `active` 或 `inactive`，随后更新 `users.status` 并记录 `buyer_user.status_changed` 审计动作。
 
 ## 采购方组织部门 Java API
 

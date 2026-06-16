@@ -15,6 +15,7 @@ import com.procurement.catalog.infrastructure.MaterialMapper;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.application.BuyerUserApplicationService;
+import com.procurement.identity.domain.BuyerUserStatusTransition;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -56,7 +57,8 @@ class BuyerMasterDataAuditLogTests {
             departmentMapper,
             tenantEntitlementApplicationService,
             auditLogApplicationService,
-            passwordEncoder);
+            passwordEncoder,
+            new BuyerUserStatusTransition());
     when(buyerUserMapper.countByTenant("tenant-1")).thenReturn(3);
     when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
     when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-buyer-requester")).thenReturn(true);

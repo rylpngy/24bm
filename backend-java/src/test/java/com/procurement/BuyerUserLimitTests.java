@@ -9,6 +9,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.application.BuyerUserApplicationService;
+import com.procurement.identity.domain.BuyerUserStatusTransition;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import com.procurement.tenant.application.TenantEntitlementApplicationService;
@@ -34,7 +35,8 @@ class BuyerUserLimitTests {
           departmentMapper,
           tenantEntitlementApplicationService,
           auditLogApplicationService,
-          passwordEncoder);
+          passwordEncoder,
+          new BuyerUserStatusTransition());
 
   @AfterEach
   void clearTenantContext() {

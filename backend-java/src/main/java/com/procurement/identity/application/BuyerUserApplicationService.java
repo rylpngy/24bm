@@ -8,6 +8,7 @@ import com.procurement.identity.api.ChangeBuyerUserStatusRequest;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.api.ResetBuyerUserPasswordRequest;
 import com.procurement.identity.domain.BuyerUser;
+import com.procurement.identity.domain.BuyerUserStatusTransition;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import com.procurement.tenant.application.TenantEntitlementApplicationService;
@@ -19,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BuyerUserApplicationService {
-  private static final String ACTIVE_STATUS = "active";
-  private static final String INACTIVE_STATUS = "inactive";
   private static final String BUYER_USER_CREATED_ACTION = "buyer_user.created";
   private static final String BUYER_USER_ROLE_CHANGED_ACTION = "buyer_user.role_changed";
   private static final String BUYER_USER_STATUS_CHANGED_ACTION = "buyer_user.status_changed";
@@ -32,18 +31,21 @@ public class BuyerUserApplicationService {
   private final TenantEntitlementApplicationService tenantEntitlementApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final PasswordEncoder passwordEncoder;
+  private final BuyerUserStatusTransition buyerUserStatusTransition;
 
   public BuyerUserApplicationService(
       BuyerUserMapper buyerUserMapper,
       DepartmentMapper departmentMapper,
       TenantEntitlementApplicationService tenantEntitlementApplicationService,
       AuditLogApplicationService auditLogApplicationService,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder,
+      BuyerUserStatusTransition buyerUserStatusTransition) {
     this.buyerUserMapper = buyerUserMapper;
     this.departmentMapper = departmentMapper;
     this.tenantEntitlementApplicationService = tenantEntitlementApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.passwordEncoder = passwordEncoder;
+    this.buyerUserStatusTransition = buyerUserStatusTransition;
   }
 
   public List<BuyerUserResponse> listCurrentTenantUsers() {
@@ -106,7 +108,7 @@ public class BuyerUserApplicationService {
   public BuyerUserResponse changeUserStatus(String userId, ChangeBuyerUserStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
     requireBuyerUser(tenantId, userId);
-    requireSupportedStatus(request.status());
+    buyerUserStatusTransition.requireSupportedTarget(request.status());
     buyerUserMapper.updateStatus(tenantId, userId, request.status());
     auditLogApplicationService.recordTenantAction(BUYER_USER_STATUS_CHANGED_ACTION, BUYER_USER_TARGET_TYPE, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
@@ -127,12 +129,6 @@ public class BuyerUserApplicationService {
   private void requireBuyerUser(String tenantId, String userId) {
     if (!buyerUserMapper.existsByTenantAndId(tenantId, userId)) {
       throw new IllegalArgumentException("Buyer user not found in tenant scope: " + userId);
-    }
-  }
-
-  private void requireSupportedStatus(String status) {
-    if (!ACTIVE_STATUS.equals(status) && !INACTIVE_STATUS.equals(status)) {
-      throw new IllegalArgumentException("Unsupported buyer user status: " + status);
     }
   }
 

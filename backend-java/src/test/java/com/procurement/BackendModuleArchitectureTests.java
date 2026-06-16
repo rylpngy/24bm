@@ -114,6 +114,31 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void buyerUserApplicationServiceDelegatesStatusTransitions() throws IOException {
+    Path status = SOURCE_ROOT.resolve("identity/domain/BuyerUserStatus.java");
+    Path transition = SOURCE_ROOT.resolve("identity/domain/BuyerUserStatusTransition.java");
+    Path userService = SOURCE_ROOT.resolve("identity/application/BuyerUserApplicationService.java");
+
+    assertThat(status).exists();
+    assertThat(transition).exists();
+
+    assertThat(Files.readString(status))
+        .contains("ACTIVE = \"active\"")
+        .contains("INACTIVE = \"inactive\"");
+    assertThat(Files.readString(transition))
+        .contains("void requireSupportedTarget")
+        .contains("BuyerUserStatus.ACTIVE")
+        .contains("BuyerUserStatus.INACTIVE")
+        .contains("Unsupported buyer user status");
+    assertThat(Files.readString(userService))
+        .contains("BuyerUserStatusTransition")
+        .contains("buyerUserStatusTransition.requireSupportedTarget")
+        .doesNotContain("private static final String ACTIVE_STATUS")
+        .doesNotContain("private static final String INACTIVE_STATUS")
+        .doesNotContain("Unsupported buyer user status");
+  }
+
+  @Test
   void rfqOrderAndInvoiceApplicationServicesUseDomainStatusConstants() throws IOException {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/RfqApplicationService.java"),
