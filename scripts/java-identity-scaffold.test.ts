@@ -63,6 +63,7 @@ describe('Java identity and JWT scaffold', () => {
     const response = read('backend-java/src/main/java/com/procurement/identity/api/BuyerUserResponse.java');
     const entitlementService = read('backend-java/src/main/java/com/procurement/tenant/application/TenantEntitlementApplicationService.java');
     const entitlementMapper = read('backend-java/src/main/java/com/procurement/tenant/infrastructure/TenantEntitlementMapper.java');
+    const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const migration = read('backend-java/src/main/resources/db/migration/V1__initial_schema.sql');
     const apiContract = read('data/apiContract.ts');
     const readme = read('backend-java/README.md');
@@ -80,12 +81,14 @@ describe('Java identity and JWT scaffold', () => {
     expect(service).toContain('BuyerUserAuditAction.PASSWORD_RESET');
     expect(service).toContain('changeUserStatus');
     expect(service).toContain('BuyerUserAuditAction.STATUS_CHANGED');
+    expect(service).toContain('AuditTargetType.BUYER_USER');
     expect(service).toContain('BuyerUserStatusTransition');
     expect(service).toContain('buyerUserStatusTransition.requireSupportedTarget');
     expect(auditAction).toContain('CREATED = "buyer_user.created"');
     expect(auditAction).toContain('ROLE_CHANGED = "buyer_user.role_changed"');
     expect(auditAction).toContain('STATUS_CHANGED = "buyer_user.status_changed"');
     expect(auditAction).toContain('PASSWORD_RESET = "buyer_user.password_reset"');
+    expect(auditTargetType).toContain('BUYER_USER = "buyer_user"');
     expect(statusTransition).toContain('Unsupported buyer user status');
     expect(statusTransition).toContain('BuyerUserStatus.ACTIVE');
     expect(statusTransition).toContain('BuyerUserStatus.INACTIVE');

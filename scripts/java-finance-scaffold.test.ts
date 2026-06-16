@@ -50,6 +50,7 @@ describe('Java finance invoice and payment scaffold', () => {
     const invoiceService = read('backend-java/src/main/java/com/procurement/finance/application/InvoiceApplicationService.java');
     const paymentService = read('backend-java/src/main/java/com/procurement/finance/application/PaymentApplicationService.java');
     const invoiceAuditAction = read('backend-java/src/main/java/com/procurement/finance/domain/InvoiceAuditAction.java');
+    const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const auditService = read('backend-java/src/main/java/com/procurement/audit/application/AuditLogApplicationService.java');
 
     expect(invoiceService).toContain('TenantAccessGuard.requireSupplierId');
@@ -65,6 +66,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('InvoiceAuditAction.CREATED');
     expect(invoiceService).toContain('InvoiceAuditAction.PAID');
     expect(invoiceService).toContain('InvoiceAuditAction.PARTIAL_PAID');
+    expect(invoiceService).toContain('AuditTargetType.INVOICE');
     expect(paymentService).toContain('TenantAccessGuard.requireTenantId');
     expect(paymentService).toContain('BuyerSupplierRelationMapper');
     expect(paymentService).toContain('PurchaseOrderMapper');
@@ -76,6 +78,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('listCurrentTenantPaymentAuditLogs');
     expect(paymentService).toContain('InvoiceAuditAction.PAID');
     expect(paymentService).toContain('InvoiceAuditAction.PARTIAL_PAID');
+    expect(paymentService).toContain('AuditTargetType.INVOICE');
     expect(paymentService).toContain('listByTenantFiltered');
     expect(paymentService).toContain('updatePaymentStatus');
     expect(paymentService).toContain('InvoicePaymentStatusTransition');
@@ -88,6 +91,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceAuditAction).toContain('CREATED = "invoice.created"');
     expect(invoiceAuditAction).toContain('PAID = "invoice.paid"');
     expect(invoiceAuditAction).toContain('PARTIAL_PAID = "invoice.partial_paid"');
+    expect(auditTargetType).toContain('INVOICE = "invoice"');
     expect(auditService).toContain('listCurrentTenantTargetActions');
   });
 

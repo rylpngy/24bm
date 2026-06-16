@@ -1,6 +1,7 @@
 package com.procurement.order.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.order.api.CreateDeliveryRequest;
 import com.procurement.order.api.DeliveryResponse;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DeliveryApplicationService {
-  private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_SHIPPED_NOTIFICATION_TITLE = "采购订单已发货";
   private static final String ORDER_FEATURE = "order";
 
@@ -90,7 +90,7 @@ public class DeliveryApplicationService {
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
         PurchaseOrderAuditAction.SHIPPED,
-        PURCHASE_ORDER_TARGET_TYPE,
+        AuditTargetType.PURCHASE_ORDER,
         order.id());
     notificationApplicationService.notifyActiveTenantUsers(
         order.tenantId(),

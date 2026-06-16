@@ -220,6 +220,7 @@ Authorization: Bearer <accessToken>
 物料/服务目录创建和维护审计动作统一由 `MaterialAuditAction` 定义，避免目录应用服务散落审计 action 字符串。
 供应商关系创建、准入审批、资料维护、绩效维护和手工状态变更审计动作统一由 `BuyerSupplierAuditAction` 定义，避免供应商关系应用服务散落审计 action 字符串。
 供应商企业档案维护审计动作统一由 `SupplierProfileAuditAction` 定义，避免供应商档案应用服务散落审计 action 字符串。
+审计目标类型统一由 `AuditTargetType` 定义，覆盖租户、企业、用户、部门、物料、供应商关系、供应商档案、供应商子账号、采购订单、发票和平台公告，避免应用服务散落 target type 字符串。
 
 ## 平台公告 Java API
 

@@ -149,6 +149,7 @@ describe('Java backend scaffold', () => {
     const departmentService = read('backend-java/src/main/java/com/procurement/organization/application/DepartmentApplicationService.java');
     const departmentStatus = read('backend-java/src/main/java/com/procurement/organization/domain/DepartmentStatus.java');
     const departmentAuditAction = read('backend-java/src/main/java/com/procurement/organization/domain/DepartmentAuditAction.java');
+    const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
 
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/api/DepartmentController.java'))).toBe(true);
     expect(existsSync(join(root, 'backend-java/src/main/java/com/procurement/organization/application/DepartmentApplicationService.java'))).toBe(true);
@@ -173,10 +174,12 @@ describe('Java backend scaffold', () => {
     expect(departmentService).toContain('DepartmentStatus.INACTIVE');
     expect(departmentService).toContain('DepartmentAuditAction.CREATED');
     expect(departmentService).toContain('DepartmentAuditAction.DISABLED');
+    expect(departmentService).toContain('AuditTargetType.DEPARTMENT');
     expect(departmentStatus).toContain('ACTIVE = "active"');
     expect(departmentStatus).toContain('INACTIVE = "inactive"');
     expect(departmentAuditAction).toContain('CREATED = "department.created"');
     expect(departmentAuditAction).toContain('DISABLED = "department.disabled"');
+    expect(auditTargetType).toContain('DEPARTMENT = "department"');
   });
 
   it('documents the notification API handoff', () => {
@@ -251,6 +254,7 @@ describe('Java backend scaffold', () => {
     const materialService = read('backend-java/src/main/java/com/procurement/catalog/application/MaterialApplicationService.java');
     const materialAuditAction = read('backend-java/src/main/java/com/procurement/catalog/domain/MaterialAuditAction.java');
     const approvalBusinessType = read('backend-java/src/main/java/com/procurement/approval/domain/ApprovalBusinessType.java');
+    const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const service = read('backend-java/src/main/java/com/procurement/supplier/application/BuyerSupplierApplicationService.java');
     const buyerSupplierAuditAction = read('backend-java/src/main/java/com/procurement/supplier/domain/BuyerSupplierAuditAction.java');
     const supplierProfileService = read('backend-java/src/main/java/com/procurement/supplier/application/SupplierProfileApplicationService.java');
@@ -271,6 +275,7 @@ describe('Java backend scaffold', () => {
     expect(readme).toContain('optional `category` and `keyword` filters');
     expect(materialService).toContain('MaterialAuditAction.CREATED');
     expect(materialService).toContain('MaterialAuditAction.UPDATED');
+    expect(materialService).toContain('AuditTargetType.MATERIAL');
     expect(materialAuditAction).toContain('CREATED = "material.created"');
     expect(materialAuditAction).toContain('UPDATED = "material.updated"');
     expect(readme).toContain('POST /api/v1/buyer/suppliers/{relationId}/status');
@@ -289,7 +294,10 @@ describe('Java backend scaffold', () => {
     expect(service).toContain('BuyerSupplierAuditAction.ADMISSION_APPROVED');
     expect(service).toContain('BuyerSupplierAuditAction.ADMISSION_REJECTED');
     expect(service).toContain('ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION');
+    expect(service).toContain('AuditTargetType.BUYER_SUPPLIER_RELATION');
     expect(approvalBusinessType).toContain('BUYER_SUPPLIER_ADMISSION = "buyer_supplier_admission"');
+    expect(auditTargetType).toContain('MATERIAL = "material"');
+    expect(auditTargetType).toContain('BUYER_SUPPLIER_RELATION = "buyer_supplier_relation"');
     expect(buyerSupplierAuditAction).toContain('RELATION_CREATED = "buyer_supplier_relation.created"');
     expect(buyerSupplierAuditAction).toContain('RELATION_PROFILE_UPDATED = "buyer_supplier_relation.profile_updated"');
     expect(buyerSupplierAuditAction).toContain('RELATION_PERFORMANCE_UPDATED = "buyer_supplier_relation.performance_updated"');
@@ -298,7 +306,9 @@ describe('Java backend scaffold', () => {
     expect(buyerSupplierAuditAction).toContain('ADMISSION_APPROVED = "buyer_supplier_admission.approved"');
     expect(buyerSupplierAuditAction).toContain('ADMISSION_REJECTED = "buyer_supplier_admission.rejected"');
     expect(supplierProfileService).toContain('SupplierProfileAuditAction.UPDATED');
+    expect(supplierProfileService).toContain('AuditTargetType.SUPPLIER_PROFILE');
     expect(supplierProfileAuditAction).toContain('UPDATED = "supplier_profile.updated"');
+    expect(auditTargetType).toContain('SUPPLIER_PROFILE = "supplier_profile"');
     expect(service).toContain('changeRelationProfile');
     expect(service).toContain('BuyerSupplierManualStatusTransition');
     expect(service).toContain('buyerSupplierManualStatusTransition.requireTransition');
@@ -334,6 +344,7 @@ describe('Java backend scaffold', () => {
     const tenantService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformTenantApplicationService.java');
     const tenantStatus = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantStatus.java');
     const tenantAuditAction = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformTenantAuditAction.java');
+    const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const enterpriseService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformEnterpriseApplicationService.java');
     const enterpriseAuditAction = read('backend-java/src/main/java/com/procurement/platform/domain/PlatformEnterpriseAuditAction.java');
     const announcementService = read('backend-java/src/main/java/com/procurement/platform/application/PlatformAnnouncementApplicationService.java');
@@ -364,6 +375,7 @@ describe('Java backend scaffold', () => {
     expect(tenantService).toContain('PlatformTenantAuditAction.PLAN_UPDATED');
     expect(tenantService).toContain('PlatformTenantAuditAction.ENABLED');
     expect(tenantService).toContain('PlatformTenantAuditAction.DISABLED');
+    expect(tenantService).toContain('AuditTargetType.TENANT');
     expect(tenantStatus).toContain('ACTIVE = "active"');
     expect(tenantStatus).toContain('INACTIVE = "inactive"');
     expect(tenantAuditAction).toContain('CREATED = "tenant.created"');
@@ -372,9 +384,14 @@ describe('Java backend scaffold', () => {
     expect(tenantAuditAction).toContain('ENABLED = "tenant.enabled"');
     expect(tenantAuditAction).toContain('DISABLED = "tenant.disabled"');
     expect(enterpriseService).toContain('PlatformEnterpriseAuditAction.REVIEWED');
+    expect(enterpriseService).toContain('AuditTargetType.ENTERPRISE');
     expect(enterpriseAuditAction).toContain('REVIEWED = "enterprise.reviewed"');
     expect(announcementService).toContain('PlatformAnnouncementAuditAction.PUBLISHED');
+    expect(announcementService).toContain('AuditTargetType.PLATFORM_ANNOUNCEMENT');
     expect(announcementAuditAction).toContain('PUBLISHED = "platform_announcement.published"');
+    expect(auditTargetType).toContain('TENANT = "tenant"');
+    expect(auditTargetType).toContain('ENTERPRISE = "enterprise"');
+    expect(auditTargetType).toContain('PLATFORM_ANNOUNCEMENT = "platform_announcement"');
     expect(auditTests).toContain('tenantFeatureToggleUpdateRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantPlanUpdateRecordsAuditLogInTargetTenant');
     expect(auditTests).toContain('tenantEnableRecordsAuditLogInTargetTenant');

@@ -1,6 +1,7 @@
 package com.procurement.supplier.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.supplier.api.ChangeSupplierUserStatusRequest;
 import com.procurement.supplier.api.CreateSupplierUserRequest;
@@ -18,8 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SupplierUserApplicationService {
-  private static final String SUPPLIER_USER_TARGET_TYPE = "supplier_user";
-
   private final SupplierUserMapper supplierUserMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final PasswordEncoder passwordEncoder;
@@ -72,7 +71,7 @@ public class SupplierUserApplicationService {
     auditLogApplicationService.recordTenantAction(
         null,
         SupplierUserAuditAction.CREATED,
-        SUPPLIER_USER_TARGET_TYPE,
+        AuditTargetType.SUPPLIER_USER,
         userId);
     return toResponse(supplierUserMapper.findBySupplierAndId(supplierId, userId));
   }
@@ -88,7 +87,7 @@ public class SupplierUserApplicationService {
     auditLogApplicationService.recordTenantAction(
         null,
         SupplierUserAuditAction.PASSWORD_RESET,
-        SUPPLIER_USER_TARGET_TYPE,
+        AuditTargetType.SUPPLIER_USER,
         userId);
     return toResponse(supplierUserMapper.findBySupplierAndId(supplierId, userId));
   }
@@ -102,7 +101,7 @@ public class SupplierUserApplicationService {
     auditLogApplicationService.recordTenantAction(
         null,
         SupplierUserAuditAction.STATUS_CHANGED,
-        SUPPLIER_USER_TARGET_TYPE,
+        AuditTargetType.SUPPLIER_USER,
         userId);
     return toResponse(supplierUserMapper.findBySupplierAndId(supplierId, userId));
   }

@@ -2,6 +2,7 @@ package com.procurement.finance.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.api.AuditLogResponse;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
@@ -22,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PaymentApplicationService {
-  private static final String INVOICE_TARGET_TYPE = "invoice";
   private static final String FINANCE_FEATURE = "finance";
   private static final String INVOICE_PAID_NOTIFICATION_TITLE = "发票已付款";
   private static final String INVOICE_PARTIAL_PAID_NOTIFICATION_TITLE = "发票部分付款";
@@ -73,7 +73,7 @@ public class PaymentApplicationService {
 
   public List<AuditLogResponse> listCurrentTenantPaymentAuditLogs(String invoiceId) {
     return auditLogApplicationService.listCurrentTenantTargetActions(
-        INVOICE_TARGET_TYPE,
+        AuditTargetType.INVOICE,
         invoiceId,
         List.of(InvoiceAuditAction.PAID, InvoiceAuditAction.PARTIAL_PAID),
         50);
@@ -109,7 +109,7 @@ public class PaymentApplicationService {
         InvoicePaymentStatus.PAID.equals(request.paymentStatus())
             ? InvoiceAuditAction.PAID
             : InvoiceAuditAction.PARTIAL_PAID,
-        INVOICE_TARGET_TYPE,
+        AuditTargetType.INVOICE,
         invoiceId);
     notificationApplicationService.notifyActiveSupplierUsers(
         tenantId,

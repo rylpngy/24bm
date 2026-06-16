@@ -177,6 +177,50 @@ class BackendModuleArchitectureTests {
   }
 
   @Test
+  void applicationServicesUseDomainAuditTargetTypes() throws IOException {
+    Path targetType = SOURCE_ROOT.resolve("audit/domain/AuditTargetType.java");
+
+    assertThat(targetType).exists();
+    assertThat(Files.readString(targetType))
+        .contains("BUYER_USER = \"buyer_user\"")
+        .contains("BUYER_SUPPLIER_RELATION = \"buyer_supplier_relation\"")
+        .contains("DEPARTMENT = \"department\"")
+        .contains("ENTERPRISE = \"enterprise\"")
+        .contains("INVOICE = \"invoice\"")
+        .contains("MATERIAL = \"material\"")
+        .contains("PLATFORM_ANNOUNCEMENT = \"platform_announcement\"")
+        .contains("PURCHASE_ORDER = \"purchase_order\"")
+        .contains("SUPPLIER_PROFILE = \"supplier_profile\"")
+        .contains("SUPPLIER_USER = \"supplier_user\"")
+        .contains("TENANT = \"tenant\"");
+
+    Map.ofEntries(
+            Map.entry("identity/application/BuyerUserApplicationService.java", "AuditTargetType.BUYER_USER"),
+            Map.entry("organization/application/DepartmentApplicationService.java", "AuditTargetType.DEPARTMENT"),
+            Map.entry("catalog/application/MaterialApplicationService.java", "AuditTargetType.MATERIAL"),
+            Map.entry("supplier/application/BuyerSupplierApplicationService.java", "AuditTargetType.BUYER_SUPPLIER_RELATION"),
+            Map.entry("supplier/application/SupplierProfileApplicationService.java", "AuditTargetType.SUPPLIER_PROFILE"),
+            Map.entry("supplier/application/SupplierUserApplicationService.java", "AuditTargetType.SUPPLIER_USER"),
+            Map.entry("platform/application/PlatformTenantApplicationService.java", "AuditTargetType.TENANT"),
+            Map.entry("platform/application/PlatformEnterpriseApplicationService.java", "AuditTargetType.ENTERPRISE"),
+            Map.entry("platform/application/PlatformAnnouncementApplicationService.java", "AuditTargetType.PLATFORM_ANNOUNCEMENT"),
+            Map.entry("order/application/PurchaseOrderApplicationService.java", "AuditTargetType.PURCHASE_ORDER"),
+            Map.entry("order/application/DeliveryApplicationService.java", "AuditTargetType.PURCHASE_ORDER"),
+            Map.entry("order/application/ReceiptApplicationService.java", "AuditTargetType.PURCHASE_ORDER"),
+            Map.entry("finance/application/InvoiceApplicationService.java", "AuditTargetType.INVOICE"),
+            Map.entry("finance/application/PaymentApplicationService.java", "AuditTargetType.INVOICE"))
+        .forEach((sourcePath, expectedTargetType) -> {
+          try {
+            assertThat(Files.readString(SOURCE_ROOT.resolve(sourcePath)))
+                .contains(expectedTargetType)
+                .doesNotContain("TARGET_TYPE");
+          } catch (IOException exception) {
+            throw new IllegalStateException(exception);
+          }
+        });
+  }
+
+  @Test
   void workspaceTodoAssemblersUseDomainStatusConstants() throws IOException {
     Path rfqStatus = SOURCE_ROOT.resolve("sourcing/domain/RfqStatus.java");
     Path purchaseOrderStatus = SOURCE_ROOT.resolve("order/domain/PurchaseOrderStatus.java");

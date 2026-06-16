@@ -1,6 +1,7 @@
 package com.procurement.organization.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.organization.api.CreateDepartmentRequest;
@@ -16,8 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DepartmentApplicationService {
-  private static final String DEPARTMENT_TARGET_TYPE = "department";
-
   private final DepartmentMapper departmentMapper;
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -51,7 +50,7 @@ public class DepartmentApplicationService {
         DepartmentStatus.ACTIVE);
     auditLogApplicationService.recordTenantAction(
         DepartmentAuditAction.CREATED,
-        DEPARTMENT_TARGET_TYPE,
+        AuditTargetType.DEPARTMENT,
         departmentId);
     return toResponse(departmentMapper.findByTenantAndId(tenantId, departmentId));
   }
@@ -76,7 +75,7 @@ public class DepartmentApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         DepartmentAuditAction.DISABLED,
-        DEPARTMENT_TARGET_TYPE,
+        AuditTargetType.DEPARTMENT,
         departmentId);
     return toResponse(departmentMapper.findByTenantAndId(tenantId, departmentId));
   }

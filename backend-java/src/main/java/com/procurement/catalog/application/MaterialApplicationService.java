@@ -6,6 +6,7 @@ import com.procurement.catalog.domain.Material;
 import com.procurement.catalog.domain.MaterialAuditAction;
 import com.procurement.catalog.infrastructure.MaterialMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import java.util.List;
 import java.util.UUID;
@@ -14,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MaterialApplicationService {
-  private static final String MATERIAL_TARGET_TYPE = "material";
-
   private final MaterialMapper materialMapper;
   private final AuditLogApplicationService auditLogApplicationService;
 
@@ -49,7 +48,7 @@ public class MaterialApplicationService {
         request.category(),
         request.unit(),
         request.referencePrice());
-    auditLogApplicationService.recordTenantAction(MaterialAuditAction.CREATED, MATERIAL_TARGET_TYPE, materialId);
+    auditLogApplicationService.recordTenantAction(MaterialAuditAction.CREATED, AuditTargetType.MATERIAL, materialId);
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
   }
 
@@ -65,7 +64,7 @@ public class MaterialApplicationService {
         request.category(),
         request.unit(),
         request.referencePrice());
-    auditLogApplicationService.recordTenantAction(MaterialAuditAction.UPDATED, MATERIAL_TARGET_TYPE, materialId);
+    auditLogApplicationService.recordTenantAction(MaterialAuditAction.UPDATED, AuditTargetType.MATERIAL, materialId);
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
   }
 

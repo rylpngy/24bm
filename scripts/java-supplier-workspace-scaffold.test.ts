@@ -48,6 +48,7 @@ describe('Java supplier workspace scaffold', () => {
     const supplierUserStatus = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierUserStatus.java');
     const supplierUserStatusTransition = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierUserStatusTransition.java');
     const supplierUserAuditAction = read('backend-java/src/main/java/com/procurement/supplier/domain/SupplierUserAuditAction.java');
+    const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const quoteService = read('backend-java/src/main/java/com/procurement/sourcing/application/QuoteApplicationService.java');
     const orderService = read('backend-java/src/main/java/com/procurement/order/application/PurchaseOrderApplicationService.java');
     const invoiceService = read('backend-java/src/main/java/com/procurement/finance/application/InvoiceApplicationService.java');
@@ -69,9 +70,12 @@ describe('Java supplier workspace scaffold', () => {
     expect(userService).toContain('SupplierUserAuditAction.CREATED');
     expect(userService).toContain('SupplierUserAuditAction.PASSWORD_RESET');
     expect(userService).toContain('SupplierUserAuditAction.STATUS_CHANGED');
+    expect(userService).toContain('AuditTargetType.SUPPLIER_USER');
     expect(supplierUserAuditAction).toContain('CREATED = "supplier_user.created"');
     expect(supplierUserAuditAction).toContain('PASSWORD_RESET = "supplier_user.password_reset"');
     expect(supplierUserAuditAction).toContain('STATUS_CHANGED = "supplier_user.status_changed"');
+    expect(auditTargetType).toContain('SUPPLIER_USER = "supplier_user"');
+    expect(auditTargetType).toContain('SUPPLIER_PROFILE = "supplier_profile"');
     expect(userService).toContain('updatePasswordHash');
     expect(userService).toContain('updateStatus');
     expect(userService).toContain('listBySupplierFiltered');

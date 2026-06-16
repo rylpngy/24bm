@@ -9,6 +9,7 @@ import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -32,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BuyerSupplierApplicationService {
-  private static final String BUYER_SUPPLIER_RELATION_TARGET_TYPE = "buyer_supplier_relation";
   private static final String SUPPLIER_ADMISSION_APPROVED_NOTIFICATION_TITLE = "供应商准入审批已通过";
   private static final String SUPPLIER_ADMISSION_REJECTED_NOTIFICATION_TITLE = "供应商准入审批已驳回";
 
@@ -98,7 +98,7 @@ public class BuyerSupplierApplicationService {
         writeCategories(request.categories()));
     auditLogApplicationService.recordTenantAction(
         BuyerSupplierAuditAction.RELATION_CREATED,
-        BUYER_SUPPLIER_RELATION_TARGET_TYPE,
+        AuditTargetType.BUYER_SUPPLIER_RELATION,
         relationId);
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
   }
@@ -125,7 +125,7 @@ public class BuyerSupplierApplicationService {
         null);
     auditLogApplicationService.recordTenantAction(
         BuyerSupplierAuditAction.ADMISSION_SUBMITTED,
-        BUYER_SUPPLIER_RELATION_TARGET_TYPE,
+        AuditTargetType.BUYER_SUPPLIER_RELATION,
         relationId);
 
     return toApprovalTaskResponse(approvalTask);
@@ -170,7 +170,7 @@ public class BuyerSupplierApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         approved ? BuyerSupplierAuditAction.ADMISSION_APPROVED : BuyerSupplierAuditAction.ADMISSION_REJECTED,
-        BUYER_SUPPLIER_RELATION_TARGET_TYPE,
+        AuditTargetType.BUYER_SUPPLIER_RELATION,
         relationId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
@@ -199,7 +199,7 @@ public class BuyerSupplierApplicationService {
     }
     auditLogApplicationService.recordTenantAction(
         BuyerSupplierAuditAction.RELATION_STATUS_CHANGED,
-        BUYER_SUPPLIER_RELATION_TARGET_TYPE,
+        AuditTargetType.BUYER_SUPPLIER_RELATION,
         relationId);
 
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
@@ -216,7 +216,7 @@ public class BuyerSupplierApplicationService {
         writeCategories(request.categories()));
     auditLogApplicationService.recordTenantAction(
         BuyerSupplierAuditAction.RELATION_PROFILE_UPDATED,
-        BUYER_SUPPLIER_RELATION_TARGET_TYPE,
+        AuditTargetType.BUYER_SUPPLIER_RELATION,
         relationId);
 
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
@@ -235,7 +235,7 @@ public class BuyerSupplierApplicationService {
         request.performanceScore());
     auditLogApplicationService.recordTenantAction(
         BuyerSupplierAuditAction.RELATION_PERFORMANCE_UPDATED,
-        BUYER_SUPPLIER_RELATION_TARGET_TYPE,
+        AuditTargetType.BUYER_SUPPLIER_RELATION,
         relationId);
 
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));

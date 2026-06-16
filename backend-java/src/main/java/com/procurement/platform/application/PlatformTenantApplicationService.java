@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.platform.api.CreateTenantRequest;
 import com.procurement.platform.api.FeatureToggleRequest;
 import com.procurement.platform.api.TenantResponse;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PlatformTenantApplicationService {
   private static final String BUYER_OWNER_ROLE_NAME = "采购管理员";
   private static final String BUYER_OWNER_PERMISSIONS = "[\"buyer:*\"]";
-  private static final String TENANT_TARGET_TYPE = "tenant";
 
   private final PlatformTenantMapper platformTenantMapper;
   private final ObjectMapper objectMapper;
@@ -88,7 +88,7 @@ public class PlatformTenantApplicationService {
     auditLogApplicationService.recordTenantAction(
         request.tenantId(),
         PlatformTenantAuditAction.CREATED,
-        TENANT_TARGET_TYPE,
+        AuditTargetType.TENANT,
         request.tenantId());
     return toResponse(platformTenantMapper.findById(request.tenantId()));
   }
@@ -102,7 +102,7 @@ public class PlatformTenantApplicationService {
     auditLogApplicationService.recordTenantAction(
         tenantId,
         PlatformTenantAuditAction.FEATURES_UPDATED,
-        TENANT_TARGET_TYPE,
+        AuditTargetType.TENANT,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));
   }
@@ -116,7 +116,7 @@ public class PlatformTenantApplicationService {
     auditLogApplicationService.recordTenantAction(
         tenantId,
         PlatformTenantAuditAction.PLAN_UPDATED,
-        TENANT_TARGET_TYPE,
+        AuditTargetType.TENANT,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));
   }
@@ -130,7 +130,7 @@ public class PlatformTenantApplicationService {
     auditLogApplicationService.recordTenantAction(
         tenantId,
         PlatformTenantAuditAction.ENABLED,
-        TENANT_TARGET_TYPE,
+        AuditTargetType.TENANT,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));
   }
@@ -144,7 +144,7 @@ public class PlatformTenantApplicationService {
     auditLogApplicationService.recordTenantAction(
         tenantId,
         PlatformTenantAuditAction.DISABLED,
-        TENANT_TARGET_TYPE,
+        AuditTargetType.TENANT,
         tenantId);
     return toResponse(platformTenantMapper.findById(tenantId));
   }

@@ -3,6 +3,7 @@ package com.procurement.order.application;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.domain.PurchaseOrder;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseOrderApplicationService {
-  private static final String PURCHASE_ORDER_TARGET_TYPE = "purchase_order";
   private static final String PURCHASE_ORDER_CONFIRMED_NOTIFICATION_TITLE = "采购订单已确认";
   private static final String ORDER_FEATURE = "order";
 
@@ -105,7 +105,7 @@ public class PurchaseOrderApplicationService {
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
         PurchaseOrderAuditAction.CONFIRMED,
-        PURCHASE_ORDER_TARGET_TYPE,
+        AuditTargetType.PURCHASE_ORDER,
         order.id());
     notificationApplicationService.notifyActiveTenantUsers(
         order.tenantId(),
@@ -140,7 +140,7 @@ public class PurchaseOrderApplicationService {
         request.expectedReceiptDate());
     auditLogApplicationService.recordTenantAction(
         PurchaseOrderAuditAction.CREATED,
-        PURCHASE_ORDER_TARGET_TYPE,
+        AuditTargetType.PURCHASE_ORDER,
         orderId);
 
     return toResponse(purchaseOrderMapper.findByTenantAndId(tenantId, orderId));

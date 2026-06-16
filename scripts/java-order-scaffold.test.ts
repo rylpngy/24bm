@@ -48,6 +48,7 @@ describe('Java purchase order scaffold', () => {
 
   it('keeps order creation tenant scoped and idempotent', () => {
     const service = read('backend-java/src/main/java/com/procurement/order/application/PurchaseOrderApplicationService.java');
+    const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
     const auditAction = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderAuditAction.java');
 
     expect(service).toContain('TenantAccessGuard.requireTenantId');
@@ -60,12 +61,14 @@ describe('Java purchase order scaffold', () => {
     expect(service).toContain('PurchaseOrderStatusTransition');
     expect(service).toContain('PurchaseOrderAuditAction.CREATED');
     expect(service).toContain('PurchaseOrderAuditAction.CONFIRMED');
+    expect(service).toContain('AuditTargetType.PURCHASE_ORDER');
     expect(service).toContain('requireSupplierConfirmation');
     expect(service).toContain('findApprovedForOrder');
     expect(service).toContain('findByAwardSource');
     expect(service).toContain('return toResponse(existingOrder)');
     expect(auditAction).toContain('CREATED = "purchase_order.created"');
     expect(auditAction).toContain('CONFIRMED = "purchase_order.confirmed"');
+    expect(auditTargetType).toContain('PURCHASE_ORDER = "purchase_order"');
   });
 
   it('documents the purchase order Java API handoff', () => {

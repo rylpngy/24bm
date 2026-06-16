@@ -1,6 +1,7 @@
 package com.procurement.platform.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.platform.api.EnterpriseReviewRequest;
 import com.procurement.platform.api.EnterpriseReviewResponse;
 import com.procurement.platform.domain.EnterpriseReview;
@@ -12,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlatformEnterpriseApplicationService {
-  private static final String ENTERPRISE_TARGET_TYPE = "enterprise";
-
   private final PlatformEnterpriseMapper platformEnterpriseMapper;
   private final AuditLogApplicationService auditLogApplicationService;
 
@@ -40,7 +39,7 @@ public class PlatformEnterpriseApplicationService {
     auditLogApplicationService.recordTenantAction(
         null,
         PlatformEnterpriseAuditAction.REVIEWED,
-        ENTERPRISE_TARGET_TYPE,
+        AuditTargetType.ENTERPRISE,
         enterpriseId);
     return toResponse(platformEnterpriseMapper.findById(enterpriseId));
   }

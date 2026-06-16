@@ -1,6 +1,7 @@
 package com.procurement.supplier.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.supplier.api.SupplierProfileResponse;
 import com.procurement.supplier.api.UpdateSupplierProfileRequest;
@@ -12,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SupplierProfileApplicationService {
-  private static final String SUPPLIER_PROFILE_TARGET_TYPE = "supplier_profile";
-
   private final SupplierProfileMapper supplierProfileMapper;
   private final AuditLogApplicationService auditLogApplicationService;
 
@@ -44,7 +43,7 @@ public class SupplierProfileApplicationService {
     auditLogApplicationService.recordTenantAction(
         null,
         SupplierProfileAuditAction.UPDATED,
-        SUPPLIER_PROFILE_TARGET_TYPE,
+        AuditTargetType.SUPPLIER_PROFILE,
         supplierId);
     return loadCurrentSupplierProfile(supplierId);
   }

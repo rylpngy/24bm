@@ -50,6 +50,7 @@ describe('Java supplier delivery scaffold', () => {
   it('keeps delivery creation supplier scoped and updates order status', () => {
     const service = read('backend-java/src/main/java/com/procurement/order/application/DeliveryApplicationService.java');
     const auditAction = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderAuditAction.java');
+    const auditTargetType = read('backend-java/src/main/java/com/procurement/audit/domain/AuditTargetType.java');
 
     expect(service).toContain('TenantAccessGuard.requireSupplierId');
     expect(service).toContain('listCurrentSupplierDeliveries');
@@ -58,11 +59,13 @@ describe('Java supplier delivery scaffold', () => {
     expect(service).toContain('PurchaseOrderStatus.SHIPPED');
     expect(service).toContain('PurchaseOrderStatusTransition');
     expect(service).toContain('PurchaseOrderAuditAction.SHIPPED');
+    expect(service).toContain('AuditTargetType.PURCHASE_ORDER');
     expect(service).toContain('requireShipment');
     expect(service).toContain('countByTenantAndOrder');
     expect(service).toContain('findBySupplierAndId');
     expect(service).toContain('updateStatus');
     expect(auditAction).toContain('SHIPPED = "purchase_order.shipped"');
+    expect(auditTargetType).toContain('PURCHASE_ORDER = "purchase_order"');
     const transition = read('backend-java/src/main/java/com/procurement/order/domain/PurchaseOrderStatusTransition.java');
     expect(transition).toContain('Only ready-to-ship orders can be shipped');
   });

@@ -2,6 +2,7 @@ package com.procurement.finance.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.api.AuditLogResponse;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.InvoiceResponse;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InvoiceApplicationService {
-  private static final String INVOICE_TARGET_TYPE = "invoice";
   private static final String FINANCE_FEATURE = "finance";
   private static final String INVOICE_CREATED_NOTIFICATION_TITLE = "供应商已登记发票";
 
@@ -70,7 +70,7 @@ public class InvoiceApplicationService {
     }
     return auditLogApplicationService.listTenantTargetActions(
         invoice.tenantId(),
-        INVOICE_TARGET_TYPE,
+        AuditTargetType.INVOICE,
         invoiceId,
         List.of(InvoiceAuditAction.PAID, InvoiceAuditAction.PARTIAL_PAID),
         50);
@@ -106,7 +106,7 @@ public class InvoiceApplicationService {
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
         InvoiceAuditAction.CREATED,
-        INVOICE_TARGET_TYPE,
+        AuditTargetType.INVOICE,
         invoiceId);
     notificationApplicationService.notifyActiveTenantUsers(
         order.tenantId(),

@@ -1,6 +1,7 @@
 package com.procurement.platform.application;
 
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.platform.api.CreatePlatformAnnouncementRequest;
 import com.procurement.platform.api.PlatformAnnouncementResponse;
@@ -17,8 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlatformAnnouncementApplicationService {
-  private static final String PLATFORM_ANNOUNCEMENT_TARGET_TYPE = "platform_announcement";
-
   private final PlatformAnnouncementMapper platformAnnouncementMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final PlatformAnnouncementAudiencePolicy platformAnnouncementAudiencePolicy;
@@ -69,7 +68,7 @@ public class PlatformAnnouncementApplicationService {
     auditLogApplicationService.recordTenantAction(
         null,
         PlatformAnnouncementAuditAction.PUBLISHED,
-        PLATFORM_ANNOUNCEMENT_TARGET_TYPE,
+        AuditTargetType.PLATFORM_ANNOUNCEMENT,
         announcementId);
     return toResponse(platformAnnouncementMapper.findById(announcementId));
   }
