@@ -27,6 +27,7 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { approvalResultMessage, approvalTypeLabel } from './data/approvalUi';
+import { buildBuyerModuleFacts, type BuyerModuleFact } from './data/buyerAdminUi';
 import {
   adminRoleNavigation,
   defaultAdminModulesByRole,
@@ -1084,6 +1085,7 @@ const BuyerWorkspaceView: React.FC<{
     .slice(0, 6);
   const unreadBuyerNotificationCount = buyerNotifications.filter((notification) => !notification.read).length;
   const linkedDemandIds = new Set(workspace.rfqs.flatMap((rfq) => rfq.demandIds));
+  const moduleFacts = buildBuyerModuleFacts(activeModule, workspace, sortedPendingApprovals);
 
   return (
     <>
@@ -1097,6 +1099,10 @@ const BuyerWorkspaceView: React.FC<{
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-700">
         {workflowStatus}
       </div>
+    )}
+
+    {moduleFacts.length > 0 && (
+      <ModuleSummaryStrip facts={moduleFacts} />
     )}
 
     {javaEnabled && activeModule === 'dashboard' && (
@@ -1268,6 +1274,9 @@ const BuyerWorkspaceView: React.FC<{
       </Panel>
 
       <Panel title="采购需求列表" icon={Database}>
+        {workspace.demands.length === 0 ? (
+          <EmptyState title="暂无采购需求" desc="创建需求后可提交审批，审批通过后再转为询价项目。" />
+        ) : (
         <div className="space-y-3">
           {workspace.demands.map((demand) => (
             <div key={demand.id} className="rounded-lg border border-slate-200 bg-white p-4">
@@ -1329,12 +1338,16 @@ const BuyerWorkspaceView: React.FC<{
             </div>
           ))}
         </div>
+        )}
       </Panel>
       </>
       )}
 
       {activeModule === 'rfqs' && (
         <Panel title="询价项目" icon={Send}>
+          {workspace.rfqs.length === 0 ? (
+            <EmptyState title="暂无询价项目" desc="需求审批通过后，可从采购需求页选择已准入供应商并创建询价。" />
+          ) : (
           <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="min-w-[760px] w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
@@ -1362,11 +1375,15 @@ const BuyerWorkspaceView: React.FC<{
               </tbody>
             </table>
           </div>
+          )}
         </Panel>
       )}
 
       {activeModule === 'quotes' && (
       <Panel title="询价比价与定标" icon={BarChart3}>
+        {workspace.rfqs.length === 0 ? (
+          <EmptyState title="暂无可比价项目" desc="创建询价并收到供应商报价后，可在这里推荐定标并提交审批。" />
+        ) : (
         <div className="space-y-4">
           {workspace.rfqs.map((rfq) => {
             const approvedAward = recentApprovals.find((approval) =>
@@ -1388,6 +1405,7 @@ const BuyerWorkspaceView: React.FC<{
             );
           })}
         </div>
+        )}
       </Panel>
       )}
     </div>
@@ -1395,15 +1413,19 @@ const BuyerWorkspaceView: React.FC<{
 
     {activeModule === 'materials' && (
       <Panel title="物料目录" icon={Database}>
-        <SimpleList
-          rows={workspace.materials.map((material) => ({
-            id: material.id,
-            title: material.name,
-            meta: `${material.code} · ${material.category} · ${material.unit}`,
-            value: currency(material.referencePrice),
-            status: '启用',
-          }))}
-        />
+        {workspace.materials.length === 0 ? (
+          <EmptyState title="暂无物料目录" desc="先维护物料或服务主数据，再用于采购需求明细和询价范围。" />
+        ) : (
+          <SimpleList
+            rows={workspace.materials.map((material) => ({
+              id: material.id,
+              title: material.name,
+              meta: `${material.code} · ${material.category} · ${material.unit}`,
+              value: currency(material.referencePrice),
+              status: '启用',
+            }))}
+          />
+        )}
       </Panel>
     )}
 
@@ -1411,6 +1433,9 @@ const BuyerWorkspaceView: React.FC<{
     <div className={`grid gap-6 ${activeModule === 'suppliers' ? '' : 'lg:grid-cols-2'}`}>
       {activeModule === 'suppliers' && (
       <Panel title="私域供应商关系" icon={Users}>
+        {workspace.privateSupplierRelations.length === 0 ? (
+          <EmptyState title="暂无私域供应商" desc="平台公共供应商通过准入后，会形成采购方自己的合作关系和绩效记录。" />
+        ) : (
         <div className="space-y-3">
           {workspace.privateSupplierRelations.map((relation) => {
             const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
@@ -1442,6 +1467,7 @@ const BuyerWorkspaceView: React.FC<{
             );
           })}
         </div>
+        )}
       </Panel>
       )}
 
@@ -1959,6 +1985,19 @@ const MiniFact: React.FC<{
   <div className="rounded-lg bg-slate-50 px-3 py-2">
     <p className="text-[11px] font-black text-slate-400">{label}</p>
     <p className="mt-1 truncate text-xs font-bold text-slate-700">{value}</p>
+  </div>
+);
+
+const ModuleSummaryStrip: React.FC<{
+  facts: BuyerModuleFact[];
+}> = ({ facts }) => (
+  <div className="grid gap-3 sm:grid-cols-3">
+    {facts.map((fact) => (
+      <div key={fact.label} className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+        <p className="text-xs font-black text-slate-400">{fact.label}</p>
+        <p className="mt-1 truncate font-mono text-lg font-black text-slate-950">{fact.value}</p>
+      </div>
+    ))}
   </div>
 );
 
