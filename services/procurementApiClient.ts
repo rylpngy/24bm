@@ -5,6 +5,7 @@ import {
   getTenantKpis,
   type AuditLogRecord,
   type BuyerWorkspace,
+  type DepartmentItem,
   type Delivery,
   type Enterprise,
   type InvoiceRecord,
@@ -528,6 +529,7 @@ export interface JavaProcurementApiClient {
 export interface JavaBuyerMasterData {
   suppliers: BuyerSupplierRelationDto[];
   materials: MaterialDto[];
+  departments?: DepartmentDto[];
   users: BuyerUserDto[];
   roles: BuyerRoleDto[];
   demands: PurchaseDemand[];
@@ -581,11 +583,12 @@ export interface JavaProcurementApiClientOptions {
 }
 
 const parseData = async <T>(response: Response): Promise<T> => {
-  const payload = await response.json();
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    throw new Error(payload.error?.message ?? payload.message ?? `API request failed with ${response.status}`);
+    throw new Error(payload?.error?.message ?? payload?.message ?? `API request failed with ${response.status}`);
   }
-  return payload.data as T;
+  return payload?.data as T;
 };
 
 export const createHttpApiClient = (options: HttpApiClientOptions): ProcurementApiClient => {
@@ -1105,13 +1108,15 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 };
 
 export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient): Promise<JavaBuyerMasterData> => {
-  const [workspace, roles, approvalTemplates] = await Promise.all([
+  const [workspace, departments, roles, approvalTemplates] = await Promise.all([
     client.getBuyerWorkspace(),
+    client.listBuyerDepartments(),
     client.listBuyerRoles(),
     client.listBuyerApprovalTemplates(),
   ]);
   return {
     ...workspace,
+    departments,
     roles,
     approvalTemplates,
   };
@@ -1157,9 +1162,18 @@ export const applyJavaBuyerMasterData = (
     scope: 'buyer',
   }));
 
+  const departments: DepartmentItem[] = (masterData.departments ?? []).map((department) => ({
+    id: department.id,
+    tenantId: department.tenantId,
+    name: department.name,
+    parentId: department.parentId,
+    status: department.status,
+  }));
+
   return {
     ...workspace,
     users,
+    departments,
     demands: masterData.demands,
     rfqs: masterData.rfqs,
     orders: masterData.orders,

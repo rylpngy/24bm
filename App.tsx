@@ -54,6 +54,7 @@ import {
   mockApiClient,
   resolveAppRuntimeDataSource,
   runJavaMvpWorkflow,
+  type CreateDemandPayload,
   type PlatformWorkspaceData,
   type JavaApprovalTaskDto,
   type JavaApprovalTemplateDto,
@@ -173,6 +174,8 @@ const App: React.FC = () => {
   const [workflowBusy, setWorkflowBusy] = useState(false);
   const [workflowStatus, setWorkflowStatus] = useState<string | null>(null);
   const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
+  const [demandCreateBusy, setDemandCreateBusy] = useState(false);
+  const [demandSubmitBusyId, setDemandSubmitBusyId] = useState<string | null>(null);
   const [supplierAdmissionBusyId, setSupplierAdmissionBusyId] = useState<string | null>(null);
   const [supplierActionBusyId, setSupplierActionBusyId] = useState<string | null>(null);
   const [rfqCreateBusy, setRfqCreateBusy] = useState<string | null>(null);
@@ -344,6 +347,41 @@ const App: React.FC = () => {
     }
   };
 
+  const createBuyerDemand = async (payload: CreateDemandPayload, submitForApproval: boolean) => {
+    if (!javaApiClient || !buyerData) return;
+    setDemandCreateBusy(true);
+    setWorkflowStatus(null);
+    try {
+      const demand = await javaApiClient.createBuyerDemand(payload);
+      if (submitForApproval) {
+        await javaApiClient.submitBuyerDemand(demand.id);
+      }
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(submitForApproval
+        ? `采购需求已创建并提交审批：${demand.title}`
+        : `采购需求已创建：${demand.title}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '采购需求创建失败');
+    } finally {
+      setDemandCreateBusy(false);
+    }
+  };
+
+  const submitBuyerDemandApproval = async (demandId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setDemandSubmitBusyId(demandId);
+    setWorkflowStatus(null);
+    try {
+      const approval = await javaApiClient.submitBuyerDemand(demandId);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`采购需求已提交审批：${approval.summaryTitle || approval.bizId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '采购需求提交审批失败');
+    } finally {
+      setDemandSubmitBusyId(null);
+    }
+  };
+
   const refreshAfterSupplierAction = async () => {
     if (!supplierData) return;
     const [nextSupplierData, nextBuyerData] = await Promise.all([
@@ -356,25 +394,28 @@ const App: React.FC = () => {
     }
   };
 
-  const createBuyerRfqFromDemand = async (demandId: string) => {
+  const createBuyerRfqFromDemand = async (demandId: string, supplierIds?: string[], deadline?: string) => {
     if (!javaApiClient || !buyerData) return;
     const demand = buyerData.workspace.demands.find((item) => item.id === demandId);
     const relation = buyerData.workspace.privateSupplierRelations.find((item) => item.status === '已准入');
-    if (!demand || !relation) {
+    const invitedSupplierIds = supplierIds && supplierIds.length > 0
+      ? supplierIds
+      : relation ? [relation.supplierId] : [];
+    if (!demand || invitedSupplierIds.length === 0) {
       setWorkflowStatus('创建询价需要已通过需求和已准入供应商');
       return;
     }
 
-    const deadline = new Date();
-    deadline.setDate(deadline.getDate() + 14);
+    const deadlineDate = new Date();
+    deadlineDate.setDate(deadlineDate.getDate() + 14);
     setRfqCreateBusy(demandId);
     setWorkflowStatus(null);
     try {
       const rfq = await javaApiClient.createBuyerRfq({
         title: `${demand.title} 询价`,
         demandIds: [demand.id],
-        invitedSupplierIds: [relation.supplierId],
-        deadline: deadline.toISOString(),
+        invitedSupplierIds,
+        deadline: deadline ?? deadlineDate.toISOString(),
       });
       setBuyerData(await refreshJavaBuyerData(buyerData));
       setWorkflowStatus(`询价已创建：${rfq.title}`);
@@ -574,12 +615,16 @@ const App: React.FC = () => {
                 approvalTemplates={buyerData.approvalTemplates}
                 roles={buyerData.roles}
                 approvalBusyId={approvalBusyId}
+                demandCreateBusy={demandCreateBusy}
+                demandSubmitBusyId={demandSubmitBusyId}
                 supplierAdmissionBusyId={supplierAdmissionBusyId}
                 rfqCreateBusy={rfqCreateBusy}
                 orderCreateBusy={orderCreateBusy}
                 buyerFulfillmentBusyId={buyerFulfillmentBusyId}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowStatus={workflowStatus}
+                onCreateDemand={createBuyerDemand}
+                onSubmitDemand={submitBuyerDemandApproval}
                 onReviewApproval={reviewApprovalTask}
                 onSubmitSupplierAdmission={submitSupplierAdmission}
                 onCreateRfqFromDemand={createBuyerRfqFromDemand}
@@ -945,15 +990,19 @@ const BuyerWorkspaceView: React.FC<{
   approvalTemplates: JavaApprovalTemplateDto[];
   roles: BuyerRoleDto[];
   approvalBusyId: string | null;
+  demandCreateBusy: boolean;
+  demandSubmitBusyId: string | null;
   supplierAdmissionBusyId: string | null;
   rfqCreateBusy: string | null;
   orderCreateBusy: string | null;
   buyerFulfillmentBusyId: string | null;
   javaEnabled: boolean;
   workflowStatus: string | null;
+  onCreateDemand: (payload: CreateDemandPayload, submitForApproval: boolean) => void;
+  onSubmitDemand: (demandId: string) => void;
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
   onSubmitSupplierAdmission: (relationId: string) => void;
-  onCreateRfqFromDemand: (demandId: string) => void;
+  onCreateRfqFromDemand: (demandId: string, supplierIds?: string[], deadline?: string) => void;
   onCreateOrderFromAward: (awardId: string) => void;
   onCreateReceipt: (orderId: string) => void;
   onRegisterPayment: (invoiceId: string) => void;
@@ -972,12 +1021,16 @@ const BuyerWorkspaceView: React.FC<{
   approvalTemplates,
   roles,
   approvalBusyId,
+  demandCreateBusy,
+  demandSubmitBusyId,
   supplierAdmissionBusyId,
   rfqCreateBusy,
   orderCreateBusy,
   buyerFulfillmentBusyId,
   javaEnabled,
   workflowStatus,
+  onCreateDemand,
+  onSubmitDemand,
   onReviewApproval,
   onSubmitSupplierAdmission,
   onCreateRfqFromDemand,
@@ -1000,6 +1053,7 @@ const BuyerWorkspaceView: React.FC<{
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, 6);
   const unreadBuyerNotificationCount = buyerNotifications.filter((notification) => !notification.read).length;
+  const linkedDemandIds = new Set(workspace.rfqs.flatMap((rfq) => rfq.demandIds));
 
   return (
     <>
@@ -1167,9 +1221,23 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {(activeModule === 'demands' || activeModule === 'rfqs' || activeModule === 'quotes') && (
-    <div className={`grid gap-6 ${activeModule === 'demands' ? '' : 'lg:grid-cols-[0.95fr_1.05fr]'}`}>
+    <div className={`grid gap-6 ${activeModule === 'demands' ? 'xl:grid-cols-[360px_1fr]' : 'lg:grid-cols-[0.95fr_1.05fr]'}`}>
       {activeModule === 'demands' && (
-      <Panel title="采购需求与物料目录" icon={Database}>
+      <>
+      <Panel title="新建采购需求" icon={FileText}>
+        <DemandCreateForm
+          materials={workspace.materials}
+          departments={workspace.departments}
+          users={workspace.users}
+          defaultDepartment={workspace.demands[0]?.department ?? 'dept-it'}
+          defaultRequester={workspace.demands[0]?.requester ?? '采购负责人'}
+          disabled={!javaEnabled || demandCreateBusy}
+          busy={demandCreateBusy}
+          onSubmit={onCreateDemand}
+        />
+      </Panel>
+
+      <Panel title="采购需求列表" icon={Database}>
         <div className="space-y-3">
           {workspace.demands.map((demand) => (
             <div key={demand.id} className="rounded-lg border border-slate-200 bg-white p-4">
@@ -1186,21 +1254,53 @@ const BuyerWorkspaceView: React.FC<{
                 <span className="text-xs font-bold text-slate-500">预算</span>
                 <span className="font-mono font-black text-slate-900">{currency(demand.budget)}</span>
               </div>
-              {javaEnabled && demand.status === '已通过' && workspace.privateSupplierRelations.some((relation) => relation.status === '已准入') && (
+              <div className="mt-3 rounded-lg bg-slate-50 p-3">
+                <p className="text-xs font-black text-slate-500">物料明细</p>
+                <div className="mt-2 space-y-1">
+                  {demand.lineItems.map((item) => {
+                    const material = workspace.materials.find((record) => record.id === item.materialId);
+                    return (
+                      <div key={`${demand.id}:${item.materialId}`} className="flex items-center justify-between text-xs font-bold text-slate-600">
+                        <span>{material?.name ?? item.materialId}</span>
+                        <span className="font-mono">{item.quantity} {material?.unit ?? ''}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {javaEnabled && demand.status === '草稿' && (
                 <button
                   type="button"
-                  onClick={() => onCreateRfqFromDemand(demand.id)}
-                  disabled={rfqCreateBusy === demand.id}
+                  onClick={() => onSubmitDemand(demand.id)}
+                  disabled={demandSubmitBusyId === demand.id}
                   className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                 >
-                  <Send size={14} />
-                  {rfqCreateBusy === demand.id ? '创建中' : '创建询价'}
+                  <ClipboardCheck size={14} />
+                  {demandSubmitBusyId === demand.id ? '提交中' : '提交审批'}
                 </button>
+              )}
+              {demand.status === '已通过' && linkedDemandIds.has(demand.id) && (
+                <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-xs font-black text-emerald-700">
+                  已关联询价项目
+                </div>
+              )}
+              {javaEnabled
+                && demand.status === '已通过'
+                && !linkedDemandIds.has(demand.id)
+                && workspace.privateSupplierRelations.some((relation) => relation.status === '已准入') && (
+                <RfqCreateForm
+                  demand={demand}
+                  suppliers={workspace.suppliers}
+                  relations={workspace.privateSupplierRelations}
+                  busy={rfqCreateBusy === demand.id}
+                  onSubmit={onCreateRfqFromDemand}
+                />
               )}
             </div>
           ))}
         </div>
       </Panel>
+      </>
       )}
 
       {activeModule === 'rfqs' && (
@@ -1590,6 +1690,215 @@ const ApprovalTemplateSettings: React.FC<{
     </Panel>
   );
 };
+
+const DemandCreateForm: React.FC<{
+  materials: BuyerWorkspace['materials'];
+  departments: BuyerWorkspace['departments'];
+  users: BuyerWorkspace['users'];
+  defaultDepartment: string;
+  defaultRequester: string;
+  disabled: boolean;
+  busy: boolean;
+  onSubmit: (payload: CreateDemandPayload, submitForApproval: boolean) => void;
+}> = ({ materials, departments, users, defaultDepartment, defaultRequester, disabled, busy, onSubmit }) => {
+  const firstMaterial = materials[0];
+  const firstDepartment = departments[0];
+  const firstRequester = users[0];
+  const [title, setTitle] = useState('办公设备补充采购');
+  const [department, setDepartment] = useState(firstDepartment?.id ?? defaultDepartment);
+  const [requester, setRequester] = useState(firstRequester?.id ?? defaultRequester);
+  const [budget, setBudget] = useState(68000);
+  const [materialId, setMaterialId] = useState(firstMaterial?.id ?? '');
+  const [quantity, setQuantity] = useState(1);
+  const [submitForApproval, setSubmitForApproval] = useState(true);
+
+  const canSubmit = !disabled && title.trim() && department.trim() && materialId && budget > 0 && quantity > 0;
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!canSubmit) return;
+        onSubmit({
+          title: title.trim(),
+          department: department.trim(),
+          requester: requester.trim(),
+          budget,
+          lineItems: [{ materialId, quantity }],
+        }, submitForApproval);
+      }}
+    >
+      <Field label="需求标题">
+        <input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </Field>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <Field label="申请部门">
+          <select
+            value={department}
+            onChange={(event) => setDepartment(event.target.value)}
+            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            {departments.length > 0 ? departments.map((departmentItem) => (
+              <option key={departmentItem.id} value={departmentItem.id}>
+                {departmentItem.name}
+              </option>
+            )) : (
+              <option value={defaultDepartment}>{defaultDepartment}</option>
+            )}
+          </select>
+        </Field>
+        <Field label="申请人">
+          <select
+            value={requester}
+            onChange={(event) => setRequester(event.target.value)}
+            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            {users.length > 0 ? users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            )) : (
+              <option value={defaultRequester}>{defaultRequester}</option>
+            )}
+          </select>
+        </Field>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <Field label="预算金额">
+          <input
+            type="number"
+            min={1}
+            value={budget}
+            onChange={(event) => setBudget(Number(event.target.value))}
+            className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </Field>
+        <Field label="物料">
+          <select
+            value={materialId}
+            onChange={(event) => setMaterialId(event.target.value)}
+            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            {materials.map((material) => (
+              <option key={material.id} value={material.id}>
+                {material.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
+      <Field label="数量">
+        <input
+          type="number"
+          min={1}
+          value={quantity}
+          onChange={(event) => setQuantity(Number(event.target.value))}
+          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </Field>
+      <label className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-700">
+        <input
+          type="checkbox"
+          checked={submitForApproval}
+          onChange={(event) => setSubmitForApproval(event.target.checked)}
+          className="h-4 w-4 rounded border-slate-300"
+        />
+        创建后直接提交审批
+      </label>
+      <button
+        type="submit"
+        disabled={!canSubmit || busy}
+        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+      >
+        <FileText size={16} />
+        {busy ? '创建中' : '创建采购需求'}
+      </button>
+      {!materials.length && (
+        <p className="text-xs font-bold text-amber-700">请先维护物料目录后再创建采购需求。</p>
+      )}
+    </form>
+  );
+};
+
+const RfqCreateForm: React.FC<{
+  demand: BuyerWorkspace['demands'][number];
+  suppliers: BuyerWorkspace['suppliers'];
+  relations: BuyerWorkspace['privateSupplierRelations'];
+  busy: boolean;
+  onSubmit: (demandId: string, supplierIds: string[], deadline: string) => void;
+}> = ({ demand, suppliers, relations, busy, onSubmit }) => {
+  const admittedSupplierIds = relations
+    .filter((relation) => relation.status === '已准入')
+    .map((relation) => relation.supplierId);
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>(admittedSupplierIds.slice(0, 1));
+  const defaultDeadline = new Date();
+  defaultDeadline.setDate(defaultDeadline.getDate() + 14);
+  const [deadline, setDeadline] = useState(defaultDeadline.toISOString().slice(0, 10));
+  const canSubmit = selectedSupplierIds.length > 0 && deadline;
+
+  return (
+    <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+      <p className="text-xs font-black text-blue-800">创建询价</p>
+      <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_180px]">
+        <div className="space-y-2">
+          {admittedSupplierIds.map((supplierId) => {
+            const supplier = suppliers.find((item) => item.id === supplierId);
+            const checked = selectedSupplierIds.includes(supplierId);
+            return (
+              <label key={supplierId} className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(event) => {
+                    setSelectedSupplierIds((current) =>
+                      event.target.checked
+                        ? [...current, supplierId]
+                        : current.filter((item) => item !== supplierId),
+                    );
+                  }}
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                {supplier?.name ?? supplierId}
+              </label>
+            );
+          })}
+        </div>
+        <Field label="截止日期">
+          <input
+            type="date"
+            value={deadline}
+            onChange={(event) => setDeadline(event.target.value)}
+            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </Field>
+      </div>
+      <button
+        type="button"
+        onClick={() => onSubmit(demand.id, selectedSupplierIds, `${deadline}T18:00:00+08:00`)}
+        disabled={!canSubmit || busy}
+        className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+      >
+        <Send size={14} />
+        {busy ? '创建中' : '创建询价'}
+      </button>
+    </div>
+  );
+};
+
+const Field: React.FC<{
+  label: string;
+  children: React.ReactNode;
+}> = ({ label, children }) => (
+  <label className="block">
+    <span className="mb-1.5 block text-xs font-black text-slate-500">{label}</span>
+    {children}
+  </label>
+);
 
 const SupplierWorkspaceView: React.FC<{
   activeModule: SupplierAdminModule;

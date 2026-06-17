@@ -15,6 +15,12 @@ public class ApiExceptionHandler {
     return ApiResponse.fail(exception.getMessage());
   }
 
+  @ExceptionHandler(IllegalStateException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiResponse<Void> handleIllegalState(IllegalStateException exception) {
+    return ApiResponse.fail(exception.getMessage());
+  }
+
   @ExceptionHandler(MethodArgumentNotValidException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiResponse<Void> handleValidation(MethodArgumentNotValidException exception) {

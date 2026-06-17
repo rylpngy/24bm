@@ -34,6 +34,14 @@ export interface UserAccount {
   scope: 'platform' | 'buyer' | 'supplier';
 }
 
+export interface DepartmentItem {
+  id: string;
+  tenantId: string;
+  name: string;
+  parentId: string | null;
+  status: string;
+}
+
 export interface SupplierRelation {
   id: string;
   tenantId: string;
@@ -157,6 +165,7 @@ export interface BuyerWorkspace {
   tenant: Tenant;
   enterprise: Enterprise;
   users: UserAccount[];
+  departments: DepartmentItem[];
   privateSupplierRelations: SupplierRelation[];
   suppliers: Enterprise[];
   materials: MaterialItem[];
@@ -462,6 +471,14 @@ export const getBuyerWorkspace = (model: ProcurementMvpModel, tenantId: string):
     tenant,
     enterprise,
     users: model.users.filter((user) => user.tenantId === tenantId),
+    departments: Array.from(new Set(byTenant(model.demands, tenantId).map((demand) => demand.department)))
+      .map((department) => ({
+        id: department,
+        tenantId,
+        name: department,
+        parentId: null,
+        status: 'active',
+      })),
     privateSupplierRelations,
     suppliers: model.enterprises.filter((item) => privateSupplierIds.has(item.id)),
     materials: byTenant(model.materials, tenantId),

@@ -455,6 +455,20 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/departments') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'dept-it',
+            tenantId: 'tenant-acme',
+            name: '信息化部',
+            parentId: null,
+            status: 'active',
+          }],
+          message: '',
+        });
+      }
       if (input === 'http://java.test/api/v1/buyer/approvals/templates') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
         return Response.json({
@@ -486,6 +500,7 @@ describe('procurement API clients', () => {
     const masterData = await loadJavaBuyerMasterData(client);
 
     expect(masterData.auditLogs[0].action).toBe('purchase_order.created');
+    expect(masterData.departments?.[0].name).toBe('信息化部');
     expect(masterData.roles[0].id).toBe('role-buyer-owner');
     expect(masterData.recentApprovals[0].actedAt).toBe('2026-06-15T12:00:00+08:00');
     expect(masterData.notifications[0].title).toBe('需求审批已通过');
@@ -493,6 +508,7 @@ describe('procurement API clients', () => {
     expect(calls.map((call) => call.input)).toEqual([
       'http://java.test/api/v1/auth/login',
       'http://java.test/api/v1/buyer/workspace',
+      'http://java.test/api/v1/buyer/departments',
       'http://java.test/api/v1/buyer/roles',
       'http://java.test/api/v1/buyer/approvals/templates',
     ]);
@@ -930,6 +946,46 @@ describe('procurement API clients', () => {
       status: 'inactive',
     });
     expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);
+  });
+
+  it('reports HTTP status when a Java API error response has no JSON body', async () => {
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: {
+            accessToken: 'buyer-token',
+            tokenType: 'Bearer',
+            expiresIn: 7200,
+            userId: 'user-buyer-owner',
+            displayName: '采购负责人',
+            scope: 'BUYER',
+            tenantId: 'tenant-acme',
+            supplierId: null,
+            roles: ['BUYER_OWNER'],
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/rfqs') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return new Response(null, { status: 403 });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      buyerLogin: {
+        account: 'buyer',
+        password: 'demo123456',
+        scope: 'BUYER',
+        tenantId: 'tenant-acme',
+      },
+    });
+
+    await expect(client.listBuyerRfqs()).rejects.toThrow('API request failed with 403');
   });
 
   it('uses the Java API client to create RFQs, submit supplier quotes, award quotes, create orders, ship, receive, invoice, and pay with scoped tokens', async () => {
@@ -1411,6 +1467,13 @@ describe('procurement API clients', () => {
         unit: '台',
         referencePrice: 6000,
       }],
+      departments: [{
+        id: 'dept-it',
+        tenantId: 'tenant-acme',
+        name: '信息化部',
+        parentId: null,
+        status: 'active',
+      }],
       users: [{
         id: 'user-buyer-owner',
         tenantId: 'tenant-acme',
@@ -1488,6 +1551,13 @@ describe('procurement API clients', () => {
       type: 'supplier',
     });
     expect(nextWorkspace.materials[0].code).toBe('IT-LAPTOP');
+    expect(nextWorkspace.departments).toEqual([{
+      id: 'dept-it',
+      tenantId: 'tenant-acme',
+      name: '信息化部',
+      parentId: null,
+      status: 'active',
+    }]);
     expect(nextWorkspace.users[0]).toMatchObject({
       id: 'user-buyer-owner',
       name: '采购负责人',
