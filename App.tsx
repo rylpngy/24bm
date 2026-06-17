@@ -40,7 +40,11 @@ import {
 import {
   canCreateOrderFromAward,
   canSubmitAwardApproval,
+  describeInvoiceNextAction,
+  describeOrderNextAction,
+  describeRfqNextAction,
   selectRecommendedQuote,
+  type BuyerNextAction,
 } from './data/buyerWorkflow';
 import {
   type BuyerWorkspace,
@@ -1482,6 +1486,7 @@ const BuyerWorkspaceView: React.FC<{
             const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
             const invoice = workspace.invoices.find((item) => item.orderId === order.id);
             const receiptBusy = buyerFulfillmentBusyId === `receipt:${order.id}`;
+            const nextAction = describeOrderNextAction(order);
             return (
               <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -1511,6 +1516,7 @@ const BuyerWorkspaceView: React.FC<{
                     </button>
                   )}
                 </div>
+                <NextActionNotice action={nextAction} />
               </div>
             );
           })}
@@ -1531,6 +1537,7 @@ const BuyerWorkspaceView: React.FC<{
                 const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
                 const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
                 const receiptBusy = buyerFulfillmentBusyId === `receipt:${order.id}`;
+                const nextAction = describeOrderNextAction(order);
                 return (
                   <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -1552,6 +1559,7 @@ const BuyerWorkspaceView: React.FC<{
                         {receiptBusy ? '登记中' : '登记收货'}
                       </button>
                     )}
+                    <NextActionNotice action={nextAction} />
                   </div>
                 );
               })}
@@ -1569,6 +1577,7 @@ const BuyerWorkspaceView: React.FC<{
           {workspace.invoices.map((invoice) => {
             const paymentBusy = buyerFulfillmentBusyId === `payment:${invoice.id}`;
             const supplier = workspace.suppliers.find((item) => item.id === invoice.supplierId);
+            const nextAction = describeInvoiceNextAction(invoice);
             return (
               <div key={invoice.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -1591,6 +1600,7 @@ const BuyerWorkspaceView: React.FC<{
                     </button>
                   )}
                 </div>
+                <NextActionNotice action={nextAction} />
               </div>
             );
           })}
@@ -2001,6 +2011,22 @@ const ModuleSummaryStrip: React.FC<{
   </div>
 );
 
+const nextActionToneClasses: Record<BuyerNextAction['tone'], string> = {
+  slate: 'border-slate-200 bg-slate-50 text-slate-600',
+  blue: 'border-blue-100 bg-blue-50 text-blue-700',
+  amber: 'border-amber-100 bg-amber-50 text-amber-700',
+  emerald: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+};
+
+const NextActionNotice: React.FC<{
+  action: BuyerNextAction;
+}> = ({ action }) => (
+  <div className={`mt-4 rounded-lg border p-3 ${nextActionToneClasses[action.tone]}`}>
+    <p className="text-xs font-black">{action.title}</p>
+    <p className="mt-1 text-xs font-bold leading-5 opacity-80">{action.detail}</p>
+  </div>
+);
+
 const EmptyState: React.FC<{
   title: string;
   desc: string;
@@ -2345,7 +2371,7 @@ const RfqCard: React.FC<{
   const recommendedQuote = selectRecommendedQuote(rfq);
   const canSubmitAward = javaEnabled && canSubmitAwardApproval(rfq) && Boolean(recommendedQuote);
   const canCreateOrder = javaEnabled && canCreateOrderFromAward(rfq, approvedAwardId, workspace.orders);
-  const awardInApproval = rfq.status === '定标审批中';
+  const nextAction = describeRfqNextAction(rfq, approvedAwardId, workspace.orders);
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
@@ -2404,11 +2430,7 @@ const RfqCard: React.FC<{
         )}
       </div>
 
-      {awardInApproval && (
-        <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-black text-amber-700">
-          定标审批中，审批通过后可生成采购订单。
-        </div>
-      )}
+      <NextActionNotice action={nextAction} />
 
       {canSubmitAward && recommendedQuote && (
         <button
