@@ -4,13 +4,16 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.sourcing.api.CreateRfqRequest;
+import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.RfqResponse;
+import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqDemandLinkPolicy;
 import com.procurement.sourcing.domain.RfqInviteStatus;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.domain.RfqSupplierInvitationPolicy;
+import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
@@ -26,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RfqApplicationService {
   private final RfqMapper rfqMapper;
+  private final QuoteMapper quoteMapper;
   private final RfqDemandMapper rfqDemandMapper;
   private final RfqInviteMapper rfqInviteMapper;
   private final PurchaseDemandMapper purchaseDemandMapper;
@@ -35,6 +39,7 @@ public class RfqApplicationService {
 
   public RfqApplicationService(
       RfqMapper rfqMapper,
+      QuoteMapper quoteMapper,
       RfqDemandMapper rfqDemandMapper,
       RfqInviteMapper rfqInviteMapper,
       PurchaseDemandMapper purchaseDemandMapper,
@@ -42,6 +47,7 @@ public class RfqApplicationService {
       TenantFeatureApplicationService tenantFeatureApplicationService,
       RfqSourcingStatusTransition rfqSourcingStatusTransition) {
     this.rfqMapper = rfqMapper;
+    this.quoteMapper = quoteMapper;
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
@@ -126,7 +132,23 @@ public class RfqApplicationService {
         rfq.createdAt(),
         rfq.updatedAt(),
         rfqDemandMapper.listDemandIds(rfq.tenantId(), rfq.id()),
-        rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()));
+        rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()),
+        quoteMapper.listByTenantAndRfq(rfq.tenantId(), rfq.id()).stream()
+            .map(this::toQuoteResponse)
+            .toList());
+  }
+
+  private QuoteResponse toQuoteResponse(Quote quote) {
+    return new QuoteResponse(
+        quote.id(),
+        quote.tenantId(),
+        quote.rfqId(),
+        quote.supplierId(),
+        quote.amount(),
+        quote.taxRate(),
+        quote.deliveryDays(),
+        quote.status(),
+        quote.submittedAt());
   }
 
   private String newId(String prefix) {

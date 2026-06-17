@@ -37,6 +37,11 @@ import {
   type SupplierAdminModule,
 } from './data/adminNavigation';
 import {
+  canCreateOrderFromAward,
+  canSubmitAwardApproval,
+  selectRecommendedQuote,
+} from './data/buyerWorkflow';
+import {
   type BuyerWorkspace,
   type ProcurementMvpModel,
   type Rfq,
@@ -179,6 +184,7 @@ const App: React.FC = () => {
   const [supplierAdmissionBusyId, setSupplierAdmissionBusyId] = useState<string | null>(null);
   const [supplierActionBusyId, setSupplierActionBusyId] = useState<string | null>(null);
   const [rfqCreateBusy, setRfqCreateBusy] = useState<string | null>(null);
+  const [awardSubmitBusyId, setAwardSubmitBusyId] = useState<string | null>(null);
   const [orderCreateBusy, setOrderCreateBusy] = useState<string | null>(null);
   const [buyerFulfillmentBusyId, setBuyerFulfillmentBusyId] = useState<string | null>(null);
 
@@ -446,6 +452,24 @@ const App: React.FC = () => {
     }
   };
 
+  const submitBuyerAwardApproval = async (rfqId: string, quoteId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setAwardSubmitBusyId(rfqId);
+    setWorkflowStatus(null);
+    try {
+      const award = await javaApiClient.awardBuyerRfq(rfqId, {
+        quoteId,
+        reason: '系统推荐：报价金额最低，交付周期优先',
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`定标审批已提交：${award.id}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '定标审批提交失败');
+    } finally {
+      setAwardSubmitBusyId(null);
+    }
+  };
+
   const createBuyerReceiptFromOrder = async (orderId: string) => {
     if (!javaApiClient || !buyerData) return;
     setBuyerFulfillmentBusyId(`receipt:${orderId}`);
@@ -619,6 +643,7 @@ const App: React.FC = () => {
                 demandSubmitBusyId={demandSubmitBusyId}
                 supplierAdmissionBusyId={supplierAdmissionBusyId}
                 rfqCreateBusy={rfqCreateBusy}
+                awardSubmitBusyId={awardSubmitBusyId}
                 orderCreateBusy={orderCreateBusy}
                 buyerFulfillmentBusyId={buyerFulfillmentBusyId}
                 javaEnabled={Boolean(javaApiClient)}
@@ -628,6 +653,7 @@ const App: React.FC = () => {
                 onReviewApproval={reviewApprovalTask}
                 onSubmitSupplierAdmission={submitSupplierAdmission}
                 onCreateRfqFromDemand={createBuyerRfqFromDemand}
+                onSubmitAwardApproval={submitBuyerAwardApproval}
                 onCreateOrderFromAward={createBuyerOrderFromAward}
                 onCreateReceipt={createBuyerReceiptFromOrder}
                 onRegisterPayment={registerBuyerInvoicePayment}
@@ -994,6 +1020,7 @@ const BuyerWorkspaceView: React.FC<{
   demandSubmitBusyId: string | null;
   supplierAdmissionBusyId: string | null;
   rfqCreateBusy: string | null;
+  awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   buyerFulfillmentBusyId: string | null;
   javaEnabled: boolean;
@@ -1003,6 +1030,7 @@ const BuyerWorkspaceView: React.FC<{
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
   onSubmitSupplierAdmission: (relationId: string) => void;
   onCreateRfqFromDemand: (demandId: string, supplierIds?: string[], deadline?: string) => void;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
   onCreateOrderFromAward: (awardId: string) => void;
   onCreateReceipt: (orderId: string) => void;
   onRegisterPayment: (invoiceId: string) => void;
@@ -1025,6 +1053,7 @@ const BuyerWorkspaceView: React.FC<{
   demandSubmitBusyId,
   supplierAdmissionBusyId,
   rfqCreateBusy,
+  awardSubmitBusyId,
   orderCreateBusy,
   buyerFulfillmentBusyId,
   javaEnabled,
@@ -1034,6 +1063,7 @@ const BuyerWorkspaceView: React.FC<{
   onReviewApproval,
   onSubmitSupplierAdmission,
   onCreateRfqFromDemand,
+  onSubmitAwardApproval,
   onCreateOrderFromAward,
   onCreateReceipt,
   onRegisterPayment,
@@ -1349,8 +1379,10 @@ const BuyerWorkspaceView: React.FC<{
                 rfq={rfq}
                 workspace={workspace}
                 approvedAwardId={approvedAward?.bizId}
+                awardSubmitBusyId={awardSubmitBusyId}
                 orderCreateBusy={orderCreateBusy}
                 javaEnabled={javaEnabled}
+                onSubmitAwardApproval={onSubmitAwardApproval}
                 onCreateOrderFromAward={onCreateOrderFromAward}
               />
             );
@@ -2201,13 +2233,25 @@ const RfqCard: React.FC<{
   rfq: Rfq;
   workspace: BuyerWorkspace;
   approvedAwardId?: string;
+  awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   javaEnabled: boolean;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
   onCreateOrderFromAward: (awardId: string) => void;
-}> = ({ rfq, workspace, approvedAwardId, orderCreateBusy, javaEnabled, onCreateOrderFromAward }) => {
-  const hasGeneratedOrder = workspace.orders.some((order) =>
-    order.rfqId === rfq.id && (!rfq.awardedSupplierId || order.supplierId === rfq.awardedSupplierId));
-  const canCreateOrder = javaEnabled && approvedAwardId && rfq.status === '已定标' && !hasGeneratedOrder;
+}> = ({
+  rfq,
+  workspace,
+  approvedAwardId,
+  awardSubmitBusyId,
+  orderCreateBusy,
+  javaEnabled,
+  onSubmitAwardApproval,
+  onCreateOrderFromAward,
+}) => {
+  const recommendedQuote = selectRecommendedQuote(rfq);
+  const canSubmitAward = javaEnabled && canSubmitAwardApproval(rfq) && Boolean(recommendedQuote);
+  const canCreateOrder = javaEnabled && canCreateOrderFromAward(rfq, approvedAwardId, workspace.orders);
+  const awardInApproval = rfq.status === '定标审批中';
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
@@ -2225,18 +2269,33 @@ const RfqCard: React.FC<{
         {rfq.quotes.length === 0 ? (
           <div className="rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-500">暂无报价，等待供应商响应。</div>
         ) : (
-          rfq.quotes.map((quote) => {
+          rfq.quotes.map((quote, index) => {
             const supplier = workspace.suppliers.find((item) => item.id === quote.supplierId);
             const awarded = rfq.awardedSupplierId === quote.supplierId;
+            const recommended = recommendedQuote?.id === quote.id;
             return (
               <div
                 key={quote.id}
                 className={`flex items-center justify-between rounded-lg border p-3 ${
-                  awarded ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'
+                  awarded
+                    ? 'border-emerald-200 bg-emerald-50'
+                    : recommended
+                      ? 'border-blue-200 bg-blue-50'
+                      : 'border-slate-200 bg-slate-50'
                 }`}
               >
                 <div>
-                  <p className="font-bold text-slate-900">{supplier?.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-bold text-slate-900">{supplier?.name}</p>
+                    <span className="rounded-md bg-white px-2 py-0.5 text-[11px] font-black text-slate-500">
+                      第 {index + 1} 轮报价
+                    </span>
+                    {recommended && !awarded && (
+                      <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-black text-blue-700">
+                        推荐
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500">
                     税率 {quote.taxRate}% · {quote.deliveryDays} 天交付
                   </p>
@@ -2250,6 +2309,24 @@ const RfqCard: React.FC<{
           })
         )}
       </div>
+
+      {awardInApproval && (
+        <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-black text-amber-700">
+          定标审批中，审批通过后可生成采购订单。
+        </div>
+      )}
+
+      {canSubmitAward && recommendedQuote && (
+        <button
+          type="button"
+          onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id)}
+          disabled={awardSubmitBusyId === rfq.id}
+          className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          <BadgeCheck size={14} />
+          {awardSubmitBusyId === rfq.id ? '提交中' : '按推荐报价提交定标审批'}
+        </button>
+      )}
 
       {canCreateOrder && (
         <button

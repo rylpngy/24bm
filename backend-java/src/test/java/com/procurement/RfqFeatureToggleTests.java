@@ -10,6 +10,7 @@ import com.procurement.common.tenant.TenantContext;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
+import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 class RfqFeatureToggleTests {
 
   private final RfqMapper rfqMapper = org.mockito.Mockito.mock(RfqMapper.class);
+  private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final RfqDemandMapper rfqDemandMapper = org.mockito.Mockito.mock(RfqDemandMapper.class);
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
@@ -34,6 +36,7 @@ class RfqFeatureToggleTests {
       new TenantFeatureApplicationService(tenantFeatureMapper, new ObjectMapper());
   private final RfqApplicationService rfqApplicationService = new RfqApplicationService(
       rfqMapper,
+      quoteMapper,
       rfqDemandMapper,
       rfqInviteMapper,
       purchaseDemandMapper,

@@ -405,7 +405,27 @@ describe('procurement API clients', () => {
             materials: [],
             users: [],
             demands: [],
-            rfqs: [],
+            rfqs: [{
+              id: 'rfq-java-001',
+              tenantId: 'tenant-acme',
+              title: 'Java RFQ',
+              status: '报价中',
+              deadlineAt: '2026-07-01T18:00:00+08:00',
+              ownerId: 'user-buyer-owner',
+              awardedSupplierId: null,
+              demandIds: ['dem-java-001'],
+              invitedSupplierIds: ['ent-supplier-sunrise'],
+              quotes: [{
+                id: 'quote-java-001',
+                tenantId: 'tenant-acme',
+                rfqId: 'rfq-java-001',
+                supplierId: 'ent-supplier-sunrise',
+                amount: 118000,
+                taxRate: 13,
+                deliveryDays: 7,
+                status: '已提交',
+              }],
+            }],
             orders: [],
             invoices: [],
             pendingApprovals: [],
@@ -501,6 +521,11 @@ describe('procurement API clients', () => {
 
     expect(masterData.auditLogs[0].action).toBe('purchase_order.created');
     expect(masterData.departments?.[0].name).toBe('信息化部');
+    expect(masterData.rfqs[0].quotes[0]).toMatchObject({
+      id: 'quote-java-001',
+      amount: 118000,
+      deliveryDays: 7,
+    });
     expect(masterData.roles[0].id).toBe('role-buyer-owner');
     expect(masterData.recentApprovals[0].actedAt).toBe('2026-06-15T12:00:00+08:00');
     expect(masterData.notifications[0].title).toBe('需求审批已通过');

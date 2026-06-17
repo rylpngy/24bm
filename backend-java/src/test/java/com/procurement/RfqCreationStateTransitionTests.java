@@ -9,7 +9,10 @@ import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.application.RfqApplicationService;
+import com.procurement.sourcing.domain.Quote;
+import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
+import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
@@ -24,6 +27,7 @@ import org.junit.jupiter.api.Test;
 class RfqCreationStateTransitionTests {
 
   private final RfqMapper rfqMapper = org.mockito.Mockito.mock(RfqMapper.class);
+  private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final RfqDemandMapper rfqDemandMapper = org.mockito.Mockito.mock(RfqDemandMapper.class);
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
@@ -32,6 +36,7 @@ class RfqCreationStateTransitionTests {
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final RfqApplicationService rfqApplicationService = new RfqApplicationService(
       rfqMapper,
+      quoteMapper,
       rfqDemandMapper,
       rfqInviteMapper,
       purchaseDemandMapper,
@@ -72,6 +77,43 @@ class RfqCreationStateTransitionTests {
     rfqApplicationService.listCurrentTenantRfqs("报价中", "电脑");
 
     verify(rfqMapper).listByTenantFiltered("tenant-1", "报价中", "电脑");
+  }
+
+  @Test
+  void listRfqsIncludesSubmittedQuotesForBuyerComparison() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    Rfq rfq = new Rfq(
+        "rfq-1",
+        "tenant-1",
+        "办公电脑询价",
+        "报价中",
+        OffsetDateTime.parse("2026-06-20T18:00:00+08:00"),
+        "buyer-user",
+        null,
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+    when(rfqMapper.listByTenant("tenant-1")).thenReturn(List.of(rfq));
+    when(rfqDemandMapper.listDemandIds("tenant-1", "rfq-1")).thenReturn(List.of("demand-1"));
+    when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1")).thenReturn(List.of("supplier-1"));
+    when(quoteMapper.listByTenantAndRfq("tenant-1", "rfq-1"))
+        .thenReturn(List.of(new Quote(
+            "quote-1",
+            "tenant-1",
+            "rfq-1",
+            "supplier-1",
+            BigDecimal.valueOf(98000),
+            BigDecimal.valueOf(13),
+            6,
+            "已提交",
+            OffsetDateTime.parse("2026-06-16T10:00:00+08:00"))));
+
+    var responses = rfqApplicationService.listCurrentTenantRfqs();
+
+    org.assertj.core.api.Assertions.assertThat(responses.get(0).quotes())
+        .hasSize(1)
+        .first()
+        .extracting("id", "amount", "deliveryDays")
+        .containsExactly("quote-1", BigDecimal.valueOf(98000), 6);
   }
 
   private PurchaseDemand demand(String id, String tenantId, String status) {

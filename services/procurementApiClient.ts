@@ -372,6 +372,7 @@ export interface JavaRfqDto {
   awardedSupplierId: string | null;
   demandIds: string[];
   invitedSupplierIds: string[];
+  quotes?: JavaQuoteDto[];
 }
 
 export interface JavaQuoteDto {
@@ -799,7 +800,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     owner: rfq.ownerId,
     invitedSupplierIds: rfq.invitedSupplierIds,
     awardedSupplierId: rfq.awardedSupplierId ?? undefined,
-    quotes: [],
+    quotes: (rfq.quotes ?? []).map(toQuote),
   });
 
   const toQuote = (quote: JavaQuoteDto): RfqQuote => ({

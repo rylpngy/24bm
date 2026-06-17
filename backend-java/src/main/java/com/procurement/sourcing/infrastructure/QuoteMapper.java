@@ -78,6 +78,17 @@ public interface QuoteMapper {
       from quotes
       where tenant_id = #{tenantId}
         and rfq_id = #{rfqId,jdbcType=VARCHAR}
+      order by amount asc, delivery_days asc, submitted_at asc
+      """)
+  List<Quote> listByTenantAndRfq(
+      @Param("tenantId") String tenantId,
+      @Param("rfqId") String rfqId);
+
+  @Select("""
+      select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
+      from quotes
+      where tenant_id = #{tenantId}
+        and rfq_id = #{rfqId,jdbcType=VARCHAR}
         and id = #{quoteId}
         and status = #{status,jdbcType=VARCHAR}
       """)
