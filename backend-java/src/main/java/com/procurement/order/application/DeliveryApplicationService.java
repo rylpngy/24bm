@@ -57,6 +57,13 @@ public class DeliveryApplicationService {
         .toList();
   }
 
+  public List<DeliveryResponse> listCurrentTenantDeliveries() {
+    String tenantId = TenantAccessGuard.requireTenantId("delivery APIs");
+    return deliveryMapper.listByTenant(tenantId).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public DeliveryResponse create(String orderId, CreateDeliveryRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("delivery APIs");

@@ -427,6 +427,16 @@ describe('procurement API clients', () => {
               }],
             }],
             orders: [],
+            deliveries: [{
+              id: 'delivery-java-001',
+              tenantId: 'tenant-acme',
+              supplierId: 'ent-supplier-sunrise',
+              orderId: 'po-java-001',
+              carrier: '顺丰速运',
+              trackingNo: 'SF100001',
+              status: '已发货',
+              createdAt: '2026-06-15T14:00:00+08:00',
+            }],
             invoices: [],
             pendingApprovals: [],
             recentApprovals: [{
@@ -521,6 +531,7 @@ describe('procurement API clients', () => {
 
     expect(masterData.auditLogs[0].action).toBe('purchase_order.created');
     expect(masterData.departments?.[0].name).toBe('信息化部');
+    expect(masterData.deliveries?.[0].trackingNo).toBe('SF100001');
     expect(masterData.rfqs[0].quotes[0]).toMatchObject({
       id: 'quote-java-001',
       amount: 118000,
@@ -1539,6 +1550,16 @@ describe('procurement API clients', () => {
         status: '已收货',
         expectedReceiptDate: '2026-07-10',
       }],
+      deliveries: [{
+        id: 'delivery-java-001',
+        tenantId: 'tenant-acme',
+        supplierId: 'ent-supplier-sunrise',
+        orderId: 'po-java-001',
+        carrier: '顺丰速运',
+        trackingNo: 'SF100001',
+        status: '已发货',
+        createdAt: '2026-06-15T14:00:00+08:00',
+      }],
       invoices: [{
         id: 'invoice-java-001',
         tenantId: 'tenant-acme',
@@ -1618,6 +1639,16 @@ describe('procurement API clients', () => {
       amount: 118000,
       status: '已收货',
       expectedReceiptDate: '2026-07-10',
+    }]);
+    expect(nextWorkspace.deliveries).toEqual([{
+      id: 'delivery-java-001',
+      tenantId: 'tenant-acme',
+      supplierId: 'ent-supplier-sunrise',
+      orderId: 'po-java-001',
+      carrier: '顺丰速运',
+      trackingNo: 'SF100001',
+      status: '已发货',
+      createdAt: '2026-06-15T14:00:00+08:00',
     }]);
     expect(nextWorkspace.invoices).toEqual([{
       id: 'invoice-java-001',

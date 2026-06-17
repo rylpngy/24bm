@@ -1447,9 +1447,14 @@ const BuyerWorkspaceView: React.FC<{
 
       {activeModule === 'orders' && (
       <Panel title="订单履约" icon={PackageCheck}>
+        {workspace.orders.length === 0 ? (
+          <EmptyState title="暂无采购订单" desc="定标审批通过后，可在报价对比页生成采购订单。" />
+        ) : (
         <div className="space-y-3">
           {workspace.orders.map((order) => {
             const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
+            const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
+            const invoice = workspace.invoices.find((item) => item.orderId === order.id);
             const receiptBusy = buyerFulfillmentBusyId === `receipt:${order.id}`;
             return (
               <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
@@ -1461,6 +1466,11 @@ const BuyerWorkspaceView: React.FC<{
                     </p>
                   </div>
                   <p className="font-mono font-black text-slate-900">{currency(order.amount)}</p>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <MiniFact label="预计到货" value={order.expectedReceiptDate} />
+                  <MiniFact label="物流单号" value={delivery ? `${delivery.carrier} ${delivery.trackingNo}` : '待发货'} />
+                  <MiniFact label="发票状态" value={invoice ? invoice.paymentStatus : '待开票'} />
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={order.status} />
@@ -1479,11 +1489,15 @@ const BuyerWorkspaceView: React.FC<{
             );
           })}
         </div>
+        )}
       </Panel>
       )}
 
       {activeModule === 'receipts' && (
         <Panel title="收货验收" icon={PackageCheck}>
+          {workspace.orders.filter((order) => order.status === '已发货' || order.status === '待收货').length === 0 ? (
+            <EmptyState title="暂无待收货订单" desc="供应商发货后，待收货订单会出现在这里。" />
+          ) : (
           <div className="space-y-3">
             {workspace.orders
               .filter((order) => order.status === '已发货' || order.status === '待收货')
@@ -1516,20 +1530,25 @@ const BuyerWorkspaceView: React.FC<{
                 );
               })}
           </div>
+          )}
         </Panel>
       )}
 
       {activeModule === 'invoices' && (
       <Panel title="发票付款" icon={Receipt}>
+        {workspace.invoices.length === 0 ? (
+          <EmptyState title="暂无发票" desc="供应商在订单收货后提交发票，采购方在这里登记付款状态。" />
+        ) : (
         <div className="space-y-3">
           {workspace.invoices.map((invoice) => {
             const paymentBusy = buyerFulfillmentBusyId === `payment:${invoice.id}`;
+            const supplier = workspace.suppliers.find((item) => item.id === invoice.supplierId);
             return (
               <div key={invoice.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-black text-slate-900">{invoice.id}</p>
-                    <p className="mt-1 text-sm text-slate-500">订单 {invoice.orderId}</p>
+                    <p className="mt-1 text-sm text-slate-500">{supplier?.name ?? invoice.supplierId} · 订单 {invoice.orderId}</p>
                   </div>
                   <p className="font-mono font-black text-slate-900">{currency(invoice.amount)}</p>
                 </div>
@@ -1550,6 +1569,7 @@ const BuyerWorkspaceView: React.FC<{
             );
           })}
         </div>
+        )}
       </Panel>
       )}
     </div>
@@ -1930,6 +1950,26 @@ const Field: React.FC<{
     <span className="mb-1.5 block text-xs font-black text-slate-500">{label}</span>
     {children}
   </label>
+);
+
+const MiniFact: React.FC<{
+  label: string;
+  value: string;
+}> = ({ label, value }) => (
+  <div className="rounded-lg bg-slate-50 px-3 py-2">
+    <p className="text-[11px] font-black text-slate-400">{label}</p>
+    <p className="mt-1 truncate text-xs font-bold text-slate-700">{value}</p>
+  </div>
+);
+
+const EmptyState: React.FC<{
+  title: string;
+  desc: string;
+}> = ({ title, desc }) => (
+  <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6">
+    <p className="text-sm font-black text-slate-700">{title}</p>
+    <p className="mt-1 text-xs font-bold leading-5 text-slate-500">{desc}</p>
+  </div>
 );
 
 const SupplierWorkspaceView: React.FC<{

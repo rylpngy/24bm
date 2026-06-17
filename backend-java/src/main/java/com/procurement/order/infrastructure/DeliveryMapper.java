@@ -51,6 +51,14 @@ public interface DeliveryMapper {
       @Param("status") String status);
 
   @Select("""
+      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
+      from deliveries
+      where tenant_id = #{tenantId}
+      order by created_at desc
+      """)
+  List<Delivery> listByTenant(@Param("tenantId") String tenantId);
+
+  @Select("""
       <script>
       select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
       from deliveries

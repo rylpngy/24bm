@@ -536,6 +536,7 @@ export interface JavaBuyerMasterData {
   demands: PurchaseDemand[];
   rfqs: Rfq[];
   orders: PurchaseOrder[];
+  deliveries?: Delivery[];
   invoices: InvoiceRecord[];
   pendingApprovals: JavaApprovalTaskDto[];
   recentApprovals: JavaApprovalTaskDto[];
@@ -860,10 +861,11 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       return platformRequest<JavaEnterpriseReviewDto[]>('/api/v1/platform/enterprise-reviews');
     },
     getBuyerWorkspace() {
-      return buyerRequest<Omit<JavaBuyerMasterData, 'demands' | 'rfqs' | 'orders' | 'invoices'> & {
+      return buyerRequest<Omit<JavaBuyerMasterData, 'demands' | 'rfqs' | 'orders' | 'deliveries' | 'invoices'> & {
         demands: JavaPurchaseDemandDto[];
         rfqs: JavaRfqDto[];
         orders: JavaPurchaseOrderDto[];
+        deliveries?: JavaDeliveryDto[];
         invoices: JavaInvoiceDto[];
       }>('/api/v1/buyer/workspace')
         .then((workspace) => ({
@@ -871,6 +873,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
           demands: workspace.demands.map(toPurchaseDemand),
           rfqs: workspace.rfqs.map(toRfq),
           orders: workspace.orders.map(toPurchaseOrder),
+          deliveries: (workspace.deliveries ?? []).map(toDelivery),
           invoices: workspace.invoices.map(toInvoice),
         }));
     },
@@ -1178,6 +1181,7 @@ export const applyJavaBuyerMasterData = (
     demands: masterData.demands,
     rfqs: masterData.rfqs,
     orders: masterData.orders,
+    deliveries: masterData.deliveries ?? [],
     invoices: masterData.invoices,
     auditLogs: masterData.auditLogs,
     privateSupplierRelations,

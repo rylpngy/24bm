@@ -118,6 +118,7 @@ export interface Delivery {
   carrier: string;
   trackingNo: string;
   status: '待发货' | '运输中' | '已发货' | '已签收';
+  createdAt?: string;
 }
 
 export interface InvoiceRecord {
