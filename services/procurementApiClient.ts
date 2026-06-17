@@ -550,6 +550,7 @@ export interface JavaSupplierWorkspaceData {
   opportunities: Rfq[];
   quotes: RfqQuote[];
   orders: PurchaseOrder[];
+  deliveries: Delivery[];
   invoices: InvoiceRecord[];
 }
 
@@ -1079,6 +1080,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
         opportunities: JavaRfqDto[];
         quotes: JavaQuoteDto[];
         orders: JavaPurchaseOrderDto[];
+        deliveries?: JavaDeliveryDto[];
         invoices: JavaInvoiceDto[];
       }>('/api/v1/supplier/workspace');
       return {
@@ -1086,6 +1088,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
         opportunities: workspace.opportunities.map(toRfq),
         quotes: workspace.quotes.map(toQuote),
         orders: workspace.orders.map(toPurchaseOrder),
+        deliveries: (workspace.deliveries ?? []).map(toDelivery),
         invoices: workspace.invoices.map(toInvoice),
       };
     },
@@ -1288,6 +1291,7 @@ export const applyJavaSupplierWorkspaceData = (
     opportunities,
     quotes: supplierData.quotes,
     orders: supplierData.orders,
+    deliveries: supplierData.deliveries,
     invoices: supplierData.invoices,
   };
 };

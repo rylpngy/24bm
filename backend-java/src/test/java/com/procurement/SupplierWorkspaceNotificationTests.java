@@ -7,6 +7,8 @@ import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.order.api.DeliveryResponse;
+import com.procurement.order.application.DeliveryApplicationService;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.api.RfqResponse;
@@ -30,6 +32,8 @@ class SupplierWorkspaceNotificationTests {
       org.mockito.Mockito.mock(QuoteApplicationService.class);
   private final PurchaseOrderApplicationService purchaseOrderApplicationService =
       org.mockito.Mockito.mock(PurchaseOrderApplicationService.class);
+  private final DeliveryApplicationService deliveryApplicationService =
+      org.mockito.Mockito.mock(DeliveryApplicationService.class);
   private final InvoiceApplicationService invoiceApplicationService =
       org.mockito.Mockito.mock(InvoiceApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
@@ -40,6 +44,7 @@ class SupplierWorkspaceNotificationTests {
           supplierProfileApplicationService,
           quoteApplicationService,
           purchaseOrderApplicationService,
+          deliveryApplicationService,
           invoiceApplicationService,
           notificationApplicationService,
           supplierTodoSummaryAssembler);
@@ -51,6 +56,7 @@ class SupplierWorkspaceNotificationTests {
     when(quoteApplicationService.listSupplierRfqs()).thenReturn(List.of());
     when(quoteApplicationService.listSupplierQuotes()).thenReturn(List.of());
     when(purchaseOrderApplicationService.listCurrentSupplierOrders()).thenReturn(List.of());
+    when(deliveryApplicationService.listCurrentSupplierDeliveries(null, null)).thenReturn(List.of(delivery()));
     when(invoiceApplicationService.listCurrentSupplierInvoices()).thenReturn(List.of());
     when(notificationApplicationService.listCurrentSupplierUserNotifications(20))
         .thenReturn(List.of(notification()));
@@ -59,6 +65,8 @@ class SupplierWorkspaceNotificationTests {
 
     assertThat(response.notifications()).hasSize(1);
     assertThat(response.notifications().get(0).title()).isEqualTo("发票已付款");
+    assertThat(response.deliveries()).extracting(DeliveryResponse::trackingNo)
+        .containsExactly("SF-SUPPLIER-001");
   }
 
   @Test
@@ -73,6 +81,7 @@ class SupplierWorkspaceNotificationTests {
         order("po-confirm", "待供应商确认"),
         order("po-ship", "待发货"),
         order("po-received", "已收货")));
+    when(deliveryApplicationService.listCurrentSupplierDeliveries(null, null)).thenReturn(List.of());
     when(invoiceApplicationService.listCurrentSupplierInvoices()).thenReturn(List.of(
         invoice("inv-pending", "待付款"),
         invoice("inv-partial", "部分付款"),
@@ -140,6 +149,18 @@ class SupplierWorkspaceNotificationTests {
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+  }
+
+  private DeliveryResponse delivery() {
+    return new DeliveryResponse(
+        "delivery-1",
+        "tenant-1",
+        "po-ship",
+        "supplier-1",
+        "顺丰速运",
+        "SF-SUPPLIER-001",
+        "已发货",
+        OffsetDateTime.parse("2026-06-16T10:00:00+08:00"));
   }
 
   private InvoiceResponse invoice(String id, String paymentStatus) {

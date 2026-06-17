@@ -696,6 +696,16 @@ describe('procurement API clients', () => {
               status: '待供应商确认',
               expectedReceiptDate: '2026-07-10',
             }],
+            deliveries: [{
+              id: 'delivery-java-001',
+              tenantId: 'tenant-acme',
+              supplierId: 'ent-supplier-sunrise',
+              orderId: 'po-java-001',
+              carrier: '顺丰速运',
+              trackingNo: 'SF-SUPPLIER-001',
+              status: '已发货',
+              createdAt: '2026-07-02T10:00:00+08:00',
+            }],
             invoices: [{
               id: 'invoice-java-001',
               tenantId: 'tenant-acme',
@@ -735,6 +745,7 @@ describe('procurement API clients', () => {
     expect(supplierData.opportunities[0].id).toBe('rfq-java-001');
     expect(supplierData.quotes[0].amount).toBe(118000);
     expect(supplierData.orders[0].status).toBe('待供应商确认');
+    expect(supplierData.deliveries[0].trackingNo).toBe('SF-SUPPLIER-001');
     expect(supplierData.invoices[0].paymentStatus).toBe('待付款');
     expect(calls.map((call) => call.input)).toEqual([
       'http://java.test/api/v1/auth/login',
@@ -1770,6 +1781,16 @@ describe('procurement API clients', () => {
         status: '待供应商确认',
         expectedReceiptDate: '2026-07-10',
       }],
+      deliveries: [{
+        id: 'delivery-java-001',
+        tenantId: 'tenant-acme',
+        supplierId: 'ent-supplier-sunrise',
+        orderId: 'po-java-001',
+        carrier: '顺丰速运',
+        trackingNo: 'SF-SUPPLIER-001',
+        status: '已发货',
+        createdAt: '2026-07-02T10:00:00+08:00',
+      }],
       invoices: [{
         id: 'invoice-java-001',
         tenantId: 'tenant-acme',
@@ -1801,6 +1822,7 @@ describe('procurement API clients', () => {
       status: '已提交',
     }]);
     expect(nextWorkspace.orders[0].id).toBe('po-java-001');
+    expect(nextWorkspace.deliveries[0].trackingNo).toBe('SF-SUPPLIER-001');
     expect(nextWorkspace.invoices[0].id).toBe('invoice-java-001');
   });
 

@@ -2106,11 +2106,16 @@ const SupplierWorkspaceView: React.FC<{
     {activeModule === 'orders' && (
     <div className="grid gap-6 lg:grid-cols-2">
       <Panel title="销售订单与发货" icon={Truck}>
+        {workspace.orders.length === 0 ? (
+          <EmptyState title="暂无销售订单" desc="采购方定标并生成订单后，供应商会在这里确认订单、提交发货和开票。" />
+        ) : (
         <div className="space-y-3">
           {workspace.orders.map((order) => {
             const confirmBusy = supplierActionBusyId === `confirm:${order.id}`;
             const deliveryBusy = supplierActionBusyId === `delivery:${order.id}`;
             const invoiceBusy = supplierActionBusyId === `invoice:${order.id}`;
+            const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
+            const invoice = workspace.invoices.find((item) => item.orderId === order.id);
             return (
               <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -2119,6 +2124,11 @@ const SupplierWorkspaceView: React.FC<{
                     <p className="mt-1 text-sm text-slate-500">采购方租户 {order.tenantId}</p>
                   </div>
                   <p className="font-mono font-black text-slate-900">{currency(order.amount)}</p>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <MiniFact label="预计收货" value={order.expectedReceiptDate} />
+                  <MiniFact label="物流单号" value={delivery ? `${delivery.carrier} ${delivery.trackingNo}` : '待发货'} />
+                  <MiniFact label="发票状态" value={invoice ? invoice.paymentStatus : '待开票'} />
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={order.status} />
@@ -2161,21 +2171,26 @@ const SupplierWorkspaceView: React.FC<{
             );
           })}
         </div>
+        )}
       </Panel>
     </div>
     )}
 
     {activeModule === 'invoices' && (
       <Panel title="发票与应收" icon={Receipt}>
-        <SimpleList
-          rows={workspace.invoices.map((invoice) => ({
-            id: invoice.id,
-            title: invoice.id,
-            meta: `订单 ${invoice.orderId}`,
-            value: currency(invoice.amount),
-            status: invoice.paymentStatus,
-          }))}
-        />
+        {workspace.invoices.length === 0 ? (
+          <EmptyState title="暂无应收发票" desc="订单收货后提交发票，应收和付款状态会显示在这里。" />
+        ) : (
+          <SimpleList
+            rows={workspace.invoices.map((invoice) => ({
+              id: invoice.id,
+              title: invoice.id,
+              meta: `订单 ${invoice.orderId}`,
+              value: currency(invoice.amount),
+              status: invoice.paymentStatus,
+            }))}
+          />
+        )}
       </Panel>
     )}
   </>
