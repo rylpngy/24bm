@@ -2464,6 +2464,26 @@ const ApprovalDetailOperationPanel: React.FC<{
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
 }> = ({ detail, approval, approvalBusyId, javaEnabled, onReviewApproval }) => {
   const busy = approvalBusyId === detail.id;
+  const approvalStatus = detail.reviewCheckRows.find((row) => row.label === '审批状态')?.value ?? detail.status;
+  const businessStatus = detail.reviewCheckRows.find((row) => row.label === '业务状态')?.value ?? detail.status;
+  const contextCount = detail.reviewCheckRows.find((row) => row.label === '关联明细')?.value ?? `${detail.contextRows.length} 条`;
+  const pendingTime = detail.timelineRows.find((row) => row.label === '等待处理')?.value
+    ?? detail.timelineRows.find((row) => row.label === '处理完成')?.value
+    ?? '未记录';
+  const nextAction = detail.reviewCheckRows.find((row) => row.label === '下一步')?.value ?? (detail.canReview ? '通过或驳回' : '已归档');
+  const renderApprovalSummary = () => (
+    <div className="mb-3 rounded-lg border border-blue-100 bg-white p-3">
+      <p className="text-xs font-black text-slate-500">审批摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        <MiniFact label="审批类型" value={detail.typeLabel} />
+        <MiniFact label="审批状态" value={approvalStatus} />
+        <MiniFact label="业务状态" value={businessStatus} />
+        <MiniFact label="关联明细" value={contextCount} />
+        <MiniFact label="等待处理" value={pendingTime} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </div>
+  );
 
   return (
     <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
@@ -2474,6 +2494,8 @@ const ApprovalDetailOperationPanel: React.FC<{
         </div>
         <StatusPill label={detail.status} />
       </div>
+
+      {renderApprovalSummary()}
 
       {!javaEnabled && (
         <ProcessStateNotice
