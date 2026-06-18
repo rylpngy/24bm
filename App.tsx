@@ -4952,11 +4952,11 @@ const SupplierWorkspaceView: React.FC<{
                   </div>
                   <p className="font-mono font-black text-slate-900">{currency(order.amount)}</p>
                 </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  <MiniFact label="预计收货" value={order.expectedReceiptDate} />
-                  <MiniFact label="物流单号" value={delivery ? `${delivery.carrier} ${delivery.trackingNo}` : '待发货'} />
-                  <MiniFact label="发票状态" value={invoice ? invoice.paymentStatus : '待开票'} />
-                </div>
+                <SupplierOrderActionSummaryPanel
+                  order={order}
+                  deliveryLabel={delivery ? `${delivery.carrier} ${delivery.trackingNo}` : '待发货'}
+                  invoiceStatus={invoice ? invoice.paymentStatus : '待开票'}
+                />
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={order.status} />
                   {javaEnabled && (
@@ -5022,6 +5022,36 @@ const SupplierWorkspaceView: React.FC<{
     )}
   </>
 );
+
+const SupplierOrderActionSummaryPanel: React.FC<{
+  order: SupplierWorkspace['orders'][number];
+  deliveryLabel: string;
+  invoiceStatus: string;
+}> = ({ order, deliveryLabel, invoiceStatus }) => {
+  const nextAction = order.status === '待供应商确认'
+    ? '确认订单'
+    : order.status === '待发货'
+      ? '提交发货'
+      : order.status === '已收货' && invoiceStatus === '待开票'
+        ? '提交发票'
+        : order.status === '已完成'
+          ? '履约完成'
+          : '跟进履约';
+
+  return (
+    <div className="mt-3 rounded-lg border border-orange-100 bg-orange-50 p-3">
+      <p className="text-xs font-black text-orange-800">销售订单摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <MiniFact label="采购方租户" value={order.tenantId} />
+        <MiniFact label="订单金额" value={currency(order.amount)} />
+        <MiniFact label="预计收货" value={order.expectedReceiptDate} />
+        <MiniFact label="物流单号" value={deliveryLabel} />
+        <MiniFact label="发票状态" value={invoiceStatus} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </div>
+  );
+};
 
 const HeroBand: React.FC<{
   eyebrow: string;
