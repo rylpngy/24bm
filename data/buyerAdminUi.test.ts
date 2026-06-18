@@ -9,6 +9,7 @@ import {
   buildDemandListRows,
   buildInvoicePaymentRows,
   buildMaterialCatalogRows,
+  buildMaterialDetailPanel,
   buildOrderDetailPanel,
   buildOrderFulfillmentRows,
   buildReceiptInspectionRows,
@@ -315,6 +316,55 @@ describe('buyer admin UI helpers', () => {
         usageLabel: '1 个需求引用',
       },
     ]);
+  });
+
+  it('builds material detail panels with demand, RFQ, and supplier coverage context', () => {
+    expect(buildMaterialDetailPanel(workspace, 'mat-acme-1')).toEqual({
+      id: 'mat-acme-1',
+      title: '视频会议一体机',
+      status: '启用',
+      facts: [
+        { label: '物料编码', value: 'IT-1001' },
+        { label: '品类', value: '智能终端' },
+        { label: '单位', value: '台' },
+        { label: '参考价', value: '¥18,000' },
+      ],
+      demandRows: [
+        {
+          id: 'dem-acme-1',
+          title: '华东总部会议室升级',
+          status: '已通过',
+          quantityLabel: '12 台',
+          referenceAmountLabel: '¥216,000',
+        },
+        {
+          id: 'dem-acme-4',
+          title: '销售培训设备采购',
+          status: '审批中',
+          quantityLabel: '3 台',
+          referenceAmountLabel: '¥54,000',
+        },
+      ],
+      rfqRows: [
+        {
+          id: 'rfq-acme-1',
+          title: '会议室升级设备询价',
+          status: '已定标',
+          quoteLabel: '3/3 已报价',
+        },
+      ],
+      supplierCoverageRows: [
+        { id: 'rel-acme-orbit', supplierName: '奥博智能设备', status: '已准入', level: 'A' },
+      ],
+      usageSummary: [
+        { label: '引用需求', value: '2 条' },
+        { label: '关联询价', value: '1 个' },
+        { label: '准入供应商', value: '1 家' },
+        { label: '参考金额', value: '¥270,000' },
+      ],
+    });
+
+    expect(buildMaterialDetailPanel(workspace, 'mat-acme-3')?.supplierCoverageRows).toEqual([]);
   });
 
   it('summarizes RFQ list rows with demand and quote response context', () => {

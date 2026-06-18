@@ -92,6 +92,39 @@ export interface MaterialCatalogRow {
   status: string;
 }
 
+export interface MaterialDetailDemandRow {
+  id: string;
+  title: string;
+  status: string;
+  quantityLabel: string;
+  referenceAmountLabel: string;
+}
+
+export interface MaterialDetailRfqRow {
+  id: string;
+  title: string;
+  status: string;
+  quoteLabel: string;
+}
+
+export interface MaterialDetailSupplierCoverageRow {
+  id: string;
+  supplierName: string;
+  status: string;
+  level: string;
+}
+
+export interface MaterialDetailPanel {
+  id: string;
+  title: string;
+  status: string;
+  facts: BuyerModuleFact[];
+  demandRows: MaterialDetailDemandRow[];
+  rfqRows: MaterialDetailRfqRow[];
+  supplierCoverageRows: MaterialDetailSupplierCoverageRow[];
+  usageSummary: BuyerModuleFact[];
+}
+
 export interface RfqListRow {
   id: string;
   title: string;
@@ -498,6 +531,73 @@ export const buildMaterialCatalogRows = (workspace: BuyerWorkspace): MaterialCat
       status: '启用',
     };
   });
+
+export const buildMaterialDetailPanel = (
+  workspace: BuyerWorkspace,
+  materialId: string,
+): MaterialDetailPanel | undefined => {
+  const material = workspace.materials.find((item) => item.id === materialId);
+  if (!material) return undefined;
+
+  const materialDemandLines = workspace.demands
+    .flatMap((demand) => demand.lineItems
+      .filter((lineItem) => lineItem.materialId === material.id)
+      .map((lineItem) => ({
+        demand,
+        lineItem,
+      })));
+  const demandRows = materialDemandLines
+    .map(({ demand, lineItem }) => ({
+        id: demand.id,
+        title: demand.title,
+        status: demand.status,
+        quantityLabel: `${lineItem.quantity} ${material.unit}`,
+        referenceAmountLabel: compactCurrency(lineItem.quantity * material.referencePrice),
+      }));
+  const demandIds = new Set(demandRows.map((demand) => demand.id));
+  const rfqRows = workspace.rfqs
+    .filter((rfq) => rfq.demandIds.some((demandId) => demandIds.has(demandId)))
+    .map((rfq) => ({
+      id: rfq.id,
+      title: rfq.title,
+      status: rfq.status,
+      quoteLabel: `${rfq.quotes.length}/${rfq.invitedSupplierIds.length} 已报价`,
+    }));
+  const supplierCoverageRows = workspace.privateSupplierRelations
+    .filter((relation) => relation.status === '已准入' && relation.categories.includes(material.category))
+    .map((relation) => {
+      const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
+      return {
+        id: relation.id,
+        supplierName: supplier?.name ?? relation.supplierId,
+        status: relation.status,
+        level: relation.level,
+      };
+    });
+  const referenceAmount = materialDemandLines
+    .reduce((sum, { lineItem }) => sum + (lineItem.quantity * material.referencePrice), 0);
+
+  return {
+    id: material.id,
+    title: material.name,
+    status: '启用',
+    facts: [
+      { label: '物料编码', value: material.code },
+      { label: '品类', value: material.category },
+      { label: '单位', value: material.unit },
+      { label: '参考价', value: compactCurrency(material.referencePrice) },
+    ],
+    demandRows,
+    rfqRows,
+    supplierCoverageRows,
+    usageSummary: [
+      { label: '引用需求', value: `${demandRows.length} 条` },
+      { label: '关联询价', value: `${rfqRows.length} 个` },
+      { label: '准入供应商', value: `${supplierCoverageRows.length} 家` },
+      { label: '参考金额', value: compactCurrency(referenceAmount) },
+    ],
+  };
+};
 
 export const buildRfqListRows = (workspace: BuyerWorkspace): RfqListRow[] =>
   workspace.rfqs.map((rfq) => {

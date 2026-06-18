@@ -37,6 +37,7 @@ import {
   buildInvoicePaymentRows,
   buildOrderDetailPanel,
   buildMaterialCatalogRows,
+  buildMaterialDetailPanel,
   buildOrderFulfillmentRows,
   buildReceiptInspectionRows,
   buildRfqDetailPanel,
@@ -46,6 +47,7 @@ import {
   buildWorkspaceApprovalQueue,
   type BuyerModuleFact,
   type DemandDetailPanel,
+  type MaterialDetailPanel,
   type OrderDetailPanel,
   type RfqDetailPanel,
   type SupplierDetailPanel,
@@ -1075,6 +1077,7 @@ const BuyerWorkspaceView: React.FC<{
   const [selectedRfqId, setSelectedRfqId] = useState(workspace.rfqs[0]?.id ?? '');
   const [selectedOrderId, setSelectedOrderId] = useState(workspace.orders[0]?.id ?? '');
   const [selectedSupplierRelationId, setSelectedSupplierRelationId] = useState(workspace.privateSupplierRelations[0]?.id ?? '');
+  const [selectedMaterialId, setSelectedMaterialId] = useState(workspace.materials[0]?.id ?? '');
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
     if (priorityDelta !== 0) return priorityDelta;
@@ -1120,6 +1123,12 @@ const BuyerWorkspaceView: React.FC<{
     : workspace.privateSupplierRelations[0]?.id ?? '';
   const selectedSupplierDetail = selectedSupplierRelation
     ? buildSupplierDetailPanel(workspace, selectedSupplierRelation)
+    : undefined;
+  const selectedMaterial = workspace.materials.some((material) => material.id === selectedMaterialId)
+    ? selectedMaterialId
+    : workspace.materials[0]?.id ?? '';
+  const selectedMaterialDetail = selectedMaterial
+    ? buildMaterialDetailPanel(workspace, selectedMaterial)
     : undefined;
 
   return (
@@ -1489,26 +1498,45 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {activeModule === 'materials' && (
-      <Panel title="物料目录" icon={Database}>
-        {workspace.materials.length === 0 ? (
-          <EmptyState title="暂无物料目录" desc="先维护物料或服务主数据，再用于采购需求明细和询价范围。" />
-        ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {buildMaterialCatalogRows(workspace).map((material) => (
-              <div key={material.id} className="rounded-lg border border-slate-200 bg-white p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-black text-slate-900">{material.title}</p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">{material.usageLabel}</p>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <Panel title="物料目录" icon={Database}>
+          {workspace.materials.length === 0 ? (
+            <EmptyState title="暂无物料目录" desc="先维护物料或服务主数据，再用于采购需求明细和询价范围。" />
+          ) : (
+            <div className="grid gap-3 lg:grid-cols-2">
+              {buildMaterialCatalogRows(workspace).map((material) => (
+                <div
+                  key={material.id}
+                  className={`rounded-lg border bg-white p-4 transition ${
+                    selectedMaterial === material.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-black text-slate-900">{material.title}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-400">{material.usageLabel}</p>
+                    </div>
+                    <StatusPill label={material.status} />
                   </div>
-                  <StatusPill label={material.status} />
+                  <InlineFactGrid facts={material.facts} />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMaterialId(material.id)}
+                    className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                      selectedMaterial === material.id
+                        ? 'border-blue-200 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {selectedMaterial === material.id ? '当前详情' : '查看详情'}
+                  </button>
                 </div>
-                <InlineFactGrid facts={material.facts} />
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
+              ))}
+            </div>
+          )}
+        </Panel>
+        <MaterialDetailPanelView detail={selectedMaterialDetail} />
+      </div>
     )}
 
     {(activeModule === 'suppliers' || activeModule === 'orders' || activeModule === 'invoices' || activeModule === 'receipts') && (
@@ -2299,6 +2327,124 @@ const SupplierDetailPanelView: React.FC<{
           ) : (
             <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
               暂无采购订单。
+            </p>
+          )}
+        </section>
+      </div>
+    )}
+  </Panel>
+);
+
+const MaterialDetailPanelView: React.FC<{
+  detail?: MaterialDetailPanel;
+}> = ({ detail }) => (
+  <Panel title="物料详情" icon={Database}>
+    {!detail ? (
+      <EmptyState title="暂无物料详情" desc="选择一个物料或服务后，可查看引用需求、询价项目和供应商覆盖情况。" />
+    ) : (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-base font-black text-slate-950">{detail.title}</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">{detail.id}</p>
+            </div>
+            <StatusPill label={detail.status} />
+          </div>
+          <InlineFactGrid facts={detail.facts} />
+        </div>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">使用概览</p>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {detail.usageSummary.map((fact) => (
+              <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">引用需求</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.demandRows.length} 条
+            </span>
+          </div>
+          {detail.demandRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.demandRows.map((demand) => (
+                <div key={demand.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-900">{demand.title}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">
+                        {demand.quantityLabel} · {demand.referenceAmountLabel}
+                      </p>
+                    </div>
+                    <StatusPill label={demand.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无需求引用。
+            </p>
+          )}
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">关联询价</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.rfqRows.length} 个
+            </span>
+          </div>
+          {detail.rfqRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.rfqRows.map((rfq) => (
+                <div key={rfq.id} className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-900">{rfq.title}</p>
+                      <p className="mt-1 text-xs font-bold text-blue-700">{rfq.quoteLabel}</p>
+                    </div>
+                    <StatusPill label={rfq.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无关联询价。
+            </p>
+          )}
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">供应商覆盖</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.supplierCoverageRows.length} 家
+            </span>
+          </div>
+          {detail.supplierCoverageRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.supplierCoverageRows.map((supplier) => (
+                <div key={supplier.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-900">{supplier.supplierName}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">等级 {supplier.level}</p>
+                    </div>
+                    <StatusPill label={supplier.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无已准入供应商覆盖该品类。
             </p>
           )}
         </section>
