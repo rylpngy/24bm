@@ -3336,10 +3336,27 @@ const OrderDetailOperationPanel: React.FC<{
   buyerFulfillmentBusyId,
   onCreateReceipt,
 }) => {
+  const expectedReceiptDate = detail.facts.find((fact) => fact.label === '预计到货')?.value ?? order?.expectedReceiptDate ?? '未维护';
+  const logisticsStatus = detail.facts.find((fact) => fact.label === '物流状态')?.value ?? '待发货';
+  const invoicePaymentStatus = detail.facts.find((fact) => fact.label === '发票状态')?.value ?? '待开票';
+  const renderFulfillmentSummary = () => (
+    <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3">
+      <p className="text-xs font-black text-slate-500">履约摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        <MiniFact label="供应商" value={detail.supplierName} />
+        <MiniFact label="订单金额" value={detail.amountLabel} />
+        <MiniFact label="预计到货" value={expectedReceiptDate} />
+        <MiniFact label="物流状态" value={logisticsStatus} />
+        <MiniFact label="发票付款" value={invoicePaymentStatus} />
+      </div>
+    </div>
+  );
+
   if (!javaEnabled) {
     return (
       <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-black text-slate-500">订单操作</p>
+        {renderFulfillmentSummary()}
         <ProcessStateNotice
           variant="waiting"
           title="当前为 mock 数据源"
@@ -3353,6 +3370,7 @@ const OrderDetailOperationPanel: React.FC<{
     return (
       <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-black text-slate-500">订单操作</p>
+        {renderFulfillmentSummary()}
         <ProcessStateNotice
           variant="waiting"
           title="未找到订单记录"
@@ -3373,6 +3391,8 @@ const OrderDetailOperationPanel: React.FC<{
         </div>
         <StatusPill label={detail.status} />
       </div>
+
+      {renderFulfillmentSummary()}
 
       {order.status === '待供应商确认' && (
         <ProcessStateNotice
