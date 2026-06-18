@@ -15,6 +15,7 @@ import {
   buildMaterialDetailPanel,
   buildOrderDetailPanel,
   buildOrderFulfillmentRows,
+  buildQuoteComparisonDetailPanel,
   buildReceiptInspectionDetailPanel,
   buildReceiptInspectionRows,
   buildRfqDetailPanel,
@@ -521,6 +522,70 @@ describe('buyer admin UI helpers', () => {
     });
 
     expect(buildRfqDetailPanel(workspace, 'rfq-acme-2')?.recommendedSupplierLabel).toBe('暂无可推荐报价');
+  });
+
+  it('builds quote comparison detail panels with recommendation, approval, and order context', () => {
+    expect(buildQuoteComparisonDetailPanel(workspace, 'rfq-acme-1')).toEqual({
+      id: 'rfq-acme-1',
+      title: '会议室升级设备询价',
+      status: '已定标',
+      recommendationLabel: '推荐：奥博智能设备 ¥216,000',
+      canSubmitAward: false,
+      facts: [
+        { label: '报价响应', value: '3/3' },
+        { label: '最低报价', value: '¥216,000' },
+        { label: '交付周期', value: '14 天' },
+        { label: '税率', value: '13%' },
+      ],
+      recommendationFacts: [
+        { label: '推荐供应商', value: '奥博智能设备' },
+        { label: '推荐理由', value: '最低报价优先，价格相同时按交付周期排序' },
+        { label: '定标状态', value: '已定标' },
+        { label: '订单状态', value: '已生成订单 po-acme-1' },
+      ],
+      quoteRows: [
+        {
+          id: 'quo-acme-1',
+          supplierName: '奥博智能设备',
+          amountLabel: '¥216,000',
+          deliveryLabel: '14 天',
+          taxLabel: '13%',
+          status: '已提交',
+          rankLabel: '第 1 名',
+          recommended: true,
+          awarded: true,
+        },
+        {
+          id: 'quo-acme-2',
+          supplierName: '流明办公科技',
+          amountLabel: '¥228,000',
+          deliveryLabel: '10 天',
+          taxLabel: '13%',
+          status: '已提交',
+          rankLabel: '第 2 名',
+          recommended: false,
+          awarded: false,
+        },
+        {
+          id: 'quo-acme-3',
+          supplierName: '海港物流服务',
+          amountLabel: '¥238,000',
+          deliveryLabel: '18 天',
+          taxLabel: '13%',
+          status: '已提交',
+          rankLabel: '第 3 名',
+          recommended: false,
+          awarded: false,
+        },
+      ],
+      relatedRows: [
+        { id: 'dem-acme-1', title: '采购需求', detail: '华东总部会议室升级 · 已通过' },
+        { id: 'po-acme-1', title: '采购订单', detail: '¥216,000 · 待收货' },
+      ],
+      nextActionTitle: '待收货验收',
+    });
+
+    expect(buildQuoteComparisonDetailPanel(workspace, 'missing-rfq')).toBeUndefined();
   });
 
   it('summarizes demand list rows with catalog and RFQ readiness context', () => {

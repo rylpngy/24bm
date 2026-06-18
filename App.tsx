@@ -42,6 +42,7 @@ import {
   buildMaterialCatalogRows,
   buildMaterialDetailPanel,
   buildOrderFulfillmentRows,
+  buildQuoteComparisonDetailPanel,
   buildReceiptInspectionDetailPanel,
   buildReceiptInspectionRows,
   buildRfqDetailPanel,
@@ -56,6 +57,7 @@ import {
   type InvoicePaymentDetailPanel,
   type MaterialDetailPanel,
   type OrderDetailPanel,
+  type QuoteComparisonDetailPanel,
   type ReceiptInspectionDetailPanel,
   type RfqDetailPanel,
   type SupplierDetailPanel,
@@ -1132,6 +1134,9 @@ const BuyerWorkspaceView: React.FC<{
   const selectedRfqDetail = selectedRfq
     ? buildRfqDetailPanel(workspace, selectedRfq)
     : undefined;
+  const selectedQuoteComparisonDetail = selectedRfq
+    ? buildQuoteComparisonDetailPanel(workspace, selectedRfq)
+    : undefined;
   const selectedOrder = workspace.orders.some((order) => order.id === selectedOrderId)
     ? selectedOrderId
     : workspace.orders[0]?.id ?? '';
@@ -1563,7 +1568,7 @@ const BuyerWorkspaceView: React.FC<{
         </div>
         )}
       </Panel>
-      <RfqDetailPanelView detail={selectedRfqDetail} />
+      <QuoteComparisonDetailPanelView detail={selectedQuoteComparisonDetail} />
       </>
       )}
     </div>
@@ -2425,6 +2430,116 @@ const RfqDetailPanelView: React.FC<{
           <MiniFact label="订单状态" value={detail.orderLabel} />
           <MiniFact label="下一步" value={detail.nextActionTitle} />
         </div>
+      </div>
+    )}
+  </Panel>
+);
+
+const QuoteComparisonDetailPanelView: React.FC<{
+  detail?: QuoteComparisonDetailPanel;
+}> = ({ detail }) => (
+  <Panel title="比价详情" icon={BarChart3}>
+    {!detail ? (
+      <EmptyState title="暂无比价详情" desc="选择一个询价项目后，可查看推荐结论、报价排行和关联业务。" />
+    ) : (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-base font-black text-slate-950">{detail.title}</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">{detail.id}</p>
+            </div>
+            <StatusPill label={detail.status} />
+          </div>
+          <p className="mt-3 text-sm font-black text-blue-700">{detail.recommendationLabel}</p>
+          <InlineFactGrid facts={detail.facts} />
+        </div>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">推荐结论</p>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {detail.recommendationFacts.map((fact) => (
+              <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">报价排行</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.quoteRows.length} 条
+            </span>
+          </div>
+          {detail.quoteRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.quoteRows.map((quote) => (
+                <div
+                  key={quote.id}
+                  className={`rounded-lg border p-3 ${
+                    quote.awarded
+                      ? 'border-emerald-200 bg-emerald-50'
+                      : quote.recommended
+                        ? 'border-blue-200 bg-blue-50'
+                        : 'border-slate-200 bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-black text-slate-900">{quote.supplierName}</p>
+                        <span className="rounded-md bg-white/80 px-2 py-0.5 text-[11px] font-black text-slate-500">
+                          {quote.rankLabel}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs font-bold text-slate-500">
+                        {quote.deliveryLabel}交付 · 税率 {quote.taxLabel}
+                      </p>
+                    </div>
+                    <p className="shrink-0 font-mono text-sm font-black text-slate-900">{quote.amountLabel}</p>
+                  </div>
+                  {(quote.recommended || quote.awarded) && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {quote.recommended && (
+                        <span className="rounded-lg bg-blue-100 px-2 py-1 text-[11px] font-black text-blue-700">
+                          推荐报价
+                        </span>
+                      )}
+                      {quote.awarded && (
+                        <span className="rounded-lg bg-emerald-100 px-2 py-1 text-[11px] font-black text-emerald-700">
+                          已定标
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无供应商报价，等待邀请供应商响应。
+            </p>
+          )}
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">关联业务</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.relatedRows.length} 条
+            </span>
+          </div>
+          <div className="space-y-2">
+            {detail.relatedRows.map((row) => (
+              <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <MiniFact label="下一步" value={detail.nextActionTitle} />
       </div>
     )}
   </Panel>

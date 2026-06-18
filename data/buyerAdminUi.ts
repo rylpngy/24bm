@@ -1,6 +1,7 @@
 import type { BuyerAdminModule } from './adminNavigation';
 import { approvalTypeLabel } from './approvalUi';
 import {
+  canSubmitAwardApproval,
   describeInvoiceNextAction,
   describeOrderNextAction,
   describeRfqNextAction,
@@ -195,6 +196,25 @@ export interface RfqDetailPanel {
   quoteRows: RfqDetailQuoteRow[];
   recommendedSupplierLabel: string;
   orderLabel: string;
+  nextActionTitle: string;
+}
+
+export interface QuoteComparisonRelatedRow {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface QuoteComparisonDetailPanel {
+  id: string;
+  title: string;
+  status: string;
+  recommendationLabel: string;
+  canSubmitAward: boolean;
+  facts: BuyerModuleFact[];
+  recommendationFacts: BuyerModuleFact[];
+  quoteRows: RfqDetailQuoteRow[];
+  relatedRows: QuoteComparisonRelatedRow[];
   nextActionTitle: string;
 }
 
@@ -885,6 +905,72 @@ export const buildRfqDetailPanel = (
       ? `推荐：${supplierName(recommendedQuote.supplierId)} ${compactCurrency(recommendedQuote.amount)}`
       : '暂无可推荐报价',
     orderLabel: generatedOrder ? `已生成订单 ${generatedOrder.id}` : '暂未生成采购订单',
+    nextActionTitle: nextAction.title,
+  };
+};
+
+export const buildQuoteComparisonDetailPanel = (
+  workspace: BuyerWorkspace,
+  rfqId: string,
+): QuoteComparisonDetailPanel | undefined => {
+  const rfq = workspace.rfqs.find((item) => item.id === rfqId);
+  if (!rfq) return undefined;
+
+  const detail = buildRfqDetailPanel(workspace, rfqId);
+  if (!detail) return undefined;
+
+  const recommendedQuote = selectRecommendedQuote(rfq);
+  const recommendedSupplier = recommendedQuote
+    ? workspace.suppliers.find((supplier) => supplier.id === recommendedQuote.supplierId)
+    : undefined;
+  const generatedOrder = workspace.orders.find((order) => order.rfqId === rfq.id);
+  const approvals = 'approvals' in workspace && Array.isArray(workspace.approvals)
+    ? workspace.approvals
+    : [];
+  const approvedAward = approvals.find((approval) =>
+    approval.bizType === 'rfq_award'
+    && approval.parentBizId === rfq.id
+    && approval.status === '已通过');
+  const nextAction = generatedOrder
+    ? describeOrderNextAction(generatedOrder)
+    : describeRfqNextAction(rfq, approvedAward?.bizId, workspace.orders);
+
+  return {
+    id: rfq.id,
+    title: rfq.title,
+    status: rfq.status,
+    recommendationLabel: detail.recommendedSupplierLabel,
+    canSubmitAward: canSubmitAwardApproval(rfq),
+    facts: [
+      { label: '报价响应', value: `${rfq.quotes.length}/${rfq.invitedSupplierIds.length}` },
+      { label: '最低报价', value: recommendedQuote ? compactCurrency(recommendedQuote.amount) : '暂无报价' },
+      { label: '交付周期', value: recommendedQuote ? `${recommendedQuote.deliveryDays} 天` : '暂无报价' },
+      { label: '税率', value: recommendedQuote ? `${recommendedQuote.taxRate}%` : '暂无报价' },
+    ],
+    recommendationFacts: [
+      { label: '推荐供应商', value: recommendedSupplier?.name ?? recommendedQuote?.supplierId ?? '暂无推荐' },
+      { label: '推荐理由', value: '最低报价优先，价格相同时按交付周期排序' },
+      { label: '定标状态', value: rfq.status },
+      { label: '订单状态', value: generatedOrder ? `已生成订单 ${generatedOrder.id}` : '暂未生成采购订单' },
+    ],
+    quoteRows: detail.quoteRows,
+    relatedRows: [
+      ...rfq.demandIds.map((demandId) => {
+        const demand = workspace.demands.find((item) => item.id === demandId);
+        return {
+          id: demandId,
+          title: '采购需求',
+          detail: `${demand?.title ?? demandId} · ${demand?.status ?? '未找到'}`,
+        };
+      }),
+      generatedOrder
+        ? {
+            id: generatedOrder.id,
+            title: '采购订单',
+            detail: `${compactCurrency(generatedOrder.amount)} · ${generatedOrder.status}`,
+          }
+        : undefined,
+    ].filter((row): row is QuoteComparisonRelatedRow => Boolean(row)),
     nextActionTitle: nextAction.title,
   };
 };
