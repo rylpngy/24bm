@@ -29,4 +29,22 @@ describe('buyer supplier detail UI', () => {
     expect(supplierDetailView).toContain('协作记录');
     expect(app).toContain('查看详情');
   });
+
+  it('surfaces supplier admission actions inside the detail panel', () => {
+    const app = read('App.tsx');
+    const supplierDetailView = app.slice(
+      app.indexOf('const SupplierDetailPanelView'),
+      app.indexOf('const MaterialDetailPanelView'),
+    );
+
+    expect(supplierDetailView).toContain('SupplierDetailOperationPanel');
+    expect(supplierDetailView).toContain('关系操作');
+    expect(supplierDetailView).toContain('relation?: BuyerWorkspace[\'privateSupplierRelations\'][number]');
+    expect(supplierDetailView).toContain('javaEnabled: boolean');
+    expect(supplierDetailView).toContain('supplierAdmissionBusyId: string | null');
+    expect(supplierDetailView).toContain('onSubmitSupplierAdmission: (relationId: string) => void');
+    expect(app).toContain('relation={selectedSupplierRelationRecord}');
+    expect(app).toContain('supplierAdmissionBusyId={supplierAdmissionBusyId}');
+    expect(app).toContain('onSubmitSupplierAdmission={onSubmitSupplierAdmission}');
+  });
 });

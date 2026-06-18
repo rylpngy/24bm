@@ -1162,6 +1162,9 @@ const BuyerWorkspaceView: React.FC<{
   const selectedSupplierDetail = selectedSupplierRelation
     ? buildSupplierDetailPanel(workspace, selectedSupplierRelation)
     : undefined;
+  const selectedSupplierRelationRecord = selectedSupplierDetail
+    ? workspace.privateSupplierRelations.find((relation) => relation.id === selectedSupplierDetail.id)
+    : undefined;
   const selectedMaterial = workspace.materials.some((material) => material.id === selectedMaterialId)
     ? selectedMaterialId
     : workspace.materials[0]?.id ?? '';
@@ -1684,7 +1687,13 @@ const BuyerWorkspaceView: React.FC<{
         </div>
         )}
       </Panel>
-      <SupplierDetailPanelView detail={selectedSupplierDetail} />
+      <SupplierDetailPanelView
+        detail={selectedSupplierDetail}
+        relation={selectedSupplierRelationRecord}
+        javaEnabled={javaEnabled}
+        supplierAdmissionBusyId={supplierAdmissionBusyId}
+        onSubmitSupplierAdmission={onSubmitSupplierAdmission}
+      />
       </>
       )}
 
@@ -3055,7 +3064,17 @@ const InvoicePaymentDetailPanelView: React.FC<{
 
 const SupplierDetailPanelView: React.FC<{
   detail?: SupplierDetailPanel;
-}> = ({ detail }) => (
+  relation?: BuyerWorkspace['privateSupplierRelations'][number];
+  javaEnabled: boolean;
+  supplierAdmissionBusyId: string | null;
+  onSubmitSupplierAdmission: (relationId: string) => void;
+}> = ({
+  detail,
+  relation,
+  javaEnabled,
+  supplierAdmissionBusyId,
+  onSubmitSupplierAdmission,
+}) => (
   <Panel title="供应商详情" icon={Users}>
     {!detail ? (
       <EmptyState title="暂无供应商详情" desc="选择一个私域供应商关系后，可查看准入、品类、绩效和协作记录。" />
@@ -3160,10 +3179,115 @@ const SupplierDetailPanelView: React.FC<{
             </p>
           )}
         </section>
+
+        <SupplierDetailOperationPanel
+          detail={detail}
+          relation={relation}
+          javaEnabled={javaEnabled}
+          supplierAdmissionBusyId={supplierAdmissionBusyId}
+          onSubmitSupplierAdmission={onSubmitSupplierAdmission}
+        />
       </DetailPanelBody>
     )}
   </Panel>
 );
+
+const SupplierDetailOperationPanel: React.FC<{
+  detail: SupplierDetailPanel;
+  relation?: BuyerWorkspace['privateSupplierRelations'][number];
+  javaEnabled: boolean;
+  supplierAdmissionBusyId: string | null;
+  onSubmitSupplierAdmission: (relationId: string) => void;
+}> = ({
+  detail,
+  relation,
+  javaEnabled,
+  supplierAdmissionBusyId,
+  onSubmitSupplierAdmission,
+}) => {
+  if (!javaEnabled) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">关系操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="当前为 mock 数据源"
+          desc="切换到 Java 模式后，可在详情中提交供应商准入审批。"
+        />
+      </section>
+    );
+  }
+
+  if (!relation) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">关系操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="未找到供应商关系"
+          desc="请重新选择供应商或刷新数据。"
+        />
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-blue-800">关系操作</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">{detail.actionTitle}</p>
+        </div>
+        <StatusPill label={detail.status} />
+      </div>
+
+      {relation.status === '待准入' && (
+        <PrimaryActionButton
+          onClick={() => onSubmitSupplierAdmission(relation.id)}
+          disabled={supplierAdmissionBusyId === relation.id}
+          busy={supplierAdmissionBusyId === relation.id}
+          icon={Send}
+          pendingLabel="提交中"
+          fullWidth
+        >
+          提交准入
+        </PrimaryActionButton>
+      )}
+
+      {relation.status === '准入审批中' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待准入审批"
+          desc="审批通过后，该供应商会进入已准入状态，可参与后续询价邀请。"
+        />
+      )}
+
+      {relation.status === '已准入' && (
+        <ProcessStateNotice
+          variant="handled"
+          title="已完成准入"
+          desc="该供应商已可参与授权品类下的询价、报价和订单履约。"
+        />
+      )}
+
+      {relation.status === '黑名单' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="合作受限"
+          desc="该供应商已进入黑名单，暂不建议邀请参与新询价。"
+        />
+      )}
+
+      {relation.status === '已驳回' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="准入已驳回"
+          desc="请补充资质或调整关系信息后，再重新发起准入审批。"
+        />
+      )}
+    </section>
+  );
+};
 
 const MaterialDetailPanelView: React.FC<{
   detail?: MaterialDetailPanel;
