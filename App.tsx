@@ -729,6 +729,8 @@ const AppSidebar: React.FC<{
                 type="button"
                 onClick={() => onSelectRole(role.id)}
                 title={role.label}
+                aria-current={roleActive ? 'true' : undefined}
+                aria-pressed={roleActive}
                 className={`flex w-full flex-col items-center gap-1 rounded-lg px-2 py-3 text-center transition lg:flex-row lg:gap-3 lg:px-4 lg:text-left ${
                   roleActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
@@ -751,6 +753,8 @@ const AppSidebar: React.FC<{
                         type="button"
                         onClick={() => onSelectModule(role.id, module.id)}
                         title={`${module.label}：${module.desc}`}
+                        aria-current={moduleActive ? 'page' : undefined}
+                        aria-pressed={moduleActive}
                         className={`flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 text-center transition lg:flex-row lg:items-start lg:gap-2 lg:px-3 lg:text-left ${
                           moduleActive ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                         }`}

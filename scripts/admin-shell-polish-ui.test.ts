@@ -24,4 +24,13 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('EmptyState');
     expect(app).toContain('variant="empty"');
   });
+
+  it('marks active role and module navigation items for accessible admin state', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('aria-current={roleActive ?');
+    expect(app).toContain('aria-pressed={roleActive}');
+    expect(app).toContain('aria-current={moduleActive ?');
+    expect(app).toContain('aria-pressed={moduleActive}');
+  });
 });
