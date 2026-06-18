@@ -4103,11 +4103,30 @@ const DemandCreateForm: React.FC<{
   const [department, setDepartment] = useState(firstDepartment?.id ?? defaultDepartment);
   const [requester, setRequester] = useState(firstRequester?.id ?? defaultRequester);
   const [budget, setBudget] = useState(68000);
-  const [materialId, setMaterialId] = useState(firstMaterial?.id ?? '');
-  const [quantity, setQuantity] = useState(1);
+  const [demandLineItems, setDemandLineItems] = useState([{ materialId: firstMaterial?.id ?? '', quantity: 1 }]);
   const [submitForApproval, setSubmitForApproval] = useState(true);
 
-  const canSubmit = !disabled && title.trim() && department.trim() && materialId && budget > 0 && quantity > 0;
+  const validLineItems = demandLineItems
+    .filter((lineItem) => lineItem.materialId && lineItem.quantity > 0);
+  const estimatedAmount = validLineItems.reduce((sum, lineItem) => {
+    const material = materials.find((item) => item.id === lineItem.materialId);
+    return sum + ((material?.referencePrice ?? 0) * lineItem.quantity);
+  }, 0);
+  const budgetBalance = budget - estimatedAmount;
+  const canSubmit = !disabled && title.trim() && department.trim() && budget > 0 && validLineItems.length > 0;
+  const updateDemandLineItem = (index: number, nextLineItem: Partial<(typeof demandLineItems)[number]>) => {
+    setDemandLineItems((current) => current.map((lineItem, lineIndex) =>
+      lineIndex === index ? { ...lineItem, ...nextLineItem } : lineItem,
+    ));
+  };
+  const addDemandLineItem = () => {
+    setDemandLineItems((current) => [...current, { materialId: firstMaterial?.id ?? '', quantity: 1 }]);
+  };
+  const removeDemandLineItem = (index: number) => {
+    setDemandLineItems((current) => current.length > 1
+      ? current.filter((_, lineIndex) => lineIndex !== index)
+      : current);
+  };
 
   return (
     <form
@@ -4120,7 +4139,9 @@ const DemandCreateForm: React.FC<{
           department: department.trim(),
           requester: requester.trim(),
           budget,
-          lineItems: [{ materialId, quantity }],
+          lineItems: demandLineItems
+            .filter((lineItem) => lineItem.materialId && lineItem.quantity > 0)
+            .map((lineItem) => ({ materialId: lineItem.materialId, quantity: lineItem.quantity })),
         }, submitForApproval);
       }}
     >
@@ -4163,39 +4184,89 @@ const DemandCreateForm: React.FC<{
           </select>
         </Field>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <Field label="预算金额">
-          <input
-            type="number"
-            min={1}
-            value={budget}
-            onChange={(event) => setBudget(Number(event.target.value))}
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
-        </Field>
-        <Field label="物料">
-          <select
-            value={materialId}
-            onChange={(event) => setMaterialId(event.target.value)}
-            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          >
-            {materials.map((material) => (
-              <option key={material.id} value={material.id}>
-                {material.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </div>
-      <Field label="数量">
+      <Field label="预算金额">
         <input
           type="number"
           min={1}
-          value={quantity}
-          onChange={(event) => setQuantity(Number(event.target.value))}
+          value={budget}
+          onChange={(event) => setBudget(Number(event.target.value))}
           className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </Field>
+
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-xs font-black text-slate-500">物料明细</p>
+          <button
+            type="button"
+            onClick={addDemandLineItem}
+            disabled={materials.length === 0}
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-black text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            增加明细
+          </button>
+        </div>
+        <div className="space-y-3">
+          {demandLineItems.map((lineItem, index) => {
+            const material = materials.find((item) => item.id === lineItem.materialId);
+            const lineAmount = (material?.referencePrice ?? 0) * lineItem.quantity;
+            return (
+              <div key={`${index}-${lineItem.materialId}`} className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_96px_auto] xl:grid-cols-1">
+                  <Field label={`物料 ${index + 1}`}>
+                    <select
+                      value={lineItem.materialId}
+                      onChange={(event) => updateDemandLineItem(index, { materialId: event.target.value })}
+                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    >
+                      {materials.map((materialItem) => (
+                        <option key={materialItem.id} value={materialItem.id}>
+                          {materialItem.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="数量">
+                    <input
+                      type="number"
+                      min={1}
+                      value={lineItem.quantity}
+                      onChange={(event) => updateDemandLineItem(index, { quantity: Number(event.target.value) })}
+                      className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </Field>
+                  <button
+                    type="button"
+                    onClick={() => removeDemandLineItem(index)}
+                    disabled={demandLineItems.length === 1}
+                    className="h-10 rounded-lg border border-red-100 bg-red-50 px-3 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40 sm:self-end"
+                  >
+                    删除
+                  </button>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
+                  <span>单位：{material?.unit ?? '未维护'}</span>
+                  <span>参考价：{currency(material?.referencePrice ?? 0)}</span>
+                  <span>预估金额：{currency(lineAmount)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <MiniFact label="预估金额" value={currency(estimatedAmount)} />
+        <MiniFact label="预算差额" value={currency(budgetBalance)} />
+      </div>
+
+      <section className="rounded-lg border border-dashed border-slate-200 bg-white p-3">
+        <p className="text-xs font-black text-slate-500">需求附件</p>
+        <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+          本阶段预留附件关联入口，可用于需求说明、报价依据和预算批复材料；上传能力接入后将关联到当前需求。
+        </p>
+      </section>
+
       <label className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-700">
         <input
           type="checkbox"
