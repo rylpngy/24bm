@@ -18,6 +18,7 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('PlatformTenantListSummaryPanel');
     expect(checklist).toContain('PlatformEnterpriseReviewSummaryPanel');
     expect(checklist).toContain('PlatformAnnouncementSummaryPanel');
+    expect(checklist).toContain('PlatformAnnouncementCard');
     expect(checklist).toContain('SupplierOpportunityResponseSummaryPanel');
     expect(checklist).toContain('SupplierOrderActionSummaryPanel');
     expect(checklist).toContain('SupplierInvoiceReceivableSummaryPanel');

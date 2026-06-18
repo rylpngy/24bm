@@ -1132,15 +1132,14 @@ const PlatformWorkspace: React.FC<{
           <PlatformAnnouncementSummaryPanel announcements={announcements} />
           <PlatformAnnouncementPublishPanel onPublishAnnouncement={onPublishAnnouncement} />
           <Panel title="平台公告" icon={Bell}>
-            <SimpleList
-              rows={platformAnnouncements.map((announcement) => ({
-                id: announcement.id,
-                title: announcement.title,
-                meta: `发布范围 ${announcement.targetScope}`,
-                value: formatAuditTime(announcement.publishedAt),
-                status: '已发布',
-              }))}
-            />
+            <div className="space-y-3">
+              {platformAnnouncements.map((announcement) => (
+                <PlatformAnnouncementCard
+                  key={announcement.id}
+                  announcement={announcement}
+                />
+              ))}
+            </div>
           </Panel>
         </>
       )}
@@ -1207,6 +1206,39 @@ const PlatformAnnouncementPublishPanel: React.FC<{
     </section>
   );
 };
+
+const formatAnnouncementScope = (scope: string) => {
+  if (scope === 'all') {
+    return '全部企业';
+  }
+  if (scope === 'buyer') {
+    return '采购方企业';
+  }
+  if (scope === 'supplier') {
+    return '供应商企业';
+  }
+  return scope;
+};
+
+const PlatformAnnouncementCard: React.FC<{
+  announcement: PlatformAnnouncement;
+}> = ({ announcement }) => (
+  <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <p className="font-black text-slate-900">公告明细卡片 {announcement.title}</p>
+        <p className="mt-1 break-words text-sm text-slate-500">公告编号 {announcement.id}</p>
+      </div>
+      <StatusPill label="已发布" />
+    </div>
+    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <MiniFact label="公告编号" value={announcement.id} />
+      <MiniFact label="发布范围" value={formatAnnouncementScope(announcement.targetScope)} />
+      <MiniFact label="发布时间" value={formatAuditTime(announcement.publishedAt)} />
+      <MiniFact label="发布状态" value="已发布" />
+    </div>
+  </div>
+);
 
 const PlatformAnnouncementSummaryPanel: React.FC<{
   announcements: Array<{ targetScope: string; publishedAt: string }>;
