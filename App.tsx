@@ -909,6 +909,13 @@ const Select: React.FC<{
   </label>
 );
 
+type PlatformAnnouncement = {
+  id: string;
+  title: string;
+  targetScope: string;
+  publishedAt: string;
+};
+
 const PlatformWorkspace: React.FC<{
   data: PlatformWorkspaceData;
   activeModule: PlatformAdminModule;
@@ -927,14 +934,24 @@ const PlatformWorkspace: React.FC<{
     industry: enterprise.industry,
     status: enterprise.verified ? '已认证' : '待审核',
   }));
-  const announcements = [
-    {
-      id: 'platform-announcement-stage3',
-      title: '阶段三后台化改造进行中',
-      targetScope: 'all',
-      publishedAt: new Date().toISOString(),
-    },
-  ];
+  const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformAnnouncement[]>([{
+    id: 'platform-announcement-stage3',
+    title: '阶段三后台化改造进行中',
+    targetScope: 'all',
+    publishedAt: new Date().toISOString(),
+  }]);
+  const announcements = platformAnnouncements;
+  const onPublishAnnouncement = (payload: { title: string; targetScope: string }) => {
+    setPlatformAnnouncements((current) => [
+      {
+        id: `platform-announcement-${Date.now()}`,
+        title: payload.title,
+        targetScope: payload.targetScope,
+        publishedAt: new Date().toISOString(),
+      },
+      ...current,
+    ]);
+  };
   const operationSummary = platformOverview?.operationSummary;
 
   return (
@@ -1049,9 +1066,10 @@ const PlatformWorkspace: React.FC<{
             enterpriseReviews={enterpriseReviews}
           />
           <PlatformAnnouncementSummaryPanel announcements={announcements} />
+          <PlatformAnnouncementPublishPanel onPublishAnnouncement={onPublishAnnouncement} />
           <Panel title="平台公告" icon={Bell}>
             <SimpleList
-              rows={announcements.map((announcement) => ({
+              rows={platformAnnouncements.map((announcement) => ({
                 id: announcement.id,
                 title: announcement.title,
                 meta: `发布范围 ${announcement.targetScope}`,
@@ -1063,6 +1081,66 @@ const PlatformWorkspace: React.FC<{
         </>
       )}
     </>
+  );
+};
+
+const PlatformAnnouncementPublishPanel: React.FC<{
+  onPublishAnnouncement: (payload: { title: string; targetScope: string }) => void;
+}> = ({ onPublishAnnouncement }) => {
+  const [title, setTitle] = useState('平台维护窗口通知');
+  const [targetScope, setTargetScope] = useState('all');
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-slate-700">发布平台公告</p>
+          <p className="mt-1 text-xs font-bold text-slate-500">先支持本地发布预览，后续接入 Java 平台公告 API。</p>
+        </div>
+        <Bell size={18} className="text-green-600" />
+      </div>
+      <form
+        className="mt-4 grid gap-3 lg:grid-cols-[1fr_180px_auto] lg:items-end"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const nextTitle = title.trim();
+          if (!nextTitle) {
+            return;
+          }
+          onPublishAnnouncement({ title: nextTitle, targetScope });
+          setTitle('');
+          setTargetScope('all');
+        }}
+      >
+        <label className="block">
+          <span className="text-xs font-black text-slate-500">公告标题</span>
+          <input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-green-400"
+            placeholder="请输入公告标题"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-black text-slate-500">发布范围</span>
+          <select
+            value={targetScope}
+            onChange={(event) => setTargetScope(event.target.value)}
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-green-400"
+          >
+            <option value="all">全部企业</option>
+            <option value="buyer">采购方企业</option>
+            <option value="supplier">供应商企业</option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          className="inline-flex h-10 items-center justify-center rounded-lg bg-green-600 px-4 text-sm font-black text-white transition hover:bg-green-700"
+        >
+          发布公告
+        </button>
+      </form>
+    </section>
   );
 };
 
