@@ -345,6 +345,11 @@ export interface OrderDetailTimelineRow {
   value: string;
 }
 
+export interface OrderDetailCheckRow {
+  label: string;
+  value: string;
+}
+
 export interface OrderDetailRelatedRow {
   id: string;
   title: string;
@@ -360,6 +365,7 @@ export interface OrderDetailPanel {
   delivery?: OrderDetailDelivery;
   invoice?: OrderDetailInvoice;
   fulfillmentTimelineRows: OrderDetailTimelineRow[];
+  fulfillmentCheckRows: OrderDetailCheckRow[];
   relatedRows: OrderDetailRelatedRow[];
   rfqLabel: string;
   nextActionTitle: string;
@@ -1259,6 +1265,12 @@ export const buildOrderDetailPanel = (
       { label: '物流状态', value: delivery?.status ?? '待发货' },
       { label: '收货验收', value: receiptLabel },
       { label: '发票付款', value: invoice?.paymentStatus ?? '待开票' },
+    ],
+    fulfillmentCheckRows: [
+      { label: '物流信息', value: delivery?.status ?? '待发货' },
+      { label: '收货验收', value: receiptLabel },
+      { label: '发票付款', value: invoice?.paymentStatus ?? '待开票' },
+      { label: '下一步', value: nextAction.title },
     ],
     relatedRows: [
       rfq

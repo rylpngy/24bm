@@ -756,6 +756,12 @@ describe('buyer admin UI helpers', () => {
         { label: '收货验收', value: '待登记' },
         { label: '发票付款', value: '待付款' },
       ],
+      fulfillmentCheckRows: [
+        { label: '物流信息', value: '运输中' },
+        { label: '收货验收', value: '待登记' },
+        { label: '发票付款', value: '待付款' },
+        { label: '下一步', value: '待收货验收' },
+      ],
       relatedRows: [
         { id: 'rfq-acme-1', title: '询价项目', detail: '会议室升级设备询价 · 已定标' },
         { id: 'del-acme-1', title: '物流信息', detail: '顺丰速运 SF88420115 · 运输中' },
