@@ -1048,6 +1048,7 @@ const PlatformWorkspace: React.FC<{
             announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
             enterpriseReviews={enterpriseReviews}
           />
+          <PlatformAnnouncementSummaryPanel announcements={announcements} />
           <Panel title="平台公告" icon={Bell}>
             <SimpleList
               rows={announcements.map((announcement) => ({
@@ -1062,6 +1063,31 @@ const PlatformWorkspace: React.FC<{
         </>
       )}
     </>
+  );
+};
+
+const PlatformAnnouncementSummaryPanel: React.FC<{
+  announcements: Array<{ targetScope: string; publishedAt: string }>;
+}> = ({ announcements }) => {
+  const publishedAnnouncementCount = announcements.length;
+  const scopeCount = new Set(announcements.map((announcement) => announcement.targetScope)).size;
+  const latestAnnouncement = announcements
+    .slice()
+    .sort((left, right) => right.publishedAt.localeCompare(left.publishedAt))[0];
+  const latestPublishedAt = latestAnnouncement ? formatAuditTime(latestAnnouncement.publishedAt) : '暂无';
+  const nextAction = publishedAnnouncementCount > 0 ? '维护公告内容' : '发布平台公告';
+
+  return (
+    <section className="rounded-lg border border-green-100 bg-green-50 p-4">
+      <p className="text-xs font-black text-green-800">公告发布摘要</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <MiniFact label="公告数量" value={`${announcements.length} 条`} />
+        <MiniFact label="发布范围" value={`${scopeCount} 类`} />
+        <MiniFact label="最近发布" value={latestPublishedAt} />
+        <MiniFact label="已发布" value={`${publishedAnnouncementCount} 条`} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </section>
   );
 };
 
