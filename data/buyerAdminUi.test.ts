@@ -9,6 +9,7 @@ import {
   buildDemandListRows,
   buildInvoicePaymentRows,
   buildMaterialCatalogRows,
+  buildOrderDetailPanel,
   buildOrderFulfillmentRows,
   buildReceiptInspectionRows,
   buildRfqDetailPanel,
@@ -476,6 +477,36 @@ describe('buyer admin UI helpers', () => {
         canRegisterReceipt: false,
       },
     ]);
+  });
+
+  it('builds order detail panels with RFQ, delivery, invoice, and payment context', () => {
+    expect(buildOrderDetailPanel(workspace, 'po-acme-1')).toEqual({
+      id: 'po-acme-1',
+      supplierName: '奥博智能设备',
+      status: '待收货',
+      amountLabel: '¥216,000',
+      facts: [
+        { label: '关联询价', value: '会议室升级设备询价' },
+        { label: '预计到货', value: '2026-07-10' },
+        { label: '物流状态', value: '运输中' },
+        { label: '发票状态', value: '待付款' },
+      ],
+      delivery: {
+        id: 'del-acme-1',
+        carrier: '顺丰速运',
+        trackingNo: 'SF88420115',
+        status: '运输中',
+      },
+      invoice: {
+        id: 'inv-acme-1',
+        amountLabel: '¥216,000',
+        paymentStatus: '待付款',
+      },
+      rfqLabel: '会议室升级设备询价',
+      nextActionTitle: '待收货验收',
+    });
+
+    expect(buildOrderDetailPanel(workspace, 'po-acme-2')?.nextActionTitle).toBe('履约已完成');
   });
 
   it('summarizes receipt inspection rows for orders waiting on buyer acceptance', () => {

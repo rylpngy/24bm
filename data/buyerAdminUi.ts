@@ -166,6 +166,31 @@ export interface OrderFulfillmentRow {
   canRegisterReceipt: boolean;
 }
 
+export interface OrderDetailDelivery {
+  id: string;
+  carrier: string;
+  trackingNo: string;
+  status: string;
+}
+
+export interface OrderDetailInvoice {
+  id: string;
+  amountLabel: string;
+  paymentStatus: string;
+}
+
+export interface OrderDetailPanel {
+  id: string;
+  supplierName: string;
+  status: string;
+  amountLabel: string;
+  facts: BuyerModuleFact[];
+  delivery?: OrderDetailDelivery;
+  invoice?: OrderDetailInvoice;
+  rfqLabel: string;
+  nextActionTitle: string;
+}
+
 export interface ReceiptInspectionRow {
   id: string;
   supplierName: string;
@@ -597,6 +622,50 @@ const orderLogisticsLabel = (workspace: BuyerWorkspace, orderId: string) => {
 
 const orderInvoiceStatus = (workspace: BuyerWorkspace, orderId: string) =>
   workspace.invoices.find((item) => item.orderId === orderId)?.paymentStatus ?? '待开票';
+
+export const buildOrderDetailPanel = (
+  workspace: BuyerWorkspace,
+  orderId: string,
+): OrderDetailPanel | undefined => {
+  const order = workspace.orders.find((item) => item.id === orderId);
+  if (!order) return undefined;
+
+  const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
+  const rfq = workspace.rfqs.find((item) => item.id === order.rfqId);
+  const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
+  const invoice = workspace.invoices.find((item) => item.orderId === order.id);
+  const nextAction = describeOrderNextAction(order);
+
+  return {
+    id: order.id,
+    supplierName: supplier?.name ?? order.supplierId,
+    status: order.status,
+    amountLabel: compactCurrency(order.amount),
+    facts: [
+      { label: '关联询价', value: rfq?.title ?? order.rfqId },
+      { label: '预计到货', value: order.expectedReceiptDate },
+      { label: '物流状态', value: delivery?.status ?? '待发货' },
+      { label: '发票状态', value: invoice?.paymentStatus ?? '待开票' },
+    ],
+    delivery: delivery
+      ? {
+          id: delivery.id,
+          carrier: delivery.carrier,
+          trackingNo: delivery.trackingNo,
+          status: delivery.status,
+        }
+      : undefined,
+    invoice: invoice
+      ? {
+          id: invoice.id,
+          amountLabel: compactCurrency(invoice.amount),
+          paymentStatus: invoice.paymentStatus,
+        }
+      : undefined,
+    rfqLabel: rfq?.title ?? order.rfqId,
+    nextActionTitle: nextAction.title,
+  };
+};
 
 export const buildOrderFulfillmentRows = (workspace: BuyerWorkspace): OrderFulfillmentRow[] =>
   workspace.orders.map((order) => {

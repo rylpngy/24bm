@@ -35,6 +35,7 @@ import {
   buildDemandDetailPanel,
   buildDemandListRows,
   buildInvoicePaymentRows,
+  buildOrderDetailPanel,
   buildMaterialCatalogRows,
   buildOrderFulfillmentRows,
   buildReceiptInspectionRows,
@@ -44,6 +45,7 @@ import {
   buildWorkspaceApprovalQueue,
   type BuyerModuleFact,
   type DemandDetailPanel,
+  type OrderDetailPanel,
   type RfqDetailPanel,
   type SupplierRelationAction,
 } from './data/buyerAdminUi';
@@ -1069,6 +1071,7 @@ const BuyerWorkspaceView: React.FC<{
 }) => {
   const [selectedDemandId, setSelectedDemandId] = useState(workspace.demands[0]?.id ?? '');
   const [selectedRfqId, setSelectedRfqId] = useState(workspace.rfqs[0]?.id ?? '');
+  const [selectedOrderId, setSelectedOrderId] = useState(workspace.orders[0]?.id ?? '');
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
     if (priorityDelta !== 0) return priorityDelta;
@@ -1102,6 +1105,12 @@ const BuyerWorkspaceView: React.FC<{
     : workspace.rfqs[0]?.id ?? '';
   const selectedRfqDetail = selectedRfq
     ? buildRfqDetailPanel(workspace, selectedRfq)
+    : undefined;
+  const selectedOrder = workspace.orders.some((order) => order.id === selectedOrderId)
+    ? selectedOrderId
+    : workspace.orders[0]?.id ?? '';
+  const selectedOrderDetail = selectedOrder
+    ? buildOrderDetailPanel(workspace, selectedOrder)
     : undefined;
 
   return (
@@ -1494,7 +1503,7 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {(activeModule === 'suppliers' || activeModule === 'orders' || activeModule === 'invoices' || activeModule === 'receipts') && (
-    <div className={`grid gap-6 ${activeModule === 'suppliers' ? '' : 'lg:grid-cols-2'}`}>
+    <div className={`grid gap-6 ${activeModule === 'suppliers' ? '' : 'xl:grid-cols-[minmax(0,1fr)_420px]'}`}>
       {activeModule === 'suppliers' && (
       <Panel title="私域供应商关系" icon={Users}>
         {supplierRelationRows.length === 0 ? (
@@ -1542,6 +1551,7 @@ const BuyerWorkspaceView: React.FC<{
       )}
 
       {activeModule === 'orders' && (
+      <>
       <Panel title="订单履约" icon={PackageCheck}>
         {orderFulfillmentRows.length === 0 ? (
           <EmptyState title="暂无采购订单" desc="定标审批通过后，可在报价对比页生成采购订单。" />
@@ -1550,7 +1560,12 @@ const BuyerWorkspaceView: React.FC<{
           {orderFulfillmentRows.map((orderRow) => {
             const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
             return (
-              <div key={orderRow.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                key={orderRow.id}
+                className={`rounded-lg border bg-white p-4 transition ${
+                  selectedOrder === orderRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-black text-slate-900">{orderRow.id}</p>
@@ -1561,6 +1576,17 @@ const BuyerWorkspaceView: React.FC<{
                   <p className="shrink-0 font-mono font-black text-slate-900">{orderRow.amountLabel}</p>
                 </div>
                 <InlineFactGrid facts={orderRow.facts} />
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrderId(orderRow.id)}
+                  className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                    selectedOrder === orderRow.id
+                      ? 'border-blue-200 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {selectedOrder === orderRow.id ? '当前详情' : '查看详情'}
+                </button>
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={orderRow.status} />
                   {javaEnabled && orderRow.canRegisterReceipt && (
@@ -1581,9 +1607,12 @@ const BuyerWorkspaceView: React.FC<{
         </div>
         )}
       </Panel>
+      <OrderDetailPanelView detail={selectedOrderDetail} />
+      </>
       )}
 
       {activeModule === 'receipts' && (
+      <>
         <Panel title="收货验收" icon={PackageCheck}>
           {receiptInspectionRows.length === 0 ? (
             <EmptyState title="暂无待收货订单" desc="供应商发货后，待收货订单会出现在这里。" />
@@ -1593,7 +1622,12 @@ const BuyerWorkspaceView: React.FC<{
               .map((orderRow) => {
                 const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
                 return (
-                  <div key={orderRow.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div
+                    key={orderRow.id}
+                    className={`rounded-lg border bg-white p-4 transition ${
+                      selectedOrder === orderRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                    }`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-black text-slate-900">{orderRow.id}</p>
@@ -1603,6 +1637,17 @@ const BuyerWorkspaceView: React.FC<{
                       </div>
                       <StatusPill label={orderRow.status} />
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOrderId(orderRow.id)}
+                      className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                        selectedOrder === orderRow.id
+                          ? 'border-blue-200 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {selectedOrder === orderRow.id ? '当前详情' : '查看详情'}
+                    </button>
                     {javaEnabled && orderRow.canRegisterReceipt && (
                       <button
                         type="button"
@@ -1620,9 +1665,12 @@ const BuyerWorkspaceView: React.FC<{
           </div>
           )}
         </Panel>
+        <OrderDetailPanelView detail={selectedOrderDetail} />
+      </>
       )}
 
       {activeModule === 'invoices' && (
+      <>
       <Panel title="发票付款" icon={Receipt}>
         {invoicePaymentRows.length === 0 ? (
           <EmptyState title="暂无发票" desc="供应商在订单收货后提交发票，采购方在这里登记付款状态。" />
@@ -1630,8 +1678,15 @@ const BuyerWorkspaceView: React.FC<{
         <div className="space-y-3">
           {invoicePaymentRows.map((invoiceRow) => {
             const paymentBusy = buyerFulfillmentBusyId === `payment:${invoiceRow.id}`;
+            const invoice = workspace.invoices.find((item) => item.id === invoiceRow.id);
+            const linkedOrderId = invoice?.orderId ?? '';
             return (
-              <div key={invoiceRow.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                key={invoiceRow.id}
+                className={`rounded-lg border bg-white p-4 transition ${
+                  selectedOrder === linkedOrderId ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-black text-slate-900">{invoiceRow.id}</p>
@@ -1639,6 +1694,19 @@ const BuyerWorkspaceView: React.FC<{
                   </div>
                   <p className="shrink-0 font-mono font-black text-slate-900">{invoiceRow.amountLabel}</p>
                 </div>
+                {linkedOrderId && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedOrderId(linkedOrderId)}
+                    className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                      selectedOrder === linkedOrderId
+                        ? 'border-blue-200 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {selectedOrder === linkedOrderId ? '当前详情' : '查看详情'}
+                  </button>
+                )}
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={invoiceRow.status} />
                   {javaEnabled && invoiceRow.canRegisterPayment && (
@@ -1659,6 +1727,8 @@ const BuyerWorkspaceView: React.FC<{
         </div>
         )}
       </Panel>
+      <OrderDetailPanelView detail={selectedOrderDetail} />
+      </>
       )}
     </div>
     )}
@@ -2030,6 +2100,77 @@ const RfqDetailPanelView: React.FC<{
           <MiniFact label="订单状态" value={detail.orderLabel} />
           <MiniFact label="下一步" value={detail.nextActionTitle} />
         </div>
+      </div>
+    )}
+  </Panel>
+);
+
+const OrderDetailPanelView: React.FC<{
+  detail?: OrderDetailPanel;
+}> = ({ detail }) => (
+  <Panel title="订单详情" icon={PackageCheck}>
+    {!detail ? (
+      <EmptyState title="暂无订单详情" desc="选择一张采购订单后，可查看询价来源、物流、发票和付款状态。" />
+    ) : (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-base font-black text-slate-950">{detail.id}</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">{detail.supplierName}</p>
+            </div>
+            <StatusPill label={detail.status} />
+          </div>
+          <p className="mt-3 font-mono text-xl font-black text-slate-950">{detail.amountLabel}</p>
+          <InlineFactGrid facts={detail.facts} />
+        </div>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">询价来源</p>
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+            <p className="truncate text-sm font-black text-slate-900">{detail.rfqLabel}</p>
+          </div>
+        </section>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">物流信息</p>
+          {detail.delivery ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-900">{detail.delivery.carrier}</p>
+                  <p className="mt-1 font-mono text-xs font-bold text-slate-500">{detail.delivery.trackingNo}</p>
+                </div>
+                <StatusPill label={detail.delivery.status} />
+              </div>
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无物流信息，等待供应商发货。
+            </p>
+          )}
+        </section>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">发票付款</p>
+          {detail.invoice ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-900">{detail.invoice.id}</p>
+                  <p className="mt-1 font-mono text-xs font-bold text-slate-500">{detail.invoice.amountLabel}</p>
+                </div>
+                <StatusPill label={detail.invoice.paymentStatus} />
+              </div>
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无发票，订单收货后供应商可提交发票。
+            </p>
+          )}
+        </section>
+
+        <MiniFact label="下一步" value={detail.nextActionTitle} />
       </div>
     )}
   </Panel>
