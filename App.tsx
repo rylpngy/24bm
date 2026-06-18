@@ -3939,10 +3939,29 @@ const SupplierDetailOperationPanel: React.FC<{
   supplierAdmissionBusyId,
   onSubmitSupplierAdmission,
 }) => {
+  const authorizedCategories = detail.facts.find((fact) => fact.label === '授权品类')?.value ?? '未维护';
+  const performanceScore = detail.facts.find((fact) => fact.label === '绩效评分')?.value ?? detail.riskLabel;
+  const rfqCount = detail.collaborationRows.find((row) => row.label === '参与询价')?.value ?? '0 个';
+  const orderCount = detail.collaborationRows.find((row) => row.label === '采购订单')?.value ?? '0 单';
+  const renderSupplierRelationSummary = () => (
+    <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3">
+      <p className="text-xs font-black text-slate-500">关系摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        <MiniFact label="准入状态" value={detail.status} />
+        <MiniFact label="供应商等级" value={detail.level} />
+        <MiniFact label="绩效评分" value={performanceScore} />
+        <MiniFact label="授权品类" value={authorizedCategories} />
+        <MiniFact label="参与询价" value={rfqCount} />
+        <MiniFact label="采购订单" value={orderCount} />
+      </div>
+    </div>
+  );
+
   if (!javaEnabled) {
     return (
       <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-black text-slate-500">关系操作</p>
+        {renderSupplierRelationSummary()}
         <ProcessStateNotice
           variant="waiting"
           title="当前为 mock 数据源"
@@ -3956,6 +3975,7 @@ const SupplierDetailOperationPanel: React.FC<{
     return (
       <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-black text-slate-500">关系操作</p>
+        {renderSupplierRelationSummary()}
         <ProcessStateNotice
           variant="waiting"
           title="未找到供应商关系"
@@ -3974,6 +3994,8 @@ const SupplierDetailOperationPanel: React.FC<{
         </div>
         <StatusPill label={detail.status} />
       </div>
+
+      {renderSupplierRelationSummary()}
 
       {relation.status === '待准入' && (
         <PrimaryActionButton
