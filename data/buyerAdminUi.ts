@@ -38,6 +38,7 @@ export interface ApprovalQueueRow {
   title: string;
   typeLabel: string;
   status: string;
+  bizId?: string;
   bizType?: string;
   facts: BuyerModuleFact[];
   canReview: boolean;
@@ -79,6 +80,32 @@ export interface DemandListRow {
   facts: BuyerModuleFact[];
   materialSummary: string;
   nextAction: BuyerNextAction;
+}
+
+export interface DemandDetailLineItemRow {
+  id: string;
+  name: string;
+  category: string;
+  quantityLabel: string;
+  referenceAmountLabel: string;
+}
+
+export interface DemandDetailRfqRow {
+  id: string;
+  title: string;
+  status: string;
+  quoteLabel: string;
+}
+
+export interface DemandDetailPanel {
+  id: string;
+  title: string;
+  status: string;
+  facts: BuyerModuleFact[];
+  lineItems: DemandDetailLineItemRow[];
+  linkedRfqs: DemandDetailRfqRow[];
+  approvalLabel: string;
+  nextActionTitle: string;
 }
 
 export interface AuditLogRow {
@@ -199,6 +226,7 @@ export const buildApprovalQueueRows = (
     title: approval.summaryTitle ?? approval.bizId ?? '待审批事项',
     typeLabel: approvalTypeLabel(approval.bizType ?? ''),
     status: approval.status ?? '待审批',
+    bizId: approval.bizId,
     bizType: approval.bizType,
     facts: buildApprovalCardFacts(approval, nowIso),
     canReview: approval.status === undefined || approval.status === '待审批',
@@ -409,6 +437,52 @@ export const buildDemandListRows = (workspace: BuyerWorkspace): DemandListRow[] 
       nextAction: describeDemandNextAction(demand, linkedDemandIds),
     };
   });
+};
+
+export const buildDemandDetailPanel = (
+  workspace: BuyerWorkspace,
+  demandId: string,
+): DemandDetailPanel | undefined => {
+  const demand = workspace.demands.find((item) => item.id === demandId);
+  if (!demand) return undefined;
+
+  const linkedDemandIds = new Set(workspace.rfqs.flatMap((rfq) => rfq.demandIds));
+  const nextAction = describeDemandNextAction(demand, linkedDemandIds);
+  const approval = buildApprovalQueueRows(buildWorkspaceApprovalQueue(workspace))
+    .find((item) => item.bizType === 'purchase_demand' && item.bizId === demand.id);
+
+  return {
+    id: demand.id,
+    title: demand.title,
+    status: demand.status,
+    facts: [
+      { label: '申请部门', value: demand.department },
+      { label: '申请人', value: demand.requester },
+      { label: '预算', value: compactCurrency(demand.budget) },
+      { label: '物料行', value: `${demand.lineItems.length} 行` },
+    ],
+    lineItems: demand.lineItems.map((item) => {
+      const material = workspace.materials.find((record) => record.id === item.materialId);
+      const unit = material?.unit ?? '';
+      return {
+        id: `${demand.id}:${item.materialId}`,
+        name: material?.name ?? item.materialId,
+        category: material?.category ?? '未维护',
+        quantityLabel: `${item.quantity} ${unit}`.trim(),
+        referenceAmountLabel: compactCurrency((material?.referencePrice ?? 0) * item.quantity),
+      };
+    }),
+    linkedRfqs: workspace.rfqs
+      .filter((rfq) => rfq.demandIds.includes(demand.id))
+      .map((rfq) => ({
+        id: rfq.id,
+        title: rfq.title,
+        status: rfq.status,
+        quoteLabel: `${rfq.quotes.length}/${rfq.invitedSupplierIds.length} 已报价`,
+      })),
+    approvalLabel: approval ? `待审批：${approval.typeLabel}` : '暂无待审批',
+    nextActionTitle: nextAction.title,
+  };
 };
 
 const orderLogisticsLabel = (workspace: BuyerWorkspace, orderId: string) => {

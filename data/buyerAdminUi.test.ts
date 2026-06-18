@@ -5,6 +5,7 @@ import {
   buildAuditLogRows,
   buildApprovalCardFacts,
   buildApprovalQueueRows,
+  buildDemandDetailPanel,
   buildDemandListRows,
   buildInvoicePaymentRows,
   buildMaterialCatalogRows,
@@ -333,6 +334,41 @@ describe('buyer admin UI helpers', () => {
         nextActionTitle: '等待需求审批',
       },
     ]);
+  });
+
+  it('builds demand detail panels with line items, linked RFQs, and approval context', () => {
+    expect(buildDemandDetailPanel(workspace, 'dem-acme-1')).toEqual({
+      id: 'dem-acme-1',
+      title: '华东总部会议室升级',
+      status: '已通过',
+      facts: [
+        { label: '申请部门', value: '行政部' },
+        { label: '申请人', value: '许行政' },
+        { label: '预算', value: '¥320,000' },
+        { label: '物料行', value: '1 行' },
+      ],
+      lineItems: [
+        {
+          id: 'dem-acme-1:mat-acme-1',
+          name: '视频会议一体机',
+          category: '智能终端',
+          quantityLabel: '12 台',
+          referenceAmountLabel: '¥216,000',
+        },
+      ],
+      linkedRfqs: [
+        {
+          id: 'rfq-acme-1',
+          title: '会议室升级设备询价',
+          status: '已定标',
+          quoteLabel: '3/3 已报价',
+        },
+      ],
+      approvalLabel: '暂无待审批',
+      nextActionTitle: '已关联询价项目',
+    });
+
+    expect(buildDemandDetailPanel(workspace, 'dem-acme-2')?.approvalLabel).toBe('待审批：需求审批');
   });
 
   it('summarizes order fulfillment rows with supplier, logistics, invoice, and next action context', () => {
