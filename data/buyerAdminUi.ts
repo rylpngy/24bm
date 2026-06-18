@@ -1,6 +1,10 @@
 import type { BuyerAdminModule } from './adminNavigation';
 import { approvalTypeLabel } from './approvalUi';
-import type { BuyerNextAction } from './buyerWorkflow';
+import {
+  describeInvoiceNextAction,
+  describeOrderNextAction,
+  type BuyerNextAction,
+} from './buyerWorkflow';
 import type { BuyerWorkspace, SupplierRelation } from './procurementModel';
 
 export interface BuyerModuleFact {
@@ -83,6 +87,35 @@ export interface AuditLogRow {
   targetLabel: string;
   actorName: string;
   timeLabel: string;
+}
+
+export interface OrderFulfillmentRow {
+  id: string;
+  supplierName: string;
+  amountLabel: string;
+  status: string;
+  facts: BuyerModuleFact[];
+  nextAction: BuyerNextAction;
+  canRegisterReceipt: boolean;
+}
+
+export interface ReceiptInspectionRow {
+  id: string;
+  supplierName: string;
+  status: string;
+  logisticsLabel: string;
+  nextAction: BuyerNextAction;
+  canRegisterReceipt: boolean;
+}
+
+export interface InvoicePaymentRow {
+  id: string;
+  supplierName: string;
+  orderLabel: string;
+  amountLabel: string;
+  status: string;
+  nextAction: BuyerNextAction;
+  canRegisterPayment: boolean;
 }
 
 const compactCurrency = (value: number) =>
@@ -377,6 +410,61 @@ export const buildDemandListRows = (workspace: BuyerWorkspace): DemandListRow[] 
     };
   });
 };
+
+const orderLogisticsLabel = (workspace: BuyerWorkspace, orderId: string) => {
+  const delivery = workspace.deliveries.find((item) => item.orderId === orderId);
+  return delivery ? `${delivery.carrier} ${delivery.trackingNo}` : '待发货';
+};
+
+const orderInvoiceStatus = (workspace: BuyerWorkspace, orderId: string) =>
+  workspace.invoices.find((item) => item.orderId === orderId)?.paymentStatus ?? '待开票';
+
+export const buildOrderFulfillmentRows = (workspace: BuyerWorkspace): OrderFulfillmentRow[] =>
+  workspace.orders.map((order) => {
+    const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
+    return {
+      id: order.id,
+      supplierName: supplier?.name ?? order.supplierId,
+      amountLabel: compactCurrency(order.amount),
+      status: order.status,
+      facts: [
+        { label: '预计到货', value: order.expectedReceiptDate },
+        { label: '物流单号', value: orderLogisticsLabel(workspace, order.id) },
+        { label: '发票状态', value: orderInvoiceStatus(workspace, order.id) },
+      ],
+      nextAction: describeOrderNextAction(order),
+      canRegisterReceipt: order.status === '已发货',
+    };
+  });
+
+export const buildReceiptInspectionRows = (workspace: BuyerWorkspace): ReceiptInspectionRow[] =>
+  workspace.orders
+    .filter((order) => order.status === '已发货' || order.status === '待收货')
+    .map((order) => {
+      const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
+      return {
+        id: order.id,
+        supplierName: supplier?.name ?? order.supplierId,
+        status: order.status,
+        logisticsLabel: orderLogisticsLabel(workspace, order.id),
+        nextAction: describeOrderNextAction(order),
+        canRegisterReceipt: order.status === '已发货',
+      };
+    });
+
+export const buildInvoicePaymentRows = (workspace: BuyerWorkspace): InvoicePaymentRow[] =>
+  workspace.invoices.map((invoice) => {
+    const supplier = workspace.suppliers.find((item) => item.id === invoice.supplierId);
+    return {
+      id: invoice.id,
+      supplierName: supplier?.name ?? invoice.supplierId,
+      orderLabel: `订单 ${invoice.orderId}`,
+      amountLabel: compactCurrency(invoice.amount),
+      status: invoice.paymentStatus,
+      nextAction: describeInvoiceNextAction(invoice),
+      canRegisterPayment: invoice.paymentStatus !== '已付款',
+    };
+  });
 
 export const buildAuditLogRows = (workspace: BuyerWorkspace): AuditLogRow[] =>
   [...workspace.auditLogs]

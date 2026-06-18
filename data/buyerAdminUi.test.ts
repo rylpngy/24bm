@@ -6,7 +6,10 @@ import {
   buildApprovalCardFacts,
   buildApprovalQueueRows,
   buildDemandListRows,
+  buildInvoicePaymentRows,
   buildMaterialCatalogRows,
+  buildOrderFulfillmentRows,
+  buildReceiptInspectionRows,
   buildRfqListRows,
   buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
@@ -328,6 +331,96 @@ describe('buyer admin UI helpers', () => {
         ],
         materialSummary: 'A4 复印纸 x 260 箱',
         nextActionTitle: '等待需求审批',
+      },
+    ]);
+  });
+
+  it('summarizes order fulfillment rows with supplier, logistics, invoice, and next action context', () => {
+    expect(buildOrderFulfillmentRows(workspace).map((row) => ({
+      id: row.id,
+      supplierName: row.supplierName,
+      amountLabel: row.amountLabel,
+      status: row.status,
+      facts: row.facts,
+      nextActionTitle: row.nextAction.title,
+      canRegisterReceipt: row.canRegisterReceipt,
+    }))).toEqual([
+      {
+        id: 'po-acme-1',
+        supplierName: '奥博智能设备',
+        amountLabel: '¥216,000',
+        status: '待收货',
+        facts: [
+          { label: '预计到货', value: '2026-07-10' },
+          { label: '物流单号', value: '顺丰速运 SF88420115' },
+          { label: '发票状态', value: '待付款' },
+        ],
+        nextActionTitle: '待收货验收',
+        canRegisterReceipt: false,
+      },
+      {
+        id: 'po-acme-2',
+        supplierName: '海港物流服务',
+        amountLabel: '¥70,000',
+        status: '已完成',
+        facts: [
+          { label: '预计到货', value: '2026-07-18' },
+          { label: '物流单号', value: '海港专线 HG20260602' },
+          { label: '发票状态', value: '已付款' },
+        ],
+        nextActionTitle: '履约已完成',
+        canRegisterReceipt: false,
+      },
+    ]);
+  });
+
+  it('summarizes receipt inspection rows for orders waiting on buyer acceptance', () => {
+    expect(buildReceiptInspectionRows(workspace).map((row) => ({
+      id: row.id,
+      supplierName: row.supplierName,
+      status: row.status,
+      logisticsLabel: row.logisticsLabel,
+      nextActionTitle: row.nextAction.title,
+      canRegisterReceipt: row.canRegisterReceipt,
+    }))).toEqual([
+      {
+        id: 'po-acme-1',
+        supplierName: '奥博智能设备',
+        status: '待收货',
+        logisticsLabel: '顺丰速运 SF88420115',
+        nextActionTitle: '待收货验收',
+        canRegisterReceipt: false,
+      },
+    ]);
+  });
+
+  it('summarizes invoice payment rows with supplier, order, amount, and payment action context', () => {
+    expect(buildInvoicePaymentRows(workspace).map((row) => ({
+      id: row.id,
+      supplierName: row.supplierName,
+      orderLabel: row.orderLabel,
+      amountLabel: row.amountLabel,
+      status: row.status,
+      nextActionTitle: row.nextAction.title,
+      canRegisterPayment: row.canRegisterPayment,
+    }))).toEqual([
+      {
+        id: 'inv-acme-1',
+        supplierName: '奥博智能设备',
+        orderLabel: '订单 po-acme-1',
+        amountLabel: '¥216,000',
+        status: '待付款',
+        nextActionTitle: '待登记付款',
+        canRegisterPayment: true,
+      },
+      {
+        id: 'inv-acme-2',
+        supplierName: '海港物流服务',
+        orderLabel: '订单 po-acme-2',
+        amountLabel: '¥70,000',
+        status: '已付款',
+        nextActionTitle: '付款已完成',
+        canRegisterPayment: false,
       },
     ]);
   });

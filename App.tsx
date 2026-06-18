@@ -33,7 +33,10 @@ import {
   buildApprovalQueueRows,
   buildBuyerModuleFacts,
   buildDemandListRows,
+  buildInvoicePaymentRows,
   buildMaterialCatalogRows,
+  buildOrderFulfillmentRows,
+  buildReceiptInspectionRows,
   buildRfqListRows,
   buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
@@ -52,8 +55,6 @@ import {
 import {
   canCreateOrderFromAward,
   canSubmitAwardApproval,
-  describeInvoiceNextAction,
-  describeOrderNextAction,
   describeRfqNextAction,
   selectRecommendedQuote,
   type BuyerNextAction,
@@ -1078,6 +1079,9 @@ const BuyerWorkspaceView: React.FC<{
   const displayPendingApprovals = javaEnabled ? sortedPendingApprovals : buildWorkspaceApprovalQueue(workspace);
   const approvalQueueRows = buildApprovalQueueRows(displayPendingApprovals);
   const supplierRelationRows = buildSupplierRelationRows(workspace);
+  const orderFulfillmentRows = buildOrderFulfillmentRows(workspace);
+  const receiptInspectionRows = buildReceiptInspectionRows(workspace);
+  const invoicePaymentRows = buildInvoicePaymentRows(workspace);
 
   return (
     <>
@@ -1470,38 +1474,30 @@ const BuyerWorkspaceView: React.FC<{
 
       {activeModule === 'orders' && (
       <Panel title="订单履约" icon={PackageCheck}>
-        {workspace.orders.length === 0 ? (
+        {orderFulfillmentRows.length === 0 ? (
           <EmptyState title="暂无采购订单" desc="定标审批通过后，可在报价对比页生成采购订单。" />
         ) : (
         <div className="space-y-3">
-          {workspace.orders.map((order) => {
-            const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
-            const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
-            const invoice = workspace.invoices.find((item) => item.orderId === order.id);
-            const receiptBusy = buyerFulfillmentBusyId === `receipt:${order.id}`;
-            const nextAction = describeOrderNextAction(order);
+          {orderFulfillmentRows.map((orderRow) => {
+            const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
             return (
-              <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div key={orderRow.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-black text-slate-900">{order.id}</p>
+                  <div className="min-w-0">
+                    <p className="font-black text-slate-900">{orderRow.id}</p>
                     <p className="mt-1 text-sm text-slate-500">
-                      {supplier?.name} · {order.expectedReceiptDate}
+                      {orderRow.supplierName}
                     </p>
                   </div>
-                  <p className="font-mono font-black text-slate-900">{currency(order.amount)}</p>
+                  <p className="shrink-0 font-mono font-black text-slate-900">{orderRow.amountLabel}</p>
                 </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  <MiniFact label="预计到货" value={order.expectedReceiptDate} />
-                  <MiniFact label="物流单号" value={delivery ? `${delivery.carrier} ${delivery.trackingNo}` : '待发货'} />
-                  <MiniFact label="发票状态" value={invoice ? invoice.paymentStatus : '待开票'} />
-                </div>
+                <InlineFactGrid facts={orderRow.facts} />
                 <div className="mt-3 flex items-center justify-between gap-3">
-                  <StatusPill label={order.status} />
-                  {javaEnabled && order.status === '已发货' && (
+                  <StatusPill label={orderRow.status} />
+                  {javaEnabled && orderRow.canRegisterReceipt && (
                     <button
                       type="button"
-                      onClick={() => onCreateReceipt(order.id)}
+                      onClick={() => onCreateReceipt(orderRow.id)}
                       disabled={receiptBusy}
                       className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                     >
@@ -1509,7 +1505,7 @@ const BuyerWorkspaceView: React.FC<{
                     </button>
                   )}
                 </div>
-                <NextActionNotice action={nextAction} />
+                <NextActionNotice action={orderRow.nextAction} />
               </div>
             );
           })}
@@ -1520,39 +1516,35 @@ const BuyerWorkspaceView: React.FC<{
 
       {activeModule === 'receipts' && (
         <Panel title="收货验收" icon={PackageCheck}>
-          {workspace.orders.filter((order) => order.status === '已发货' || order.status === '待收货').length === 0 ? (
+          {receiptInspectionRows.length === 0 ? (
             <EmptyState title="暂无待收货订单" desc="供应商发货后，待收货订单会出现在这里。" />
           ) : (
           <div className="space-y-3">
-            {workspace.orders
-              .filter((order) => order.status === '已发货' || order.status === '待收货')
-              .map((order) => {
-                const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
-                const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
-                const receiptBusy = buyerFulfillmentBusyId === `receipt:${order.id}`;
-                const nextAction = describeOrderNextAction(order);
+            {receiptInspectionRows
+              .map((orderRow) => {
+                const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
                 return (
-                  <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div key={orderRow.id} className="rounded-lg border border-slate-200 bg-white p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-black text-slate-900">{order.id}</p>
+                      <div className="min-w-0">
+                        <p className="font-black text-slate-900">{orderRow.id}</p>
                         <p className="mt-1 text-sm text-slate-500">
-                          {supplier?.name} · {delivery?.carrier ?? '待物流'} {delivery?.trackingNo ?? ''}
+                          {orderRow.supplierName} · {orderRow.logisticsLabel}
                         </p>
                       </div>
-                      <StatusPill label={order.status} />
+                      <StatusPill label={orderRow.status} />
                     </div>
-                    {javaEnabled && order.status === '已发货' && (
+                    {javaEnabled && orderRow.canRegisterReceipt && (
                       <button
                         type="button"
-                        onClick={() => onCreateReceipt(order.id)}
+                        onClick={() => onCreateReceipt(orderRow.id)}
                         disabled={receiptBusy}
                         className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                       >
                         {receiptBusy ? '登记中' : '登记收货'}
                       </button>
                     )}
-                    <NextActionNotice action={nextAction} />
+                    <NextActionNotice action={orderRow.nextAction} />
                   </div>
                 );
               })}
@@ -1563,29 +1555,27 @@ const BuyerWorkspaceView: React.FC<{
 
       {activeModule === 'invoices' && (
       <Panel title="发票付款" icon={Receipt}>
-        {workspace.invoices.length === 0 ? (
+        {invoicePaymentRows.length === 0 ? (
           <EmptyState title="暂无发票" desc="供应商在订单收货后提交发票，采购方在这里登记付款状态。" />
         ) : (
         <div className="space-y-3">
-          {workspace.invoices.map((invoice) => {
-            const paymentBusy = buyerFulfillmentBusyId === `payment:${invoice.id}`;
-            const supplier = workspace.suppliers.find((item) => item.id === invoice.supplierId);
-            const nextAction = describeInvoiceNextAction(invoice);
+          {invoicePaymentRows.map((invoiceRow) => {
+            const paymentBusy = buyerFulfillmentBusyId === `payment:${invoiceRow.id}`;
             return (
-              <div key={invoice.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div key={invoiceRow.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-black text-slate-900">{invoice.id}</p>
-                    <p className="mt-1 text-sm text-slate-500">{supplier?.name ?? invoice.supplierId} · 订单 {invoice.orderId}</p>
+                  <div className="min-w-0">
+                    <p className="font-black text-slate-900">{invoiceRow.id}</p>
+                    <p className="mt-1 text-sm text-slate-500">{invoiceRow.supplierName} · {invoiceRow.orderLabel}</p>
                   </div>
-                  <p className="font-mono font-black text-slate-900">{currency(invoice.amount)}</p>
+                  <p className="shrink-0 font-mono font-black text-slate-900">{invoiceRow.amountLabel}</p>
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-3">
-                  <StatusPill label={invoice.paymentStatus} />
-                  {javaEnabled && invoice.paymentStatus !== '已付款' && (
+                  <StatusPill label={invoiceRow.status} />
+                  {javaEnabled && invoiceRow.canRegisterPayment && (
                     <button
                       type="button"
-                      onClick={() => onRegisterPayment(invoice.id)}
+                      onClick={() => onRegisterPayment(invoiceRow.id)}
                       disabled={paymentBusy}
                       className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                     >
@@ -1593,7 +1583,7 @@ const BuyerWorkspaceView: React.FC<{
                     </button>
                   )}
                 </div>
-                <NextActionNotice action={nextAction} />
+                <NextActionNotice action={invoiceRow.nextAction} />
               </div>
             );
           })}
