@@ -30,6 +30,7 @@ import { approvalResultMessage, approvalTypeLabel } from './data/approvalUi';
 import {
   buildAuditLogRows,
   buildApprovalCardFacts,
+  buildApprovalDetailPanel,
   buildApprovalQueueRows,
   buildBuyerModuleFacts,
   buildDemandDetailPanel,
@@ -45,6 +46,7 @@ import {
   buildSupplierDetailPanel,
   buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
+  type ApprovalDetailPanel,
   type BuyerModuleFact,
   type DemandDetailPanel,
   type MaterialDetailPanel,
@@ -1078,6 +1080,7 @@ const BuyerWorkspaceView: React.FC<{
   const [selectedOrderId, setSelectedOrderId] = useState(workspace.orders[0]?.id ?? '');
   const [selectedSupplierRelationId, setSelectedSupplierRelationId] = useState(workspace.privateSupplierRelations[0]?.id ?? '');
   const [selectedMaterialId, setSelectedMaterialId] = useState(workspace.materials[0]?.id ?? '');
+  const [selectedApprovalId, setSelectedApprovalId] = useState('');
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
     if (priorityDelta !== 0) return priorityDelta;
@@ -1093,9 +1096,18 @@ const BuyerWorkspaceView: React.FC<{
     .slice(0, 6);
   const unreadBuyerNotificationCount = buyerNotifications.filter((notification) => !notification.read).length;
   const linkedDemandIds = new Set(workspace.rfqs.flatMap((rfq) => rfq.demandIds));
-  const moduleFacts = buildBuyerModuleFacts(activeModule, workspace, sortedPendingApprovals);
   const displayPendingApprovals = javaEnabled ? sortedPendingApprovals : buildWorkspaceApprovalQueue(workspace);
+  const moduleFacts = buildBuyerModuleFacts(activeModule, workspace, displayPendingApprovals);
   const approvalQueueRows = buildApprovalQueueRows(displayPendingApprovals);
+  const allApprovalSources = [...displayPendingApprovals, ...sortedRecentApprovals];
+  const selectedApproval = allApprovalSources.some((approval) => (approval.id ?? `${approval.bizType}:${approval.bizId}`) === selectedApprovalId)
+    ? selectedApprovalId
+    : allApprovalSources[0]?.id ?? '';
+  const selectedApprovalDetail = selectedApproval
+    ? buildApprovalDetailPanel(workspace, displayPendingApprovals, sortedRecentApprovals, selectedApproval)
+    : undefined;
+  const selectedApprovalSource = allApprovalSources.find((approval) =>
+    (approval.id ?? `${approval.bizType}:${approval.bizId}`) === selectedApproval);
   const supplierRelationRows = buildSupplierRelationRows(workspace);
   const orderFulfillmentRows = buildOrderFulfillmentRows(workspace);
   const receiptInspectionRows = buildReceiptInspectionRows(workspace);
@@ -1175,14 +1187,19 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {activeModule === 'approvals' && (
-      <div className="grid gap-6 xl:grid-cols-[1fr_0.85fr]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Panel title="审批待办" icon={ClipboardCheck}>
           {approvalQueueRows.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
               {approvalQueueRows.map((approvalRow) => {
                 const approval = displayPendingApprovals.find((item) => item.id === approvalRow.id);
                 return (
-                  <div key={approvalRow.id} className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+                  <div
+                    key={approvalRow.id}
+                    className={`rounded-lg border bg-amber-50 p-4 transition ${
+                      selectedApproval === approvalRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-amber-100'
+                    }`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black text-slate-950">{approvalRow.title}</p>
@@ -1191,6 +1208,17 @@ const BuyerWorkspaceView: React.FC<{
                       <StatusPill label={approvalRow.status} />
                     </div>
                     <InlineFactGrid facts={approvalRow.facts} />
+                    <button
+                      type="button"
+                      onClick={() => setSelectedApprovalId(approvalRow.id)}
+                      className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                        selectedApproval === approvalRow.id
+                          ? 'border-blue-200 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {selectedApproval === approvalRow.id ? '当前详情' : '查看详情'}
+                    </button>
                     {javaEnabled && approval && approvalRow.canReview ? (
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <button
@@ -1226,29 +1254,30 @@ const BuyerWorkspaceView: React.FC<{
           )}
         </Panel>
 
-        {javaEnabled ? (
-          <ApprovalTemplateSettings
-            templates={approvalTemplates}
-            roles={roles}
-            onSave={onUpdateApprovalTemplate}
-          />
-        ) : (
-          <Panel title="审批模板配置" icon={Settings}>
-            <EmptyState title="当前为 mock 数据源" desc="Java 模式下可配置需求审批、供应商准入和定标审批的默认审批角色。" />
-          </Panel>
-        )}
+        <ApprovalDetailPanelView
+          detail={selectedApprovalDetail}
+          approval={javaEnabled ? selectedApprovalSource as JavaApprovalTaskDto | undefined : undefined}
+          approvalBusyId={approvalBusyId}
+          javaEnabled={javaEnabled}
+          onReviewApproval={onReviewApproval}
+        />
       </div>
     )}
 
     {activeModule === 'approvals' && (
-      <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+      <div className="grid gap-6 xl:grid-cols-3">
         <Panel title="最近审批记录" icon={ShieldCheck}>
           {javaEnabled && sortedRecentApprovals.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
               {sortedRecentApprovals.map((approval) => {
                 const facts = buildApprovalCardFacts(approval);
                 return (
-                  <div key={approval.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div
+                    key={approval.id}
+                    className={`rounded-lg border bg-white p-4 transition ${
+                      selectedApproval === approval.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                    }`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black text-slate-950">
@@ -1262,6 +1291,17 @@ const BuyerWorkspaceView: React.FC<{
                       ...facts.slice(0, 4),
                       { label: '处理时间', value: formatAuditTime(approval.actedAt ?? approval.createdAt) },
                     ]} />
+                    <button
+                      type="button"
+                      onClick={() => setSelectedApprovalId(approval.id)}
+                      className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                        selectedApproval === approval.id
+                          ? 'border-blue-200 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {selectedApproval === approval.id ? '当前详情' : '查看详情'}
+                    </button>
                   </div>
                 );
               })}
@@ -1272,6 +1312,18 @@ const BuyerWorkspaceView: React.FC<{
             </p>
           )}
         </Panel>
+
+        {javaEnabled ? (
+          <ApprovalTemplateSettings
+            templates={approvalTemplates}
+            roles={roles}
+            onSave={onUpdateApprovalTemplate}
+          />
+        ) : (
+          <Panel title="审批模板配置" icon={Settings}>
+            <EmptyState title="当前为 mock 数据源" desc="Java 模式下可配置需求审批、供应商准入和定标审批的默认审批角色。" />
+          </Panel>
+        )}
 
         <Panel title="审批结果通知" icon={Bell}>
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -2028,6 +2080,102 @@ const DemandDetailPanelView: React.FC<{
           <MiniFact label="审批状态" value={detail.approvalLabel} />
           <MiniFact label="下一步" value={detail.nextActionTitle} />
         </div>
+      </div>
+    )}
+  </Panel>
+);
+
+const ApprovalDetailPanelView: React.FC<{
+  detail?: ApprovalDetailPanel;
+  approval?: JavaApprovalTaskDto;
+  approvalBusyId: string | null;
+  javaEnabled: boolean;
+  onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
+}> = ({ detail, approval, approvalBusyId, javaEnabled, onReviewApproval }) => (
+  <Panel title="审批详情" icon={ShieldCheck}>
+    {!detail ? (
+      <EmptyState title="暂无审批详情" desc="选择一条待办或最近审批记录后，可查看业务上下文和处理轨迹。" />
+    ) : (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-base font-black text-slate-950">{detail.title}</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">{detail.typeLabel} · {detail.id}</p>
+            </div>
+            <StatusPill label={detail.status} />
+          </div>
+          <InlineFactGrid facts={detail.facts} />
+        </div>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">业务上下文</p>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {detail.businessFacts.map((fact) => (
+              <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">关联明细</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.contextRows.length} 条
+            </span>
+          </div>
+          {detail.contextRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.contextRows.map((row) => (
+                <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无可展示的关联明细。
+            </p>
+          )}
+        </section>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">处理轨迹</p>
+          <div className="space-y-2">
+            {detail.timelineRows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                <span className="text-xs font-black text-slate-500">{row.label}</span>
+                <span className="font-mono text-xs font-black text-slate-900">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {javaEnabled && approval && detail.canReview ? (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => onReviewApproval(approval, false)}
+              disabled={approvalBusyId === detail.id}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white text-xs font-black text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              驳回
+            </button>
+            <button
+              type="button"
+              onClick={() => onReviewApproval(approval, true)}
+              disabled={approvalBusyId === detail.id}
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {approvalBusyId === detail.id ? '处理中' : '通过'}
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+            {detail.canReview ? 'Java 模式下可在详情中直接处理审批。' : '该审批已处理，仅保留业务上下文和轨迹。'}
+          </div>
+        )}
       </div>
     )}
   </Panel>

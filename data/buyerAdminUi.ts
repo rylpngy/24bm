@@ -18,6 +18,7 @@ export interface ApprovalCardSource {
   id?: string;
   bizType?: string;
   bizId?: string;
+  parentBizId?: string | null;
   summaryTitle?: string;
   businessStatus?: string | null;
   priority?: number | null;
@@ -26,6 +27,7 @@ export interface ApprovalCardSource {
   counterpartyName?: string | null;
   status?: string;
   createdAt: string;
+  actedAt?: string | null;
 }
 
 export interface SupplierRelationAction {
@@ -44,6 +46,29 @@ export interface ApprovalQueueRow {
   bizType?: string;
   facts: BuyerModuleFact[];
   canReview: boolean;
+}
+
+export interface ApprovalDetailContextRow {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface ApprovalDetailTimelineRow {
+  label: string;
+  value: string;
+}
+
+export interface ApprovalDetailPanel {
+  id: string;
+  title: string;
+  typeLabel: string;
+  status: string;
+  canReview: boolean;
+  facts: BuyerModuleFact[];
+  businessFacts: BuyerModuleFact[];
+  contextRows: ApprovalDetailContextRow[];
+  timelineRows: ApprovalDetailTimelineRow[];
 }
 
 export interface SupplierRelationRow {
@@ -392,6 +417,123 @@ export const buildWorkspaceApprovalQueue = (workspace: BuyerWorkspace): Approval
     });
 
   return [...demandApprovals, ...supplierApprovals];
+};
+
+const approvalId = (approval: ApprovalCardSource) =>
+  approval.id ?? `${approval.bizType}:${approval.bizId}`;
+
+const buildApprovalBusinessContext = (
+  workspace: BuyerWorkspace,
+  approval: ApprovalCardSource,
+): { businessFacts: BuyerModuleFact[]; contextRows: ApprovalDetailContextRow[] } => {
+  if (approval.bizType === 'purchase_demand') {
+    const demand = workspace.demands.find((item) => item.id === approval.bizId);
+    if (demand) {
+      return {
+        businessFacts: [
+          { label: '业务单号', value: demand.id },
+          { label: '当前状态', value: demand.status },
+          { label: '申请部门', value: demand.department },
+          { label: '申请人', value: demand.requester },
+          { label: '预算金额', value: compactCurrency(demand.budget) },
+        ],
+        contextRows: demand.lineItems.map((lineItem) => {
+          const material = workspace.materials.find((item) => item.id === lineItem.materialId);
+          const referenceAmount = (material?.referencePrice ?? 0) * lineItem.quantity;
+          return {
+            id: lineItem.materialId,
+            title: material?.name ?? lineItem.materialId,
+            detail: `${lineItem.quantity} ${material?.unit ?? ''}`.trim() + ` · 参考 ${compactCurrency(referenceAmount)}`,
+          };
+        }),
+      };
+    }
+  }
+
+  if (approval.bizType === 'buyer_supplier_admission') {
+    const relation = workspace.privateSupplierRelations.find((item) => item.id === approval.bizId);
+    if (relation) {
+      const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
+      return {
+        businessFacts: [
+          { label: '业务单号', value: relation.id },
+          { label: '当前状态', value: relation.status },
+          { label: '供应商', value: supplier?.name ?? relation.supplierId },
+          { label: '等级', value: relation.level },
+          { label: '绩效', value: `${relation.performanceScore} 分` },
+        ],
+        contextRows: relation.categories.map((category) => ({
+          id: `${relation.id}:${category}`,
+          title: category,
+          detail: supplier?.verified ? '企业已认证' : '企业待认证',
+        })),
+      };
+    }
+  }
+
+  if (approval.bizType === 'rfq_award') {
+    const rfq = workspace.rfqs.find((item) => item.id === approval.parentBizId || item.id === approval.bizId);
+    if (rfq) {
+      const awardedSupplier = workspace.suppliers.find((item) => item.id === rfq.awardedSupplierId);
+      return {
+        businessFacts: [
+          { label: '业务单号', value: rfq.id },
+          { label: '当前状态', value: rfq.status },
+          { label: '负责人', value: rfq.owner },
+          { label: '报价数量', value: `${rfq.quotes.length} 条` },
+          { label: '拟定标供应商', value: awardedSupplier?.name ?? rfq.awardedSupplierId ?? '待定标' },
+        ],
+        contextRows: rfq.quotes.map((quote) => {
+          const supplier = workspace.suppliers.find((item) => item.id === quote.supplierId);
+          return {
+            id: quote.id,
+            title: supplier?.name ?? quote.supplierId,
+            detail: `${compactCurrency(quote.amount)} · ${quote.deliveryDays} 天`,
+          };
+        }),
+      };
+    }
+  }
+
+  return {
+    businessFacts: [
+      { label: '业务单号', value: approval.bizId ?? approvalId(approval) },
+      { label: '当前状态', value: approval.businessStatus ?? approval.status ?? '待审批' },
+    ],
+    contextRows: [],
+  };
+};
+
+export const buildApprovalDetailPanel = (
+  workspace: BuyerWorkspace,
+  pendingApprovals: ApprovalCardSource[],
+  recentApprovals: ApprovalCardSource[],
+  selectedApprovalId: string,
+  nowIso = new Date().toISOString(),
+): ApprovalDetailPanel | undefined => {
+  const approval = [...pendingApprovals, ...recentApprovals]
+    .find((item) => approvalId(item) === selectedApprovalId);
+  if (!approval) return undefined;
+
+  const context = buildApprovalBusinessContext(workspace, approval);
+  const actedAt = approval.actedAt ?? undefined;
+
+  return {
+    id: approvalId(approval),
+    title: approval.summaryTitle ?? approval.bizId ?? '审批事项',
+    typeLabel: approvalTypeLabel(approval.bizType ?? ''),
+    status: approval.status ?? '待审批',
+    canReview: approval.status === undefined || approval.status === '待审批',
+    facts: buildApprovalCardFacts(approval, nowIso),
+    businessFacts: context.businessFacts,
+    contextRows: context.contextRows,
+    timelineRows: [
+      { label: '提交审批', value: compactDateTime(approval.createdAt) },
+      actedAt
+        ? { label: '处理完成', value: compactDateTime(actedAt) }
+        : { label: '等待处理', value: elapsedLabel(approval.createdAt, nowIso) },
+    ],
+  };
 };
 
 const supplierRiskLabel = (performanceScore: number) => {

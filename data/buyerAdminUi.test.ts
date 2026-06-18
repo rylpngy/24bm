@@ -4,6 +4,7 @@ import { buildProcurementMvpModel, getBuyerWorkspace } from './procurementModel'
 import {
   buildAuditLogRows,
   buildApprovalCardFacts,
+  buildApprovalDetailPanel,
   buildApprovalQueueRows,
   buildDemandDetailPanel,
   buildDemandListRows,
@@ -123,6 +124,63 @@ describe('buyer admin UI helpers', () => {
         ],
         canReview: true,
       },
+    ]);
+  });
+
+  it('builds approval detail panels with business context and timeline', () => {
+    const pending = buildWorkspaceApprovalQueue(workspace);
+
+    expect(buildApprovalDetailPanel(
+      workspace,
+      pending,
+      [],
+      'approval-demand-dem-acme-2',
+      '2026-06-18T08:00:00.000Z',
+    )).toEqual({
+      id: 'approval-demand-dem-acme-2',
+      title: '集团办公耗材季度补充',
+      typeLabel: '需求审批',
+      status: '待审批',
+      canReview: true,
+      facts: [
+        { label: '业务状态', value: '审批中' },
+        { label: '优先级', value: 'P8' },
+        { label: '提交人', value: '李后勤' },
+        { label: '金额', value: '¥48,000' },
+        { label: '已等待', value: '7 小时' },
+      ],
+      businessFacts: [
+        { label: '业务单号', value: 'dem-acme-2' },
+        { label: '当前状态', value: '审批中' },
+        { label: '申请部门', value: '综合管理部' },
+        { label: '申请人', value: '李后勤' },
+        { label: '预算金额', value: '¥48,000' },
+      ],
+      contextRows: [
+        {
+          id: 'mat-acme-2',
+          title: 'A4 复印纸',
+          detail: '260 箱 · 参考 ¥41,600',
+        },
+      ],
+      timelineRows: [
+        { label: '提交审批', value: '06/18 09:00' },
+        { label: '等待处理', value: '7 小时' },
+      ],
+    });
+
+    expect(buildApprovalDetailPanel(
+      workspace,
+      pending,
+      [],
+      'approval-supplier-rel-acme-harbor',
+      '2026-06-18T08:00:00.000Z',
+    )?.businessFacts).toEqual([
+      { label: '业务单号', value: 'rel-acme-harbor' },
+      { label: '当前状态', value: '待准入' },
+      { label: '供应商', value: '海港物流服务' },
+      { label: '等级', value: 'C' },
+      { label: '绩效', value: '76 分' },
     ]);
   });
 
