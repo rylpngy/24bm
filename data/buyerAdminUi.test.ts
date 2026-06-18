@@ -555,6 +555,12 @@ describe('buyer admin UI helpers', () => {
         { label: '定标状态', value: '已定标' },
         { label: '订单状态', value: '已生成订单 po-acme-1' },
       ],
+      awardTimelineRows: [
+        { label: '推荐报价', value: '奥博智能设备' },
+        { label: '定标审批', value: '已定标' },
+        { label: '订单生成', value: 'po-acme-1' },
+        { label: '付款状态', value: '待付款' },
+      ],
       quoteRows: [
         {
           id: 'quo-acme-1',
@@ -593,6 +599,7 @@ describe('buyer admin UI helpers', () => {
       relatedRows: [
         { id: 'dem-acme-1', title: '采购需求', detail: '华东总部会议室升级 · 已通过' },
         { id: 'po-acme-1', title: '采购订单', detail: '¥216,000 · 待收货' },
+        { id: 'inv-acme-1', title: '发票付款', detail: '¥216,000 · 待付款' },
       ],
       nextActionTitle: '待收货验收',
     });

@@ -2535,6 +2535,18 @@ const QuoteComparisonDetailPanelView: React.FC<{
         </section>
 
         <section>
+          <p className="mb-2 text-xs font-black text-slate-500">定标审批</p>
+          <div className="space-y-2">
+            {detail.awardTimelineRows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                <span className="text-xs font-black text-slate-500">{row.label}</span>
+                <span className="text-xs font-black text-slate-900">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
           <div className="mb-2 flex items-center justify-between gap-3">
             <p className="text-xs font-black text-slate-500">报价排行</p>
             <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">

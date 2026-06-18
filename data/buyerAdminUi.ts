@@ -218,6 +218,11 @@ export interface QuoteComparisonRelatedRow {
   detail: string;
 }
 
+export interface QuoteComparisonAwardTimelineRow {
+  label: string;
+  value: string;
+}
+
 export interface QuoteComparisonDetailPanel {
   id: string;
   title: string;
@@ -226,6 +231,7 @@ export interface QuoteComparisonDetailPanel {
   canSubmitAward: boolean;
   facts: BuyerModuleFact[];
   recommendationFacts: BuyerModuleFact[];
+  awardTimelineRows: QuoteComparisonAwardTimelineRow[];
   quoteRows: RfqDetailQuoteRow[];
   relatedRows: QuoteComparisonRelatedRow[];
   nextActionTitle: string;
@@ -1008,6 +1014,10 @@ export const buildQuoteComparisonDetailPanel = (
   const nextAction = generatedOrder
     ? describeOrderNextAction(generatedOrder)
     : describeRfqNextAction(rfq, approvedAward?.bizId, workspace.orders);
+  const generatedInvoice = generatedOrder
+    ? workspace.invoices.find((invoice) => invoice.orderId === generatedOrder.id)
+    : undefined;
+  const awardStatusLabel = approvedAward?.status ?? rfq.status;
 
   return {
     id: rfq.id,
@@ -1027,6 +1037,12 @@ export const buildQuoteComparisonDetailPanel = (
       { label: '定标状态', value: rfq.status },
       { label: '订单状态', value: generatedOrder ? `已生成订单 ${generatedOrder.id}` : '暂未生成采购订单' },
     ],
+    awardTimelineRows: [
+      { label: '推荐报价', value: recommendedSupplier?.name ?? recommendedQuote?.supplierId ?? '暂无推荐' },
+      { label: '定标审批', value: awardStatusLabel },
+      { label: '订单生成', value: generatedOrder?.id ?? '暂未生成' },
+      { label: '付款状态', value: generatedInvoice?.paymentStatus ?? '待开票' },
+    ],
     quoteRows: detail.quoteRows,
     relatedRows: [
       ...rfq.demandIds.map((demandId) => {
@@ -1042,6 +1058,13 @@ export const buildQuoteComparisonDetailPanel = (
             id: generatedOrder.id,
             title: '采购订单',
             detail: `${compactCurrency(generatedOrder.amount)} · ${generatedOrder.status}`,
+          }
+        : undefined,
+      generatedInvoice
+        ? {
+            id: generatedInvoice.id,
+            title: '发票付款',
+            detail: `${compactCurrency(generatedInvoice.amount)} · ${generatedInvoice.paymentStatus}`,
           }
         : undefined,
     ].filter((row): row is QuoteComparisonRelatedRow => Boolean(row)),
