@@ -563,20 +563,23 @@ const App: React.FC = () => {
 
   if (configurationError || loadError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-8 text-slate-900">
-        <div className="rounded-lg border border-red-100 bg-white p-6 shadow-sm">
-          <p className="text-sm font-black text-red-600">加载失败</p>
-          <p className="mt-2 text-sm text-slate-600">{configurationError ?? loadError}</p>
-        </div>
-      </div>
+      <ShellState
+        variant="error"
+        title="加载失败"
+        desc={configurationError ?? loadError ?? '工作台数据加载失败'}
+        fullScreen
+      />
     );
   }
 
   if (!platformData || !buyerData || !supplierData) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-bold text-slate-500">
-        正在加载采购工作台...
-      </div>
+      <ShellState
+        variant="loading"
+        title="正在加载采购工作台"
+        desc="正在同步平台、采购方和供应商工作台数据。"
+        fullScreen
+      />
     );
   }
 
@@ -590,14 +593,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900">
+    <div className="flex h-dvh overflow-hidden bg-slate-50 text-slate-900">
       <AppSidebar
         activeRole={activeRole}
         activeModules={activeModules}
         onSelectRole={setActiveRole}
         onSelectModule={setActiveRoleModule}
       />
-      <main className="flex min-w-0 flex-1 flex-col">
+      <main className="flex min-h-0 flex-1 flex-col min-w-0">
         <AppHeader
           activeRole={activeRole}
           activeModule={activeModule}
@@ -611,8 +614,8 @@ const App: React.FC = () => {
           onRefresh={() => setRefreshKey((value) => value + 1)}
           onRunJavaWorkflow={runJavaWorkflow}
         />
-        <section className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-7xl space-y-6 p-6">
+        <section className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto max-w-7xl max-w-full space-y-6 p-4 sm:p-6">
             {activeRole === 'platform' && (
               <PlatformWorkspace
                 data={platformData}
@@ -678,7 +681,7 @@ const AppSidebar: React.FC<{
   onSelectModule: (role: AdminRole, moduleId: string) => void;
 }> = ({ activeRole, activeModules, onSelectRole, onSelectModule }) => {
   return (
-    <aside className="flex w-24 shrink-0 flex-col bg-slate-950 text-white lg:w-72">
+    <aside className="flex min-h-0 w-24 shrink-0 flex-col bg-slate-950 text-white lg:w-72">
       <div className="border-b border-white/10 p-3 lg:p-6">
         <div className="flex items-center justify-center gap-3 lg:justify-start">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-lg font-black shadow-lg shadow-blue-950/40 lg:h-11 lg:w-11">
@@ -695,7 +698,7 @@ const AppSidebar: React.FC<{
         </div>
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto p-2 lg:space-y-5 lg:p-4">
+      <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-2 lg:space-y-5 lg:p-4">
         {adminRoleNavigation.map((role) => {
           const roleActive = activeRole === role.id;
           const roleIcon = role.id === 'platform' ? Layers3 : role.id === 'buyer' ? ShoppingCart : Truck;
@@ -2042,14 +2045,47 @@ const SupplierRelationNotice: React.FC<{
   </div>
 );
 
+const shellStateToneClasses = {
+  loading: 'border-blue-100 bg-blue-50 text-blue-700',
+  error: 'border-red-100 bg-red-50 text-red-700',
+  empty: 'border-slate-200 bg-slate-50 text-slate-600',
+};
+
+const ShellState: React.FC<{
+  variant: 'loading' | 'error' | 'empty';
+  title: string;
+  desc: string;
+  fullScreen?: boolean;
+}> = ({ variant, title, desc, fullScreen = false }) => {
+  const Icon = variant === 'error' ? ShieldCheck : variant === 'loading' ? Activity : Database;
+  const body = (
+    <div className={`rounded-lg border p-6 ${shellStateToneClasses[variant]}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/80">
+          <Icon size={18} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-black">{title}</p>
+          <p className="mt-1 text-xs font-bold leading-5 opacity-80">{desc}</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!fullScreen) return body;
+
+  return (
+    <div className="flex h-dvh items-center justify-center bg-slate-50 p-6 text-slate-900">
+      <div className="w-full max-w-md">{body}</div>
+    </div>
+  );
+};
+
 const EmptyState: React.FC<{
   title: string;
   desc: string;
 }> = ({ title, desc }) => (
-  <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6">
-    <p className="text-sm font-black text-slate-700">{title}</p>
-    <p className="mt-1 text-xs font-bold leading-5 text-slate-500">{desc}</p>
-  </div>
+  <ShellState variant="empty" title={title} desc={desc} />
 );
 
 const SupplierWorkspaceView: React.FC<{
