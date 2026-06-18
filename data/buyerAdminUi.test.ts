@@ -3,6 +3,8 @@ import type { BuyerAdminModule } from './adminNavigation';
 import { buildProcurementMvpModel, getBuyerWorkspace } from './procurementModel';
 import {
   buildApprovalCardFacts,
+  buildMaterialCatalogRows,
+  buildRfqListRows,
   buildWorkspaceApprovalQueue,
   buildBuyerModuleFacts,
   describeSupplierRelationAction,
@@ -124,5 +126,76 @@ describe('buyer admin UI helpers', () => {
       tone: 'emerald',
       riskLabel: '绩效优秀',
     });
+  });
+
+  it('summarizes material catalog usage for buyer list pages', () => {
+    expect(buildMaterialCatalogRows(workspace).map((row) => ({
+      id: row.id,
+      title: row.title,
+      facts: row.facts,
+      usageLabel: row.usageLabel,
+    }))).toEqual([
+      {
+        id: 'mat-acme-1',
+        title: '视频会议一体机',
+        facts: [
+          { label: '物料编码', value: 'IT-1001' },
+          { label: '品类', value: '智能终端' },
+          { label: '单位', value: '台' },
+          { label: '参考价', value: '¥18,000' },
+        ],
+        usageLabel: '2 个需求引用',
+      },
+      {
+        id: 'mat-acme-2',
+        title: 'A4 复印纸',
+        facts: [
+          { label: '物料编码', value: 'OA-2040' },
+          { label: '品类', value: '办公耗材' },
+          { label: '单位', value: '箱' },
+          { label: '参考价', value: '¥160' },
+        ],
+        usageLabel: '1 个需求引用',
+      },
+      {
+        id: 'mat-acme-3',
+        title: '年度物流服务',
+        facts: [
+          { label: '物料编码', value: 'SV-3100' },
+          { label: '品类', value: '服务采购' },
+          { label: '单位', value: '项' },
+          { label: '参考价', value: '¥80,000' },
+        ],
+        usageLabel: '1 个需求引用',
+      },
+    ]);
+  });
+
+  it('summarizes RFQ list rows with demand and quote response context', () => {
+    expect(buildRfqListRows(workspace).map((row) => ({
+      id: row.id,
+      title: row.title,
+      demandLabel: row.demandLabel,
+      supplierLabel: row.supplierLabel,
+      quoteLabel: row.quoteLabel,
+      status: row.status,
+    }))).toEqual([
+      {
+        id: 'rfq-acme-1',
+        title: '会议室升级设备询价',
+        demandLabel: '华东总部会议室升级',
+        supplierLabel: '3 家已邀请',
+        quoteLabel: '3/3 已报价',
+        status: '已定标',
+      },
+      {
+        id: 'rfq-acme-2',
+        title: '区域仓储配送服务询价',
+        demandLabel: '区域仓储配送服务',
+        supplierLabel: '1 家已邀请',
+        quoteLabel: '0/1 已报价',
+        status: '报价中',
+      },
+    ]);
   });
 });

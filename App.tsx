@@ -30,6 +30,8 @@ import { approvalResultMessage, approvalTypeLabel } from './data/approvalUi';
 import {
   buildApprovalCardFacts,
   buildBuyerModuleFacts,
+  buildMaterialCatalogRows,
+  buildRfqListRows,
   buildWorkspaceApprovalQueue,
   describeSupplierRelationAction,
   type BuyerModuleFact,
@@ -1370,26 +1372,32 @@ const BuyerWorkspaceView: React.FC<{
             <EmptyState title="暂无询价项目" desc="需求审批通过后，可从采购需求页选择已准入供应商并创建询价。" />
           ) : (
           <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="min-w-[760px] w-full text-left text-sm">
+            <table className="min-w-[860px] w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
                 <tr>
                   <th className="px-4 py-3">询价项目</th>
-                  <th className="px-4 py-3">邀请供应商</th>
-                  <th className="px-4 py-3">报价数</th>
+                  <th className="px-4 py-3">关联需求</th>
+                  <th className="px-4 py-3">供应商</th>
+                  <th className="px-4 py-3">响应</th>
                   <th className="px-4 py-3">截止时间</th>
                   <th className="px-4 py-3">状态</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {workspace.rfqs.map((rfq) => (
-                  <tr key={rfq.id}>
+                {buildRfqListRows(workspace).map((rfq) => (
+                  <tr key={rfq.id} className="align-top">
                     <td className="px-4 py-4">
                       <p className="font-black text-slate-900">{rfq.title}</p>
                       <p className="mt-1 text-xs font-bold text-slate-400">{rfq.id}</p>
                     </td>
-                    <td className="px-4 py-4 font-mono font-bold text-slate-700">{rfq.invitedSupplierIds.length}</td>
-                    <td className="px-4 py-4 font-mono font-bold text-slate-700">{rfq.quotes.length}</td>
-                    <td className="px-4 py-4 text-slate-600">{rfq.deadline}</td>
+                    <td className="px-4 py-4 font-bold text-slate-600">{rfq.demandLabel}</td>
+                    <td className="px-4 py-4 font-mono font-bold text-slate-700">{rfq.supplierLabel}</td>
+                    <td className="px-4 py-4">
+                      <span className="rounded-lg bg-blue-50 px-2 py-1 font-mono text-xs font-black text-blue-700">
+                        {rfq.quoteLabel}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-slate-600">{rfq.deadlineLabel}</td>
                     <td className="px-4 py-4"><StatusPill label={rfq.status} /></td>
                   </tr>
                 ))}
@@ -1437,15 +1445,20 @@ const BuyerWorkspaceView: React.FC<{
         {workspace.materials.length === 0 ? (
           <EmptyState title="暂无物料目录" desc="先维护物料或服务主数据，再用于采购需求明细和询价范围。" />
         ) : (
-          <SimpleList
-            rows={workspace.materials.map((material) => ({
-              id: material.id,
-              title: material.name,
-              meta: `${material.code} · ${material.category} · ${material.unit}`,
-              value: currency(material.referencePrice),
-              status: '启用',
-            }))}
-          />
+          <div className="grid gap-3 lg:grid-cols-2">
+            {buildMaterialCatalogRows(workspace).map((material) => (
+              <div key={material.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-black text-slate-900">{material.title}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-400">{material.usageLabel}</p>
+                  </div>
+                  <StatusPill label={material.status} />
+                </div>
+                <InlineFactGrid facts={material.facts} />
+              </div>
+            ))}
+          </div>
         )}
       </Panel>
     )}

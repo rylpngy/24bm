@@ -27,6 +27,24 @@ export interface SupplierRelationAction {
   riskLabel: string;
 }
 
+export interface MaterialCatalogRow {
+  id: string;
+  title: string;
+  facts: BuyerModuleFact[];
+  usageLabel: string;
+  status: string;
+}
+
+export interface RfqListRow {
+  id: string;
+  title: string;
+  demandLabel: string;
+  supplierLabel: string;
+  quoteLabel: string;
+  deadlineLabel: string;
+  status: string;
+}
+
 const compactCurrency = (value: number) =>
   new Intl.NumberFormat('zh-CN', {
     style: 'currency',
@@ -150,6 +168,39 @@ export const describeSupplierRelationAction = (relation: SupplierRelation): Supp
     riskLabel: supplierRiskLabel(relation.performanceScore),
   };
 };
+
+export const buildMaterialCatalogRows = (workspace: BuyerWorkspace): MaterialCatalogRow[] =>
+  workspace.materials.map((material) => {
+    const usageCount = workspace.demands.filter((demand) =>
+      demand.lineItems.some((item) => item.materialId === material.id)).length;
+    return {
+      id: material.id,
+      title: material.name,
+      facts: [
+        { label: '物料编码', value: material.code },
+        { label: '品类', value: material.category },
+        { label: '单位', value: material.unit },
+        { label: '参考价', value: compactCurrency(material.referencePrice) },
+      ],
+      usageLabel: usageCount > 0 ? `${usageCount} 个需求引用` : '暂无需求引用',
+      status: '启用',
+    };
+  });
+
+export const buildRfqListRows = (workspace: BuyerWorkspace): RfqListRow[] =>
+  workspace.rfqs.map((rfq) => {
+    const demands = rfq.demandIds
+      .map((demandId) => workspace.demands.find((demand) => demand.id === demandId)?.title ?? demandId);
+    return {
+      id: rfq.id,
+      title: rfq.title,
+      demandLabel: demands.join(' / '),
+      supplierLabel: `${rfq.invitedSupplierIds.length} 家已邀请`,
+      quoteLabel: `${rfq.quotes.length}/${rfq.invitedSupplierIds.length} 已报价`,
+      deadlineLabel: rfq.deadline,
+      status: rfq.status,
+    };
+  });
 
 export const buildBuyerModuleFacts = (
   module: BuyerAdminModule,
