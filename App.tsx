@@ -4064,6 +4064,8 @@ const MaterialDetailPanelView: React.FC<{
           <InlineFactGrid facts={detail.facts} />
         </div>
 
+        <MaterialDetailSummaryPanel detail={detail} />
+
         <section>
           <p className="mb-2 text-xs font-black text-slate-500">使用概览</p>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
@@ -4171,6 +4173,31 @@ const MaterialDetailPanelView: React.FC<{
     )}
   </Panel>
 );
+
+const MaterialDetailSummaryPanel: React.FC<{
+  detail: MaterialDetailPanel;
+}> = ({ detail }) => {
+  const code = detail.facts.find((fact) => fact.label === '物料编码')?.value ?? detail.id;
+  const category = detail.facts.find((fact) => fact.label === '品类')?.value ?? '未维护';
+  const referencePrice = detail.facts.find((fact) => fact.label === '参考价')?.value ?? '未维护';
+  const demandUsage = detail.usageSummary.find((row) => row.label === '引用需求')?.value ?? '0 条';
+  const supplierCoverage = detail.usageSummary.find((row) => row.label === '准入供应商')?.value ?? '0 家';
+  const nextAction = detail.procurementReadinessRows.find((row) => row.label === '下一步')?.value ?? '待确认';
+
+  return (
+    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+      <p className="text-xs font-black text-blue-800">目录摘要</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        <MiniFact label="物料编码" value={code} />
+        <MiniFact label="品类" value={category} />
+        <MiniFact label="参考价" value={referencePrice} />
+        <MiniFact label="引用需求" value={demandUsage} />
+        <MiniFact label="准入供应商" value={supplierCoverage} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </section>
+  );
+};
 
 const DemandCreateForm: React.FC<{
   materials: BuyerWorkspace['materials'];
