@@ -3511,6 +3511,33 @@ const EmptyState: React.FC<{
   <ShellState variant="empty" title={title} desc={desc} />
 );
 
+const processStateToneClasses = {
+  handled: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+  waiting: 'border-slate-200 bg-slate-50 text-slate-600',
+};
+
+const ProcessStateNotice: React.FC<{
+  variant: 'handled' | 'waiting';
+  title: string;
+  desc: string;
+}> = ({ variant, title, desc }) => {
+  const Icon = variant === 'handled' ? CheckCircle2 : Activity;
+
+  return (
+    <div className={`mt-4 rounded-lg border p-3 ${processStateToneClasses[variant]}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/80">
+          <Icon size={16} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-black">{title}</p>
+          <p className="mt-1 text-xs font-bold leading-5 opacity-80">{desc}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SupplierWorkspaceView: React.FC<{
   activeModule: SupplierAdminModule;
   workspace: SupplierWorkspace;
@@ -3850,6 +3877,7 @@ const RfqCard: React.FC<{
   const canSubmitAward = javaEnabled && canSubmitAwardApproval(rfq) && Boolean(recommendedQuote);
   const canCreateOrder = javaEnabled && canCreateOrderFromAward(rfq, approvedAwardId, workspace.orders);
   const nextAction = describeRfqNextAction(rfq, approvedAwardId, workspace.orders);
+  const handledState = nextAction.title === '流程已处理';
 
   return (
     <div className={`rounded-lg border bg-white p-4 transition ${
@@ -3870,7 +3898,11 @@ const RfqCard: React.FC<{
 
       <div className="mt-4 space-y-2">
         {rfq.quotes.length === 0 ? (
-          <div className="rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-500">暂无报价，等待供应商响应。</div>
+          <ProcessStateNotice
+            variant="waiting"
+            title="等待供应商响应"
+            desc="暂无报价，等待供应商响应。收到有效报价后会开放定标入口。"
+          />
         ) : (
           rfq.quotes.map((quote, index) => {
             const supplier = workspace.suppliers.find((item) => item.id === quote.supplierId);
@@ -3913,7 +3945,15 @@ const RfqCard: React.FC<{
         )}
       </div>
 
-      <NextActionNotice action={nextAction} />
+      {handledState ? (
+        <ProcessStateNotice
+          variant="handled"
+          title="流程已处理"
+          desc="当前询价项目暂无需要采购方立即处理的动作。可进入详情查看关联订单、收货和付款状态。"
+        />
+      ) : (
+        <NextActionNotice action={nextAction} />
+      )}
 
       {canSubmitAward && recommendedQuote && (
         <PrimaryActionButton

@@ -51,4 +51,14 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('aria-busy={busy || undefined}');
     expect(app.match(/<PrimaryActionButton/g)?.length).toBeGreaterThanOrEqual(6);
   });
+
+  it('uses a shared process state notice for handled or waiting workflow cards', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('const ProcessStateNotice');
+    expect(app).toContain("variant: 'handled' | 'waiting'");
+    expect(app).toContain('流程已处理');
+    expect(app).toContain('等待供应商响应');
+    expect(app.match(/<ProcessStateNotice/g)?.length).toBeGreaterThanOrEqual(2);
+  });
 });
