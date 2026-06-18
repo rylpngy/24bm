@@ -5414,15 +5414,18 @@ const SupplierWorkspaceView: React.FC<{
         ) : (
           <div className="space-y-4">
             <SupplierInvoiceReceivableSummaryPanel invoices={workspace.invoices} />
-            <SimpleList
-              rows={workspace.invoices.map((invoice) => ({
-                id: invoice.id,
-                title: invoice.id,
-                meta: `订单 ${invoice.orderId}`,
-                value: currency(invoice.amount),
-                status: invoice.paymentStatus,
-              }))}
-            />
+            <div className="space-y-3">
+              {workspace.invoices.map((invoice) => {
+                const order = workspace.orders.find((order) => order.id === invoice.orderId);
+                return (
+                  <SupplierInvoiceReceivableCard
+                    key={invoice.id}
+                    invoice={invoice}
+                    order={order}
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
       </Panel>
@@ -5567,6 +5570,41 @@ const SupplierInvoiceReceivableSummaryPanel: React.FC<{
         <MiniFact label="待回款" value={currency(pendingReceivableTotal)} />
         <MiniFact label="已回款" value={currency(paidTotal)} />
         <MiniFact label="发票数量" value={`${invoices.length} 张`} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </div>
+  );
+};
+
+const SupplierInvoiceReceivableCard: React.FC<{
+  invoice: SupplierWorkspace['invoices'][number];
+  order?: SupplierWorkspace['orders'][number];
+}> = ({ invoice, order }) => {
+  const paymentProgress = invoice.paymentStatus === '已付款'
+    ? '100%'
+    : invoice.paymentStatus === '部分付款'
+      ? '部分回款'
+      : '待回款';
+  const nextAction = invoice.paymentStatus === '已付款'
+    ? '归档对账'
+    : invoice.paymentStatus === '部分付款'
+      ? '跟进尾款'
+      : '跟进回款';
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-black text-slate-900">发票应收卡片 {invoice.id}</p>
+          <p className="mt-1 text-sm text-slate-500">关联订单 {invoice.orderId} · {order?.status ?? '订单状态待同步'}</p>
+        </div>
+        <StatusPill label={invoice.paymentStatus} />
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <MiniFact label="关联订单" value={invoice.orderId} />
+        <MiniFact label="应收金额" value={currency(invoice.amount)} />
+        <MiniFact label="付款状态" value={invoice.paymentStatus} />
+        <MiniFact label="回款进度" value={paymentProgress} />
         <MiniFact label="下一步" value={nextAction} />
       </div>
     </div>
