@@ -167,6 +167,12 @@ describe('buyer admin UI helpers', () => {
           detail: '260 箱 · 参考 ¥41,600',
         },
       ],
+      reviewCheckRows: [
+        { label: '审批状态', value: '待审批' },
+        { label: '业务状态', value: '审批中' },
+        { label: '关联明细', value: '1 条' },
+        { label: '下一步', value: '通过或驳回' },
+      ],
       timelineRows: [
         { label: '提交审批', value: '06/18 09:00' },
         { label: '等待处理', value: '7 小时' },

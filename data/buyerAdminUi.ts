@@ -60,6 +60,11 @@ export interface ApprovalDetailTimelineRow {
   value: string;
 }
 
+export interface ApprovalDetailCheckRow {
+  label: string;
+  value: string;
+}
+
 export interface ApprovalDetailPanel {
   id: string;
   title: string;
@@ -69,6 +74,7 @@ export interface ApprovalDetailPanel {
   facts: BuyerModuleFact[];
   businessFacts: BuyerModuleFact[];
   contextRows: ApprovalDetailContextRow[];
+  reviewCheckRows: ApprovalDetailCheckRow[];
   timelineRows: ApprovalDetailTimelineRow[];
 }
 
@@ -668,16 +674,23 @@ export const buildApprovalDetailPanel = (
 
   const context = buildApprovalBusinessContext(workspace, approval);
   const actedAt = approval.actedAt ?? undefined;
+  const canReview = approval.status === undefined || approval.status === '待审批';
 
   return {
     id: approvalId(approval),
     title: approval.summaryTitle ?? approval.bizId ?? '审批事项',
     typeLabel: approvalTypeLabel(approval.bizType ?? ''),
     status: approval.status ?? '待审批',
-    canReview: approval.status === undefined || approval.status === '待审批',
+    canReview,
     facts: buildApprovalCardFacts(approval, nowIso),
     businessFacts: context.businessFacts,
     contextRows: context.contextRows,
+    reviewCheckRows: [
+      { label: '审批状态', value: approval.status ?? '待审批' },
+      { label: '业务状态', value: approval.businessStatus ?? approval.status ?? '待审批' },
+      { label: '关联明细', value: `${context.contextRows.length} 条` },
+      { label: '下一步', value: canReview ? '通过或驳回' : '已归档' },
+    ],
     timelineRows: [
       { label: '提交审批', value: compactDateTime(approval.createdAt) },
       actedAt
