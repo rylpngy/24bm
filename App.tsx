@@ -4298,43 +4298,39 @@ const RfqCreateForm: React.FC<{
   busy: boolean;
   onSubmit: (demandId: string, supplierIds: string[], deadline: string) => void;
 }> = ({ demand, suppliers, relations, busy, onSubmit }) => {
-  const admittedSupplierIds = relations
-    .filter((relation) => relation.status === '已准入')
-    .map((relation) => relation.supplierId);
-  const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>(admittedSupplierIds.slice(0, 1));
+  const admittedRelations = relations.filter((relation) => relation.status === '已准入');
+  const admittedSupplierIds = admittedRelations.map((relation) => relation.supplierId);
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>(admittedSupplierIds.slice(0, 2));
   const defaultDeadline = new Date();
   defaultDeadline.setDate(defaultDeadline.getDate() + 14);
   const [deadline, setDeadline] = useState(defaultDeadline.toISOString().slice(0, 10));
   const canSubmit = selectedSupplierIds.length > 0 && deadline;
+  const toggleSupplierSelection = (supplierId: string, checked: boolean) => {
+    setSelectedSupplierIds((current) =>
+      checked
+        ? Array.from(new Set([...current, supplierId]))
+        : current.filter((item) => item !== supplierId),
+    );
+  };
 
   return (
     <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
-      <p className="text-xs font-black text-blue-800">创建询价</p>
-      <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_180px]">
-        <div className="space-y-2">
-          {admittedSupplierIds.map((supplierId) => {
-            const supplier = suppliers.find((item) => item.id === supplierId);
-            const checked = selectedSupplierIds.includes(supplierId);
-            return (
-              <label key={supplierId} className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={(event) => {
-                    setSelectedSupplierIds((current) =>
-                      event.target.checked
-                        ? [...current, supplierId]
-                        : current.filter((item) => item !== supplierId),
-                    );
-                  }}
-                  className="h-4 w-4 rounded border-slate-300"
-                />
-                {supplier?.name ?? supplierId}
-              </label>
-            );
-          })}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-blue-800">创建询价</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
+            从已准入供应商中选择邀请对象，生成后进入报价和比价流程。
+          </p>
         </div>
-        <Field label="截止日期">
+        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-blue-700">
+          已选择供应商 {selectedSupplierIds.length} 家
+        </span>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+        <MiniFact label="需求编号" value={demand.id} />
+        <MiniFact label="需求预算" value={currency(demand.budget)} />
+        <Field label="预计报价截止">
           <input
             type="date"
             value={deadline}
@@ -4343,6 +4339,45 @@ const RfqCreateForm: React.FC<{
           />
         </Field>
       </div>
+
+      <div className="mt-3 space-y-2">
+        {admittedRelations.map((relation) => {
+          const supplier = suppliers.find((item) => item.id === relation.supplierId);
+          const checked = selectedSupplierIds.includes(relation.supplierId);
+          return (
+            <label
+              key={relation.id}
+              className={`block rounded-lg border bg-white p-3 transition ${
+                checked ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200 hover:border-blue-200'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(event) => toggleSupplierSelection(relation.supplierId, event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="break-words text-xs font-black text-slate-800">{supplier?.name ?? relation.supplierId}</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
+                      {relation.level} 级
+                    </span>
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">
+                      绩效 {relation.performanceScore} 分
+                    </span>
+                  </div>
+                  <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-500">
+                    授权品类：{relation.categories.join(' / ')}
+                  </p>
+                </div>
+              </div>
+            </label>
+          );
+        })}
+      </div>
+
       <button
         type="button"
         onClick={() => onSubmit(demand.id, selectedSupplierIds, `${deadline}T18:00:00+08:00`)}
