@@ -33,4 +33,22 @@ describe('buyer order detail UI', () => {
     expect(orderDetailView).toContain('关联业务');
     expect(app).toContain('查看详情');
   });
+
+  it('surfaces buyer fulfillment actions inside the order detail panel', () => {
+    const app = read('App.tsx');
+    const orderDetailView = app.slice(
+      app.indexOf('const OrderDetailPanelView'),
+      app.indexOf('const ReceiptInspectionDetailPanelView'),
+    );
+
+    expect(orderDetailView).toContain('OrderDetailOperationPanel');
+    expect(orderDetailView).toContain('订单操作');
+    expect(orderDetailView).toContain('order?: BuyerWorkspace[\'orders\'][number]');
+    expect(orderDetailView).toContain('javaEnabled: boolean');
+    expect(orderDetailView).toContain('buyerFulfillmentBusyId: string | null');
+    expect(orderDetailView).toContain('onCreateReceipt: (orderId: string) => void');
+    expect(app).toContain('order={selectedOrderRecord}');
+    expect(app).toContain('buyerFulfillmentBusyId={buyerFulfillmentBusyId}');
+    expect(app).toContain('onCreateReceipt={onCreateReceipt}');
+  });
 });
