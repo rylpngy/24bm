@@ -12,6 +12,8 @@ describe('buyer order detail UI', () => {
     expect(buyerAdminUi).toContain('delivery');
     expect(buyerAdminUi).toContain('invoice');
     expect(buyerAdminUi).toContain('rfqLabel');
+    expect(buyerAdminUi).toContain('fulfillmentTimelineRows');
+    expect(buyerAdminUi).toContain('relatedRows');
 
     expect(app).toContain('buildOrderDetailPanel');
     expect(app).toContain('selectedOrderId');
@@ -20,6 +22,9 @@ describe('buyer order detail UI', () => {
     expect(app).toContain('订单详情');
     expect(app).toContain('物流信息');
     expect(app).toContain('发票付款');
+    expect(app).toContain('履约轨迹');
+    expect(app).toContain('关联业务');
+    expect(app).toContain('收货验收');
     expect(app).toContain('查看详情');
   });
 });

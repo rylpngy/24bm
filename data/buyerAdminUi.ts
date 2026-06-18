@@ -308,6 +308,17 @@ export interface OrderDetailInvoice {
   paymentStatus: string;
 }
 
+export interface OrderDetailTimelineRow {
+  label: string;
+  value: string;
+}
+
+export interface OrderDetailRelatedRow {
+  id: string;
+  title: string;
+  detail: string;
+}
+
 export interface OrderDetailPanel {
   id: string;
   supplierName: string;
@@ -316,6 +327,8 @@ export interface OrderDetailPanel {
   facts: BuyerModuleFact[];
   delivery?: OrderDetailDelivery;
   invoice?: OrderDetailInvoice;
+  fulfillmentTimelineRows: OrderDetailTimelineRow[];
+  relatedRows: OrderDetailRelatedRow[];
   rfqLabel: string;
   nextActionTitle: string;
 }
@@ -1107,6 +1120,7 @@ export const buildOrderDetailPanel = (
   const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
   const invoice = workspace.invoices.find((item) => item.orderId === order.id);
   const nextAction = describeOrderNextAction(order);
+  const receiptLabel = order.status === '已收货' || order.status === '已完成' ? '已登记' : '待登记';
 
   return {
     id: order.id,
@@ -1134,6 +1148,36 @@ export const buildOrderDetailPanel = (
           paymentStatus: invoice.paymentStatus,
         }
       : undefined,
+    fulfillmentTimelineRows: [
+      { label: '订单创建', value: order.id },
+      { label: '供应商确认', value: order.status },
+      { label: '物流状态', value: delivery?.status ?? '待发货' },
+      { label: '收货验收', value: receiptLabel },
+      { label: '发票付款', value: invoice?.paymentStatus ?? '待开票' },
+    ],
+    relatedRows: [
+      rfq
+        ? {
+            id: rfq.id,
+            title: '询价项目',
+            detail: `${rfq.title} · ${rfq.status}`,
+          }
+        : undefined,
+      delivery
+        ? {
+            id: delivery.id,
+            title: '物流信息',
+            detail: `${delivery.carrier} ${delivery.trackingNo} · ${delivery.status}`,
+          }
+        : undefined,
+      invoice
+        ? {
+            id: invoice.id,
+            title: '发票付款',
+            detail: `${compactCurrency(invoice.amount)} · ${invoice.paymentStatus}`,
+          }
+        : undefined,
+    ].filter((row): row is OrderDetailRelatedRow => Boolean(row)),
     rfqLabel: rfq?.title ?? order.rfqId,
     nextActionTitle: nextAction.title,
   };

@@ -2610,6 +2610,41 @@ const OrderDetailPanelView: React.FC<{
           )}
         </section>
 
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">履约轨迹</p>
+          <div className="space-y-2">
+            {detail.fulfillmentTimelineRows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                <span className="text-xs font-black text-slate-500">{row.label}</span>
+                <span className="text-xs font-black text-slate-900">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">关联业务</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.relatedRows.length} 条
+            </span>
+          </div>
+          {detail.relatedRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.relatedRows.map((row) => (
+                <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无关联业务记录。
+            </p>
+          )}
+        </section>
+
         <MiniFact label="下一步" value={detail.nextActionTitle} />
       </div>
     )}

@@ -720,6 +720,18 @@ describe('buyer admin UI helpers', () => {
         amountLabel: '¥216,000',
         paymentStatus: '待付款',
       },
+      fulfillmentTimelineRows: [
+        { label: '订单创建', value: 'po-acme-1' },
+        { label: '供应商确认', value: '待收货' },
+        { label: '物流状态', value: '运输中' },
+        { label: '收货验收', value: '待登记' },
+        { label: '发票付款', value: '待付款' },
+      ],
+      relatedRows: [
+        { id: 'rfq-acme-1', title: '询价项目', detail: '会议室升级设备询价 · 已定标' },
+        { id: 'del-acme-1', title: '物流信息', detail: '顺丰速运 SF88420115 · 运输中' },
+        { id: 'inv-acme-1', title: '发票付款', detail: '¥216,000 · 待付款' },
+      ],
       rfqLabel: '会议室升级设备询价',
       nextActionTitle: '待收货验收',
     });
