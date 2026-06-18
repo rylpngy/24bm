@@ -1513,17 +1513,10 @@ const BuyerWorkspaceView: React.FC<{
                     <td className="px-4 py-4 text-slate-600">{rfq.deadlineLabel}</td>
                     <td className="px-4 py-4"><StatusPill label={rfq.status} /></td>
                     <td className="px-4 py-4">
-                      <button
-                        type="button"
+                      <TableDetailButton
+                        selected={selectedRfq === rfq.id}
                         onClick={() => setSelectedRfqId(rfq.id)}
-                        className={`inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                          selectedRfq === rfq.id
-                            ? 'border-blue-200 bg-blue-100 text-blue-700'
-                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        {selectedRfq === rfq.id ? '当前详情' : '查看详情'}
-                      </button>
+                      />
                     </td>
                   </tr>
                 ))}
@@ -4035,6 +4028,25 @@ const DetailToggleButton: React.FC<{
     className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
       fullWidth ? 'w-full' : ''
     } ${
+      selected
+        ? 'border-blue-200 bg-blue-50 text-blue-700'
+        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+    }`}
+  >
+    {selected ? '当前详情' : '查看详情'}
+  </button>
+);
+
+const TableDetailButton: React.FC<{
+  selected: boolean;
+  onClick: () => void;
+}> = ({ selected, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-current={selected ? 'true' : undefined}
+    aria-pressed={selected}
+    className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-lg border px-3 text-xs font-black transition ${
       selected
         ? 'border-blue-200 bg-blue-50 text-blue-700'
         : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'

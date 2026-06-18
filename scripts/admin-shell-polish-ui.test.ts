@@ -61,4 +61,13 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('等待供应商响应');
     expect(app.match(/<ProcessStateNotice/g)?.length).toBeGreaterThanOrEqual(2);
   });
+
+  it('uses a shared table detail button for dense buyer tables', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('const TableDetailButton');
+    expect(app).toContain('aria-current={selected ?');
+    expect(app).toContain('aria-pressed={selected}');
+    expect(app.match(/<TableDetailButton/g)?.length).toBeGreaterThanOrEqual(1);
+  });
 });
