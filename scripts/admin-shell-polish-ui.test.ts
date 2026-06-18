@@ -70,4 +70,14 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('aria-pressed={selected}');
     expect(app.match(/<TableDetailButton/g)?.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('uses shared responsive detail panel primitives for dense detail views', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('const DetailPanelBody');
+    expect(app).toContain('className="space-y-3 sm:space-y-4"');
+    expect(app).toContain('break-words');
+    expect(app).toContain('min-w-0');
+    expect(app.match(/<DetailPanelBody>/g)?.length).toBeGreaterThanOrEqual(6);
+  });
 });

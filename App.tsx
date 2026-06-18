@@ -2041,7 +2041,7 @@ const DemandDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无需求详情" desc="选择一条采购需求后，可查看物料明细、关联询价和审批上下文。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -2157,7 +2157,7 @@ const DemandDetailPanelView: React.FC<{
           <MiniFact label="审批状态" value={detail.approvalLabel} />
           <MiniFact label="下一步" value={detail.nextActionTitle} />
         </div>
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -2173,7 +2173,7 @@ const ApprovalDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无审批详情" desc="选择一条待办或最近审批记录后，可查看业务上下文和处理轨迹。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -2262,7 +2262,7 @@ const ApprovalDetailPanelView: React.FC<{
             {detail.canReview ? 'Java 模式下可在详情中直接处理审批。' : '该审批已处理，仅保留业务上下文和轨迹。'}
           </div>
         )}
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -2274,7 +2274,7 @@ const AuditLogDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无日志详情" desc="选择一条审计记录后，可查看操作对象、关联业务和处理轨迹。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -2340,7 +2340,7 @@ const AuditLogDetailPanelView: React.FC<{
             ))}
           </div>
         </section>
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -2352,7 +2352,7 @@ const RfqDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无询价详情" desc="选择一个询价项目后，可查看关联需求、邀请供应商、报价排行和履约状态。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -2503,7 +2503,7 @@ const RfqDetailPanelView: React.FC<{
           <MiniFact label="订单状态" value={detail.orderLabel} />
           <MiniFact label="下一步" value={detail.nextActionTitle} />
         </div>
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -2515,7 +2515,7 @@ const QuoteComparisonDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无比价详情" desc="选择一个询价项目后，可查看推荐结论、报价排行和关联业务。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -2625,7 +2625,7 @@ const QuoteComparisonDetailPanelView: React.FC<{
         </section>
 
         <MiniFact label="下一步" value={detail.nextActionTitle} />
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -2637,7 +2637,7 @@ const OrderDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无订单详情" desc="选择一张采购订单后，可查看询价来源、物流、发票和付款状态。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -2740,7 +2740,7 @@ const OrderDetailPanelView: React.FC<{
         </section>
 
         <MiniFact label="下一步" value={detail.nextActionTitle} />
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -2755,7 +2755,7 @@ const ReceiptInspectionDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无验收详情" desc="选择一张待收货订单后，可查看物流、验收检查和关联业务。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -2838,7 +2838,7 @@ const ReceiptInspectionDetailPanelView: React.FC<{
         )}
 
         <MiniFact label="下一步" value={detail.nextActionTitle} />
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -2853,7 +2853,7 @@ const InvoicePaymentDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无发票详情" desc="选择一张发票后，可查看订单、物流、供应商和付款状态。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -2932,7 +2932,7 @@ const InvoicePaymentDetailPanelView: React.FC<{
         )}
 
         <MiniFact label="下一步" value={detail.nextActionTitle} />
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -2944,7 +2944,7 @@ const SupplierDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无供应商详情" desc="选择一个私域供应商关系后，可查看准入、品类、绩效和协作记录。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -3044,7 +3044,7 @@ const SupplierDetailPanelView: React.FC<{
             </p>
           )}
         </section>
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -3056,7 +3056,7 @@ const MaterialDetailPanelView: React.FC<{
     {!detail ? (
       <EmptyState title="暂无物料详情" desc="选择一个物料或服务后，可查看引用需求、询价项目和供应商覆盖情况。" />
     ) : (
-      <div className="space-y-4">
+      <DetailPanelBody>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -3171,7 +3171,7 @@ const MaterialDetailPanelView: React.FC<{
             </p>
           )}
         </section>
-      </div>
+      </DetailPanelBody>
     )}
   </Panel>
 );
@@ -3385,13 +3385,19 @@ const Field: React.FC<{
   </label>
 );
 
+const DetailPanelBody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="space-y-3 sm:space-y-4">
+    {children}
+  </div>
+);
+
 const MiniFact: React.FC<{
   label: string;
   value: string;
 }> = ({ label, value }) => (
-  <div className="rounded-lg bg-slate-50 px-3 py-2">
+  <div className="min-w-0 rounded-lg bg-slate-50 px-3 py-2">
     <p className="text-[11px] font-black text-slate-400">{label}</p>
-    <p className="mt-1 truncate text-xs font-bold text-slate-700">{value}</p>
+    <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">{value}</p>
   </div>
 );
 
