@@ -2313,6 +2313,15 @@ const AuditLogDetailPanelView: React.FC<{
         </section>
 
         <section>
+          <p className="mb-2 text-xs font-black text-slate-500">追溯检查</p>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {detail.traceabilityRows.map((row) => (
+              <MiniFact key={row.label} label={row.label} value={row.value} />
+            ))}
+          </div>
+        </section>
+
+        <section>
           <div className="mb-2 flex items-center justify-between gap-3">
             <p className="text-xs font-black text-slate-500">关联业务</p>
             <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">

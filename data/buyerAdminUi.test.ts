@@ -971,6 +971,12 @@ describe('buyer admin UI helpers', () => {
         { id: 'del-acme-1', title: '物流信息', detail: '顺丰速运 SF88420115 · 运输中' },
         { id: 'inv-acme-1', title: '发票付款', detail: '¥216,000 · 待付款' },
       ],
+      traceabilityRows: [
+        { label: '操作人', value: 'u-orbit-sales' },
+        { label: '对象类型', value: '订单' },
+        { label: '关联业务', value: '2 条' },
+        { label: '留痕结果', value: '已记录' },
+      ],
       timelineRows: [
         { label: '审计记录', value: '06/15 14:35' },
         { label: '业务动作', value: '供应商发货' },

@@ -322,6 +322,7 @@ export interface AuditLogDetailPanel {
   facts: BuyerModuleFact[];
   targetFacts: BuyerModuleFact[];
   relatedRows: AuditLogRelatedRow[];
+  traceabilityRows: BuyerModuleFact[];
   timelineRows: AuditLogTimelineRow[];
 }
 
@@ -1663,6 +1664,12 @@ export const buildAuditLogDetailPanel = (
     ],
     targetFacts: targetContext.targetFacts,
     relatedRows: targetContext.relatedRows,
+    traceabilityRows: [
+      { label: '操作人', value: actor?.name ?? log.actorId },
+      { label: '对象类型', value: targetTypeLabel },
+      { label: '关联业务', value: `${targetContext.relatedRows.length} 条` },
+      { label: '留痕结果', value: '已记录' },
+    ],
     timelineRows: [
       { label: '审计记录', value: compactDateTime(log.createdAt) },
       { label: '业务动作', value: title },
