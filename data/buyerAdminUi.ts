@@ -386,6 +386,11 @@ export interface ReceiptInspectionRelatedRow {
   detail: string;
 }
 
+export interface ReceiptInspectionPostReceiptRow {
+  label: string;
+  value: string;
+}
+
 export interface ReceiptInspectionDetailPanel {
   id: string;
   supplierName: string;
@@ -397,6 +402,7 @@ export interface ReceiptInspectionDetailPanel {
   facts: BuyerModuleFact[];
   logisticsFacts: BuyerModuleFact[];
   acceptanceChecks: BuyerModuleFact[];
+  postReceiptRows: ReceiptInspectionPostReceiptRow[];
   relatedRows: ReceiptInspectionRelatedRow[];
 }
 
@@ -1369,6 +1375,11 @@ export const buildReceiptInspectionDetailPanel = (
       { label: '物流信息', value: delivery?.status ?? '待发货' },
       { label: '订单状态', value: order.status },
       { label: '验收结果', value: order.status === '已收货' || order.status === '已完成' ? '已登记' : '待登记' },
+    ],
+    postReceiptRows: [
+      { label: '验收登记', value: order.status === '已收货' || order.status === '已完成' ? '已登记' : '待登记' },
+      { label: '发票状态', value: invoice?.paymentStatus ?? '待开票' },
+      { label: '下一步', value: nextAction.title },
     ],
     relatedRows: [
       rfq

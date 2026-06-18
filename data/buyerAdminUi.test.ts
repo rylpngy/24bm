@@ -819,6 +819,11 @@ describe('buyer admin UI helpers', () => {
         { label: '订单状态', value: '待收货' },
         { label: '验收结果', value: '待登记' },
       ],
+      postReceiptRows: [
+        { label: '验收登记', value: '待登记' },
+        { label: '发票状态', value: '待付款' },
+        { label: '下一步', value: '待收货验收' },
+      ],
       relatedRows: [
         { id: 'rfq-acme-1', title: '询价项目', detail: '会议室升级设备询价 · 已定标' },
         { id: 'inv-acme-1', title: '发票付款', detail: '¥216,000 · 待付款' },
