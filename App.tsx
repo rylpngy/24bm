@@ -1434,17 +1434,11 @@ const BuyerWorkspaceView: React.FC<{
               </div>
               <InlineFactGrid facts={demandRow.facts} />
               <NextActionNotice action={demandRow.nextAction} />
-              <button
-                type="button"
+              <DetailToggleButton
+                selected={selectedDemand === demandRow.id}
                 onClick={() => setSelectedDemandId(demandRow.id)}
-                className={`mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                  selectedDemand === demandRow.id
-                    ? 'border-blue-200 bg-blue-50 text-blue-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {selectedDemand === demandRow.id ? '当前详情' : '查看详情'}
-              </button>
+                fullWidth
+              />
               {javaEnabled && demand.status === '草稿' && (
                 <button
                   type="button"
@@ -1713,17 +1707,10 @@ const BuyerWorkspaceView: React.FC<{
                   <p className="shrink-0 font-mono font-black text-slate-900">{orderRow.amountLabel}</p>
                 </div>
                 <InlineFactGrid facts={orderRow.facts} />
-                <button
-                  type="button"
+                <DetailToggleButton
+                  selected={selectedOrder === orderRow.id}
                   onClick={() => setSelectedOrderId(orderRow.id)}
-                  className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                    selectedOrder === orderRow.id
-                      ? 'border-blue-200 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {selectedOrder === orderRow.id ? '当前详情' : '查看详情'}
-                </button>
+                />
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={orderRow.status} />
                   {javaEnabled && orderRow.canRegisterReceipt && (
@@ -1774,17 +1761,10 @@ const BuyerWorkspaceView: React.FC<{
                       </div>
                       <StatusPill label={orderRow.status} />
                     </div>
-                    <button
-                      type="button"
+                    <DetailToggleButton
+                      selected={selectedReceiptOrder === orderRow.id}
                       onClick={() => setSelectedReceiptOrderId(orderRow.id)}
-                      className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                        selectedReceiptOrder === orderRow.id
-                          ? 'border-blue-200 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {selectedReceiptOrder === orderRow.id ? '当前详情' : '查看详情'}
-                    </button>
+                    />
                     {javaEnabled && orderRow.canRegisterReceipt && (
                       <button
                         type="button"
@@ -1834,17 +1814,10 @@ const BuyerWorkspaceView: React.FC<{
                   </div>
                   <p className="shrink-0 font-mono font-black text-slate-900">{invoiceRow.amountLabel}</p>
                 </div>
-                <button
-                  type="button"
+                <DetailToggleButton
+                  selected={selectedInvoice === invoiceRow.id}
                   onClick={() => setSelectedInvoiceId(invoiceRow.id)}
-                  className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                    selectedInvoice === invoiceRow.id
-                      ? 'border-blue-200 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {selectedInvoice === invoiceRow.id ? '当前详情' : '查看详情'}
-                </button>
+                />
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={invoiceRow.status} />
                   {javaEnabled && invoiceRow.canRegisterPayment && (
@@ -3887,17 +3860,7 @@ const RfqCard: React.FC<{
         <StatusPill label={rfq.status} />
       </div>
 
-      <button
-        type="button"
-        onClick={onSelectDetail}
-        className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-          selected
-            ? 'border-blue-200 bg-blue-50 text-blue-700'
-            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-        }`}
-      >
-        {selected ? '当前详情' : '查看详情'}
-      </button>
+      <DetailToggleButton selected={selected} onClick={onSelectDetail} />
 
       <div className="mt-4 space-y-2">
         {rfq.quotes.length === 0 ? (
@@ -4009,6 +3972,28 @@ const SimpleList: React.FC<{
     </div>
   );
 };
+
+const DetailToggleButton: React.FC<{
+  selected: boolean;
+  onClick: () => void;
+  fullWidth?: boolean;
+}> = ({ selected, onClick, fullWidth = false }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-current={selected ? 'true' : undefined}
+    aria-pressed={selected}
+    className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+      fullWidth ? 'w-full' : ''
+    } ${
+      selected
+        ? 'border-blue-200 bg-blue-50 text-blue-700'
+        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+    }`}
+  >
+    {selected ? '当前详情' : '查看详情'}
+  </button>
+);
 
 const CapabilityList: React.FC<{ items: string[] }> = ({ items }) => (
   <div className="space-y-3">

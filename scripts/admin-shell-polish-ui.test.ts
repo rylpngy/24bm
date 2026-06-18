@@ -33,4 +33,13 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('aria-current={moduleActive ?');
     expect(app).toContain('aria-pressed={moduleActive}');
   });
+
+  it('uses a shared accessible detail toggle for buyer list-to-detail actions', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('const DetailToggleButton');
+    expect(app).toContain('aria-current={selected ?');
+    expect(app).toContain('aria-pressed={selected}');
+    expect(app.match(/<DetailToggleButton/g)?.length).toBeGreaterThanOrEqual(5);
+  });
 });
