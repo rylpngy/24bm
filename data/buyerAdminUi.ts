@@ -241,6 +241,30 @@ export interface AuditLogRow {
   timeLabel: string;
 }
 
+export interface AuditLogRelatedRow {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface AuditLogTimelineRow {
+  label: string;
+  value: string;
+}
+
+export interface AuditLogDetailPanel {
+  id: string;
+  title: string;
+  actionCode: string;
+  targetLabel: string;
+  actorName: string;
+  timeLabel: string;
+  facts: BuyerModuleFact[];
+  targetFacts: BuyerModuleFact[];
+  relatedRows: AuditLogRelatedRow[];
+  timelineRows: AuditLogTimelineRow[];
+}
+
 export interface OrderFulfillmentRow {
   id: string;
   supplierName: string;
@@ -1047,6 +1071,146 @@ export const buildAuditLogRows = (workspace: BuyerWorkspace): AuditLogRow[] =>
         timeLabel: compactDateTime(log.createdAt),
       };
     });
+
+const buildAuditTargetContext = (
+  workspace: BuyerWorkspace,
+  targetType: string,
+  targetId: string,
+): { targetFacts: BuyerModuleFact[]; relatedRows: AuditLogRelatedRow[] } => {
+  if (targetType === 'purchase_order') {
+    const order = workspace.orders.find((item) => item.id === targetId);
+    if (order) {
+      const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
+      const rfq = workspace.rfqs.find((item) => item.id === order.rfqId);
+      const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
+      const invoice = workspace.invoices.find((item) => item.orderId === order.id);
+      return {
+        targetFacts: [
+          { label: '供应商', value: supplier?.name ?? order.supplierId },
+          { label: '订单金额', value: compactCurrency(order.amount) },
+          { label: '订单状态', value: order.status },
+          { label: '关联询价', value: rfq?.title ?? order.rfqId },
+        ],
+        relatedRows: [
+          delivery
+            ? {
+                id: delivery.id,
+                title: '物流信息',
+                detail: `${delivery.carrier} ${delivery.trackingNo} · ${delivery.status}`,
+              }
+            : undefined,
+          invoice
+            ? {
+                id: invoice.id,
+                title: '发票付款',
+                detail: `${compactCurrency(invoice.amount)} · ${invoice.paymentStatus}`,
+              }
+            : undefined,
+        ].filter((row): row is AuditLogRelatedRow => Boolean(row)),
+      };
+    }
+  }
+
+  if (targetType === 'purchase_demand') {
+    const demand = workspace.demands.find((item) => item.id === targetId);
+    if (demand) {
+      return {
+        targetFacts: [
+          { label: '需求标题', value: demand.title },
+          { label: '申请部门', value: demand.department },
+          { label: '申请人', value: demand.requester },
+          { label: '预算金额', value: compactCurrency(demand.budget) },
+        ],
+        relatedRows: demand.lineItems.map((lineItem) => {
+          const material = workspace.materials.find((item) => item.id === lineItem.materialId);
+          return {
+            id: lineItem.materialId,
+            title: material?.name ?? lineItem.materialId,
+            detail: `${lineItem.quantity} ${material?.unit ?? ''}`.trim(),
+          };
+        }),
+      };
+    }
+  }
+
+  if (targetType === 'invoice') {
+    const invoice = workspace.invoices.find((item) => item.id === targetId);
+    if (invoice) {
+      const supplier = workspace.suppliers.find((item) => item.id === invoice.supplierId);
+      return {
+        targetFacts: [
+          { label: '供应商', value: supplier?.name ?? invoice.supplierId },
+          { label: '发票金额', value: compactCurrency(invoice.amount) },
+          { label: '付款状态', value: invoice.paymentStatus },
+          { label: '关联订单', value: invoice.orderId },
+        ],
+        relatedRows: [],
+      };
+    }
+  }
+
+  if (targetType === 'buyer_supplier_relation') {
+    const relation = workspace.privateSupplierRelations.find((item) => item.id === targetId);
+    if (relation) {
+      const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
+      return {
+        targetFacts: [
+          { label: '供应商', value: supplier?.name ?? relation.supplierId },
+          { label: '合作状态', value: relation.status },
+          { label: '等级', value: relation.level },
+          { label: '绩效', value: `${relation.performanceScore} 分` },
+        ],
+        relatedRows: relation.categories.map((category) => ({
+          id: `${relation.id}:${category}`,
+          title: category,
+          detail: '授权品类',
+        })),
+      };
+    }
+  }
+
+  return {
+    targetFacts: [
+      { label: '对象类型', value: auditTargetLabels[targetType] ?? targetType },
+      { label: '对象编号', value: targetId },
+    ],
+    relatedRows: [],
+  };
+};
+
+export const buildAuditLogDetailPanel = (
+  workspace: BuyerWorkspace,
+  logId: string,
+): AuditLogDetailPanel | undefined => {
+  const log = workspace.auditLogs.find((item) => item.id === logId);
+  if (!log) return undefined;
+
+  const actor = workspace.users.find((user) => user.id === log.actorId);
+  const targetTypeLabel = auditTargetLabels[log.targetType] ?? log.targetType;
+  const title = auditActionLabels[log.action] ?? log.action;
+  const targetContext = buildAuditTargetContext(workspace, log.targetType, log.targetId);
+
+  return {
+    id: log.id,
+    title,
+    actionCode: log.action,
+    targetLabel: `${targetTypeLabel} · ${log.targetId}`,
+    actorName: actor?.name ?? log.actorId,
+    timeLabel: compactDateTime(log.createdAt),
+    facts: [
+      { label: '操作人', value: actor?.name ?? log.actorId },
+      { label: '操作时间', value: compactDateTime(log.createdAt) },
+      { label: '对象类型', value: targetTypeLabel },
+      { label: '对象编号', value: log.targetId },
+    ],
+    targetFacts: targetContext.targetFacts,
+    relatedRows: targetContext.relatedRows,
+    timelineRows: [
+      { label: '审计记录', value: compactDateTime(log.createdAt) },
+      { label: '业务动作', value: title },
+    ],
+  };
+};
 
 export const buildBuyerModuleFacts = (
   module: BuyerAdminModule,

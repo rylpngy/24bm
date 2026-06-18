@@ -3,6 +3,7 @@ import type { BuyerAdminModule } from './adminNavigation';
 import { buildProcurementMvpModel, getBuyerWorkspace } from './procurementModel';
 import {
   buildAuditLogRows,
+  buildAuditLogDetailPanel,
   buildApprovalCardFacts,
   buildApprovalDetailPanel,
   buildApprovalQueueRows,
@@ -733,5 +734,38 @@ describe('buyer admin UI helpers', () => {
         timeLabel: '06/15 10:20',
       },
     ]);
+  });
+
+  it('builds audit log detail panels with actor, target, and related business context', () => {
+    expect(buildAuditLogDetailPanel(workspace, 'audit-acme-2')).toEqual({
+      id: 'audit-acme-2',
+      title: '供应商发货',
+      actionCode: 'purchase_order.shipped',
+      targetLabel: '订单 · po-acme-1',
+      actorName: 'u-orbit-sales',
+      timeLabel: '06/15 14:35',
+      facts: [
+        { label: '操作人', value: 'u-orbit-sales' },
+        { label: '操作时间', value: '06/15 14:35' },
+        { label: '对象类型', value: '订单' },
+        { label: '对象编号', value: 'po-acme-1' },
+      ],
+      targetFacts: [
+        { label: '供应商', value: '奥博智能设备' },
+        { label: '订单金额', value: '¥216,000' },
+        { label: '订单状态', value: '待收货' },
+        { label: '关联询价', value: '会议室升级设备询价' },
+      ],
+      relatedRows: [
+        { id: 'del-acme-1', title: '物流信息', detail: '顺丰速运 SF88420115 · 运输中' },
+        { id: 'inv-acme-1', title: '发票付款', detail: '¥216,000 · 待付款' },
+      ],
+      timelineRows: [
+        { label: '审计记录', value: '06/15 14:35' },
+        { label: '业务动作', value: '供应商发货' },
+      ],
+    });
+
+    expect(buildAuditLogDetailPanel(workspace, 'missing-log')).toBeUndefined();
   });
 });

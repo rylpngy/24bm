@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { approvalResultMessage, approvalTypeLabel } from './data/approvalUi';
 import {
+  buildAuditLogDetailPanel,
   buildAuditLogRows,
   buildApprovalCardFacts,
   buildApprovalDetailPanel,
@@ -47,6 +48,7 @@ import {
   buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
   type ApprovalDetailPanel,
+  type AuditLogDetailPanel,
   type BuyerModuleFact,
   type DemandDetailPanel,
   type MaterialDetailPanel,
@@ -1852,6 +1854,13 @@ const BuyerWorkspaceView: React.FC<{
 
 const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) => {
   const logs = buildAuditLogRows(workspace);
+  const [selectedAuditLogId, setSelectedAuditLogId] = useState(logs[0]?.id ?? '');
+  const selectedAuditLog = logs.some((log) => log.id === selectedAuditLogId)
+    ? selectedAuditLogId
+    : logs[0]?.id ?? '';
+  const selectedAuditDetail = selectedAuditLog
+    ? buildAuditLogDetailPanel(workspace, selectedAuditLog)
+    : undefined;
 
   if (logs.length === 0) {
     return (
@@ -1862,26 +1871,45 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) =>
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {logs.map((log) => (
-        <div key={log.id} className="rounded-lg border border-slate-200 bg-white p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black text-slate-950">{log.title}</p>
-              <p className="mt-1 truncate text-xs font-bold text-slate-500">{log.targetLabel}</p>
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid gap-3 md:grid-cols-2">
+        {logs.map((log) => (
+          <div
+            key={log.id}
+            className={`rounded-lg border bg-white p-4 transition ${
+              selectedAuditLog === log.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-slate-950">{log.title}</p>
+                <p className="mt-1 truncate text-xs font-bold text-slate-500">{log.targetLabel}</p>
+              </div>
+              <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
+                {log.timeLabel}
+              </span>
             </div>
-            <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
-              {log.timeLabel}
-            </span>
+            <InlineFactGrid
+              facts={[
+                { label: '操作人', value: log.actorName },
+                { label: '审计编号', value: log.id },
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => setSelectedAuditLogId(log.id)}
+              className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                selectedAuditLog === log.id
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {selectedAuditLog === log.id ? '当前详情' : '查看详情'}
+            </button>
           </div>
-          <InlineFactGrid
-            facts={[
-              { label: '操作人', value: log.actorName },
-              { label: '审计编号', value: log.id },
-            ]}
-          />
-        </div>
-      ))}
+        ))}
+      </div>
+      <AuditLogDetailPanelView detail={selectedAuditDetail} />
     </div>
   );
 };
@@ -2176,6 +2204,75 @@ const ApprovalDetailPanelView: React.FC<{
             {detail.canReview ? 'Java 模式下可在详情中直接处理审批。' : '该审批已处理，仅保留业务上下文和轨迹。'}
           </div>
         )}
+      </div>
+    )}
+  </Panel>
+);
+
+const AuditLogDetailPanelView: React.FC<{
+  detail?: AuditLogDetailPanel;
+}> = ({ detail }) => (
+  <Panel title="日志详情" icon={Activity}>
+    {!detail ? (
+      <EmptyState title="暂无日志详情" desc="选择一条审计记录后，可查看操作对象、关联业务和处理轨迹。" />
+    ) : (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-base font-black text-slate-950">{detail.title}</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">{detail.actionCode}</p>
+            </div>
+            <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
+              {detail.timeLabel}
+            </span>
+          </div>
+          <InlineFactGrid facts={detail.facts} />
+        </div>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">对象上下文</p>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {detail.targetFacts.map((fact) => (
+              <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">关联业务</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.relatedRows.length} 条
+            </span>
+          </div>
+          {detail.relatedRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.relatedRows.map((row) => (
+                <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无关联业务记录。
+            </p>
+          )}
+        </section>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">处理轨迹</p>
+          <div className="space-y-2">
+            {detail.timelineRows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                <span className="text-xs font-black text-slate-500">{row.label}</span>
+                <span className="font-mono text-xs font-black text-slate-900">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     )}
   </Panel>
