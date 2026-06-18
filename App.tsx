@@ -983,6 +983,7 @@ const PlatformWorkspace: React.FC<{
             announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
             enterpriseReviews={enterpriseReviews}
           />
+          <PlatformTenantListSummaryPanel tenants={data.tenants} />
           <Panel title="租户列表" icon={Layers3}>
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="min-w-[720px] w-full text-left text-sm">
@@ -1060,6 +1061,30 @@ const PlatformWorkspace: React.FC<{
         </>
       )}
     </>
+  );
+};
+
+const PlatformTenantListSummaryPanel: React.FC<{
+  tenants: PlatformWorkspaceData['tenants'];
+}> = ({ tenants }) => {
+  const activeTenantCount = tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length;
+  const pendingTenantCount = tenants.filter((tenant) => tenant.status === '待审核').length;
+  const userCapacity = tenants.reduce((sum, tenant) => sum + tenant.userLimit, 0);
+  const planCount = new Set(tenants.map((tenant) => tenant.plan)).size;
+  const nextAction = pendingTenantCount > 0 ? '审核租户入驻' : '维护套餐容量';
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <p className="text-xs font-black text-slate-700">租户运营摘要</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <MiniFact label="租户总数" value={`${tenants.length} 家`} />
+        <MiniFact label="启用租户" value={`${activeTenantCount} 家`} />
+        <MiniFact label="待审核租户" value={`${pendingTenantCount} 家`} />
+        <MiniFact label="用户容量" value={`${userCapacity} 人`} />
+        <MiniFact label="套餐覆盖" value={`${planCount} 类`} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </section>
   );
 };
 
