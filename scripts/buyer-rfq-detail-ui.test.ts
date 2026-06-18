@@ -27,4 +27,23 @@ describe('buyer RFQ detail UI', () => {
     expect(app).toContain('发票付款');
     expect(app).toContain('查看详情');
   });
+
+  it('surfaces RFQ award and order actions inside the detail panel', () => {
+    const app = read('App.tsx');
+    const rfqDetailView = app.slice(
+      app.indexOf('const RfqDetailPanelView'),
+      app.indexOf('const QuoteComparisonDetailPanelView'),
+    );
+
+    expect(rfqDetailView).toContain('RfqDetailOperationPanel');
+    expect(rfqDetailView).toContain('询价操作');
+    expect(rfqDetailView).toContain('rfq?: Rfq');
+    expect(rfqDetailView).toContain('approvedAwardId?: string');
+    expect(rfqDetailView).toContain('awardSubmitBusyId: string | null');
+    expect(rfqDetailView).toContain('orderCreateBusy: string | null');
+    expect(rfqDetailView).toContain('onSubmitAwardApproval: (rfqId: string, quoteId: string) => void');
+    expect(rfqDetailView).toContain('onCreateOrderFromAward: (awardId: string) => void');
+    expect(app).toContain('rfq={selectedRfqRecord}');
+    expect(app).toContain('approvedAwardId={selectedRfqApprovedAwardId}');
+  });
 });

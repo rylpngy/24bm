@@ -1141,6 +1141,14 @@ const BuyerWorkspaceView: React.FC<{
   const selectedRfqDetail = selectedRfq
     ? buildRfqDetailPanel(workspace, selectedRfq)
     : undefined;
+  const selectedRfqRecord = selectedRfqDetail
+    ? workspace.rfqs.find((rfq) => rfq.id === selectedRfqDetail.id)
+    : undefined;
+  const selectedRfqApprovedAward = sortedRecentApprovals.find((approval) =>
+    approval.bizType === 'rfq_award'
+    && approval.parentBizId === selectedRfq
+    && approval.status === '已通过');
+  const selectedRfqApprovedAwardId = selectedRfqApprovedAward?.bizId;
   const selectedQuoteComparisonDetail = selectedRfq
     ? buildQuoteComparisonDetailPanel(workspace, selectedRfq)
     : undefined;
@@ -1541,7 +1549,17 @@ const BuyerWorkspaceView: React.FC<{
           </div>
           )}
         </Panel>
-        <RfqDetailPanelView detail={selectedRfqDetail} />
+        <RfqDetailPanelView
+          detail={selectedRfqDetail}
+          rfq={selectedRfqRecord}
+          workspace={workspace}
+          approvedAwardId={selectedRfqApprovedAwardId}
+          awardSubmitBusyId={awardSubmitBusyId}
+          orderCreateBusy={orderCreateBusy}
+          javaEnabled={javaEnabled}
+          onSubmitAwardApproval={onSubmitAwardApproval}
+          onCreateOrderFromAward={onCreateOrderFromAward}
+        />
       </>
       )}
 
@@ -2502,7 +2520,25 @@ const AuditLogDetailPanelView: React.FC<{
 
 const RfqDetailPanelView: React.FC<{
   detail?: RfqDetailPanel;
-}> = ({ detail }) => (
+  rfq?: Rfq;
+  workspace: BuyerWorkspace;
+  approvedAwardId?: string;
+  awardSubmitBusyId: string | null;
+  orderCreateBusy: string | null;
+  javaEnabled: boolean;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
+  onCreateOrderFromAward: (awardId: string) => void;
+}> = ({
+  detail,
+  rfq,
+  workspace,
+  approvedAwardId,
+  awardSubmitBusyId,
+  orderCreateBusy,
+  javaEnabled,
+  onSubmitAwardApproval,
+  onCreateOrderFromAward,
+}) => (
   <Panel title="询价详情" icon={Send}>
     {!detail ? (
       <EmptyState title="暂无询价详情" desc="选择一个询价项目后，可查看关联需求、邀请供应商、报价排行和履约状态。" />
@@ -2652,10 +2688,146 @@ const RfqDetailPanelView: React.FC<{
           <MiniFact label="订单状态" value={detail.orderLabel} />
           <MiniFact label="下一步" value={detail.nextActionTitle} />
         </div>
+
+        <RfqDetailOperationPanel
+          detail={detail}
+          rfq={rfq}
+          workspace={workspace}
+          approvedAwardId={approvedAwardId}
+          awardSubmitBusyId={awardSubmitBusyId}
+          orderCreateBusy={orderCreateBusy}
+          javaEnabled={javaEnabled}
+          onSubmitAwardApproval={onSubmitAwardApproval}
+          onCreateOrderFromAward={onCreateOrderFromAward}
+        />
       </DetailPanelBody>
     )}
   </Panel>
 );
+
+const RfqDetailOperationPanel: React.FC<{
+  detail: RfqDetailPanel;
+  rfq?: Rfq;
+  workspace: BuyerWorkspace;
+  approvedAwardId?: string;
+  awardSubmitBusyId: string | null;
+  orderCreateBusy: string | null;
+  javaEnabled: boolean;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
+  onCreateOrderFromAward: (awardId: string) => void;
+}> = ({
+  detail,
+  rfq,
+  workspace,
+  approvedAwardId,
+  awardSubmitBusyId,
+  orderCreateBusy,
+  javaEnabled,
+  onSubmitAwardApproval,
+  onCreateOrderFromAward,
+}) => {
+  if (!javaEnabled) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">询价操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="当前为 mock 数据源"
+          desc="切换到 Java 模式后，可在详情中提交定标审批并生成采购订单。"
+        />
+      </section>
+    );
+  }
+
+  if (!rfq) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">询价操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="未找到询价项目"
+          desc="请重新选择询价项目或刷新数据。"
+        />
+      </section>
+    );
+  }
+
+  const recommendedQuote = selectRecommendedQuote(rfq);
+  const canSubmitAward = canSubmitAwardApproval(rfq) && Boolean(recommendedQuote);
+  const canCreateOrder = canCreateOrderFromAward(rfq, approvedAwardId, workspace.orders);
+  const nextAction = describeRfqNextAction(rfq, approvedAwardId, workspace.orders);
+
+  return (
+    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-blue-800">询价操作</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">{nextAction.title}</p>
+        </div>
+        <StatusPill label={detail.status} />
+      </div>
+
+      {rfq.quotes.length === 0 && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待供应商报价"
+          desc="暂无供应商报价，收到有效报价后会开放定标审批入口。"
+        />
+      )}
+
+      {canSubmitAward && recommendedQuote && (
+        <PrimaryActionButton
+          onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id)}
+          disabled={awardSubmitBusyId === rfq.id}
+          busy={awardSubmitBusyId === rfq.id}
+          icon={BadgeCheck}
+          pendingLabel="提交中"
+          fullWidth
+        >
+          按推荐报价提交定标审批
+        </PrimaryActionButton>
+      )}
+
+      {rfq.quotes.length > 0 && !canSubmitAward && rfq.status === '报价中' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待更多报价或截标"
+          desc="当前已有报价，但暂未达到可提交定标审批的状态。"
+        />
+      )}
+
+      {rfq.status === '定标审批中' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待定标审批"
+          desc="定标审批通过后，将开放生成采购订单入口。"
+        />
+      )}
+
+      {canCreateOrder && approvedAwardId && (
+        <PrimaryActionButton
+          onClick={() => onCreateOrderFromAward(approvedAwardId)}
+          disabled={orderCreateBusy === approvedAwardId}
+          busy={orderCreateBusy === approvedAwardId}
+          tone="emerald"
+          icon={ShoppingCart}
+          pendingLabel="生成中"
+          fullWidth
+        >
+          生成采购订单
+        </PrimaryActionButton>
+      )}
+
+      {rfq.status === '已定标' && !canCreateOrder && (
+        <ProcessStateNotice
+          variant="handled"
+          title="定标已处理"
+          desc="该询价项目已完成定标，可在关联业务中查看后续订单和履约记录。"
+        />
+      )}
+    </section>
+  );
+};
 
 const QuoteComparisonDetailPanelView: React.FC<{
   detail?: QuoteComparisonDetailPanel;
