@@ -1167,6 +1167,9 @@ const BuyerWorkspaceView: React.FC<{
   const selectedReceiptDetail = selectedReceiptOrder
     ? buildReceiptInspectionDetailPanel(workspace, selectedReceiptOrder)
     : undefined;
+  const selectedReceiptOrderRecord = selectedReceiptDetail
+    ? workspace.orders.find((order) => order.id === selectedReceiptDetail.id)
+    : undefined;
   const selectedSupplierRelation = workspace.privateSupplierRelations.some((relation) => relation.id === selectedSupplierRelationId)
     ? selectedSupplierRelationId
     : workspace.privateSupplierRelations[0]?.id ?? '';
@@ -1839,6 +1842,7 @@ const BuyerWorkspaceView: React.FC<{
         </Panel>
         <ReceiptInspectionDetailPanelView
           detail={selectedReceiptDetail}
+          order={selectedReceiptOrderRecord}
           busy={buyerFulfillmentBusyId === `receipt:${selectedReceiptOrder}`}
           javaEnabled={javaEnabled}
           onCreateReceipt={onCreateReceipt}
@@ -3339,10 +3343,11 @@ const OrderDetailOperationPanel: React.FC<{
 
 const ReceiptInspectionDetailPanelView: React.FC<{
   detail?: ReceiptInspectionDetailPanel;
+  order?: BuyerWorkspace['orders'][number];
   busy: boolean;
   javaEnabled: boolean;
   onCreateReceipt: (orderId: string) => void;
-}> = ({ detail, busy, javaEnabled, onCreateReceipt }) => (
+}> = ({ detail, order, busy, javaEnabled, onCreateReceipt }) => (
   <Panel title="验收详情" icon={PackageCheck}>
     {!detail ? (
       <EmptyState title="暂无验收详情" desc="选择一张待收货订单后，可查看物流、验收检查和关联业务。" />
@@ -3410,24 +3415,101 @@ const ReceiptInspectionDetailPanelView: React.FC<{
           )}
         </section>
 
-        {javaEnabled && detail.canRegisterReceipt && (
-          <PrimaryActionButton
-            onClick={() => onCreateReceipt(detail.id)}
-            disabled={busy}
-            busy={busy}
-            tone="emerald"
-            pendingLabel="登记中"
-            fullWidth
-          >
-            登记收货
-          </PrimaryActionButton>
-        )}
-
         <MiniFact label="下一步" value={detail.nextActionTitle} />
+
+        <ReceiptInspectionOperationPanel
+          detail={detail}
+          order={order}
+          busy={busy}
+          javaEnabled={javaEnabled}
+          onCreateReceipt={onCreateReceipt}
+        />
       </DetailPanelBody>
     )}
   </Panel>
 );
+
+const ReceiptInspectionOperationPanel: React.FC<{
+  detail: ReceiptInspectionDetailPanel;
+  order?: BuyerWorkspace['orders'][number];
+  busy: boolean;
+  javaEnabled: boolean;
+  onCreateReceipt: (orderId: string) => void;
+}> = ({
+  detail,
+  order,
+  busy,
+  javaEnabled,
+  onCreateReceipt,
+}) => {
+  if (!javaEnabled) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">验收操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="当前为 mock 数据源"
+          desc="切换到 Java 模式后，可在验收详情中登记收货并衔接发票付款。"
+        />
+      </section>
+    );
+  }
+
+  if (!order) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">验收操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="未找到订单记录"
+          desc="请重新选择待验收订单或刷新数据。"
+        />
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-blue-800">验收操作</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">{detail.nextActionTitle}</p>
+        </div>
+        <StatusPill label={detail.status} />
+      </div>
+
+      {detail.canRegisterReceipt && (
+        <PrimaryActionButton
+          onClick={() => onCreateReceipt(detail.id)}
+          disabled={busy}
+          busy={busy}
+          tone="emerald"
+          icon={PackageCheck}
+          pendingLabel="登记中"
+          fullWidth
+        >
+          登记收货
+        </PrimaryActionButton>
+      )}
+
+      {!detail.canRegisterReceipt && (order.status === '待供应商确认' || order.status === '待发货') && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待供应商履约"
+          desc="供应商确认并发货后，采购方才能登记收货验收。"
+        />
+      )}
+
+      {!detail.canRegisterReceipt && (order.status === '已收货' || order.status === '已完成') && (
+        <ProcessStateNotice
+          variant="handled"
+          title="验收已完成"
+          desc="收货验收已登记，可继续跟进供应商发票和付款状态。"
+        />
+      )}
+    </section>
+  );
+};
 
 const InvoicePaymentDetailPanelView: React.FC<{
   detail?: InvoicePaymentDetailPanel;

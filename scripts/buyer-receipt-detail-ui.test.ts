@@ -29,4 +29,22 @@ describe('buyer receipt detail UI', () => {
     expect(receiptDetailView).toContain('postReceiptRows');
     expect(receiptDetailView).toContain('关联业务');
   });
+
+  it('surfaces receipt registration actions inside the detail panel', () => {
+    const app = read('App.tsx');
+    const receiptDetailView = app.slice(
+      app.indexOf('const ReceiptInspectionDetailPanelView'),
+      app.indexOf('const InvoicePaymentDetailPanelView'),
+    );
+
+    expect(receiptDetailView).toContain('ReceiptInspectionOperationPanel');
+    expect(receiptDetailView).toContain('验收操作');
+    expect(receiptDetailView).toContain('order?: BuyerWorkspace[\'orders\'][number]');
+    expect(receiptDetailView).toContain('busy: boolean');
+    expect(receiptDetailView).toContain('javaEnabled: boolean');
+    expect(receiptDetailView).toContain('onCreateReceipt: (orderId: string) => void');
+    expect(app).toContain('order={selectedReceiptOrderRecord}');
+    expect(app).toContain('busy={buyerFulfillmentBusyId === `receipt:${selectedReceiptOrder}`}');
+    expect(app).toContain('onCreateReceipt={onCreateReceipt}');
+  });
 });
