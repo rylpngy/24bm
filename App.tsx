@@ -1440,15 +1440,16 @@ const BuyerWorkspaceView: React.FC<{
                 fullWidth
               />
               {javaEnabled && demand.status === '草稿' && (
-                <button
-                  type="button"
+                <PrimaryActionButton
                   onClick={() => onSubmitDemand(demand.id)}
                   disabled={demandSubmitBusyId === demand.id}
-                  className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  busy={demandSubmitBusyId === demand.id}
+                  icon={ClipboardCheck}
+                  pendingLabel="提交中"
+                  fullWidth
                 >
-                  <ClipboardCheck size={14} />
-                  {demandSubmitBusyId === demand.id ? '提交中' : '提交审批'}
-                </button>
+                  提交审批
+                </PrimaryActionButton>
               )}
               {javaEnabled
                 && demand.status === '已通过'
@@ -1714,14 +1715,15 @@ const BuyerWorkspaceView: React.FC<{
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={orderRow.status} />
                   {javaEnabled && orderRow.canRegisterReceipt && (
-                    <button
-                      type="button"
+                    <PrimaryActionButton
                       onClick={() => onCreateReceipt(orderRow.id)}
                       disabled={receiptBusy}
-                      className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      busy={receiptBusy}
+                      tone="emerald"
+                      pendingLabel="登记中"
                     >
-                      {receiptBusy ? '登记中' : '登记收货'}
-                    </button>
+                      登记收货
+                    </PrimaryActionButton>
                   )}
                 </div>
                 <NextActionNotice action={orderRow.nextAction} />
@@ -1766,14 +1768,15 @@ const BuyerWorkspaceView: React.FC<{
                       onClick={() => setSelectedReceiptOrderId(orderRow.id)}
                     />
                     {javaEnabled && orderRow.canRegisterReceipt && (
-                      <button
-                        type="button"
+                      <PrimaryActionButton
                         onClick={() => onCreateReceipt(orderRow.id)}
                         disabled={receiptBusy}
-                        className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                        busy={receiptBusy}
+                        tone="emerald"
+                        pendingLabel="登记中"
                       >
-                        {receiptBusy ? '登记中' : '登记收货'}
-                      </button>
+                        登记收货
+                      </PrimaryActionButton>
                     )}
                     <NextActionNotice action={orderRow.nextAction} />
                   </div>
@@ -1821,14 +1824,14 @@ const BuyerWorkspaceView: React.FC<{
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={invoiceRow.status} />
                   {javaEnabled && invoiceRow.canRegisterPayment && (
-                    <button
-                      type="button"
+                    <PrimaryActionButton
                       onClick={() => onRegisterPayment(invoiceRow.id)}
                       disabled={paymentBusy}
-                      className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      busy={paymentBusy}
+                      pendingLabel="登记中"
                     >
-                      {paymentBusy ? '登记中' : '登记付款'}
-                    </button>
+                      登记付款
+                    </PrimaryActionButton>
                   )}
                 </div>
                 <NextActionNotice action={invoiceRow.nextAction} />
@@ -2829,14 +2832,16 @@ const ReceiptInspectionDetailPanelView: React.FC<{
         </section>
 
         {javaEnabled && detail.canRegisterReceipt && (
-          <button
-            type="button"
+          <PrimaryActionButton
             onClick={() => onCreateReceipt(detail.id)}
             disabled={busy}
-            className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+            busy={busy}
+            tone="emerald"
+            pendingLabel="登记中"
+            fullWidth
           >
-            {busy ? '登记中' : '登记收货'}
-          </button>
+            登记收货
+          </PrimaryActionButton>
         )}
 
         <MiniFact label="下一步" value={detail.nextActionTitle} />
@@ -2922,14 +2927,15 @@ const InvoicePaymentDetailPanelView: React.FC<{
         </section>
 
         {javaEnabled && detail.canRegisterPayment && (
-          <button
-            type="button"
+          <PrimaryActionButton
             onClick={() => onRegisterPayment(detail.id)}
             disabled={busy}
-            className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+            busy={busy}
+            pendingLabel="登记中"
+            fullWidth
           >
-            {busy ? '登记中' : '登记付款'}
-          </button>
+            登记付款
+          </PrimaryActionButton>
         )}
 
         <MiniFact label="下一步" value={detail.nextActionTitle} />
@@ -3910,27 +3916,30 @@ const RfqCard: React.FC<{
       <NextActionNotice action={nextAction} />
 
       {canSubmitAward && recommendedQuote && (
-        <button
-          type="button"
+        <PrimaryActionButton
           onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id)}
           disabled={awardSubmitBusyId === rfq.id}
-          className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+          busy={awardSubmitBusyId === rfq.id}
+          icon={BadgeCheck}
+          pendingLabel="提交中"
+          fullWidth
         >
-          <BadgeCheck size={14} />
-          {awardSubmitBusyId === rfq.id ? '提交中' : '按推荐报价提交定标审批'}
-        </button>
+          按推荐报价提交定标审批
+        </PrimaryActionButton>
       )}
 
       {canCreateOrder && (
-        <button
-          type="button"
+        <PrimaryActionButton
           onClick={() => onCreateOrderFromAward(approvedAwardId)}
           disabled={orderCreateBusy === approvedAwardId}
-          className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+          busy={orderCreateBusy === approvedAwardId}
+          tone="emerald"
+          icon={ShoppingCart}
+          pendingLabel="生成中"
+          fullWidth
         >
-          <ShoppingCart size={14} />
-          {orderCreateBusy === approvedAwardId ? '生成中' : '生成采购订单'}
-        </button>
+          生成采购订单
+        </PrimaryActionButton>
       )}
     </div>
   );
@@ -3994,6 +4003,46 @@ const DetailToggleButton: React.FC<{
     {selected ? '当前详情' : '查看详情'}
   </button>
 );
+
+const PrimaryActionButton: React.FC<{
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  busy?: boolean;
+  pendingLabel?: string;
+  icon?: React.ElementType;
+  fullWidth?: boolean;
+  tone?: 'blue' | 'emerald' | 'amber';
+}> = ({
+  children,
+  onClick,
+  disabled = false,
+  busy = false,
+  pendingLabel,
+  icon: Icon,
+  fullWidth = false,
+  tone = 'blue',
+}) => {
+  const toneClasses = {
+    blue: 'bg-blue-600 hover:bg-blue-700',
+    emerald: 'bg-emerald-600 hover:bg-emerald-700',
+    amber: 'bg-amber-600 hover:bg-amber-700',
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-busy={busy || undefined}
+      className={`mt-3 inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3 text-xs font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 ${
+        fullWidth ? 'w-full' : ''
+      } ${toneClasses[tone]}`}
+    >
+      {Icon && <Icon size={14} />}
+      {busy && pendingLabel ? pendingLabel : children}
+    </button>
+  );
+};
 
 const CapabilityList: React.FC<{ items: string[] }> = ({ items }) => (
   <div className="space-y-3">

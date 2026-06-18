@@ -42,4 +42,13 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('aria-pressed={selected}');
     expect(app.match(/<DetailToggleButton/g)?.length).toBeGreaterThanOrEqual(5);
   });
+
+  it('uses a shared primary action button for buyer workflow commands', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('const PrimaryActionButton');
+    expect(app).toContain("tone?: 'blue' | 'emerald' | 'amber'");
+    expect(app).toContain('aria-busy={busy || undefined}');
+    expect(app.match(/<PrimaryActionButton/g)?.length).toBeGreaterThanOrEqual(6);
+  });
 });
