@@ -5279,15 +5279,26 @@ const SupplierWorkspaceView: React.FC<{
 
       {activeModule === 'quotes' && (
         <Panel title="报价记录" icon={BarChart3}>
-          <SimpleList
-            rows={workspace.quotes.map((quote) => ({
-              id: quote.id,
-              title: `报价 ${quote.rfqId}`,
-              meta: `${quote.deliveryDays} 天交付 · 税率 ${quote.taxRate}%`,
-              value: currency(quote.amount),
-              status: quote.status,
-            }))}
-          />
+          {workspace.quotes.length === 0 ? (
+            <EmptyState title="暂无报价记录" desc="收到询价邀请并提交报价后，报价历史和关联询价状态会显示在这里。" />
+          ) : (
+            <div className="space-y-3">
+              <SupplierQuoteHistorySummaryPanel
+                quotes={workspace.quotes}
+                opportunities={workspace.opportunities}
+              />
+              {workspace.quotes.map((quote) => {
+                const rfq = workspace.opportunities.find((rfq) => rfq.id === quote.rfqId);
+                return (
+                  <SupplierQuoteHistoryCard
+                    key={quote.id}
+                    quote={quote}
+                    rfq={rfq}
+                  />
+                );
+              })}
+            </div>
+          )}
         </Panel>
       )}
 
@@ -5486,6 +5497,57 @@ const SupplierOrderFulfillmentSummaryPanel: React.FC<{
     </div>
   );
 };
+
+const SupplierQuoteHistorySummaryPanel: React.FC<{
+  quotes: SupplierWorkspace['quotes'];
+  opportunities: SupplierWorkspace['opportunities'];
+}> = ({ quotes, opportunities }) => {
+  const submittedQuoteCount = quotes.filter((quote) => quote.status === '已提交').length;
+  const quoteTotal = quotes.reduce((sum, quote) => sum + quote.amount, 0);
+  const averageDeliveryDays = quotes.length === 0
+    ? 0
+    : Math.round(quotes.reduce((sum, quote) => sum + quote.deliveryDays, 0) / quotes.length);
+  const waitingAwardCount = quotes.filter((quote) => {
+    const rfq = opportunities.find((rfq) => rfq.id === quote.rfqId);
+    return quote.status === '已提交' && (rfq?.status === '报价中' || rfq?.status === '已截标');
+  }).length;
+  const nextAction = waitingAwardCount > 0 ? '等待定标' : '跟进订单';
+
+  return (
+    <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+      <p className="text-xs font-black text-blue-800">报价历史摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <MiniFact label="报价总数" value={`${quotes.length} 条`} />
+        <MiniFact label="已提交" value={`${submittedQuoteCount} 条`} />
+        <MiniFact label="报价总额" value={currency(quoteTotal)} />
+        <MiniFact label="平均交付" value={`${averageDeliveryDays} 天`} />
+        <MiniFact label="等待定标" value={`${waitingAwardCount} 条`} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </div>
+  );
+};
+
+const SupplierQuoteHistoryCard: React.FC<{
+  quote: SupplierWorkspace['quotes'][number];
+  rfq?: SupplierWorkspace['opportunities'][number];
+}> = ({ quote, rfq }) => (
+  <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="font-black text-slate-900">{rfq?.title ?? `报价 ${quote.rfqId}`}</p>
+        <p className="mt-1 text-sm text-slate-500">关联询价 {quote.rfqId} · {rfq?.status ?? '未知状态'}</p>
+      </div>
+      <StatusPill label={quote.status} />
+    </div>
+    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <MiniFact label="报价金额" value={currency(quote.amount)} />
+      <MiniFact label="税率" value={`${quote.taxRate}%`} />
+      <MiniFact label="交付周期" value={`${quote.deliveryDays} 天`} />
+      <MiniFact label="下一步" value={rfq?.status === '已定标' ? '查看订单' : '等待定标'} />
+    </div>
+  </div>
+);
 
 const SupplierInvoiceReceivableSummaryPanel: React.FC<{
   invoices: SupplierWorkspace['invoices'];
