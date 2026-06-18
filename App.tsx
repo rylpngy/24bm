@@ -3544,10 +3544,29 @@ const ReceiptInspectionOperationPanel: React.FC<{
   javaEnabled,
   onCreateReceipt,
 }) => {
+  const supplierName = detail.facts.find((fact) => fact.label === '供应商')?.value ?? detail.supplierName;
+  const orderAmount = detail.facts.find((fact) => fact.label === '订单金额')?.value ?? detail.amountLabel;
+  const expectedReceiptDate = detail.facts.find((fact) => fact.label === '预计到货')?.value ?? order?.expectedReceiptDate ?? '未维护';
+  const trackingNo = detail.logisticsFacts.find((fact) => fact.label === '物流单号')?.value ?? '待维护';
+  const invoiceStatus = detail.facts.find((fact) => fact.label === '发票状态')?.value ?? '待开票';
+  const renderReceiptSummary = () => (
+    <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3">
+      <p className="text-xs font-black text-slate-500">验收摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        <MiniFact label="供应商" value={supplierName} />
+        <MiniFact label="订单金额" value={orderAmount} />
+        <MiniFact label="预计到货" value={expectedReceiptDate} />
+        <MiniFact label="物流单号" value={trackingNo} />
+        <MiniFact label="发票状态" value={invoiceStatus} />
+      </div>
+    </div>
+  );
+
   if (!javaEnabled) {
     return (
       <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-black text-slate-500">验收操作</p>
+        {renderReceiptSummary()}
         <ProcessStateNotice
           variant="waiting"
           title="当前为 mock 数据源"
@@ -3561,6 +3580,7 @@ const ReceiptInspectionOperationPanel: React.FC<{
     return (
       <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-black text-slate-500">验收操作</p>
+        {renderReceiptSummary()}
         <ProcessStateNotice
           variant="waiting"
           title="未找到订单记录"
@@ -3579,6 +3599,8 @@ const ReceiptInspectionOperationPanel: React.FC<{
         </div>
         <StatusPill label={detail.status} />
       </div>
+
+      {renderReceiptSummary()}
 
       {detail.canRegisterReceipt && (
         <PrimaryActionButton
