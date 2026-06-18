@@ -1191,6 +1191,9 @@ const BuyerWorkspaceView: React.FC<{
   const selectedInvoiceDetail = selectedInvoice
     ? buildInvoicePaymentDetailPanel(workspace, selectedInvoice)
     : undefined;
+  const selectedInvoiceRecord = selectedInvoiceDetail
+    ? workspace.invoices.find((invoice) => invoice.id === selectedInvoiceDetail.id)
+    : undefined;
 
   return (
     <>
@@ -1899,6 +1902,7 @@ const BuyerWorkspaceView: React.FC<{
       </Panel>
       <InvoicePaymentDetailPanelView
         detail={selectedInvoiceDetail}
+        invoice={selectedInvoiceRecord}
         busy={buyerFulfillmentBusyId === `payment:${selectedInvoice}`}
         javaEnabled={javaEnabled}
         onRegisterPayment={onRegisterPayment}
@@ -3513,10 +3517,11 @@ const ReceiptInspectionOperationPanel: React.FC<{
 
 const InvoicePaymentDetailPanelView: React.FC<{
   detail?: InvoicePaymentDetailPanel;
+  invoice?: BuyerWorkspace['invoices'][number];
   busy: boolean;
   javaEnabled: boolean;
   onRegisterPayment: (invoiceId: string) => void;
-}> = ({ detail, busy, javaEnabled, onRegisterPayment }) => (
+}> = ({ detail, invoice, busy, javaEnabled, onRegisterPayment }) => (
   <Panel title="发票详情" icon={Receipt}>
     {!detail ? (
       <EmptyState title="暂无发票详情" desc="选择一张发票后，可查看订单、物流、供应商和付款状态。" />
@@ -3581,22 +3586,72 @@ const InvoicePaymentDetailPanelView: React.FC<{
           </div>
         </section>
 
-        {javaEnabled && detail.canRegisterPayment && (
-          <PrimaryActionButton
-            onClick={() => onRegisterPayment(detail.id)}
-            disabled={busy}
-            busy={busy}
-            pendingLabel="登记中"
-            fullWidth
-          >
-            登记付款
-          </PrimaryActionButton>
-        )}
-
         <MiniFact label="下一步" value={detail.nextActionTitle} />
+        <InvoicePaymentOperationPanel
+          detail={detail}
+          invoice={invoice}
+          busy={busy}
+          javaEnabled={javaEnabled}
+          onRegisterPayment={onRegisterPayment}
+        />
       </DetailPanelBody>
     )}
   </Panel>
+);
+
+const InvoicePaymentOperationPanel: React.FC<{
+  detail: InvoicePaymentDetailPanel;
+  invoice?: BuyerWorkspace['invoices'][number];
+  busy: boolean;
+  javaEnabled: boolean;
+  onRegisterPayment: (invoiceId: string) => void;
+}> = ({ detail, invoice, busy, javaEnabled, onRegisterPayment }) => (
+  <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-blue-700">付款操作</p>
+        <p className="mt-1 text-sm font-black text-slate-950">{detail.nextActionTitle}</p>
+      </div>
+      <StatusPill label={detail.status} />
+    </div>
+
+    {!javaEnabled && (
+      <ProcessStateNotice
+        variant="waiting"
+        title="当前为 mock 数据源"
+        desc="切换到 Java 数据源后，可在此处登记付款并写入真实履约状态。"
+      />
+    )}
+
+    {javaEnabled && !invoice && (
+      <ProcessStateNotice
+        variant="blocked"
+        title="未找到发票记录"
+        desc="请刷新数据后重新选择发票，再执行付款登记。"
+      />
+    )}
+
+    {javaEnabled && invoice && detail.canRegisterPayment && (
+      <PrimaryActionButton
+        onClick={() => onRegisterPayment(detail.id)}
+        disabled={busy}
+        busy={busy}
+        icon={CreditCard}
+        pendingLabel="登记中"
+        fullWidth
+      >
+        登记付款
+      </PrimaryActionButton>
+    )}
+
+    {javaEnabled && invoice && !detail.canRegisterPayment && invoice.paymentStatus === '已付款' && (
+      <ProcessStateNotice
+        variant="handled"
+        title="付款已登记"
+        desc="该发票已完成付款登记，可在关联业务中查看订单和物流留痕。"
+      />
+    )}
+  </section>
 );
 
 const SupplierDetailPanelView: React.FC<{

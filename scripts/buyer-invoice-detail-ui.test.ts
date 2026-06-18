@@ -29,4 +29,22 @@ describe('buyer invoice detail UI', () => {
     expect(invoiceDetailView).toContain('关联业务');
     expect(invoiceDetailView).toContain('付款轨迹');
   });
+
+  it('surfaces payment registration actions inside the invoice detail panel', () => {
+    const app = read('App.tsx');
+    const invoiceDetailView = app.slice(
+      app.indexOf('const InvoicePaymentDetailPanelView'),
+      app.indexOf('const SupplierDetailPanelView'),
+    );
+
+    expect(invoiceDetailView).toContain('InvoicePaymentOperationPanel');
+    expect(invoiceDetailView).toContain('付款操作');
+    expect(invoiceDetailView).toContain('invoice?: BuyerWorkspace[\'invoices\'][number]');
+    expect(invoiceDetailView).toContain('busy: boolean');
+    expect(invoiceDetailView).toContain('javaEnabled: boolean');
+    expect(invoiceDetailView).toContain('onRegisterPayment: (invoiceId: string) => void');
+    expect(app).toContain('invoice={selectedInvoiceRecord}');
+    expect(app).toContain('busy={buyerFulfillmentBusyId === `payment:${selectedInvoice}`}');
+    expect(app).toContain('onRegisterPayment={onRegisterPayment}');
+  });
 });
