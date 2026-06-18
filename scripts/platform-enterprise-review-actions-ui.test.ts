@@ -19,6 +19,7 @@ describe('platform enterprise review actions UI', () => {
     expect(platformWorkspace).toContain('setPlatformEnterpriseReviews');
     expect(platformWorkspace).toContain("status: result === 'approved' ? '已认证' : '已驳回'");
     expect(platformWorkspace).toContain("enterpriseReviews.filter((review) => review.status === '待审核')");
-    expect(platformWorkspace).toContain('rows={enterpriseReviews.map');
+    expect(platformWorkspace).toContain('PlatformEnterpriseReviewCard');
+    expect(platformWorkspace).toContain('enterpriseReviews.map((review) => (');
   });
 });

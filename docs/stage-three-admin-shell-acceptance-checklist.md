@@ -65,7 +65,7 @@
 | --- | --- | --- |
 | 平台看板 | 采购租户、公共供应商、启用套餐、待审核企业、下一步 | `PlatformOperationSummaryPanel` |
 | 租户列表 | 租户运营摘要、租户总数、启用租户、待审核租户、用户容量、套餐覆盖、下一步 | `PlatformTenantListSummaryPanel` |
-| 企业审核 | 企业审核摘要、待审核、已认证、采购方企业、供应商企业、下一步 | `PlatformEnterpriseReviewSummaryPanel` |
+| 企业审核 | 企业审核摘要、审核操作、企业审核卡片、企业类型、所属行业、审核状态、下一步 | `PlatformEnterpriseReviewSummaryPanel`、`PlatformEnterpriseReviewActionPanel`、`PlatformEnterpriseReviewCard` |
 | 平台公告 | 公告发布摘要、公告发布表单、公告明细卡片、发布范围、发布时间、发布状态 | `PlatformAnnouncementSummaryPanel`、`PlatformAnnouncementPublishPanel`、`PlatformAnnouncementCard` |
 
 平台端第一轮结论：基础运营页已经从只读列表升级为带运营摘要、基础操作和结构化明细卡片的后台雏形。第二轮可继续补租户详情、公告编辑/撤回、功能开关持久化、企业审核操作持久化和套餐维护。

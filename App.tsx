@@ -1106,15 +1106,14 @@ const PlatformWorkspace: React.FC<{
             onReviewEnterprise={onReviewEnterprise}
           />
           <Panel title="企业审核" icon={ClipboardCheck}>
-            <SimpleList
-              rows={enterpriseReviews.map((review) => ({
-                id: review.id,
-                title: review.name,
-                meta: `${review.type} · ${review.industry}`,
-                value: review.status,
-                status: review.status,
-              }))}
-            />
+            <div className="space-y-3">
+              {enterpriseReviews.map((review) => (
+                <PlatformEnterpriseReviewCard
+                  key={review.id}
+                  review={review}
+                />
+              ))}
+            </div>
           </Panel>
         </>
       )}
@@ -1313,6 +1312,44 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
         </div>
       )}
     </section>
+  );
+};
+
+const formatEnterpriseType = (type: string) => {
+  if (type === 'buyer') {
+    return '采购方企业';
+  }
+  if (type === 'supplier') {
+    return '供应商企业';
+  }
+  return type;
+};
+
+const PlatformEnterpriseReviewCard: React.FC<{
+  review: PlatformEnterpriseReview;
+}> = ({ review }) => {
+  const nextAction = review.status === '待审核'
+    ? '处理企业审核'
+    : review.status === '已驳回'
+      ? '等待重新提交'
+      : '维护认证档案';
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="font-black text-slate-900">企业审核卡片 {review.name}</p>
+          <p className="mt-1 break-words text-sm text-slate-500">审核编号 {review.id}</p>
+        </div>
+        <StatusPill label={review.status} />
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <MiniFact label="企业类型" value={formatEnterpriseType(review.type)} />
+        <MiniFact label="所属行业" value={review.industry} />
+        <MiniFact label="审核状态" value={review.status} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </div>
   );
 };
 
