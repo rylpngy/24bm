@@ -309,6 +309,26 @@ export interface ReceiptInspectionRow {
   canRegisterReceipt: boolean;
 }
 
+export interface ReceiptInspectionRelatedRow {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface ReceiptInspectionDetailPanel {
+  id: string;
+  supplierName: string;
+  status: string;
+  amountLabel: string;
+  logisticsLabel: string;
+  canRegisterReceipt: boolean;
+  nextActionTitle: string;
+  facts: BuyerModuleFact[];
+  logisticsFacts: BuyerModuleFact[];
+  acceptanceChecks: BuyerModuleFact[];
+  relatedRows: ReceiptInspectionRelatedRow[];
+}
+
 export interface InvoicePaymentRow {
   id: string;
   supplierName: string;
@@ -1065,6 +1085,62 @@ export const buildReceiptInspectionRows = (workspace: BuyerWorkspace): ReceiptIn
         canRegisterReceipt: order.status === '已发货',
       };
     });
+
+export const buildReceiptInspectionDetailPanel = (
+  workspace: BuyerWorkspace,
+  orderId: string,
+): ReceiptInspectionDetailPanel | undefined => {
+  const order = workspace.orders.find((item) => item.id === orderId);
+  if (!order) return undefined;
+
+  const supplier = workspace.suppliers.find((item) => item.id === order.supplierId);
+  const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
+  const invoice = workspace.invoices.find((item) => item.orderId === order.id);
+  const rfq = workspace.rfqs.find((item) => item.id === order.rfqId);
+  const nextAction = describeOrderNextAction(order);
+
+  return {
+    id: order.id,
+    supplierName: supplier?.name ?? order.supplierId,
+    status: order.status,
+    amountLabel: compactCurrency(order.amount),
+    logisticsLabel: orderLogisticsLabel(workspace, order.id),
+    canRegisterReceipt: order.status === '已发货',
+    nextActionTitle: nextAction.title,
+    facts: [
+      { label: '供应商', value: supplier?.name ?? order.supplierId },
+      { label: '订单金额', value: compactCurrency(order.amount) },
+      { label: '预计到货', value: order.expectedReceiptDate },
+      { label: '发票状态', value: invoice?.paymentStatus ?? '待开票' },
+    ],
+    logisticsFacts: [
+      { label: '承运商', value: delivery?.carrier ?? '待发货' },
+      { label: '物流单号', value: delivery?.trackingNo ?? '待维护' },
+      { label: '物流状态', value: delivery?.status ?? '待发货' },
+    ],
+    acceptanceChecks: [
+      { label: '物流信息', value: delivery?.status ?? '待发货' },
+      { label: '订单状态', value: order.status },
+      { label: '验收结果', value: order.status === '已收货' || order.status === '已完成' ? '已登记' : '待登记' },
+    ],
+    relatedRows: [
+      rfq
+        ? {
+            id: rfq.id,
+            title: '询价项目',
+            detail: `${rfq.title} · ${rfq.status}`,
+          }
+        : undefined,
+      invoice
+        ? {
+            id: invoice.id,
+            title: '发票付款',
+            detail: `${compactCurrency(invoice.amount)} · ${invoice.paymentStatus}`,
+          }
+        : undefined,
+    ].filter((row): row is ReceiptInspectionRelatedRow => Boolean(row)),
+  };
+};
 
 export const buildInvoicePaymentRows = (workspace: BuyerWorkspace): InvoicePaymentRow[] =>
   workspace.invoices.map((invoice) => {

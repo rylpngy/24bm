@@ -15,6 +15,7 @@ import {
   buildMaterialDetailPanel,
   buildOrderDetailPanel,
   buildOrderFulfillmentRows,
+  buildReceiptInspectionDetailPanel,
   buildReceiptInspectionRows,
   buildRfqDetailPanel,
   buildRfqListRows,
@@ -679,6 +680,40 @@ describe('buyer admin UI helpers', () => {
         canRegisterReceipt: false,
       },
     ]);
+  });
+
+  it('builds receipt inspection detail panels with logistics, invoice, and acceptance checks', () => {
+    expect(buildReceiptInspectionDetailPanel(workspace, 'po-acme-1')).toEqual({
+      id: 'po-acme-1',
+      supplierName: '奥博智能设备',
+      status: '待收货',
+      amountLabel: '¥216,000',
+      logisticsLabel: '顺丰速运 SF88420115',
+      canRegisterReceipt: false,
+      nextActionTitle: '待收货验收',
+      facts: [
+        { label: '供应商', value: '奥博智能设备' },
+        { label: '订单金额', value: '¥216,000' },
+        { label: '预计到货', value: '2026-07-10' },
+        { label: '发票状态', value: '待付款' },
+      ],
+      logisticsFacts: [
+        { label: '承运商', value: '顺丰速运' },
+        { label: '物流单号', value: 'SF88420115' },
+        { label: '物流状态', value: '运输中' },
+      ],
+      acceptanceChecks: [
+        { label: '物流信息', value: '运输中' },
+        { label: '订单状态', value: '待收货' },
+        { label: '验收结果', value: '待登记' },
+      ],
+      relatedRows: [
+        { id: 'rfq-acme-1', title: '询价项目', detail: '会议室升级设备询价 · 已定标' },
+        { id: 'inv-acme-1', title: '发票付款', detail: '¥216,000 · 待付款' },
+      ],
+    });
+
+    expect(buildReceiptInspectionDetailPanel(workspace, 'missing-order')).toBeUndefined();
   });
 
   it('summarizes invoice payment rows with supplier, order, amount, and payment action context', () => {
