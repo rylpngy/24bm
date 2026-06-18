@@ -77,6 +77,7 @@
 | `npm run build` | Vite 生产构建通过 |
 | `npm test` | 全量 Vitest 通过 |
 | 浏览器验收 | 打开 `http://localhost:3000/`，三端菜单可切换，页面无加载失败、无 React runtime error、无横向溢出 |
+| Java 模式逐页联调 | 按 `docs/stage-three-java-page-walkthrough.md` 验收三端所有菜单 |
 
 已在本轮针对以下页面执行浏览器验收：
 
@@ -100,8 +101,9 @@
 
 1. `npm run build` 通过。
 2. `npm test` 通过。
-3. 浏览器验收三端菜单切换无加载失败、无 React runtime error、无横向溢出。
-4. 用户确认第一轮页面风格、信息密度和后台形态基本可接受。
+3. `npm run java:smoke` 通过。
+4. 按 `docs/stage-three-java-page-walkthrough.md` 完成 Java 模式逐页联调，三端菜单切换无加载失败、无 React runtime error、无横向溢出。
+5. 用户确认第一轮页面风格、信息密度和后台形态基本可接受。
 
 第二轮建议优先级：
 
