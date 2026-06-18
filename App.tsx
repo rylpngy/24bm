@@ -935,6 +935,7 @@ const PlatformWorkspace: React.FC<{
       publishedAt: new Date().toISOString(),
     },
   ];
+  const operationSummary = platformOverview?.operationSummary;
 
   return (
     <>
@@ -951,6 +952,14 @@ const PlatformWorkspace: React.FC<{
             <MetricCard icon={Settings} label="启用套餐" value={`${model.tenants.length} 个`} tone="slate" />
             <MetricCard icon={ClipboardCheck} label="待审核企业" value={`${pendingTenantCount} 个`} tone="amber" />
           </div>
+          <PlatformOperationSummaryPanel
+            buyerCount={buyerCount}
+            supplierCount={supplierCount}
+            pendingTenantCount={pendingTenantCount}
+            activeTenantCount={operationSummary?.activeTenantCount ?? model.tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length}
+            announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
+            enterpriseReviews={enterpriseReviews}
+          />
           <Panel title="平台能力边界" icon={ShieldCheck}>
             <CapabilityList
               items={[
@@ -965,62 +974,125 @@ const PlatformWorkspace: React.FC<{
       )}
 
       {activeModule === 'tenants' && (
-        <Panel title="租户列表" icon={Layers3}>
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="min-w-[720px] w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
-                <tr>
-                  <th className="px-4 py-3">企业</th>
-                  <th className="px-4 py-3">套餐</th>
-                  <th className="px-4 py-3">状态</th>
-                  <th className="px-4 py-3 text-right">用户上限</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {data.tenants.map((tenant) => (
-                  <tr key={tenant.id}>
-                    <td className="px-4 py-4 font-bold text-slate-900">{tenant.name}</td>
-                    <td className="px-4 py-4 text-slate-600">{tenant.plan}</td>
-                    <td className="px-4 py-4">
-                      <StatusPill label={tenant.status} />
-                    </td>
-                    <td className="px-4 py-4 text-right font-mono font-bold">{tenant.userLimit}</td>
+        <>
+          <PlatformOperationSummaryPanel
+            buyerCount={buyerCount}
+            supplierCount={supplierCount}
+            pendingTenantCount={pendingTenantCount}
+            activeTenantCount={operationSummary?.activeTenantCount ?? model.tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length}
+            announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
+            enterpriseReviews={enterpriseReviews}
+          />
+          <Panel title="租户列表" icon={Layers3}>
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="min-w-[720px] w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3">企业</th>
+                    <th className="px-4 py-3">套餐</th>
+                    <th className="px-4 py-3">状态</th>
+                    <th className="px-4 py-3 text-right">用户上限</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {data.tenants.map((tenant) => (
+                    <tr key={tenant.id}>
+                      <td className="px-4 py-4 font-bold text-slate-900">{tenant.name}</td>
+                      <td className="px-4 py-4 text-slate-600">{tenant.plan}</td>
+                      <td className="px-4 py-4">
+                        <StatusPill label={tenant.status} />
+                      </td>
+                      <td className="px-4 py-4 text-right font-mono font-bold">{tenant.userLimit}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </>
       )}
 
       {activeModule === 'reviews' && (
-        <Panel title="企业审核" icon={ClipboardCheck}>
-          <SimpleList
-            rows={enterpriseReviews.map((review) => ({
-              id: review.id,
-              title: review.name,
-              meta: `${review.type} · ${review.industry}`,
-              value: review.status,
-              status: review.status,
-            }))}
+        <>
+          <PlatformOperationSummaryPanel
+            buyerCount={buyerCount}
+            supplierCount={supplierCount}
+            pendingTenantCount={pendingTenantCount}
+            activeTenantCount={operationSummary?.activeTenantCount ?? model.tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length}
+            announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
+            enterpriseReviews={enterpriseReviews}
           />
-        </Panel>
+          <Panel title="企业审核" icon={ClipboardCheck}>
+            <SimpleList
+              rows={enterpriseReviews.map((review) => ({
+                id: review.id,
+                title: review.name,
+                meta: `${review.type} · ${review.industry}`,
+                value: review.status,
+                status: review.status,
+              }))}
+            />
+          </Panel>
+        </>
       )}
 
       {activeModule === 'announcements' && (
-        <Panel title="平台公告" icon={Bell}>
-          <SimpleList
-            rows={announcements.map((announcement) => ({
-              id: announcement.id,
-              title: announcement.title,
-              meta: `发布范围 ${announcement.targetScope}`,
-              value: formatAuditTime(announcement.publishedAt),
-              status: '已发布',
-            }))}
+        <>
+          <PlatformOperationSummaryPanel
+            buyerCount={buyerCount}
+            supplierCount={supplierCount}
+            pendingTenantCount={pendingTenantCount}
+            activeTenantCount={operationSummary?.activeTenantCount ?? model.tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length}
+            announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
+            enterpriseReviews={enterpriseReviews}
           />
-        </Panel>
+          <Panel title="平台公告" icon={Bell}>
+            <SimpleList
+              rows={announcements.map((announcement) => ({
+                id: announcement.id,
+                title: announcement.title,
+                meta: `发布范围 ${announcement.targetScope}`,
+                value: formatAuditTime(announcement.publishedAt),
+                status: '已发布',
+              }))}
+            />
+          </Panel>
+        </>
       )}
     </>
+  );
+};
+
+const PlatformOperationSummaryPanel: React.FC<{
+  buyerCount: number;
+  supplierCount: number;
+  pendingTenantCount: number;
+  activeTenantCount: number;
+  announcementCount: number;
+  enterpriseReviews: Array<{ status: string }>;
+}> = ({
+  buyerCount,
+  supplierCount,
+  pendingTenantCount,
+  activeTenantCount,
+  announcementCount,
+  enterpriseReviews,
+}) => {
+  const reviewCount = enterpriseReviews.filter((review) => review.status === '待审核').length;
+  const nextAction = reviewCount > 0 ? '处理企业审核' : '维护套餐与公告';
+
+  return (
+    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+      <p className="text-xs font-black text-blue-800">平台运营摘要</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <MiniFact label="采购租户" value={`${buyerCount} 家`} />
+        <MiniFact label="公共供应商" value={`${supplierCount} 家`} />
+        <MiniFact label="待审核企业" value={`${pendingTenantCount} 个`} />
+        <MiniFact label="启用套餐" value={`${activeTenantCount} 个`} />
+        <MiniFact label="公告数量" value={`${announcementCount} 条`} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </section>
   );
 };
 

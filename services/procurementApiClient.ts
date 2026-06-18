@@ -452,6 +452,11 @@ export interface JavaPlatformOverviewDto {
   tenantCount: number;
   publicSupplierCount: number;
   pendingEnterpriseReviews: number;
+  operationSummary?: {
+    activeTenantCount: number;
+    pendingEnterpriseReviewCount: number;
+    activeAnnouncementCount?: number;
+  };
 }
 
 export interface JavaPlatformTenantDto {
