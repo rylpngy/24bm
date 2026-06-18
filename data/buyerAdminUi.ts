@@ -319,6 +319,30 @@ export interface InvoicePaymentRow {
   canRegisterPayment: boolean;
 }
 
+export interface InvoicePaymentRelatedRow {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface InvoicePaymentTimelineRow {
+  label: string;
+  value: string;
+}
+
+export interface InvoicePaymentDetailPanel {
+  id: string;
+  supplierName: string;
+  status: string;
+  amountLabel: string;
+  canRegisterPayment: boolean;
+  nextActionTitle: string;
+  facts: BuyerModuleFact[];
+  orderFacts: BuyerModuleFact[];
+  relatedRows: InvoicePaymentRelatedRow[];
+  paymentTimelineRows: InvoicePaymentTimelineRow[];
+}
+
 const compactCurrency = (value: number) =>
   new Intl.NumberFormat('zh-CN', {
     style: 'currency',
@@ -1055,6 +1079,62 @@ export const buildInvoicePaymentRows = (workspace: BuyerWorkspace): InvoicePayme
       canRegisterPayment: invoice.paymentStatus !== '已付款',
     };
   });
+
+export const buildInvoicePaymentDetailPanel = (
+  workspace: BuyerWorkspace,
+  invoiceId: string,
+): InvoicePaymentDetailPanel | undefined => {
+  const invoice = workspace.invoices.find((item) => item.id === invoiceId);
+  if (!invoice) return undefined;
+
+  const supplier = workspace.suppliers.find((item) => item.id === invoice.supplierId);
+  const order = workspace.orders.find((item) => item.id === invoice.orderId);
+  const rfq = order ? workspace.rfqs.find((item) => item.id === order.rfqId) : undefined;
+  const delivery = order ? workspace.deliveries.find((item) => item.orderId === order.id) : undefined;
+  const nextAction = describeInvoiceNextAction(invoice);
+
+  return {
+    id: invoice.id,
+    supplierName: supplier?.name ?? invoice.supplierId,
+    status: invoice.paymentStatus,
+    amountLabel: compactCurrency(invoice.amount),
+    canRegisterPayment: invoice.paymentStatus !== '已付款',
+    nextActionTitle: nextAction.title,
+    facts: [
+      { label: '供应商', value: supplier?.name ?? invoice.supplierId },
+      { label: '关联订单', value: invoice.orderId },
+      { label: '发票金额', value: compactCurrency(invoice.amount) },
+      { label: '付款状态', value: invoice.paymentStatus },
+    ],
+    orderFacts: [
+      { label: '订单状态', value: order?.status ?? '未找到' },
+      { label: '订单金额', value: compactCurrency(order?.amount ?? 0) },
+      { label: '预计到货', value: order?.expectedReceiptDate ?? '未维护' },
+      { label: '关联询价', value: rfq?.title ?? order?.rfqId ?? '未找到' },
+    ],
+    relatedRows: [
+      delivery
+        ? {
+            id: delivery.id,
+            title: '物流信息',
+            detail: `${delivery.carrier} ${delivery.trackingNo} · ${delivery.status}`,
+          }
+        : undefined,
+      rfq
+        ? {
+            id: rfq.id,
+            title: '询价项目',
+            detail: `${rfq.title} · ${rfq.status}`,
+          }
+        : undefined,
+    ].filter((row): row is InvoicePaymentRelatedRow => Boolean(row)),
+    paymentTimelineRows: [
+      { label: '发票登记', value: invoice.id },
+      { label: '付款状态', value: invoice.paymentStatus },
+      { label: '下一步', value: nextAction.title },
+    ],
+  };
+};
 
 export const buildAuditLogRows = (workspace: BuyerWorkspace): AuditLogRow[] =>
   [...workspace.auditLogs]
