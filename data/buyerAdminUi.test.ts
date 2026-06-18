@@ -14,6 +14,7 @@ import {
   buildReceiptInspectionRows,
   buildRfqDetailPanel,
   buildRfqListRows,
+  buildSupplierDetailPanel,
   buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
   buildBuyerModuleFacts,
@@ -230,6 +231,47 @@ describe('buyer admin UI helpers', () => {
         actionTitle: '待提交准入',
       },
     ]);
+  });
+
+  it('builds supplier detail panels with admission, category, RFQ, order, and invoice context', () => {
+    expect(buildSupplierDetailPanel(workspace, 'rel-acme-orbit')).toEqual({
+      id: 'rel-acme-orbit',
+      supplierId: 'supplier-orbit',
+      supplierName: '奥博智能设备',
+      status: '已准入',
+      level: 'A',
+      facts: [
+        { label: '所属行业', value: '智能硬件' },
+        { label: '企业认证', value: '已认证' },
+        { label: '授权品类', value: '智能终端 / 会议设备' },
+        { label: '绩效评分', value: '94 分' },
+      ],
+      actionTitle: '可参与询价',
+      riskLabel: '绩效优秀',
+      collaborationRows: [
+        { label: '参与询价', value: '1 个' },
+        { label: '已提交报价', value: '1 条' },
+        { label: '采购订单', value: '1 单' },
+        { label: '发票金额', value: '¥216,000' },
+      ],
+      rfqRows: [
+        {
+          id: 'rfq-acme-1',
+          title: '会议室升级设备询价',
+          status: '已定标',
+          quoteLabel: '已报价',
+        },
+      ],
+      orderRows: [
+        {
+          id: 'po-acme-1',
+          status: '待收货',
+          amountLabel: '¥216,000',
+        },
+      ],
+    });
+
+    expect(buildSupplierDetailPanel(workspace, 'rel-acme-harbor')?.actionTitle).toBe('待提交准入');
   });
 
   it('summarizes material catalog usage for buyer list pages', () => {

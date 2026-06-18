@@ -41,12 +41,14 @@ import {
   buildReceiptInspectionRows,
   buildRfqDetailPanel,
   buildRfqListRows,
+  buildSupplierDetailPanel,
   buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
   type BuyerModuleFact,
   type DemandDetailPanel,
   type OrderDetailPanel,
   type RfqDetailPanel,
+  type SupplierDetailPanel,
   type SupplierRelationAction,
 } from './data/buyerAdminUi';
 import {
@@ -1072,6 +1074,7 @@ const BuyerWorkspaceView: React.FC<{
   const [selectedDemandId, setSelectedDemandId] = useState(workspace.demands[0]?.id ?? '');
   const [selectedRfqId, setSelectedRfqId] = useState(workspace.rfqs[0]?.id ?? '');
   const [selectedOrderId, setSelectedOrderId] = useState(workspace.orders[0]?.id ?? '');
+  const [selectedSupplierRelationId, setSelectedSupplierRelationId] = useState(workspace.privateSupplierRelations[0]?.id ?? '');
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
     if (priorityDelta !== 0) return priorityDelta;
@@ -1111,6 +1114,12 @@ const BuyerWorkspaceView: React.FC<{
     : workspace.orders[0]?.id ?? '';
   const selectedOrderDetail = selectedOrder
     ? buildOrderDetailPanel(workspace, selectedOrder)
+    : undefined;
+  const selectedSupplierRelation = workspace.privateSupplierRelations.some((relation) => relation.id === selectedSupplierRelationId)
+    ? selectedSupplierRelationId
+    : workspace.privateSupplierRelations[0]?.id ?? '';
+  const selectedSupplierDetail = selectedSupplierRelation
+    ? buildSupplierDetailPanel(workspace, selectedSupplierRelation)
     : undefined;
 
   return (
@@ -1503,8 +1512,9 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {(activeModule === 'suppliers' || activeModule === 'orders' || activeModule === 'invoices' || activeModule === 'receipts') && (
-    <div className={`grid gap-6 ${activeModule === 'suppliers' ? '' : 'xl:grid-cols-[minmax(0,1fr)_420px]'}`}>
+    <div className={`grid gap-6 ${activeModule === 'suppliers' ? 'xl:grid-cols-[minmax(0,1fr)_420px]' : 'xl:grid-cols-[minmax(0,1fr)_420px]'}`}>
       {activeModule === 'suppliers' && (
+      <>
       <Panel title="私域供应商关系" icon={Users}>
         {supplierRelationRows.length === 0 ? (
           <EmptyState title="暂无私域供应商" desc="平台公共供应商通过准入后，会形成采购方自己的合作关系和绩效记录。" />
@@ -1513,7 +1523,12 @@ const BuyerWorkspaceView: React.FC<{
           {supplierRelationRows.map((relationRow) => {
             const relation = workspace.privateSupplierRelations.find((item) => item.id === relationRow.id);
             return (
-              <div key={relationRow.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                key={relationRow.id}
+                className={`rounded-lg border bg-white p-4 transition ${
+                  selectedSupplierRelation === relationRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-black text-slate-900">{relationRow.supplierName}</p>
@@ -1531,6 +1546,17 @@ const BuyerWorkspaceView: React.FC<{
                 </div>
                 <InlineFactGrid facts={relationRow.facts} />
                 <SupplierRelationNotice action={relationRow.action} />
+                <button
+                  type="button"
+                  onClick={() => setSelectedSupplierRelationId(relationRow.id)}
+                  className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                    selectedSupplierRelation === relationRow.id
+                      ? 'border-blue-200 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {selectedSupplierRelation === relationRow.id ? '当前详情' : '查看详情'}
+                </button>
                 {javaEnabled && relation && relationRow.status === '待准入' && (
                   <button
                     type="button"
@@ -1548,6 +1574,8 @@ const BuyerWorkspaceView: React.FC<{
         </div>
         )}
       </Panel>
+      <SupplierDetailPanelView detail={selectedSupplierDetail} />
+      </>
       )}
 
       {activeModule === 'orders' && (
@@ -2171,6 +2199,109 @@ const OrderDetailPanelView: React.FC<{
         </section>
 
         <MiniFact label="下一步" value={detail.nextActionTitle} />
+      </div>
+    )}
+  </Panel>
+);
+
+const SupplierDetailPanelView: React.FC<{
+  detail?: SupplierDetailPanel;
+}> = ({ detail }) => (
+  <Panel title="供应商详情" icon={Users}>
+    {!detail ? (
+      <EmptyState title="暂无供应商详情" desc="选择一个私域供应商关系后，可查看准入、品类、绩效和协作记录。" />
+    ) : (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-base font-black text-slate-950">{detail.supplierName}</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">{detail.supplierId}</p>
+            </div>
+            <StatusPill label={detail.status} />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
+              等级 {detail.level}
+            </span>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
+              {detail.riskLabel}
+            </span>
+          </div>
+          <InlineFactGrid facts={detail.facts} />
+        </div>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">合作关系</p>
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+            <p className="text-sm font-black text-blue-950">{detail.actionTitle}</p>
+          </div>
+        </section>
+
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">协作记录</p>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {detail.collaborationRows.map((row) => (
+              <MiniFact key={row.label} label={row.label} value={row.value} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">参与询价</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.rfqRows.length} 个
+            </span>
+          </div>
+          {detail.rfqRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.rfqRows.map((rfq) => (
+                <div key={rfq.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-900">{rfq.title}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">{rfq.quoteLabel}</p>
+                    </div>
+                    <StatusPill label={rfq.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无询价协作记录。
+            </p>
+          )}
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">采购订单</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.orderRows.length} 单
+            </span>
+          </div>
+          {detail.orderRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.orderRows.map((order) => (
+                <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-900">{order.id}</p>
+                      <p className="mt-1 font-mono text-xs font-bold text-slate-500">{order.amountLabel}</p>
+                    </div>
+                    <StatusPill label={order.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无采购订单。
+            </p>
+          )}
+        </section>
       </div>
     )}
   </Panel>

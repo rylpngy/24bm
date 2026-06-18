@@ -57,6 +57,33 @@ export interface SupplierRelationRow {
   action: SupplierRelationAction;
 }
 
+export interface SupplierDetailRfqRow {
+  id: string;
+  title: string;
+  status: string;
+  quoteLabel: string;
+}
+
+export interface SupplierDetailOrderRow {
+  id: string;
+  status: string;
+  amountLabel: string;
+}
+
+export interface SupplierDetailPanel {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  status: string;
+  level: string;
+  facts: BuyerModuleFact[];
+  actionTitle: string;
+  riskLabel: string;
+  collaborationRows: BuyerModuleFact[];
+  rfqRows: SupplierDetailRfqRow[];
+  orderRows: SupplierDetailOrderRow[];
+}
+
 export interface MaterialCatalogRow {
   id: string;
   title: string;
@@ -404,6 +431,55 @@ export const buildSupplierRelationRows = (workspace: BuyerWorkspace): SupplierRe
       action: describeSupplierRelationAction(relation),
     };
   });
+
+export const buildSupplierDetailPanel = (
+  workspace: BuyerWorkspace,
+  relationId: string,
+): SupplierDetailPanel | undefined => {
+  const relation = workspace.privateSupplierRelations.find((item) => item.id === relationId);
+  if (!relation) return undefined;
+
+  const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
+  const action = describeSupplierRelationAction(relation);
+  const rfqs = workspace.rfqs.filter((rfq) => rfq.invitedSupplierIds.includes(relation.supplierId));
+  const quotes = rfqs.flatMap((rfq) => rfq.quotes.filter((quote) => quote.supplierId === relation.supplierId));
+  const orders = workspace.orders.filter((order) => order.supplierId === relation.supplierId);
+  const invoices = workspace.invoices.filter((invoice) => invoice.supplierId === relation.supplierId);
+  const invoiceAmount = invoices.reduce((sum, invoice) => sum + invoice.amount, 0);
+
+  return {
+    id: relation.id,
+    supplierId: relation.supplierId,
+    supplierName: supplier?.name ?? relation.supplierId,
+    status: relation.status,
+    level: relation.level,
+    facts: [
+      { label: '所属行业', value: supplier?.industry ?? '未维护' },
+      { label: '企业认证', value: supplier?.verified ? '已认证' : '待认证' },
+      { label: '授权品类', value: relation.categories.join(' / ') },
+      { label: '绩效评分', value: `${relation.performanceScore} 分` },
+    ],
+    actionTitle: action.title,
+    riskLabel: action.riskLabel,
+    collaborationRows: [
+      { label: '参与询价', value: `${rfqs.length} 个` },
+      { label: '已提交报价', value: `${quotes.length} 条` },
+      { label: '采购订单', value: `${orders.length} 单` },
+      { label: '发票金额', value: compactCurrency(invoiceAmount) },
+    ],
+    rfqRows: rfqs.map((rfq) => ({
+      id: rfq.id,
+      title: rfq.title,
+      status: rfq.status,
+      quoteLabel: rfq.quotes.some((quote) => quote.supplierId === relation.supplierId) ? '已报价' : '待报价',
+    })),
+    orderRows: orders.map((order) => ({
+      id: order.id,
+      status: order.status,
+      amountLabel: compactCurrency(order.amount),
+    })),
+  };
+};
 
 export const buildMaterialCatalogRows = (workspace: BuyerWorkspace): MaterialCatalogRow[] =>
   workspace.materials.map((material) => {
