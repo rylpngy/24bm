@@ -4847,6 +4847,10 @@ const SupplierWorkspaceView: React.FC<{
       {activeModule === 'opportunities' && (
       <Panel title="商机与报价" icon={Send}>
         <div className="space-y-4">
+          <SupplierOpportunityResponseSummaryPanel
+            opportunities={workspace.opportunities}
+            supplierId={workspace.supplier.id}
+          />
           {workspace.opportunities.map((rfq) => {
             const myQuotes = rfq.quotes.filter((quote) => quote.supplierId === workspace.supplier.id);
             const hasMyQuote = myQuotes.length > 0;
@@ -5025,6 +5029,36 @@ const SupplierWorkspaceView: React.FC<{
     )}
   </>
 );
+
+const SupplierOpportunityResponseSummaryPanel: React.FC<{
+  opportunities: SupplierWorkspace['opportunities'];
+  supplierId: string;
+}> = ({ opportunities, supplierId }) => {
+  const activeOpportunities = opportunities.filter((rfq) => rfq.status === '报价中');
+  const pendingQuoteCount = activeOpportunities.filter(
+    (rfq) => !rfq.quotes.some((quote) => quote.supplierId === supplierId),
+  ).length;
+  const quotedCount = opportunities.filter((rfq) =>
+    rfq.quotes.some((quote) => quote.supplierId === supplierId),
+  ).length;
+  const closestDeadline = activeOpportunities
+    .map((rfq) => rfq.deadline)
+    .sort((left, right) => left.localeCompare(right))[0] ?? '暂无';
+  const nextAction = pendingQuoteCount > 0 ? '提交报价' : '等待定标';
+
+  return (
+    <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+      <p className="text-xs font-black text-blue-800">商机响应摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <MiniFact label="邀请总数" value={`${opportunities.length} 个`} />
+        <MiniFact label="待报价" value={`${pendingQuoteCount} 个`} />
+        <MiniFact label="已报价" value={`${quotedCount} 个`} />
+        <MiniFact label="最近截止" value={closestDeadline} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </div>
+  );
+};
 
 const SupplierInvoiceReceivableSummaryPanel: React.FC<{
   invoices: SupplierWorkspace['invoices'];
