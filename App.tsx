@@ -1132,6 +1132,9 @@ const BuyerWorkspaceView: React.FC<{
   const selectedDemandDetail = selectedDemand
     ? buildDemandDetailPanel(workspace, selectedDemand)
     : undefined;
+  const selectedDemandRecord = selectedDemandDetail
+    ? workspace.demands.find((demand) => demand.id === selectedDemandDetail.id)
+    : undefined;
   const selectedRfq = workspace.rfqs.some((rfq) => rfq.id === selectedRfqId)
     ? selectedRfqId
     : workspace.rfqs[0]?.id ?? '';
@@ -1470,7 +1473,17 @@ const BuyerWorkspaceView: React.FC<{
         )}
       </Panel>
 
-      <DemandDetailPanelView detail={selectedDemandDetail} />
+      <DemandDetailPanelView
+        detail={selectedDemandDetail}
+        demand={selectedDemandRecord}
+        workspace={workspace}
+        javaEnabled={javaEnabled}
+        linkedDemandIds={linkedDemandIds}
+        demandSubmitBusyId={demandSubmitBusyId}
+        rfqCreateBusy={rfqCreateBusy}
+        onSubmitDemand={onSubmitDemand}
+        onCreateRfqFromDemand={onCreateRfqFromDemand}
+      />
       </>
       )}
 
@@ -2036,7 +2049,25 @@ const ApprovalTemplateSettings: React.FC<{
 
 const DemandDetailPanelView: React.FC<{
   detail?: DemandDetailPanel;
-}> = ({ detail }) => (
+  demand?: BuyerWorkspace['demands'][number];
+  workspace: BuyerWorkspace;
+  javaEnabled: boolean;
+  linkedDemandIds: Set<string>;
+  demandSubmitBusyId: string | null;
+  rfqCreateBusy: string | null;
+  onSubmitDemand: (demandId: string) => void;
+  onCreateRfqFromDemand: (demandId: string, supplierIds: string[], deadline: string) => void;
+}> = ({
+  detail,
+  demand,
+  workspace,
+  javaEnabled,
+  linkedDemandIds,
+  demandSubmitBusyId,
+  rfqCreateBusy,
+  onSubmitDemand,
+  onCreateRfqFromDemand,
+}) => (
   <Panel title="需求详情" icon={FileText}>
     {!detail ? (
       <EmptyState title="暂无需求详情" desc="选择一条采购需求后，可查看物料明细、关联询价和审批上下文。" />
@@ -2148,10 +2179,143 @@ const DemandDetailPanelView: React.FC<{
           <MiniFact label="审批状态" value={detail.approvalLabel} />
           <MiniFact label="下一步" value={detail.nextActionTitle} />
         </div>
+
+        <DemandDetailOperationPanel
+          detail={detail}
+          demand={demand}
+          workspace={workspace}
+          javaEnabled={javaEnabled}
+          linkedDemandIds={linkedDemandIds}
+          demandSubmitBusyId={demandSubmitBusyId}
+          rfqCreateBusy={rfqCreateBusy}
+          onSubmitDemand={onSubmitDemand}
+          onCreateRfqFromDemand={onCreateRfqFromDemand}
+        />
       </DetailPanelBody>
     )}
   </Panel>
 );
+
+const DemandDetailOperationPanel: React.FC<{
+  detail: DemandDetailPanel;
+  demand?: BuyerWorkspace['demands'][number];
+  workspace: BuyerWorkspace;
+  javaEnabled: boolean;
+  linkedDemandIds: Set<string>;
+  demandSubmitBusyId: string | null;
+  rfqCreateBusy: string | null;
+  onSubmitDemand: (demandId: string) => void;
+  onCreateRfqFromDemand: (demandId: string, supplierIds: string[], deadline: string) => void;
+}> = ({
+  detail,
+  demand,
+  workspace,
+  javaEnabled,
+  linkedDemandIds,
+  demandSubmitBusyId,
+  rfqCreateBusy,
+  onSubmitDemand,
+  onCreateRfqFromDemand,
+}) => {
+  const hasAdmittedSuppliers = workspace.privateSupplierRelations.some((relation) => relation.status === '已准入');
+
+  if (!javaEnabled) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">需求操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="当前为 mock 数据源"
+          desc="切换到 Java 模式后，可在详情中提交审批、创建询价并继续主流程联调。"
+        />
+      </section>
+    );
+  }
+
+  if (!demand) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">需求操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="未找到需求记录"
+          desc="请重新选择采购需求或刷新数据。"
+        />
+      </section>
+    );
+  }
+
+  const linked = linkedDemandIds.has(demand.id);
+
+  return (
+    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-blue-800">需求操作</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
+            {detail.nextActionTitle}
+          </p>
+        </div>
+        <StatusPill label={detail.status} />
+      </div>
+
+      {demand.status === '草稿' && (
+        <PrimaryActionButton
+          onClick={() => onSubmitDemand(demand.id)}
+          disabled={demandSubmitBusyId === demand.id}
+          busy={demandSubmitBusyId === demand.id}
+          icon={ClipboardCheck}
+          pendingLabel="提交中"
+          fullWidth
+        >
+          提交审批
+        </PrimaryActionButton>
+      )}
+
+      {demand.status === '已通过' && !linked && hasAdmittedSuppliers && (
+        <RfqCreateForm
+          demand={demand}
+          suppliers={workspace.suppliers}
+          relations={workspace.privateSupplierRelations}
+          busy={rfqCreateBusy === demand.id}
+          onSubmit={onCreateRfqFromDemand}
+        />
+      )}
+
+      {demand.status === '已通过' && !linked && !hasAdmittedSuppliers && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="缺少已准入供应商"
+          desc="先在供应商库完成准入，再回到需求详情创建询价项目。"
+        />
+      )}
+
+      {demand.status === '已通过' && linked && (
+        <ProcessStateNotice
+          variant="handled"
+          title="询价已创建"
+          desc="该需求已关联询价项目，可切换到询价项目或报价对比继续处理。"
+        />
+      )}
+
+      {demand.status === '审批中' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待审批"
+          desc="需求审批通过后，将开放创建询价入口。"
+        />
+      )}
+
+      {demand.status === '已驳回' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="需求已驳回"
+          desc="请调整需求内容后重新提交审批。"
+        />
+      )}
+    </section>
+  );
+};
 
 const ApprovalDetailPanelView: React.FC<{
   detail?: ApprovalDetailPanel;

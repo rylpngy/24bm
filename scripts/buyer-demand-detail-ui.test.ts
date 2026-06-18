@@ -30,4 +30,19 @@ describe('buyer demand detail UI', () => {
     expect(app).toContain('采购订单');
     expect(app).toContain('查看详情');
   });
+
+  it('surfaces status-aware demand actions inside the detail panel', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('DemandDetailOperationPanel');
+    expect(app).toContain('需求操作');
+    expect(app).toContain('demand?: BuyerWorkspace[\'demands\'][number]');
+    expect(app).toContain('onSubmitDemand: (demandId: string) => void');
+    expect(app).toContain('onCreateRfqFromDemand: (demandId: string, supplierIds: string[], deadline: string) => void');
+    expect(app).toContain('detail={selectedDemandDetail}');
+    expect(app).toContain('demand={selectedDemandRecord}');
+    expect(app).toContain('linkedDemandIds={linkedDemandIds}');
+    expect(app).toContain('demandSubmitBusyId={demandSubmitBusyId}');
+    expect(app).toContain('rfqCreateBusy={rfqCreateBusy}');
+  });
 });
