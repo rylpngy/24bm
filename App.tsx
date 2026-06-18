@@ -2134,6 +2134,18 @@ const DemandDetailPanelView: React.FC<{
         </section>
 
         <section>
+          <p className="mb-2 text-xs font-black text-slate-500">流程检查</p>
+          <div className="space-y-2">
+            {detail.flowCheckRows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                <span className="text-xs font-black text-slate-500">{row.label}</span>
+                <span className="text-xs font-black text-slate-900">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
           <p className="mb-2 text-xs font-black text-slate-500">流程轨迹</p>
           <div className="space-y-2">
             {detail.workflowTimelineRows.map((row) => (

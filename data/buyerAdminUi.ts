@@ -288,6 +288,7 @@ export interface DemandDetailPanel {
   lineItems: DemandDetailLineItemRow[];
   linkedRfqs: DemandDetailRfqRow[];
   workflowTimelineRows: DemandDetailTimelineRow[];
+  flowCheckRows: BuyerModuleFact[];
   relatedRows: DemandDetailRelatedRow[];
   approvalLabel: string;
   nextActionTitle: string;
@@ -1238,6 +1239,12 @@ export const buildDemandDetailPanel = (
       { label: '审批状态', value: approvalLabel },
       { label: '询价项目', value: `${linkedRfqs.length} 个` },
       { label: '后续订单', value: `${linkedOrders.length} 单` },
+    ],
+    flowCheckRows: [
+      { label: '审批状态', value: approvalLabel },
+      { label: '物料明细', value: `${demand.lineItems.length} 行` },
+      { label: '询价项目', value: `${linkedRfqs.length} 个` },
+      { label: '下一步', value: nextAction.title },
     ],
     relatedRows: [
       ...linkedRfqs.map((rfq) => ({

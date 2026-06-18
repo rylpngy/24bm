@@ -13,6 +13,7 @@ describe('buyer demand detail UI', () => {
     expect(buyerAdminUi).toContain('const linkedRfqs = workspace.rfqs.filter');
     expect(buyerAdminUi).toContain('const linkedOrders = workspace.orders.filter');
     expect(buyerAdminUi).toContain('approvalLabel');
+    expect(buyerAdminUi).toContain('flowCheckRows');
     expect(buyerAdminUi).toContain('workflowTimelineRows');
     expect(buyerAdminUi).toContain('relatedRows');
 
@@ -23,6 +24,7 @@ describe('buyer demand detail UI', () => {
     expect(app).toContain('需求详情');
     expect(app).toContain('物料明细');
     expect(app).toContain('关联询价');
+    expect(app).toContain('流程检查');
     expect(app).toContain('流程轨迹');
     expect(app).toContain('关联业务');
     expect(app).toContain('采购订单');

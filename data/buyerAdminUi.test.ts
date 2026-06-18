@@ -694,6 +694,12 @@ describe('buyer admin UI helpers', () => {
         { label: '询价项目', value: '1 个' },
         { label: '后续订单', value: '1 单' },
       ],
+      flowCheckRows: [
+        { label: '审批状态', value: '暂无待审批' },
+        { label: '物料明细', value: '1 行' },
+        { label: '询价项目', value: '1 个' },
+        { label: '下一步', value: '已关联询价项目' },
+      ],
       relatedRows: [
         { id: 'rfq-acme-1', title: '询价项目', detail: '会议室升级设备询价 · 已定标' },
         { id: 'po-acme-1', title: '采购订单', detail: '¥216,000 · 待收货' },
