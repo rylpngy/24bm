@@ -2110,10 +2110,7 @@ const DemandDetailPanelView: React.FC<{
           <p className="mb-2 text-xs font-black text-slate-500">流程检查</p>
           <div className="space-y-2">
             {detail.flowCheckRows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                <span className="text-xs font-black text-slate-500">{row.label}</span>
-                <span className="text-xs font-black text-slate-900">{row.value}</span>
-              </div>
+              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
             ))}
           </div>
         </section>
@@ -2122,10 +2119,7 @@ const DemandDetailPanelView: React.FC<{
           <p className="mb-2 text-xs font-black text-slate-500">流程轨迹</p>
           <div className="space-y-2">
             {detail.workflowTimelineRows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                <span className="text-xs font-black text-slate-500">{row.label}</span>
-                <span className="text-xs font-black text-slate-900">{row.value}</span>
-              </div>
+              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
             ))}
           </div>
         </section>
@@ -2140,10 +2134,7 @@ const DemandDetailPanelView: React.FC<{
           {detail.relatedRows.length > 0 ? (
             <div className="space-y-2">
               {detail.relatedRows.map((row) => (
-                <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
-                </div>
+                <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
               ))}
             </div>
           ) : (
@@ -2230,10 +2221,7 @@ const ApprovalDetailPanelView: React.FC<{
           <p className="mb-2 text-xs font-black text-slate-500">处理轨迹</p>
           <div className="space-y-2">
             {detail.timelineRows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                <span className="text-xs font-black text-slate-500">{row.label}</span>
-                <span className="font-mono text-xs font-black text-slate-900">{row.value}</span>
-              </div>
+              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} fontMono />
             ))}
           </div>
         </section>
@@ -2316,10 +2304,7 @@ const AuditLogDetailPanelView: React.FC<{
           {detail.relatedRows.length > 0 ? (
             <div className="space-y-2">
               {detail.relatedRows.map((row) => (
-                <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
-                </div>
+                <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
               ))}
             </div>
           ) : (
@@ -2333,10 +2318,7 @@ const AuditLogDetailPanelView: React.FC<{
           <p className="mb-2 text-xs font-black text-slate-500">处理轨迹</p>
           <div className="space-y-2">
             {detail.timelineRows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                <span className="text-xs font-black text-slate-500">{row.label}</span>
-                <span className="font-mono text-xs font-black text-slate-900">{row.value}</span>
-              </div>
+              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} fontMono />
             ))}
           </div>
         </section>
@@ -2467,10 +2449,7 @@ const RfqDetailPanelView: React.FC<{
           <p className="mb-2 text-xs font-black text-slate-500">履约轨迹</p>
           <div className="space-y-2">
             {detail.fulfillmentTimelineRows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                <span className="text-xs font-black text-slate-500">{row.label}</span>
-                <span className="text-xs font-black text-slate-900">{row.value}</span>
-              </div>
+              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
             ))}
           </div>
         </section>
@@ -2485,10 +2464,7 @@ const RfqDetailPanelView: React.FC<{
           {detail.relatedRows.length > 0 ? (
             <div className="space-y-2">
               {detail.relatedRows.map((row) => (
-                <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
-                </div>
+                <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
               ))}
             </div>
           ) : (
@@ -2541,10 +2517,7 @@ const QuoteComparisonDetailPanelView: React.FC<{
           <p className="mb-2 text-xs font-black text-slate-500">定标审批</p>
           <div className="space-y-2">
             {detail.awardTimelineRows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                <span className="text-xs font-black text-slate-500">{row.label}</span>
-                <span className="text-xs font-black text-slate-900">{row.value}</span>
-              </div>
+              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
             ))}
           </div>
         </section>
@@ -2616,10 +2589,7 @@ const QuoteComparisonDetailPanelView: React.FC<{
           </div>
           <div className="space-y-2">
             {detail.relatedRows.map((row) => (
-              <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
-                <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
-              </div>
+              <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
             ))}
           </div>
         </section>
@@ -2708,10 +2678,7 @@ const OrderDetailPanelView: React.FC<{
           <p className="mb-2 text-xs font-black text-slate-500">履约轨迹</p>
           <div className="space-y-2">
             {detail.fulfillmentTimelineRows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                <span className="text-xs font-black text-slate-500">{row.label}</span>
-                <span className="text-xs font-black text-slate-900">{row.value}</span>
-              </div>
+              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
             ))}
           </div>
         </section>
@@ -2726,10 +2693,7 @@ const OrderDetailPanelView: React.FC<{
           {detail.relatedRows.length > 0 ? (
             <div className="space-y-2">
               {detail.relatedRows.map((row) => (
-                <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
-                </div>
+                <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
               ))}
             </div>
           ) : (
@@ -2784,10 +2748,7 @@ const ReceiptInspectionDetailPanelView: React.FC<{
           <p className="mb-2 text-xs font-black text-slate-500">验收检查</p>
           <div className="space-y-2">
             {detail.acceptanceChecks.map((check) => (
-              <div key={check.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                <span className="text-xs font-black text-slate-500">{check.label}</span>
-                <span className="text-xs font-black text-slate-900">{check.value}</span>
-              </div>
+              <DetailKeyValueRow key={check.label} label={check.label} value={check.value} />
             ))}
           </div>
         </section>
@@ -2811,10 +2772,7 @@ const ReceiptInspectionDetailPanelView: React.FC<{
           {detail.relatedRows.length > 0 ? (
             <div className="space-y-2">
               {detail.relatedRows.map((row) => (
-                <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
-                </div>
+                <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
               ))}
             </div>
           ) : (
@@ -2894,10 +2852,7 @@ const InvoicePaymentDetailPanelView: React.FC<{
           {detail.relatedRows.length > 0 ? (
             <div className="space-y-2">
               {detail.relatedRows.map((row) => (
-                <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="truncate text-sm font-black text-slate-900">{row.title}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{row.detail}</p>
-                </div>
+                <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
               ))}
             </div>
           ) : (
@@ -2911,10 +2866,7 @@ const InvoicePaymentDetailPanelView: React.FC<{
           <p className="mb-2 text-xs font-black text-slate-500">付款轨迹</p>
           <div className="space-y-2">
             {detail.paymentTimelineRows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                <span className="text-xs font-black text-slate-500">{row.label}</span>
-                <span className="font-mono text-xs font-black text-slate-900">{row.value}</span>
-              </div>
+              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} fontMono />
             ))}
           </div>
         </section>
@@ -3398,6 +3350,29 @@ const MiniFact: React.FC<{
   <div className="min-w-0 rounded-lg bg-slate-50 px-3 py-2">
     <p className="text-[11px] font-black text-slate-400">{label}</p>
     <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">{value}</p>
+  </div>
+);
+
+const DetailKeyValueRow: React.FC<{
+  label: string;
+  value: string;
+  fontMono?: boolean;
+}> = ({ label, value, fontMono = false }) => (
+  <div className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <span className="text-xs font-black text-slate-500">{label}</span>
+    <span className={`break-words text-xs font-black text-slate-900 sm:text-right ${fontMono ? 'font-mono' : ''}`}>
+      {value}
+    </span>
+  </div>
+);
+
+const RelatedBusinessRow: React.FC<{
+  title: string;
+  detail: string;
+}> = ({ title, detail }) => (
+  <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <p className="break-words text-sm font-black text-slate-900">{title}</p>
+    <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-500">{detail}</p>
   </div>
 );
 

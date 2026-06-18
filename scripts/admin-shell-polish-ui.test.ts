@@ -80,4 +80,14 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('min-w-0');
     expect(app.match(/<DetailPanelBody>/g)?.length).toBeGreaterThanOrEqual(6);
   });
+
+  it('uses shared detail row components for trace and related business sections', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('const DetailKeyValueRow');
+    expect(app).toContain('const RelatedBusinessRow');
+    expect(app).toContain('fontMono?: boolean');
+    expect(app.match(/<DetailKeyValueRow/g)?.length).toBeGreaterThanOrEqual(6);
+    expect(app.match(/<RelatedBusinessRow/g)?.length).toBeGreaterThanOrEqual(5);
+  });
 });
