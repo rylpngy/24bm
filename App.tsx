@@ -924,6 +924,11 @@ type PlatformEnterpriseReview = {
   status: string;
 };
 
+type PlatformTenantRow = Omit<PlatformWorkspaceData['tenants'][number], 'status'> & {
+  status: string;
+  features: string[];
+};
+
 const PlatformWorkspace: React.FC<{
   data: PlatformWorkspaceData;
   activeModule: PlatformAdminModule;
@@ -935,6 +940,37 @@ const PlatformWorkspace: React.FC<{
     ?? model.enterprises.filter((enterprise) => enterprise.type === 'buyer').length;
   const pendingTenantCount = platformOverview?.pendingEnterpriseReviews
     ?? model.tenants.filter((tenant) => tenant.status === '待审核').length;
+  const [platformTenants, setPlatformTenants] = useState<PlatformTenantRow[]>(data.tenants.map((tenant) => ({
+    ...tenant,
+    features: tenant.enabledFeatures,
+  })));
+  const onUpdateTenantStatus = (tenantId: string, status: '已启用' | '停用') => {
+    setPlatformTenants((current) => current.map((tenant) => (
+      tenant.id === tenantId ? { ...tenant, status } : tenant
+    )));
+  };
+  const onUpdateTenantPlan = (tenantId: string, plan: PlatformTenantRow['plan']) => {
+    setPlatformTenants((current) => current.map((tenant) => (
+      tenant.id === tenantId ? { ...tenant, plan } : tenant
+    )));
+  };
+  const onToggleTenantFeature = (tenantId: string, feature: 'rfq') => {
+    const featureLabel = feature === 'rfq' ? '询价比价' : feature;
+    setPlatformTenants((current) => current.map((tenant) => {
+      if (tenant.id !== tenantId) {
+        return tenant;
+      }
+      const nextFeatures = tenant.features.includes(featureLabel)
+        ? tenant.features.filter((enabledFeature) => enabledFeature !== featureLabel)
+        : [...tenant.features, featureLabel];
+
+      return {
+        ...tenant,
+        enabledFeatures: nextFeatures,
+        features: nextFeatures,
+      };
+    }));
+  };
   const [platformEnterpriseReviews, setPlatformEnterpriseReviews] = useState<PlatformEnterpriseReview[]>(model.enterprises.map((enterprise) => ({
     id: enterprise.id,
     name: enterprise.name,
@@ -989,7 +1025,7 @@ const PlatformWorkspace: React.FC<{
             buyerCount={buyerCount}
             supplierCount={supplierCount}
             pendingTenantCount={pendingTenantCount}
-            activeTenantCount={operationSummary?.activeTenantCount ?? model.tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length}
+            activeTenantCount={operationSummary?.activeTenantCount ?? platformTenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用' || tenant.status === '已启用').length}
             announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
             enterpriseReviews={enterpriseReviews}
           />
@@ -1012,30 +1048,38 @@ const PlatformWorkspace: React.FC<{
             buyerCount={buyerCount}
             supplierCount={supplierCount}
             pendingTenantCount={pendingTenantCount}
-            activeTenantCount={operationSummary?.activeTenantCount ?? model.tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length}
+            activeTenantCount={operationSummary?.activeTenantCount ?? platformTenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用' || tenant.status === '已启用').length}
             announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
             enterpriseReviews={enterpriseReviews}
           />
-          <PlatformTenantListSummaryPanel tenants={data.tenants} />
+          <PlatformTenantListSummaryPanel tenants={platformTenants} />
+          <PlatformTenantActionPanel
+            tenants={platformTenants}
+            onUpdateTenantStatus={onUpdateTenantStatus}
+            onUpdateTenantPlan={onUpdateTenantPlan}
+            onToggleTenantFeature={onToggleTenantFeature}
+          />
           <Panel title="租户列表" icon={Layers3}>
             <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="min-w-[720px] w-full text-left text-sm">
+              <table className="min-w-[860px] w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
                   <tr>
                     <th className="px-4 py-3">企业</th>
                     <th className="px-4 py-3">套餐</th>
                     <th className="px-4 py-3">状态</th>
+                    <th className="px-4 py-3">功能开关</th>
                     <th className="px-4 py-3 text-right">用户上限</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {data.tenants.map((tenant) => (
+                  {platformTenants.map((tenant) => (
                     <tr key={tenant.id}>
                       <td className="px-4 py-4 font-bold text-slate-900">{tenant.name}</td>
                       <td className="px-4 py-4 text-slate-600">{tenant.plan}</td>
                       <td className="px-4 py-4">
                         <StatusPill label={tenant.status} />
                       </td>
+                      <td className="px-4 py-4 text-slate-600">{tenant.features.join('、') || '未启用'}</td>
                       <td className="px-4 py-4 text-right font-mono font-bold">{tenant.userLimit}</td>
                     </tr>
                   ))}
@@ -1052,7 +1096,7 @@ const PlatformWorkspace: React.FC<{
             buyerCount={buyerCount}
             supplierCount={supplierCount}
             pendingTenantCount={pendingTenantCount}
-            activeTenantCount={operationSummary?.activeTenantCount ?? model.tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length}
+            activeTenantCount={operationSummary?.activeTenantCount ?? platformTenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用' || tenant.status === '已启用').length}
             announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
             enterpriseReviews={enterpriseReviews}
           />
@@ -1081,7 +1125,7 @@ const PlatformWorkspace: React.FC<{
             buyerCount={buyerCount}
             supplierCount={supplierCount}
             pendingTenantCount={pendingTenantCount}
-            activeTenantCount={operationSummary?.activeTenantCount ?? model.tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length}
+            activeTenantCount={operationSummary?.activeTenantCount ?? platformTenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用' || tenant.status === '已启用').length}
             announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
             enterpriseReviews={enterpriseReviews}
           />
@@ -1263,10 +1307,86 @@ const PlatformEnterpriseReviewSummaryPanel: React.FC<{
   );
 };
 
+const PlatformTenantActionPanel: React.FC<{
+  tenants: PlatformTenantRow[];
+  onUpdateTenantStatus: (tenantId: string, status: '已启用' | '停用') => void;
+  onUpdateTenantPlan: (tenantId: string, plan: PlatformTenantRow['plan']) => void;
+  onToggleTenantFeature: (tenantId: string, feature: 'rfq') => void;
+}> = ({
+  tenants,
+  onUpdateTenantStatus,
+  onUpdateTenantPlan,
+  onToggleTenantFeature,
+}) => (
+  <section className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-xs font-black text-slate-700">租户操作</p>
+        <p className="mt-1 text-xs font-bold text-slate-500">先支持状态、套餐和询价功能开关的前端预览，后续接入 Java 租户管理 API。</p>
+      </div>
+      <Settings size={18} className="text-blue-600" />
+    </div>
+    <div className="mt-4 grid gap-3 xl:grid-cols-2">
+      {tenants.map((tenant) => {
+        const rfqEnabled = tenant.features.includes('询价比价');
+        const disabled = tenant.status === '停用';
+
+        return (
+          <div key={tenant.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-slate-900">{tenant.name}</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">{tenant.plan} · {tenant.userLimit} 人 · {tenant.features.join('、') || '未启用功能'}</p>
+              </div>
+              <StatusPill label={tenant.status} />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => onUpdateTenantStatus(tenant.id, '已启用')}
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                disabled={!disabled}
+              >
+                启用租户
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateTenantStatus(tenant.id, '停用')}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300"
+                disabled={disabled}
+              >
+                停用租户
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateTenantPlan(tenant.id, '专业版')}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 transition hover:bg-indigo-50"
+              >
+                升级专业版
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleTenantFeature(tenant.id, 'rfq')}
+                className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-black transition ${
+                  rfqEnabled
+                    ? 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                    : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'
+                }`}
+              >
+                切换询价
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </section>
+);
+
 const PlatformTenantListSummaryPanel: React.FC<{
-  tenants: PlatformWorkspaceData['tenants'];
+  tenants: PlatformTenantRow[];
 }> = ({ tenants }) => {
-  const activeTenantCount = tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用').length;
+  const activeTenantCount = tenants.filter((tenant) => tenant.status === 'active' || tenant.status === '启用' || tenant.status === '已启用').length;
   const pendingTenantCount = tenants.filter((tenant) => tenant.status === '待审核').length;
   const userCapacity = tenants.reduce((sum, tenant) => sum + tenant.userLimit, 0);
   const planCount = new Set(tenants.map((tenant) => tenant.plan)).size;
