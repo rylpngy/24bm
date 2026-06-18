@@ -916,6 +916,14 @@ type PlatformAnnouncement = {
   publishedAt: string;
 };
 
+type PlatformEnterpriseReview = {
+  id: string;
+  name: string;
+  type: string;
+  industry: string;
+  status: string;
+};
+
 const PlatformWorkspace: React.FC<{
   data: PlatformWorkspaceData;
   activeModule: PlatformAdminModule;
@@ -927,13 +935,21 @@ const PlatformWorkspace: React.FC<{
     ?? model.enterprises.filter((enterprise) => enterprise.type === 'buyer').length;
   const pendingTenantCount = platformOverview?.pendingEnterpriseReviews
     ?? model.tenants.filter((tenant) => tenant.status === '待审核').length;
-  const enterpriseReviews = model.enterprises.map((enterprise) => ({
+  const [platformEnterpriseReviews, setPlatformEnterpriseReviews] = useState<PlatformEnterpriseReview[]>(model.enterprises.map((enterprise) => ({
     id: enterprise.id,
     name: enterprise.name,
     type: enterprise.type,
     industry: enterprise.industry,
     status: enterprise.verified ? '已认证' : '待审核',
-  }));
+  })));
+  const enterpriseReviews = platformEnterpriseReviews;
+  const onReviewEnterprise = (reviewId: string, result: 'approved' | 'rejected') => {
+    setPlatformEnterpriseReviews((current) => current.map((review) => (
+      review.id === reviewId
+        ? { ...review, status: result === 'approved' ? '已认证' : '已驳回' }
+        : review
+    )));
+  };
   const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformAnnouncement[]>([{
     id: 'platform-announcement-stage3',
     title: '阶段三后台化改造进行中',
@@ -1041,6 +1057,10 @@ const PlatformWorkspace: React.FC<{
             enterpriseReviews={enterpriseReviews}
           />
           <PlatformEnterpriseReviewSummaryPanel enterpriseReviews={enterpriseReviews} />
+          <PlatformEnterpriseReviewActionPanel
+            enterpriseReviews={enterpriseReviews}
+            onReviewEnterprise={onReviewEnterprise}
+          />
           <Panel title="企业审核" icon={ClipboardCheck}>
             <SimpleList
               rows={enterpriseReviews.map((review) => ({
@@ -1165,6 +1185,57 @@ const PlatformAnnouncementSummaryPanel: React.FC<{
         <MiniFact label="已发布" value={`${publishedAnnouncementCount} 条`} />
         <MiniFact label="下一步" value={nextAction} />
       </div>
+    </section>
+  );
+};
+
+const PlatformEnterpriseReviewActionPanel: React.FC<{
+  enterpriseReviews: PlatformEnterpriseReview[];
+  onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => void;
+}> = ({ enterpriseReviews, onReviewEnterprise }) => {
+  const pendingReviews = enterpriseReviews.filter((review) => review.status === '待审核');
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-slate-700">审核操作</p>
+          <p className="mt-1 text-xs font-bold text-slate-500">先支持前端审核状态预览，后续接入 Java 企业审核 API。</p>
+        </div>
+        <ClipboardCheck size={18} className="text-amber-600" />
+      </div>
+      {pendingReviews.length === 0 ? (
+        <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm font-bold text-slate-500">
+          暂无待审核企业
+        </div>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {pendingReviews.map((review) => (
+            <div key={review.id} className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-slate-900">{review.name}</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">{review.type} · {review.industry}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => onReviewEnterprise(review.id, 'approved')}
+                  className="inline-flex h-9 items-center justify-center rounded-lg bg-green-600 px-3 text-xs font-black text-white transition hover:bg-green-700"
+                >
+                  通过审核
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReviewEnterprise(review.id, 'rejected')}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 transition hover:bg-red-50"
+                >
+                  驳回
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 };
