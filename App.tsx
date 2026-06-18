@@ -2444,34 +2444,89 @@ const ApprovalDetailPanelView: React.FC<{
           </div>
         </section>
 
-        {javaEnabled && approval && detail.canReview ? (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => onReviewApproval(approval, false)}
-              disabled={approvalBusyId === detail.id}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white text-xs font-black text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              驳回
-            </button>
-            <button
-              type="button"
-              onClick={() => onReviewApproval(approval, true)}
-              disabled={approvalBusyId === detail.id}
-              className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-            >
-              {approvalBusyId === detail.id ? '处理中' : '通过'}
-            </button>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
-            {detail.canReview ? 'Java 模式下可在详情中直接处理审批。' : '该审批已处理，仅保留业务上下文和轨迹。'}
-          </div>
-        )}
+        <ApprovalDetailOperationPanel
+          detail={detail}
+          approval={approval}
+          approvalBusyId={approvalBusyId}
+          javaEnabled={javaEnabled}
+          onReviewApproval={onReviewApproval}
+        />
       </DetailPanelBody>
     )}
   </Panel>
 );
+
+const ApprovalDetailOperationPanel: React.FC<{
+  detail: ApprovalDetailPanel;
+  approval?: JavaApprovalTaskDto;
+  approvalBusyId: string | null;
+  javaEnabled: boolean;
+  onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
+}> = ({ detail, approval, approvalBusyId, javaEnabled, onReviewApproval }) => {
+  const busy = approvalBusyId === detail.id;
+
+  return (
+    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-blue-700">审批操作</p>
+          <p className="mt-1 text-sm font-black text-slate-950">{detail.canReview ? '等待审批处理' : '审批结果已归档'}</p>
+        </div>
+        <StatusPill label={detail.status} />
+      </div>
+
+      {!javaEnabled && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="当前为 mock 数据源"
+          desc="切换到 Java 数据源后，可在详情中直接通过或驳回审批。"
+        />
+      )}
+
+      {javaEnabled && detail.canReview && !approval && (
+        <ProcessStateNotice
+          variant="blocked"
+          title="未找到审批任务"
+          desc="请刷新审批队列后重新选择待办，再执行审批处理。"
+        />
+      )}
+
+      {javaEnabled && approval && detail.canReview && (
+        <div className="grid grid-cols-2 gap-2">
+          <PrimaryActionButton
+            onClick={() => onReviewApproval(approval, false)}
+            disabled={busy}
+            busy={busy}
+            tone="red"
+            pendingLabel="处理中"
+            fullWidth
+          >
+            驳回
+          </PrimaryActionButton>
+          <PrimaryActionButton
+            onClick={() => onReviewApproval(approval, true)}
+            disabled={busy}
+            busy={busy}
+            tone="emerald"
+            icon={CheckCircle2}
+            pendingLabel="处理中"
+            fullWidth
+          >
+            通过
+          </PrimaryActionButton>
+        </div>
+      )}
+
+      {javaEnabled && !detail.canReview && (
+        <ProcessStateNotice
+          variant="handled"
+          title="该审批已处理"
+          desc="审批结果已写入业务状态，当前详情仅保留业务上下文和处理轨迹。"
+        />
+      )}
+    </section>
+  );
+};
 
 const AuditLogDetailPanelView: React.FC<{
   detail?: AuditLogDetailPanel;

@@ -29,4 +29,22 @@ describe('buyer approval detail UI', () => {
     expect(approvalDetailView).toContain('处理轨迹');
     expect(app).toContain('当前详情');
   });
+
+  it('surfaces approve and reject actions inside the approval detail panel', () => {
+    const app = read('App.tsx');
+    const approvalDetailView = app.slice(
+      app.indexOf('const ApprovalDetailPanelView'),
+      app.indexOf('const AuditLogDetailPanelView'),
+    );
+
+    expect(approvalDetailView).toContain('ApprovalDetailOperationPanel');
+    expect(approvalDetailView).toContain('审批操作');
+    expect(approvalDetailView).toContain('approval?: JavaApprovalTaskDto');
+    expect(approvalDetailView).toContain('approvalBusyId: string | null');
+    expect(approvalDetailView).toContain('javaEnabled: boolean');
+    expect(approvalDetailView).toContain('onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void');
+    expect(approvalDetailView).toContain('onReviewApproval(approval, false)');
+    expect(approvalDetailView).toContain('onReviewApproval(approval, true)');
+    expect(approvalDetailView).toContain('该审批已处理');
+  });
 });
