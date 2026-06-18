@@ -1,4 +1,5 @@
 import type { BuyerAdminModule } from './adminNavigation';
+import { approvalTypeLabel } from './approvalUi';
 import type { BuyerNextAction } from './buyerWorkflow';
 import type { BuyerWorkspace, SupplierRelation } from './procurementModel';
 
@@ -26,6 +27,27 @@ export interface SupplierRelationAction {
   detail: string;
   tone: 'slate' | 'blue' | 'amber' | 'emerald' | 'red';
   riskLabel: string;
+}
+
+export interface ApprovalQueueRow {
+  id: string;
+  title: string;
+  typeLabel: string;
+  status: string;
+  bizType?: string;
+  facts: BuyerModuleFact[];
+  canReview: boolean;
+}
+
+export interface SupplierRelationRow {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  status: string;
+  level: string;
+  categoryLabel: string;
+  facts: BuyerModuleFact[];
+  action: SupplierRelationAction;
 }
 
 export interface MaterialCatalogRow {
@@ -135,6 +157,20 @@ export const buildApprovalCardFacts = (
   { label: '已等待', value: elapsedLabel(approval.createdAt, nowIso) },
 ].filter((fact): fact is BuyerModuleFact => Boolean(fact));
 
+export const buildApprovalQueueRows = (
+  approvals: ApprovalCardSource[],
+  nowIso = new Date().toISOString(),
+): ApprovalQueueRow[] =>
+  approvals.map((approval) => ({
+    id: approval.id ?? `${approval.bizType}:${approval.bizId}`,
+    title: approval.summaryTitle ?? approval.bizId ?? '待审批事项',
+    typeLabel: approvalTypeLabel(approval.bizType ?? ''),
+    status: approval.status ?? '待审批',
+    bizType: approval.bizType,
+    facts: buildApprovalCardFacts(approval, nowIso),
+    canReview: approval.status === undefined || approval.status === '待审批',
+  }));
+
 export const buildWorkspaceApprovalQueue = (workspace: BuyerWorkspace): ApprovalCardSource[] => {
   const demandApprovals = workspace.demands
     .filter((demand) => demand.status === '审批中')
@@ -222,6 +258,26 @@ export const describeSupplierRelationAction = (relation: SupplierRelation): Supp
     riskLabel: supplierRiskLabel(relation.performanceScore),
   };
 };
+
+export const buildSupplierRelationRows = (workspace: BuyerWorkspace): SupplierRelationRow[] =>
+  workspace.privateSupplierRelations.map((relation) => {
+    const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
+    return {
+      id: relation.id,
+      supplierId: relation.supplierId,
+      supplierName: supplier?.name ?? relation.supplierId,
+      status: relation.status,
+      level: relation.level,
+      categoryLabel: relation.categories.join(' / '),
+      facts: [
+        { label: '授权品类', value: `${relation.categories.length} 类` },
+        { label: '绩效评分', value: `${relation.performanceScore} 分` },
+        { label: '企业认证', value: supplier?.verified ? '已认证' : '待认证' },
+        { label: '所属行业', value: supplier?.industry ?? '未维护' },
+      ],
+      action: describeSupplierRelationAction(relation),
+    };
+  });
 
 export const buildMaterialCatalogRows = (workspace: BuyerWorkspace): MaterialCatalogRow[] =>
   workspace.materials.map((material) => {

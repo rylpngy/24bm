@@ -11,8 +11,9 @@ describe('buyer supplier admission UI', () => {
 
     expect(apiClient).toContain('submitBuyerSupplierAdmission');
     expect(app).toContain('submitSupplierAdmission');
+    expect(app).toContain('buildSupplierRelationRows');
     expect(app).toContain('supplierAdmissionBusyId');
-    expect(app).toContain(`relation.status === '待准入'`);
+    expect(app).toContain(`relationRow.status === '待准入'`);
     expect(app).toContain('准入审批中');
     expect(app).toContain('提交准入');
     expect(app).toContain('供应商准入已提交');

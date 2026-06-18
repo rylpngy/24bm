@@ -4,9 +4,11 @@ import { buildProcurementMvpModel, getBuyerWorkspace } from './procurementModel'
 import {
   buildAuditLogRows,
   buildApprovalCardFacts,
+  buildApprovalQueueRows,
   buildDemandListRows,
   buildMaterialCatalogRows,
   buildRfqListRows,
+  buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
   buildBuyerModuleFacts,
   describeSupplierRelationAction,
@@ -77,6 +79,45 @@ describe('buyer admin UI helpers', () => {
     ]);
   });
 
+  it('summarizes approval queue rows with type, facts, and available decisions', () => {
+    expect(buildApprovalQueueRows(buildWorkspaceApprovalQueue(workspace), '2026-06-18T08:00:00.000Z')
+      .slice(0, 2)
+      .map((row) => ({
+        id: row.id,
+        title: row.title,
+        typeLabel: row.typeLabel,
+        facts: row.facts,
+        canReview: row.canReview,
+      }))).toEqual([
+      {
+        id: 'approval-demand-dem-acme-2',
+        title: '集团办公耗材季度补充',
+        typeLabel: '需求审批',
+        facts: [
+          { label: '业务状态', value: '审批中' },
+          { label: '优先级', value: 'P8' },
+          { label: '提交人', value: '李后勤' },
+          { label: '金额', value: '¥48,000' },
+          { label: '已等待', value: '7 小时' },
+        ],
+        canReview: true,
+      },
+      {
+        id: 'approval-demand-dem-acme-3',
+        title: '区域仓储配送服务',
+        typeLabel: '需求审批',
+        facts: [
+          { label: '业务状态', value: '审批中' },
+          { label: '优先级', value: 'P7' },
+          { label: '提交人', value: '赵运营' },
+          { label: '金额', value: '¥90,000' },
+          { label: '已等待', value: '6 小时' },
+        ],
+        canReview: true,
+      },
+    ]);
+  });
+
   it('builds a fallback approval queue from buyer workspace data', () => {
     expect(buildWorkspaceApprovalQueue(workspace).map((approval) => ({
       id: approval.id,
@@ -128,6 +169,61 @@ describe('buyer admin UI helpers', () => {
       tone: 'emerald',
       riskLabel: '绩效优秀',
     });
+  });
+
+  it('summarizes supplier relation rows with private status and platform profile context', () => {
+    expect(buildSupplierRelationRows(workspace).map((row) => ({
+      id: row.id,
+      supplierName: row.supplierName,
+      status: row.status,
+      level: row.level,
+      categoryLabel: row.categoryLabel,
+      facts: row.facts,
+      actionTitle: row.action.title,
+    }))).toEqual([
+      {
+        id: 'rel-acme-orbit',
+        supplierName: '奥博智能设备',
+        status: '已准入',
+        level: 'A',
+        categoryLabel: '智能终端 / 会议设备',
+        facts: [
+          { label: '授权品类', value: '2 类' },
+          { label: '绩效评分', value: '94 分' },
+          { label: '企业认证', value: '已认证' },
+          { label: '所属行业', value: '智能硬件' },
+        ],
+        actionTitle: '可参与询价',
+      },
+      {
+        id: 'rel-acme-lumen',
+        supplierName: '流明办公科技',
+        status: '已准入',
+        level: 'B',
+        categoryLabel: '办公设备 / 耗材',
+        facts: [
+          { label: '授权品类', value: '2 类' },
+          { label: '绩效评分', value: '88 分' },
+          { label: '企业认证', value: '已认证' },
+          { label: '所属行业', value: '办公设备' },
+        ],
+        actionTitle: '可参与询价',
+      },
+      {
+        id: 'rel-acme-harbor',
+        supplierName: '海港物流服务',
+        status: '待准入',
+        level: 'C',
+        categoryLabel: '物流服务',
+        facts: [
+          { label: '授权品类', value: '1 类' },
+          { label: '绩效评分', value: '76 分' },
+          { label: '企业认证', value: '待认证' },
+          { label: '所属行业', value: '物流服务' },
+        ],
+        actionTitle: '待提交准入',
+      },
+    ]);
   });
 
   it('summarizes material catalog usage for buyer list pages', () => {

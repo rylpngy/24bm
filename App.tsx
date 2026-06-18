@@ -30,12 +30,13 @@ import { approvalResultMessage, approvalTypeLabel } from './data/approvalUi';
 import {
   buildAuditLogRows,
   buildApprovalCardFacts,
+  buildApprovalQueueRows,
   buildBuyerModuleFacts,
   buildDemandListRows,
   buildMaterialCatalogRows,
   buildRfqListRows,
+  buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
-  describeSupplierRelationAction,
   type BuyerModuleFact,
   type SupplierRelationAction,
 } from './data/buyerAdminUi';
@@ -1075,6 +1076,8 @@ const BuyerWorkspaceView: React.FC<{
   const linkedDemandIds = new Set(workspace.rfqs.flatMap((rfq) => rfq.demandIds));
   const moduleFacts = buildBuyerModuleFacts(activeModule, workspace, sortedPendingApprovals);
   const displayPendingApprovals = javaEnabled ? sortedPendingApprovals : buildWorkspaceApprovalQueue(workspace);
+  const approvalQueueRows = buildApprovalQueueRows(displayPendingApprovals);
+  const supplierRelationRows = buildSupplierRelationRows(workspace);
 
   return (
     <>
@@ -1122,28 +1125,26 @@ const BuyerWorkspaceView: React.FC<{
     {activeModule === 'approvals' && (
       <div className="grid gap-6 xl:grid-cols-[1fr_0.85fr]">
         <Panel title="审批待办" icon={ClipboardCheck}>
-          {displayPendingApprovals.length > 0 ? (
+          {approvalQueueRows.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
-              {displayPendingApprovals.map((approval) => {
-                const facts = buildApprovalCardFacts(approval);
+              {approvalQueueRows.map((approvalRow) => {
+                const approval = displayPendingApprovals.find((item) => item.id === approvalRow.id);
                 return (
-                  <div key={approval.id} className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+                  <div key={approvalRow.id} className="rounded-lg border border-amber-100 bg-amber-50 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-slate-950">
-                          {approval.summaryTitle || approval.bizId}
-                        </p>
-                        <p className="mt-1 text-xs font-bold text-amber-700">{approvalTypeLabel(approval.bizType)}</p>
+                        <p className="truncate text-sm font-black text-slate-950">{approvalRow.title}</p>
+                        <p className="mt-1 text-xs font-bold text-amber-700">{approvalRow.typeLabel}</p>
                       </div>
-                      <StatusPill label={approval.status} />
+                      <StatusPill label={approvalRow.status} />
                     </div>
-                    <InlineFactGrid facts={facts} />
-                    {javaEnabled ? (
+                    <InlineFactGrid facts={approvalRow.facts} />
+                    {javaEnabled && approval && approvalRow.canReview ? (
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => onReviewApproval(approval as JavaApprovalTaskDto, false)}
-                        disabled={approvalBusyId === approval.id}
+                        disabled={approvalBusyId === approvalRow.id}
                         className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white text-xs font-black text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         驳回
@@ -1151,10 +1152,10 @@ const BuyerWorkspaceView: React.FC<{
                       <button
                         type="button"
                         onClick={() => onReviewApproval(approval as JavaApprovalTaskDto, true)}
-                        disabled={approvalBusyId === approval.id}
+                        disabled={approvalBusyId === approvalRow.id}
                         className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                       >
-                        {approvalBusyId === approval.id ? '处理中' : '通过'}
+                        {approvalBusyId === approvalRow.id ? '处理中' : '通过'}
                       </button>
                     </div>
                     ) : (
@@ -1423,46 +1424,40 @@ const BuyerWorkspaceView: React.FC<{
     <div className={`grid gap-6 ${activeModule === 'suppliers' ? '' : 'lg:grid-cols-2'}`}>
       {activeModule === 'suppliers' && (
       <Panel title="私域供应商关系" icon={Users}>
-        {workspace.privateSupplierRelations.length === 0 ? (
+        {supplierRelationRows.length === 0 ? (
           <EmptyState title="暂无私域供应商" desc="平台公共供应商通过准入后，会形成采购方自己的合作关系和绩效记录。" />
         ) : (
         <div className="space-y-3">
-          {workspace.privateSupplierRelations.map((relation) => {
-            const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
-            const relationAction = describeSupplierRelationAction(relation);
+          {supplierRelationRows.map((relationRow) => {
+            const relation = workspace.privateSupplierRelations.find((item) => item.id === relationRow.id);
             return (
-              <div key={relation.id} className="rounded-lg border border-slate-200 bg-white p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-black">{supplier?.name ?? relation.supplierId}</p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">{relation.categories.join(' / ')}</p>
+              <div key={relationRow.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-black text-slate-900">{relationRow.supplierName}</p>
+                    <p className="mt-1 truncate text-xs font-bold text-slate-400">{relationRow.categoryLabel}</p>
                   </div>
-                  <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">{relation.level}</span>
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-3 text-sm">
-                  <StatusPill label={relation.status} />
-                  <span className="rounded-lg bg-slate-50 px-2 py-1 font-mono text-xs font-black text-slate-700">
-                    {relation.performanceScore} 分
+                  <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
+                    {relationRow.level}
                   </span>
                 </div>
-                <InlineFactGrid
-                  facts={[
-                    { label: '授权品类', value: `${relation.categories.length} 类` },
-                    { label: '合作等级', value: relation.level },
-                    { label: '企业认证', value: supplier?.verified ? '已认证' : '待认证' },
-                    { label: '所属行业', value: supplier?.industry ?? '未维护' },
-                  ]}
-                />
-                <SupplierRelationNotice action={relationAction} />
-                {javaEnabled && relation.status === '待准入' && (
+                <div className="mt-3 flex items-center justify-between gap-3 text-sm">
+                  <StatusPill label={relationRow.status} />
+                  <span className="rounded-lg bg-slate-50 px-2 py-1 font-mono text-xs font-black text-slate-700">
+                    {relationRow.action.riskLabel}
+                  </span>
+                </div>
+                <InlineFactGrid facts={relationRow.facts} />
+                <SupplierRelationNotice action={relationRow.action} />
+                {javaEnabled && relation && relationRow.status === '待准入' && (
                   <button
                     type="button"
-                    onClick={() => onSubmitSupplierAdmission(relation.id)}
-                    disabled={supplierAdmissionBusyId === relation.id}
+                    onClick={() => onSubmitSupplierAdmission(relationRow.id)}
+                    disabled={supplierAdmissionBusyId === relationRow.id}
                     className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                   >
                     <Send size={14} />
-                    {supplierAdmissionBusyId === relation.id ? '提交中' : '提交准入'}
+                    {supplierAdmissionBusyId === relationRow.id ? '提交中' : '提交准入'}
                   </button>
                 )}
               </div>
