@@ -427,6 +427,11 @@ export interface InvoicePaymentTimelineRow {
   value: string;
 }
 
+export interface InvoicePaymentCheckRow {
+  label: string;
+  value: string;
+}
+
 export interface InvoicePaymentDetailPanel {
   id: string;
   supplierName: string;
@@ -436,6 +441,7 @@ export interface InvoicePaymentDetailPanel {
   nextActionTitle: string;
   facts: BuyerModuleFact[];
   orderFacts: BuyerModuleFact[];
+  paymentCheckRows: InvoicePaymentCheckRow[];
   relatedRows: InvoicePaymentRelatedRow[];
   paymentTimelineRows: InvoicePaymentTimelineRow[];
 }
@@ -1445,6 +1451,12 @@ export const buildInvoicePaymentDetailPanel = (
       { label: '订单金额', value: compactCurrency(order?.amount ?? 0) },
       { label: '预计到货', value: order?.expectedReceiptDate ?? '未维护' },
       { label: '关联询价', value: rfq?.title ?? order?.rfqId ?? '未找到' },
+    ],
+    paymentCheckRows: [
+      { label: '订单状态', value: order?.status ?? '未找到' },
+      { label: '物流状态', value: delivery?.status ?? '待发货' },
+      { label: '付款状态', value: invoice.paymentStatus },
+      { label: '下一步', value: nextAction.title },
     ],
     relatedRows: [
       delivery

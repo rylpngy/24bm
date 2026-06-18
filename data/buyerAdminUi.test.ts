@@ -884,6 +884,12 @@ describe('buyer admin UI helpers', () => {
         { label: '预计到货', value: '2026-07-10' },
         { label: '关联询价', value: '会议室升级设备询价' },
       ],
+      paymentCheckRows: [
+        { label: '订单状态', value: '待收货' },
+        { label: '物流状态', value: '运输中' },
+        { label: '付款状态', value: '待付款' },
+        { label: '下一步', value: '待登记付款' },
+      ],
       relatedRows: [
         { id: 'del-acme-1', title: '物流信息', detail: '顺丰速运 SF88420115 · 运输中' },
         { id: 'rfq-acme-1', title: '询价项目', detail: '会议室升级设备询价 · 已定标' },
