@@ -3725,54 +3725,76 @@ const InvoicePaymentOperationPanel: React.FC<{
   busy: boolean;
   javaEnabled: boolean;
   onRegisterPayment: (invoiceId: string) => void;
-}> = ({ detail, invoice, busy, javaEnabled, onRegisterPayment }) => (
-  <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-    <div className="mb-3 flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <p className="text-xs font-black text-blue-700">付款操作</p>
-        <p className="mt-1 text-sm font-black text-slate-950">{detail.nextActionTitle}</p>
+}> = ({ detail, invoice, busy, javaEnabled, onRegisterPayment }) => {
+  const supplierName = detail.facts.find((fact) => fact.label === '供应商')?.value ?? detail.supplierName;
+  const orderLabel = detail.facts.find((fact) => fact.label === '关联订单')?.value ?? invoice?.orderId ?? '未找到';
+  const invoiceAmount = detail.facts.find((fact) => fact.label === '发票金额')?.value ?? detail.amountLabel;
+  const orderAmount = detail.orderFacts.find((fact) => fact.label === '订单金额')?.value ?? '未找到';
+  const paymentStatus = detail.facts.find((fact) => fact.label === '付款状态')?.value ?? detail.status;
+  const renderPaymentSummary = () => (
+    <div className="mb-3 rounded-lg border border-blue-100 bg-white p-3">
+      <p className="text-xs font-black text-slate-500">付款摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        <MiniFact label="供应商" value={supplierName} />
+        <MiniFact label="关联订单" value={orderLabel} />
+        <MiniFact label="发票金额" value={invoiceAmount} />
+        <MiniFact label="订单金额" value={orderAmount} />
+        <MiniFact label="付款状态" value={paymentStatus} />
       </div>
-      <StatusPill label={detail.status} />
     </div>
+  );
 
-    {!javaEnabled && (
-      <ProcessStateNotice
-        variant="waiting"
-        title="当前为 mock 数据源"
-        desc="切换到 Java 数据源后，可在此处登记付款并写入真实履约状态。"
-      />
-    )}
+  return (
+    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-blue-700">付款操作</p>
+          <p className="mt-1 text-sm font-black text-slate-950">{detail.nextActionTitle}</p>
+        </div>
+        <StatusPill label={detail.status} />
+      </div>
 
-    {javaEnabled && !invoice && (
-      <ProcessStateNotice
-        variant="blocked"
-        title="未找到发票记录"
-        desc="请刷新数据后重新选择发票，再执行付款登记。"
-      />
-    )}
+      {renderPaymentSummary()}
 
-    {javaEnabled && invoice && detail.canRegisterPayment && (
-      <PrimaryActionButton
-        onClick={() => onRegisterPayment(detail.id)}
-        disabled={busy}
-        busy={busy}
-        icon={CreditCard}
-        pendingLabel="登记中"
-        fullWidth
-      >
-        登记付款
-      </PrimaryActionButton>
-    )}
+      {!javaEnabled && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="当前为 mock 数据源"
+          desc="切换到 Java 数据源后，可在此处登记付款并写入真实履约状态。"
+        />
+      )}
 
-    {javaEnabled && invoice && !detail.canRegisterPayment && invoice.paymentStatus === '已付款' && (
-      <ProcessStateNotice
-        variant="handled"
-        title="付款已登记"
-        desc="该发票已完成付款登记，可在关联业务中查看订单和物流留痕。"
-      />
-    )}
-  </section>
-);
+      {javaEnabled && !invoice && (
+        <ProcessStateNotice
+          variant="blocked"
+          title="未找到发票记录"
+          desc="请刷新数据后重新选择发票，再执行付款登记。"
+        />
+      )}
+
+      {javaEnabled && invoice && detail.canRegisterPayment && (
+        <PrimaryActionButton
+          onClick={() => onRegisterPayment(detail.id)}
+          disabled={busy}
+          busy={busy}
+          icon={CreditCard}
+          pendingLabel="登记中"
+          fullWidth
+        >
+          登记付款
+        </PrimaryActionButton>
+      )}
+
+      {javaEnabled && invoice && !detail.canRegisterPayment && invoice.paymentStatus === '已付款' && (
+        <ProcessStateNotice
+          variant="handled"
+          title="付款已登记"
+          desc="该发票已完成付款登记，可在关联业务中查看订单和物流留痕。"
+        />
+      )}
+    </section>
+  );
+};
 
 const SupplierDetailPanelView: React.FC<{
   detail?: SupplierDetailPanel;
