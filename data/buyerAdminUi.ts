@@ -1,4 +1,5 @@
 import type { BuyerAdminModule } from './adminNavigation';
+import type { BuyerNextAction } from './buyerWorkflow';
 import type { BuyerWorkspace, SupplierRelation } from './procurementModel';
 
 export interface BuyerModuleFact {
@@ -45,6 +46,23 @@ export interface RfqListRow {
   status: string;
 }
 
+export interface DemandListRow {
+  id: string;
+  title: string;
+  status: string;
+  facts: BuyerModuleFact[];
+  materialSummary: string;
+  nextAction: BuyerNextAction;
+}
+
+export interface AuditLogRow {
+  id: string;
+  title: string;
+  targetLabel: string;
+  actorName: string;
+  timeLabel: string;
+}
+
 const compactCurrency = (value: number) =>
   new Intl.NumberFormat('zh-CN', {
     style: 'currency',
@@ -56,6 +74,42 @@ const countBy = <T>(records: T[], predicate: (record: T) => boolean) =>
   records.filter(predicate).length;
 
 const uniqueCount = (values: string[]) => new Set(values).size;
+
+const auditActionLabels: Record<string, string> = {
+  'purchase_demand.created': '需求创建',
+  'purchase_demand.approved': '需求通过',
+  'purchase_demand.rejected': '需求驳回',
+  'buyer_supplier_admission.submitted': '供应商准入提交',
+  'buyer_supplier_admission.approved': '供应商准入通过',
+  'buyer_supplier_admission.rejected': '供应商准入驳回',
+  'rfq_award.submitted': '定标提交',
+  'rfq_award.approved': '定标通过',
+  'rfq_award.rejected': '定标驳回',
+  'purchase_order.created': '订单创建',
+  'purchase_order.confirmed': '订单确认',
+  'purchase_order.shipped': '供应商发货',
+  'purchase_order.received': '采购收货',
+  'invoice.created': '发票登记',
+  'invoice.paid': '付款完成',
+  'invoice.partial_paid': '部分付款',
+};
+
+const auditTargetLabels: Record<string, string> = {
+  purchase_demand: '需求',
+  buyer_supplier_relation: '供应商关系',
+  rfq_award: '定标',
+  purchase_order: '订单',
+  invoice: '发票',
+};
+
+const compactDateTime = (value: string) =>
+  new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(value));
 
 const elapsedLabel = (fromIso: string, nowIso: string) => {
   const elapsedMs = new Date(nowIso).getTime() - new Date(fromIso).getTime();
@@ -201,6 +255,88 @@ export const buildRfqListRows = (workspace: BuyerWorkspace): RfqListRow[] =>
       status: rfq.status,
     };
   });
+
+const describeDemandNextAction = (
+  demand: BuyerWorkspace['demands'][number],
+  linkedDemandIds: Set<string>,
+): BuyerNextAction => {
+  if (demand.status === '草稿') {
+    return {
+      title: '待提交审批',
+      detail: '需求提交审批通过后，才能创建询价项目。',
+      tone: 'blue',
+    };
+  }
+
+  if (demand.status === '审批中') {
+    return {
+      title: '等待需求审批',
+      detail: '审批通过后可邀请已准入供应商创建询价。',
+      tone: 'amber',
+    };
+  }
+
+  if (demand.status === '已通过' && linkedDemandIds.has(demand.id)) {
+    return {
+      title: '已关联询价项目',
+      detail: '需求已经进入询价流程，可在询价项目或报价对比页继续跟进。',
+      tone: 'emerald',
+    };
+  }
+
+  if (demand.status === '已通过') {
+    return {
+      title: '可创建询价',
+      detail: '选择已准入供应商后，可将需求转为询价项目。',
+      tone: 'blue',
+    };
+  }
+
+  return {
+    title: '需求未通过',
+    detail: '需求审批未通过，需调整后重新提交。',
+    tone: 'slate',
+  };
+};
+
+export const buildDemandListRows = (workspace: BuyerWorkspace): DemandListRow[] => {
+  const linkedDemandIds = new Set(workspace.rfqs.flatMap((rfq) => rfq.demandIds));
+  return workspace.demands.map((demand) => {
+    const materialSummary = demand.lineItems.map((item) => {
+      const material = workspace.materials.find((record) => record.id === item.materialId);
+      return `${material?.name ?? item.materialId} x ${item.quantity} ${material?.unit ?? ''}`.trim();
+    }).join(' / ');
+    return {
+      id: demand.id,
+      title: demand.title,
+      status: demand.status,
+      facts: [
+        { label: '申请部门', value: demand.department },
+        { label: '申请人', value: demand.requester },
+        { label: '预算', value: compactCurrency(demand.budget) },
+        { label: '物料行', value: `${demand.lineItems.length} 行` },
+      ],
+      materialSummary,
+      nextAction: describeDemandNextAction(demand, linkedDemandIds),
+    };
+  });
+};
+
+export const buildAuditLogRows = (workspace: BuyerWorkspace): AuditLogRow[] =>
+  [...workspace.auditLogs]
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 6)
+    .map((log) => {
+      const actor = workspace.users.find((user) => user.id === log.actorId);
+      const targetLabel = auditTargetLabels[log.targetType] ?? log.targetType;
+      return {
+        id: log.id,
+        title: auditActionLabels[log.action] ?? log.action,
+        targetLabel: `${targetLabel} · ${log.targetId}`,
+        actorName: actor?.name ?? log.actorId,
+        timeLabel: compactDateTime(log.createdAt),
+      };
+    });
 
 export const buildBuyerModuleFacts = (
   module: BuyerAdminModule,

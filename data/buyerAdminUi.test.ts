@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { BuyerAdminModule } from './adminNavigation';
 import { buildProcurementMvpModel, getBuyerWorkspace } from './procurementModel';
 import {
+  buildAuditLogRows,
   buildApprovalCardFacts,
+  buildDemandListRows,
   buildMaterialCatalogRows,
   buildRfqListRows,
   buildWorkspaceApprovalQueue,
@@ -195,6 +197,66 @@ describe('buyer admin UI helpers', () => {
         supplierLabel: '1 家已邀请',
         quoteLabel: '0/1 已报价',
         status: '报价中',
+      },
+    ]);
+  });
+
+  it('summarizes demand list rows with catalog and RFQ readiness context', () => {
+    expect(buildDemandListRows(workspace).slice(0, 2).map((row) => ({
+      id: row.id,
+      title: row.title,
+      facts: row.facts,
+      materialSummary: row.materialSummary,
+      nextActionTitle: row.nextAction.title,
+    }))).toEqual([
+      {
+        id: 'dem-acme-1',
+        title: '华东总部会议室升级',
+        facts: [
+          { label: '申请部门', value: '行政部' },
+          { label: '申请人', value: '许行政' },
+          { label: '预算', value: '¥320,000' },
+          { label: '物料行', value: '1 行' },
+        ],
+        materialSummary: '视频会议一体机 x 12 台',
+        nextActionTitle: '已关联询价项目',
+      },
+      {
+        id: 'dem-acme-2',
+        title: '集团办公耗材季度补充',
+        facts: [
+          { label: '申请部门', value: '综合管理部' },
+          { label: '申请人', value: '李后勤' },
+          { label: '预算', value: '¥48,000' },
+          { label: '物料行', value: '1 行' },
+        ],
+        materialSummary: 'A4 复印纸 x 260 箱',
+        nextActionTitle: '等待需求审批',
+      },
+    ]);
+  });
+
+  it('formats audit log rows with action, target, actor, and time', () => {
+    expect(buildAuditLogRows(workspace).map((row) => ({
+      id: row.id,
+      title: row.title,
+      targetLabel: row.targetLabel,
+      actorName: row.actorName,
+      timeLabel: row.timeLabel,
+    }))).toEqual([
+      {
+        id: 'audit-acme-2',
+        title: '供应商发货',
+        targetLabel: '订单 · po-acme-1',
+        actorName: 'u-orbit-sales',
+        timeLabel: '06/15 14:35',
+      },
+      {
+        id: 'audit-acme-1',
+        title: '订单创建',
+        targetLabel: '订单 · po-acme-1',
+        actorName: '陈采购',
+        timeLabel: '06/15 10:20',
       },
     ]);
   });

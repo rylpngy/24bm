@@ -28,8 +28,10 @@ import {
 } from 'lucide-react';
 import { approvalResultMessage, approvalTypeLabel } from './data/approvalUi';
 import {
+  buildAuditLogRows,
   buildApprovalCardFacts,
   buildBuyerModuleFacts,
+  buildDemandListRows,
   buildMaterialCatalogRows,
   buildRfqListRows,
   buildWorkspaceApprovalQueue,
@@ -110,33 +112,6 @@ const currency = (value: number) =>
     currency: 'CNY',
     maximumFractionDigits: 0,
   }).format(value);
-
-const auditActionLabels: Record<string, string> = {
-  'purchase_demand.created': '需求创建',
-  'purchase_demand.approved': '需求通过',
-  'purchase_demand.rejected': '需求驳回',
-  'buyer_supplier_admission.submitted': '供应商准入提交',
-  'buyer_supplier_admission.approved': '供应商准入通过',
-  'buyer_supplier_admission.rejected': '供应商准入驳回',
-  'rfq_award.submitted': '定标提交',
-  'rfq_award.approved': '定标通过',
-  'rfq_award.rejected': '定标驳回',
-  'purchase_order.created': '订单创建',
-  'purchase_order.confirmed': '订单确认',
-  'purchase_order.shipped': '供应商发货',
-  'purchase_order.received': '采购收货',
-  'invoice.created': '发票登记',
-  'invoice.paid': '付款完成',
-  'invoice.partial_paid': '部分付款',
-};
-
-const auditTargetLabels: Record<string, string> = {
-  purchase_demand: '需求',
-  buyer_supplier_relation: '供应商关系',
-  rfq_award: '定标',
-  purchase_order: '订单',
-  invoice: '发票',
-};
 
 const formatAuditTime = (value: string) =>
   new Intl.DateTimeFormat('zh-CN', {
@@ -1301,35 +1276,20 @@ const BuyerWorkspaceView: React.FC<{
           <EmptyState title="暂无采购需求" desc="创建需求后可提交审批，审批通过后再转为询价项目。" />
         ) : (
         <div className="space-y-3">
-          {workspace.demands.map((demand) => (
-            <div key={demand.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          {buildDemandListRows(workspace).map((demandRow) => {
+            const demand = workspace.demands.find((item) => item.id === demandRow.id);
+            if (!demand) return null;
+            return (
+            <div key={demandRow.id} className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-black text-slate-900">{demand.title}</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {demand.department} · {demand.requester}
-                  </p>
+                <div className="min-w-0">
+                  <p className="truncate font-black text-slate-900">{demandRow.title}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-400">{demandRow.materialSummary}</p>
                 </div>
-                <StatusPill label={demand.status} />
+                <StatusPill label={demandRow.status} />
               </div>
-              <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                <span className="text-xs font-bold text-slate-500">预算</span>
-                <span className="font-mono font-black text-slate-900">{currency(demand.budget)}</span>
-              </div>
-              <div className="mt-3 rounded-lg bg-slate-50 p-3">
-                <p className="text-xs font-black text-slate-500">物料明细</p>
-                <div className="mt-2 space-y-1">
-                  {demand.lineItems.map((item) => {
-                    const material = workspace.materials.find((record) => record.id === item.materialId);
-                    return (
-                      <div key={`${demand.id}:${item.materialId}`} className="flex items-center justify-between text-xs font-bold text-slate-600">
-                        <span>{material?.name ?? item.materialId}</span>
-                        <span className="font-mono">{item.quantity} {material?.unit ?? ''}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <InlineFactGrid facts={demandRow.facts} />
+              <NextActionNotice action={demandRow.nextAction} />
               {javaEnabled && demand.status === '草稿' && (
                 <button
                   type="button"
@@ -1340,11 +1300,6 @@ const BuyerWorkspaceView: React.FC<{
                   <ClipboardCheck size={14} />
                   {demandSubmitBusyId === demand.id ? '提交中' : '提交审批'}
                 </button>
-              )}
-              {demand.status === '已通过' && linkedDemandIds.has(demand.id) && (
-                <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-xs font-black text-emerald-700">
-                  已关联询价项目
-                </div>
               )}
               {javaEnabled
                 && demand.status === '已通过'
@@ -1359,7 +1314,8 @@ const BuyerWorkspaceView: React.FC<{
                 />
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
         )}
       </Panel>
@@ -1663,9 +1619,7 @@ const BuyerWorkspaceView: React.FC<{
 };
 
 const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) => {
-  const logs = [...workspace.auditLogs]
-    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-    .slice(0, 6);
+  const logs = buildAuditLogRows(workspace);
 
   if (logs.length === 0) {
     return (
@@ -1677,28 +1631,25 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) =>
 
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {logs.map((log) => {
-        const actor = workspace.users.find((user) => user.id === log.actorId);
-        const targetLabel = auditTargetLabels[log.targetType] ?? log.targetType;
-        return (
-          <div key={log.id} className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-slate-950">
-                  {auditActionLabels[log.action] ?? log.action}
-                </p>
-                <p className="mt-1 truncate text-xs font-bold text-slate-500">
-                  {targetLabel} · {log.targetId}
-                </p>
-              </div>
-              <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
-                {formatAuditTime(log.createdAt)}
-              </span>
+      {logs.map((log) => (
+        <div key={log.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-slate-950">{log.title}</p>
+              <p className="mt-1 truncate text-xs font-bold text-slate-500">{log.targetLabel}</p>
             </div>
-            <p className="mt-3 truncate text-xs font-bold text-blue-700">{actor?.name ?? log.actorId}</p>
+            <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
+              {log.timeLabel}
+            </span>
           </div>
-        );
-      })}
+          <InlineFactGrid
+            facts={[
+              { label: '操作人', value: log.actorName },
+              { label: '审计编号', value: log.id },
+            ]}
+          />
+        </div>
+      ))}
     </div>
   );
 };
