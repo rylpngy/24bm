@@ -5163,8 +5163,20 @@ const SupplierWorkspaceView: React.FC<{
   onConfirmOrder,
   onCreateDelivery,
   onCreateInvoice,
-}) => (
-  <>
+}) => {
+  const [declinedOpportunityIds, setDeclinedOpportunityIds] = useState<string[]>([]);
+  const [selectedRequirementRfqId, setSelectedRequirementRfqId] = useState<string | null>(null);
+  const onDeclineOpportunity = (rfqId: string) => {
+    setDeclinedOpportunityIds((current) => (
+      current.includes(rfqId) ? current : [...current, rfqId]
+    ));
+  };
+  const onViewRequirement = (rfqId: string) => {
+    setSelectedRequirementRfqId((current) => (current === rfqId ? null : rfqId));
+  };
+
+  return (
+    <>
     <HeroBand
       eyebrow="供应商协同中心"
       title="一次注册，多采购方协作"
@@ -5199,6 +5211,8 @@ const SupplierWorkspaceView: React.FC<{
             const myQuotes = rfq.quotes.filter((quote) => quote.supplierId === workspace.supplier.id);
             const hasMyQuote = myQuotes.length > 0;
             const quoteBusy = supplierActionBusyId === `quote:${rfq.id}`;
+            const declined = declinedOpportunityIds.includes(rfq.id);
+            const requirementVisible = selectedRequirementRfqId === rfq.id;
             return (
               <div key={rfq.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -5208,8 +5222,18 @@ const SupplierWorkspaceView: React.FC<{
                       {rfq.id} · 截止 {rfq.deadline}
                     </p>
                   </div>
-                  <StatusPill label={rfq.status} />
+                  <StatusPill label={declined ? '已拒绝' : rfq.status} />
                 </div>
+                {requirementVisible && (
+                  <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
+                    <p className="text-xs font-black text-blue-800">采购要求</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                      <MiniFact label="报价截止" value={rfq.deadline} />
+                      <MiniFact label="邀请供应商" value={`${rfq.invitedSupplierIds.length} 家`} />
+                      <MiniFact label="需求编号" value={rfq.demandIds.join('、') || '暂无'} />
+                    </div>
+                  </div>
+                )}
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   {myQuotes.map((quote) => (
                     <div key={quote.id} className="rounded-lg bg-orange-50 p-3">
@@ -5222,10 +5246,27 @@ const SupplierWorkspaceView: React.FC<{
                     <button
                       type="button"
                       onClick={() => onSubmitQuote(rfq.id)}
-                      disabled={quoteBusy}
+                      disabled={declinedOpportunityIds.includes(rfq.id) || quoteBusy}
                       className="inline-flex min-h-24 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                     >
                       {quoteBusy ? '提交中' : '提交报价'}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onViewRequirement(rfq.id)}
+                    className="inline-flex min-h-24 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+                  >
+                    查看要求
+                  </button>
+                  {!hasMyQuote && rfq.status === '报价中' && (
+                    <button
+                      type="button"
+                      onClick={() => onDeclineOpportunity(rfq.id)}
+                      disabled={declined}
+                      className="inline-flex min-h-24 items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                    >
+                      {declined ? '已拒绝' : '拒绝邀请'}
                     </button>
                   )}
                 </div>
@@ -5371,8 +5412,9 @@ const SupplierWorkspaceView: React.FC<{
         )}
       </Panel>
     )}
-  </>
-);
+    </>
+  );
+};
 
 const SupplierOpportunityResponseSummaryPanel: React.FC<{
   opportunities: SupplierWorkspace['opportunities'];
