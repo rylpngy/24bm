@@ -38,11 +38,13 @@ import {
   buildMaterialCatalogRows,
   buildOrderFulfillmentRows,
   buildReceiptInspectionRows,
+  buildRfqDetailPanel,
   buildRfqListRows,
   buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
   type BuyerModuleFact,
   type DemandDetailPanel,
+  type RfqDetailPanel,
   type SupplierRelationAction,
 } from './data/buyerAdminUi';
 import {
@@ -1066,6 +1068,7 @@ const BuyerWorkspaceView: React.FC<{
   onUpdateApprovalTemplate,
 }) => {
   const [selectedDemandId, setSelectedDemandId] = useState(workspace.demands[0]?.id ?? '');
+  const [selectedRfqId, setSelectedRfqId] = useState(workspace.rfqs[0]?.id ?? '');
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
     if (priorityDelta !== 0) return priorityDelta;
@@ -1093,6 +1096,12 @@ const BuyerWorkspaceView: React.FC<{
     : workspace.demands[0]?.id ?? '';
   const selectedDemandDetail = selectedDemand
     ? buildDemandDetailPanel(workspace, selectedDemand)
+    : undefined;
+  const selectedRfq = workspace.rfqs.some((rfq) => rfq.id === selectedRfqId)
+    ? selectedRfqId
+    : workspace.rfqs[0]?.id ?? '';
+  const selectedRfqDetail = selectedRfq
+    ? buildRfqDetailPanel(workspace, selectedRfq)
     : undefined;
 
   return (
@@ -1272,7 +1281,12 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {(activeModule === 'demands' || activeModule === 'rfqs' || activeModule === 'quotes') && (
-    <div className={`grid gap-6 ${activeModule === 'demands' ? 'xl:grid-cols-[340px_minmax(0,1fr)_420px]' : 'lg:grid-cols-[0.95fr_1.05fr]'}`}>
+    <div className={`grid gap-6 ${
+      activeModule === 'demands'
+        ? 'xl:grid-cols-[340px_minmax(0,1fr)_420px]'
+        : 'xl:grid-cols-[minmax(0,1fr)_420px]'
+    }`}
+    >
       {activeModule === 'demands' && (
       <>
       <Panel title="新建采购需求" icon={FileText}>
@@ -1358,6 +1372,7 @@ const BuyerWorkspaceView: React.FC<{
       )}
 
       {activeModule === 'rfqs' && (
+      <>
         <Panel title="询价项目" icon={Send}>
           {workspace.rfqs.length === 0 ? (
             <EmptyState title="暂无询价项目" desc="需求审批通过后，可从采购需求页选择已准入供应商并创建询价。" />
@@ -1372,11 +1387,15 @@ const BuyerWorkspaceView: React.FC<{
                   <th className="px-4 py-3">响应</th>
                   <th className="px-4 py-3">截止时间</th>
                   <th className="px-4 py-3">状态</th>
+                  <th className="px-4 py-3">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
                 {buildRfqListRows(workspace).map((rfq) => (
-                  <tr key={rfq.id} className="align-top">
+                  <tr
+                    key={rfq.id}
+                    className={`align-top ${selectedRfq === rfq.id ? 'bg-blue-50/50' : ''}`}
+                  >
                     <td className="px-4 py-4">
                       <p className="font-black text-slate-900">{rfq.title}</p>
                       <p className="mt-1 text-xs font-bold text-slate-400">{rfq.id}</p>
@@ -1390,6 +1409,19 @@ const BuyerWorkspaceView: React.FC<{
                     </td>
                     <td className="px-4 py-4 text-slate-600">{rfq.deadlineLabel}</td>
                     <td className="px-4 py-4"><StatusPill label={rfq.status} /></td>
+                    <td className="px-4 py-4">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRfqId(rfq.id)}
+                        className={`inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                          selectedRfq === rfq.id
+                            ? 'border-blue-200 bg-blue-100 text-blue-700'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {selectedRfq === rfq.id ? '当前详情' : '查看详情'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1397,9 +1429,12 @@ const BuyerWorkspaceView: React.FC<{
           </div>
           )}
         </Panel>
+        <RfqDetailPanelView detail={selectedRfqDetail} />
+      </>
       )}
 
       {activeModule === 'quotes' && (
+      <>
       <Panel title="询价比价与定标" icon={BarChart3}>
         {workspace.rfqs.length === 0 ? (
           <EmptyState title="暂无可比价项目" desc="创建询价并收到供应商报价后，可在这里推荐定标并提交审批。" />
@@ -1421,12 +1456,16 @@ const BuyerWorkspaceView: React.FC<{
                 javaEnabled={javaEnabled}
                 onSubmitAwardApproval={onSubmitAwardApproval}
                 onCreateOrderFromAward={onCreateOrderFromAward}
+                selected={selectedRfq === rfq.id}
+                onSelectDetail={() => setSelectedRfqId(rfq.id)}
               />
             );
           })}
         </div>
         )}
       </Panel>
+      <RfqDetailPanelView detail={selectedRfqDetail} />
+      </>
       )}
     </div>
     )}
@@ -1861,6 +1900,134 @@ const DemandDetailPanelView: React.FC<{
 
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
           <MiniFact label="审批状态" value={detail.approvalLabel} />
+          <MiniFact label="下一步" value={detail.nextActionTitle} />
+        </div>
+      </div>
+    )}
+  </Panel>
+);
+
+const RfqDetailPanelView: React.FC<{
+  detail?: RfqDetailPanel;
+}> = ({ detail }) => (
+  <Panel title="询价详情" icon={Send}>
+    {!detail ? (
+      <EmptyState title="暂无询价详情" desc="选择一个询价项目后，可查看关联需求、邀请供应商、报价排行和履约状态。" />
+    ) : (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-base font-black text-slate-950">{detail.title}</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">{detail.id}</p>
+            </div>
+            <StatusPill label={detail.status} />
+          </div>
+          <InlineFactGrid facts={detail.facts} />
+        </div>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">关联需求</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.demandRows.length} 条
+            </span>
+          </div>
+          <div className="space-y-2">
+            {detail.demandRows.map((demand) => (
+              <div key={demand.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-slate-900">{demand.title}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">{demand.budgetLabel}</p>
+                  </div>
+                  <StatusPill label={demand.status} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">邀请供应商</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.supplierRows.length} 家
+            </span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {detail.supplierRows.map((supplier) => (
+              <div key={supplier.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="truncate text-sm font-black text-slate-900">{supplier.name}</p>
+                  <StatusPill label={supplier.status} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">报价排行</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {detail.quoteRows.length} 条
+            </span>
+          </div>
+          {detail.quoteRows.length > 0 ? (
+            <div className="space-y-2">
+              {detail.quoteRows.map((quote) => (
+                <div
+                  key={quote.id}
+                  className={`rounded-lg border p-3 ${
+                    quote.awarded
+                      ? 'border-emerald-200 bg-emerald-50'
+                      : quote.recommended
+                        ? 'border-blue-200 bg-blue-50'
+                        : 'border-slate-200 bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-black text-slate-900">{quote.supplierName}</p>
+                        <span className="rounded-md bg-white/80 px-2 py-0.5 text-[11px] font-black text-slate-500">
+                          {quote.rankLabel}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs font-bold text-slate-500">
+                        {quote.deliveryLabel}交付 · 税率 {quote.taxLabel}
+                      </p>
+                    </div>
+                    <p className="shrink-0 font-mono text-sm font-black text-slate-900">{quote.amountLabel}</p>
+                  </div>
+                  {(quote.recommended || quote.awarded) && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {quote.recommended && (
+                        <span className="rounded-lg bg-blue-100 px-2 py-1 text-[11px] font-black text-blue-700">
+                          推荐报价
+                        </span>
+                      )}
+                      {quote.awarded && (
+                        <span className="rounded-lg bg-emerald-100 px-2 py-1 text-[11px] font-black text-emerald-700">
+                          已定标
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+              暂无供应商报价，等待邀请供应商响应。
+            </p>
+          )}
+        </section>
+
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+          <MiniFact label="推荐结果" value={detail.recommendedSupplierLabel} />
+          <MiniFact label="订单状态" value={detail.orderLabel} />
           <MiniFact label="下一步" value={detail.nextActionTitle} />
         </div>
       </div>
@@ -2517,6 +2684,8 @@ const RfqCard: React.FC<{
   javaEnabled: boolean;
   onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
   onCreateOrderFromAward: (awardId: string) => void;
+  selected: boolean;
+  onSelectDetail: () => void;
 }> = ({
   rfq,
   workspace,
@@ -2526,6 +2695,8 @@ const RfqCard: React.FC<{
   javaEnabled,
   onSubmitAwardApproval,
   onCreateOrderFromAward,
+  selected,
+  onSelectDetail,
 }) => {
   const recommendedQuote = selectRecommendedQuote(rfq);
   const canSubmitAward = javaEnabled && canSubmitAwardApproval(rfq) && Boolean(recommendedQuote);
@@ -2533,7 +2704,10 @@ const RfqCard: React.FC<{
   const nextAction = describeRfqNextAction(rfq, approvedAwardId, workspace.orders);
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className={`rounded-lg border bg-white p-4 transition ${
+      selected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+    }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-black text-slate-900">{rfq.title}</p>
@@ -2543,6 +2717,18 @@ const RfqCard: React.FC<{
         </div>
         <StatusPill label={rfq.status} />
       </div>
+
+      <button
+        type="button"
+        onClick={onSelectDetail}
+        className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+          selected
+            ? 'border-blue-200 bg-blue-50 text-blue-700'
+            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+        }`}
+      >
+        {selected ? '当前详情' : '查看详情'}
+      </button>
 
       <div className="mt-4 space-y-2">
         {rfq.quotes.length === 0 ? (

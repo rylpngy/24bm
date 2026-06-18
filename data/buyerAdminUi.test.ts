@@ -11,6 +11,7 @@ import {
   buildMaterialCatalogRows,
   buildOrderFulfillmentRows,
   buildReceiptInspectionRows,
+  buildRfqDetailPanel,
   buildRfqListRows,
   buildSupplierRelationRows,
   buildWorkspaceApprovalQueue,
@@ -299,6 +300,73 @@ describe('buyer admin UI helpers', () => {
         status: '报价中',
       },
     ]);
+  });
+
+  it('builds RFQ detail panels with invited suppliers, quote ranking, and fulfillment context', () => {
+    expect(buildRfqDetailPanel(workspace, 'rfq-acme-1')).toEqual({
+      id: 'rfq-acme-1',
+      title: '会议室升级设备询价',
+      status: '已定标',
+      facts: [
+        { label: '负责人', value: '陈采购' },
+        { label: '截止时间', value: '2026-06-28' },
+        { label: '关联需求', value: '1 条' },
+        { label: '报价响应', value: '3/3' },
+      ],
+      demandRows: [
+        {
+          id: 'dem-acme-1',
+          title: '华东总部会议室升级',
+          status: '已通过',
+          budgetLabel: '¥320,000',
+        },
+      ],
+      supplierRows: [
+        { id: 'supplier-orbit', name: '奥博智能设备', status: '已报价' },
+        { id: 'supplier-lumen', name: '流明办公科技', status: '已报价' },
+        { id: 'supplier-harbor', name: '海港物流服务', status: '已报价' },
+      ],
+      quoteRows: [
+        {
+          id: 'quo-acme-1',
+          supplierName: '奥博智能设备',
+          amountLabel: '¥216,000',
+          deliveryLabel: '14 天',
+          taxLabel: '13%',
+          status: '已提交',
+          rankLabel: '第 1 名',
+          recommended: true,
+          awarded: true,
+        },
+        {
+          id: 'quo-acme-2',
+          supplierName: '流明办公科技',
+          amountLabel: '¥228,000',
+          deliveryLabel: '10 天',
+          taxLabel: '13%',
+          status: '已提交',
+          rankLabel: '第 2 名',
+          recommended: false,
+          awarded: false,
+        },
+        {
+          id: 'quo-acme-3',
+          supplierName: '海港物流服务',
+          amountLabel: '¥238,000',
+          deliveryLabel: '18 天',
+          taxLabel: '13%',
+          status: '已提交',
+          rankLabel: '第 3 名',
+          recommended: false,
+          awarded: false,
+        },
+      ],
+      recommendedSupplierLabel: '推荐：奥博智能设备 ¥216,000',
+      orderLabel: '已生成订单 po-acme-1',
+      nextActionTitle: '待收货验收',
+    });
+
+    expect(buildRfqDetailPanel(workspace, 'rfq-acme-2')?.recommendedSupplierLabel).toBe('暂无可推荐报价');
   });
 
   it('summarizes demand list rows with catalog and RFQ readiness context', () => {

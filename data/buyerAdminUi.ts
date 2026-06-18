@@ -3,6 +3,8 @@ import { approvalTypeLabel } from './approvalUi';
 import {
   describeInvoiceNextAction,
   describeOrderNextAction,
+  describeRfqNextAction,
+  selectRecommendedQuote,
   type BuyerNextAction,
 } from './buyerWorkflow';
 import type { BuyerWorkspace, SupplierRelation } from './procurementModel';
@@ -71,6 +73,44 @@ export interface RfqListRow {
   quoteLabel: string;
   deadlineLabel: string;
   status: string;
+}
+
+export interface RfqDetailDemandRow {
+  id: string;
+  title: string;
+  status: string;
+  budgetLabel: string;
+}
+
+export interface RfqDetailSupplierRow {
+  id: string;
+  name: string;
+  status: string;
+}
+
+export interface RfqDetailQuoteRow {
+  id: string;
+  supplierName: string;
+  amountLabel: string;
+  deliveryLabel: string;
+  taxLabel: string;
+  status: string;
+  rankLabel: string;
+  recommended: boolean;
+  awarded: boolean;
+}
+
+export interface RfqDetailPanel {
+  id: string;
+  title: string;
+  status: string;
+  facts: BuyerModuleFact[];
+  demandRows: RfqDetailDemandRow[];
+  supplierRows: RfqDetailSupplierRow[];
+  quoteRows: RfqDetailQuoteRow[];
+  recommendedSupplierLabel: string;
+  orderLabel: string;
+  nextActionTitle: string;
 }
 
 export interface DemandListRow {
@@ -372,6 +412,71 @@ export const buildRfqListRows = (workspace: BuyerWorkspace): RfqListRow[] =>
       status: rfq.status,
     };
   });
+
+export const buildRfqDetailPanel = (
+  workspace: BuyerWorkspace,
+  rfqId: string,
+): RfqDetailPanel | undefined => {
+  const rfq = workspace.rfqs.find((item) => item.id === rfqId);
+  if (!rfq) return undefined;
+
+  const recommendedQuote = selectRecommendedQuote(rfq);
+  const generatedOrder = workspace.orders.find((order) => order.rfqId === rfq.id);
+  const nextAction = generatedOrder
+    ? describeOrderNextAction(generatedOrder)
+    : describeRfqNextAction(rfq, undefined, workspace.orders);
+  const rankedQuotes = [...rfq.quotes]
+    .sort((left, right) => {
+      const amountDelta = left.amount - right.amount;
+      if (amountDelta !== 0) return amountDelta;
+      return left.deliveryDays - right.deliveryDays;
+    });
+
+  const supplierName = (supplierId: string) =>
+    workspace.suppliers.find((supplier) => supplier.id === supplierId)?.name ?? supplierId;
+
+  return {
+    id: rfq.id,
+    title: rfq.title,
+    status: rfq.status,
+    facts: [
+      { label: '负责人', value: rfq.owner },
+      { label: '截止时间', value: rfq.deadline },
+      { label: '关联需求', value: `${rfq.demandIds.length} 条` },
+      { label: '报价响应', value: `${rfq.quotes.length}/${rfq.invitedSupplierIds.length}` },
+    ],
+    demandRows: rfq.demandIds.map((demandId) => {
+      const demand = workspace.demands.find((item) => item.id === demandId);
+      return {
+        id: demandId,
+        title: demand?.title ?? demandId,
+        status: demand?.status ?? '未找到',
+        budgetLabel: compactCurrency(demand?.budget ?? 0),
+      };
+    }),
+    supplierRows: rfq.invitedSupplierIds.map((supplierId) => ({
+      id: supplierId,
+      name: supplierName(supplierId),
+      status: rfq.quotes.some((quote) => quote.supplierId === supplierId) ? '已报价' : '待报价',
+    })),
+    quoteRows: rankedQuotes.map((quote, index) => ({
+      id: quote.id,
+      supplierName: supplierName(quote.supplierId),
+      amountLabel: compactCurrency(quote.amount),
+      deliveryLabel: `${quote.deliveryDays} 天`,
+      taxLabel: `${quote.taxRate}%`,
+      status: quote.status,
+      rankLabel: `第 ${index + 1} 名`,
+      recommended: recommendedQuote?.id === quote.id,
+      awarded: rfq.awardedSupplierId === quote.supplierId,
+    })),
+    recommendedSupplierLabel: recommendedQuote
+      ? `推荐：${supplierName(recommendedQuote.supplierId)} ${compactCurrency(recommendedQuote.amount)}`
+      : '暂无可推荐报价',
+    orderLabel: generatedOrder ? `已生成订单 ${generatedOrder.id}` : '暂未生成采购订单',
+    nextActionTitle: nextAction.title,
+  };
+};
 
 const describeDemandNextAction = (
   demand: BuyerWorkspace['demands'][number],
