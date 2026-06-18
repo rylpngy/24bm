@@ -111,6 +111,7 @@ export interface SupplierDetailPanel {
   facts: BuyerModuleFact[];
   actionTitle: string;
   riskLabel: string;
+  admissionCheckRows: BuyerModuleFact[];
   collaborationRows: BuyerModuleFact[];
   rfqRows: SupplierDetailRfqRow[];
   orderRows: SupplierDetailOrderRow[];
@@ -800,6 +801,12 @@ export const buildSupplierDetailPanel = (
     ],
     actionTitle: action.title,
     riskLabel: action.riskLabel,
+    admissionCheckRows: [
+      { label: '准入状态', value: relation.status },
+      { label: '企业认证', value: supplier?.verified ? '已认证' : '待认证' },
+      { label: '绩效风险', value: action.riskLabel },
+      { label: '下一步', value: action.title },
+    ],
     collaborationRows: [
       { label: '参与询价', value: `${rfqs.length} 个` },
       { label: '已提交报价', value: `${quotes.length} 条` },

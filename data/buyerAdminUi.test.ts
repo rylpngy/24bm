@@ -317,6 +317,12 @@ describe('buyer admin UI helpers', () => {
       ],
       actionTitle: '可参与询价',
       riskLabel: '绩效优秀',
+      admissionCheckRows: [
+        { label: '准入状态', value: '已准入' },
+        { label: '企业认证', value: '已认证' },
+        { label: '绩效风险', value: '绩效优秀' },
+        { label: '下一步', value: '可参与询价' },
+      ],
       collaborationRows: [
         { label: '参与询价', value: '1 个' },
         { label: '已提交报价', value: '1 条' },

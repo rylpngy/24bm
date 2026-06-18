@@ -2975,6 +2975,15 @@ const SupplierDetailPanelView: React.FC<{
         </section>
 
         <section>
+          <p className="mb-2 text-xs font-black text-slate-500">准入检查</p>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {detail.admissionCheckRows.map((row) => (
+              <MiniFact key={row.label} label={row.label} value={row.value} />
+            ))}
+          </div>
+        </section>
+
+        <section>
           <p className="mb-2 text-xs font-black text-slate-500">协作记录</p>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
             {detail.collaborationRows.map((row) => (
