@@ -320,6 +320,9 @@ export interface AuditLogDetailPanel {
   targetLabel: string;
   actorName: string;
   timeLabel: string;
+  traceabilityTitle: string;
+  traceabilityDesc: string;
+  traceabilityStatus: string;
   facts: BuyerModuleFact[];
   targetFacts: BuyerModuleFact[];
   relatedRows: AuditLogRelatedRow[];
@@ -1655,6 +1658,9 @@ export const buildAuditLogDetailPanel = (
   const targetTypeLabel = auditTargetLabels[log.targetType] ?? log.targetType;
   const title = auditActionLabels[log.action] ?? log.action;
   const targetContext = buildAuditTargetContext(workspace, log.targetType, log.targetId);
+  const hasActor = Boolean(actor);
+  const hasTargetContext = targetContext.targetFacts.length > 2;
+  const traceabilityStatus = hasActor && hasTargetContext ? '完整留痕' : '基础留痕';
 
   return {
     id: log.id,
@@ -1663,6 +1669,11 @@ export const buildAuditLogDetailPanel = (
     targetLabel: `${targetTypeLabel} · ${log.targetId}`,
     actorName: actor?.name ?? log.actorId,
     timeLabel: compactDateTime(log.createdAt),
+    traceabilityTitle: traceabilityStatus === '完整留痕' ? '审计链路完整' : '审计链路待补充',
+    traceabilityDesc: traceabilityStatus === '完整留痕'
+      ? '已记录操作人、操作对象、业务上下文和关联业务，可支持后续追溯。'
+      : '已记录基础操作信息，建议补齐业务对象上下文以增强审计可追溯性。',
+    traceabilityStatus,
     facts: [
       { label: '操作人', value: actor?.name ?? log.actorId },
       { label: '操作时间', value: compactDateTime(log.createdAt) },

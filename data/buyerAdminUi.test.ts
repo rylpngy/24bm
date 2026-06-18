@@ -961,6 +961,9 @@ describe('buyer admin UI helpers', () => {
       targetLabel: '订单 · po-acme-1',
       actorName: 'u-orbit-sales',
       timeLabel: '06/15 14:35',
+      traceabilityTitle: '审计链路待补充',
+      traceabilityDesc: '已记录基础操作信息，建议补齐业务对象上下文以增强审计可追溯性。',
+      traceabilityStatus: '基础留痕',
       facts: [
         { label: '操作人', value: 'u-orbit-sales' },
         { label: '操作时间', value: '06/15 14:35' },

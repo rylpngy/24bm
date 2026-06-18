@@ -2595,9 +2595,32 @@ const AuditLogDetailPanelView: React.FC<{
             ))}
           </div>
         </section>
+
+        <AuditTraceabilitySummaryPanel detail={detail} />
       </DetailPanelBody>
     )}
   </Panel>
+);
+
+const AuditTraceabilitySummaryPanel: React.FC<{
+  detail: AuditLogDetailPanel;
+}> = ({ detail }) => (
+  <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-blue-700">审计结论</p>
+        <p className="mt-1 text-sm font-black text-slate-950">{detail.traceabilityTitle}</p>
+      </div>
+      <StatusPill label={detail.traceabilityStatus} />
+    </div>
+    <p className="mt-3 text-xs font-bold leading-5 text-slate-600">{detail.traceabilityDesc}</p>
+    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+      <MiniFact label="操作人" value={detail.actorName} />
+      <MiniFact label="操作时间" value={detail.timeLabel} />
+      <MiniFact label="对象" value={detail.targetLabel} />
+      <MiniFact label="关联业务" value={`${detail.relatedRows.length} 条`} />
+    </div>
+  </section>
 );
 
 const RfqDetailPanelView: React.FC<{
