@@ -5373,25 +5373,42 @@ const SupplierWorkspaceView: React.FC<{
 
       {activeModule === 'profile' && (
       <Panel title="供应商企业档案" icon={BadgeCheck}>
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-orange-100 text-orange-700">
-              <Building2 size={26} />
-            </div>
-            <div>
-              <p className="text-lg font-black">{workspace.supplier.name}</p>
-              <p className="text-sm text-slate-500">{workspace.supplier.industry}</p>
-            </div>
-          </div>
-          <div className="mt-5 space-y-3">
-            <CapabilityList
-              items={[
-                '企业认证、资质维护、联系人与子账号',
-                '接收不同采购方询价邀请并在线报价',
-                '确认销售订单、提交发货和发票信息',
-                '按采购方隔离报价历史、订单和应收记录',
+        <div className="space-y-4">
+          <SupplierProfileSummaryPanel workspace={workspace} />
+          <div className="grid gap-3 lg:grid-cols-2">
+            <SupplierProfileCapabilityCard
+              title="企业档案卡片"
+              icon={Building2}
+              facts={[
+                { label: '企业名称', value: workspace.supplier.name },
+                { label: '所属行业', value: workspace.supplier.industry },
+                { label: '认证状态', value: workspace.supplier.verified ? '已认证' : '待认证' },
+                { label: '合作采购方', value: `${workspace.connectedBuyerNames.length} 家` },
               ]}
             />
+            <SupplierProfileCapabilityCard
+              title="协同能力卡片"
+              icon={BadgeCheck}
+              facts={[
+                { label: '资质维护', value: workspace.supplier.verified ? '资料有效' : '待补充' },
+                { label: '联系人与子账号', value: '待接入管理' },
+                { label: '询价邀请', value: `${workspace.opportunities.length} 个` },
+                { label: '销售订单', value: `${workspace.orders.length} 单` },
+              ]}
+            />
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <p className="text-xs font-black text-slate-700">档案维护范围</p>
+            <div className="mt-3">
+              <CapabilityList
+                items={[
+                  '企业认证、资质维护、联系人与子账号',
+                  '接收不同采购方询价邀请并在线报价',
+                  '确认销售订单、提交发货和发票信息',
+                  '按采购方隔离报价历史、订单和应收记录',
+                ]}
+              />
+            </div>
           </div>
         </div>
       </Panel>
@@ -5502,6 +5519,53 @@ const SupplierWorkspaceView: React.FC<{
     </>
   );
 };
+
+const SupplierProfileSummaryPanel: React.FC<{
+  workspace: SupplierWorkspace;
+}> = ({ workspace }) => {
+  const receivableCount = workspace.invoices.filter((invoice) => invoice.paymentStatus !== '已付款').length;
+  const deliveryCount = workspace.deliveries.length;
+  const nextAction = workspace.supplier.verified ? '维护资质与联系人' : '补充认证资料';
+
+  return (
+    <section className="rounded-lg border border-orange-100 bg-orange-50 p-4">
+      <p className="text-xs font-black text-orange-800">供应商档案摘要</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <MiniFact label="认证状态" value={workspace.supplier.verified ? '已认证' : '待认证'} />
+        <MiniFact label="合作采购方" value={`${workspace.connectedBuyerNames.length} 家`} />
+        <MiniFact label="报价记录" value={`${workspace.quotes.length} 条`} />
+        <MiniFact label="发货记录" value={`${deliveryCount} 条`} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+      <p className="mt-3 text-xs font-bold text-orange-700">
+        当前还有 {receivableCount} 张待回款发票，档案与资质信息会影响采购方准入和后续合作评价。
+      </p>
+    </section>
+  );
+};
+
+const SupplierProfileCapabilityCard: React.FC<{
+  title: string;
+  icon: LucideIcon;
+  facts: Array<{ label: string; value: string }>;
+}> = ({ title, icon: Icon, facts }) => (
+  <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="flex items-start gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-700">
+        <Icon size={20} />
+      </div>
+      <div className="min-w-0">
+        <p className="font-black text-slate-900">{title}</p>
+        <p className="mt-1 text-xs font-bold text-slate-500">企业档案、资质、联系人与多采购方协同信息。</p>
+      </div>
+    </div>
+    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      {facts.map((fact) => (
+        <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+      ))}
+    </div>
+  </div>
+);
 
 const SupplierOpportunityResponseSummaryPanel: React.FC<{
   opportunities: SupplierWorkspace['opportunities'];

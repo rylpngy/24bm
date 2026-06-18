@@ -17,7 +17,7 @@ describe('stage three first-round final acceptance matrix', () => {
     expect(checklist).toContain('| 采购方 | 发票付款 | 可进入第二轮 |');
     expect(checklist).toContain('| 平台 | 企业审核 | 可进入第二轮 |');
     expect(checklist).toContain('| 平台 | 平台公告 | 可进入第二轮 |');
-    expect(checklist).toContain('| 供应商 | 企业档案 | 需补强 |');
+    expect(checklist).toContain('| 供应商 | 企业档案 | 可进入第二轮 |');
     expect(checklist).toContain('| 供应商 | 发票应收 | 可进入第二轮 |');
     expect(checklist).toContain('第一轮最终结论');
     expect(checklist).toContain('先做 Java 模式逐页联调');
