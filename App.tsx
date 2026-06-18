@@ -5008,20 +5008,47 @@ const SupplierWorkspaceView: React.FC<{
         {workspace.invoices.length === 0 ? (
           <EmptyState title="暂无应收发票" desc="订单收货后提交发票，应收和付款状态会显示在这里。" />
         ) : (
-          <SimpleList
-            rows={workspace.invoices.map((invoice) => ({
-              id: invoice.id,
-              title: invoice.id,
-              meta: `订单 ${invoice.orderId}`,
-              value: currency(invoice.amount),
-              status: invoice.paymentStatus,
-            }))}
-          />
+          <div className="space-y-4">
+            <SupplierInvoiceReceivableSummaryPanel invoices={workspace.invoices} />
+            <SimpleList
+              rows={workspace.invoices.map((invoice) => ({
+                id: invoice.id,
+                title: invoice.id,
+                meta: `订单 ${invoice.orderId}`,
+                value: currency(invoice.amount),
+                status: invoice.paymentStatus,
+              }))}
+            />
+          </div>
         )}
       </Panel>
     )}
   </>
 );
+
+const SupplierInvoiceReceivableSummaryPanel: React.FC<{
+  invoices: SupplierWorkspace['invoices'];
+}> = ({ invoices }) => {
+  const receivableTotal = invoices.reduce((sum, invoice) => sum + invoice.amount, 0);
+  const pendingReceivableTotal = invoices
+    .filter((invoice) => invoice.paymentStatus !== '已付款')
+    .reduce((sum, invoice) => sum + invoice.amount, 0);
+  const paidTotal = receivableTotal - pendingReceivableTotal;
+  const nextAction = pendingReceivableTotal > 0 ? '跟进回款' : '归档对账';
+
+  return (
+    <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
+      <p className="text-xs font-black text-amber-800">应收摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <MiniFact label="应收总额" value={currency(receivableTotal)} />
+        <MiniFact label="待回款" value={currency(pendingReceivableTotal)} />
+        <MiniFact label="已回款" value={currency(paidTotal)} />
+        <MiniFact label="发票数量" value={`${invoices.length} 张`} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </div>
+  );
+};
 
 const SupplierOrderActionSummaryPanel: React.FC<{
   order: SupplierWorkspace['orders'][number];
