@@ -5326,6 +5326,10 @@ const SupplierWorkspaceView: React.FC<{
           <EmptyState title="暂无销售订单" desc="采购方定标并生成订单后，供应商会在这里确认订单、提交发货和开票。" />
         ) : (
         <div className="space-y-3">
+          <SupplierOrderFulfillmentSummaryPanel
+            orders={workspace.orders}
+            invoices={workspace.invoices}
+          />
           {workspace.orders.map((order) => {
             const confirmBusy = supplierActionBusyId === `confirm:${order.id}`;
             const deliveryBusy = supplierActionBusyId === `delivery:${order.id}`;
@@ -5440,6 +5444,43 @@ const SupplierOpportunityResponseSummaryPanel: React.FC<{
         <MiniFact label="待报价" value={`${pendingQuoteCount} 个`} />
         <MiniFact label="已报价" value={`${quotedCount} 个`} />
         <MiniFact label="最近截止" value={closestDeadline} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </div>
+  );
+};
+
+const SupplierOrderFulfillmentSummaryPanel: React.FC<{
+  orders: SupplierWorkspace['orders'];
+  invoices: SupplierWorkspace['invoices'];
+}> = ({ orders, invoices }) => {
+  const pendingConfirmCount = orders.filter((order) => order.status === '待供应商确认').length;
+  const pendingDeliveryCount = orders.filter((order) => order.status === '待发货').length;
+  const pendingInvoiceCount = orders.filter((order) =>
+    order.status === '已收货' && !invoices.some((invoice) => invoice.orderId === order.id)
+  ).length;
+  const receivableAmount = invoices
+    .filter((invoice) => invoice.paymentStatus !== '已付款')
+    .reduce((sum, invoice) => sum + invoice.amount, 0);
+  const nextAction = pendingConfirmCount > 0
+    ? '确认订单'
+    : pendingDeliveryCount > 0
+      ? '提交发货'
+      : pendingInvoiceCount > 0
+        ? '提交发票'
+        : receivableAmount > 0
+          ? '跟进回款'
+          : '归档履约';
+
+  return (
+    <div className="rounded-lg border border-orange-100 bg-orange-50 p-3">
+      <p className="text-xs font-black text-orange-800">履约工作摘要</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+        <MiniFact label="订单总数" value={`${orders.length} 单`} />
+        <MiniFact label="待确认" value={`${pendingConfirmCount} 单`} />
+        <MiniFact label="待发货" value={`${pendingDeliveryCount} 单`} />
+        <MiniFact label="待开票" value={`${pendingInvoiceCount} 单`} />
+        <MiniFact label="应收金额" value={currency(receivableAmount)} />
         <MiniFact label="下一步" value={nextAction} />
       </div>
     </div>
