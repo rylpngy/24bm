@@ -1023,6 +1023,7 @@ const PlatformWorkspace: React.FC<{
             announcementCount={operationSummary?.activeAnnouncementCount ?? announcements.length}
             enterpriseReviews={enterpriseReviews}
           />
+          <PlatformEnterpriseReviewSummaryPanel enterpriseReviews={enterpriseReviews} />
           <Panel title="企业审核" icon={ClipboardCheck}>
             <SimpleList
               rows={enterpriseReviews.map((review) => ({
@@ -1061,6 +1062,29 @@ const PlatformWorkspace: React.FC<{
         </>
       )}
     </>
+  );
+};
+
+const PlatformEnterpriseReviewSummaryPanel: React.FC<{
+  enterpriseReviews: Array<{ type: string; status: string }>;
+}> = ({ enterpriseReviews }) => {
+  const pendingReviewCount = enterpriseReviews.filter((review) => review.status === '待审核').length;
+  const verifiedReviewCount = enterpriseReviews.filter((review) => review.status === '已认证').length;
+  const buyerEnterpriseCount = enterpriseReviews.filter((review) => review.type === 'buyer').length;
+  const supplierEnterpriseCount = enterpriseReviews.filter((review) => review.type === 'supplier').length;
+  const nextAction = pendingReviewCount > 0 ? '处理待审核企业' : '复核认证资料';
+
+  return (
+    <section className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+      <p className="text-xs font-black text-amber-800">企业审核摘要</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <MiniFact label="待审核" value={`${pendingReviewCount} 家`} />
+        <MiniFact label="已认证" value={`${verifiedReviewCount} 家`} />
+        <MiniFact label="采购方企业" value={`${buyerEnterpriseCount} 家`} />
+        <MiniFact label="供应商企业" value={`${supplierEnterpriseCount} 家`} />
+        <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </section>
   );
 };
 
