@@ -155,6 +155,7 @@ export interface MaterialDetailPanel {
   demandRows: MaterialDetailDemandRow[];
   rfqRows: MaterialDetailRfqRow[];
   supplierCoverageRows: MaterialDetailSupplierCoverageRow[];
+  procurementReadinessRows: BuyerModuleFact[];
   usageSummary: BuyerModuleFact[];
 }
 
@@ -889,6 +890,11 @@ export const buildMaterialDetailPanel = (
     });
   const referenceAmount = materialDemandLines
     .reduce((sum, { lineItem }) => sum + (lineItem.quantity * material.referencePrice), 0);
+  const nextActionTitle = rfqRows.length > 0
+    ? '已进入询价'
+    : supplierCoverageRows.length > 0
+      ? '可创建询价'
+      : '补充准入供应商';
 
   return {
     id: material.id,
@@ -903,6 +909,12 @@ export const buildMaterialDetailPanel = (
     demandRows,
     rfqRows,
     supplierCoverageRows,
+    procurementReadinessRows: [
+      { label: '需求引用', value: `${demandRows.length} 条` },
+      { label: '询价项目', value: `${rfqRows.length} 个` },
+      { label: '准入供应商', value: `${supplierCoverageRows.length} 家` },
+      { label: '下一步', value: nextActionTitle },
+    ],
     usageSummary: [
       { label: '引用需求', value: `${demandRows.length} 条` },
       { label: '关联询价', value: `${rfqRows.length} 个` },

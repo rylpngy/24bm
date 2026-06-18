@@ -430,6 +430,12 @@ describe('buyer admin UI helpers', () => {
       supplierCoverageRows: [
         { id: 'rel-acme-orbit', supplierName: '奥博智能设备', status: '已准入', level: 'A' },
       ],
+      procurementReadinessRows: [
+        { label: '需求引用', value: '2 条' },
+        { label: '询价项目', value: '1 个' },
+        { label: '准入供应商', value: '1 家' },
+        { label: '下一步', value: '已进入询价' },
+      ],
       usageSummary: [
         { label: '引用需求', value: '2 条' },
         { label: '关联询价', value: '1 个' },
