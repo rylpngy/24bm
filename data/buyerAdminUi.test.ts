@@ -651,6 +651,16 @@ describe('buyer admin UI helpers', () => {
           quoteLabel: '3/3 已报价',
         },
       ],
+      workflowTimelineRows: [
+        { label: '需求申请', value: '已通过' },
+        { label: '审批状态', value: '暂无待审批' },
+        { label: '询价项目', value: '1 个' },
+        { label: '后续订单', value: '1 单' },
+      ],
+      relatedRows: [
+        { id: 'rfq-acme-1', title: '询价项目', detail: '会议室升级设备询价 · 已定标' },
+        { id: 'po-acme-1', title: '采购订单', detail: '¥216,000 · 待收货' },
+      ],
       approvalLabel: '暂无待审批',
       nextActionTitle: '已关联询价项目',
     });

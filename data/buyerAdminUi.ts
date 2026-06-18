@@ -242,6 +242,17 @@ export interface DemandDetailRfqRow {
   quoteLabel: string;
 }
 
+export interface DemandDetailTimelineRow {
+  label: string;
+  value: string;
+}
+
+export interface DemandDetailRelatedRow {
+  id: string;
+  title: string;
+  detail: string;
+}
+
 export interface DemandDetailPanel {
   id: string;
   title: string;
@@ -249,6 +260,8 @@ export interface DemandDetailPanel {
   facts: BuyerModuleFact[];
   lineItems: DemandDetailLineItemRow[];
   linkedRfqs: DemandDetailRfqRow[];
+  workflowTimelineRows: DemandDetailTimelineRow[];
+  relatedRows: DemandDetailRelatedRow[];
   approvalLabel: string;
   nextActionTitle: string;
 }
@@ -1065,6 +1078,10 @@ export const buildDemandDetailPanel = (
   const nextAction = describeDemandNextAction(demand, linkedDemandIds);
   const approval = buildApprovalQueueRows(buildWorkspaceApprovalQueue(workspace))
     .find((item) => item.bizType === 'purchase_demand' && item.bizId === demand.id);
+  const approvalLabel = approval ? `待审批：${approval.typeLabel}` : '暂无待审批';
+  const linkedRfqs = workspace.rfqs.filter((rfq) => rfq.demandIds.includes(demand.id));
+  const linkedOrders = workspace.orders.filter((order) =>
+    linkedRfqs.some((rfq) => rfq.id === order.rfqId));
 
   return {
     id: demand.id,
@@ -1087,15 +1104,32 @@ export const buildDemandDetailPanel = (
         referenceAmountLabel: compactCurrency((material?.referencePrice ?? 0) * item.quantity),
       };
     }),
-    linkedRfqs: workspace.rfqs
-      .filter((rfq) => rfq.demandIds.includes(demand.id))
+    linkedRfqs: linkedRfqs
       .map((rfq) => ({
         id: rfq.id,
         title: rfq.title,
         status: rfq.status,
         quoteLabel: `${rfq.quotes.length}/${rfq.invitedSupplierIds.length} 已报价`,
       })),
-    approvalLabel: approval ? `待审批：${approval.typeLabel}` : '暂无待审批',
+    workflowTimelineRows: [
+      { label: '需求申请', value: demand.status },
+      { label: '审批状态', value: approvalLabel },
+      { label: '询价项目', value: `${linkedRfqs.length} 个` },
+      { label: '后续订单', value: `${linkedOrders.length} 单` },
+    ],
+    relatedRows: [
+      ...linkedRfqs.map((rfq) => ({
+        id: rfq.id,
+        title: '询价项目',
+        detail: `${rfq.title} · ${rfq.status}`,
+      })),
+      ...linkedOrders.map((order) => ({
+        id: order.id,
+        title: '采购订单',
+        detail: `${compactCurrency(order.amount)} · ${order.status}`,
+      })),
+    ],
+    approvalLabel,
     nextActionTitle: nextAction.title,
   };
 };
