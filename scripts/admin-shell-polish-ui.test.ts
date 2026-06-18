@@ -9,9 +9,17 @@ describe('admin shell polish UI', () => {
 
     expect(app).toContain('h-dvh overflow-hidden');
     expect(app).toContain('min-h-0 flex-1 flex-col');
-    expect(app).toContain('min-h-0 flex-1 overflow-y-auto');
+    expect(app).toContain('min-h-0 min-w-0 flex-1 overflow-y-auto');
     expect(app).toContain('overscroll-contain');
     expect(app).toContain('max-w-full');
+  });
+
+  it('prevents nested workspace scroll regions from forcing horizontal overflow', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('flex min-h-0 flex-1 flex-col min-w-0');
+    expect(app).toContain('min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain');
+    expect(app).toContain('mx-auto max-w-7xl max-w-full');
   });
 
   it('uses shared state components for loading, errors, and empty content', () => {
