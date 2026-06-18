@@ -1,9 +1,30 @@
 import type { BuyerAdminModule } from './adminNavigation';
-import type { BuyerWorkspace } from './procurementModel';
+import type { BuyerWorkspace, SupplierRelation } from './procurementModel';
 
 export interface BuyerModuleFact {
   label: string;
   value: string;
+}
+
+export interface ApprovalCardSource {
+  id?: string;
+  bizType?: string;
+  bizId?: string;
+  summaryTitle?: string;
+  businessStatus?: string | null;
+  priority?: number | null;
+  submittedByName?: string | null;
+  amount?: number | null;
+  counterpartyName?: string | null;
+  status?: string;
+  createdAt: string;
+}
+
+export interface SupplierRelationAction {
+  title: string;
+  detail: string;
+  tone: 'slate' | 'blue' | 'amber' | 'emerald' | 'red';
+  riskLabel: string;
 }
 
 const compactCurrency = (value: number) =>
@@ -17,6 +38,118 @@ const countBy = <T>(records: T[], predicate: (record: T) => boolean) =>
   records.filter(predicate).length;
 
 const uniqueCount = (values: string[]) => new Set(values).size;
+
+const elapsedLabel = (fromIso: string, nowIso: string) => {
+  const elapsedMs = new Date(nowIso).getTime() - new Date(fromIso).getTime();
+  const elapsedHours = Math.max(elapsedMs / 1000 / 60 / 60, 0);
+  if (elapsedHours < 1) {
+    return `${Math.round(elapsedHours * 60)} 分钟`;
+  }
+  if (elapsedHours < 24) {
+    return `${Number(elapsedHours.toFixed(1))} 小时`;
+  }
+  return `${Math.floor(elapsedHours / 24)} 天`;
+};
+
+export const buildApprovalCardFacts = (
+  approval: ApprovalCardSource,
+  nowIso = new Date().toISOString(),
+): BuyerModuleFact[] => [
+  approval.businessStatus ? { label: '业务状态', value: approval.businessStatus } : undefined,
+  typeof approval.priority === 'number' ? { label: '优先级', value: `P${approval.priority}` } : undefined,
+  approval.submittedByName ? { label: '提交人', value: approval.submittedByName } : undefined,
+  approval.counterpartyName ? { label: '相关方', value: approval.counterpartyName } : undefined,
+  typeof approval.amount === 'number' ? { label: '金额', value: compactCurrency(approval.amount) } : undefined,
+  { label: '已等待', value: elapsedLabel(approval.createdAt, nowIso) },
+].filter((fact): fact is BuyerModuleFact => Boolean(fact));
+
+export const buildWorkspaceApprovalQueue = (workspace: BuyerWorkspace): ApprovalCardSource[] => {
+  const demandApprovals = workspace.demands
+    .filter((demand) => demand.status === '审批中')
+    .map((demand, index) => ({
+      id: `approval-demand-${demand.id}`,
+      bizType: 'purchase_demand',
+      bizId: demand.id,
+      summaryTitle: demand.title,
+      businessStatus: demand.status,
+      priority: Math.max(8 - index, 1),
+      submittedByName: demand.requester,
+      amount: demand.budget,
+      status: '待审批',
+      createdAt: new Date(Date.UTC(2026, 5, 18, 1 + index, 0, 0)).toISOString(),
+    }));
+
+  const supplierApprovals = workspace.privateSupplierRelations
+    .filter((relation) => relation.status === '待准入' || relation.status === '准入审批中')
+    .map((relation, index) => {
+      const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
+      return {
+        id: `approval-supplier-${relation.id}`,
+        bizType: 'buyer_supplier_admission',
+        bizId: relation.id,
+        summaryTitle: supplier?.name ?? relation.supplierId,
+        businessStatus: relation.status,
+        priority: 5,
+        submittedByName: '采购管理员',
+        counterpartyName: supplier?.name ?? relation.supplierId,
+        status: '待审批',
+        createdAt: new Date(Date.UTC(2026, 5, 18, 4 + index, 0, 0)).toISOString(),
+      };
+    });
+
+  return [...demandApprovals, ...supplierApprovals];
+};
+
+const supplierRiskLabel = (performanceScore: number) => {
+  if (performanceScore >= 90) return '绩效优秀';
+  if (performanceScore >= 80) return '绩效稳定';
+  return `绩效 ${performanceScore} 分`;
+};
+
+export const describeSupplierRelationAction = (relation: SupplierRelation): SupplierRelationAction => {
+  if (relation.status === '待准入') {
+    return {
+      title: '待提交准入',
+      detail: '补齐准入资料后提交审批，通过后才能参与采购协同。',
+      tone: 'blue',
+      riskLabel: supplierRiskLabel(relation.performanceScore),
+    };
+  }
+
+  if (relation.status === '准入审批中') {
+    return {
+      title: '准入审批中',
+      detail: '审批通过后供应商会进入可协作状态。',
+      tone: 'amber',
+      riskLabel: supplierRiskLabel(relation.performanceScore),
+    };
+  }
+
+  if (relation.status === '已准入') {
+    return {
+      title: '可参与询价',
+      detail: '供应商已准入，可按授权品类邀请参与询价。',
+      tone: 'emerald',
+      riskLabel: supplierRiskLabel(relation.performanceScore),
+    };
+  }
+
+  if (relation.status === '黑名单' || relation.status === '暂停合作') {
+    return {
+      title: '限制合作',
+      detail: '当前合作状态受限，需完成关系恢复后再邀请参与采购。',
+      tone: 'red',
+      riskLabel: supplierRiskLabel(relation.performanceScore),
+    };
+  }
+
+  return {
+    title: '需重新评估',
+    detail: '当前关系未通过准入，建议复核资质、品类和绩效后再处理。',
+    tone: 'slate',
+    riskLabel: supplierRiskLabel(relation.performanceScore),
+  };
+};
 
 export const buildBuyerModuleFacts = (
   module: BuyerAdminModule,
