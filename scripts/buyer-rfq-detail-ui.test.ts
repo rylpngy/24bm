@@ -12,6 +12,8 @@ describe('buyer RFQ detail UI', () => {
     expect(buyerAdminUi).toContain('quoteRows');
     expect(buyerAdminUi).toContain('recommendedSupplierLabel');
     expect(buyerAdminUi).toContain('orderLabel');
+    expect(buyerAdminUi).toContain('fulfillmentTimelineRows');
+    expect(buyerAdminUi).toContain('relatedRows');
 
     expect(app).toContain('buildRfqDetailPanel');
     expect(app).toContain('selectedRfqId');
@@ -20,6 +22,9 @@ describe('buyer RFQ detail UI', () => {
     expect(app).toContain('询价详情');
     expect(app).toContain('邀请供应商');
     expect(app).toContain('报价排行');
+    expect(app).toContain('履约轨迹');
+    expect(app).toContain('关联业务');
+    expect(app).toContain('发票付款');
     expect(app).toContain('查看详情');
   });
 });

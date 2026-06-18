@@ -516,6 +516,18 @@ describe('buyer admin UI helpers', () => {
           awarded: false,
         },
       ],
+      fulfillmentTimelineRows: [
+        { label: '询价发布', value: '已定标' },
+        { label: '供应商响应', value: '3/3' },
+        { label: '定标结果', value: '奥博智能设备' },
+        { label: '采购订单', value: '待收货' },
+        { label: '发票付款', value: '待付款' },
+      ],
+      relatedRows: [
+        { id: 'dem-acme-1', title: '采购需求', detail: '华东总部会议室升级 · 已通过' },
+        { id: 'po-acme-1', title: '采购订单', detail: '¥216,000 · 待收货' },
+        { id: 'inv-acme-1', title: '发票付款', detail: '¥216,000 · 待付款' },
+      ],
       recommendedSupplierLabel: '推荐：奥博智能设备 ¥216,000',
       orderLabel: '已生成订单 po-acme-1',
       nextActionTitle: '待收货验收',

@@ -186,6 +186,17 @@ export interface RfqDetailQuoteRow {
   awarded: boolean;
 }
 
+export interface RfqDetailTimelineRow {
+  label: string;
+  value: string;
+}
+
+export interface RfqDetailRelatedRow {
+  id: string;
+  title: string;
+  detail: string;
+}
+
 export interface RfqDetailPanel {
   id: string;
   title: string;
@@ -194,6 +205,8 @@ export interface RfqDetailPanel {
   demandRows: RfqDetailDemandRow[];
   supplierRows: RfqDetailSupplierRow[];
   quoteRows: RfqDetailQuoteRow[];
+  fulfillmentTimelineRows: RfqDetailTimelineRow[];
+  relatedRows: RfqDetailRelatedRow[];
   recommendedSupplierLabel: string;
   orderLabel: string;
   nextActionTitle: string;
@@ -879,6 +892,9 @@ export const buildRfqDetailPanel = (
 
   const recommendedQuote = selectRecommendedQuote(rfq);
   const generatedOrder = workspace.orders.find((order) => order.rfqId === rfq.id);
+  const generatedInvoice = generatedOrder
+    ? workspace.invoices.find((invoice) => invoice.orderId === generatedOrder.id)
+    : undefined;
   const nextAction = generatedOrder
     ? describeOrderNextAction(generatedOrder)
     : describeRfqNextAction(rfq, undefined, workspace.orders);
@@ -891,6 +907,7 @@ export const buildRfqDetailPanel = (
 
   const supplierName = (supplierId: string) =>
     workspace.suppliers.find((supplier) => supplier.id === supplierId)?.name ?? supplierId;
+  const awardedSupplierName = rfq.awardedSupplierId ? supplierName(rfq.awardedSupplierId) : '待定标';
 
   return {
     id: rfq.id,
@@ -927,6 +944,37 @@ export const buildRfqDetailPanel = (
       recommended: recommendedQuote?.id === quote.id,
       awarded: rfq.awardedSupplierId === quote.supplierId,
     })),
+    fulfillmentTimelineRows: [
+      { label: '询价发布', value: rfq.status },
+      { label: '供应商响应', value: `${rfq.quotes.length}/${rfq.invitedSupplierIds.length}` },
+      { label: '定标结果', value: awardedSupplierName },
+      { label: '采购订单', value: generatedOrder?.status ?? '暂未生成' },
+      { label: '发票付款', value: generatedInvoice?.paymentStatus ?? '待开票' },
+    ],
+    relatedRows: [
+      ...rfq.demandIds.map((demandId) => {
+        const demand = workspace.demands.find((item) => item.id === demandId);
+        return {
+          id: demandId,
+          title: '采购需求',
+          detail: `${demand?.title ?? demandId} · ${demand?.status ?? '未找到'}`,
+        };
+      }),
+      generatedOrder
+        ? {
+            id: generatedOrder.id,
+            title: '采购订单',
+            detail: `${compactCurrency(generatedOrder.amount)} · ${generatedOrder.status}`,
+          }
+        : undefined,
+      generatedInvoice
+        ? {
+            id: generatedInvoice.id,
+            title: '发票付款',
+            detail: `${compactCurrency(generatedInvoice.amount)} · ${generatedInvoice.paymentStatus}`,
+          }
+        : undefined,
+    ].filter((row): row is RfqDetailRelatedRow => Boolean(row)),
     recommendedSupplierLabel: recommendedQuote
       ? `推荐：${supplierName(recommendedQuote.supplierId)} ${compactCurrency(recommendedQuote.amount)}`
       : '暂无可推荐报价',
