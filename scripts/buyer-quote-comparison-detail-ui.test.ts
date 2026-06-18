@@ -23,4 +23,23 @@ describe('buyer quote comparison detail UI', () => {
     expect(app).toContain('关联业务');
     expect(app).toContain('发票付款');
   });
+
+  it('surfaces quote decision actions inside the detail panel', () => {
+    const app = read('App.tsx');
+    const quoteDetailView = app.slice(
+      app.indexOf('const QuoteComparisonDetailPanelView'),
+      app.indexOf('const OrderDetailPanelView'),
+    );
+
+    expect(quoteDetailView).toContain('QuoteComparisonOperationPanel');
+    expect(quoteDetailView).toContain('比价操作');
+    expect(quoteDetailView).toContain('rfq?: Rfq');
+    expect(quoteDetailView).toContain('approvedAwardId?: string');
+    expect(quoteDetailView).toContain('awardSubmitBusyId: string | null');
+    expect(quoteDetailView).toContain('orderCreateBusy: string | null');
+    expect(quoteDetailView).toContain('onSubmitAwardApproval: (rfqId: string, quoteId: string) => void');
+    expect(quoteDetailView).toContain('onCreateOrderFromAward: (awardId: string) => void');
+    expect(app).toContain('rfq={selectedRfqRecord}');
+    expect(app).toContain('approvedAwardId={selectedRfqApprovedAwardId}');
+  });
 });

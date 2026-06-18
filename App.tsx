@@ -1594,7 +1594,17 @@ const BuyerWorkspaceView: React.FC<{
         </div>
         )}
       </Panel>
-      <QuoteComparisonDetailPanelView detail={selectedQuoteComparisonDetail} />
+      <QuoteComparisonDetailPanelView
+        detail={selectedQuoteComparisonDetail}
+        rfq={selectedRfqRecord}
+        workspace={workspace}
+        approvedAwardId={selectedRfqApprovedAwardId}
+        awardSubmitBusyId={awardSubmitBusyId}
+        orderCreateBusy={orderCreateBusy}
+        javaEnabled={javaEnabled}
+        onSubmitAwardApproval={onSubmitAwardApproval}
+        onCreateOrderFromAward={onCreateOrderFromAward}
+      />
       </>
       )}
     </div>
@@ -2831,7 +2841,25 @@ const RfqDetailOperationPanel: React.FC<{
 
 const QuoteComparisonDetailPanelView: React.FC<{
   detail?: QuoteComparisonDetailPanel;
-}> = ({ detail }) => (
+  rfq?: Rfq;
+  workspace: BuyerWorkspace;
+  approvedAwardId?: string;
+  awardSubmitBusyId: string | null;
+  orderCreateBusy: string | null;
+  javaEnabled: boolean;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
+  onCreateOrderFromAward: (awardId: string) => void;
+}> = ({
+  detail,
+  rfq,
+  workspace,
+  approvedAwardId,
+  awardSubmitBusyId,
+  orderCreateBusy,
+  javaEnabled,
+  onSubmitAwardApproval,
+  onCreateOrderFromAward,
+}) => (
   <Panel title="比价详情" icon={BarChart3}>
     {!detail ? (
       <EmptyState title="暂无比价详情" desc="选择一个询价项目后，可查看推荐结论、报价排行和关联业务。" />
@@ -2940,10 +2968,138 @@ const QuoteComparisonDetailPanelView: React.FC<{
         </section>
 
         <MiniFact label="下一步" value={detail.nextActionTitle} />
+
+        <QuoteComparisonOperationPanel
+          detail={detail}
+          rfq={rfq}
+          workspace={workspace}
+          approvedAwardId={approvedAwardId}
+          awardSubmitBusyId={awardSubmitBusyId}
+          orderCreateBusy={orderCreateBusy}
+          javaEnabled={javaEnabled}
+          onSubmitAwardApproval={onSubmitAwardApproval}
+          onCreateOrderFromAward={onCreateOrderFromAward}
+        />
       </DetailPanelBody>
     )}
   </Panel>
 );
+
+const QuoteComparisonOperationPanel: React.FC<{
+  detail: QuoteComparisonDetailPanel;
+  rfq?: Rfq;
+  workspace: BuyerWorkspace;
+  approvedAwardId?: string;
+  awardSubmitBusyId: string | null;
+  orderCreateBusy: string | null;
+  javaEnabled: boolean;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
+  onCreateOrderFromAward: (awardId: string) => void;
+}> = ({
+  detail,
+  rfq,
+  workspace,
+  approvedAwardId,
+  awardSubmitBusyId,
+  orderCreateBusy,
+  javaEnabled,
+  onSubmitAwardApproval,
+  onCreateOrderFromAward,
+}) => {
+  if (!javaEnabled) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">比价操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="当前为 mock 数据源"
+          desc="切换到 Java 模式后，可在比价详情中提交定标审批并生成采购订单。"
+        />
+      </section>
+    );
+  }
+
+  if (!rfq) {
+    return (
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-black text-slate-500">比价操作</p>
+        <ProcessStateNotice
+          variant="waiting"
+          title="未找到询价项目"
+          desc="请重新选择比价项目或刷新数据。"
+        />
+      </section>
+    );
+  }
+
+  const recommendedQuote = selectRecommendedQuote(rfq);
+  const canSubmitAward = canSubmitAwardApproval(rfq) && Boolean(recommendedQuote);
+  const canCreateOrder = canCreateOrderFromAward(rfq, approvedAwardId, workspace.orders);
+  const nextAction = describeRfqNextAction(rfq, approvedAwardId, workspace.orders);
+
+  return (
+    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-blue-800">比价操作</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">{nextAction.title}</p>
+        </div>
+        <StatusPill label={detail.status} />
+      </div>
+
+      {rfq.quotes.length === 0 && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待报价形成比价"
+          desc="暂无供应商报价，收到报价后可生成推荐结论并提交定标审批。"
+        />
+      )}
+
+      {canSubmitAward && recommendedQuote && (
+        <PrimaryActionButton
+          onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id)}
+          disabled={awardSubmitBusyId === rfq.id}
+          busy={awardSubmitBusyId === rfq.id}
+          icon={BadgeCheck}
+          pendingLabel="提交中"
+          fullWidth
+        >
+          按推荐报价提交定标审批
+        </PrimaryActionButton>
+      )}
+
+      {rfq.status === '定标审批中' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待定标审批"
+          desc="审批通过后，比价结论会进入可生成采购订单状态。"
+        />
+      )}
+
+      {canCreateOrder && approvedAwardId && (
+        <PrimaryActionButton
+          onClick={() => onCreateOrderFromAward(approvedAwardId)}
+          disabled={orderCreateBusy === approvedAwardId}
+          busy={orderCreateBusy === approvedAwardId}
+          tone="emerald"
+          icon={ShoppingCart}
+          pendingLabel="生成中"
+          fullWidth
+        >
+          生成采购订单
+        </PrimaryActionButton>
+      )}
+
+      {rfq.status === '已定标' && !canCreateOrder && (
+        <ProcessStateNotice
+          variant="handled"
+          title="比价已处理"
+          desc="定标和后续订单已进入关联业务，可继续跟踪履约、收货和付款。"
+        />
+      )}
+    </section>
+  );
+};
 
 const OrderDetailPanelView: React.FC<{
   detail?: OrderDetailPanel;
