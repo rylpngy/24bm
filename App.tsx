@@ -1546,8 +1546,13 @@ const PlatformWorkspace: React.FC<{
     ?? model.tenants.filter((tenant) => tenant.status === '待审核').length;
   const [platformTenants, setPlatformTenants] = useState<PlatformTenantRow[]>(() =>
     buildPlatformTenantRows(data.tenants));
+  const [selectedPlatformTenantId, setSelectedPlatformTenantId] = useState(data.tenants[0]?.id ?? '');
   useEffect(() => {
-    setPlatformTenants(buildPlatformTenantRows(data.tenants));
+    const nextTenants = buildPlatformTenantRows(data.tenants);
+    setPlatformTenants(nextTenants);
+    setSelectedPlatformTenantId((current) => (
+      nextTenants.some((tenant) => tenant.id === current) ? current : nextTenants[0]?.id ?? ''
+    ));
   }, [data.tenants]);
   const handleUpdateTenantStatus = async (tenantId: string, status: '已启用' | '停用') => {
     if (javaEnabled) {
@@ -1591,8 +1596,13 @@ const PlatformWorkspace: React.FC<{
   };
   const [platformEnterpriseReviews, setPlatformEnterpriseReviews] = useState<PlatformEnterpriseReview[]>(() =>
     buildPlatformEnterpriseReviews(model));
+  const [selectedPlatformReviewId, setSelectedPlatformReviewId] = useState(model.enterprises[0]?.id ?? '');
   useEffect(() => {
-    setPlatformEnterpriseReviews(buildPlatformEnterpriseReviews(model));
+    const nextReviews = buildPlatformEnterpriseReviews(model);
+    setPlatformEnterpriseReviews(nextReviews);
+    setSelectedPlatformReviewId((current) => (
+      nextReviews.some((review) => review.id === current) ? current : nextReviews[0]?.id ?? ''
+    ));
   }, [model]);
   const enterpriseReviews = platformEnterpriseReviews;
   const handleReviewEnterprise = async (reviewId: string, result: 'approved' | 'rejected') => {
@@ -1613,13 +1623,20 @@ const PlatformWorkspace: React.FC<{
     targetScope: 'all',
     publishedAt: new Date().toISOString(),
   }]);
+  const [selectedPlatformAnnouncementId, setSelectedPlatformAnnouncementId] = useState('platform-announcement-stage3');
   useEffect(() => {
     if (!javaEnabled || !javaApiClient) return;
     let active = true;
     javaApiClient.listPlatformAnnouncements()
       .then((announcements) => {
         if (active) {
-          setPlatformAnnouncements(buildPlatformAnnouncements(announcements));
+          const nextAnnouncements = buildPlatformAnnouncements(announcements);
+          setPlatformAnnouncements(nextAnnouncements);
+          setSelectedPlatformAnnouncementId((current) => (
+            nextAnnouncements.some((announcement) => announcement.id === current)
+              ? current
+              : nextAnnouncements[0]?.id ?? ''
+          ));
         }
       })
       .catch((error) => {
@@ -1648,16 +1665,18 @@ const PlatformWorkspace: React.FC<{
       }
       return;
     }
-    setPlatformAnnouncements((current) => [
-      {
-        id: `platform-announcement-${Date.now()}`,
+    const nextAnnouncement: PlatformAnnouncement = {
+      id: `platform-announcement-${Date.now()}`,
         title: payload.title,
         content: payload.content,
         targetScope: payload.targetScope,
         publishedAt: new Date().toISOString(),
-      },
+    };
+    setPlatformAnnouncements((current) => [
+      nextAnnouncement,
       ...current,
     ]);
+    setSelectedPlatformAnnouncementId(nextAnnouncement.id);
   };
   const operationSummary = platformOverview?.operationSummary;
 
@@ -1731,12 +1750,22 @@ const PlatformWorkspace: React.FC<{
               filterLabel="全部采购企业租户"
               actionLabel="租户配置"
             />
+            <FilterResultSummary
+              label="租户列表筛选结果"
+              filterLabel="全部状态"
+              resultCount={platformTenants.length}
+              totalCount={platformTenants.length}
+              selectedLabel={selectedPlatformTenantId}
+              onClear={() => setSelectedPlatformTenantId(platformTenants[0]?.id ?? '')}
+            />
             <ResponsiveTableFrame
               mobileCards={platformTenants.map((tenant) => (
                 <div
                   key={tenant.id}
                   aria-label={`${tenant.name} 租户摘要`}
-                  className="rounded-lg border border-slate-200 bg-white p-4"
+                  className={`rounded-lg border bg-white p-4 transition ${
+                    selectedPlatformTenantId === tenant.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                  }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
@@ -1748,6 +1777,13 @@ const PlatformWorkspace: React.FC<{
                   <div className="mt-3 grid gap-2">
                     <MiniFact label="功能开关" value={tenant.features.join('、') || '未启用'} />
                     <MiniFact label="用户上限" value={`${tenant.userLimit}`} />
+                  </div>
+                  <div className="mt-3">
+                    <DetailToggleButton
+                      selected={selectedPlatformTenantId === tenant.id}
+                      onClick={() => setSelectedPlatformTenantId(tenant.id)}
+                      compact
+                    />
                   </div>
                 </div>
               ))}
@@ -1765,7 +1801,16 @@ const PlatformWorkspace: React.FC<{
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {platformTenants.map((tenant) => (
                     <tr key={tenant.id}>
-                      <td className="px-4 py-4 font-bold text-slate-900">{tenant.name}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <DetailToggleButton
+                            selected={selectedPlatformTenantId === tenant.id}
+                            onClick={() => setSelectedPlatformTenantId(tenant.id)}
+                            compact
+                          />
+                          <span className="font-bold text-slate-900">{tenant.name}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-4 text-slate-600">{tenant.plan}</td>
                       <td className="px-4 py-4">
                         <StatusPill label={tenant.status} />
@@ -1807,11 +1852,21 @@ const PlatformWorkspace: React.FC<{
               filterLabel="待审核优先"
               actionLabel="批量审核"
             />
+            <FilterResultSummary
+              label="企业审核筛选结果"
+              filterLabel="全部状态"
+              resultCount={enterpriseReviews.length}
+              totalCount={enterpriseReviews.length}
+              selectedLabel={selectedPlatformReviewId}
+              onClear={() => setSelectedPlatformReviewId(enterpriseReviews[0]?.id ?? '')}
+            />
             <div className="space-y-3">
               {enterpriseReviews.map((review) => (
                 <PlatformEnterpriseReviewCard
                   key={review.id}
                   review={review}
+                  selected={selectedPlatformReviewId === review.id}
+                  onSelectDetail={() => setSelectedPlatformReviewId(review.id)}
                 />
               ))}
             </div>
@@ -1844,11 +1899,21 @@ const PlatformWorkspace: React.FC<{
               filterLabel="已发布公告"
               actionLabel="发布公告"
             />
+            <FilterResultSummary
+              label="平台公告筛选结果"
+              filterLabel="全部状态"
+              resultCount={announcements.length}
+              totalCount={announcements.length}
+              selectedLabel={selectedPlatformAnnouncementId}
+              onClear={() => setSelectedPlatformAnnouncementId(announcements[0]?.id ?? '')}
+            />
             <div className="space-y-3">
               {platformAnnouncements.map((announcement) => (
                 <PlatformAnnouncementCard
                   key={announcement.id}
                   announcement={announcement}
+                  selected={selectedPlatformAnnouncementId === announcement.id}
+                  onSelectDetail={() => setSelectedPlatformAnnouncementId(announcement.id)}
                 />
               ))}
             </div>
@@ -1980,7 +2045,9 @@ const formatAnnouncementScope = (scope: string) => {
 
 const PlatformAnnouncementCard: React.FC<{
   announcement: PlatformAnnouncement;
-}> = ({ announcement }) => (
+  selected: boolean;
+  onSelectDetail: () => void;
+}> = ({ announcement, selected, onSelectDetail }) => (
   <div className="space-y-3">
     <DetailHeroCard
       eyebrow="平台公告"
@@ -1993,6 +2060,10 @@ const PlatformAnnouncementCard: React.FC<{
         { label: '发布时间', value: formatAuditTime(announcement.publishedAt) },
         { label: '发布状态', value: '已发布' },
       ]}
+    />
+    <DetailToggleButton
+      selected={selected}
+      onClick={onSelectDetail}
     />
     <DetailSection title="公告正文">
       <p className="break-words text-sm font-bold leading-6 text-slate-700">{announcement.content}</p>
@@ -2208,7 +2279,9 @@ const formatEnterpriseType = (type: string) => {
 
 const PlatformEnterpriseReviewCard: React.FC<{
   review: PlatformEnterpriseReview;
-}> = ({ review }) => {
+  selected: boolean;
+  onSelectDetail: () => void;
+}> = ({ review, selected, onSelectDetail }) => {
   const nextAction = review.status === '待审核'
     ? '处理企业审核'
     : review.status === '已驳回'
@@ -2216,22 +2289,28 @@ const PlatformEnterpriseReviewCard: React.FC<{
       : '维护认证档案';
 
   return (
-    <DetailHeroCard
-      eyebrow="企业审核"
-      title={`企业审核卡片 ${review.name}`}
-      meta={`审核编号 ${review.id}`}
-      status={review.status}
-      facts={[
-        { label: '企业类型', value: formatEnterpriseType(review.type) },
-        { label: '所属行业', value: review.industry },
-        { label: '审核状态', value: review.status },
-        { label: '下一步', value: nextAction },
-      ]}
-      summaryFacts={[
-        { label: '企业类型', value: formatEnterpriseType(review.type) },
-        { label: '下一步', value: nextAction },
-      ]}
-    />
+    <div className="space-y-3">
+      <DetailHeroCard
+        eyebrow="企业审核"
+        title={`企业审核卡片 ${review.name}`}
+        meta={`审核编号 ${review.id}`}
+        status={review.status}
+        facts={[
+          { label: '企业类型', value: formatEnterpriseType(review.type) },
+          { label: '所属行业', value: review.industry },
+          { label: '审核状态', value: review.status },
+          { label: '下一步', value: nextAction },
+        ]}
+        summaryFacts={[
+          { label: '企业类型', value: formatEnterpriseType(review.type) },
+          { label: '下一步', value: nextAction },
+        ]}
+      />
+      <DetailToggleButton
+        selected={selected}
+        onClick={onSelectDetail}
+      />
+    </div>
   );
 };
 
@@ -7291,6 +7370,9 @@ const SupplierWorkspaceView: React.FC<{
 }) => {
   const [declinedOpportunityIds, setDeclinedOpportunityIds] = useState<string[]>([]);
   const [selectedRequirementRfqId, setSelectedRequirementRfqId] = useState<string | null>(null);
+  const [selectedSupplierQuoteId, setSelectedSupplierQuoteId] = useState(workspace.quotes[0]?.id ?? '');
+  const [selectedSupplierOrderId, setSelectedSupplierOrderId] = useState(workspace.orders[0]?.id ?? '');
+  const [selectedSupplierInvoiceId, setSelectedSupplierInvoiceId] = useState(workspace.invoices[0]?.id ?? '');
   const [quoteDrafts, setQuoteDrafts] = useState<Record<string, SupplierQuoteDraft>>({});
   const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, SupplierDeliveryDraft>>({});
   const [invoiceDrafts, setInvoiceDrafts] = useState<Record<string, SupplierInvoiceDraft>>({});
@@ -7336,6 +7418,17 @@ const SupplierWorkspaceView: React.FC<{
     supplierOrderStatusFilter === '全部状态' || order.status === supplierOrderStatusFilter);
   const filteredSupplierInvoices = workspace.invoices.filter((invoice) =>
     supplierInvoiceStatusFilter === '全部状态' || invoice.paymentStatus === supplierInvoiceStatusFilter);
+  useEffect(() => {
+    setSelectedSupplierQuoteId((current) => (
+      workspace.quotes.some((quote) => quote.id === current) ? current : workspace.quotes[0]?.id ?? ''
+    ));
+    setSelectedSupplierOrderId((current) => (
+      workspace.orders.some((order) => order.id === current) ? current : workspace.orders[0]?.id ?? ''
+    ));
+    setSelectedSupplierInvoiceId((current) => (
+      workspace.invoices.some((invoice) => invoice.id === current) ? current : workspace.invoices[0]?.id ?? ''
+    ));
+  }, [workspace.quotes, workspace.orders, workspace.invoices]);
 
   return (
     <>
@@ -7547,7 +7640,7 @@ const SupplierWorkspaceView: React.FC<{
             filterLabel={quoteStatusFilter}
             resultCount={filteredSupplierQuotes.length}
             totalCount={workspace.quotes.length}
-            selectedLabel={filteredSupplierQuotes[0]?.id}
+            selectedLabel={selectedSupplierQuoteId}
             onClear={() => setQuoteStatusFilter('全部状态')}
           />
           {filteredSupplierQuotes.length === 0 ? (
@@ -7565,6 +7658,8 @@ const SupplierWorkspaceView: React.FC<{
                     key={quote.id}
                     quote={quote}
                     rfq={rfq}
+                    selected={selectedSupplierQuoteId === quote.id}
+                    onSelectDetail={() => setSelectedSupplierQuoteId(quote.id)}
                   />
                 );
               })}
@@ -7638,7 +7733,7 @@ const SupplierWorkspaceView: React.FC<{
           filterLabel={supplierOrderStatusFilter}
           resultCount={filteredSupplierOrders.length}
           totalCount={workspace.orders.length}
-          selectedLabel={filteredSupplierOrders[0]?.id}
+          selectedLabel={selectedSupplierOrderId}
           onClear={() => setSupplierOrderStatusFilter('全部状态')}
         />
         {filteredSupplierOrders.length === 0 ? (
@@ -7658,7 +7753,12 @@ const SupplierWorkspaceView: React.FC<{
             const deliveryDraft = deliveryDrafts[order.id] ?? { carrier: '顺丰速运', trackingNo: '' };
             const invoiceDraft = invoiceDrafts[order.id] ?? { amount: order.amount, invoiceNo: '' };
             return (
-              <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                key={order.id}
+                className={`rounded-lg border bg-white p-4 transition ${
+                  selectedSupplierOrderId === order.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-black text-slate-900">{order.id}</p>
@@ -7673,8 +7773,14 @@ const SupplierWorkspaceView: React.FC<{
                 />
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <StatusPill label={order.status} />
-                  {javaEnabled && (
-                    <div className="flex flex-wrap justify-end gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <DetailToggleButton
+                      selected={selectedSupplierOrderId === order.id}
+                      onClick={() => setSelectedSupplierOrderId(order.id)}
+                      compact
+                    />
+                    {javaEnabled && (
+                      <>
                       {order.status === '待供应商确认' && (
                         <PrimaryActionButton
                           onClick={() => onConfirmOrder(order.id)}
@@ -7692,8 +7798,9 @@ const SupplierWorkspaceView: React.FC<{
                       {order.status === '已收货' && !workspace.invoices.some((invoice) => invoice.orderId === order.id) && (
                         <span className="text-xs font-black text-amber-700">填写发票信息</span>
                       )}
-                    </div>
-                  )}
+                      </>
+                    )}
+                  </div>
                 </div>
                 {javaEnabled && order.status === '待发货' && (
                   <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
@@ -7817,7 +7924,7 @@ const SupplierWorkspaceView: React.FC<{
           filterLabel={supplierInvoiceStatusFilter}
           resultCount={filteredSupplierInvoices.length}
           totalCount={workspace.invoices.length}
-          selectedLabel={filteredSupplierInvoices[0]?.id}
+          selectedLabel={selectedSupplierInvoiceId}
           onClear={() => setSupplierInvoiceStatusFilter('全部状态')}
         />
         {filteredSupplierInvoices.length === 0 ? (
@@ -7833,6 +7940,8 @@ const SupplierWorkspaceView: React.FC<{
                     key={invoice.id}
                     invoice={invoice}
                     order={order}
+                    selected={selectedSupplierInvoiceId === invoice.id}
+                    onSelectDetail={() => setSelectedSupplierInvoiceId(invoice.id)}
                   />
                 );
               })}
@@ -8042,19 +8151,27 @@ const SupplierQuoteHistorySummaryPanel: React.FC<{
 const SupplierQuoteHistoryCard: React.FC<{
   quote: SupplierWorkspace['quotes'][number];
   rfq?: SupplierWorkspace['opportunities'][number];
-}> = ({ quote, rfq }) => (
-  <DetailHeroCard
-    eyebrow="报价记录"
-    title={rfq?.title ?? `报价 ${quote.rfqId}`}
-    meta={`关联询价 ${quote.rfqId} · ${rfq?.status ?? '未知状态'}`}
-    status={quote.status}
-    facts={[
-      { label: '报价金额', value: currency(quote.amount) },
-      { label: '税率', value: `${quote.taxRate}%` },
-      { label: '交付周期', value: `${quote.deliveryDays} 天` },
-      { label: '下一步', value: rfq?.status === '已定标' ? '查看订单' : '等待定标' },
-    ]}
-  />
+  selected: boolean;
+  onSelectDetail: () => void;
+}> = ({ quote, rfq, selected, onSelectDetail }) => (
+  <div className="space-y-3">
+    <DetailHeroCard
+      eyebrow="报价记录"
+      title={rfq?.title ?? `报价 ${quote.rfqId}`}
+      meta={`关联询价 ${quote.rfqId} · ${rfq?.status ?? '未知状态'}`}
+      status={quote.status}
+      facts={[
+        { label: '报价金额', value: currency(quote.amount) },
+        { label: '税率', value: `${quote.taxRate}%` },
+        { label: '交付周期', value: `${quote.deliveryDays} 天` },
+        { label: '下一步', value: rfq?.status === '已定标' ? '查看订单' : '等待定标' },
+      ]}
+    />
+    <DetailToggleButton
+      selected={selected}
+      onClick={onSelectDetail}
+    />
+  </div>
 );
 
 const SupplierInvoiceReceivableSummaryPanel: React.FC<{
@@ -8084,7 +8201,9 @@ const SupplierInvoiceReceivableSummaryPanel: React.FC<{
 const SupplierInvoiceReceivableCard: React.FC<{
   invoice: SupplierWorkspace['invoices'][number];
   order?: SupplierWorkspace['orders'][number];
-}> = ({ invoice, order }) => {
+  selected: boolean;
+  onSelectDetail: () => void;
+}> = ({ invoice, order, selected, onSelectDetail }) => {
   const paymentProgress = invoice.paymentStatus === '已付款'
     ? '100%'
     : invoice.paymentStatus === '部分付款'
@@ -8097,19 +8216,25 @@ const SupplierInvoiceReceivableCard: React.FC<{
       : '跟进回款';
 
   return (
-    <DetailHeroCard
-      eyebrow="发票应收"
-      title={`发票应收卡片 ${invoice.id}`}
-      meta={`关联订单 ${invoice.orderId} · ${order?.status ?? '订单状态待同步'}`}
-      status={invoice.paymentStatus}
-      facts={[
-        { label: '关联订单', value: invoice.orderId },
-        { label: '应收金额', value: currency(invoice.amount) },
-        { label: '付款状态', value: invoice.paymentStatus },
-        { label: '回款进度', value: paymentProgress },
-        { label: '下一步', value: nextAction },
-      ]}
-    />
+    <div className="space-y-3">
+      <DetailHeroCard
+        eyebrow="发票应收"
+        title={`发票应收卡片 ${invoice.id}`}
+        meta={`关联订单 ${invoice.orderId} · ${order?.status ?? '订单状态待同步'}`}
+        status={invoice.paymentStatus}
+        facts={[
+          { label: '关联订单', value: invoice.orderId },
+          { label: '应收金额', value: currency(invoice.amount) },
+          { label: '付款状态', value: invoice.paymentStatus },
+          { label: '回款进度', value: paymentProgress },
+          { label: '下一步', value: nextAction },
+        ]}
+      />
+      <DetailToggleButton
+        selected={selected}
+        onClick={onSelectDetail}
+      />
+    </div>
   );
 };
 

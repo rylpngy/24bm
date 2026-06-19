@@ -70,6 +70,7 @@
 | 14 | 移动端布局收口 | 后台壳、移动端导航、顶部工具栏、工作区选择器和状态筛选器已补窄屏宽度约束，降低横向溢出风险 | `scripts/mobile-layout-overflow-ui.test.ts` |
 | 15 | 空态一致性 | 平台待审核、供应商询价邀请筛选无结果和共享列表空态已统一复用 EmptyState | `scripts/empty-state-consistency-ui.test.ts` |
 | 16 | 提示态一致性 | 平台、采购方、供应商三端主流程运行结果已统一复用 FeedbackNotice，并按成功、失败、普通信息区分反馈样式 | `scripts/feedback-notice-consistency-ui.test.ts` |
+| 17 | 只读页详情入口 | 平台租户、企业审核、公告以及供应商报价、销售订单、应收发票列表已补筛选摘要、已选记录和详情入口 | `scripts/platform-supplier-readonly-detail-affordance-ui.test.ts` |
 
 ## 第二批候选任务
 
