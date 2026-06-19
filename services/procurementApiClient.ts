@@ -43,6 +43,9 @@ export interface CreateDemandPayload {
   department: string;
   requester: string;
   budget: number;
+  expectedDeliveryDate?: string;
+  description?: string;
+  attachmentNames?: string[];
   lineItems: PurchaseDemand['lineItems'];
 }
 

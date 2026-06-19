@@ -6045,6 +6045,11 @@ const DemandCreateForm: React.FC<{
   const [department, setDepartment] = useState(firstDepartment?.id ?? defaultDepartment);
   const [requester, setRequester] = useState(firstRequester?.id ?? defaultRequester);
   const [budget, setBudget] = useState(68000);
+  const defaultExpectedDeliveryDate = new Date();
+  defaultExpectedDeliveryDate.setDate(defaultExpectedDeliveryDate.getDate() + 14);
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(defaultExpectedDeliveryDate.toISOString().slice(0, 10));
+  const [demandDescription, setDemandDescription] = useState('用于补充研发、行政办公和会议协同场景的设备缺口。');
+  const [attachmentNames, setAttachmentNames] = useState('预算批复.pdf\n配置说明.xlsx');
   const [demandLineItems, setDemandLineItems] = useState([{ materialId: firstMaterial?.id ?? '', quantity: 1 }]);
   const [submitForApproval, setSubmitForApproval] = useState(true);
 
@@ -6081,6 +6086,12 @@ const DemandCreateForm: React.FC<{
           department: department.trim(),
           requester: requester.trim(),
           budget,
+          expectedDeliveryDate: expectedDeliveryDate || undefined,
+          description: demandDescription.trim() || undefined,
+          attachmentNames: attachmentNames
+            .split('\n')
+            .map((name) => name.trim())
+            .filter(Boolean),
           lineItems: demandLineItems
             .filter((lineItem) => lineItem.materialId && lineItem.quantity > 0)
             .map((lineItem) => ({ materialId: lineItem.materialId, quantity: lineItem.quantity })),
@@ -6133,6 +6144,22 @@ const DemandCreateForm: React.FC<{
           value={budget}
           onChange={(event) => setBudget(Number(event.target.value))}
           className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </Field>
+      <Field label="期望到货日期">
+        <input
+          type="date"
+          value={expectedDeliveryDate}
+          onChange={(event) => setExpectedDeliveryDate(event.target.value)}
+          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </Field>
+      <Field label="需求说明">
+        <textarea
+          value={demandDescription}
+          onChange={(event) => setDemandDescription(event.target.value)}
+          rows={3}
+          className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </Field>
 
@@ -6207,6 +6234,15 @@ const DemandCreateForm: React.FC<{
         <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
           附件入口用于归集需求说明、报价依据和预算批复材料；上传能力接入后将关联到当前需求。
         </p>
+        <label className="mt-3 block text-xs font-black text-slate-500">
+          附件清单
+          <textarea
+            value={attachmentNames}
+            onChange={(event) => setAttachmentNames(event.target.value)}
+            rows={3}
+            className="mt-2 w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold leading-6 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
       </section>
 
       <label className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-700">

@@ -1221,6 +1221,9 @@ describe('procurement API clients', () => {
       department: 'dept-admin',
       requester: '页面不会提交 requester',
       budget: 66000,
+      expectedDeliveryDate: '2026-07-05',
+      description: '补充采购研发用高性能笔记本',
+      attachmentNames: ['预算批复.pdf', '配置说明.xlsx'],
       lineItems: [{ materialId: 'mat-laptop', quantity: 3 }],
     });
     const approval = await client.submitBuyerDemand(created.id);

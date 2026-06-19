@@ -17,7 +17,16 @@ describe('buyer demand create form UI', () => {
     expect(demandCreateForm).toContain('updateDemandLineItem');
     expect(demandCreateForm).toContain('预估金额');
     expect(demandCreateForm).toContain('预算差额');
+    expect(demandCreateForm).toContain('expectedDeliveryDate');
+    expect(demandCreateForm).toContain('demandDescription');
+    expect(demandCreateForm).toContain('attachmentNames');
+    expect(demandCreateForm).toContain('期望到货日期');
+    expect(demandCreateForm).toContain('需求说明');
+    expect(demandCreateForm).toContain('附件清单');
     expect(demandCreateForm).toContain('需求附件');
+    expect(demandCreateForm).toContain('description: demandDescription.trim() || undefined');
+    expect(demandCreateForm).toContain('expectedDeliveryDate: expectedDeliveryDate || undefined');
+    expect(demandCreateForm).toContain("attachmentNames: attachmentNames");
     expect(demandCreateForm).toContain('lineItems: demandLineItems');
     expect(demandCreateForm).toContain('filter((lineItem) => lineItem.materialId && lineItem.quantity > 0)');
     expect(demandCreateForm).toContain('disabled={materials.length === 0}');
