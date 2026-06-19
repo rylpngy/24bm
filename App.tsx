@@ -4584,6 +4584,9 @@ const RfqDetailOperationPanel: React.FC<{
   const canSubmitAward = canSubmitAwardApproval(rfq) && Boolean(recommendedQuote);
   const canCreateOrder = canCreateOrderFromAward(rfq, approvedAwardId, workspace.orders);
   const nextAction = describeRfqNextAction(rfq, approvedAwardId, workspace.orders);
+  const todayDate = new Date().toISOString().slice(0, 10);
+  const awardReasonInvalid = !awardDraft?.reason.trim();
+  const orderReceiptDateInvalid = !orderDraft?.expectedReceiptDate || orderDraft.expectedReceiptDate <= todayDate;
 
   return (
     <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
@@ -4614,9 +4617,14 @@ const RfqDetailOperationPanel: React.FC<{
             onChange={(event) => onChangeAwardDraft(rfq.id, { reason: event.target.value })}
             className="mt-2 min-h-20 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
           />
+          {awardReasonInvalid && (
+            <p aria-live="polite" className="mt-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请填写定标理由后再提交审批。
+            </p>
+          )}
           <PrimaryActionButton
             onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id, awardDraft)}
-            disabled={awardSubmitBusyId === rfq.id || awardDraft.reason.trim().length === 0}
+            disabled={awardSubmitBusyId === rfq.id || awardReasonInvalid}
             busy={awardSubmitBusyId === rfq.id}
             icon={BadgeCheck}
             pendingLabel="提交中"
@@ -4655,9 +4663,14 @@ const RfqDetailOperationPanel: React.FC<{
             onChange={(event) => onChangeOrderDraft(approvedAwardId, { expectedReceiptDate: event.target.value })}
             className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
           />
+          {orderReceiptDateInvalid && (
+            <p aria-live="polite" className="mt-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              预计到货日期必须晚于今天。
+            </p>
+          )}
           <PrimaryActionButton
             onClick={() => onCreateOrderFromAward(approvedAwardId, orderDraft)}
-            disabled={orderCreateBusy === approvedAwardId || !orderDraft.expectedReceiptDate}
+            disabled={orderCreateBusy === approvedAwardId || orderReceiptDateInvalid}
             busy={orderCreateBusy === approvedAwardId}
             tone="emerald"
             icon={ShoppingCart}
@@ -4897,6 +4910,9 @@ const QuoteComparisonOperationPanel: React.FC<{
   const canSubmitAward = canSubmitAwardApproval(rfq) && Boolean(recommendedQuote);
   const canCreateOrder = canCreateOrderFromAward(rfq, approvedAwardId, workspace.orders);
   const nextAction = describeRfqNextAction(rfq, approvedAwardId, workspace.orders);
+  const todayDate = new Date().toISOString().slice(0, 10);
+  const awardReasonInvalid = !awardDraft?.reason.trim();
+  const orderReceiptDateInvalid = !orderDraft?.expectedReceiptDate || orderDraft.expectedReceiptDate <= todayDate;
 
   return (
     <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
@@ -4927,9 +4943,14 @@ const QuoteComparisonOperationPanel: React.FC<{
             onChange={(event) => onChangeAwardDraft(rfq.id, { reason: event.target.value })}
             className="mt-2 min-h-20 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
           />
+          {awardReasonInvalid && (
+            <p aria-live="polite" className="mt-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请填写定标理由后再提交审批。
+            </p>
+          )}
           <PrimaryActionButton
             onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id, awardDraft)}
-            disabled={awardSubmitBusyId === rfq.id || awardDraft.reason.trim().length === 0}
+            disabled={awardSubmitBusyId === rfq.id || awardReasonInvalid}
             busy={awardSubmitBusyId === rfq.id}
             icon={BadgeCheck}
             pendingLabel="提交中"
@@ -4960,9 +4981,14 @@ const QuoteComparisonOperationPanel: React.FC<{
             onChange={(event) => onChangeOrderDraft(approvedAwardId, { expectedReceiptDate: event.target.value })}
             className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
           />
+          {orderReceiptDateInvalid && (
+            <p aria-live="polite" className="mt-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              预计到货日期必须晚于今天。
+            </p>
+          )}
           <PrimaryActionButton
             onClick={() => onCreateOrderFromAward(approvedAwardId, orderDraft)}
-            disabled={orderCreateBusy === approvedAwardId || !orderDraft.expectedReceiptDate}
+            disabled={orderCreateBusy === approvedAwardId || orderReceiptDateInvalid}
             busy={orderCreateBusy === approvedAwardId}
             tone="emerald"
             icon={ShoppingCart}
@@ -8020,6 +8046,9 @@ const RfqCard: React.FC<{
   const canCreateOrder = javaEnabled && canCreateOrderFromAward(rfq, approvedAwardId, workspace.orders);
   const nextAction = describeRfqNextAction(rfq, approvedAwardId, workspace.orders);
   const handledState = nextAction.title === '流程已处理';
+  const todayDate = new Date().toISOString().slice(0, 10);
+  const awardReasonInvalid = !awardDraft.reason.trim();
+  const orderReceiptDateInvalid = !orderDraft?.expectedReceiptDate || orderDraft.expectedReceiptDate <= todayDate;
 
   return (
     <div className={`rounded-lg border bg-white p-4 transition ${
@@ -8108,9 +8137,14 @@ const RfqCard: React.FC<{
             onChange={(event) => onChangeAwardDraft(rfq.id, { reason: event.target.value })}
             className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
           />
+          {awardReasonInvalid && (
+            <p aria-live="polite" className="mt-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请填写定标理由后再提交审批。
+            </p>
+          )}
           <PrimaryActionButton
             onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id, awardDraft)}
-            disabled={awardSubmitBusyId === rfq.id || awardDraft.reason.trim().length === 0}
+            disabled={awardSubmitBusyId === rfq.id || awardReasonInvalid}
             busy={awardSubmitBusyId === rfq.id}
             icon={BadgeCheck}
             pendingLabel="提交中"
@@ -8133,9 +8167,14 @@ const RfqCard: React.FC<{
             onChange={(event) => onChangeOrderDraft(approvedAwardId, { expectedReceiptDate: event.target.value })}
             className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
           />
+          {orderReceiptDateInvalid && (
+            <p aria-live="polite" className="mt-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              预计到货日期必须晚于今天。
+            </p>
+          )}
           <PrimaryActionButton
             onClick={() => onCreateOrderFromAward(approvedAwardId, orderDraft)}
-            disabled={orderCreateBusy === approvedAwardId || !orderDraft.expectedReceiptDate}
+            disabled={orderCreateBusy === approvedAwardId || orderReceiptDateInvalid}
             busy={orderCreateBusy === approvedAwardId}
             tone="emerald"
             icon={ShoppingCart}

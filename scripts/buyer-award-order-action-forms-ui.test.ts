@@ -24,4 +24,23 @@ describe('buyer award and order action forms UI', () => {
     expect(app).toContain('onSubmitAwardApproval(rfq.id, recommendedQuote.id, awardDraft)');
     expect(app).toContain('onCreateOrderFromAward(approvedAwardId, orderDraft)');
   });
+
+  it('shows validation feedback before submitting awards or creating orders', () => {
+    const app = read('App.tsx');
+    const quoteComparisonOperationPanel = app.slice(
+      app.indexOf('const QuoteComparisonOperationPanel'),
+      app.indexOf('const RfqCard'),
+    );
+
+    expect(app).toContain('awardReasonInvalid');
+    expect(app).toContain('orderReceiptDateInvalid');
+    expect(app).toContain("new Date().toISOString().slice(0, 10)");
+    expect(quoteComparisonOperationPanel).toContain('const awardReasonInvalid');
+    expect(quoteComparisonOperationPanel).toContain('const orderReceiptDateInvalid');
+    expect(app).toContain('disabled={awardSubmitBusyId === rfq.id || awardReasonInvalid}');
+    expect(app).toContain('disabled={orderCreateBusy === approvedAwardId || orderReceiptDateInvalid}');
+    expect(app).toContain('aria-live="polite"');
+    expect(app).toContain('请填写定标理由后再提交审批。');
+    expect(app).toContain('预计到货日期必须晚于今天。');
+  });
 });
