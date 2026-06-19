@@ -158,5 +158,9 @@
 | 供应商准入动作表单化 | 供应商详情页补准入理由和授权品类确认，避免准入动作缺少上下文 | `BuyerSupplierAdmissionDraft`、`scripts/buyer-supplier-admission-action-form-ui.test.ts` |
 | 审批处理动作表单化 | 审批中心通过/驳回前需要填写审批意见，固定审批模板下也能保留处理上下文 | `BuyerApprovalReviewDraft`、`scripts/buyer-approval-action-forms-ui.test.ts` |
 | 订单收货和发票付款详情动作表单化 | 订单/收货详情可选择验收结果后登记收货，发票详情可选择付款状态后登记付款 | `ReceiptRegistrationForm`、`PaymentRegistrationForm`、`scripts/buyer-fulfillment-detail-action-forms-ui.test.ts` |
+| 快捷操作草稿保护 | 订单、收货和发票列表中的快捷下拉只合并更新单个字段，不覆盖详情表单中的备注、异常原因、附件和对账草稿 | `updateReceiptDraft`、`updatePaymentDraft`、`scripts/buyer-fulfillment-action-forms-ui.test.ts` |
+| 快捷操作面板统一 | 订单履约、收货验收和发票付款列表的快捷登记入口统一为紧凑操作面板，补充右侧详情可继续完善的信息提示 | `InlineWorkflowAction`、`scripts/buyer-fulfillment-list-card-ui.test.ts` |
+| 列表工具条提示优化 | 列表工具条不再显示误导性的“快速筛选”，改为明确提示顶部搜索和状态筛选，并增强窄屏标签稳定性 | `ListToolbar`、`scripts/admin-list-toolbar-ui.test.ts` |
+| 状态筛选组件优化 | 状态筛选补充筛选器语义、可选项数量和移动端上下布局，避免小屏下选择框挤压 | `StatusFilterControl`、`scripts/buyer-workflow-status-filters-ui.test.ts` |
 
 第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。

@@ -44,11 +44,18 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('供应商准入动作表单化');
     expect(checklist).toContain('审批处理动作表单化');
     expect(checklist).toContain('订单收货和发票付款详情动作表单化');
+    expect(checklist).toContain('快捷操作草稿保护');
+    expect(checklist).toContain('快捷操作面板统一');
+    expect(checklist).toContain('列表工具条提示优化');
+    expect(checklist).toContain('状态筛选组件优化');
     expect(checklist).toContain('BuyerAwardDraft');
     expect(checklist).toContain('BuyerSupplierAdmissionDraft');
     expect(checklist).toContain('BuyerApprovalReviewDraft');
     expect(checklist).toContain('ReceiptRegistrationForm');
     expect(checklist).toContain('PaymentRegistrationForm');
+    expect(checklist).toContain('scripts/buyer-fulfillment-action-forms-ui.test.ts');
+    expect(checklist).toContain('scripts/buyer-fulfillment-list-card-ui.test.ts');
+    expect(checklist).toContain('scripts/buyer-workflow-status-filters-ui.test.ts');
     expect(checklist).toContain('第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。');
   });
 });
