@@ -45,4 +45,22 @@ describe('buyer demand detail UI', () => {
     expect(app).toContain('demandSubmitBusyId={demandSubmitBusyId}');
     expect(app).toContain('rfqCreateBusy={rfqCreateBusy}');
   });
+
+  it('places approval and next action summary in the top demand detail card', () => {
+    const app = read('App.tsx');
+    const demandDetail = app.slice(
+      app.indexOf('const DemandDetailPanelView'),
+      app.indexOf('const DemandDetailOperationPanel'),
+    );
+    const topCard = demandDetail.slice(
+      demandDetail.indexOf('<InlineFactGrid facts={detail.facts} />'),
+      demandDetail.indexOf('<section>'),
+    );
+
+    expect(topCard).toContain('<MiniFact label="审批状态" value={detail.approvalLabel} />');
+    expect(topCard).toContain('<MiniFact label="下一步" value={detail.nextActionTitle} />');
+    expect(topCard.indexOf('<MiniFact label="审批状态" value={detail.approvalLabel} />')).toBeGreaterThan(
+      topCard.indexOf('<InlineFactGrid facts={detail.facts} />'),
+    );
+  });
 });

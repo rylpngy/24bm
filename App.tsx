@@ -3691,6 +3691,10 @@ const DemandDetailPanelView: React.FC<{
             <StatusPill label={detail.status} />
           </div>
           <InlineFactGrid facts={detail.facts} />
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <MiniFact label="审批状态" value={detail.approvalLabel} />
+            <MiniFact label="下一步" value={detail.nextActionTitle} />
+          </div>
         </div>
 
         <section>
@@ -3783,11 +3787,6 @@ const DemandDetailPanelView: React.FC<{
             </p>
           )}
         </section>
-
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-          <MiniFact label="审批状态" value={detail.approvalLabel} />
-          <MiniFact label="下一步" value={detail.nextActionTitle} />
-        </div>
 
         <DemandDetailOperationPanel
           detail={detail}
