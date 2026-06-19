@@ -1597,6 +1597,9 @@ describe('procurement API clients', () => {
       demandIds: ['dem-local-laptop'],
       invitedSupplierIds: ['ent-supplier-sunrise'],
       deadline: '2026-07-01T18:00:00+08:00',
+      quoteRequirement: '请按含税总价报价，并注明质保周期。',
+      deliveryRequirement: '中标后 7 个自然日内送达华东总部。',
+      invitationNote: '本次询价优先考虑准时交付和售后响应。',
     });
     const quote = await client.submitSupplierQuote(rfq.id, { amount: 118000, taxRate: 13, deliveryDays: 7 });
     const award = await client.awardBuyerRfq(rfq.id, { quoteId: quote.id, reason: '价格和交期最优' });

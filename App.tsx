@@ -6282,6 +6282,9 @@ const RfqCreateForm: React.FC<{
   const defaultDeadline = new Date();
   defaultDeadline.setDate(defaultDeadline.getDate() + 14);
   const [deadline, setDeadline] = useState(defaultDeadline.toISOString().slice(0, 10));
+  const [quoteRequirement, setQuoteRequirement] = useState('请按含税总价报价，并注明税率、质保周期和可替代型号。');
+  const [deliveryRequirement, setDeliveryRequirement] = useState('中标后 7 个自然日内送达指定收货地点，支持分批交付需提前说明。');
+  const [invitationNote, setInvitationNote] = useState('本次询价优先考虑准时交付、售后响应和历史合作绩效。');
   const canSubmit = selectedSupplierIds.length > 0 && deadline;
   const toggleSupplierSelection = (supplierId: string, checked: boolean) => {
     setSelectedSupplierIds((current) =>
@@ -6318,7 +6321,39 @@ const RfqCreateForm: React.FC<{
         </Field>
       </div>
 
+      <div className="mt-3 grid gap-3 lg:grid-cols-3 xl:grid-cols-1">
+        <Field label="报价要求">
+          <textarea
+            value={quoteRequirement}
+            onChange={(event) => setQuoteRequirement(event.target.value)}
+            rows={3}
+            className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold leading-5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </Field>
+        <Field label="交付要求">
+          <textarea
+            value={deliveryRequirement}
+            onChange={(event) => setDeliveryRequirement(event.target.value)}
+            rows={3}
+            className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold leading-5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </Field>
+        <Field label="邀请说明">
+          <textarea
+            value={invitationNote}
+            onChange={(event) => setInvitationNote(event.target.value)}
+            rows={3}
+            className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold leading-5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </Field>
+      </div>
+
       <div className="mt-3 space-y-2">
+        {admittedRelations.length === 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+            暂无已准入供应商，请先完成供应商准入后再创建询价。
+          </div>
+        )}
         {admittedRelations.map((relation) => {
           const supplier = suppliers.find((item) => item.id === relation.supplierId);
           const checked = selectedSupplierIds.includes(relation.supplierId);
@@ -6354,6 +6389,10 @@ const RfqCreateForm: React.FC<{
             </label>
           );
         })}
+      </div>
+
+      <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3 text-xs font-bold leading-5 text-blue-700">
+        RFQ 创建后将向 {selectedSupplierIds.length} 家供应商发送询价邀请；报价要求、交付要求和邀请说明会作为页面上下文展示，待后端字段开放后再持久化。
       </div>
 
       <button

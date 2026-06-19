@@ -54,6 +54,9 @@ export interface CreateRfqPayload {
   demandIds: string[];
   invitedSupplierIds: string[];
   deadline: string;
+  quoteRequirement?: string;
+  deliveryRequirement?: string;
+  invitationNote?: string;
 }
 
 export interface SubmitQuotePayload {
