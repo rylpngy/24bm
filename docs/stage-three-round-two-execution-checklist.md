@@ -71,6 +71,7 @@
 | 15 | 空态一致性 | 平台待审核、供应商询价邀请筛选无结果和共享列表空态已统一复用 EmptyState | `scripts/empty-state-consistency-ui.test.ts` |
 | 16 | 提示态一致性 | 平台、采购方、供应商三端主流程运行结果已统一复用 FeedbackNotice，并按成功、失败、普通信息区分反馈样式 | `scripts/feedback-notice-consistency-ui.test.ts` |
 | 17 | 只读页详情入口 | 平台租户、企业审核、公告以及供应商报价、销售订单、应收发票列表已补筛选摘要、已选记录和详情入口 | `scripts/platform-supplier-readonly-detail-affordance-ui.test.ts` |
+| 18 | 附件中心入口 | 采购需求、收货验收、发票付款和供应商资质已补附件中心入口、业务对象关联、可见范围和元数据登记边界说明 | `scripts/attachment-center-entry-ui.test.ts` |
 
 ## 第二批候选任务
 

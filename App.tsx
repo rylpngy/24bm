@@ -5293,6 +5293,14 @@ const ReceiptRegistrationForm: React.FC<{
           className="mt-2 min-h-20 w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
         />
       </label>
+      <AttachmentCenterEntryPanel
+        title="收货附件中心"
+        ownerType="收货验收"
+        ownerId={orderId}
+        visibility="buyer_internal"
+        desc="登记收货照片、验收单和差异说明的附件元数据，后续与订单履约和异常处理关联。"
+        attachmentNames={parseAttachmentNames(draft.attachmentNames)}
+      />
       <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
         差异处理提示：如选择异常待处理，请填写异常原因并在附件清单中登记照片、验收单或差异说明；后续将衔接差异处理和补发/退换流程。
       </div>
@@ -5393,6 +5401,14 @@ const PaymentRegistrationForm: React.FC<{
           className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
         />
       </label>
+      <AttachmentCenterEntryPanel
+        title="发票附件中心"
+        ownerType="发票付款"
+        ownerId={invoiceId}
+        visibility="buyer_internal"
+        desc="登记发票影像、付款凭证和对账说明附件元数据，后续与三单匹配和付款审批关联。"
+        attachmentNames={['发票影像.pdf', '付款凭证待补充']}
+      />
       <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-xs font-bold leading-5 text-indigo-800">
         三单匹配提示：付款前请核对采购订单、收货验收和发票金额；如存在差异，应先完成对账处理再登记付款。
       </div>
@@ -6844,6 +6860,14 @@ const DemandCreateForm: React.FC<{
         <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
           附件入口用于归集需求说明、报价依据和预算批复材料；上传能力接入后将关联到当前需求。
         </p>
+        <AttachmentCenterEntryPanel
+          title="需求附件中心"
+          ownerType="采购需求"
+          ownerId="新建需求草稿"
+          visibility="tenant"
+          desc="登记需求说明、报价依据和预算批复材料的附件元数据，创建后关联到采购需求。"
+          attachmentNames={parseAttachmentNames(attachmentNames)}
+        />
         <label className="mt-3 block text-xs font-black text-slate-500">
           附件清单
           <textarea
@@ -7107,6 +7131,76 @@ const DetailSection: React.FC<{
     {children}
   </section>
 );
+
+const parseAttachmentNames = (value: string) =>
+  value
+    .split('\n')
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+const AttachmentCenterEntryPanel: React.FC<{
+  title: string;
+  ownerType: string;
+  ownerId: string;
+  visibility: 'tenant' | 'buyer_internal' | 'supplier_shared';
+  desc: string;
+  attachmentNames?: string[];
+}> = ({
+  title,
+  ownerType,
+  ownerId,
+  visibility,
+  desc,
+  attachmentNames = [],
+}) => {
+  const visibilityLabel = visibility === 'supplier_shared'
+    ? '供应商共享'
+    : visibility === 'buyer_internal'
+      ? '采购方内部'
+      : '租户内可见';
+
+  return (
+    <section className="mt-3 rounded-lg border border-sky-100 bg-sky-50 p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-sky-800">附件中心入口</p>
+          <p className="mt-1 text-sm font-black text-slate-950">{title}</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-sky-700">{desc}</p>
+        </div>
+        <span className="shrink-0 rounded-lg bg-white px-2 py-1 text-[11px] font-black text-sky-700">
+          登记附件元数据
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <MiniFact label="业务对象" value={ownerType} />
+        <MiniFact label="对象编号" value={ownerId} />
+        <MiniFact label="visibility" value={visibilityLabel} />
+      </div>
+      <div className="mt-3 rounded-lg border border-sky-100 bg-white p-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-black text-slate-600">附件清单预览</p>
+          <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+            {attachmentNames.length} 个
+          </span>
+        </div>
+        {attachmentNames.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {attachmentNames.map((name) => (
+              <span key={name} className="rounded-lg bg-slate-50 px-2 py-1 text-xs font-bold text-slate-600">
+                {name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs font-bold text-slate-500">暂无附件名称，保存业务单据后可补充附件元数据。</p>
+        )}
+      </div>
+      <p className="mt-3 text-xs font-bold leading-5 text-sky-700">
+        当前阶段只登记附件元数据并关联业务对象，暂不上传原文件、生成下载签名或处理文件预览。
+      </p>
+    </section>
+  );
+};
 
 const DetailActionPanel: React.FC<{
   title: string;
@@ -7672,6 +7766,17 @@ const SupplierWorkspaceView: React.FC<{
       <Panel title="供应商企业档案" icon={BadgeCheck}>
         <div className="space-y-4">
           <SupplierProfileSummaryPanel workspace={workspace} />
+          <AttachmentCenterEntryPanel
+            title="资质附件中心"
+            ownerType="供应商资质"
+            ownerId={workspace.supplier.id}
+            visibility="supplier_shared"
+            desc="登记营业执照、授权代理证书和服务能力证明的附件元数据，供供应商自维护和采购方准入参考。"
+            attachmentNames={[
+              '营业执照.pdf',
+              workspace.supplier.verified ? '授权代理资质.pdf' : '资质材料待补充',
+            ]}
+          />
           <div className="grid gap-3 lg:grid-cols-2">
             <SupplierProfileCapabilityCard
               title="企业档案卡片"
