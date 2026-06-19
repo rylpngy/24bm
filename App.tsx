@@ -699,6 +699,8 @@ const App: React.FC = () => {
         variant="error"
         title="加载失败"
         desc={configurationError ?? loadError ?? '工作台数据加载失败'}
+        actionLabel="重新加载"
+        onAction={() => setRefreshKey((value) => value + 1)}
         fullScreen
       />
     );
@@ -5717,7 +5719,9 @@ const ShellState: React.FC<{
   title: string;
   desc: string;
   fullScreen?: boolean;
-}> = ({ variant, title, desc, fullScreen = false }) => {
+  actionLabel?: string;
+  onAction?: () => void;
+}> = ({ variant, title, desc, fullScreen = false, actionLabel, onAction }) => {
   const Icon = variant === 'error' ? ShieldCheck : variant === 'loading' ? Activity : Database;
   const body = (
     <div className={`rounded-lg border p-6 ${shellStateToneClasses[variant]}`}>
@@ -5728,6 +5732,15 @@ const ShellState: React.FC<{
         <div className="min-w-0">
           <p className="text-sm font-black">{title}</p>
           <p className="mt-1 text-xs font-bold leading-5 opacity-80">{desc}</p>
+          {actionLabel && onAction && (
+            <button
+              type="button"
+              onClick={onAction}
+              className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-white px-3 text-xs font-black shadow-sm transition hover:bg-white/80"
+            >
+              {actionLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

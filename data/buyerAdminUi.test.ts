@@ -166,7 +166,7 @@ describe('buyer admin UI helpers', () => {
       ],
       contextRows: [
         {
-          id: 'mat-acme-2',
+          id: 'dem-acme-2:mat-acme-2:0',
           title: 'A4 复印纸',
           detail: '260 箱 · 参考 ¥41,600',
         },
@@ -229,6 +229,28 @@ describe('buyer admin UI helpers', () => {
         title: '海港物流服务',
         status: '待准入',
       },
+    ]);
+  });
+
+  it('keeps approval demand context row ids unique when one demand repeats a material', () => {
+    const duplicateWorkspace = cloneWorkspace();
+    duplicateWorkspace.demands[1].lineItems = [
+      ...duplicateWorkspace.demands[1].lineItems,
+      { materialId: duplicateWorkspace.demands[1].lineItems[0].materialId, quantity: 1 },
+    ];
+
+    const pending = buildWorkspaceApprovalQueue(duplicateWorkspace);
+    const detail = buildApprovalDetailPanel(
+      duplicateWorkspace,
+      pending,
+      [],
+      `approval-demand-${duplicateWorkspace.demands[1].id}`,
+      '2026-06-18T08:00:00.000Z',
+    );
+
+    expect(detail?.contextRows.map((row) => row.id)).toEqual([
+      `${duplicateWorkspace.demands[1].id}:mat-acme-2:0`,
+      `${duplicateWorkspace.demands[1].id}:mat-acme-2:1`,
     ]);
   });
 

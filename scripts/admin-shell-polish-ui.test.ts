@@ -33,6 +33,20 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('variant="empty"');
   });
 
+  it('offers a retry action from the full-screen loading failure state', () => {
+    const app = read('App.tsx');
+    const shellState = app.slice(
+      app.indexOf('const ShellState'),
+      app.indexOf('const EmptyState'),
+    );
+
+    expect(shellState).toContain('actionLabel?: string');
+    expect(shellState).toContain('onAction?: () => void');
+    expect(shellState).toContain('{actionLabel && onAction &&');
+    expect(app).toContain('actionLabel="重新加载"');
+    expect(app).toContain('onAction={() => setRefreshKey((value) => value + 1)}');
+  });
+
   it('marks active role and module navigation items for accessible admin state', () => {
     const app = read('App.tsx');
 

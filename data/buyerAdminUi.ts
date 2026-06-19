@@ -601,11 +601,11 @@ const buildApprovalBusinessContext = (
           { label: '申请人', value: demand.requester },
           { label: '预算金额', value: compactCurrency(demand.budget) },
         ],
-        contextRows: demand.lineItems.map((lineItem) => {
+        contextRows: demand.lineItems.map((lineItem, index) => {
           const material = workspace.materials.find((item) => item.id === lineItem.materialId);
           const referenceAmount = (material?.referencePrice ?? 0) * lineItem.quantity;
           return {
-            id: lineItem.materialId,
+            id: `${demand.id}:${lineItem.materialId}:${index}`,
             title: material?.name ?? lineItem.materialId,
             detail: `${lineItem.quantity} ${material?.unit ?? ''}`.trim() + ` · 参考 ${compactCurrency(referenceAmount)}`,
           };
