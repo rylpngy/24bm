@@ -705,6 +705,113 @@ describe('procurement API clients', () => {
     ]);
   });
 
+  it('uses the Java API client to persist platform tenant operations', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: {
+            accessToken: 'platform-token',
+            tokenType: 'Bearer',
+            expiresIn: 7200,
+            userId: 'user-platform-admin',
+            displayName: '平台管理员',
+            scope: 'PLATFORM',
+            tenantId: null,
+            supplierId: null,
+            roles: ['PLATFORM_ADMIN'],
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/platform/tenants/tenant-acme/disable') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer platform-token' });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'tenant-acme',
+            name: 'Acme 采购公司',
+            plan: 'MVP',
+            status: 'inactive',
+            enabledFeatures: ['rfq', 'order'],
+            userLimit: 100,
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/platform/tenants/tenant-acme/plan') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer platform-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init?.body))).toEqual({ plan: 'pro', userLimit: 120 });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'tenant-acme',
+            name: 'Acme 采购公司',
+            plan: 'pro',
+            status: 'active',
+            enabledFeatures: ['rfq', 'order'],
+            userLimit: 120,
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/platform/tenants/tenant-acme/features') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer platform-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init?.body))).toEqual({ enabledFeatures: ['order', 'finance'] });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'tenant-acme',
+            name: 'Acme 采购公司',
+            plan: 'pro',
+            status: 'active',
+            enabledFeatures: ['order', 'finance'],
+            userLimit: 120,
+          },
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      platformLogin: {
+        account: 'platform',
+        password: 'demo123456',
+        scope: 'PLATFORM',
+      },
+    });
+
+    const disabledTenant = await client.disablePlatformTenant('tenant-acme');
+    const upgradedTenant = await client.updatePlatformTenantPlan('tenant-acme', { plan: 'pro', userLimit: 120 });
+    const featureTenant = await client.updatePlatformTenantFeatures('tenant-acme', {
+      enabledFeatures: ['order', 'finance'],
+    });
+
+    expect(disabledTenant.status).toBe('inactive');
+    expect(upgradedTenant.plan).toBe('pro');
+    expect(featureTenant.enabledFeatures).toEqual(['order', 'finance']);
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/platform/tenants/tenant-acme/disable',
+      'http://java.test/api/v1/platform/tenants/tenant-acme/plan',
+      'http://java.test/api/v1/platform/tenants/tenant-acme/features',
+    ]);
+  });
+
   it('uses the Java API client to authenticate and load supplier workspace data from the aggregate endpoint', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
@@ -1766,7 +1873,7 @@ describe('procurement API clients', () => {
       tenants: [{
         id: 'tenant-acme',
         name: 'Acme 采购公司',
-        plan: 'MVP',
+        plan: 'pro',
         status: 'active',
         enabledFeatures: ['rfq', 'order', 'finance'],
         userLimit: 100,
@@ -1785,7 +1892,7 @@ describe('procurement API clients', () => {
     expect(nextPlatform.tenants).toEqual([{
       id: 'tenant-acme',
       name: 'Acme 采购公司',
-      plan: '标准版',
+      plan: '专业版',
       status: '已启用',
       enabledFeatures: ['rfq', 'order', 'finance'],
       userLimit: 100,

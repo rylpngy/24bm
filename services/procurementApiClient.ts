@@ -485,6 +485,16 @@ export interface JavaProcurementApiClient {
   getPlatformWorkspace(): Promise<JavaPlatformWorkspaceData>;
   getPlatformOverview(): Promise<JavaPlatformOverviewDto>;
   listPlatformTenants(): Promise<JavaPlatformTenantDto[]>;
+  enablePlatformTenant(tenantId: string): Promise<JavaPlatformTenantDto>;
+  disablePlatformTenant(tenantId: string): Promise<JavaPlatformTenantDto>;
+  updatePlatformTenantPlan(
+    tenantId: string,
+    payload: { plan: string; userLimit: number },
+  ): Promise<JavaPlatformTenantDto>;
+  updatePlatformTenantFeatures(
+    tenantId: string,
+    payload: { enabledFeatures: string[] },
+  ): Promise<JavaPlatformTenantDto>;
   listPlatformEnterpriseReviews(): Promise<JavaEnterpriseReviewDto[]>;
   reviewPlatformEnterprise(
     enterpriseId: string,
@@ -867,6 +877,36 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     listPlatformTenants() {
       return platformRequest<JavaPlatformTenantDto[]>('/api/v1/platform/tenants');
     },
+    enablePlatformTenant(tenantId: string) {
+      return platformRequest<JavaPlatformTenantDto>(`/api/v1/platform/tenants/${tenantId}/enable`, {
+        method: 'POST',
+      });
+    },
+    disablePlatformTenant(tenantId: string) {
+      return platformRequest<JavaPlatformTenantDto>(`/api/v1/platform/tenants/${tenantId}/disable`, {
+        method: 'POST',
+      });
+    },
+    updatePlatformTenantPlan(
+      tenantId: string,
+      payload: { plan: string; userLimit: number },
+    ) {
+      return platformRequest<JavaPlatformTenantDto>(`/api/v1/platform/tenants/${tenantId}/plan`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    updatePlatformTenantFeatures(
+      tenantId: string,
+      payload: { enabledFeatures: string[] },
+    ) {
+      return platformRequest<JavaPlatformTenantDto>(`/api/v1/platform/tenants/${tenantId}/features`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
     listPlatformEnterpriseReviews() {
       return platformRequest<JavaEnterpriseReviewDto[]>('/api/v1/platform/enterprise-reviews');
     },
@@ -1217,6 +1257,7 @@ const toTenantPlan = (plan: string): ProcurementMvpModel['tenants'][number]['pla
     MVP: '标准版',
     starter: '标准版',
     standard: '标准版',
+    pro: '专业版',
     professional: '专业版',
     enterprise: '旗舰版',
   };
@@ -1228,6 +1269,7 @@ const toTenantStatus = (status: string): ProcurementMvpModel['tenants'][number][
     active: '已启用',
     trial: '试用中',
     pending: '待审核',
+    inactive: '停用',
   };
   return statusMap[status] ?? (status as ProcurementMvpModel['tenants'][number]['status']);
 };

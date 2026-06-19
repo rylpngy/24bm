@@ -21,7 +21,8 @@ describe('platform tenant actions UI', () => {
     expect(platformWorkspace).toContain('onUpdateTenantPlan');
     expect(platformWorkspace).toContain('onToggleTenantFeature');
     expect(platformWorkspace).toContain('setPlatformTenants');
-    expect(platformWorkspace).toContain('features: tenant.enabledFeatures');
+    expect(app).toContain('buildPlatformTenantRows');
+    expect(app).toContain('tenant.enabledFeatures.map(formatPlatformTenantFeature)');
     expect(platformWorkspace).toContain("feature === 'rfq'");
     expect(platformWorkspace).toContain("tenant.status === '停用'");
     expect(platformWorkspace).toContain('platformTenants.map');

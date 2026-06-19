@@ -12,7 +12,7 @@ export interface Tenant {
   id: string;
   name: string;
   plan: TenantPlan;
-  status: '试用中' | '已启用' | '待审核';
+  status: '试用中' | '已启用' | '待审核' | '停用';
   userLimit: number;
   enabledFeatures: string[];
 }

@@ -199,6 +199,7 @@ const App: React.FC = () => {
   const [orderCreateBusy, setOrderCreateBusy] = useState<string | null>(null);
   const [buyerFulfillmentBusyId, setBuyerFulfillmentBusyId] = useState<string | null>(null);
   const [platformReviewBusyId, setPlatformReviewBusyId] = useState<string | null>(null);
+  const [platformTenantBusyId, setPlatformTenantBusyId] = useState<string | null>(null);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -321,6 +322,65 @@ const App: React.FC = () => {
       setWorkflowStatus(error instanceof Error ? error.message : '平台企业审核失败');
     } finally {
       setPlatformReviewBusyId(null);
+    }
+  };
+
+  const updatePlatformTenantStatus = async (tenantId: string, status: '已启用' | '停用') => {
+    if (!javaApiClient || !platformData) return;
+    const action = status === '已启用' ? 'enable' : 'disable';
+    setPlatformTenantBusyId(`${tenantId}:${action}`);
+    setWorkflowStatus(null);
+    try {
+      if (status === '已启用') {
+        await javaApiClient.enablePlatformTenant(tenantId);
+      } else {
+        await javaApiClient.disablePlatformTenant(tenantId);
+      }
+      setPlatformData(await refreshJavaPlatformData(platformData));
+      setWorkflowStatus(`平台租户${status === '已启用' ? '已启用' : '已停用'}：${tenantId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '平台租户状态更新失败');
+    } finally {
+      setPlatformTenantBusyId(null);
+    }
+  };
+
+  const updatePlatformTenantPlan = async (tenantId: string, plan: PlatformWorkspaceData['tenants'][number]['plan']) => {
+    if (!javaApiClient || !platformData) return;
+    setPlatformTenantBusyId(`${tenantId}:plan`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.updatePlatformTenantPlan(tenantId, {
+        plan: plan === '专业版' ? 'pro' : plan,
+        userLimit: 120,
+      });
+      setPlatformData(await refreshJavaPlatformData(platformData));
+      setWorkflowStatus(`平台租户套餐已更新：${tenantId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '平台租户套餐更新失败');
+    } finally {
+      setPlatformTenantBusyId(null);
+    }
+  };
+
+  const togglePlatformTenantFeature = async (tenantId: string, enabledFeatures: string[], feature: 'rfq') => {
+    if (!javaApiClient || !platformData) return;
+    const featureLabel = feature === 'rfq' ? '询价比价' : feature;
+    const featureCode = feature === 'rfq' ? 'rfq' : feature;
+    const featureEnabled = enabledFeatures.includes(featureLabel) || enabledFeatures.includes(featureCode);
+    const nextFeatures = featureEnabled
+      ? enabledFeatures.filter((enabledFeature) => enabledFeature !== featureLabel && enabledFeature !== featureCode)
+      : [...enabledFeatures, featureCode];
+    setPlatformTenantBusyId(`${tenantId}:feature:${feature}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.updatePlatformTenantFeatures(tenantId, { enabledFeatures: nextFeatures });
+      setPlatformData(await refreshJavaPlatformData(platformData));
+      setWorkflowStatus(`平台租户功能开关已更新：${tenantId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '平台租户功能开关更新失败');
+    } finally {
+      setPlatformTenantBusyId(null);
     }
   };
 
@@ -668,7 +728,11 @@ const App: React.FC = () => {
                 javaEnabled={Boolean(javaApiClient)}
                 workflowStatus={workflowStatus}
                 platformReviewBusyId={platformReviewBusyId}
+                platformTenantBusyId={platformTenantBusyId}
                 onReviewEnterprise={reviewPlatformEnterprise}
+                onUpdateTenantStatus={updatePlatformTenantStatus}
+                onUpdateTenantPlan={updatePlatformTenantPlan}
+                onToggleTenantFeature={togglePlatformTenantFeature}
               />
             )}
             {activeRole === 'buyer' && (
@@ -967,20 +1031,41 @@ type PlatformTenantRow = Omit<PlatformWorkspaceData['tenants'][number], 'status'
   features: string[];
 };
 
+const formatPlatformTenantFeature = (feature: string) => {
+  if (feature === 'rfq') return '询价比价';
+  if (feature === 'order') return '订单履约';
+  if (feature === 'finance') return '财务协同';
+  return feature;
+};
+
+const buildPlatformTenantRows = (tenants: PlatformWorkspaceData['tenants']): PlatformTenantRow[] =>
+  tenants.map((tenant) => ({
+    ...tenant,
+    features: tenant.enabledFeatures.map(formatPlatformTenantFeature),
+  }));
+
 const PlatformWorkspace: React.FC<{
   data: PlatformWorkspaceData;
   activeModule: PlatformAdminModule;
   javaEnabled: boolean;
   workflowStatus: string | null;
   platformReviewBusyId: string | null;
+  platformTenantBusyId: string | null;
   onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => Promise<void> | void;
+  onUpdateTenantStatus: (tenantId: string, status: '已启用' | '停用') => Promise<void> | void;
+  onUpdateTenantPlan: (tenantId: string, plan: PlatformTenantRow['plan']) => Promise<void> | void;
+  onToggleTenantFeature: (tenantId: string, enabledFeatures: string[], feature: 'rfq') => Promise<void> | void;
 }> = ({
   data,
   activeModule,
   javaEnabled,
   workflowStatus,
   platformReviewBusyId,
+  platformTenantBusyId,
   onReviewEnterprise,
+  onUpdateTenantStatus,
+  onUpdateTenantPlan,
+  onToggleTenantFeature,
 }) => {
   const { model, platformOverview } = data;
   const supplierCount = platformOverview?.publicSupplierCount
@@ -989,28 +1074,36 @@ const PlatformWorkspace: React.FC<{
     ?? model.enterprises.filter((enterprise) => enterprise.type === 'buyer').length;
   const pendingTenantCount = platformOverview?.pendingEnterpriseReviews
     ?? model.tenants.filter((tenant) => tenant.status === '待审核').length;
-  const [platformTenants, setPlatformTenants] = useState<PlatformTenantRow[]>(data.tenants.map((tenant) => ({
-    ...tenant,
-    features: tenant.enabledFeatures,
-  })));
+  const [platformTenants, setPlatformTenants] = useState<PlatformTenantRow[]>(() =>
+    buildPlatformTenantRows(data.tenants));
   useEffect(() => {
-    setPlatformTenants(data.tenants.map((tenant) => ({
-      ...tenant,
-      features: tenant.enabledFeatures,
-    })));
+    setPlatformTenants(buildPlatformTenantRows(data.tenants));
   }, [data.tenants]);
-  const onUpdateTenantStatus = (tenantId: string, status: '已启用' | '停用') => {
+  const handleUpdateTenantStatus = async (tenantId: string, status: '已启用' | '停用') => {
+    if (javaEnabled) {
+      await onUpdateTenantStatus(tenantId, status);
+      return;
+    }
     setPlatformTenants((current) => current.map((tenant) => (
       tenant.id === tenantId ? { ...tenant, status } : tenant
     )));
   };
-  const onUpdateTenantPlan = (tenantId: string, plan: PlatformTenantRow['plan']) => {
+  const handleUpdateTenantPlan = async (tenantId: string, plan: PlatformTenantRow['plan']) => {
+    if (javaEnabled) {
+      await onUpdateTenantPlan(tenantId, plan);
+      return;
+    }
     setPlatformTenants((current) => current.map((tenant) => (
       tenant.id === tenantId ? { ...tenant, plan } : tenant
     )));
   };
-  const onToggleTenantFeature = (tenantId: string, feature: 'rfq') => {
+  const handleToggleTenantFeature = async (tenantId: string, feature: 'rfq') => {
     const featureLabel = feature === 'rfq' ? '询价比价' : feature;
+    const targetTenant = platformTenants.find((tenant) => tenant.id === tenantId);
+    if (javaEnabled && targetTenant) {
+      await onToggleTenantFeature(tenantId, targetTenant.enabledFeatures, feature);
+      return;
+    }
     setPlatformTenants((current) => current.map((tenant) => {
       if (tenant.id !== tenantId) {
         return tenant;
@@ -1112,10 +1205,16 @@ const PlatformWorkspace: React.FC<{
           <PlatformTenantListSummaryPanel tenants={platformTenants} />
           <PlatformTenantActionPanel
             tenants={platformTenants}
-            onUpdateTenantStatus={onUpdateTenantStatus}
-            onUpdateTenantPlan={onUpdateTenantPlan}
-            onToggleTenantFeature={onToggleTenantFeature}
+            tenantBusyId={platformTenantBusyId}
+            onUpdateTenantStatus={handleUpdateTenantStatus}
+            onUpdateTenantPlan={handleUpdateTenantPlan}
+            onToggleTenantFeature={handleToggleTenantFeature}
           />
+          {javaEnabled && workflowStatus && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+              {workflowStatus}
+            </div>
+          )}
           <Panel title="租户列表" icon={Layers3}>
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="min-w-[860px] w-full text-left text-sm">
@@ -1449,11 +1548,13 @@ const PlatformEnterpriseReviewSummaryPanel: React.FC<{
 
 const PlatformTenantActionPanel: React.FC<{
   tenants: PlatformTenantRow[];
+  tenantBusyId: string | null;
   onUpdateTenantStatus: (tenantId: string, status: '已启用' | '停用') => void;
   onUpdateTenantPlan: (tenantId: string, plan: PlatformTenantRow['plan']) => void;
   onToggleTenantFeature: (tenantId: string, feature: 'rfq') => void;
 }> = ({
   tenants,
+  tenantBusyId,
   onUpdateTenantStatus,
   onUpdateTenantPlan,
   onToggleTenantFeature,
@@ -1462,7 +1563,7 @@ const PlatformTenantActionPanel: React.FC<{
     <div className="flex items-start justify-between gap-3">
       <div>
         <p className="text-xs font-black text-slate-700">租户操作</p>
-        <p className="mt-1 text-xs font-bold text-slate-500">先支持状态、套餐和询价功能开关的前端预览，后续接入 Java 租户管理 API。</p>
+        <p className="mt-1 text-xs font-bold text-slate-500">Java 模式下持久化租户操作，mock 模式保留本地状态预览。</p>
       </div>
       <Settings size={18} className="text-blue-600" />
     </div>
@@ -1470,6 +1571,12 @@ const PlatformTenantActionPanel: React.FC<{
       {tenants.map((tenant) => {
         const rfqEnabled = tenant.features.includes('询价比价');
         const disabled = tenant.status === '停用';
+        const enableBusy = tenantBusyId === `${tenant.id}:enable`;
+        const disableBusy = tenantBusyId === `${tenant.id}:disable`;
+        const planBusy = tenantBusyId === `${tenant.id}:plan`;
+        const featureBusy = tenantBusyId === `${tenant.id}:feature:rfq`;
+        const enableDisabled = !disabled || enableBusy || disableBusy;
+        const disableDisabled = disabled || enableBusy || disableBusy;
 
         return (
           <div key={tenant.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
@@ -1485,35 +1592,37 @@ const PlatformTenantActionPanel: React.FC<{
                 type="button"
                 onClick={() => onUpdateTenantStatus(tenant.id, '已启用')}
                 className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                disabled={!disabled}
+                disabled={enableDisabled}
               >
-                启用租户
+                {enableBusy ? '处理中' : '启用租户'}
               </button>
               <button
                 type="button"
                 onClick={() => onUpdateTenantStatus(tenant.id, '停用')}
                 className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300"
-                disabled={disabled}
+                disabled={disableDisabled}
               >
-                停用租户
+                {disableBusy ? '处理中' : '停用租户'}
               </button>
               <button
                 type="button"
                 onClick={() => onUpdateTenantPlan(tenant.id, '专业版')}
                 className="inline-flex h-9 items-center justify-center rounded-lg border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 transition hover:bg-indigo-50"
+                disabled={planBusy || featureBusy}
               >
-                升级专业版
+                {planBusy ? '处理中' : '升级专业版'}
               </button>
               <button
                 type="button"
                 onClick={() => onToggleTenantFeature(tenant.id, 'rfq')}
+                disabled={planBusy || featureBusy}
                 className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-black transition ${
                   rfqEnabled
                     ? 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
                     : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'
                 }`}
               >
-                切换询价
+                {featureBusy ? '处理中' : '切换询价'}
               </button>
             </div>
           </div>
