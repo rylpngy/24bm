@@ -6579,7 +6579,10 @@ const RfqCreateForm: React.FC<{
   const [quoteRequirement, setQuoteRequirement] = useState('请按含税总价报价，并注明税率、质保周期和可替代型号。');
   const [deliveryRequirement, setDeliveryRequirement] = useState('中标后 7 个自然日内送达指定收货地点，支持分批交付需提前说明。');
   const [invitationNote, setInvitationNote] = useState('本次询价优先考虑准时交付、售后响应和历史合作绩效。');
-  const canSubmit = selectedSupplierIds.length > 0 && deadline;
+  const todayDate = new Date().toISOString().slice(0, 10);
+  const supplierSelectionInvalid = selectedSupplierIds.length === 0;
+  const deadlineInvalid = !deadline || deadline <= todayDate;
+  const canSubmit = !supplierSelectionInvalid && !deadlineInvalid;
   const toggleSupplierSelection = (supplierId: string, checked: boolean) => {
     setSelectedSupplierIds((current) =>
       checked
@@ -6688,6 +6691,21 @@ const RfqCreateForm: React.FC<{
       <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3 text-xs font-bold leading-5 text-blue-700">
         RFQ 创建后将向 {selectedSupplierIds.length} 家供应商发送询价邀请；报价要求、交付要求和邀请说明会作为页面上下文展示，待后端字段开放后再持久化。
       </div>
+
+      {(supplierSelectionInvalid || deadlineInvalid) && (
+        <div aria-live="polite" className="mt-3 space-y-2">
+          {supplierSelectionInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请至少选择一家已准入供应商。
+            </p>
+          )}
+          {deadlineInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              报价截止日期必须晚于今天。
+            </p>
+          )}
+        </div>
+      )}
 
       <button
         type="button"

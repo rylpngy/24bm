@@ -31,4 +31,20 @@ describe('buyer RFQ create form UI details', () => {
     expect(rfqCreateForm).toContain('deadline}T18:00:00+08:00');
     expect(rfqCreateForm).toContain('admittedRelations.map');
   });
+
+  it('blocks RFQ creation when supplier selection or deadline is invalid', () => {
+    const app = read('App.tsx');
+    const rfqCreateForm = app.slice(
+      app.indexOf('const RfqCreateForm'),
+      app.indexOf('const Field:'),
+    );
+
+    expect(rfqCreateForm).toContain("new Date().toISOString().slice(0, 10)");
+    expect(rfqCreateForm).toContain('supplierSelectionInvalid');
+    expect(rfqCreateForm).toContain('deadlineInvalid');
+    expect(rfqCreateForm).toContain('const canSubmit = !supplierSelectionInvalid && !deadlineInvalid;');
+    expect(rfqCreateForm).toContain('aria-live="polite"');
+    expect(rfqCreateForm).toContain('请至少选择一家已准入供应商。');
+    expect(rfqCreateForm).toContain('报价截止日期必须晚于今天。');
+  });
 });
