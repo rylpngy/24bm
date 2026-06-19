@@ -2997,6 +2997,14 @@ const BuyerWorkspaceView: React.FC<{
           statusOptions={demandStatusOptions}
           onChange={setDemandStatusFilter}
         />
+        <FilterResultSummary
+          label="采购需求筛选结果"
+          filterLabel={demandStatusFilter}
+          resultCount={filteredDemandListRows.length}
+          totalCount={demandListRows.length}
+          selectedLabel={selectedDemandDetail?.title}
+          onClear={() => setDemandStatusFilter('全部状态')}
+        />
         {filteredDemandListRows.length === 0 ? (
           <EmptyState title="暂无采购需求" desc="创建需求后可提交审批，审批通过后再转为询价项目。" />
         ) : (
@@ -3074,6 +3082,14 @@ const BuyerWorkspaceView: React.FC<{
             value={rfqStatusFilter}
             statusOptions={rfqStatusOptions}
             onChange={setRfqStatusFilter}
+          />
+          <FilterResultSummary
+            label="询价项目筛选结果"
+            filterLabel={rfqStatusFilter}
+            resultCount={filteredRfqListRows.length}
+            totalCount={rfqListRows.length}
+            selectedLabel={selectedRfqDetail?.title}
+            onClear={() => setRfqStatusFilter('全部状态')}
           />
           {filteredRfqListRows.length === 0 ? (
             <EmptyState title="暂无询价项目" desc="需求审批通过后，可从采购需求页选择已准入供应商并创建询价。" />
@@ -3353,6 +3369,14 @@ const BuyerWorkspaceView: React.FC<{
           statusOptions={orderStatusOptions}
           onChange={setOrderStatusFilter}
         />
+        <FilterResultSummary
+          label="采购订单筛选结果"
+          filterLabel={orderStatusFilter}
+          resultCount={filteredOrderFulfillmentRows.length}
+          totalCount={orderFulfillmentRows.length}
+          selectedLabel={selectedOrderDetail?.id}
+          onClear={() => setOrderStatusFilter('全部状态')}
+        />
         {filteredOrderFulfillmentRows.length === 0 ? (
           <EmptyState title="暂无采购订单" desc="定标审批通过后，可在报价对比页生成采购订单。" />
         ) : (
@@ -3436,6 +3460,14 @@ const BuyerWorkspaceView: React.FC<{
             statusOptions={receiptStatusOptions}
             onChange={setReceiptStatusFilter}
           />
+          <FilterResultSummary
+            label="收货验收筛选结果"
+            filterLabel={receiptStatusFilter}
+            resultCount={filteredReceiptInspectionRows.length}
+            totalCount={receiptInspectionRows.length}
+            selectedLabel={selectedReceiptDetail?.id}
+            onClear={() => setReceiptStatusFilter('全部状态')}
+          />
           {filteredReceiptInspectionRows.length === 0 ? (
             <EmptyState title="暂无待收货订单" desc="供应商发货后，待收货订单会出现在这里。" />
           ) : (
@@ -3518,6 +3550,14 @@ const BuyerWorkspaceView: React.FC<{
           value={invoiceStatusFilter}
           statusOptions={invoiceStatusOptions}
           onChange={setInvoiceStatusFilter}
+        />
+        <FilterResultSummary
+          label="发票付款筛选结果"
+          filterLabel={invoiceStatusFilter}
+          resultCount={filteredInvoicePaymentRows.length}
+          totalCount={invoicePaymentRows.length}
+          selectedLabel={selectedInvoiceDetail?.id}
+          onClear={() => setInvoiceStatusFilter('全部状态')}
         />
         {filteredInvoicePaymentRows.length === 0 ? (
           <EmptyState title="暂无发票" desc="供应商在订单收货后提交发票，采购方在这里登记付款状态。" />
@@ -8183,10 +8223,49 @@ const StatusFilterControl: React.FC<{
         <option key={status} value={status}>
           {status}
         </option>
-      ))}
-    </select>
-  </div>
+    ))}
+  </select>
+</div>
 );
+
+const FilterResultSummary: React.FC<{
+  label: string;
+  filterLabel: string;
+  resultCount: number;
+  totalCount: number;
+  selectedLabel?: string;
+  onClear: () => void;
+}> = ({
+  label,
+  filterLabel,
+  resultCount,
+  totalCount,
+  selectedLabel,
+  onClear,
+}) => {
+  const filtered = filterLabel !== '全部状态';
+
+  return (
+    <div
+      aria-label={label}
+      className="mb-4 flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50 p-3 lg:flex-row lg:items-center lg:justify-between"
+    >
+      <div className="grid gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap">
+        <MiniFact label="当前筛选" value={filterLabel} />
+        <MiniFact label="命中记录" value={`${resultCount} / ${totalCount}`} />
+        <MiniFact label="已选详情" value={selectedLabel ?? '暂无'} />
+      </div>
+      <button
+        type="button"
+        onClick={onClear}
+        disabled={!filtered}
+        className="inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white"
+      >
+        清空筛选
+      </button>
+    </div>
+  );
+};
 
 const ResponsiveTableFrame: React.FC<{
   mobileCards: React.ReactNode;

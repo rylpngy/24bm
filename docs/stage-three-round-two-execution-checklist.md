@@ -62,6 +62,7 @@
 | 6 | 供应商准入校验 | 供应商准入已补准入理由、资质摘要、联系人、授权品类和风险提示确认 | `scripts/buyer-supplier-admission-ui.test.ts` |
 | 7 | 平台企业审核校验 | 平台企业审核已补审核意见、资料确认和风险确认，支撑企业入驻审核闭环 | `scripts/platform-enterprise-review-actions-ui.test.ts` |
 | 8 | 平台公告发布校验 | 平台公告发布已校验标题、正文、发布范围和发布确认 | `scripts/platform-announcement-publish-form-ui.test.ts` |
+| 9 | 详情筛选摘要 | 采购需求、RFQ、订单、收货、发票页已补当前筛选、命中记录、已选详情和清空筛选入口 | `scripts/buyer-detail-filter-summary-ui.test.ts` |
 
 ## 第二批候选任务
 
