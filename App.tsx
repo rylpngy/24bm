@@ -3199,7 +3199,9 @@ const BuyerWorkspaceView: React.FC<{
         order={selectedOrderRecord}
         javaEnabled={javaEnabled}
         buyerFulfillmentBusyId={buyerFulfillmentBusyId}
-        onCreateReceipt={(orderId) => onCreateReceipt(orderId, getReceiptDraft(orderId))}
+        receiptDraft={selectedOrderRecord ? getReceiptDraft(selectedOrderRecord.id) : undefined}
+        onChangeReceiptDraft={(orderId, draft) => setReceiptDrafts((drafts) => ({ ...drafts, [orderId]: draft }))}
+        onCreateReceipt={onCreateReceipt}
       />
       </>
       )}
@@ -3269,7 +3271,9 @@ const BuyerWorkspaceView: React.FC<{
           order={selectedReceiptOrderRecord}
           busy={buyerFulfillmentBusyId === `receipt:${selectedReceiptOrder}`}
           javaEnabled={javaEnabled}
-          onCreateReceipt={(orderId) => onCreateReceipt(orderId, getReceiptDraft(orderId))}
+          receiptDraft={selectedReceiptOrderRecord ? getReceiptDraft(selectedReceiptOrderRecord.id) : undefined}
+          onChangeReceiptDraft={(orderId, draft) => setReceiptDrafts((drafts) => ({ ...drafts, [orderId]: draft }))}
+          onCreateReceipt={onCreateReceipt}
         />
       </>
       )}
@@ -3337,7 +3341,9 @@ const BuyerWorkspaceView: React.FC<{
         invoice={selectedInvoiceRecord}
         busy={buyerFulfillmentBusyId === `payment:${selectedInvoice}`}
         javaEnabled={javaEnabled}
-        onRegisterPayment={(invoiceId) => onRegisterPayment(invoiceId, getPaymentDraft(invoiceId))}
+        paymentDraft={selectedInvoiceRecord ? getPaymentDraft(selectedInvoiceRecord.id) : undefined}
+        onChangePaymentDraft={(invoiceId, draft) => setPaymentDrafts((drafts) => ({ ...drafts, [invoiceId]: draft }))}
+        onRegisterPayment={onRegisterPayment}
       />
       </>
       )}
@@ -4852,17 +4858,88 @@ const QuoteComparisonOperationPanel: React.FC<{
   );
 };
 
+const ReceiptRegistrationForm: React.FC<{
+  orderId: string;
+  draft: BuyerReceiptDraft;
+  busy: boolean;
+  onChange: (draft: BuyerReceiptDraft) => void;
+  onSubmit: () => void;
+}> = ({ orderId, draft, busy, onChange, onSubmit }) => (
+  <div className="mt-3 rounded-lg border border-emerald-100 bg-white p-3">
+    <label className="block text-xs font-black text-emerald-700" htmlFor={`receipt-result-${orderId}`}>
+      验收结果
+    </label>
+    <select
+      id={`receipt-result-${orderId}`}
+      value={draft.result}
+      onChange={(event) => onChange({ result: event.target.value })}
+      className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+    >
+      <option value="验收通过">验收通过</option>
+      <option value="异常待处理">异常待处理</option>
+    </select>
+    <PrimaryActionButton
+      onClick={onSubmit}
+      disabled={busy || draft.result.trim().length === 0}
+      busy={busy}
+      tone="emerald"
+      icon={PackageCheck}
+      pendingLabel="登记中"
+      fullWidth
+    >
+      登记收货
+    </PrimaryActionButton>
+  </div>
+);
+
+const PaymentRegistrationForm: React.FC<{
+  invoiceId: string;
+  draft: BuyerPaymentDraft;
+  busy: boolean;
+  onChange: (draft: BuyerPaymentDraft) => void;
+  onSubmit: () => void;
+}> = ({ invoiceId, draft, busy, onChange, onSubmit }) => (
+  <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3">
+    <label className="block text-xs font-black text-blue-700" htmlFor={`payment-status-${invoiceId}`}>
+      付款状态
+    </label>
+    <select
+      id={`payment-status-${invoiceId}`}
+      value={draft.paymentStatus}
+      onChange={(event) => onChange({ paymentStatus: event.target.value })}
+      className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+    >
+      <option value="部分付款">部分付款</option>
+      <option value="已付款">已付款</option>
+    </select>
+    <PrimaryActionButton
+      onClick={onSubmit}
+      disabled={busy || draft.paymentStatus.trim().length === 0}
+      busy={busy}
+      icon={CreditCard}
+      pendingLabel="登记中"
+      fullWidth
+    >
+      登记付款
+    </PrimaryActionButton>
+  </div>
+);
+
 const OrderDetailPanelView: React.FC<{
   detail?: OrderDetailPanel;
   order?: BuyerWorkspace['orders'][number];
   javaEnabled: boolean;
   buyerFulfillmentBusyId: string | null;
-  onCreateReceipt: (orderId: string) => void;
+  receiptDraft?: BuyerReceiptDraft;
+  onChangeReceiptDraft: (orderId: string, draft: BuyerReceiptDraft) => void;
+  onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
 }> = ({
   detail,
   order,
   javaEnabled,
   buyerFulfillmentBusyId,
+  receiptDraft,
+  onChangeReceiptDraft,
   onCreateReceipt,
 }) => (
   <Panel title="订单详情" icon={PackageCheck}>
@@ -4972,6 +5049,8 @@ const OrderDetailPanelView: React.FC<{
           order={order}
           javaEnabled={javaEnabled}
           buyerFulfillmentBusyId={buyerFulfillmentBusyId}
+          receiptDraft={receiptDraft}
+          onChangeReceiptDraft={onChangeReceiptDraft}
           onCreateReceipt={onCreateReceipt}
         />
       </DetailPanelBody>
@@ -4984,12 +5063,16 @@ const OrderDetailOperationPanel: React.FC<{
   order?: BuyerWorkspace['orders'][number];
   javaEnabled: boolean;
   buyerFulfillmentBusyId: string | null;
-  onCreateReceipt: (orderId: string) => void;
+  receiptDraft?: BuyerReceiptDraft;
+  onChangeReceiptDraft: (orderId: string, draft: BuyerReceiptDraft) => void;
+  onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
 }> = ({
   detail,
   order,
   javaEnabled,
   buyerFulfillmentBusyId,
+  receiptDraft,
+  onChangeReceiptDraft,
   onCreateReceipt,
 }) => {
   const expectedReceiptDate = detail.facts.find((fact) => fact.label === '预计到货')?.value ?? order?.expectedReceiptDate ?? '未维护';
@@ -5066,18 +5149,14 @@ const OrderDetailOperationPanel: React.FC<{
         />
       )}
 
-      {(order.status === '已发货' || order.status === '待收货') && (
-        <PrimaryActionButton
-          onClick={() => onCreateReceipt(order.id)}
-          disabled={receiptBusy}
+      {(order.status === '已发货' || order.status === '待收货') && receiptDraft && (
+        <ReceiptRegistrationForm
+          orderId={order.id}
+          draft={receiptDraft}
           busy={receiptBusy}
-          tone="emerald"
-          icon={PackageCheck}
-          pendingLabel="登记中"
-          fullWidth
-        >
-          登记收货
-        </PrimaryActionButton>
+          onChange={(draft) => onChangeReceiptDraft(order.id, draft)}
+          onSubmit={() => onCreateReceipt(order.id, receiptDraft)}
+        />
       )}
 
       {order.status === '已收货' && (
@@ -5104,8 +5183,10 @@ const ReceiptInspectionDetailPanelView: React.FC<{
   order?: BuyerWorkspace['orders'][number];
   busy: boolean;
   javaEnabled: boolean;
-  onCreateReceipt: (orderId: string) => void;
-}> = ({ detail, order, busy, javaEnabled, onCreateReceipt }) => (
+  receiptDraft?: BuyerReceiptDraft;
+  onChangeReceiptDraft: (orderId: string, draft: BuyerReceiptDraft) => void;
+  onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
+}> = ({ detail, order, busy, javaEnabled, receiptDraft, onChangeReceiptDraft, onCreateReceipt }) => (
   <Panel title="验收详情" icon={PackageCheck}>
     {!detail ? (
       <EmptyState title="暂无验收详情" desc="选择一张待收货订单后，可查看物流、验收检查和关联业务。" />
@@ -5180,6 +5261,8 @@ const ReceiptInspectionDetailPanelView: React.FC<{
           order={order}
           busy={busy}
           javaEnabled={javaEnabled}
+          receiptDraft={receiptDraft}
+          onChangeReceiptDraft={onChangeReceiptDraft}
           onCreateReceipt={onCreateReceipt}
         />
       </DetailPanelBody>
@@ -5192,12 +5275,16 @@ const ReceiptInspectionOperationPanel: React.FC<{
   order?: BuyerWorkspace['orders'][number];
   busy: boolean;
   javaEnabled: boolean;
-  onCreateReceipt: (orderId: string) => void;
+  receiptDraft?: BuyerReceiptDraft;
+  onChangeReceiptDraft: (orderId: string, draft: BuyerReceiptDraft) => void;
+  onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
 }> = ({
   detail,
   order,
   busy,
   javaEnabled,
+  receiptDraft,
+  onChangeReceiptDraft,
   onCreateReceipt,
 }) => {
   const supplierName = detail.facts.find((fact) => fact.label === '供应商')?.value ?? detail.supplierName;
@@ -5258,18 +5345,14 @@ const ReceiptInspectionOperationPanel: React.FC<{
 
       {renderReceiptSummary()}
 
-      {detail.canRegisterReceipt && (
-        <PrimaryActionButton
-          onClick={() => onCreateReceipt(detail.id)}
-          disabled={busy}
+      {detail.canRegisterReceipt && receiptDraft && (
+        <ReceiptRegistrationForm
+          orderId={detail.id}
+          draft={receiptDraft}
           busy={busy}
-          tone="emerald"
-          icon={PackageCheck}
-          pendingLabel="登记中"
-          fullWidth
-        >
-          登记收货
-        </PrimaryActionButton>
+          onChange={(draft) => onChangeReceiptDraft(detail.id, draft)}
+          onSubmit={() => onCreateReceipt(detail.id, receiptDraft)}
+        />
       )}
 
       {!detail.canRegisterReceipt && (order.status === '待供应商确认' || order.status === '待发货') && (
@@ -5296,8 +5379,10 @@ const InvoicePaymentDetailPanelView: React.FC<{
   invoice?: BuyerWorkspace['invoices'][number];
   busy: boolean;
   javaEnabled: boolean;
-  onRegisterPayment: (invoiceId: string) => void;
-}> = ({ detail, invoice, busy, javaEnabled, onRegisterPayment }) => (
+  paymentDraft?: BuyerPaymentDraft;
+  onChangePaymentDraft: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+}> = ({ detail, invoice, busy, javaEnabled, paymentDraft, onChangePaymentDraft, onRegisterPayment }) => (
   <Panel title="发票详情" icon={Receipt}>
     {!detail ? (
       <EmptyState title="暂无发票详情" desc="选择一张发票后，可查看订单、物流、供应商和付款状态。" />
@@ -5368,6 +5453,8 @@ const InvoicePaymentDetailPanelView: React.FC<{
           invoice={invoice}
           busy={busy}
           javaEnabled={javaEnabled}
+          paymentDraft={paymentDraft}
+          onChangePaymentDraft={onChangePaymentDraft}
           onRegisterPayment={onRegisterPayment}
         />
       </DetailPanelBody>
@@ -5380,8 +5467,10 @@ const InvoicePaymentOperationPanel: React.FC<{
   invoice?: BuyerWorkspace['invoices'][number];
   busy: boolean;
   javaEnabled: boolean;
-  onRegisterPayment: (invoiceId: string) => void;
-}> = ({ detail, invoice, busy, javaEnabled, onRegisterPayment }) => {
+  paymentDraft?: BuyerPaymentDraft;
+  onChangePaymentDraft: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+}> = ({ detail, invoice, busy, javaEnabled, paymentDraft, onChangePaymentDraft, onRegisterPayment }) => {
   const supplierName = detail.facts.find((fact) => fact.label === '供应商')?.value ?? detail.supplierName;
   const orderLabel = detail.facts.find((fact) => fact.label === '关联订单')?.value ?? invoice?.orderId ?? '未找到';
   const invoiceAmount = detail.facts.find((fact) => fact.label === '发票金额')?.value ?? detail.amountLabel;
@@ -5428,17 +5517,14 @@ const InvoicePaymentOperationPanel: React.FC<{
         />
       )}
 
-      {javaEnabled && invoice && detail.canRegisterPayment && (
-        <PrimaryActionButton
-          onClick={() => onRegisterPayment(detail.id)}
-          disabled={busy}
+      {javaEnabled && invoice && detail.canRegisterPayment && paymentDraft && (
+        <PaymentRegistrationForm
+          invoiceId={detail.id}
+          draft={paymentDraft}
           busy={busy}
-          icon={CreditCard}
-          pendingLabel="登记中"
-          fullWidth
-        >
-          登记付款
-        </PrimaryActionButton>
+          onChange={(draft) => onChangePaymentDraft(detail.id, draft)}
+          onSubmit={() => onRegisterPayment(detail.id, paymentDraft)}
+        />
       )}
 
       {javaEnabled && invoice && !detail.canRegisterPayment && invoice.paymentStatus === '已付款' && (

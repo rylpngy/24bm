@@ -42,7 +42,8 @@ describe('buyer receipt detail UI', () => {
     expect(receiptDetailView).toContain('order?: BuyerWorkspace[\'orders\'][number]');
     expect(receiptDetailView).toContain('busy: boolean');
     expect(receiptDetailView).toContain('javaEnabled: boolean');
-    expect(receiptDetailView).toContain('onCreateReceipt: (orderId: string) => void');
+    expect(receiptDetailView).toContain('receiptDraft?: BuyerReceiptDraft');
+    expect(receiptDetailView).toContain('onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void');
     expect(app).toContain('order={selectedReceiptOrderRecord}');
     expect(app).toContain('busy={buyerFulfillmentBusyId === `receipt:${selectedReceiptOrder}`}');
     expect(app).toContain('onCreateReceipt={onCreateReceipt}');

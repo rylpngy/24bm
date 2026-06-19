@@ -42,7 +42,8 @@ describe('buyer invoice detail UI', () => {
     expect(invoiceDetailView).toContain('invoice?: BuyerWorkspace[\'invoices\'][number]');
     expect(invoiceDetailView).toContain('busy: boolean');
     expect(invoiceDetailView).toContain('javaEnabled: boolean');
-    expect(invoiceDetailView).toContain('onRegisterPayment: (invoiceId: string) => void');
+    expect(invoiceDetailView).toContain('paymentDraft?: BuyerPaymentDraft');
+    expect(invoiceDetailView).toContain('onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void');
     expect(app).toContain('invoice={selectedInvoiceRecord}');
     expect(app).toContain('busy={buyerFulfillmentBusyId === `payment:${selectedInvoice}`}');
     expect(app).toContain('onRegisterPayment={onRegisterPayment}');
