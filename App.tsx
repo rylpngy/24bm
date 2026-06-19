@@ -2263,6 +2263,12 @@ const BuyerWorkspaceView: React.FC<{
     {activeModule === 'approvals' && (
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Panel title="审批待办" icon={ClipboardCheck}>
+          <ListToolbar
+            title="审批待办池"
+            recordCount={approvalQueueRows.length}
+            filterLabel="待审批优先"
+            actionLabel="批量审批预留"
+          />
           {approvalQueueRows.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
               {approvalQueueRows.map((approvalRow) => {
@@ -2326,6 +2332,12 @@ const BuyerWorkspaceView: React.FC<{
     {activeModule === 'approvals' && (
       <div className="grid gap-6 xl:grid-cols-3">
         <Panel title="最近审批记录" icon={ShieldCheck}>
+          <ListToolbar
+            title="审批记录池"
+            recordCount={sortedRecentApprovals.length}
+            filterLabel="最近处理优先"
+            actionLabel="审批模板"
+          />
           {javaEnabled && sortedRecentApprovals.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
               {sortedRecentApprovals.map((approval) => {
@@ -2628,6 +2640,12 @@ const BuyerWorkspaceView: React.FC<{
     {activeModule === 'materials' && (
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Panel title="物料目录" icon={Database}>
+          <ListToolbar
+            title="物料服务池"
+            recordCount={workspace.materials.length}
+            filterLabel="全部物料品类"
+            actionLabel="新增物料"
+          />
           {workspace.materials.length === 0 ? (
             <EmptyState title="暂无物料目录" desc="先维护物料或服务主数据，再用于采购需求明细和询价范围。" />
           ) : (
@@ -2655,6 +2673,12 @@ const BuyerWorkspaceView: React.FC<{
       {activeModule === 'suppliers' && (
       <>
       <Panel title="私域供应商关系" icon={Users}>
+        <ListToolbar
+          title="私域供应商池"
+          recordCount={supplierRelationRows.length}
+          filterLabel="全部合作状态"
+          actionLabel="供应商准入"
+        />
         {supplierRelationRows.length === 0 ? (
           <EmptyState title="暂无私域供应商" desc="平台公共供应商通过准入后，会形成采购方自己的合作关系和绩效记录。" />
         ) : (

@@ -69,4 +69,28 @@ describe('admin list toolbar UI', () => {
     expect(app).toContain('filterLabel="最近操作优先"');
     expect(app).toContain('actionLabel="导出预留"');
   });
+
+  it('adds list toolbar context to buyer information management lists', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('title="审批待办池"');
+    expect(app).toContain('recordCount={approvalQueueRows.length}');
+    expect(app).toContain('filterLabel="待审批优先"');
+    expect(app).toContain('actionLabel="批量审批预留"');
+
+    expect(app).toContain('title="审批记录池"');
+    expect(app).toContain('recordCount={sortedRecentApprovals.length}');
+    expect(app).toContain('filterLabel="最近处理优先"');
+    expect(app).toContain('actionLabel="审批模板"');
+
+    expect(app).toContain('title="私域供应商池"');
+    expect(app).toContain('recordCount={supplierRelationRows.length}');
+    expect(app).toContain('filterLabel="全部合作状态"');
+    expect(app).toContain('actionLabel="供应商准入"');
+
+    expect(app).toContain('title="物料服务池"');
+    expect(app).toContain('recordCount={workspace.materials.length}');
+    expect(app).toContain('filterLabel="全部物料品类"');
+    expect(app).toContain('actionLabel="新增物料"');
+  });
 });
