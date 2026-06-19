@@ -76,6 +76,7 @@
 | 20 | 权限差异提示 | 平台、采购方、供应商工作台已补角色能力、不可执行动作、数据边界和 Java/Mock 模式差异说明 | `scripts/permission-boundary-hints-ui.test.ts` |
 | 21 | 操作日志筛选 | 采购方审计日志已补对象类型、动作类型组合筛选、命中摘要、已选详情和清空筛选入口 | `scripts/buyer-audit-log-filtering-ui.test.ts` |
 | 22 | 供应商档案维护入口 | 供应商企业档案页已补企业档案草稿、联系人维护、授权品类、资质上传入口和附件元数据边界说明 | `scripts/supplier-profile-maintenance-entry-ui.test.ts` |
+| 23 | 供应商报价与履约详情 | 供应商报价记录和销售订单页已补选中详情面板，覆盖关联询价、定标结果、发货详情、发票应收和履约轨迹 | `scripts/supplier-quote-order-detail-panels-ui.test.ts` |
 
 ## 第二批候选任务
 

@@ -7727,6 +7727,19 @@ const SupplierWorkspaceView: React.FC<{
     supplierOrderStatusFilter === '全部状态' || order.status === supplierOrderStatusFilter);
   const filteredSupplierInvoices = workspace.invoices.filter((invoice) =>
     supplierInvoiceStatusFilter === '全部状态' || invoice.paymentStatus === supplierInvoiceStatusFilter);
+  const selectedSupplierQuoteDetail = filteredSupplierQuotes.find((quote) => quote.id === selectedSupplierQuoteId)
+    ?? filteredSupplierQuotes[0];
+  const selectedSupplierQuoteRfq = selectedSupplierQuoteDetail
+    ? workspace.opportunities.find((rfq) => rfq.id === selectedSupplierQuoteDetail.rfqId)
+    : undefined;
+  const selectedSupplierOrderDetail = filteredSupplierOrders.find((order) => order.id === selectedSupplierOrderId)
+    ?? filteredSupplierOrders[0];
+  const selectedSupplierOrderDelivery = selectedSupplierOrderDetail
+    ? workspace.deliveries.find((delivery) => delivery.orderId === selectedSupplierOrderDetail.id)
+    : undefined;
+  const selectedSupplierOrderInvoice = selectedSupplierOrderDetail
+    ? workspace.invoices.find((invoice) => invoice.orderId === selectedSupplierOrderDetail.id)
+    : undefined;
   const supplierMessageCenterNotifications = buildSupplierMessageCenterNotifications(workspace);
   useEffect(() => {
     setSelectedSupplierQuoteId((current) => (
@@ -7976,23 +7989,29 @@ const SupplierWorkspaceView: React.FC<{
           {filteredSupplierQuotes.length === 0 ? (
             <EmptyState title="暂无报价记录" desc="收到询价邀请并提交报价后，报价历史和关联询价状态会显示在这里。" />
           ) : (
-            <div className="space-y-3">
-              <SupplierQuoteHistorySummaryPanel
-                quotes={filteredSupplierQuotes}
-                opportunities={workspace.opportunities}
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+              <div className="space-y-3">
+                <SupplierQuoteHistorySummaryPanel
+                  quotes={filteredSupplierQuotes}
+                  opportunities={workspace.opportunities}
+                />
+                {filteredSupplierQuotes.map((quote) => {
+                  const rfq = workspace.opportunities.find((rfq) => rfq.id === quote.rfqId);
+                  return (
+                    <SupplierQuoteHistoryCard
+                      key={quote.id}
+                      quote={quote}
+                      rfq={rfq}
+                      selected={selectedSupplierQuoteId === quote.id}
+                      onSelectDetail={() => setSelectedSupplierQuoteId(quote.id)}
+                    />
+                  );
+                })}
+              </div>
+              <SupplierQuoteDetailPanel
+                quote={selectedSupplierQuoteDetail}
+                rfq={selectedSupplierQuoteRfq}
               />
-              {filteredSupplierQuotes.map((quote) => {
-                const rfq = workspace.opportunities.find((rfq) => rfq.id === quote.rfqId);
-                return (
-                  <SupplierQuoteHistoryCard
-                    key={quote.id}
-                    quote={quote}
-                    rfq={rfq}
-                    selected={selectedSupplierQuoteId === quote.id}
-                    onSelectDetail={() => setSelectedSupplierQuoteId(quote.id)}
-                  />
-                );
-              })}
             </div>
           )}
         </Panel>
@@ -8081,166 +8100,173 @@ const SupplierWorkspaceView: React.FC<{
         {filteredSupplierOrders.length === 0 ? (
           <EmptyState title="暂无销售订单" desc="采购方定标并生成订单后，供应商会在这里确认订单、提交发货和开票。" />
         ) : (
-        <div className="space-y-3">
-          <SupplierOrderFulfillmentSummaryPanel
-            orders={filteredSupplierOrders}
-            invoices={workspace.invoices}
-          />
-          {filteredSupplierOrders.map((order) => {
-            const confirmBusy = supplierActionBusyId === `confirm:${order.id}`;
-            const deliveryBusy = supplierActionBusyId === `delivery:${order.id}`;
-            const invoiceBusy = supplierActionBusyId === `invoice:${order.id}`;
-            const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
-            const invoice = workspace.invoices.find((item) => item.orderId === order.id);
-            const deliveryDraft = deliveryDrafts[order.id] ?? { carrier: '顺丰速运', trackingNo: '' };
-            const invoiceDraft = invoiceDrafts[order.id] ?? { amount: order.amount, invoiceNo: '' };
-            return (
-              <div
-                key={order.id}
-                className={`rounded-lg border bg-white p-4 transition ${
-                  selectedSupplierOrderId === order.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-black text-slate-900">{order.id}</p>
-                    <p className="mt-1 text-sm text-slate-500">采购方租户 {order.tenantId}</p>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="space-y-3">
+            <SupplierOrderFulfillmentSummaryPanel
+              orders={filteredSupplierOrders}
+              invoices={workspace.invoices}
+            />
+            {filteredSupplierOrders.map((order) => {
+              const confirmBusy = supplierActionBusyId === `confirm:${order.id}`;
+              const deliveryBusy = supplierActionBusyId === `delivery:${order.id}`;
+              const invoiceBusy = supplierActionBusyId === `invoice:${order.id}`;
+              const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
+              const invoice = workspace.invoices.find((item) => item.orderId === order.id);
+              const deliveryDraft = deliveryDrafts[order.id] ?? { carrier: '顺丰速运', trackingNo: '' };
+              const invoiceDraft = invoiceDrafts[order.id] ?? { amount: order.amount, invoiceNo: '' };
+              return (
+                <div
+                  key={order.id}
+                  className={`rounded-lg border bg-white p-4 transition ${
+                    selectedSupplierOrderId === order.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-black text-slate-900">{order.id}</p>
+                      <p className="mt-1 text-sm text-slate-500">采购方租户 {order.tenantId}</p>
+                    </div>
+                    <p className="font-mono font-black text-slate-900">{currency(order.amount)}</p>
                   </div>
-                  <p className="font-mono font-black text-slate-900">{currency(order.amount)}</p>
-                </div>
-                <SupplierOrderActionSummaryPanel
-                  order={order}
-                  deliveryLabel={delivery ? `${delivery.carrier} ${delivery.trackingNo}` : '待发货'}
-                  invoiceStatus={invoice ? invoice.paymentStatus : '待开票'}
-                />
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <StatusPill label={order.status} />
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <DetailToggleButton
-                      selected={selectedSupplierOrderId === order.id}
-                      onClick={() => setSelectedSupplierOrderId(order.id)}
-                      compact
-                    />
-                    {javaEnabled && (
-                      <>
-                      {order.status === '待供应商确认' && (
+                  <SupplierOrderActionSummaryPanel
+                    order={order}
+                    deliveryLabel={delivery ? `${delivery.carrier} ${delivery.trackingNo}` : '待发货'}
+                    invoiceStatus={invoice ? invoice.paymentStatus : '待开票'}
+                  />
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <StatusPill label={order.status} />
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <DetailToggleButton
+                        selected={selectedSupplierOrderId === order.id}
+                        onClick={() => setSelectedSupplierOrderId(order.id)}
+                        compact
+                      />
+                      {javaEnabled && (
+                        <>
+                        {order.status === '待供应商确认' && (
+                          <PrimaryActionButton
+                            onClick={() => onConfirmOrder(order.id)}
+                            disabled={confirmBusy}
+                            busy={confirmBusy}
+                            pendingLabel="确认中"
+                            flushTop
+                          >
+                            确认订单
+                          </PrimaryActionButton>
+                        )}
+                        {order.status === '待发货' && (
+                          <span className="text-xs font-black text-emerald-700">填写发货信息</span>
+                        )}
+                        {order.status === '已收货' && !workspace.invoices.some((invoice) => invoice.orderId === order.id) && (
+                          <span className="text-xs font-black text-amber-700">填写发票信息</span>
+                        )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {javaEnabled && order.status === '待发货' && (
+                    <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+                      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                        <label className="block">
+                          <span className="text-xs font-black text-emerald-700">承运商</span>
+                          <input
+                            value={deliveryDraft.carrier}
+                            onChange={(event) => setDeliveryDrafts((current) => ({
+                              ...current,
+                              [order.id]: {
+                                ...deliveryDraft,
+                                carrier: event.target.value,
+                              },
+                            }))}
+                            className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black text-emerald-700">物流单号</span>
+                          <input
+                            value={deliveryDraft.trackingNo}
+                            onChange={(event) => setDeliveryDrafts((current) => ({
+                              ...current,
+                              [order.id]: {
+                                ...deliveryDraft,
+                                trackingNo: event.target.value,
+                              },
+                            }))}
+                            className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400"
+                            placeholder="请输入物流单号"
+                          />
+                        </label>
                         <PrimaryActionButton
-                          onClick={() => onConfirmOrder(order.id)}
-                          disabled={confirmBusy}
-                          busy={confirmBusy}
-                          pendingLabel="确认中"
+                          onClick={() => onCreateDelivery(order.id, deliveryDraft)}
+                          disabled={deliveryBusy || !deliveryDraft.carrier.trim() || !deliveryDraft.trackingNo.trim()}
+                          busy={deliveryBusy}
+                          pendingLabel="提交中"
+                          tone="emerald"
+                          size="md"
                           flushTop
                         >
-                          确认订单
+                          提交发货
                         </PrimaryActionButton>
-                      )}
-                      {order.status === '待发货' && (
-                        <span className="text-xs font-black text-emerald-700">填写发货信息</span>
-                      )}
-                      {order.status === '已收货' && !workspace.invoices.some((invoice) => invoice.orderId === order.id) && (
-                        <span className="text-xs font-black text-amber-700">填写发票信息</span>
-                      )}
-                      </>
-                    )}
-                  </div>
+                      </div>
+                    </div>
+                  )}
+                  {javaEnabled && order.status === '已收货' && !workspace.invoices.some((invoice) => invoice.orderId === order.id) && (
+                    <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-3">
+                      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                        <label className="block">
+                          <span className="text-xs font-black text-amber-700">发票号</span>
+                          <input
+                            value={invoiceDraft.invoiceNo}
+                            onChange={(event) => setInvoiceDrafts((current) => ({
+                              ...current,
+                              [order.id]: {
+                                ...invoiceDraft,
+                                invoiceNo: event.target.value,
+                              },
+                            }))}
+                            className="mt-2 h-10 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-400"
+                            placeholder="请输入发票号"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black text-amber-700">发票金额</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={invoiceDraft.amount}
+                            onChange={(event) => setInvoiceDrafts((current) => ({
+                              ...current,
+                              [order.id]: {
+                                ...invoiceDraft,
+                                amount: Number(event.target.value),
+                              },
+                            }))}
+                            className="mt-2 h-10 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-400"
+                          />
+                        </label>
+                        <PrimaryActionButton
+                          onClick={() => onCreateInvoice(order.id, invoiceDraft)}
+                          disabled={invoiceBusy || !invoiceDraft.invoiceNo.trim() || invoiceDraft.amount <= 0}
+                          busy={invoiceBusy}
+                          pendingLabel="提交中"
+                          tone="amber"
+                          size="md"
+                          flushTop
+                        >
+                          提交发票
+                        </PrimaryActionButton>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {javaEnabled && order.status === '待发货' && (
-                  <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
-                    <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                      <label className="block">
-                        <span className="text-xs font-black text-emerald-700">承运商</span>
-                        <input
-                          value={deliveryDraft.carrier}
-                          onChange={(event) => setDeliveryDrafts((current) => ({
-                            ...current,
-                            [order.id]: {
-                              ...deliveryDraft,
-                              carrier: event.target.value,
-                            },
-                          }))}
-                          className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="text-xs font-black text-emerald-700">物流单号</span>
-                        <input
-                          value={deliveryDraft.trackingNo}
-                          onChange={(event) => setDeliveryDrafts((current) => ({
-                            ...current,
-                            [order.id]: {
-                              ...deliveryDraft,
-                              trackingNo: event.target.value,
-                            },
-                          }))}
-                          className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400"
-                          placeholder="请输入物流单号"
-                        />
-                      </label>
-                      <PrimaryActionButton
-                        onClick={() => onCreateDelivery(order.id, deliveryDraft)}
-                        disabled={deliveryBusy || !deliveryDraft.carrier.trim() || !deliveryDraft.trackingNo.trim()}
-                        busy={deliveryBusy}
-                        pendingLabel="提交中"
-                        tone="emerald"
-                        size="md"
-                        flushTop
-                      >
-                        提交发货
-                      </PrimaryActionButton>
-                    </div>
-                  </div>
-                )}
-                {javaEnabled && order.status === '已收货' && !workspace.invoices.some((invoice) => invoice.orderId === order.id) && (
-                  <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-3">
-                    <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                      <label className="block">
-                        <span className="text-xs font-black text-amber-700">发票号</span>
-                        <input
-                          value={invoiceDraft.invoiceNo}
-                          onChange={(event) => setInvoiceDrafts((current) => ({
-                            ...current,
-                            [order.id]: {
-                              ...invoiceDraft,
-                              invoiceNo: event.target.value,
-                            },
-                          }))}
-                          className="mt-2 h-10 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-400"
-                          placeholder="请输入发票号"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="text-xs font-black text-amber-700">发票金额</span>
-                        <input
-                          type="number"
-                          min={1}
-                          value={invoiceDraft.amount}
-                          onChange={(event) => setInvoiceDrafts((current) => ({
-                            ...current,
-                            [order.id]: {
-                              ...invoiceDraft,
-                              amount: Number(event.target.value),
-                            },
-                          }))}
-                          className="mt-2 h-10 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-400"
-                        />
-                      </label>
-                      <PrimaryActionButton
-                        onClick={() => onCreateInvoice(order.id, invoiceDraft)}
-                        disabled={invoiceBusy || !invoiceDraft.invoiceNo.trim() || invoiceDraft.amount <= 0}
-                        busy={invoiceBusy}
-                        pendingLabel="提交中"
-                        tone="amber"
-                        size="md"
-                        flushTop
-                      >
-                        提交发票
-                      </PrimaryActionButton>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          <SupplierOrderFulfillmentDetailPanel
+            order={selectedSupplierOrderDetail}
+            delivery={selectedSupplierOrderDelivery}
+            invoice={selectedSupplierOrderInvoice}
+          />
         </div>
         )}
       </Panel>
@@ -8602,6 +8628,143 @@ const SupplierQuoteHistoryCard: React.FC<{
     />
   </div>
 );
+
+const SupplierQuoteDetailPanel: React.FC<{
+  quote?: SupplierWorkspace['quotes'][number];
+  rfq?: SupplierWorkspace['opportunities'][number];
+}> = ({ quote, rfq }) => {
+  if (!quote) {
+    return (
+      <Panel title="报价详情" icon={BarChart3}>
+        <EmptyState title="暂无报价详情" desc="选择一条报价记录后，可查看关联询价、定标结果和下一步建议。" />
+      </Panel>
+    );
+  }
+
+  const awardLabel = rfq?.status === '已定标'
+    ? quote.status === '已采纳' ? '已采纳' : '未采纳'
+    : rfq?.status === '已截标'
+      ? '等待定标'
+      : '报价处理中';
+  const nextAction = awardLabel === '已采纳'
+    ? '查看订单履约'
+    : awardLabel === '等待定标'
+      ? '等待采购方定标'
+      : '跟进询价状态';
+
+  return (
+    <Panel title="报价详情" icon={BarChart3}>
+      <div className="space-y-4">
+        <DetailHeroCard
+          eyebrow="报价详情"
+          title={rfq?.title ?? `关联询价 ${quote.rfqId}`}
+          meta={`报价 ${quote.id} · 关联询价 ${quote.rfqId}`}
+          status={quote.status}
+          facts={[
+            { label: '报价金额', value: currency(quote.amount) },
+            { label: '税率', value: `${quote.taxRate}%` },
+            { label: '交付周期', value: `${quote.deliveryDays} 天` },
+            { label: '下一步建议', value: nextAction },
+          ]}
+        />
+
+        <DetailSection title="关联询价">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="询价编号" value={quote.rfqId} />
+            <DetailKeyValueRow label="询价状态" value={rfq?.status ?? '待同步'} />
+            <DetailKeyValueRow label="报价截止" value={rfq?.deadline ?? '待同步'} />
+            <DetailKeyValueRow label="邀请供应商" value={`${rfq?.invitedSupplierIds.length ?? 0} 家`} />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="定标结果">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="当前结论" value={awardLabel} />
+            <DetailKeyValueRow label="RFQ 状态" value={rfq?.status ?? '待同步'} />
+            <DetailKeyValueRow label="下一步建议" value={nextAction} />
+          </div>
+        </DetailSection>
+
+        <AttachmentCenterEntryPanel
+          title="报价附件"
+          ownerType="供应商报价"
+          ownerId={quote.id}
+          visibility="buyer_supplier_shared"
+          desc="登记报价清单、服务承诺和商务说明附件元数据，供采购方比价和供应商追溯使用。"
+          attachmentNames={['报价清单.xlsx', '服务承诺.pdf']}
+        />
+      </div>
+    </Panel>
+  );
+};
+
+const SupplierOrderFulfillmentDetailPanel: React.FC<{
+  order?: SupplierWorkspace['orders'][number];
+  delivery?: SupplierWorkspace['deliveries'][number];
+  invoice?: SupplierWorkspace['invoices'][number];
+}> = ({ order, delivery, invoice }) => {
+  if (!order) {
+    return (
+      <Panel title="销售订单详情" icon={Truck}>
+        <EmptyState title="暂无销售订单详情" desc="选择一张销售订单后，可查看发货详情、发票应收和履约轨迹。" />
+      </Panel>
+    );
+  }
+
+  const nextAction = order.status === '待供应商确认'
+    ? '确认订单'
+    : order.status === '待发货'
+      ? '提交发货'
+      : order.status === '已收货' && !invoice
+        ? '提交发票'
+        : invoice?.paymentStatus === '已付款'
+          ? '归档履约'
+          : '跟进回款';
+
+  return (
+    <Panel title="销售订单详情" icon={Truck}>
+      <div className="space-y-4">
+        <DetailHeroCard
+          eyebrow="销售订单详情"
+          title={order.id}
+          meta={`采购方租户 ${order.tenantId}`}
+          status={order.status}
+          facts={[
+            { label: '订单金额', value: currency(order.amount) },
+            { label: '预计收货', value: order.expectedReceiptDate },
+            { label: '发票应收', value: invoice?.paymentStatus ?? '待开票' },
+            { label: '下一步', value: nextAction },
+          ]}
+        />
+
+        <DetailSection title="发货详情">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="承运商" value={delivery?.carrier ?? '待发货'} />
+            <DetailKeyValueRow label="物流单号" value={delivery?.trackingNo ?? '待登记'} />
+            <DetailKeyValueRow label="发货时间" value={delivery?.shippedAt ? formatAuditTime(delivery.shippedAt) : '待登记'} />
+            <DetailKeyValueRow label="物流状态" value={delivery?.trackingNo ? '已提交发货' : '等待供应商发货'} />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="发票应收">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="发票编号" value={invoice?.invoiceNo ?? '待开票'} />
+            <DetailKeyValueRow label="发票金额" value={invoice ? currency(invoice.amount) : '待开票'} />
+            <DetailKeyValueRow label="付款状态" value={invoice?.paymentStatus ?? '待开票'} />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="履约轨迹">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="订单状态" value={order.status} />
+            <DetailKeyValueRow label="预计收货" value={order.expectedReceiptDate} />
+            <DetailKeyValueRow label="下一步" value={nextAction} />
+          </div>
+        </DetailSection>
+      </div>
+    </Panel>
+  );
+};
 
 const SupplierInvoiceReceivableSummaryPanel: React.FC<{
   invoices: SupplierWorkspace['invoices'];

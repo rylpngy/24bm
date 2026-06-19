@@ -64,6 +64,7 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('权限差异提示');
     expect(checklist).toContain('操作日志筛选');
     expect(checklist).toContain('供应商档案维护入口');
+    expect(checklist).toContain('供应商报价与履约详情');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-award-order-action-forms-ui.test.ts');
@@ -86,5 +87,6 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('scripts/permission-boundary-hints-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-audit-log-filtering-ui.test.ts');
     expect(checklist).toContain('scripts/supplier-profile-maintenance-entry-ui.test.ts');
+    expect(checklist).toContain('scripts/supplier-quote-order-detail-panels-ui.test.ts');
   });
 });
