@@ -35,4 +35,28 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('发票付款对账入口');
     expect(checklist).toContain('详情抽屉和筛选');
   });
+
+  it('records completed round two increments with explicit verification anchors', () => {
+    expect(existsSync(checklistPath)).toBe(true);
+
+    const checklist = readFileSync(checklistPath, 'utf8');
+
+    expect(checklist).toContain('## 已完成的小步验收记录');
+    expect(checklist).toContain('需求预算超限提示');
+    expect(checklist).toContain('RFQ 邀请校验');
+    expect(checklist).toContain('定标和订单动作校验');
+    expect(checklist).toContain('收货和付款登记校验');
+    expect(checklist).toContain('审批处理校验');
+    expect(checklist).toContain('供应商准入校验');
+    expect(checklist).toContain('平台企业审核校验');
+    expect(checklist).toContain('平台公告发布校验');
+    expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
+    expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');
+    expect(checklist).toContain('scripts/buyer-award-order-action-forms-ui.test.ts');
+    expect(checklist).toContain('scripts/buyer-fulfillment-action-forms-ui.test.ts');
+    expect(checklist).toContain('scripts/buyer-approval-action-forms-ui.test.ts');
+    expect(checklist).toContain('scripts/buyer-supplier-admission-ui.test.ts');
+    expect(checklist).toContain('scripts/platform-enterprise-review-actions-ui.test.ts');
+    expect(checklist).toContain('scripts/platform-announcement-publish-form-ui.test.ts');
+  });
 });

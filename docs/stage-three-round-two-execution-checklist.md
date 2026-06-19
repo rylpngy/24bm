@@ -48,6 +48,21 @@
 | P1 | 发票付款对账入口 | 登记付款补付款备注、对账入口、付款申请状态和三单匹配提示 | `App.tsx` |
 | P2 | 详情抽屉和筛选 | 采购需求、RFQ、订单、发票页补常用筛选和更稳定的详情展示结构 | `App.tsx` |
 
+## 已完成的小步验收记录
+
+当前第二轮第一批已经完成一组表单校验和反馈收尾：采购方主流程的高频动作已经从“按钮入口”推进到“可填写、可校验、有反馈”的后台操作形态，并同步补到了平台端企业审核和公告发布。下一步可以继续做供应商端协同表单，或进入详情抽屉和筛选能力。
+
+| 序号 | 增量 | 当前结论 | 验收依据 |
+| --- | --- | --- | --- |
+| 1 | 需求预算超限提示 | 新建需求表单已校验预算、期望日期、物料行和附件提示，预算超限会给出明确反馈 | `scripts/buyer-demand-create-form-ui.test.ts` |
+| 2 | RFQ 邀请校验 | RFQ 创建与邀请供应商已校验准入供应商选择、报价截止日期和报价要求 | `scripts/buyer-rfq-create-form-ui.test.ts` |
+| 3 | 定标和订单动作校验 | 报价定标、定标审批和生成订单动作已补定标理由、预计收货日期等必要校验 | `scripts/buyer-award-order-action-forms-ui.test.ts` |
+| 4 | 收货和付款登记校验 | 收货登记、异常说明、付款登记和对账提示已从轻量动作升级为可填写表单 | `scripts/buyer-fulfillment-action-forms-ui.test.ts` |
+| 5 | 审批处理校验 | 审批通过/驳回已要求处理意见和确认项，避免误操作 | `scripts/buyer-approval-action-forms-ui.test.ts` |
+| 6 | 供应商准入校验 | 供应商准入已补准入理由、资质摘要、联系人、授权品类和风险提示确认 | `scripts/buyer-supplier-admission-ui.test.ts` |
+| 7 | 平台企业审核校验 | 平台企业审核已补审核意见、资料确认和风险确认，支撑企业入驻审核闭环 | `scripts/platform-enterprise-review-actions-ui.test.ts` |
+| 8 | 平台公告发布校验 | 平台公告发布已校验标题、正文、发布范围和发布确认 | `scripts/platform-announcement-publish-form-ui.test.ts` |
+
 ## 第二批候选任务
 
 第一批验收后，再进入以下任务：
