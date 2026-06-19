@@ -36,8 +36,8 @@
 | 询价项目 | RFQ 列表、详情、邀请供应商、新建询价表单 | `RfqDetailOperationPanel` |
 | 报价对比 | 报价对比卡片、推荐定标、定标审批入口 | `QuoteComparisonOperationPanel` |
 | 采购订单 | 订单列表、订单详情、生成订单和履约摘要 | `OrderDetailOperationPanel` |
-| 收货验收 | 待收货订单、验收详情、登记收货和验收摘要 | `ReceiptInspectionOperationPanel` |
-| 发票付款 | 发票列表、付款详情、登记付款和付款摘要 | `InvoicePaymentOperationPanel` |
+| 收货验收 | 待收货订单、验收详情、登记收货表单和验收摘要 | `ReceiptInspectionOperationPanel`、`ReceiptRegistrationForm` |
+| 发票付款 | 发票列表、付款详情、登记付款表单和付款摘要 | `InvoicePaymentOperationPanel`、`PaymentRegistrationForm` |
 | 审计日志 | 最近操作、审计详情、操作摘要和关联业务 | `AuditTraceabilitySummaryPanel` |
 
 采购方端第一轮结论：后台菜单、核心列表、详情面板和主流程操作入口已经具备第一轮可验收基础。第二轮可继续补复杂新建/编辑表单、批量操作、筛选、详情抽屉和更强的 Java 联调体验。
@@ -126,9 +126,9 @@
 | 采购方 | 物料目录 | 可进入第二轮 | 分类、批量导入和供应商授权待补 | 第二轮补目录维护能力 |
 | 采购方 | 询价项目 | 可进入第二轮 | 创建 RFQ 后的详情联动仍需 Java 逐页验收 | 第二轮补 RFQ 表单和详情抽屉 |
 | 采购方 | 报价对比 | 可进入第二轮 | 定标审批仍是轻量入口 | 第二轮补定标记录和审批链路 |
-| 采购方 | 采购订单 | 可进入第二轮 | 订单生成与履约状态仍需后端联调加强 | 第二轮补订单详情和状态流 |
-| 采购方 | 收货验收 | 可进入第二轮 | 验收附件、差异处理和批量收货待补 | 第二轮补验收表单 |
-| 采购方 | 发票付款 | 可进入第二轮 | 三单匹配、对账和付款申请待补 | 第二轮补财务协同 |
+| 采购方 | 采购订单 | 可进入第二轮 | 订单生成已表单化，订单详情和履约状态仍需后端联调加强 | 第二轮补订单详情和状态流 |
+| 采购方 | 收货验收 | 可进入第二轮 | 登记收货已表单化，验收附件、差异处理和批量收货待补 | 第二轮补验收附件和差异处理 |
+| 采购方 | 发票付款 | 可进入第二轮 | 登记付款已表单化，三单匹配、对账和付款申请待补 | 第二轮补财务协同 |
 | 采购方 | 审计日志 | 可进入第二轮 | 操作筛选、导出和审计详情深度待补 | 第二轮补筛选和导出 |
 | 平台 | 平台看板 | 可进入第二轮 | 运营指标还不是真实 BI | 第二轮补用量和套餐运营 |
 | 平台 | 租户列表 | 可进入第二轮 | 租户详情和功能开关持久化待补 | 第二轮补租户详情和开关配置 |
@@ -154,5 +154,9 @@
 | 采购方列表详情并排延后到 2xl | 普通笔记本和中屏下先保持上下结构，避免列表和详情面板互相挤压 | `2xl:grid-cols[...]`、`scripts/admin-shell-polish-ui.test.ts` |
 | 通用卡片小屏换行 | 审批、供应商、物料、审计、订单履约等卡片标题、状态、金额和操作区可自然换行 | `AdminInfoCard`、`WorkflowListCard` |
 | 响应式表格摘要卡片 | 租户列表和询价项目在小屏显示摘要卡片，桌面端保留表格密度 | `ResponsiveTableFrame`、`scripts/responsive-table-frame-ui.test.ts` |
+| 采购方定标和订单动作表单化 | 报价对比页定标原因、采购订单页预计收货日期不再是单按钮裸操作 | `BuyerAwardDraft`、`BuyerOrderDraft`、`scripts/buyer-award-order-action-forms-ui.test.ts` |
+| 供应商准入动作表单化 | 供应商详情页补准入理由和授权品类确认，避免准入动作缺少上下文 | `BuyerSupplierAdmissionDraft`、`scripts/buyer-supplier-admission-action-form-ui.test.ts` |
+| 审批处理动作表单化 | 审批中心通过/驳回前需要填写审批意见，固定审批模板下也能保留处理上下文 | `BuyerApprovalReviewDraft`、`scripts/buyer-approval-action-forms-ui.test.ts` |
+| 订单收货和发票付款详情动作表单化 | 订单/收货详情可选择验收结果后登记收货，发票详情可选择付款状态后登记付款 | `ReceiptRegistrationForm`、`PaymentRegistrationForm`、`scripts/buyer-fulfillment-detail-action-forms-ui.test.ts` |
 
 第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。

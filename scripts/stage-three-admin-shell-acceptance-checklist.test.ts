@@ -40,6 +40,15 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('采购方列表详情并排延后到 2xl');
     expect(checklist).toContain('通用卡片小屏换行');
     expect(checklist).toContain('响应式表格摘要卡片');
+    expect(checklist).toContain('采购方定标和订单动作表单化');
+    expect(checklist).toContain('供应商准入动作表单化');
+    expect(checklist).toContain('审批处理动作表单化');
+    expect(checklist).toContain('订单收货和发票付款详情动作表单化');
+    expect(checklist).toContain('BuyerAwardDraft');
+    expect(checklist).toContain('BuyerSupplierAdmissionDraft');
+    expect(checklist).toContain('BuyerApprovalReviewDraft');
+    expect(checklist).toContain('ReceiptRegistrationForm');
+    expect(checklist).toContain('PaymentRegistrationForm');
     expect(checklist).toContain('第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。');
   });
 });
