@@ -41,7 +41,7 @@ describe('platform module header and toolbar UI', () => {
     expect(platformWorkspace).toContain('title="企业审核池"');
     expect(platformWorkspace).toContain('recordCount={enterpriseReviews.length}');
     expect(platformWorkspace).toContain('filterLabel="待审核优先"');
-    expect(platformWorkspace).toContain('actionLabel="批量审核预留"');
+    expect(platformWorkspace).toContain('actionLabel="批量审核"');
 
     expect(platformWorkspace).toContain('title="公告发布池"');
     expect(platformWorkspace).toContain('recordCount={announcements.length}');

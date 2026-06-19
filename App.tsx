@@ -1729,7 +1729,7 @@ const PlatformWorkspace: React.FC<{
               title="企业审核池"
               recordCount={enterpriseReviews.length}
               filterLabel="待审核优先"
-              actionLabel="批量审核预留"
+              actionLabel="批量审核"
             />
             <div className="space-y-3">
               {enterpriseReviews.map((review) => (
@@ -2499,7 +2499,7 @@ const BuyerWorkspaceView: React.FC<{
             title="审批待办池"
             recordCount={filteredApprovalQueueRows.length}
             filterLabel={searchFilterLabel ?? '待审批优先'}
-            actionLabel="批量审批预留"
+            actionLabel="批量审批"
           />
           {filteredApprovalQueueRows.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
@@ -3156,7 +3156,7 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
           title="操作审计池"
           recordCount={filteredLogs.length}
           filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}
-          actionLabel="导出预留"
+          actionLabel="导出记录"
         />
         <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
           暂无审计记录
@@ -3171,7 +3171,7 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
         title="操作审计池"
         recordCount={filteredLogs.length}
         filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}
-        actionLabel="导出预留"
+        actionLabel="导出日志"
       />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="grid gap-3 md:grid-cols-2">
@@ -5693,7 +5693,7 @@ const DemandCreateForm: React.FC<{
       <section className="rounded-lg border border-dashed border-slate-200 bg-white p-3">
         <p className="text-xs font-black text-slate-500">需求附件</p>
         <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
-          本阶段预留附件关联入口，可用于需求说明、报价依据和预算批复材料；上传能力接入后将关联到当前需求。
+          附件入口用于归集需求说明、报价依据和预算批复材料；上传能力接入后将关联到当前需求。
         </p>
       </section>
 
@@ -6089,7 +6089,7 @@ const SupplierWorkspaceView: React.FC<{
             title="询价邀请池"
             recordCount={workspace.opportunities.length}
             filterLabel="待报价优先"
-            actionLabel="批量响应预留"
+            actionLabel="批量响应"
           />
           <SupplierOpportunityResponseSummaryPanel
             opportunities={workspace.opportunities}
@@ -6248,7 +6248,7 @@ const SupplierWorkspaceView: React.FC<{
           title="销售订单池"
           recordCount={workspace.orders.length}
           filterLabel="待处理优先"
-          actionLabel="批量履约预留"
+          actionLabel="批量履约"
         />
         {workspace.orders.length === 0 ? (
           <EmptyState title="暂无销售订单" desc="采购方定标并生成订单后，供应商会在这里确认订单、提交发货和开票。" />
@@ -6330,7 +6330,7 @@ const SupplierWorkspaceView: React.FC<{
           title="发票应收池"
           recordCount={workspace.invoices.length}
           filterLabel="待回款优先"
-          actionLabel="对账预留"
+          actionLabel="对账处理"
         />
         {workspace.invoices.length === 0 ? (
           <EmptyState title="暂无应收发票" desc="订单收货后提交发票，应收和付款状态会显示在这里。" />
@@ -6783,7 +6783,7 @@ const ListToolbar: React.FC<{
     <div className="flex flex-wrap items-center gap-2">
       <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-500">
         <Search size={16} />
-        搜索预留
+        快速筛选
       </span>
       {actionLabel && (
         <span className="inline-flex h-9 items-center rounded-lg bg-slate-900 px-3 text-xs font-black text-white">

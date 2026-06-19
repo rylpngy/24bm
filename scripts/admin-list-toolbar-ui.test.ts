@@ -16,6 +16,18 @@ describe('admin list toolbar UI', () => {
     expect(app).toContain('<Search size={16}');
   });
 
+  it('does not expose temporary placeholder copy in production-facing toolbars', () => {
+    const app = read('App.tsx');
+
+    expect(app).not.toContain('搜索预留');
+    expect(app).not.toContain('批量审核预留');
+    expect(app).not.toContain('批量审批预留');
+    expect(app).not.toContain('导出预留');
+    expect(app).not.toContain('批量响应预留');
+    expect(app).not.toContain('批量履约预留');
+    expect(app).not.toContain('对账预留');
+  });
+
   it('adds list toolbar context to buyer demand, platform tenant, and supplier opportunity lists', () => {
     const app = read('App.tsx');
 
@@ -32,7 +44,7 @@ describe('admin list toolbar UI', () => {
     expect(app).toContain('title="询价邀请池"');
     expect(app).toContain('recordCount={workspace.opportunities.length}');
     expect(app).toContain('filterLabel="待报价优先"');
-    expect(app).toContain('actionLabel="批量响应预留"');
+    expect(app).toContain('actionLabel="批量响应"');
   });
 
   it('adds list toolbar context to remaining buyer workflow lists', () => {
@@ -67,7 +79,7 @@ describe('admin list toolbar UI', () => {
     expect(app).toContain('title="操作审计池"');
     expect(app).toContain('recordCount={filteredLogs.length}');
     expect(app).toContain("filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}");
-    expect(app).toContain('actionLabel="导出预留"');
+    expect(app).toContain('actionLabel="导出记录"');
   });
 
   it('adds list toolbar context to buyer information management lists', () => {
@@ -76,7 +88,7 @@ describe('admin list toolbar UI', () => {
     expect(app).toContain('title="审批待办池"');
     expect(app).toContain('recordCount={filteredApprovalQueueRows.length}');
     expect(app).toContain("filterLabel={searchFilterLabel ?? '待审批优先'}");
-    expect(app).toContain('actionLabel="批量审批预留"');
+    expect(app).toContain('actionLabel="批量审批"');
 
     expect(app).toContain('title="审批记录池"');
     expect(app).toContain('recordCount={filteredRecentApprovals.length}');

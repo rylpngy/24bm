@@ -48,11 +48,11 @@ describe('supplier module header and toolbar UI', () => {
     expect(supplierWorkspace).toContain('title="销售订单池"');
     expect(supplierWorkspace).toContain('recordCount={workspace.orders.length}');
     expect(supplierWorkspace).toContain('filterLabel="待处理优先"');
-    expect(supplierWorkspace).toContain('actionLabel="批量履约预留"');
+    expect(supplierWorkspace).toContain('actionLabel="批量履约"');
 
     expect(supplierWorkspace).toContain('title="发票应收池"');
     expect(supplierWorkspace).toContain('recordCount={workspace.invoices.length}');
     expect(supplierWorkspace).toContain('filterLabel="待回款优先"');
-    expect(supplierWorkspace).toContain('actionLabel="对账预留"');
+    expect(supplierWorkspace).toContain('actionLabel="对账处理"');
   });
 });
