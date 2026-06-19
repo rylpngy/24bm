@@ -78,6 +78,7 @@
 | 22 | 供应商档案维护入口 | 供应商企业档案页已补企业档案草稿、联系人维护、授权品类、资质上传入口和附件元数据边界说明 | `scripts/supplier-profile-maintenance-entry-ui.test.ts` |
 | 23 | 供应商报价与履约详情 | 供应商报价记录和销售订单页已补选中详情面板，覆盖关联询价、定标结果、发货详情、发票应收和履约轨迹 | `scripts/supplier-quote-order-detail-panels-ui.test.ts` |
 | 24 | 平台公告生命周期入口 | 平台公告页已补编辑草稿、撤回公告、影响范围、站内通知和审计留痕说明，Java API 后续扩展 | `scripts/platform-announcement-lifecycle-entry-ui.test.ts` |
+| 25 | 平台租户功能开关详情 | 平台租户列表已补选中租户详情面板，覆盖套餐容量、功能开关、多租户数据隔离和审计动作说明 | `scripts/platform-tenant-detail-panel-ui.test.ts` |
 
 ## 第二批候选任务
 

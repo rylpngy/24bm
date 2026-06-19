@@ -1689,6 +1689,8 @@ const PlatformWorkspace: React.FC<{
     };
   }, [javaEnabled, data.platformOverview?.operationSummary?.activeAnnouncementCount]);
   const announcements = platformAnnouncements;
+  const selectedPlatformTenant = platformTenants.find((tenant) => tenant.id === selectedPlatformTenantId)
+    ?? platformTenants[0];
   const selectedPlatformAnnouncement = announcements.find((announcement) => announcement.id === selectedPlatformAnnouncementId)
     ?? announcements[0];
   const platformModuleFacts = buildPlatformModuleFacts(
@@ -1815,70 +1817,73 @@ const PlatformWorkspace: React.FC<{
               selectedLabel={selectedPlatformTenantId}
               onClear={() => setSelectedPlatformTenantId(platformTenants[0]?.id ?? '')}
             />
-            <ResponsiveTableFrame
-              mobileCards={platformTenants.map((tenant) => (
-                <div
-                  key={tenant.id}
-                  aria-label={`${tenant.name} 租户摘要`}
-                  className={`rounded-lg border bg-white p-4 transition ${
-                    selectedPlatformTenantId === tenant.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                  }`}
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="break-words font-black text-slate-950">{tenant.name}</p>
-                      <p className="mt-1 text-xs font-bold text-slate-500">{tenant.plan}</p>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+              <ResponsiveTableFrame
+                mobileCards={platformTenants.map((tenant) => (
+                  <div
+                    key={tenant.id}
+                    aria-label={`${tenant.name} 租户摘要`}
+                    className={`rounded-lg border bg-white p-4 transition ${
+                      selectedPlatformTenantId === tenant.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="break-words font-black text-slate-950">{tenant.name}</p>
+                        <p className="mt-1 text-xs font-bold text-slate-500">{tenant.plan}</p>
+                      </div>
+                      <StatusPill label={tenant.status} />
                     </div>
-                    <StatusPill label={tenant.status} />
+                    <div className="mt-3 grid gap-2">
+                      <MiniFact label="功能开关" value={tenant.features.join('、') || '未启用'} />
+                      <MiniFact label="用户上限" value={`${tenant.userLimit}`} />
+                    </div>
+                    <div className="mt-3">
+                      <DetailToggleButton
+                        selected={selectedPlatformTenantId === tenant.id}
+                        onClick={() => setSelectedPlatformTenantId(tenant.id)}
+                        compact
+                      />
+                    </div>
                   </div>
-                  <div className="mt-3 grid gap-2">
-                    <MiniFact label="功能开关" value={tenant.features.join('、') || '未启用'} />
-                    <MiniFact label="用户上限" value={`${tenant.userLimit}`} />
-                  </div>
-                  <div className="mt-3">
-                    <DetailToggleButton
-                      selected={selectedPlatformTenantId === tenant.id}
-                      onClick={() => setSelectedPlatformTenantId(tenant.id)}
-                      compact
-                    />
-                  </div>
-                </div>
-              ))}
-            >
-              <table className="min-w-[860px] w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3">企业</th>
-                    <th className="px-4 py-3">套餐</th>
-                    <th className="px-4 py-3">状态</th>
-                    <th className="px-4 py-3">功能开关</th>
-                    <th className="px-4 py-3 text-right">用户上限</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {platformTenants.map((tenant) => (
-                    <tr key={tenant.id}>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <DetailToggleButton
-                            selected={selectedPlatformTenantId === tenant.id}
-                            onClick={() => setSelectedPlatformTenantId(tenant.id)}
-                            compact
-                          />
-                          <span className="font-bold text-slate-900">{tenant.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-slate-600">{tenant.plan}</td>
-                      <td className="px-4 py-4">
-                        <StatusPill label={tenant.status} />
-                      </td>
-                      <td className="px-4 py-4 text-slate-600">{tenant.features.join('、') || '未启用'}</td>
-                      <td className="px-4 py-4 text-right font-mono font-bold">{tenant.userLimit}</td>
+                ))}
+              >
+                <table className="min-w-[860px] w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3">企业</th>
+                      <th className="px-4 py-3">套餐</th>
+                      <th className="px-4 py-3">状态</th>
+                      <th className="px-4 py-3">功能开关</th>
+                      <th className="px-4 py-3 text-right">用户上限</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ResponsiveTableFrame>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {platformTenants.map((tenant) => (
+                      <tr key={tenant.id}>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <DetailToggleButton
+                              selected={selectedPlatformTenantId === tenant.id}
+                              onClick={() => setSelectedPlatformTenantId(tenant.id)}
+                              compact
+                            />
+                            <span className="font-bold text-slate-900">{tenant.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-slate-600">{tenant.plan}</td>
+                        <td className="px-4 py-4">
+                          <StatusPill label={tenant.status} />
+                        </td>
+                        <td className="px-4 py-4 text-slate-600">{tenant.features.join('、') || '未启用'}</td>
+                        <td className="px-4 py-4 text-right font-mono font-bold">{tenant.userLimit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </ResponsiveTableFrame>
+              <PlatformTenantDetailPanel tenant={selectedPlatformTenant} />
+            </div>
           </Panel>
         </>
       )}
@@ -2563,6 +2568,83 @@ const PlatformTenantActionPanel: React.FC<{
     </div>
   </section>
 );
+
+const PlatformTenantDetailPanel: React.FC<{
+  tenant?: PlatformTenantRow;
+}> = ({ tenant }) => {
+  if (!tenant) {
+    return (
+      <Panel title="租户详情" icon={Layers3}>
+        <EmptyState title="暂无租户详情" desc="选择一个采购方租户后，可查看套餐容量、功能开关和审计上下文。" />
+      </Panel>
+    );
+  }
+
+  const featureItems = [
+    { key: 'rfq', label: '询价比价', enabled: tenant.features.includes('询价比价') || tenant.enabledFeatures.includes('rfq') },
+    { key: 'order', label: '订单履约', enabled: tenant.features.includes('订单履约') || tenant.enabledFeatures.includes('order') },
+    { key: 'finance', label: '财务协同', enabled: tenant.features.includes('财务协同') || tenant.enabledFeatures.includes('finance') },
+  ];
+
+  return (
+    <Panel title="租户详情" icon={Layers3}>
+      <div className="space-y-4">
+        <DetailHeroCard
+          eyebrow="租户详情"
+          title={tenant.name}
+          meta={`租户编号 ${tenant.id}`}
+          status={tenant.status}
+          facts={[
+            { label: '套餐容量', value: tenant.plan },
+            { label: '用户上限', value: `${tenant.userLimit} 人` },
+            { label: '功能开关', value: tenant.features.join('、') || '未启用' },
+            { label: '租户状态', value: tenant.status },
+          ]}
+        />
+
+        <DetailSection title="套餐容量">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="当前套餐" value={tenant.plan} />
+            <DetailKeyValueRow label="用户容量" value={`${tenant.userLimit} 人`} />
+            <DetailKeyValueRow label="容量策略" value="创建采购方用户时按 userLimit 约束" />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="功能开关详情">
+          <div className="space-y-2">
+            {featureItems.map((feature) => (
+              <div key={feature.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-slate-900">{feature.label}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">feature key: {feature.key}</p>
+                  </div>
+                  <StatusPill label={feature.enabled ? '已启用' : '未启用'} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </DetailSection>
+
+        <DetailSection title="多租户数据隔离">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="采购数据" value="需求、询价、订单、发票按租户隔离" />
+            <DetailKeyValueRow label="供应商关系" value="采购方私域供应商库按租户隔离" />
+            <DetailKeyValueRow label="数据边界" value="平台只维护租户配置，不参与业务定标" />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="审计动作">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="套餐调整" value="tenant.plan_updated" />
+            <DetailKeyValueRow label="功能开关" value="tenant.features.updated" />
+            <DetailKeyValueRow label="启停租户" value="tenant.enabled / tenant.disabled" />
+          </div>
+        </DetailSection>
+      </div>
+    </Panel>
+  );
+};
 
 const PlatformTenantListSummaryPanel: React.FC<{
   tenants: PlatformTenantRow[];
