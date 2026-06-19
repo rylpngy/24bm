@@ -21,4 +21,22 @@ describe('buyer audit summary panel UI details', () => {
     expect(auditSummaryPanel).toContain('detail.facts.find');
     expect(auditSummaryPanel).toContain('detail.traceabilityRows.find');
   });
+
+  it('surfaces an audit operation summary for traceability handling', () => {
+    const app = read('App.tsx');
+    const auditDetailView = app.slice(
+      app.indexOf('const AuditLogDetailPanelView'),
+      app.indexOf('const RfqDetailPanelView'),
+    );
+
+    expect(auditDetailView).toContain('AuditLogDetailOperationPanel');
+    expect(auditDetailView).toContain('追溯处理摘要');
+    expect(auditDetailView).toContain('追溯状态');
+    expect(auditDetailView).toContain('关联业务');
+    expect(auditDetailView).toContain('处理轨迹');
+    expect(auditDetailView).toContain('建议动作');
+    expect(auditDetailView).toContain('detail.traceabilityStatus');
+    expect(auditDetailView).toContain('detail.relatedRows.length');
+    expect(auditDetailView).toContain('detail.timelineRows.length');
+  });
 });

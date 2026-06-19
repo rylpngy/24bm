@@ -3590,6 +3590,7 @@ const AuditLogDetailPanelView: React.FC<{
         </section>
 
         <AuditTraceabilitySummaryPanel detail={detail} />
+        <AuditLogDetailOperationPanel detail={detail} />
       </DetailPanelBody>
     )}
   </Panel>
@@ -3627,6 +3628,36 @@ const AuditTraceabilitySummaryPanel: React.FC<{
           <MiniFact label="留痕结果" value={traceResult} />
           <MiniFact label="关联业务" value={`${detail.relatedRows.length} 条`} />
         </div>
+      </div>
+    </section>
+  );
+};
+
+const AuditLogDetailOperationPanel: React.FC<{
+  detail: AuditLogDetailPanel;
+}> = ({ detail }) => {
+  const recommendedAction = detail.traceabilityStatus === '完整留痕'
+    ? '归档审计记录，必要时用于业务追溯和合规抽查。'
+    : '补齐操作对象、关联业务和处理轨迹后再归档。';
+
+  return (
+    <section className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-emerald-700">追溯处理摘要</p>
+          <p className="mt-1 text-sm font-black text-slate-950">{detail.title}</p>
+        </div>
+        <StatusPill label={detail.traceabilityStatus} />
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        <MiniFact label="追溯状态" value={detail.traceabilityStatus} />
+        <MiniFact label="关联业务" value={`${detail.relatedRows.length} 条`} />
+        <MiniFact label="处理轨迹" value={`${detail.timelineRows.length} 条`} />
+        <MiniFact label="操作时间" value={detail.timeLabel} />
+      </div>
+      <div className="mt-3 rounded-lg border border-emerald-100 bg-white p-3">
+        <p className="text-xs font-black text-slate-500">建议动作</p>
+        <p className="mt-1 text-xs font-bold leading-5 text-slate-600">{recommendedAction}</p>
       </div>
     </section>
   );
