@@ -129,6 +129,8 @@ const moduleIcon = (moduleId: string): React.ElementType => {
   return icons[moduleId] ?? FileText;
 };
 
+const ALL_STATUS_FILTER = '全部状态';
+
 const currency = (value: number) =>
   new Intl.NumberFormat('zh-CN', {
     style: 'currency',
@@ -3770,11 +3772,14 @@ const BuyerWorkspaceView: React.FC<{
 
 const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }> = ({ workspace, searchQuery }) => {
   const logs = buildAuditLogRows(workspace);
-  const [auditTargetFilter, setAuditTargetFilter] = useState('全部状态');
+  const [auditTargetFilter, setAuditTargetFilter] = useState(ALL_STATUS_FILTER);
+  const [auditActionFilter, setAuditActionFilter] = useState(ALL_STATUS_FILTER);
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
   const auditTargetOptions = Array.from(new Set(logs.map((log) => log.targetLabel)));
+  const auditActionOptions = Array.from(new Set(logs.map((log) => log.title)));
   const filteredLogs = logs.filter((log) =>
-    (auditTargetFilter === '全部状态' || log.targetLabel === auditTargetFilter)
+    (auditTargetFilter === ALL_STATUS_FILTER || log.targetLabel === auditTargetFilter)
+    && (auditActionFilter === ALL_STATUS_FILTER || log.title === auditActionFilter)
     && (!normalizedSearchQuery
     || [
       log.id,
@@ -3790,6 +3795,11 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
   const selectedAuditDetail = selectedAuditLog
     ? buildAuditLogDetailPanel(workspace, selectedAuditLog)
     : undefined;
+  const auditFilterLabel = buildAuditFilterLabel(auditTargetFilter, auditActionFilter);
+  const clearAuditFilters = () => {
+    setAuditTargetFilter(ALL_STATUS_FILTER);
+    setAuditActionFilter(ALL_STATUS_FILTER);
+  };
 
   if (filteredLogs.length === 0) {
     return (
@@ -3800,11 +3810,27 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
           filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}
           actionLabel="导出记录"
         />
-        <StatusFilterControl
-          label="对象类型"
-          value={auditTargetFilter}
-          statusOptions={auditTargetOptions}
-          onChange={setAuditTargetFilter}
+        <div className="grid gap-3 lg:grid-cols-2">
+          <StatusFilterControl
+            label="对象类型"
+            value={auditTargetFilter}
+            statusOptions={auditTargetOptions}
+            onChange={setAuditTargetFilter}
+          />
+          <StatusFilterControl
+            label="动作类型"
+            value={auditActionFilter}
+            statusOptions={auditActionOptions}
+            onChange={setAuditActionFilter}
+          />
+        </div>
+        <FilterResultSummary
+          label="操作日志筛选结果"
+          filterLabel={auditFilterLabel}
+          resultCount={filteredLogs.length}
+          totalCount={logs.length}
+          selectedLabel={selectedAuditDetail?.title}
+          onClear={clearAuditFilters}
         />
         <EmptyState title="暂无审计记录" desc="当前对象类型或搜索条件下没有匹配的操作日志。" />
       </>
@@ -3819,11 +3845,27 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
         filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}
         actionLabel="导出日志"
       />
-      <StatusFilterControl
-        label="对象类型"
-        value={auditTargetFilter}
-        statusOptions={auditTargetOptions}
-        onChange={setAuditTargetFilter}
+      <div className="grid gap-3 lg:grid-cols-2">
+        <StatusFilterControl
+          label="对象类型"
+          value={auditTargetFilter}
+          statusOptions={auditTargetOptions}
+          onChange={setAuditTargetFilter}
+        />
+        <StatusFilterControl
+          label="动作类型"
+          value={auditActionFilter}
+          statusOptions={auditActionOptions}
+          onChange={setAuditActionFilter}
+        />
+      </div>
+      <FilterResultSummary
+        label="操作日志筛选结果"
+        filterLabel={auditFilterLabel}
+        resultCount={filteredLogs.length}
+        totalCount={logs.length}
+        selectedLabel={selectedAuditDetail?.title}
+        onClear={clearAuditFilters}
       />
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="grid gap-3 md:grid-cols-2">
@@ -3846,6 +3888,15 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
       </div>
     </>
   );
+};
+
+const buildAuditFilterLabel = (targetFilter: string, actionFilter: string) => {
+  const labels = [
+    targetFilter !== ALL_STATUS_FILTER ? `对象类型：${targetFilter}` : '',
+    actionFilter !== ALL_STATUS_FILTER ? `动作类型：${actionFilter}` : '',
+  ].filter(Boolean);
+
+  return labels.length > 0 ? labels.join(' · ') : ALL_STATUS_FILTER;
 };
 
 const ApprovalTemplateSettings: React.FC<{
