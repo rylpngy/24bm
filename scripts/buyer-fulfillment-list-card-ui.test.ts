@@ -22,6 +22,21 @@ describe('buyer fulfillment list card UI', () => {
     expect(app).toContain("compact ? '' : 'mt-3'");
   });
 
+  it('keeps fulfillment card amounts and actions readable on narrow screens', () => {
+    const app = read('App.tsx');
+    const workflowCard = app.slice(
+      app.indexOf('const WorkflowListCard'),
+      app.indexOf('const SimpleList'),
+    );
+
+    expect(workflowCard).toContain('flex flex-col gap-3 md:flex-row md:items-start md:justify-between');
+    expect(workflowCard).toContain('break-words');
+    expect(workflowCard).toContain('self-start rounded-lg bg-slate-50 px-2 py-1');
+    expect(workflowCard).toContain('sm:w-auto');
+    expect(workflowCard).toContain('sm:justify-between');
+    expect(workflowCard).not.toContain('sm:flex-row sm:items-start sm:justify-between');
+  });
+
   it('applies the shared workflow card to fulfillment list modules', () => {
     const app = read('App.tsx');
 

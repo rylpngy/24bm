@@ -5886,11 +5886,11 @@ const ModuleSummaryStrip: React.FC<{
 const InlineFactGrid: React.FC<{
   facts: BuyerModuleFact[];
 }> = ({ facts }) => (
-  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+  <div className="mt-3 grid gap-2 md:grid-cols-2">
     {facts.map((fact) => (
       <div key={`${fact.label}:${fact.value}`} className="rounded-lg bg-white/70 px-3 py-2">
         <p className="text-[11px] font-black text-slate-400">{fact.label}</p>
-        <p className="mt-1 truncate text-xs font-bold text-slate-700">{fact.value}</p>
+        <p className="mt-1 break-words text-xs font-bold text-slate-700">{fact.value}</p>
       </div>
     ))}
   </div>
@@ -6996,12 +6996,12 @@ const AdminInfoCard: React.FC<{
       aria-label={`${title} 信息卡片`}
       className={`rounded-lg border p-4 transition ${detailSelected ? activeTone : baseTone}`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="truncate text-sm font-black text-slate-950">{title}</p>
           <p className={`mt-1 truncate text-xs font-bold ${metaTone}`}>{meta}</p>
         </div>
-        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+        <div className="flex w-full sm:w-auto shrink-0 flex-wrap justify-start sm:justify-end gap-2">
           {status && <StatusPill label={status} />}
           {badge && (
             <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
@@ -7052,13 +7052,13 @@ const WorkflowListCard: React.FC<{
       detailSelected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
     }`}
   >
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
       <div className="min-w-0">
-        <p className="truncate font-black text-slate-900">{title}</p>
-        <p className="mt-1 text-sm text-slate-500">{meta}</p>
+        <p className="break-words font-black text-slate-900">{title}</p>
+        <p className="mt-1 break-words text-sm text-slate-500">{meta}</p>
       </div>
       {amountLabel && (
-        <p className="shrink-0 font-mono font-black text-slate-900">{amountLabel}</p>
+        <p className="self-start rounded-lg bg-slate-50 px-2 py-1 font-mono font-black text-slate-900">{amountLabel}</p>
       )}
     </div>
 
@@ -7076,7 +7076,9 @@ const WorkflowListCard: React.FC<{
           onClick={onSelectDetail}
         />
       </div>
-      {action}
+      <div className="w-full sm:w-auto">
+        {action}
+      </div>
     </div>
 
     <NextActionNotice action={nextAction} />

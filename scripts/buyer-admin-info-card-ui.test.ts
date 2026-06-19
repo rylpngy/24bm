@@ -20,6 +20,26 @@ describe('buyer admin info card UI', () => {
     expect(app).toContain('aria-label={`${title} 信息卡片`}');
   });
 
+  it('lets dense card titles, badges, and facts breathe on narrow screens', () => {
+    const app = read('App.tsx');
+    const adminInfoCard = app.slice(
+      app.indexOf('const AdminInfoCard'),
+      app.indexOf('const WorkflowListCard'),
+    );
+    const inlineFactGrid = app.slice(
+      app.indexOf('const InlineFactGrid'),
+      app.indexOf('const nextActionToneClasses'),
+    );
+
+    expect(adminInfoCard).toContain('flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between');
+    expect(adminInfoCard).toContain('w-full sm:w-auto');
+    expect(adminInfoCard).toContain('justify-start sm:justify-end');
+    expect(inlineFactGrid).toContain('md:grid-cols-2');
+    expect(inlineFactGrid).toContain('break-words');
+    expect(inlineFactGrid).not.toContain('sm:grid-cols-2');
+    expect(inlineFactGrid).not.toContain('truncate text-xs font-bold text-slate-700');
+  });
+
   it('uses the shared admin info card in approval, supplier, material, and audit lists', () => {
     const app = read('App.tsx');
 
