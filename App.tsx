@@ -6875,14 +6875,17 @@ const ProcessStateNotice: React.FC<{
   const Icon = variant === 'handled' ? CheckCircle2 : Activity;
 
   return (
-    <div className={`mt-4 rounded-lg border p-3 ${processStateToneClasses[variant]}`}>
+    <div
+      aria-label={`${title}：${desc}`}
+      className={`mt-4 rounded-lg border p-3 ${processStateToneClasses[variant]}`}
+    >
       <div className="flex items-start gap-3">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/80">
           <Icon size={16} />
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-black">{title}</p>
-          <p className="mt-1 text-xs font-bold leading-5 opacity-80">{desc}</p>
+          <p className="break-words text-xs font-black">{title}</p>
+          <p className="mt-1 break-words text-xs font-bold leading-5 opacity-80">{desc}</p>
         </div>
       </div>
     </div>

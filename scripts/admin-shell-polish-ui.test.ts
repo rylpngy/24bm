@@ -178,11 +178,18 @@ describe('admin shell polish UI', () => {
 
   it('uses a shared process state notice for handled or waiting workflow cards', () => {
     const app = read('App.tsx');
+    const processStateNotice = app.slice(
+      app.indexOf('const ProcessStateNotice'),
+      app.indexOf('const SupplierWorkspaceView'),
+    );
 
     expect(app).toContain('const ProcessStateNotice');
     expect(app).toContain("variant: 'handled' | 'waiting'");
     expect(app).toContain('流程已处理');
     expect(app).toContain('等待供应商响应');
+    expect(processStateNotice).toContain('aria-label={`${title}：${desc}`}');
+    expect(processStateNotice).toContain('break-words');
+    expect(processStateNotice).toContain('leading-5');
     expect(app.match(/<ProcessStateNotice/g)?.length).toBeGreaterThanOrEqual(2);
   });
 
