@@ -24,7 +24,8 @@ describe('platform enterprise review Java persistence UI', () => {
     expect(platformWorkspace).toContain('reviewBusyId');
     expect(platformReviewActionPanel).toContain("reviewBusyId === `${review.id}:approved`");
     expect(platformReviewActionPanel).toContain("reviewBusyId === `${review.id}:rejected`");
-    expect(platformReviewActionPanel).toContain('disabled={approveBusy || rejectBusy}');
+    expect(platformReviewActionPanel).toContain('enterpriseReviewInvalid');
+    expect(platformReviewActionPanel).toContain('disabled={approveBusy || rejectBusy || enterpriseReviewInvalid}');
     expect(platformReviewActionPanel).toContain('审核中');
     expect(platformReviewActionPanel).toContain('最近审核结果');
     expect(platformReviewActionPanel).toContain("enterpriseReviews.filter((review) => review.status !== '待审核')");

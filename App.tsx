@@ -1477,6 +1477,12 @@ type PlatformEnterpriseReview = {
   status: string;
 };
 
+type PlatformEnterpriseReviewDraft = {
+  comment: string;
+  profileConfirmed: boolean;
+  riskConfirmed: boolean;
+};
+
 const buildPlatformEnterpriseReviews = (model: ProcurementMvpModel): PlatformEnterpriseReview[] =>
   model.enterprises.map((enterprise) => ({
     id: enterprise.id,
@@ -2003,6 +2009,24 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
 }> = ({ enterpriseReviews, reviewBusyId, onReviewEnterprise }) => {
   const pendingReviews = enterpriseReviews.filter((review) => review.status === '待审核');
   const reviewedResults = enterpriseReviews.filter((review) => review.status !== '待审核');
+  const [reviewDrafts, setReviewDrafts] = useState<Record<string, PlatformEnterpriseReviewDraft>>({});
+  const getReviewDraft = (review: PlatformEnterpriseReview): PlatformEnterpriseReviewDraft =>
+    reviewDrafts[review.id] ?? {
+      comment: `已核对 ${review.name} 入驻资料，按平台企业审核规则处理。`,
+      profileConfirmed: false,
+      riskConfirmed: false,
+    };
+  const updateReviewDraft = (reviewId: string, patch: Partial<PlatformEnterpriseReviewDraft>) => {
+    const review = enterpriseReviews.find((item) => item.id === reviewId);
+    if (!review) return;
+    setReviewDrafts((current) => ({
+      ...current,
+      [reviewId]: {
+        ...getReviewDraft(review),
+        ...patch,
+      },
+    }));
+  };
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
@@ -2022,31 +2046,94 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
           {pendingReviews.map((review) => {
             const approveBusy = reviewBusyId === `${review.id}:approved`;
             const rejectBusy = reviewBusyId === `${review.id}:rejected`;
+            const draft = getReviewDraft(review);
+            const reviewCommentInvalid = draft.comment.trim().length === 0;
+            const reviewProfileInvalid = !draft.profileConfirmed;
+            const reviewRiskInvalid = !draft.riskConfirmed;
+            const enterpriseReviewInvalid = reviewCommentInvalid || reviewProfileInvalid || reviewRiskInvalid;
 
             return (
-              <div key={review.id} className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-slate-900">{review.name}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{review.type} · {review.industry}</p>
+              <div key={review.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-slate-900">{review.name}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">{review.type} · {review.industry}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onReviewEnterprise(review.id, 'approved')}
+                      disabled={approveBusy || rejectBusy || enterpriseReviewInvalid}
+                      className="inline-flex h-9 items-center justify-center rounded-lg bg-green-600 px-3 text-xs font-black text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                    >
+                      {approveBusy ? '审核中' : '通过审核'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onReviewEnterprise(review.id, 'rejected')}
+                      disabled={approveBusy || rejectBusy || enterpriseReviewInvalid}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                    >
+                      {rejectBusy ? '审核中' : '驳回'}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onReviewEnterprise(review.id, 'approved')}
-                    disabled={approveBusy || rejectBusy}
-                    className="inline-flex h-9 items-center justify-center rounded-lg bg-green-600 px-3 text-xs font-black text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                <label className="mt-3 block text-xs font-black text-slate-600" htmlFor={`platform-review-comment-${review.id}`}>
+                  审核意见
+                  <textarea
+                    id={`platform-review-comment-${review.id}`}
+                    value={draft.comment}
+                    onChange={(event) => updateReviewDraft(review.id, { comment: event.target.value })}
+                    className="mt-2 min-h-20 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
+                  />
+                </label>
+                <div className="mt-3 grid gap-2 lg:grid-cols-2">
+                  <label
+                    htmlFor={`platform-review-profile-${review.id}`}
+                    className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-3 text-xs font-bold text-slate-600"
                   >
-                    {approveBusy ? '审核中' : '通过审核'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onReviewEnterprise(review.id, 'rejected')}
-                    disabled={approveBusy || rejectBusy}
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                    <input
+                      id={`platform-review-profile-${review.id}`}
+                      type="checkbox"
+                      checked={draft.profileConfirmed}
+                      onChange={(event) => updateReviewDraft(review.id, { profileConfirmed: event.target.checked })}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-amber-600"
+                    />
+                    <span>企业入驻资料已核对</span>
+                  </label>
+                  <label
+                    htmlFor={`platform-review-risk-${review.id}`}
+                    className="flex items-start gap-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold text-amber-800"
                   >
-                    {rejectBusy ? '审核中' : '驳回'}
-                  </button>
+                    <input
+                      id={`platform-review-risk-${review.id}`}
+                      type="checkbox"
+                      checked={draft.riskConfirmed}
+                      onChange={(event) => updateReviewDraft(review.id, { riskConfirmed: event.target.checked })}
+                      className="mt-0.5 h-4 w-4 rounded border-amber-200 text-amber-600"
+                    />
+                    <span>风险与重复企业已复核</span>
+                  </label>
                 </div>
+                {enterpriseReviewInvalid && (
+                  <div aria-live="polite" className="mt-3 space-y-2">
+                    {reviewCommentInvalid && (
+                      <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                        请填写审核意见后再处理。
+                      </p>
+                    )}
+                    {reviewProfileInvalid && (
+                      <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                        请先确认企业入驻资料已核对。
+                      </p>
+                    )}
+                    {reviewRiskInvalid && (
+                      <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                        请先确认风险与重复企业已复核。
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
