@@ -2882,27 +2882,16 @@ const BuyerWorkspaceView: React.FC<{
             const demand = workspace.demands.find((item) => item.id === demandRow.id);
             if (!demand) return null;
             return (
-            <div
+            <WorkflowListCard
               key={demandRow.id}
-              className={`rounded-lg border bg-white p-4 transition ${
-                selectedDemand === demandRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-black text-slate-900">{demandRow.title}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-400">{demandRow.materialSummary}</p>
-                </div>
-                <StatusPill label={demandRow.status} />
-              </div>
-              <InlineFactGrid facts={demandRow.facts} />
-              <NextActionNotice action={demandRow.nextAction} />
-              <DetailToggleButton
-                selected={selectedDemand === demandRow.id}
-                onClick={() => setSelectedDemandId(demandRow.id)}
-                fullWidth
-              />
-              {javaEnabled && demand.status === '草稿' && (
+              title={demandRow.title}
+              meta={demandRow.materialSummary}
+              facts={demandRow.facts}
+              status={demandRow.status}
+              nextAction={demandRow.nextAction}
+              detailSelected={selectedDemand === demandRow.id}
+              onSelectDetail={() => setSelectedDemandId(demandRow.id)}
+              action={javaEnabled && demand.status === '草稿' ? (
                 <PrimaryActionButton
                   onClick={() => onSubmitDemand(demand.id)}
                   disabled={demandSubmitBusyId === demand.id}
@@ -2913,7 +2902,8 @@ const BuyerWorkspaceView: React.FC<{
                 >
                   提交审批
                 </PrimaryActionButton>
-              )}
+              ) : undefined}
+            >
               {javaEnabled
                 && demand.status === '已通过'
                 && !linkedDemandIds.has(demand.id)
@@ -2926,7 +2916,7 @@ const BuyerWorkspaceView: React.FC<{
                   onSubmit={onCreateRfqFromDemand}
                 />
               )}
-            </div>
+            </WorkflowListCard>
             );
           })}
         </div>
@@ -8148,6 +8138,7 @@ const WorkflowListCard: React.FC<{
   detailSelected: boolean;
   onSelectDetail: () => void;
   action?: React.ReactNode;
+  children?: React.ReactNode;
 }> = ({
   title,
   meta,
@@ -8158,6 +8149,7 @@ const WorkflowListCard: React.FC<{
   detailSelected,
   onSelectDetail,
   action,
+  children,
 }) => (
   <div
     className={`rounded-lg border bg-white p-4 transition ${
@@ -8194,6 +8186,7 @@ const WorkflowListCard: React.FC<{
     </div>
 
     <NextActionNotice action={nextAction} />
+    {children}
   </div>
 );
 

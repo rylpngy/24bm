@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const read = (path: string) => readFileSync(path, 'utf8');
 
 describe('buyer fulfillment list card UI', () => {
-  it('uses a shared workflow list card for order, receipt, and invoice rows', () => {
+  it('uses a shared workflow list card for demand, order, receipt, and invoice rows', () => {
     const app = read('App.tsx');
 
     expect(app).toContain('const WorkflowListCard');
@@ -37,9 +37,13 @@ describe('buyer fulfillment list card UI', () => {
     expect(workflowCard).not.toContain('sm:flex-row sm:items-start sm:justify-between');
   });
 
-  it('applies the shared workflow card to fulfillment list modules', () => {
+  it('applies the shared workflow card to demand and fulfillment list modules', () => {
     const app = read('App.tsx');
 
+    const demandModule = app.slice(
+      app.indexOf('<Panel title="采购需求列表"'),
+      app.indexOf('<DemandDetailPanelView'),
+    );
     const orderModule = app.slice(
       app.indexOf("{activeModule === 'orders'"),
       app.indexOf('<OrderDetailPanelView'),
@@ -52,6 +56,13 @@ describe('buyer fulfillment list card UI', () => {
       app.indexOf("{activeModule === 'invoices'"),
       app.indexOf('<InvoicePaymentDetailPanelView'),
     );
+
+    expect(demandModule).toContain('<WorkflowListCard');
+    expect(demandModule).toContain('title={demandRow.title}');
+    expect(demandModule).toContain('meta={demandRow.materialSummary}');
+    expect(demandModule).toContain('facts={demandRow.facts}');
+    expect(demandModule).toContain('status={demandRow.status}');
+    expect(demandModule).toContain('nextAction={demandRow.nextAction}');
 
     expect(orderModule).toContain('<WorkflowListCard');
     expect(orderModule).toContain('title={orderRow.id}');
