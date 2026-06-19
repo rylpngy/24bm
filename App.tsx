@@ -5587,85 +5587,96 @@ const InvoicePaymentDetailPanelView: React.FC<{
   paymentDraft?: BuyerPaymentDraft;
   onChangePaymentDraft: (invoiceId: string, draft: BuyerPaymentDraft) => void;
   onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
-}> = ({ detail, invoice, busy, javaEnabled, paymentDraft, onChangePaymentDraft, onRegisterPayment }) => (
-  <Panel title="发票详情" icon={Receipt}>
-    {!detail ? (
-      <EmptyState title="暂无发票详情" desc="选择一张发票后，可查看订单、物流、供应商和付款状态。" />
-    ) : (
-      <DetailPanelBody>
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-base font-black text-slate-950">{detail.id}</p>
-              <p className="mt-1 text-xs font-bold text-slate-400">{detail.supplierName}</p>
+}> = ({ detail, invoice, busy, javaEnabled, paymentDraft, onChangePaymentDraft, onRegisterPayment }) => {
+  const paymentStatus = detail?.facts.find((fact) => fact.label === '付款状态')?.value ?? '待付款';
+  const invoiceAmount = detail?.facts.find((fact) => fact.label === '发票金额')?.value ?? detail?.amountLabel ?? '未找到';
+  const orderAmount = detail?.orderFacts.find((fact) => fact.label === '订单金额')?.value ?? '未找到';
+  const reconciliationStatus = detail && invoiceAmount === orderAmount ? '金额一致' : '待核对';
+
+  return (
+    <Panel title="发票详情" icon={Receipt}>
+      {!detail ? (
+        <EmptyState title="暂无发票详情" desc="选择一张发票后，可查看订单、物流、供应商和付款状态。" />
+      ) : (
+        <DetailPanelBody>
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-base font-black text-slate-950">{detail.id}</p>
+                <p className="mt-1 text-xs font-bold text-slate-400">{detail.supplierName}</p>
+              </div>
+              <StatusPill label={detail.status} />
             </div>
-            <StatusPill label={detail.status} />
+            <p className="mt-3 font-mono text-xl font-black text-slate-950">{detail.amountLabel}</p>
+            <InlineFactGrid facts={detail.facts} />
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <MiniFact label="付款状态" value={paymentStatus} />
+              <MiniFact label="对账状态" value={reconciliationStatus} />
+              <MiniFact label="下一步" value={detail.nextActionTitle} />
+            </div>
           </div>
-          <p className="mt-3 font-mono text-xl font-black text-slate-950">{detail.amountLabel}</p>
-          <InlineFactGrid facts={detail.facts} />
-        </div>
 
-        <section>
-          <p className="mb-2 text-xs font-black text-slate-500">订单上下文</p>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            {detail.orderFacts.map((fact) => (
-              <MiniFact key={fact.label} label={fact.label} value={fact.value} />
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <p className="mb-2 text-xs font-black text-slate-500">付款检查</p>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            {detail.paymentCheckRows.map((row) => (
-              <MiniFact key={row.label} label={row.label} value={row.value} />
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs font-black text-slate-500">关联业务</p>
-            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
-              {detail.relatedRows.length} 条
-            </span>
-          </div>
-          {detail.relatedRows.length > 0 ? (
-            <div className="space-y-2">
-              {detail.relatedRows.map((row) => (
-                <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">订单上下文</p>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              {detail.orderFacts.map((fact) => (
+                <MiniFact key={fact.label} label={fact.label} value={fact.value} />
               ))}
             </div>
-          ) : (
-            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
-              暂无关联业务记录。
-            </p>
-          )}
-        </section>
+          </section>
 
-        <section>
-          <p className="mb-2 text-xs font-black text-slate-500">付款轨迹</p>
-          <div className="space-y-2">
-            {detail.paymentTimelineRows.map((row) => (
-              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} fontMono />
-            ))}
-          </div>
-        </section>
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">付款检查</p>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              {detail.paymentCheckRows.map((row) => (
+                <MiniFact key={row.label} label={row.label} value={row.value} />
+              ))}
+            </div>
+          </section>
 
-        <MiniFact label="下一步" value={detail.nextActionTitle} />
-        <InvoicePaymentOperationPanel
-          detail={detail}
-          invoice={invoice}
-          busy={busy}
-          javaEnabled={javaEnabled}
-          paymentDraft={paymentDraft}
-          onChangePaymentDraft={onChangePaymentDraft}
-          onRegisterPayment={onRegisterPayment}
-        />
-      </DetailPanelBody>
-    )}
-  </Panel>
-);
+          <section>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-xs font-black text-slate-500">关联业务</p>
+              <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+                {detail.relatedRows.length} 条
+              </span>
+            </div>
+            {detail.relatedRows.length > 0 ? (
+              <div className="space-y-2">
+                {detail.relatedRows.map((row) => (
+                  <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+                暂无关联业务记录。
+              </p>
+            )}
+          </section>
+
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">付款轨迹</p>
+            <div className="space-y-2">
+              {detail.paymentTimelineRows.map((row) => (
+                <DetailKeyValueRow key={row.label} label={row.label} value={row.value} fontMono />
+              ))}
+            </div>
+          </section>
+
+          <InvoicePaymentOperationPanel
+            detail={detail}
+            invoice={invoice}
+            busy={busy}
+            javaEnabled={javaEnabled}
+            paymentDraft={paymentDraft}
+            onChangePaymentDraft={onChangePaymentDraft}
+            onRegisterPayment={onRegisterPayment}
+          />
+        </DetailPanelBody>
+      )}
+    </Panel>
+  );
+};
 
 const InvoicePaymentOperationPanel: React.FC<{
   detail: InvoicePaymentDetailPanel;
