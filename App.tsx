@@ -2409,6 +2409,18 @@ const BuyerWorkspaceView: React.FC<{
     paymentRequestStatus: '付款申请已通过',
     reconciliationNote: '订单、收货、发票金额一致，满足三单匹配。',
   };
+  const updateReceiptDraft = (orderId: string, draft: Partial<BuyerReceiptDraft>) => {
+    setReceiptDrafts((current) => ({
+      ...current,
+      [orderId]: { ...(current[orderId] ?? getReceiptDraft(orderId)), ...draft },
+    }));
+  };
+  const updatePaymentDraft = (invoiceId: string, draft: Partial<BuyerPaymentDraft>) => {
+    setPaymentDrafts((current) => ({
+      ...current,
+      [invoiceId]: { ...(current[invoiceId] ?? getPaymentDraft(invoiceId)), ...draft },
+    }));
+  };
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
     if (priorityDelta !== 0) return priorityDelta;
@@ -3254,10 +3266,7 @@ const BuyerWorkspaceView: React.FC<{
                       <span className="text-xs font-black text-emerald-700">验收结果</span>
                       <select
                         value={receiptDraft.result}
-                        onChange={(event) => setReceiptDrafts((current) => ({
-                          ...current,
-                          [orderRow.id]: { result: event.target.value },
-                        }))}
+                        onChange={(event) => updateReceiptDraft(orderRow.id, { result: event.target.value })}
                         className="mt-1 h-9 w-full rounded-lg border border-emerald-100 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-emerald-400"
                       >
                         <option value="验收通过">验收通过</option>
@@ -3332,10 +3341,7 @@ const BuyerWorkspaceView: React.FC<{
                           <span className="text-xs font-black text-emerald-700">验收结果</span>
                           <select
                             value={receiptDraft.result}
-                            onChange={(event) => setReceiptDrafts((current) => ({
-                              ...current,
-                              [orderRow.id]: { result: event.target.value },
-                            }))}
+                            onChange={(event) => updateReceiptDraft(orderRow.id, { result: event.target.value })}
                             className="mt-1 h-9 w-full rounded-lg border border-emerald-100 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-emerald-400"
                           >
                             <option value="验收通过">验收通过</option>
@@ -3409,10 +3415,7 @@ const BuyerWorkspaceView: React.FC<{
                       <span className="text-xs font-black text-blue-700">付款状态</span>
                       <select
                         value={paymentDraft.paymentStatus}
-                        onChange={(event) => setPaymentDrafts((current) => ({
-                          ...current,
-                          [invoiceRow.id]: { paymentStatus: event.target.value },
-                        }))}
+                        onChange={(event) => updatePaymentDraft(invoiceRow.id, { paymentStatus: event.target.value })}
                         className="mt-1 h-9 w-full rounded-lg border border-blue-100 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-400"
                       >
                         <option value="部分付款">部分付款</option>

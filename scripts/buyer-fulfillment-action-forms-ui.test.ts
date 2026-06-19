@@ -24,4 +24,17 @@ describe('buyer fulfillment action forms UI', () => {
     expect(buyerWorkspace).toContain('onCreateReceipt(orderRow.id, receiptDraft)');
     expect(buyerWorkspace).toContain('onRegisterPayment(invoiceRow.id, paymentDraft)');
   });
+
+  it('keeps inline receipt and payment quick actions from overwriting draft details', () => {
+    const app = read('App.tsx');
+    const buyerWorkspace = app.slice(
+      app.indexOf('const BuyerWorkspaceView'),
+      app.indexOf('const AuditLogList'),
+    );
+
+    expect(buyerWorkspace).toContain('updateReceiptDraft(orderRow.id, { result: event.target.value })');
+    expect(buyerWorkspace).toContain('updatePaymentDraft(invoiceRow.id, { paymentStatus: event.target.value })');
+    expect(buyerWorkspace).not.toContain('[orderRow.id]: { result: event.target.value }');
+    expect(buyerWorkspace).not.toContain('[invoiceRow.id]: { paymentStatus: event.target.value }');
+  });
 });
