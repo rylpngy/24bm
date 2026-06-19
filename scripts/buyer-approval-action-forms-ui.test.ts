@@ -27,4 +27,20 @@ describe('buyer approval action forms UI', () => {
     expect(approvalDetailView).toContain('onReviewApproval(approval, true, reviewDraft)');
     expect(app).toContain('!draft.confirmed');
   });
+
+  it('shows validation feedback before approval review actions', () => {
+    const app = read('App.tsx');
+    const approvalReviewForm = app.slice(
+      app.indexOf('const ApprovalReviewForm'),
+      app.indexOf('const ApprovalDetailPanelView'),
+    );
+
+    expect(approvalReviewForm).toContain('approvalCommentInvalid');
+    expect(approvalReviewForm).toContain('approvalConfirmationInvalid');
+    expect(approvalReviewForm).toContain('approvalReviewInvalid');
+    expect(approvalReviewForm).toContain('请填写审批意见后再处理。');
+    expect(approvalReviewForm).toContain('请先确认已核对业务上下文和审批影响。');
+    expect(approvalReviewForm).toContain('aria-live="polite"');
+    expect(approvalReviewForm).toContain('disabled={busy || approvalReviewInvalid}');
+  });
 });

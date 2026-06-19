@@ -3959,55 +3959,75 @@ const ApprovalReviewForm: React.FC<{
   onChange: (draft: BuyerApprovalReviewDraft) => void;
   onReject: () => void;
   onApprove: () => void;
-}> = ({ approvalId, draft, busy, onChange, onReject, onApprove }) => (
-  <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
-    <label className="block text-xs font-black text-blue-800" htmlFor={`approval-review-comment-${approvalId}`}>
-      审批意见
-    </label>
-    <textarea
-      id={`approval-review-comment-${approvalId}`}
-      value={draft.comment}
-      onChange={(event) => onChange({ ...draft, comment: event.target.value })}
-      className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-    />
-    <label
-      htmlFor={`approval-review-confirmed-${approvalId}`}
-      className="mt-3 flex items-start gap-2 rounded-lg border border-blue-100 bg-white p-3 text-xs font-bold text-slate-600"
-    >
-      <input
-        id={`approval-review-confirmed-${approvalId}`}
-        type="checkbox"
-        checked={draft.confirmed}
-        onChange={(event) => onChange({ ...draft, confirmed: event.target.checked })}
-        className="mt-0.5 h-4 w-4 rounded border-blue-200 text-blue-600"
+}> = ({ approvalId, draft, busy, onChange, onReject, onApprove }) => {
+  const approvalCommentInvalid = draft.comment.trim().length === 0;
+  const approvalConfirmationInvalid = !draft.confirmed;
+  const approvalReviewInvalid = approvalCommentInvalid || approvalConfirmationInvalid;
+
+  return (
+    <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+      <label className="block text-xs font-black text-blue-800" htmlFor={`approval-review-comment-${approvalId}`}>
+        审批意见
+      </label>
+      <textarea
+        id={`approval-review-comment-${approvalId}`}
+        value={draft.comment}
+        onChange={(event) => onChange({ ...draft, comment: event.target.value })}
+        className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
       />
-      <span>已核对业务上下文和审批影响</span>
-    </label>
-    <div className="grid grid-cols-2 gap-2">
-      <PrimaryActionButton
-        onClick={onReject}
-        disabled={busy || draft.comment.trim().length === 0 || !draft.confirmed}
-        busy={busy}
-        tone="red"
-        pendingLabel="处理中"
-        fullWidth
+      <label
+        htmlFor={`approval-review-confirmed-${approvalId}`}
+        className="mt-3 flex items-start gap-2 rounded-lg border border-blue-100 bg-white p-3 text-xs font-bold text-slate-600"
       >
-        驳回
-      </PrimaryActionButton>
-      <PrimaryActionButton
-        onClick={onApprove}
-        disabled={busy || draft.comment.trim().length === 0 || !draft.confirmed}
-        busy={busy}
-        tone="emerald"
-        icon={CheckCircle2}
-        pendingLabel="处理中"
-        fullWidth
-      >
-        通过
-      </PrimaryActionButton>
+        <input
+          id={`approval-review-confirmed-${approvalId}`}
+          type="checkbox"
+          checked={draft.confirmed}
+          onChange={(event) => onChange({ ...draft, confirmed: event.target.checked })}
+          className="mt-0.5 h-4 w-4 rounded border-blue-200 text-blue-600"
+        />
+        <span>已核对业务上下文和审批影响</span>
+      </label>
+      {approvalReviewInvalid && (
+        <div aria-live="polite" className="mt-3 space-y-2">
+          {approvalCommentInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请填写审批意见后再处理。
+            </p>
+          )}
+          {approvalConfirmationInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请先确认已核对业务上下文和审批影响。
+            </p>
+          )}
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <PrimaryActionButton
+          onClick={onReject}
+          disabled={busy || approvalReviewInvalid}
+          busy={busy}
+          tone="red"
+          pendingLabel="处理中"
+          fullWidth
+        >
+          驳回
+        </PrimaryActionButton>
+        <PrimaryActionButton
+          onClick={onApprove}
+          disabled={busy || approvalReviewInvalid}
+          busy={busy}
+          tone="emerald"
+          icon={CheckCircle2}
+          pendingLabel="处理中"
+          fullWidth
+        >
+          通过
+        </PrimaryActionButton>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ApprovalDetailPanelView: React.FC<{
   detail?: ApprovalDetailPanel;
