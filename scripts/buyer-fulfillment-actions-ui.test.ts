@@ -20,6 +20,10 @@ describe('buyer fulfillment actions UI', () => {
     expect(app).toContain('onRegisterPayment');
     expect(app).toContain('登记收货');
     expect(app).toContain('登记付款');
+    expect(app).toContain('BuyerReceiptDraft');
+    expect(app).toContain('BuyerPaymentDraft');
+    expect(app).toContain('result: draft.result');
+    expect(app).toContain('paymentStatus: draft.paymentStatus');
     expect(buyerAdminUi).toContain(`canRegisterReceipt: order.status === '已发货'`);
     expect(buyerAdminUi).toContain(`canRegisterPayment: invoice.paymentStatus !== '已付款'`);
   });

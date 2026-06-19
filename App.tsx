@@ -186,6 +186,14 @@ type SupplierInvoiceDraft = {
   invoiceNo: string;
 };
 
+type BuyerReceiptDraft = {
+  result: string;
+};
+
+type BuyerPaymentDraft = {
+  paymentStatus: string;
+};
+
 const App: React.FC = () => {
   const [activeRole, setActiveRole] = useState<AdminRole>(defaultAdminRole);
   const [activeModules, setActiveModules] = useState<Record<AdminRole, string>>(defaultAdminModulesByRole);
@@ -621,12 +629,12 @@ const App: React.FC = () => {
     }
   };
 
-  const createBuyerReceiptFromOrder = async (orderId: string) => {
+  const createBuyerReceiptFromOrder = async (orderId: string, draft: BuyerReceiptDraft) => {
     if (!javaApiClient || !buyerData) return;
     setBuyerFulfillmentBusyId(`receipt:${orderId}`);
     setWorkflowStatus(null);
     try {
-      await javaApiClient.createBuyerReceipt(orderId, { result: '验收通过' });
+      await javaApiClient.createBuyerReceipt(orderId, { result: draft.result });
       setBuyerData(await refreshJavaBuyerData(buyerData));
       setWorkflowStatus(`收货验收已登记：${orderId}`);
     } catch (error) {
@@ -636,12 +644,12 @@ const App: React.FC = () => {
     }
   };
 
-  const registerBuyerInvoicePayment = async (invoiceId: string) => {
+  const registerBuyerInvoicePayment = async (invoiceId: string, draft: BuyerPaymentDraft) => {
     if (!javaApiClient || !buyerData) return;
     setBuyerFulfillmentBusyId(`payment:${invoiceId}`);
     setWorkflowStatus(null);
     try {
-      const invoice = await javaApiClient.registerBuyerPayment(invoiceId, { paymentStatus: '已付款' });
+      const invoice = await javaApiClient.registerBuyerPayment(invoiceId, { paymentStatus: draft.paymentStatus });
       setBuyerData(await refreshJavaBuyerData(buyerData));
       setWorkflowStatus(`登记付款完成：${invoice.id}`);
     } catch (error) {
@@ -2279,8 +2287,8 @@ const BuyerWorkspaceView: React.FC<{
   onCreateRfqFromDemand: (demandId: string, supplierIds?: string[], deadline?: string) => void;
   onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
   onCreateOrderFromAward: (awardId: string) => void;
-  onCreateReceipt: (orderId: string) => void;
-  onRegisterPayment: (invoiceId: string) => void;
+  onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
+  onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
   onUpdateApprovalTemplate: (
     templateCode: string,
     defaultApproverRoleId: string,
@@ -2325,6 +2333,10 @@ const BuyerWorkspaceView: React.FC<{
   const [selectedApprovalId, setSelectedApprovalId] = useState('');
   const [selectedReceiptOrderId, setSelectedReceiptOrderId] = useState(workspace.orders.find((order) => order.status === '已发货' || order.status === '待收货')?.id ?? '');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(workspace.invoices[0]?.id ?? '');
+  const [receiptDrafts, setReceiptDrafts] = useState<Record<string, BuyerReceiptDraft>>({});
+  const [paymentDrafts, setPaymentDrafts] = useState<Record<string, BuyerPaymentDraft>>({});
+  const getReceiptDraft = (orderId: string): BuyerReceiptDraft => receiptDrafts[orderId] ?? { result: '验收通过' };
+  const getPaymentDraft = (invoiceId: string): BuyerPaymentDraft => paymentDrafts[invoiceId] ?? { paymentStatus: '已付款' };
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
     if (priorityDelta !== 0) return priorityDelta;
@@ -3090,6 +3102,7 @@ const BuyerWorkspaceView: React.FC<{
         <div className="space-y-3">
           {filteredOrderFulfillmentRows.map((orderRow) => {
             const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
+            const receiptDraft = getReceiptDraft(orderRow.id);
             return (
               <WorkflowListCard
                 key={orderRow.id}
@@ -3102,15 +3115,31 @@ const BuyerWorkspaceView: React.FC<{
                 detailSelected={selectedOrder === orderRow.id}
                 onSelectDetail={() => setSelectedOrderId(orderRow.id)}
                 action={javaEnabled && orderRow.canRegisterReceipt ? (
+                  <div className="grid gap-2 sm:grid-cols-[160px_auto] sm:items-end">
+                    <label className="block">
+                      <span className="text-xs font-black text-emerald-700">验收结果</span>
+                      <select
+                        value={receiptDraft.result}
+                        onChange={(event) => setReceiptDrafts((current) => ({
+                          ...current,
+                          [orderRow.id]: { result: event.target.value },
+                        }))}
+                        className="mt-1 h-9 w-full rounded-lg border border-emerald-100 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-emerald-400"
+                      >
+                        <option value="验收通过">验收通过</option>
+                        <option value="异常待处理">异常待处理</option>
+                      </select>
+                    </label>
                     <PrimaryActionButton
-                      onClick={() => onCreateReceipt(orderRow.id)}
-                      disabled={receiptBusy}
+                      onClick={() => onCreateReceipt(orderRow.id, receiptDraft)}
+                      disabled={receiptBusy || !receiptDraft.result.trim()}
                       busy={receiptBusy}
                       tone="emerald"
                       pendingLabel="登记中"
                     >
                       登记收货
                     </PrimaryActionButton>
+                  </div>
                   ) : undefined}
               />
             );
@@ -3123,7 +3152,7 @@ const BuyerWorkspaceView: React.FC<{
         order={selectedOrderRecord}
         javaEnabled={javaEnabled}
         buyerFulfillmentBusyId={buyerFulfillmentBusyId}
-        onCreateReceipt={onCreateReceipt}
+        onCreateReceipt={(orderId) => onCreateReceipt(orderId, getReceiptDraft(orderId))}
       />
       </>
       )}
@@ -3144,6 +3173,7 @@ const BuyerWorkspaceView: React.FC<{
             {filteredReceiptInspectionRows
               .map((orderRow) => {
                 const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
+                const receiptDraft = getReceiptDraft(orderRow.id);
                 return (
                   <WorkflowListCard
                     key={orderRow.id}
@@ -3155,15 +3185,31 @@ const BuyerWorkspaceView: React.FC<{
                     detailSelected={selectedReceiptOrder === orderRow.id}
                     onSelectDetail={() => setSelectedReceiptOrderId(orderRow.id)}
                     action={javaEnabled && orderRow.canRegisterReceipt ? (
-                      <PrimaryActionButton
-                        onClick={() => onCreateReceipt(orderRow.id)}
-                        disabled={receiptBusy}
-                        busy={receiptBusy}
-                        tone="emerald"
-                        pendingLabel="登记中"
-                      >
-                        登记收货
-                      </PrimaryActionButton>
+                      <div className="grid gap-2 sm:grid-cols-[160px_auto] sm:items-end">
+                        <label className="block">
+                          <span className="text-xs font-black text-emerald-700">验收结果</span>
+                          <select
+                            value={receiptDraft.result}
+                            onChange={(event) => setReceiptDrafts((current) => ({
+                              ...current,
+                              [orderRow.id]: { result: event.target.value },
+                            }))}
+                            className="mt-1 h-9 w-full rounded-lg border border-emerald-100 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-emerald-400"
+                          >
+                            <option value="验收通过">验收通过</option>
+                            <option value="异常待处理">异常待处理</option>
+                          </select>
+                        </label>
+                        <PrimaryActionButton
+                          onClick={() => onCreateReceipt(orderRow.id, receiptDraft)}
+                          disabled={receiptBusy || !receiptDraft.result.trim()}
+                          busy={receiptBusy}
+                          tone="emerald"
+                          pendingLabel="登记中"
+                        >
+                          登记收货
+                        </PrimaryActionButton>
+                      </div>
                     ) : undefined}
                   />
                 );
@@ -3176,7 +3222,7 @@ const BuyerWorkspaceView: React.FC<{
           order={selectedReceiptOrderRecord}
           busy={buyerFulfillmentBusyId === `receipt:${selectedReceiptOrder}`}
           javaEnabled={javaEnabled}
-          onCreateReceipt={onCreateReceipt}
+          onCreateReceipt={(orderId) => onCreateReceipt(orderId, getReceiptDraft(orderId))}
         />
       </>
       )}
@@ -3196,6 +3242,7 @@ const BuyerWorkspaceView: React.FC<{
         <div className="space-y-3">
           {filteredInvoicePaymentRows.map((invoiceRow) => {
             const paymentBusy = buyerFulfillmentBusyId === `payment:${invoiceRow.id}`;
+            const paymentDraft = getPaymentDraft(invoiceRow.id);
             return (
               <WorkflowListCard
                 key={invoiceRow.id}
@@ -3207,14 +3254,30 @@ const BuyerWorkspaceView: React.FC<{
                 detailSelected={selectedInvoice === invoiceRow.id}
                 onSelectDetail={() => setSelectedInvoiceId(invoiceRow.id)}
                 action={javaEnabled && invoiceRow.canRegisterPayment ? (
+                  <div className="grid gap-2 sm:grid-cols-[160px_auto] sm:items-end">
+                    <label className="block">
+                      <span className="text-xs font-black text-blue-700">付款状态</span>
+                      <select
+                        value={paymentDraft.paymentStatus}
+                        onChange={(event) => setPaymentDrafts((current) => ({
+                          ...current,
+                          [invoiceRow.id]: { paymentStatus: event.target.value },
+                        }))}
+                        className="mt-1 h-9 w-full rounded-lg border border-blue-100 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-400"
+                      >
+                        <option value="部分付款">部分付款</option>
+                        <option value="已付款">已付款</option>
+                      </select>
+                    </label>
                     <PrimaryActionButton
-                      onClick={() => onRegisterPayment(invoiceRow.id)}
-                      disabled={paymentBusy}
+                      onClick={() => onRegisterPayment(invoiceRow.id, paymentDraft)}
+                      disabled={paymentBusy || !paymentDraft.paymentStatus.trim()}
                       busy={paymentBusy}
                       pendingLabel="登记中"
                     >
                       登记付款
                     </PrimaryActionButton>
+                  </div>
                   ) : undefined}
               />
             );
@@ -3227,7 +3290,7 @@ const BuyerWorkspaceView: React.FC<{
         invoice={selectedInvoiceRecord}
         busy={buyerFulfillmentBusyId === `payment:${selectedInvoice}`}
         javaEnabled={javaEnabled}
-        onRegisterPayment={onRegisterPayment}
+        onRegisterPayment={(invoiceId) => onRegisterPayment(invoiceId, getPaymentDraft(invoiceId))}
       />
       </>
       )}
