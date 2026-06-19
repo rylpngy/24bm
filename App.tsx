@@ -207,6 +207,11 @@ type BuyerSupplierAdmissionDraft = {
   categoryConfirmed: boolean;
 };
 
+type BuyerApprovalReviewDraft = {
+  comment: string;
+  confirmed: boolean;
+};
+
 const App: React.FC = () => {
   const [activeRole, setActiveRole] = useState<AdminRole>(defaultAdminRole);
   const [activeModules, setActiveModules] = useState<Record<AdminRole, string>>(defaultAdminModulesByRole);
@@ -460,7 +465,7 @@ const App: React.FC = () => {
     }
   };
 
-  const reviewApprovalTask = async (approval: JavaApprovalTaskDto, approved: boolean) => {
+  const reviewApprovalTask = async (approval: JavaApprovalTaskDto, approved: boolean, draft: BuyerApprovalReviewDraft) => {
     if (!javaApiClient || !buyerData) return;
     setApprovalBusyId(approval.id);
     setWorkflowStatus(null);
@@ -478,7 +483,7 @@ const App: React.FC = () => {
         throw new Error(`暂不支持审批类型：${approval.bizType}`);
       }
       setBuyerData(await refreshJavaBuyerData(buyerData));
-      setWorkflowStatus(approvalResultMessage(approval.bizType, approved, approval.summaryTitle || approval.bizId));
+      setWorkflowStatus(`${approvalResultMessage(approval.bizType, approved, approval.summaryTitle || approval.bizId)}，审批意见：${draft.comment}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '审批操作失败');
     } finally {
@@ -2293,7 +2298,7 @@ const BuyerWorkspaceView: React.FC<{
   workflowStatus: string | null;
   onCreateDemand: (payload: CreateDemandPayload, submitForApproval: boolean) => void;
   onSubmitDemand: (demandId: string) => void;
-  onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
+  onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean, draft: BuyerApprovalReviewDraft) => void;
   onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
   onCreateRfqFromDemand: (demandId: string, supplierIds?: string[], deadline?: string) => void;
   onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
@@ -2344,6 +2349,7 @@ const BuyerWorkspaceView: React.FC<{
   const [selectedApprovalId, setSelectedApprovalId] = useState('');
   const [selectedReceiptOrderId, setSelectedReceiptOrderId] = useState(workspace.orders.find((order) => order.status === '已发货' || order.status === '待收货')?.id ?? '');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(workspace.invoices[0]?.id ?? '');
+  const [approvalReviewDrafts, setApprovalReviewDrafts] = useState<Record<string, BuyerApprovalReviewDraft>>({});
   const [supplierAdmissionDrafts, setSupplierAdmissionDrafts] = useState<Record<string, BuyerSupplierAdmissionDraft>>({});
   const [awardDrafts, setAwardDrafts] = useState<Record<string, BuyerAwardDraft>>({});
   const [orderDrafts, setOrderDrafts] = useState<Record<string, BuyerOrderDraft>>({});
@@ -2364,6 +2370,11 @@ const BuyerWorkspaceView: React.FC<{
     reason: `申请将该供应商纳入私域供应商库，授权品类：${relation.categories.join('、') || '待补充'}`,
     categoryConfirmed: false,
   };
+  const getApprovalReviewDraft = (approval: JavaApprovalTaskDto): BuyerApprovalReviewDraft =>
+    approvalReviewDrafts[approval.id] ?? {
+      comment: `已核对${approvalTypeLabel(approval.bizType)}上下文，同意按当前业务状态处理。`,
+      confirmed: false,
+    };
   const getReceiptDraft = (orderId: string): BuyerReceiptDraft => receiptDrafts[orderId] ?? { result: '验收通过' };
   const getPaymentDraft = (invoiceId: string): BuyerPaymentDraft => paymentDrafts[invoiceId] ?? { paymentStatus: '已付款' };
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
@@ -2630,6 +2641,7 @@ const BuyerWorkspaceView: React.FC<{
             <div className="grid gap-3 md:grid-cols-2">
               {filteredApprovalQueueRows.map((approvalRow) => {
                 const approval = displayPendingApprovals.find((item) => item.id === approvalRow.id);
+                const approvalDraft = approval ? getApprovalReviewDraft(approval as JavaApprovalTaskDto) : undefined;
                 return (
                   <AdminInfoCard
                     key={approvalRow.id}
@@ -2641,25 +2653,15 @@ const BuyerWorkspaceView: React.FC<{
                     onSelectDetail={() => setSelectedApprovalId(approvalRow.id)}
                     tone="warning"
                   >
-                    {javaEnabled && approval && approvalRow.canReview ? (
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onReviewApproval(approval as JavaApprovalTaskDto, false)}
-                        disabled={approvalBusyId === approvalRow.id}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white text-xs font-black text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        驳回
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onReviewApproval(approval as JavaApprovalTaskDto, true)}
-                        disabled={approvalBusyId === approvalRow.id}
-                        className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-                      >
-                        {approvalBusyId === approvalRow.id ? '处理中' : '通过'}
-                      </button>
-                    </div>
+                    {javaEnabled && approval && approvalDraft && approvalRow.canReview ? (
+                      <ApprovalReviewForm
+                        approvalId={approvalRow.id}
+                        draft={approvalDraft}
+                        busy={approvalBusyId === approvalRow.id}
+                        onChange={(draft) => setApprovalReviewDrafts((drafts) => ({ ...drafts, [approvalRow.id]: draft }))}
+                        onReject={() => onReviewApproval(approval as JavaApprovalTaskDto, false, approvalDraft)}
+                        onApprove={() => onReviewApproval(approval as JavaApprovalTaskDto, true, approvalDraft)}
+                      />
                     ) : (
                       <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-black text-blue-700">
                         Java 模式下可直接通过或驳回，mock 模式仅展示审批队列。
@@ -2681,6 +2683,8 @@ const BuyerWorkspaceView: React.FC<{
           approval={javaEnabled ? selectedApprovalSource as JavaApprovalTaskDto | undefined : undefined}
           approvalBusyId={approvalBusyId}
           javaEnabled={javaEnabled}
+          reviewDraft={selectedApprovalSource ? getApprovalReviewDraft(selectedApprovalSource as JavaApprovalTaskDto) : undefined}
+          onChangeReviewDraft={(approvalId, draft) => setApprovalReviewDrafts((drafts) => ({ ...drafts, [approvalId]: draft }))}
           onReviewApproval={onReviewApproval}
         />
       </div>
@@ -3804,13 +3808,80 @@ const DemandDetailOperationPanel: React.FC<{
   );
 };
 
+const ApprovalReviewForm: React.FC<{
+  approvalId: string;
+  draft: BuyerApprovalReviewDraft;
+  busy: boolean;
+  onChange: (draft: BuyerApprovalReviewDraft) => void;
+  onReject: () => void;
+  onApprove: () => void;
+}> = ({ approvalId, draft, busy, onChange, onReject, onApprove }) => (
+  <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+    <label className="block text-xs font-black text-blue-800" htmlFor={`approval-review-comment-${approvalId}`}>
+      审批意见
+    </label>
+    <textarea
+      id={`approval-review-comment-${approvalId}`}
+      value={draft.comment}
+      onChange={(event) => onChange({ ...draft, comment: event.target.value })}
+      className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+    />
+    <label
+      htmlFor={`approval-review-confirmed-${approvalId}`}
+      className="mt-3 flex items-start gap-2 rounded-lg border border-blue-100 bg-white p-3 text-xs font-bold text-slate-600"
+    >
+      <input
+        id={`approval-review-confirmed-${approvalId}`}
+        type="checkbox"
+        checked={draft.confirmed}
+        onChange={(event) => onChange({ ...draft, confirmed: event.target.checked })}
+        className="mt-0.5 h-4 w-4 rounded border-blue-200 text-blue-600"
+      />
+      <span>已核对业务上下文和审批影响</span>
+    </label>
+    <div className="grid grid-cols-2 gap-2">
+      <PrimaryActionButton
+        onClick={onReject}
+        disabled={busy || draft.comment.trim().length === 0 || !draft.confirmed}
+        busy={busy}
+        tone="red"
+        pendingLabel="处理中"
+        fullWidth
+      >
+        驳回
+      </PrimaryActionButton>
+      <PrimaryActionButton
+        onClick={onApprove}
+        disabled={busy || draft.comment.trim().length === 0 || !draft.confirmed}
+        busy={busy}
+        tone="emerald"
+        icon={CheckCircle2}
+        pendingLabel="处理中"
+        fullWidth
+      >
+        通过
+      </PrimaryActionButton>
+    </div>
+  </div>
+);
+
 const ApprovalDetailPanelView: React.FC<{
   detail?: ApprovalDetailPanel;
   approval?: JavaApprovalTaskDto;
   approvalBusyId: string | null;
   javaEnabled: boolean;
-  onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
-}> = ({ detail, approval, approvalBusyId, javaEnabled, onReviewApproval }) => (
+  reviewDraft?: BuyerApprovalReviewDraft;
+  onChangeReviewDraft: (approvalId: string, draft: BuyerApprovalReviewDraft) => void;
+  onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean, draft: BuyerApprovalReviewDraft) => void;
+}> = ({
+  detail,
+  approval,
+  approvalBusyId,
+  javaEnabled,
+  reviewDraft,
+  onChangeReviewDraft,
+  onReviewApproval,
+}) => (
   <Panel title="审批详情" icon={ShieldCheck}>
     {!detail ? (
       <EmptyState title="暂无审批详情" desc="选择一条待办或最近审批记录后，可查看业务上下文和处理轨迹。" />
@@ -3882,6 +3953,8 @@ const ApprovalDetailPanelView: React.FC<{
           approval={approval}
           approvalBusyId={approvalBusyId}
           javaEnabled={javaEnabled}
+          reviewDraft={reviewDraft}
+          onChangeReviewDraft={onChangeReviewDraft}
           onReviewApproval={onReviewApproval}
         />
       </DetailPanelBody>
@@ -3894,8 +3967,18 @@ const ApprovalDetailOperationPanel: React.FC<{
   approval?: JavaApprovalTaskDto;
   approvalBusyId: string | null;
   javaEnabled: boolean;
-  onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
-}> = ({ detail, approval, approvalBusyId, javaEnabled, onReviewApproval }) => {
+  reviewDraft?: BuyerApprovalReviewDraft;
+  onChangeReviewDraft: (approvalId: string, draft: BuyerApprovalReviewDraft) => void;
+  onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean, draft: BuyerApprovalReviewDraft) => void;
+}> = ({
+  detail,
+  approval,
+  approvalBusyId,
+  javaEnabled,
+  reviewDraft,
+  onChangeReviewDraft,
+  onReviewApproval,
+}) => {
   const busy = approvalBusyId === detail.id;
   const approvalStatus = detail.reviewCheckRows.find((row) => row.label === '审批状态')?.value ?? detail.status;
   const businessStatus = detail.reviewCheckRows.find((row) => row.label === '业务状态')?.value ?? detail.status;
@@ -3946,30 +4029,15 @@ const ApprovalDetailOperationPanel: React.FC<{
         />
       )}
 
-      {javaEnabled && approval && detail.canReview && (
-        <div className="grid grid-cols-2 gap-2">
-          <PrimaryActionButton
-            onClick={() => onReviewApproval(approval, false)}
-            disabled={busy}
-            busy={busy}
-            tone="red"
-            pendingLabel="处理中"
-            fullWidth
-          >
-            驳回
-          </PrimaryActionButton>
-          <PrimaryActionButton
-            onClick={() => onReviewApproval(approval, true)}
-            disabled={busy}
-            busy={busy}
-            tone="emerald"
-            icon={CheckCircle2}
-            pendingLabel="处理中"
-            fullWidth
-          >
-            通过
-          </PrimaryActionButton>
-        </div>
+      {javaEnabled && approval && detail.canReview && reviewDraft && (
+        <ApprovalReviewForm
+          approvalId={approval.id}
+          draft={reviewDraft}
+          busy={busy}
+          onChange={(draft) => onChangeReviewDraft(approval.id, draft)}
+          onReject={() => onReviewApproval(approval, false, reviewDraft)}
+          onApprove={() => onReviewApproval(approval, true, reviewDraft)}
+        />
       )}
 
       {javaEnabled && !detail.canReview && (
@@ -7776,7 +7844,7 @@ const PrimaryActionButton: React.FC<{
   pendingLabel?: string;
   icon?: React.ElementType;
   fullWidth?: boolean;
-  tone?: 'blue' | 'emerald' | 'amber';
+  tone?: 'blue' | 'emerald' | 'amber' | 'red';
 }> = ({
   children,
   onClick,
@@ -7791,6 +7859,7 @@ const PrimaryActionButton: React.FC<{
     blue: 'bg-blue-600 hover:bg-blue-700',
     emerald: 'bg-emerald-600 hover:bg-emerald-700',
     amber: 'bg-amber-600 hover:bg-amber-700',
+    red: 'bg-red-600 hover:bg-red-700',
   };
   return (
     <button

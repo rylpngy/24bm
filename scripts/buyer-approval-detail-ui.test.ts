@@ -42,9 +42,10 @@ describe('buyer approval detail UI', () => {
     expect(approvalDetailView).toContain('approval?: JavaApprovalTaskDto');
     expect(approvalDetailView).toContain('approvalBusyId: string | null');
     expect(approvalDetailView).toContain('javaEnabled: boolean');
-    expect(approvalDetailView).toContain('onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void');
-    expect(approvalDetailView).toContain('onReviewApproval(approval, false)');
-    expect(approvalDetailView).toContain('onReviewApproval(approval, true)');
+    expect(approvalDetailView).toContain('reviewDraft?: BuyerApprovalReviewDraft');
+    expect(approvalDetailView).toContain('onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean, draft: BuyerApprovalReviewDraft) => void');
+    expect(approvalDetailView).toContain('onReviewApproval(approval, false, reviewDraft)');
+    expect(approvalDetailView).toContain('onReviewApproval(approval, true, reviewDraft)');
     expect(approvalDetailView).toContain('该审批已处理');
   });
 });
