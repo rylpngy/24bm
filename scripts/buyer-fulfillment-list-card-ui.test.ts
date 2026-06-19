@@ -37,6 +37,38 @@ describe('buyer fulfillment list card UI', () => {
     expect(workflowCard).not.toContain('sm:flex-row sm:items-start sm:justify-between');
   });
 
+  it('wraps inline fulfillment actions in a shared compact operation panel', () => {
+    const app = read('App.tsx');
+    const inlineAction = app.slice(
+      app.indexOf('const InlineWorkflowAction'),
+      app.indexOf('const WorkflowListCard'),
+    );
+    const orderModule = app.slice(
+      app.indexOf("{activeModule === 'orders'"),
+      app.indexOf('<OrderDetailPanelView'),
+    );
+    const receiptModule = app.slice(
+      app.indexOf("{activeModule === 'receipts'"),
+      app.indexOf('<ReceiptInspectionDetailPanelView'),
+    );
+    const invoiceModule = app.slice(
+      app.indexOf("{activeModule === 'invoices'"),
+      app.indexOf('<InvoicePaymentDetailPanelView'),
+    );
+
+    expect(app).toContain('const InlineWorkflowAction');
+    expect(inlineAction).toContain('aria-label={`${title} 快捷操作`}');
+    expect(inlineAction).toContain('text-xs font-black');
+    expect(inlineAction).toContain('text-xs font-bold leading-5');
+    expect(inlineAction).toContain("tone === 'emerald'");
+    expect(orderModule).toContain('<InlineWorkflowAction');
+    expect(receiptModule).toContain('<InlineWorkflowAction');
+    expect(invoiceModule).toContain('<InlineWorkflowAction');
+    expect(app.match(/<InlineWorkflowAction/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(app).toContain('右侧详情可补充验收备注、异常原因和附件清单。');
+    expect(app).toContain('右侧详情可补充付款备注、付款申请状态和对账说明。');
+  });
+
   it('applies the shared workflow card to demand and fulfillment list modules', () => {
     const app = read('App.tsx');
 

@@ -3261,7 +3261,11 @@ const BuyerWorkspaceView: React.FC<{
                 detailSelected={selectedOrder === orderRow.id}
                 onSelectDetail={() => setSelectedOrderId(orderRow.id)}
                 action={javaEnabled && orderRow.canRegisterReceipt ? (
-                  <div className="grid gap-2 sm:grid-cols-[160px_auto] sm:items-end">
+                  <InlineWorkflowAction
+                    title="快捷登记收货"
+                    desc="右侧详情可补充验收备注、异常原因和附件清单。"
+                    tone="emerald"
+                  >
                     <label className="block">
                       <span className="text-xs font-black text-emerald-700">验收结果</span>
                       <select
@@ -3282,7 +3286,7 @@ const BuyerWorkspaceView: React.FC<{
                     >
                       登记收货
                     </PrimaryActionButton>
-                  </div>
+                  </InlineWorkflowAction>
                   ) : undefined}
               />
             );
@@ -3336,7 +3340,11 @@ const BuyerWorkspaceView: React.FC<{
                     detailSelected={selectedReceiptOrder === orderRow.id}
                     onSelectDetail={() => setSelectedReceiptOrderId(orderRow.id)}
                     action={javaEnabled && orderRow.canRegisterReceipt ? (
-                      <div className="grid gap-2 sm:grid-cols-[160px_auto] sm:items-end">
+                      <InlineWorkflowAction
+                        title="快捷登记收货"
+                        desc="右侧详情可补充验收备注、异常原因和附件清单。"
+                        tone="emerald"
+                      >
                         <label className="block">
                           <span className="text-xs font-black text-emerald-700">验收结果</span>
                           <select
@@ -3357,7 +3365,7 @@ const BuyerWorkspaceView: React.FC<{
                         >
                           登记收货
                         </PrimaryActionButton>
-                      </div>
+                      </InlineWorkflowAction>
                     ) : undefined}
                   />
                 );
@@ -3410,7 +3418,10 @@ const BuyerWorkspaceView: React.FC<{
                 detailSelected={selectedInvoice === invoiceRow.id}
                 onSelectDetail={() => setSelectedInvoiceId(invoiceRow.id)}
                 action={javaEnabled && invoiceRow.canRegisterPayment ? (
-                  <div className="grid gap-2 sm:grid-cols-[160px_auto] sm:items-end">
+                  <InlineWorkflowAction
+                    title="快捷登记付款"
+                    desc="右侧详情可补充付款备注、付款申请状态和对账说明。"
+                  >
                     <label className="block">
                       <span className="text-xs font-black text-blue-700">付款状态</span>
                       <select
@@ -3430,7 +3441,7 @@ const BuyerWorkspaceView: React.FC<{
                     >
                       登记付款
                     </PrimaryActionButton>
-                  </div>
+                  </InlineWorkflowAction>
                   ) : undefined}
               />
             );
@@ -8152,6 +8163,31 @@ const AdminInfoCard: React.FC<{
       </div>
 
       {children}
+    </div>
+  );
+};
+
+const InlineWorkflowAction: React.FC<{
+  title: string;
+  desc: string;
+  tone?: 'blue' | 'emerald';
+  children: React.ReactNode;
+}> = ({ title, desc, tone = 'blue', children }) => {
+  const panelTone = tone === 'emerald'
+    ? 'border-emerald-100 bg-emerald-50'
+    : 'border-blue-100 bg-blue-50';
+  const textTone = tone === 'emerald' ? 'text-emerald-700' : 'text-blue-700';
+
+  return (
+    <div
+      aria-label={`${title} 快捷操作`}
+      className={`rounded-lg border p-3 ${panelTone}`}
+    >
+      <p className={`text-xs font-black ${textTone}`}>{title}</p>
+      <p className={`mt-1 text-xs font-bold leading-5 ${textTone}`}>{desc}</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-[160px_auto] sm:items-end">
+        {children}
+      </div>
     </div>
   );
 };
