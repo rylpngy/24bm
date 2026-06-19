@@ -195,6 +195,9 @@ type BuyerReceiptDraft = {
 
 type BuyerPaymentDraft = {
   paymentStatus: string;
+  paymentRemark: string;
+  paymentRequestStatus: string;
+  reconciliationNote: string;
 };
 
 type BuyerAwardDraft = {
@@ -2392,7 +2395,12 @@ const BuyerWorkspaceView: React.FC<{
     exceptionReason: '',
     attachmentNames: '收货照片.jpg\n验收单.pdf',
   };
-  const getPaymentDraft = (invoiceId: string): BuyerPaymentDraft => paymentDrafts[invoiceId] ?? { paymentStatus: '已付款' };
+  const getPaymentDraft = (invoiceId: string): BuyerPaymentDraft => paymentDrafts[invoiceId] ?? {
+    paymentStatus: '已付款',
+    paymentRemark: '已完成付款登记，付款凭证待附件中心接入后补充。',
+    paymentRequestStatus: '付款申请已通过',
+    reconciliationNote: '订单、收货、发票金额一致，满足三单匹配。',
+  };
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
     if (priorityDelta !== 0) return priorityDelta;
@@ -4959,15 +4967,57 @@ const PaymentRegistrationForm: React.FC<{
     <select
       id={`payment-status-${invoiceId}`}
       value={draft.paymentStatus}
-      onChange={(event) => onChange({ paymentStatus: event.target.value })}
+      onChange={(event) => onChange({ ...draft, paymentStatus: event.target.value })}
       className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
     >
       <option value="部分付款">部分付款</option>
       <option value="已付款">已付款</option>
     </select>
+    <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-1">
+      <label className="block text-xs font-black text-blue-700" htmlFor={`payment-remark-${invoiceId}`}>
+        付款备注
+        <textarea
+          id={`payment-remark-${invoiceId}`}
+          value={draft.paymentRemark}
+          onChange={(event) => onChange({ ...draft, paymentRemark: event.target.value })}
+          className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+        />
+      </label>
+      <label className="block text-xs font-black text-blue-700" htmlFor={`payment-request-status-${invoiceId}`}>
+        付款申请状态
+        <select
+          id={`payment-request-status-${invoiceId}`}
+          value={draft.paymentRequestStatus}
+          onChange={(event) => onChange({ ...draft, paymentRequestStatus: event.target.value })}
+          className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+        >
+          <option value="付款申请待提交">付款申请待提交</option>
+          <option value="付款申请审批中">付款申请审批中</option>
+          <option value="付款申请已通过">付款申请已通过</option>
+        </select>
+      </label>
+    </div>
+    <label className="mt-3 block text-xs font-black text-blue-700" htmlFor={`payment-reconciliation-${invoiceId}`}>
+      对账入口
+      <textarea
+        id={`payment-reconciliation-${invoiceId}`}
+        value={draft.reconciliationNote}
+        onChange={(event) => onChange({ ...draft, reconciliationNote: event.target.value })}
+        className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+      />
+    </label>
+    <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-xs font-bold leading-5 text-indigo-800">
+      三单匹配提示：付款前请核对采购订单、收货验收和发票金额；如存在差异，应先完成对账处理再登记付款。
+    </div>
     <PrimaryActionButton
       onClick={onSubmit}
-      disabled={busy || draft.paymentStatus.trim().length === 0}
+      disabled={
+        busy
+        || draft.paymentStatus.trim().length === 0
+        || draft.paymentRemark.trim().length === 0
+        || draft.paymentRequestStatus.trim().length === 0
+        || draft.reconciliationNote.trim().length === 0
+      }
       busy={busy}
       icon={CreditCard}
       pendingLabel="登记中"

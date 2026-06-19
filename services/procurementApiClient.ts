@@ -94,6 +94,9 @@ export interface CreateInvoicePayload {
 
 export interface RegisterPaymentPayload {
   paymentStatus: string;
+  paymentRemark?: string;
+  paymentRequestStatus?: string;
+  reconciliationNote?: string;
 }
 
 export interface CreateDepartmentPayload {
@@ -1162,7 +1165,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       const invoice = await buyerRequest<JavaInvoiceDto>(`/api/v1/buyer/invoices/${invoiceId}/payments`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ paymentStatus: payload.paymentStatus }),
       });
       return toInvoice(invoice);
     },

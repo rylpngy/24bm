@@ -1613,7 +1613,12 @@ describe('procurement API clients', () => {
       attachmentNames: ['收货照片.jpg', '验收单.pdf'],
     });
     const invoice = await client.createSupplierInvoice(order.id, { amount: 118000, invoiceNo: 'INV-2026-0001' });
-    const paidInvoice = await client.registerBuyerPayment(invoice.id, { paymentStatus: '已付款' });
+    const paidInvoice = await client.registerBuyerPayment(invoice.id, {
+      paymentStatus: '已付款',
+      paymentRemark: '已完成银行付款登记',
+      paymentRequestStatus: '付款申请已通过',
+      reconciliationNote: '订单、收货、发票金额一致',
+    });
 
     expect(rfqs[0]).toMatchObject({
       id: 'rfq-java-001',
