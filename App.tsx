@@ -2368,6 +2368,7 @@ const BuyerWorkspaceView: React.FC<{
   const [demandStatusFilter, setDemandStatusFilter] = useState('全部状态');
   const [rfqStatusFilter, setRfqStatusFilter] = useState('全部状态');
   const [orderStatusFilter, setOrderStatusFilter] = useState('全部状态');
+  const [receiptStatusFilter, setReceiptStatusFilter] = useState('全部状态');
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('全部状态');
   const [approvalStatusFilter, setApprovalStatusFilter] = useState('全部状态');
   const [supplierStatusFilter, setSupplierStatusFilter] = useState('全部状态');
@@ -2546,7 +2547,9 @@ const BuyerWorkspaceView: React.FC<{
     orderRow.nextAction.title,
     ...orderRow.facts.map((fact) => fact.value),
   ]));
-  const filteredReceiptInspectionRows = receiptInspectionRows.filter((orderRow) => matchesSearchQuery([
+  const filteredReceiptInspectionRows = receiptInspectionRows.filter((orderRow) =>
+    (receiptStatusFilter === '全部状态' || orderRow.status === receiptStatusFilter)
+    && matchesSearchQuery([
     orderRow.id,
     orderRow.supplierName,
     orderRow.logisticsLabel,
@@ -2566,6 +2569,7 @@ const BuyerWorkspaceView: React.FC<{
   const demandStatusOptions = Array.from(new Set(demandListRows.map((demandRow) => demandRow.status)));
   const rfqStatusOptions = Array.from(new Set(rfqListRows.map((rfq) => rfq.status)));
   const orderStatusOptions = Array.from(new Set(orderFulfillmentRows.map((orderRow) => orderRow.status)));
+  const receiptStatusOptions = Array.from(new Set(receiptInspectionRows.map((orderRow) => orderRow.status)));
   const invoiceStatusOptions = Array.from(new Set(invoicePaymentRows.map((invoiceRow) => invoiceRow.status)));
   const approvalStatusOptions = Array.from(new Set([
     ...approvalQueueRows.map((row) => row.status),
@@ -3307,6 +3311,12 @@ const BuyerWorkspaceView: React.FC<{
             recordCount={filteredReceiptInspectionRows.length}
             filterLabel={searchFilterLabel ?? '待收货优先'}
             actionLabel="登记收货"
+          />
+          <StatusFilterControl
+            label="收货状态"
+            value={receiptStatusFilter}
+            statusOptions={receiptStatusOptions}
+            onChange={setReceiptStatusFilter}
           />
           {filteredReceiptInspectionRows.length === 0 ? (
             <EmptyState title="暂无待收货订单" desc="供应商发货后，待收货订单会出现在这里。" />
