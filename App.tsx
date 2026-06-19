@@ -1557,6 +1557,12 @@ const PlatformWorkspace: React.FC<{
             </div>
           )}
           <Panel title="租户列表" icon={Layers3}>
+            <ListToolbar
+              title="租户运营列表"
+              recordCount={platformTenants.length}
+              filterLabel="全部采购企业租户"
+              actionLabel="租户配置"
+            />
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="min-w-[860px] w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
@@ -2449,6 +2455,12 @@ const BuyerWorkspaceView: React.FC<{
       </Panel>
 
       <Panel title="采购需求列表" icon={Database}>
+        <ListToolbar
+          title="需求池"
+          recordCount={workspace.demands.length}
+          filterLabel="全部需求状态"
+          actionLabel="新建需求"
+        />
         {workspace.demands.length === 0 ? (
           <EmptyState title="暂无采购需求" desc="创建需求后可提交审批，审批通过后再转为询价项目。" />
         ) : (
@@ -5810,6 +5822,12 @@ const SupplierWorkspaceView: React.FC<{
       {activeModule === 'opportunities' && (
       <Panel title="商机与报价" icon={Send}>
         <div className="space-y-4">
+          <ListToolbar
+            title="询价邀请池"
+            recordCount={workspace.opportunities.length}
+            filterLabel="待报价优先"
+            actionLabel="批量响应预留"
+          />
           <SupplierOpportunityResponseSummaryPanel
             opportunities={workspace.opportunities}
             supplierId={workspace.supplier.id}
@@ -6461,6 +6479,38 @@ const PlatformModuleHeader: React.FC<{
       ))}
     </div>
   </section>
+);
+
+const ListToolbar: React.FC<{
+  title: string;
+  recordCount: number;
+  filterLabel: string;
+  actionLabel?: string;
+}> = ({ title, recordCount, filterLabel, actionLabel }) => (
+  <div className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-black text-slate-900">{title}</p>
+        <span className="rounded-lg bg-white px-2 py-1 text-xs font-black text-slate-500">
+          共 {recordCount} 条
+        </span>
+      </div>
+      <p className="mt-1 text-xs font-bold text-slate-500">
+        当前筛选：{filterLabel}
+      </p>
+    </div>
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-500">
+        <Search size={16} />
+        搜索预留
+      </span>
+      {actionLabel && (
+        <span className="inline-flex h-9 items-center rounded-lg bg-slate-900 px-3 text-xs font-black text-white">
+          {actionLabel}
+        </span>
+      )}
+    </div>
+  </div>
 );
 
 const Panel: React.FC<{
