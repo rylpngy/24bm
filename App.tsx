@@ -3860,28 +3860,19 @@ const DemandDetailPanelView: React.FC<{
       <EmptyState title="暂无需求详情" desc="选择一条采购需求后，可查看物料明细、关联询价和审批上下文。" />
     ) : (
       <DetailPanelBody>
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-base font-black text-slate-950">{detail.title}</p>
-              <p className="mt-1 text-xs font-bold text-slate-400">{detail.id}</p>
-            </div>
-            <StatusPill label={detail.status} />
-          </div>
-          <InlineFactGrid facts={detail.facts} />
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <MiniFact label="审批状态" value={detail.approvalLabel} />
-            <MiniFact label="下一步" value={detail.nextActionTitle} />
-          </div>
-        </div>
+        <DetailHeroCard
+          eyebrow="采购需求"
+          title={detail.title}
+          meta={detail.id}
+          status={detail.status}
+          facts={detail.facts}
+          summaryFacts={[
+            { label: '审批状态', value: detail.approvalLabel },
+            { label: '下一步', value: detail.nextActionTitle },
+          ]}
+        />
 
-        <section>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs font-black text-slate-500">物料明细</p>
-            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
-              {detail.lineItems.length} 行
-            </span>
-          </div>
+        <DetailSection title="物料明细" countLabel={`${detail.lineItems.length} 行`}>
           <div className="space-y-2">
             {detail.lineItems.map((item) => (
               <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -3898,7 +3889,7 @@ const DemandDetailPanelView: React.FC<{
               </div>
             ))}
           </div>
-        </section>
+        </DetailSection>
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -3928,14 +3919,13 @@ const DemandDetailPanelView: React.FC<{
           )}
         </section>
 
-        <section>
-          <p className="mb-2 text-xs font-black text-slate-500">流程检查</p>
+        <DetailSection title="流程检查">
           <div className="space-y-2">
             {detail.flowCheckRows.map((row) => (
               <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
             ))}
           </div>
-        </section>
+        </DetailSection>
 
         <section>
           <p className="mb-2 text-xs font-black text-slate-500">流程轨迹</p>
@@ -4034,17 +4024,11 @@ const DemandDetailOperationPanel: React.FC<{
   const linked = linkedDemandIds.has(demand.id);
 
   return (
-    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-black text-blue-800">需求操作</p>
-          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
-            {detail.nextActionTitle}
-          </p>
-        </div>
-        <StatusPill label={detail.status} />
-      </div>
-
+    <DetailActionPanel
+      title="需求操作"
+      desc={detail.nextActionTitle}
+      status={detail.status}
+    >
       {demand.status === '草稿' && (
         <PrimaryActionButton
           onClick={() => onSubmitDemand(demand.id)}
@@ -4099,7 +4083,7 @@ const DemandDetailOperationPanel: React.FC<{
           desc="请调整需求内容后重新提交审批。"
         />
       )}
-    </section>
+    </DetailActionPanel>
   );
 };
 
@@ -4542,21 +4526,18 @@ const RfqDetailPanelView: React.FC<{
       <EmptyState title="暂无询价详情" desc="选择一个询价项目后，可查看关联需求、邀请供应商、报价排行和履约状态。" />
     ) : (
       <DetailPanelBody>
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-base font-black text-slate-950">{detail.title}</p>
-              <p className="mt-1 text-xs font-bold text-slate-400">{detail.id}</p>
-            </div>
-            <StatusPill label={detail.status} />
-          </div>
-          <InlineFactGrid facts={detail.facts} />
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <MiniFact label="推荐结果" value={detail.recommendedSupplierLabel} />
-            <MiniFact label="订单状态" value={detail.orderLabel} />
-            <MiniFact label="下一步" value={detail.nextActionTitle} />
-          </div>
-        </div>
+        <DetailHeroCard
+          eyebrow="询价项目"
+          title={detail.title}
+          meta={detail.id}
+          status={detail.status}
+          facts={detail.facts}
+          summaryFacts={[
+            { label: '推荐结果', value: detail.recommendedSupplierLabel },
+            { label: '订单状态', value: detail.orderLabel },
+            { label: '下一步', value: detail.nextActionTitle },
+          ]}
+        />
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -4599,13 +4580,7 @@ const RfqDetailPanelView: React.FC<{
           </div>
         </section>
 
-        <section>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs font-black text-slate-500">报价排行</p>
-            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
-              {detail.quoteRows.length} 条
-            </span>
-          </div>
+        <DetailSection title="报价排行" countLabel={`${detail.quoteRows.length} 条`}>
           {detail.quoteRows.length > 0 ? (
             <div className="space-y-2">
               {detail.quoteRows.map((quote) => (
@@ -4655,7 +4630,7 @@ const RfqDetailPanelView: React.FC<{
               暂无供应商报价，等待邀请供应商响应。
             </p>
           )}
-        </section>
+        </DetailSection>
 
         <section>
           <p className="mb-2 text-xs font-black text-slate-500">履约轨迹</p>
@@ -4666,13 +4641,7 @@ const RfqDetailPanelView: React.FC<{
           </div>
         </section>
 
-        <section>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs font-black text-slate-500">关联业务</p>
-            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
-              {detail.relatedRows.length} 条
-            </span>
-          </div>
+        <DetailSection title="关联业务" countLabel={`${detail.relatedRows.length} 条`}>
           {detail.relatedRows.length > 0 ? (
             <div className="space-y-2">
               {detail.relatedRows.map((row) => (
@@ -4684,7 +4653,7 @@ const RfqDetailPanelView: React.FC<{
               暂无关联业务记录。
             </p>
           )}
-        </section>
+        </DetailSection>
 
         <RfqDetailOperationPanel
           detail={detail}
@@ -4770,15 +4739,11 @@ const RfqDetailOperationPanel: React.FC<{
   const orderReceiptDateInvalid = !orderDraft?.expectedReceiptDate || orderDraft.expectedReceiptDate <= todayDate;
 
   return (
-    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-black text-blue-800">询价操作</p>
-          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">{nextAction.title}</p>
-        </div>
-        <StatusPill label={detail.status} />
-      </div>
-
+    <DetailActionPanel
+      title="询价操作"
+      desc={nextAction.title}
+      status={detail.status}
+    >
       {rfq.quotes.length === 0 && (
         <ProcessStateNotice
           variant="waiting"
@@ -4870,7 +4835,7 @@ const RfqDetailOperationPanel: React.FC<{
           desc="该询价项目已完成定标，可在关联业务中查看后续订单和履约记录。"
         />
       )}
-    </section>
+    </DetailActionPanel>
   );
 };
 
@@ -5414,22 +5379,19 @@ const OrderDetailPanelView: React.FC<{
         <EmptyState title="暂无订单详情" desc="选择一张采购订单后，可查看询价来源、物流、发票和付款状态。" />
       ) : (
         <DetailPanelBody>
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-base font-black text-slate-950">{detail.id}</p>
-                <p className="mt-1 text-xs font-bold text-slate-400">{detail.supplierName}</p>
-              </div>
-              <StatusPill label={detail.status} />
-            </div>
-            <p className="mt-3 font-mono text-xl font-black text-slate-950">{detail.amountLabel}</p>
-            <InlineFactGrid facts={detail.facts} />
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <MiniFact label="物流状态" value={logisticsStatus} />
-              <MiniFact label="发票付款" value={invoicePaymentStatus} />
-              <MiniFact label="下一步" value={detail.nextActionTitle} />
-            </div>
-          </div>
+          <DetailHeroCard
+            eyebrow="采购订单"
+            title={detail.id}
+            meta={detail.supplierName}
+            status={detail.status}
+            amountLabel={detail.amountLabel}
+            facts={detail.facts}
+            summaryFacts={[
+              { label: '物流状态', value: logisticsStatus },
+              { label: '发票付款', value: invoicePaymentStatus },
+              { label: '下一步', value: detail.nextActionTitle },
+            ]}
+          />
 
           <section>
             <p className="mb-2 text-xs font-black text-slate-500">询价来源</p>
@@ -5438,8 +5400,7 @@ const OrderDetailPanelView: React.FC<{
             </div>
           </section>
 
-          <section>
-            <p className="mb-2 text-xs font-black text-slate-500">物流信息</p>
+          <DetailSection title="物流信息">
             {detail.delivery ? (
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="flex items-start justify-between gap-3">
@@ -5455,7 +5416,7 @@ const OrderDetailPanelView: React.FC<{
                 暂无物流信息，等待供应商发货。
               </p>
             )}
-          </section>
+          </DetailSection>
 
           <section>
             <p className="mb-2 text-xs font-black text-slate-500">发票付款</p>
@@ -5485,14 +5446,13 @@ const OrderDetailPanelView: React.FC<{
             </div>
           </section>
 
-          <section>
-            <p className="mb-2 text-xs font-black text-slate-500">履约轨迹</p>
+          <DetailSection title="履约轨迹">
             <div className="space-y-2">
               {detail.fulfillmentTimelineRows.map((row) => (
                 <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
               ))}
             </div>
-          </section>
+          </DetailSection>
 
           <section>
             <div className="mb-2 flex items-center justify-between gap-3">
@@ -5593,15 +5553,11 @@ const OrderDetailOperationPanel: React.FC<{
   const receiptBusy = buyerFulfillmentBusyId === `receipt:${order.id}`;
 
   return (
-    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-black text-blue-800">订单操作</p>
-          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">{detail.nextActionTitle}</p>
-        </div>
-        <StatusPill label={detail.status} />
-      </div>
-
+    <DetailActionPanel
+      title="订单操作"
+      desc={detail.nextActionTitle}
+      status={detail.status}
+    >
       {renderFulfillmentSummary()}
 
       {order.status === '待供应商确认' && (
@@ -5645,7 +5601,7 @@ const OrderDetailOperationPanel: React.FC<{
           desc="该订单已完成履约和付款，可继续查看关联业务留痕。"
         />
       )}
-    </section>
+    </DetailActionPanel>
   );
 };
 
@@ -5873,22 +5829,19 @@ const InvoicePaymentDetailPanelView: React.FC<{
         <EmptyState title="暂无发票详情" desc="选择一张发票后，可查看订单、物流、供应商和付款状态。" />
       ) : (
         <DetailPanelBody>
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-base font-black text-slate-950">{detail.id}</p>
-                <p className="mt-1 text-xs font-bold text-slate-400">{detail.supplierName}</p>
-              </div>
-              <StatusPill label={detail.status} />
-            </div>
-            <p className="mt-3 font-mono text-xl font-black text-slate-950">{detail.amountLabel}</p>
-            <InlineFactGrid facts={detail.facts} />
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <MiniFact label="付款状态" value={paymentStatus} />
-              <MiniFact label="对账状态" value={reconciliationStatus} />
-              <MiniFact label="下一步" value={detail.nextActionTitle} />
-            </div>
-          </div>
+          <DetailHeroCard
+            eyebrow="发票付款"
+            title={detail.id}
+            meta={detail.supplierName}
+            status={detail.status}
+            amountLabel={detail.amountLabel}
+            facts={detail.facts}
+            summaryFacts={[
+              { label: '付款状态', value: paymentStatus },
+              { label: '对账状态', value: reconciliationStatus },
+              { label: '下一步', value: detail.nextActionTitle },
+            ]}
+          />
 
           <section>
             <p className="mb-2 text-xs font-black text-slate-500">订单上下文</p>
@@ -5908,13 +5861,7 @@ const InvoicePaymentDetailPanelView: React.FC<{
             </div>
           </section>
 
-          <section>
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-xs font-black text-slate-500">关联业务</p>
-              <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
-                {detail.relatedRows.length} 条
-              </span>
-            </div>
+          <DetailSection title="关联业务" countLabel={`${detail.relatedRows.length} 条`}>
             {detail.relatedRows.length > 0 ? (
               <div className="space-y-2">
                 {detail.relatedRows.map((row) => (
@@ -5926,16 +5873,15 @@ const InvoicePaymentDetailPanelView: React.FC<{
                 暂无关联业务记录。
               </p>
             )}
-          </section>
+          </DetailSection>
 
-          <section>
-            <p className="mb-2 text-xs font-black text-slate-500">付款轨迹</p>
+          <DetailSection title="付款轨迹">
             <div className="space-y-2">
               {detail.paymentTimelineRows.map((row) => (
                 <DetailKeyValueRow key={row.label} label={row.label} value={row.value} fontMono />
               ))}
             </div>
-          </section>
+          </DetailSection>
 
           <InvoicePaymentOperationPanel
             detail={detail}
@@ -5980,15 +5926,11 @@ const InvoicePaymentOperationPanel: React.FC<{
   );
 
   return (
-    <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-black text-blue-700">付款操作</p>
-          <p className="mt-1 text-sm font-black text-slate-950">{detail.nextActionTitle}</p>
-        </div>
-        <StatusPill label={detail.status} />
-      </div>
-
+    <DetailActionPanel
+      title="付款操作"
+      desc={detail.nextActionTitle}
+      status={detail.status}
+    >
       {renderPaymentSummary()}
 
       {!javaEnabled && (
@@ -6024,7 +5966,7 @@ const InvoicePaymentOperationPanel: React.FC<{
           desc="该发票已完成付款登记，可在关联业务中查看订单和物流留痕。"
         />
       )}
-    </section>
+    </DetailActionPanel>
   );
 };
 
@@ -7028,6 +6970,89 @@ const DetailPanelBody: React.FC<{ children: React.ReactNode }> = ({ children }) 
     {children}
   </div>
 );
+
+const DetailHeroCard: React.FC<{
+  eyebrow: string;
+  title: string;
+  meta: string;
+  status?: string;
+  amountLabel?: string;
+  facts: Array<{ label: string; value: string }>;
+  summaryFacts?: Array<{ label: string; value: string }>;
+}> = ({
+  eyebrow,
+  title,
+  meta,
+  status,
+  amountLabel,
+  facts,
+  summaryFacts = [],
+}) => (
+  <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-[11px] font-black uppercase tracking-widest text-blue-600">{eyebrow}</p>
+        <p className="mt-1 truncate text-base font-black text-slate-950">{title}</p>
+        <p className="mt-1 break-words text-xs font-bold text-slate-400">{meta}</p>
+      </div>
+      {status && <StatusPill label={status} />}
+    </div>
+    {amountLabel && <p className="mt-3 font-mono text-xl font-black text-slate-950">{amountLabel}</p>}
+    <InlineFactGrid facts={facts} />
+    {summaryFacts.length > 0 && (
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {summaryFacts.map((fact) => (
+          <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+const DetailSection: React.FC<{
+  title: string;
+  countLabel?: string;
+  children: React.ReactNode;
+}> = ({ title, countLabel, children }) => (
+  <section className="rounded-lg border border-slate-100 bg-white p-3">
+    <div className="mb-2 flex items-center justify-between gap-3">
+      <p className="text-xs font-black text-slate-600">{title}</p>
+      {countLabel && (
+        <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+          {countLabel}
+        </span>
+      )}
+    </div>
+    {children}
+  </section>
+);
+
+const DetailActionPanel: React.FC<{
+  title: string;
+  desc?: string;
+  status?: string;
+  tone?: 'blue' | 'emerald' | 'slate';
+  children: React.ReactNode;
+}> = ({ title, desc, status, tone = 'blue', children }) => {
+  const toneClass = tone === 'emerald'
+    ? 'border-emerald-100 bg-emerald-50 text-emerald-800'
+    : tone === 'slate'
+      ? 'border-slate-200 bg-slate-50 text-slate-700'
+      : 'border-blue-100 bg-blue-50 text-blue-800';
+
+  return (
+    <section className={`rounded-lg border p-4 ${toneClass}`}>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black">{title}</p>
+          {desc && <p className="mt-1 text-xs font-bold leading-5">{desc}</p>}
+        </div>
+        {status && <StatusPill label={status} />}
+      </div>
+      {children}
+    </section>
+  );
+};
 
 const MiniFact: React.FC<{
   label: string;

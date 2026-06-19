@@ -53,14 +53,15 @@ describe('buyer demand detail UI', () => {
       app.indexOf('const DemandDetailOperationPanel'),
     );
     const topCard = demandDetail.slice(
-      demandDetail.indexOf('<InlineFactGrid facts={detail.facts} />'),
-      demandDetail.indexOf('<section>'),
+      demandDetail.indexOf('<DetailHeroCard'),
+      demandDetail.indexOf('<DetailSection title="物料明细"'),
     );
 
-    expect(topCard).toContain('<MiniFact label="审批状态" value={detail.approvalLabel} />');
-    expect(topCard).toContain('<MiniFact label="下一步" value={detail.nextActionTitle} />');
-    expect(topCard.indexOf('<MiniFact label="审批状态" value={detail.approvalLabel} />')).toBeGreaterThan(
-      topCard.indexOf('<InlineFactGrid facts={detail.facts} />'),
+    expect(topCard).toContain('summaryFacts={[');
+    expect(topCard).toContain("{ label: '审批状态', value: detail.approvalLabel }");
+    expect(topCard).toContain("{ label: '下一步', value: detail.nextActionTitle }");
+    expect(topCard.indexOf("{ label: '审批状态', value: detail.approvalLabel }")).toBeGreaterThan(
+      topCard.indexOf('facts={detail.facts}'),
     );
   });
 });

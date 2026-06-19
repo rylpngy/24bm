@@ -56,14 +56,15 @@ describe('buyer invoice detail UI', () => {
       app.indexOf('const InvoicePaymentOperationPanel'),
     );
     const topCard = invoiceDetailView.slice(
-      invoiceDetailView.indexOf('<InlineFactGrid facts={detail.facts} />'),
+      invoiceDetailView.indexOf('<DetailHeroCard'),
       invoiceDetailView.indexOf('<section>'),
     );
 
     expect(invoiceDetailView).toContain('const paymentStatus = detail?.facts.find((fact) => fact.label === \'付款状态\')?.value ?? \'待付款\';');
     expect(invoiceDetailView).toContain('const reconciliationStatus = detail && invoiceAmount === orderAmount ? \'金额一致\' : \'待核对\';');
-    expect(topCard).toContain('<MiniFact label="付款状态" value={paymentStatus} />');
-    expect(topCard).toContain('<MiniFact label="对账状态" value={reconciliationStatus} />');
-    expect(topCard).toContain('<MiniFact label="下一步" value={detail.nextActionTitle} />');
+    expect(topCard).toContain('summaryFacts={[');
+    expect(topCard).toContain("{ label: '付款状态', value: paymentStatus }");
+    expect(topCard).toContain("{ label: '对账状态', value: reconciliationStatus }");
+    expect(topCard).toContain("{ label: '下一步', value: detail.nextActionTitle }");
   });
 });

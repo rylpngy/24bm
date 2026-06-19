@@ -60,14 +60,15 @@ describe('buyer order detail UI', () => {
       app.indexOf('const OrderDetailOperationPanel'),
     );
     const topCard = orderDetailView.slice(
-      orderDetailView.indexOf('<InlineFactGrid facts={detail.facts} />'),
+      orderDetailView.indexOf('<DetailHeroCard'),
       orderDetailView.indexOf('<section>'),
     );
 
     expect(orderDetailView).toContain('const logisticsStatus = detail?.facts.find((fact) => fact.label === \'物流状态\')?.value ?? \'待发货\';');
     expect(orderDetailView).toContain('const invoicePaymentStatus = detail?.facts.find((fact) => fact.label === \'发票状态\')?.value ?? \'待开票\';');
-    expect(topCard).toContain('<MiniFact label="物流状态" value={logisticsStatus} />');
-    expect(topCard).toContain('<MiniFact label="发票付款" value={invoicePaymentStatus} />');
-    expect(topCard).toContain('<MiniFact label="下一步" value={detail.nextActionTitle} />');
+    expect(topCard).toContain('summaryFacts={[');
+    expect(topCard).toContain("{ label: '物流状态', value: logisticsStatus }");
+    expect(topCard).toContain("{ label: '发票付款', value: invoicePaymentStatus }");
+    expect(topCard).toContain("{ label: '下一步', value: detail.nextActionTitle }");
   });
 });

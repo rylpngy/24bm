@@ -56,15 +56,16 @@ describe('buyer RFQ detail UI', () => {
       app.indexOf('const RfqDetailOperationPanel'),
     );
     const topCard = rfqDetail.slice(
-      rfqDetail.indexOf('<InlineFactGrid facts={detail.facts} />'),
+      rfqDetail.indexOf('<DetailHeroCard'),
       rfqDetail.indexOf('<section>'),
     );
 
-    expect(topCard).toContain('<MiniFact label="推荐结果" value={detail.recommendedSupplierLabel} />');
-    expect(topCard).toContain('<MiniFact label="订单状态" value={detail.orderLabel} />');
-    expect(topCard).toContain('<MiniFact label="下一步" value={detail.nextActionTitle} />');
-    expect(topCard.indexOf('<MiniFact label="推荐结果" value={detail.recommendedSupplierLabel} />')).toBeGreaterThan(
-      topCard.indexOf('<InlineFactGrid facts={detail.facts} />'),
+    expect(topCard).toContain('summaryFacts={[');
+    expect(topCard).toContain("{ label: '推荐结果', value: detail.recommendedSupplierLabel }");
+    expect(topCard).toContain("{ label: '订单状态', value: detail.orderLabel }");
+    expect(topCard).toContain("{ label: '下一步', value: detail.nextActionTitle }");
+    expect(topCard.indexOf("{ label: '推荐结果', value: detail.recommendedSupplierLabel }")).toBeGreaterThan(
+      topCard.indexOf('facts={detail.facts}'),
     );
   });
 });
