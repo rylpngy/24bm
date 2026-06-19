@@ -1727,6 +1727,20 @@ const PlatformWorkspace: React.FC<{
         javaEnabled={javaEnabled}
       />
 
+      <PermissionBoundaryPanel
+        roleLabel="平台运营方"
+        modeLabel={javaEnabled ? 'Java 模式' : 'Mock 模式'}
+        allowedActions={[
+          '管理租户、企业审核、平台公告和功能开关',
+          '维护平台公共供应商企业档案和运营摘要',
+        ]}
+        blockedActions={[
+          '不直接参与采购方定标、收货和付款决策',
+          '不读取采购方私域供应商评价和财务明细',
+        ]}
+        dataBoundary="平台公共企业档案与租户运营数据"
+      />
+
       {activeModule === 'overview' && (
         <>
           <HeroBand
@@ -2906,6 +2920,20 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     <BuyerModuleHeader header={moduleHeader} facts={moduleFacts} javaEnabled={javaEnabled} />
+
+    <PermissionBoundaryPanel
+      roleLabel="采购方企业"
+      modeLabel={javaEnabled ? 'Java 模式' : 'Mock 模式'}
+      allowedActions={[
+        '提交需求、审批、询价比价、生成订单、登记收货和付款状态',
+        '维护组织用户、物料目录和私域供应商关系',
+      ]}
+      blockedActions={[
+        '不能维护平台套餐，也不能查看其他采购企业的采购数据',
+        '不能替供应商确认订单、发货或登记应收发票',
+      ]}
+      dataBoundary="当前采购租户内的需求、供应商关系、订单和财务记录"
+    />
 
     {javaEnabled && activeModule === 'dashboard' && (
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
@@ -7405,6 +7433,63 @@ const EmptyState: React.FC<{
   <ShellState variant="empty" title={title} desc={desc} />
 );
 
+const PermissionBoundaryPanel: React.FC<{
+  roleLabel: string;
+  modeLabel: string;
+  allowedActions: string[];
+  blockedActions: string[];
+  dataBoundary: string;
+}> = ({ roleLabel, modeLabel, allowedActions, blockedActions, dataBoundary }) => (
+  <section className="rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-indigo-700" />
+          <p className="text-sm font-black text-indigo-950">权限差异提示</p>
+        </div>
+        <p className="mt-1 text-xs font-bold leading-5 text-indigo-700">
+          当前为 {modeLabel}，Java 模式执行真实 API 权限校验；Mock 模式仅用于页面形态和交互预览。
+        </p>
+      </div>
+      <div className="grid min-w-0 gap-2 sm:grid-cols-3 lg:w-[520px]">
+        <MiniFact label="当前角色" value={roleLabel} />
+        <MiniFact label="运行模式" value={modeLabel} />
+        <MiniFact label="数据边界" value={dataBoundary} />
+      </div>
+    </div>
+
+    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+      <div className="rounded-lg border border-emerald-100 bg-white p-3">
+        <div className="mb-2 flex items-center gap-2 text-xs font-black text-emerald-700">
+          <CheckCircle2 className="h-4 w-4" />
+          可执行动作
+        </div>
+        <div className="space-y-2">
+          {allowedActions.map((action) => (
+            <p key={action} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold leading-5 text-emerald-800">
+              {action}
+            </p>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-3">
+        <div className="mb-2 flex items-center gap-2 text-xs font-black text-slate-600">
+          <LockKeyhole className="h-4 w-4" />
+          不可越界动作
+        </div>
+        <div className="space-y-2">
+          {blockedActions.map((action) => (
+            <p key={action} className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-600">
+              {action}
+            </p>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
 const MessageCenterPanel: React.FC<{
   title: string;
   scopeLabel: string;
@@ -7620,6 +7705,20 @@ const SupplierWorkspaceView: React.FC<{
       header={supplierModuleHeader}
       facts={supplierModuleFacts}
       javaEnabled={javaEnabled}
+    />
+
+    <PermissionBoundaryPanel
+      roleLabel="供应商企业"
+      modeLabel={javaEnabled ? 'Java 模式' : 'Mock 模式'}
+      allowedActions={[
+        '响应询价、提交报价、确认订单、发货和登记发票',
+        '维护企业档案、资质附件和联系人协同信息',
+      ]}
+      blockedActions={[
+        '不能查看采购方内部审批、预算和其他供应商报价明细',
+        '不能修改采购方定标、收货验收和付款审批结果',
+      ]}
+      dataBoundary="当前供应商主体下的商机、报价、销售订单和应收记录"
     />
 
     <SupplierActionLoopSummaryPanel
