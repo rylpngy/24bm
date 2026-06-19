@@ -2369,6 +2369,9 @@ const BuyerWorkspaceView: React.FC<{
   const [rfqStatusFilter, setRfqStatusFilter] = useState('全部状态');
   const [orderStatusFilter, setOrderStatusFilter] = useState('全部状态');
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('全部状态');
+  const [approvalStatusFilter, setApprovalStatusFilter] = useState('全部状态');
+  const [supplierStatusFilter, setSupplierStatusFilter] = useState('全部状态');
+  const [materialStatusFilter, setMaterialStatusFilter] = useState('全部状态');
   const defaultExpectedReceiptDate = () => {
     const date = new Date();
     date.setDate(date.getDate() + 14);
@@ -2458,14 +2461,18 @@ const BuyerWorkspaceView: React.FC<{
       ...extraValues,
     ]);
   };
-  const filteredApprovalQueueRows = approvalQueueRows.filter((row) => matchesSearchQuery([
+  const filteredApprovalQueueRows = approvalQueueRows.filter((row) =>
+    (approvalStatusFilter === '全部状态' || row.status === approvalStatusFilter)
+    && matchesSearchQuery([
     row.id,
     row.title,
     row.typeLabel,
     row.status,
     ...row.facts.map((fact) => fact.value),
   ]));
-  const filteredRecentApprovals = sortedRecentApprovals.filter((approval) => matchesSearchQuery([
+  const filteredRecentApprovals = sortedRecentApprovals.filter((approval) =>
+    (approvalStatusFilter === '全部状态' || approval.status === approvalStatusFilter)
+    && matchesSearchQuery([
     approval.id,
     approval.bizId,
     approval.parentBizId,
@@ -2508,7 +2515,9 @@ const BuyerWorkspaceView: React.FC<{
     ...rfq.invitedSupplierIds,
     ...rfq.quotes.flatMap((quote) => [quote.id, quote.supplierId, quote.amount, quote.status]),
   ]));
-  const filteredSupplierRelationRows = supplierRelationRows.filter((relationRow) => matchesSearchQuery([
+  const filteredSupplierRelationRows = supplierRelationRows.filter((relationRow) =>
+    (supplierStatusFilter === '全部状态' || relationRow.status === supplierStatusFilter)
+    && matchesSearchQuery([
     relationRow.id,
     relationRow.supplierName,
     relationRow.categoryLabel,
@@ -2518,7 +2527,9 @@ const BuyerWorkspaceView: React.FC<{
     relationRow.action.riskLabel,
     ...relationRow.facts.map((fact) => fact.value),
   ]));
-  const filteredMaterialRows = materialRows.filter((material) => matchesSearchQuery([
+  const filteredMaterialRows = materialRows.filter((material) =>
+    (materialStatusFilter === '全部状态' || material.status === materialStatusFilter)
+    && matchesSearchQuery([
     material.id,
     material.title,
     material.status,
@@ -2556,6 +2567,12 @@ const BuyerWorkspaceView: React.FC<{
   const rfqStatusOptions = Array.from(new Set(rfqListRows.map((rfq) => rfq.status)));
   const orderStatusOptions = Array.from(new Set(orderFulfillmentRows.map((orderRow) => orderRow.status)));
   const invoiceStatusOptions = Array.from(new Set(invoicePaymentRows.map((invoiceRow) => invoiceRow.status)));
+  const approvalStatusOptions = Array.from(new Set([
+    ...approvalQueueRows.map((row) => row.status),
+    ...sortedRecentApprovals.map((approval) => approval.status),
+  ]));
+  const supplierStatusOptions = Array.from(new Set(supplierRelationRows.map((relationRow) => relationRow.status)));
+  const materialStatusOptions = Array.from(new Set(materialRows.map((material) => material.status)));
   const searchFilterLabel = normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : undefined;
   const moduleHeader = buyerModuleHeaders[activeModule];
   const selectedDemand = workspace.demands.some((demand) => demand.id === selectedDemandId)
@@ -2677,6 +2694,12 @@ const BuyerWorkspaceView: React.FC<{
             filterLabel={searchFilterLabel ?? '待审批优先'}
             actionLabel="批量审批"
           />
+          <StatusFilterControl
+            label="审批状态"
+            value={approvalStatusFilter}
+            statusOptions={approvalStatusOptions}
+            onChange={setApprovalStatusFilter}
+          />
           {filteredApprovalQueueRows.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
               {filteredApprovalQueueRows.map((approvalRow) => {
@@ -2738,6 +2761,12 @@ const BuyerWorkspaceView: React.FC<{
             recordCount={filteredRecentApprovals.length}
             filterLabel={searchFilterLabel ?? '最近处理优先'}
             actionLabel="审批模板"
+          />
+          <StatusFilterControl
+            label="审批状态"
+            value={approvalStatusFilter}
+            statusOptions={approvalStatusOptions}
+            onChange={setApprovalStatusFilter}
           />
           {javaEnabled && filteredRecentApprovals.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
@@ -3101,6 +3130,12 @@ const BuyerWorkspaceView: React.FC<{
             filterLabel={searchFilterLabel ?? '全部物料品类'}
             actionLabel="新增物料"
           />
+          <StatusFilterControl
+            label="物料状态"
+            value={materialStatusFilter}
+            statusOptions={materialStatusOptions}
+            onChange={setMaterialStatusFilter}
+          />
           {filteredMaterialRows.length === 0 ? (
             <EmptyState title="暂无物料目录" desc="先维护物料或服务主数据，再用于采购需求明细和询价范围。" />
           ) : (
@@ -3133,6 +3168,12 @@ const BuyerWorkspaceView: React.FC<{
           recordCount={filteredSupplierRelationRows.length}
           filterLabel={searchFilterLabel ?? '全部合作状态'}
           actionLabel="供应商准入"
+        />
+        <StatusFilterControl
+          label="合作状态"
+          value={supplierStatusFilter}
+          statusOptions={supplierStatusOptions}
+          onChange={setSupplierStatusFilter}
         />
         {filteredSupplierRelationRows.length === 0 ? (
           <EmptyState title="暂无私域供应商" desc="平台公共供应商通过准入后，会形成采购方自己的合作关系和绩效记录。" />
@@ -3425,16 +3466,19 @@ const BuyerWorkspaceView: React.FC<{
 
 const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }> = ({ workspace, searchQuery }) => {
   const logs = buildAuditLogRows(workspace);
+  const [auditTargetFilter, setAuditTargetFilter] = useState('全部状态');
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const auditTargetOptions = Array.from(new Set(logs.map((log) => log.targetLabel)));
   const filteredLogs = logs.filter((log) =>
-    !normalizedSearchQuery
+    (auditTargetFilter === '全部状态' || log.targetLabel === auditTargetFilter)
+    && (!normalizedSearchQuery
     || [
       log.id,
       log.title,
       log.targetLabel,
       log.actorName,
       log.timeLabel,
-    ].some((value) => value.toLowerCase().includes(normalizedSearchQuery)));
+    ].some((value) => value.toLowerCase().includes(normalizedSearchQuery))));
   const [selectedAuditLogId, setSelectedAuditLogId] = useState(filteredLogs[0]?.id ?? '');
   const selectedAuditLog = filteredLogs.some((log) => log.id === selectedAuditLogId)
     ? selectedAuditLogId
@@ -3452,6 +3496,12 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
           filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}
           actionLabel="导出记录"
         />
+        <StatusFilterControl
+          label="对象类型"
+          value={auditTargetFilter}
+          statusOptions={auditTargetOptions}
+          onChange={setAuditTargetFilter}
+        />
         <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
           暂无审计记录
         </p>
@@ -3466,6 +3516,12 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
         recordCount={filteredLogs.length}
         filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}
         actionLabel="导出日志"
+      />
+      <StatusFilterControl
+        label="对象类型"
+        value={auditTargetFilter}
+        statusOptions={auditTargetOptions}
+        onChange={setAuditTargetFilter}
       />
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="grid gap-3 md:grid-cols-2">

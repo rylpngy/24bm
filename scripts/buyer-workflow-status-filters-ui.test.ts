@@ -30,4 +30,31 @@ describe('buyer workflow status filters UI', () => {
     expect(buyerWorkspace).toContain('orderRow.status === orderStatusFilter');
     expect(buyerWorkspace).toContain('invoiceRow.status === invoiceStatusFilter');
   });
+
+  it('adds status or type filters to buyer approval, supplier, material, and audit lists', () => {
+    const app = read('App.tsx');
+    const buyerWorkspace = app.slice(
+      app.indexOf('const BuyerWorkspaceView'),
+      app.indexOf('const AuditLogList'),
+    );
+    const auditLogList = app.slice(
+      app.indexOf('const AuditLogList'),
+      app.indexOf('const AuditLogDetailPanelView'),
+    );
+
+    expect(buyerWorkspace).toContain('approvalStatusFilter');
+    expect(buyerWorkspace).toContain('supplierStatusFilter');
+    expect(buyerWorkspace).toContain('materialStatusFilter');
+    expect(auditLogList).toContain('auditTargetFilter');
+
+    expect(buyerWorkspace).toContain('审批状态');
+    expect(buyerWorkspace).toContain('合作状态');
+    expect(buyerWorkspace).toContain('物料状态');
+    expect(auditLogList).toContain('对象类型');
+
+    expect(buyerWorkspace).toContain('row.status === approvalStatusFilter');
+    expect(buyerWorkspace).toContain('relationRow.status === supplierStatusFilter');
+    expect(buyerWorkspace).toContain('material.status === materialStatusFilter');
+    expect(auditLogList).toContain('log.targetLabel === auditTargetFilter');
+  });
 });
