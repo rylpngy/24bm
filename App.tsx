@@ -204,7 +204,11 @@ type BuyerOrderDraft = {
 
 type BuyerSupplierAdmissionDraft = {
   reason: string;
+  qualificationSummary: string;
+  contactName: string;
+  contactPhone: string;
   categoryConfirmed: boolean;
+  riskConfirmed: boolean;
 };
 
 type BuyerApprovalReviewDraft = {
@@ -2368,7 +2372,11 @@ const BuyerWorkspaceView: React.FC<{
     relation: BuyerWorkspace['privateSupplierRelations'][number],
   ): BuyerSupplierAdmissionDraft => supplierAdmissionDrafts[relation.id] ?? {
     reason: `申请将该供应商纳入私域供应商库，授权品类：${relation.categories.join('、') || '待补充'}`,
+    qualificationSummary: '已核对营业执照、授权代理资质、近一年合作记录和基础履约能力。',
+    contactName: '供应商业务联系人',
+    contactPhone: '13800000000',
     categoryConfirmed: false,
+    riskConfirmed: false,
   };
   const getApprovalReviewDraft = (approval: JavaApprovalTaskDto): BuyerApprovalReviewDraft =>
     approvalReviewDrafts[approval.id] ?? {
@@ -5556,6 +5564,37 @@ const SupplierAdmissionForm: React.FC<{
       onChange={(event) => onChange({ ...draft, reason: event.target.value })}
       className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
     />
+    <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-1">
+      <label className="block text-xs font-black text-blue-800" htmlFor={`supplier-admission-qualification-${relationId}`}>
+        资质摘要
+        <textarea
+          id={`supplier-admission-qualification-${relationId}`}
+          value={draft.qualificationSummary}
+          onChange={(event) => onChange({ ...draft, qualificationSummary: event.target.value })}
+          className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+        />
+      </label>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+        <label className="block text-xs font-black text-blue-800" htmlFor={`supplier-admission-contact-${relationId}`}>
+          联系人
+          <input
+            id={`supplier-admission-contact-${relationId}`}
+            value={draft.contactName}
+            onChange={(event) => onChange({ ...draft, contactName: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+        <label className="block text-xs font-black text-blue-800" htmlFor={`supplier-admission-phone-${relationId}`}>
+          联系电话
+          <input
+            id={`supplier-admission-phone-${relationId}`}
+            value={draft.contactPhone}
+            onChange={(event) => onChange({ ...draft, contactPhone: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+      </div>
+    </div>
     <label
       htmlFor={`supplier-admission-category-${relationId}`}
       className="mt-3 flex items-start gap-2 rounded-lg border border-blue-100 bg-white p-3 text-xs font-bold text-slate-600"
@@ -5569,9 +5608,30 @@ const SupplierAdmissionForm: React.FC<{
       />
       <span>授权品类已确认：{categoryLabel || '待补充'}</span>
     </label>
+    <label
+      htmlFor={`supplier-admission-risk-${relationId}`}
+      className="mt-3 flex items-start gap-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold text-amber-800"
+    >
+      <input
+        id={`supplier-admission-risk-${relationId}`}
+        type="checkbox"
+        checked={draft.riskConfirmed}
+        onChange={(event) => onChange({ ...draft, riskConfirmed: event.target.checked })}
+        className="mt-0.5 h-4 w-4 rounded border-amber-200 text-amber-600"
+      />
+      <span>黑名单与风险已复核：确认当前供应商未处于黑名单、暂停合作或高风险状态。</span>
+    </label>
     <PrimaryActionButton
       onClick={onSubmit}
-      disabled={busy || draft.reason.trim().length === 0 || !draft.categoryConfirmed}
+      disabled={
+        busy
+        || draft.reason.trim().length === 0
+        || draft.qualificationSummary.trim().length === 0
+        || draft.contactName.trim().length === 0
+        || draft.contactPhone.trim().length === 0
+        || !draft.categoryConfirmed
+        || !draft.riskConfirmed
+      }
       busy={busy}
       icon={Send}
       pendingLabel="提交中"
