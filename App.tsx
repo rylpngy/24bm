@@ -739,7 +739,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-slate-50 text-slate-900">
+    <div className="flex h-dvh flex-col overflow-hidden bg-slate-50 text-slate-900 lg:flex-row">
+      <MobileAdminNav
+        activeRole={activeRole}
+        activeModules={activeModules}
+        onSelectRole={setActiveRole}
+        onSelectModule={setActiveRoleModule}
+      />
       <AppSidebar
         activeRole={activeRole}
         activeModules={activeModules}
@@ -841,7 +847,7 @@ const AppSidebar: React.FC<{
   onSelectModule: (role: AdminRole, moduleId: string) => void;
 }> = ({ activeRole, activeModules, onSelectRole, onSelectModule }) => {
   return (
-    <aside className="flex min-h-0 w-24 shrink-0 flex-col bg-slate-950 text-white lg:w-72">
+    <aside className="hidden min-h-0 shrink-0 flex-col bg-slate-950 text-white lg:flex lg:w-72">
       <div className="border-b border-white/10 p-3 lg:p-6">
         <div className="flex items-center justify-center gap-3 lg:justify-start">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-lg font-black shadow-lg shadow-blue-950/40 lg:h-11 lg:w-11">
@@ -926,6 +932,72 @@ const AppSidebar: React.FC<{
         </div>
       </div>
     </aside>
+  );
+};
+
+const MobileAdminNav: React.FC<{
+  activeRole: AdminRole;
+  activeModules: Record<AdminRole, string>;
+  onSelectRole: (role: AdminRole) => void;
+  onSelectModule: (role: AdminRole, moduleId: string) => void;
+}> = ({ activeRole, activeModules, onSelectRole, onSelectModule }) => {
+  const activeRoleNavigation = adminRoleNavigation.find((role) => role.id === activeRole) ?? adminRoleNavigation[0];
+
+  return (
+    <div className="shrink-0 border-b border-slate-200 bg-slate-950 text-white lg:hidden">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-base font-black">24</div>
+        <div className="min-w-0">
+          <p className="text-sm font-black leading-none">24Bid</p>
+          <p className="mt-1 truncate text-xs font-bold uppercase tracking-widest text-blue-300">Procurement SaaS</p>
+        </div>
+      </div>
+
+      <nav aria-label="移动端角色导航" className="flex gap-2 overflow-x-auto px-3 pb-2">
+        {adminRoleNavigation.map((role) => {
+          const roleActive = activeRole === role.id;
+          const RoleIcon = role.id === 'platform' ? Layers3 : role.id === 'buyer' ? ShoppingCart : Truck;
+          return (
+            <button
+              key={role.id}
+              type="button"
+              onClick={() => onSelectRole(role.id)}
+              aria-current={roleActive ? 'true' : undefined}
+              aria-pressed={roleActive}
+              className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition ${
+                roleActive ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <RoleIcon size={15} />
+              {role.shortLabel}
+            </button>
+          );
+        })}
+      </nav>
+
+      <nav aria-label="移动端模块导航" className="flex gap-2 overflow-x-auto px-3 pb-3">
+        {activeRoleNavigation.modules.map((module) => {
+          const moduleActive = activeModules[activeRoleNavigation.id] === module.id;
+          const ModuleIcon = moduleIcon(module.id);
+          return (
+            <button
+              key={`${activeRoleNavigation.id}:${module.id}`}
+              type="button"
+              onClick={() => onSelectModule(activeRoleNavigation.id, module.id)}
+              title={`${module.label}：${module.desc}`}
+              aria-current={moduleActive ? 'page' : undefined}
+              aria-pressed={moduleActive}
+              className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition ${
+                moduleActive ? 'bg-white text-slate-950' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <ModuleIcon size={14} className={moduleActive ? 'text-blue-600' : 'text-slate-400'} />
+              {module.label}
+            </button>
+          );
+        })}
+      </nav>
+    </div>
   );
 };
 

@@ -7,7 +7,7 @@ describe('admin shell polish UI', () => {
   it('keeps long navigation and workspace content scrollable within the viewport', () => {
     const app = read('App.tsx');
 
-    expect(app).toContain('h-dvh overflow-hidden');
+    expect(app).toContain('h-dvh flex-col overflow-hidden');
     expect(app).toContain('min-h-0 flex-1 flex-col');
     expect(app).toContain('min-h-0 min-w-0 flex-1 overflow-y-auto');
     expect(app).toContain('overscroll-contain');
@@ -104,6 +104,29 @@ describe('admin shell polish UI', () => {
     expect(appHeader).toContain('sm:min-w-[18rem]');
     expect(appHeader).toContain('xl:order-none xl:w-64');
     expect(appHeader).toContain('aria-label="搜索当前工作区"');
+  });
+
+  it('uses a mobile admin navigation instead of the fixed sidebar on narrow screens', () => {
+    const app = read('App.tsx');
+    const appSidebar = app.slice(
+      app.indexOf('const AppSidebar'),
+      app.indexOf('const AppHeader'),
+    );
+    const mobileNav = app.slice(
+      app.indexOf('const MobileAdminNav'),
+      app.indexOf('const AppHeader'),
+    );
+
+    expect(app).toContain('flex h-dvh flex-col overflow-hidden');
+    expect(app).toContain('lg:flex-row');
+    expect(app).toContain('<MobileAdminNav');
+    expect(appSidebar).toContain('hidden min-h-0 shrink-0 flex-col');
+    expect(appSidebar).toContain('lg:flex lg:w-72');
+    expect(app).toContain('const MobileAdminNav');
+    expect(mobileNav).toContain('lg:hidden');
+    expect(mobileNav).toContain('overflow-x-auto');
+    expect(mobileNav).toContain('aria-label="移动端角色导航"');
+    expect(mobileNav).toContain('aria-label="移动端模块导航"');
   });
 
   it('marks active role and module navigation items for accessible admin state', () => {
