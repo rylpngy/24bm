@@ -188,6 +188,9 @@ type SupplierInvoiceDraft = {
 
 type BuyerReceiptDraft = {
   result: string;
+  receiptRemark: string;
+  exceptionReason: string;
+  attachmentNames: string;
 };
 
 type BuyerPaymentDraft = {
@@ -2383,7 +2386,12 @@ const BuyerWorkspaceView: React.FC<{
       comment: `已核对${approvalTypeLabel(approval.bizType)}上下文，同意按当前业务状态处理。`,
       confirmed: false,
     };
-  const getReceiptDraft = (orderId: string): BuyerReceiptDraft => receiptDrafts[orderId] ?? { result: '验收通过' };
+  const getReceiptDraft = (orderId: string): BuyerReceiptDraft => receiptDrafts[orderId] ?? {
+    result: '验收通过',
+    receiptRemark: '数量、外观和包装已完成现场核验。',
+    exceptionReason: '',
+    attachmentNames: '收货照片.jpg\n验收单.pdf',
+  };
   const getPaymentDraft = (invoiceId: string): BuyerPaymentDraft => paymentDrafts[invoiceId] ?? { paymentStatus: '已付款' };
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
     const priorityDelta = (right.priority ?? 0) - (left.priority ?? 0);
@@ -4880,15 +4888,52 @@ const ReceiptRegistrationForm: React.FC<{
     <select
       id={`receipt-result-${orderId}`}
       value={draft.result}
-      onChange={(event) => onChange({ result: event.target.value })}
+      onChange={(event) => onChange({ ...draft, result: event.target.value })}
       className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
     >
       <option value="验收通过">验收通过</option>
       <option value="异常待处理">异常待处理</option>
     </select>
+    <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-1">
+      <label className="block text-xs font-black text-emerald-700" htmlFor={`receipt-remark-${orderId}`}>
+        验收备注
+        <textarea
+          id={`receipt-remark-${orderId}`}
+          value={draft.receiptRemark}
+          onChange={(event) => onChange({ ...draft, receiptRemark: event.target.value })}
+          className="mt-2 min-h-20 w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+        />
+      </label>
+      <label className="block text-xs font-black text-emerald-700" htmlFor={`receipt-exception-${orderId}`}>
+        异常原因
+        <textarea
+          id={`receipt-exception-${orderId}`}
+          value={draft.exceptionReason}
+          onChange={(event) => onChange({ ...draft, exceptionReason: event.target.value })}
+          className="mt-2 min-h-20 w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+        />
+      </label>
+    </div>
+    <label className="mt-3 block text-xs font-black text-emerald-700" htmlFor={`receipt-attachments-${orderId}`}>
+      附件清单
+      <textarea
+        id={`receipt-attachments-${orderId}`}
+        value={draft.attachmentNames}
+        onChange={(event) => onChange({ ...draft, attachmentNames: event.target.value })}
+        className="mt-2 min-h-20 w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+      />
+    </label>
+    <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+      差异处理提示：如选择异常待处理，请填写异常原因并在附件清单中登记照片、验收单或差异说明；后续将衔接差异处理和补发/退换流程。
+    </div>
     <PrimaryActionButton
       onClick={onSubmit}
-      disabled={busy || draft.result.trim().length === 0}
+      disabled={
+        busy
+        || draft.result.trim().length === 0
+        || draft.receiptRemark.trim().length === 0
+        || (draft.result === '异常待处理' && draft.exceptionReason.trim().length === 0)
+      }
       busy={busy}
       tone="emerald"
       icon={PackageCheck}

@@ -25,6 +25,13 @@ describe('buyer fulfillment detail action forms UI', () => {
     expect(receiptDetailView).toContain('receiptDraft?: BuyerReceiptDraft');
     expect(invoiceDetailView).toContain('paymentDraft?: BuyerPaymentDraft');
     expect(app).toContain('验收结果');
+    expect(app).toContain('receiptRemark');
+    expect(app).toContain('exceptionReason');
+    expect(app).toContain('attachmentNames');
+    expect(app).toContain('验收备注');
+    expect(app).toContain('异常原因');
+    expect(app).toContain('附件清单');
+    expect(app).toContain('差异处理提示');
     expect(app).toContain('付款状态');
     expect(orderDetailView).toContain('onCreateReceipt(order.id, receiptDraft)');
     expect(receiptDetailView).toContain('onCreateReceipt(detail.id, receiptDraft)');

@@ -82,6 +82,9 @@ export interface CreateDeliveryPayload {
 
 export interface CreateReceiptPayload {
   result: string;
+  receiptRemark?: string;
+  exceptionReason?: string;
+  attachmentNames?: string[];
 }
 
 export interface CreateInvoicePayload {
@@ -1140,7 +1143,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       return buyerRequest<JavaReceiptDto>(`/api/v1/buyer/orders/${orderId}/receipts`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ result: payload.result }),
       });
     },
     async listBuyerInvoices() {

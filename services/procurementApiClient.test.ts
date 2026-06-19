@@ -1606,7 +1606,12 @@ describe('procurement API clients', () => {
     const order = await client.createBuyerOrder({ awardId: award.id, expectedReceiptDate: '2026-07-10' });
     const confirmedOrder = await client.confirmSupplierOrder(order.id);
     const delivery = await client.createSupplierDelivery(confirmedOrder.id, { carrier: '顺丰速运', trackingNo: 'SF1234567890' });
-    const receipt = await client.createBuyerReceipt(order.id, { result: '验收通过' });
+    const receipt = await client.createBuyerReceipt(order.id, {
+      result: '验收通过',
+      receiptRemark: '外观和数量核验无误',
+      exceptionReason: '',
+      attachmentNames: ['收货照片.jpg', '验收单.pdf'],
+    });
     const invoice = await client.createSupplierInvoice(order.id, { amount: 118000, invoiceNo: 'INV-2026-0001' });
     const paidInvoice = await client.registerBuyerPayment(invoice.id, { paymentStatus: '已付款' });
 
