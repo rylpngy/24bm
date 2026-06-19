@@ -28,4 +28,18 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('浏览器验收');
     expect(checklist).toContain('第二轮');
   });
+
+  it('documents first-round UI polish gates before moving to round two', () => {
+    expect(existsSync(checklistPath)).toBe(true);
+
+    const checklist = readFileSync(checklistPath, 'utf8');
+
+    expect(checklist).toContain('## 八、第一轮 UI 收尾验收');
+    expect(checklist).toContain('移动端顶部角色/模块导航');
+    expect(checklist).toContain('去除生产页面占位文案');
+    expect(checklist).toContain('采购方列表详情并排延后到 2xl');
+    expect(checklist).toContain('通用卡片小屏换行');
+    expect(checklist).toContain('响应式表格摘要卡片');
+    expect(checklist).toContain('第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。');
+  });
 });
