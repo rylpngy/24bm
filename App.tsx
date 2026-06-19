@@ -1114,6 +1114,109 @@ const buyerModuleHeaders: Record<BuyerAdminModule, BuyerModuleHeaderConfig> = {
   },
 };
 
+type SupplierModuleHeaderConfig = {
+  title: string;
+  desc: string;
+  primaryAction: string;
+  currentFilter: string;
+};
+
+const supplierModuleHeaders: Record<SupplierAdminModule, SupplierModuleHeaderConfig> = {
+  overview: {
+    title: '供应商看板',
+    desc: '汇总合作采购方、询价邀请、销售订单和待回款发票。',
+    primaryAction: '查看协同待办',
+    currentFilter: '全部采购方协作',
+  },
+  opportunities: {
+    title: '询价邀请',
+    desc: '查看采购方发来的 RFQ，确认采购要求并提交报价或拒绝邀请。',
+    primaryAction: '提交报价 / 查看要求',
+    currentFilter: '待报价优先',
+  },
+  quotes: {
+    title: '报价记录',
+    desc: '追踪已提交报价、交付周期、税率和关联询价状态。',
+    primaryAction: '跟进定标结果',
+    currentFilter: '全部报价历史',
+  },
+  orders: {
+    title: '销售订单',
+    desc: '处理采购方生成的订单，完成确认、发货和开票协同。',
+    primaryAction: '确认订单 / 提交发货',
+    currentFilter: '待履约优先',
+  },
+  invoices: {
+    title: '发票应收',
+    desc: '查看已提交发票、付款状态和应收回款进度。',
+    primaryAction: '跟进回款状态',
+    currentFilter: '未回款优先',
+  },
+  profile: {
+    title: '企业档案',
+    desc: '维护企业认证、资质、联系人和服务能力信息。',
+    primaryAction: '维护企业档案',
+    currentFilter: '当前供应商主体',
+  },
+};
+
+const buildSupplierModuleFacts = (
+  workspace: SupplierWorkspace,
+  activeModule: SupplierAdminModule,
+): Array<{ label: string; value: string }> => {
+  const pendingQuoteCount = workspace.opportunities.filter((rfq) =>
+    rfq.status === '报价中' && !rfq.quotes.some((quote) => quote.supplierId === workspace.supplier.id)
+  ).length;
+  const pendingOrderCount = workspace.orders.filter((order) =>
+    order.status === '待供应商确认' || order.status === '待发货'
+  ).length;
+  const pendingReceivableCount = workspace.invoices.filter((invoice) => invoice.paymentStatus !== '已付款').length;
+  const pendingReceivableAmount = workspace.invoices
+    .filter((invoice) => invoice.paymentStatus !== '已付款')
+    .reduce((sum, invoice) => sum + invoice.amount, 0);
+
+  const commonFacts = {
+    overview: [
+      { label: '合作采购方', value: `${workspace.connectedBuyerNames.length} 家` },
+      { label: '询价邀请', value: `${workspace.opportunities.length} 个` },
+      { label: '销售订单', value: `${workspace.orders.length} 单` },
+      { label: '待回款发票', value: `${pendingReceivableCount} 张` },
+    ],
+    opportunities: [
+      { label: '邀请总数', value: `${workspace.opportunities.length} 个` },
+      { label: '待报价', value: `${pendingQuoteCount} 个` },
+      { label: '已报价', value: `${workspace.quotes.length} 条` },
+      { label: '合作采购方', value: `${workspace.connectedBuyerNames.length} 家` },
+    ],
+    quotes: [
+      { label: '报价记录', value: `${workspace.quotes.length} 条` },
+      { label: '报价总额', value: currency(workspace.quotes.reduce((sum, quote) => sum + quote.amount, 0)) },
+      { label: '待定标', value: `${workspace.opportunities.filter((rfq) => rfq.status === '报价中').length} 个` },
+      { label: '下一步', value: pendingQuoteCount > 0 ? '补充报价' : '等待定标' },
+    ],
+    orders: [
+      { label: '订单总数', value: `${workspace.orders.length} 单` },
+      { label: '待履约', value: `${pendingOrderCount} 单` },
+      { label: '发货记录', value: `${workspace.deliveries.length} 条` },
+      { label: '下一步', value: pendingOrderCount > 0 ? '处理履约' : '跟进开票' },
+    ],
+    invoices: [
+      { label: '发票总数', value: `${workspace.invoices.length} 张` },
+      { label: '待回款', value: `${pendingReceivableCount} 张` },
+      { label: '待回款金额', value: currency(pendingReceivableAmount) },
+      { label: '下一步', value: pendingReceivableCount > 0 ? '跟进回款' : '归档对账' },
+    ],
+    profile: [
+      { label: '认证状态', value: workspace.supplier.verified ? '已认证' : '待认证' },
+      { label: '所属行业', value: workspace.supplier.industry },
+      { label: '合作采购方', value: `${workspace.connectedBuyerNames.length} 家` },
+      { label: '服务状态', value: workspace.supplier.verified ? '资料有效' : '待补充' },
+    ],
+  } satisfies Record<SupplierAdminModule, Array<{ label: string; value: string }>>;
+
+  return commonFacts[activeModule];
+};
+
 const buildPlatformAnnouncements = (announcements: JavaPlatformAnnouncementDto[]): PlatformAnnouncement[] =>
   announcements.map((announcement) => ({
     id: announcement.id,
@@ -5573,6 +5676,8 @@ const SupplierWorkspaceView: React.FC<{
   const onViewRequirement = (rfqId: string) => {
     setSelectedRequirementRfqId((current) => (current === rfqId ? null : rfqId));
   };
+  const supplierModuleFacts = buildSupplierModuleFacts(workspace, activeModule);
+  const supplierModuleHeader = supplierModuleHeaders[activeModule];
 
   return (
     <>
@@ -5587,6 +5692,12 @@ const SupplierWorkspaceView: React.FC<{
         {workflowStatus}
       </div>
     )}
+
+    <SupplierModuleHeader
+      header={supplierModuleHeader}
+      facts={supplierModuleFacts}
+      javaEnabled={javaEnabled}
+    />
 
     {activeModule === 'overview' && (
       <div className="grid gap-4 md:grid-cols-4">
@@ -6188,6 +6299,38 @@ const BuyerModuleHeader: React.FC<{
         ))}
       </div>
     )}
+  </section>
+);
+
+const SupplierModuleHeader: React.FC<{
+  header: SupplierModuleHeaderConfig;
+  facts: Array<{ label: string; value: string }>;
+  javaEnabled: boolean;
+}> = ({ header, facts, javaEnabled }) => (
+  <section className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-lg bg-orange-50 px-2 py-1 text-xs font-black text-orange-700">
+            {javaEnabled ? 'Java 数据源' : 'Mock 数据源'}
+          </span>
+          <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-500">
+            当前筛选：{header.currentFilter}
+          </span>
+        </div>
+        <h3 className="mt-3 text-lg font-black text-slate-950">{header.title}</h3>
+        <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
+      </div>
+      <div className="shrink-0 rounded-lg border border-orange-100 bg-orange-50 p-3 lg:w-64">
+        <p className="text-xs font-black text-orange-800">供应商当前动作</p>
+        <p className="mt-1 text-sm font-black text-orange-950">{header.primaryAction}</p>
+      </div>
+    </div>
+    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      {facts.slice(0, 4).map((fact) => (
+        <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+      ))}
+    </div>
   </section>
 );
 
