@@ -1038,6 +1038,82 @@ type PlatformAnnouncement = {
   publishedAt: string;
 };
 
+type BuyerModuleHeaderConfig = {
+  title: string;
+  desc: string;
+  primaryAction: string;
+  currentFilter: string;
+};
+
+const buyerModuleHeaders: Record<BuyerAdminModule, BuyerModuleHeaderConfig> = {
+  dashboard: {
+    title: '首页看板',
+    desc: '汇总采购金额、审批待办、询价状态和履约进度。',
+    primaryAction: '查看主流程进度',
+    currentFilter: '全部采购业务',
+  },
+  demands: {
+    title: '采购需求',
+    desc: '从需求申请、预算和物料明细开始，推动审批后转入询价。',
+    primaryAction: '新建需求 / 提交审批',
+    currentFilter: '全部需求状态',
+  },
+  approvals: {
+    title: '审批中心',
+    desc: '集中处理需求审批、供应商准入和定标审批。',
+    primaryAction: '通过 / 驳回审批',
+    currentFilter: '待审批优先',
+  },
+  suppliers: {
+    title: '供应商库',
+    desc: '维护采购方私域供应商关系、准入状态、分级和品类授权。',
+    primaryAction: '提交供应商准入',
+    currentFilter: '私域合作关系',
+  },
+  materials: {
+    title: '物料目录',
+    desc: '维护物料和服务主数据，为需求、询价和供应商覆盖分析提供基础。',
+    primaryAction: '查看物料引用',
+    currentFilter: '全部物料与服务',
+  },
+  rfqs: {
+    title: '询价项目',
+    desc: '跟进 RFQ 邀请供应商、报价响应、截止时间和项目状态。',
+    primaryAction: '邀请供应商 / 跟进报价',
+    currentFilter: '全部询价项目',
+  },
+  quotes: {
+    title: '报价对比',
+    desc: '比较供应商报价、交付周期和税率，推荐定标并提交审批。',
+    primaryAction: '推荐定标 / 提交审批',
+    currentFilter: '按询价项目聚合',
+  },
+  orders: {
+    title: '采购订单',
+    desc: '跟进定标后的采购订单、供应商确认和履约状态。',
+    primaryAction: '生成订单 / 跟进确认',
+    currentFilter: '全部采购订单',
+  },
+  receipts: {
+    title: '收货验收',
+    desc: '处理待收货订单，登记收货验收结果并推动发票协同。',
+    primaryAction: '登记收货验收',
+    currentFilter: '待收货优先',
+  },
+  invoices: {
+    title: '发票付款',
+    desc: '查看发票登记、付款状态和订单对账进度。',
+    primaryAction: '登记付款状态',
+    currentFilter: '待付款优先',
+  },
+  audit: {
+    title: '审计日志',
+    desc: '查看近期操作记录、对象编号和流程留痕结果。',
+    primaryAction: '查看操作留痕',
+    currentFilter: '最近操作',
+  },
+};
+
 const buildPlatformAnnouncements = (announcements: JavaPlatformAnnouncementDto[]): PlatformAnnouncement[] =>
   announcements.map((announcement) => ({
     id: announcement.id,
@@ -1866,6 +1942,7 @@ const BuyerWorkspaceView: React.FC<{
   const orderFulfillmentRows = buildOrderFulfillmentRows(workspace);
   const receiptInspectionRows = buildReceiptInspectionRows(workspace);
   const invoicePaymentRows = buildInvoicePaymentRows(workspace);
+  const moduleHeader = buyerModuleHeaders[activeModule];
   const selectedDemand = workspace.demands.some((demand) => demand.id === selectedDemandId)
     ? selectedDemandId
     : workspace.demands[0]?.id ?? '';
@@ -1949,9 +2026,7 @@ const BuyerWorkspaceView: React.FC<{
       </div>
     )}
 
-    {moduleFacts.length > 0 && (
-      <ModuleSummaryStrip facts={moduleFacts} />
-    )}
+    <BuyerModuleHeader header={moduleHeader} facts={moduleFacts} javaEnabled={javaEnabled} />
 
     {javaEnabled && activeModule === 'dashboard' && (
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
@@ -6081,6 +6156,40 @@ const MetricCard: React.FC<{
     </div>
   );
 };
+
+const BuyerModuleHeader: React.FC<{
+  header: BuyerModuleHeaderConfig;
+  facts: BuyerModuleFact[];
+  javaEnabled: boolean;
+}> = ({ header, facts, javaEnabled }) => (
+  <section className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
+            {javaEnabled ? 'Java 数据源' : 'Mock 数据源'}
+          </span>
+          <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-500">
+            当前筛选：{header.currentFilter}
+          </span>
+        </div>
+        <h3 className="mt-3 text-lg font-black text-slate-950">{header.title}</h3>
+        <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
+      </div>
+      <div className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 p-3 lg:w-64">
+        <p className="text-xs font-black text-blue-800">本页关键动作</p>
+        <p className="mt-1 text-sm font-black text-blue-950">{header.primaryAction}</p>
+      </div>
+    </div>
+    {facts.length > 0 && (
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        {facts.slice(0, 4).map((fact) => (
+          <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+        ))}
+      </div>
+    )}
+  </section>
+);
 
 const Panel: React.FC<{
   title: string;
