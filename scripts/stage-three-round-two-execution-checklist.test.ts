@@ -57,6 +57,7 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('动作按钮反馈');
     expect(checklist).toContain('移动端布局收口');
     expect(checklist).toContain('空态一致性');
+    expect(checklist).toContain('提示态一致性');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-award-order-action-forms-ui.test.ts');
@@ -72,5 +73,6 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('scripts/action-button-feedback-consistency-ui.test.ts');
     expect(checklist).toContain('scripts/mobile-layout-overflow-ui.test.ts');
     expect(checklist).toContain('scripts/empty-state-consistency-ui.test.ts');
+    expect(checklist).toContain('scripts/feedback-notice-consistency-ui.test.ts');
   });
 });

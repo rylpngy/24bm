@@ -1722,9 +1722,7 @@ const PlatformWorkspace: React.FC<{
             onToggleTenantFeature={handleToggleTenantFeature}
           />
           {javaEnabled && workflowStatus && (
-            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
-              {workflowStatus}
-            </div>
+            <FeedbackNotice message={workflowStatus} />
           )}
           <Panel title="租户列表" icon={Layers3}>
             <ListToolbar
@@ -1800,9 +1798,7 @@ const PlatformWorkspace: React.FC<{
             onReviewEnterprise={handleReviewEnterprise}
           />
           {javaEnabled && workflowStatus && (
-            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
-              {workflowStatus}
-            </div>
+            <FeedbackNotice message={workflowStatus} />
           )}
           <Panel title="企业审核" icon={ClipboardCheck}>
             <ListToolbar
@@ -1839,9 +1835,7 @@ const PlatformWorkspace: React.FC<{
             onPublishAnnouncement={handlePublishAnnouncement}
           />
           {javaEnabled && workflowStatus && (
-            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
-              {workflowStatus}
-            </div>
+            <FeedbackNotice message={workflowStatus} />
           )}
           <Panel title="平台公告" icon={Bell}>
             <ListToolbar
@@ -2790,9 +2784,7 @@ const BuyerWorkspaceView: React.FC<{
     />
 
     {workflowStatus && (
-      <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-700">
-        {workflowStatus}
-      </div>
+      <FeedbackNotice message={workflowStatus} />
     )}
 
     <BuyerModuleHeader header={moduleHeader} facts={moduleFacts} javaEnabled={javaEnabled} />
@@ -7217,6 +7209,35 @@ const EmptyState: React.FC<{
   <ShellState variant="empty" title={title} desc={desc} />
 );
 
+const feedbackNoticeToneClasses: Record<'success' | 'error' | 'info', string> = {
+  success: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+  error: 'border-red-100 bg-red-50 text-red-700',
+  info: 'border-blue-100 bg-blue-50 text-blue-700',
+};
+
+const resolveFeedbackTone = (message: string): 'success' | 'error' | 'info' => {
+  if (message.includes('失败')) {
+    return 'error';
+  }
+  if (message.includes('已完成') || message.includes('已')) {
+    return 'success';
+  }
+  return 'info';
+};
+
+const FeedbackNotice: React.FC<{
+  message: string;
+  tone?: 'success' | 'error' | 'info';
+}> = ({ message, tone = resolveFeedbackTone(message) }) => (
+  <div
+    aria-live="polite"
+    role="status"
+    className={`rounded-lg border px-4 py-3 text-sm font-bold ${feedbackNoticeToneClasses[tone]}`}
+  >
+    {message}
+  </div>
+);
+
 const processStateToneClasses = {
   handled: 'border-emerald-100 bg-emerald-50 text-emerald-700',
   waiting: 'border-slate-200 bg-slate-50 text-slate-600',
@@ -7325,9 +7346,7 @@ const SupplierWorkspaceView: React.FC<{
     />
 
     {javaEnabled && workflowStatus && (
-      <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-700">
-        {workflowStatus}
-      </div>
+      <FeedbackNotice message={workflowStatus} />
     )}
 
     <SupplierModuleHeader
