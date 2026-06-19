@@ -1,0 +1,30 @@
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+
+const read = (path: string) => readFileSync(path, 'utf8');
+
+describe('platform enterprise review Java persistence UI', () => {
+  it('wires platform enterprise review actions to Java persistence with busy state and status feedback', () => {
+    const app = read('App.tsx');
+    const platformWorkspace = app.slice(
+      app.indexOf('const PlatformWorkspace'),
+      app.indexOf('const PlatformAnnouncementPublishPanel'),
+    );
+    const platformReviewActionPanel = app.slice(
+      app.indexOf('const PlatformEnterpriseReviewActionPanel'),
+      app.indexOf('const formatEnterpriseType'),
+    );
+
+    expect(app).toContain('platformReviewBusyId');
+    expect(app).toContain('reviewPlatformEnterprise');
+    expect(app).toContain('javaApiClient.reviewPlatformEnterprise');
+    expect(app).toContain("reviewStatus: result === 'approved' ? 'approved' : 'rejected'");
+    expect(app).toContain('setWorkflowStatus(`平台企业审核已${result ===');
+    expect(platformWorkspace).toContain('platformReviewBusyId');
+    expect(platformWorkspace).toContain('reviewBusyId');
+    expect(platformReviewActionPanel).toContain("reviewBusyId === `${review.id}:approved`");
+    expect(platformReviewActionPanel).toContain("reviewBusyId === `${review.id}:rejected`");
+    expect(platformReviewActionPanel).toContain('disabled={approveBusy || rejectBusy}');
+    expect(platformReviewActionPanel).toContain('审核中');
+  });
+});

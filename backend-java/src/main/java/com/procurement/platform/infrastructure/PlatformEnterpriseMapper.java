@@ -16,7 +16,7 @@ public interface PlatformEnterpriseMapper {
       from enterprises e
       left join supplier_enterprises s on s.enterprise_id = e.id
       where e.verified = false
-         or coalesce(s.verified_status, 'pending') = 'pending'
+         or (e.type = 'supplier' and coalesce(s.verified_status, 'pending') = 'pending')
       order by e.created_at desc
       """)
   List<EnterpriseReview> listPendingReviews();

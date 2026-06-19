@@ -631,6 +631,80 @@ describe('procurement API clients', () => {
     ]);
   });
 
+  it('uses the Java API client to persist platform enterprise review decisions', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: {
+            accessToken: 'platform-token',
+            tokenType: 'Bearer',
+            expiresIn: 7200,
+            userId: 'user-platform-admin',
+            displayName: '平台管理员',
+            scope: 'PLATFORM',
+            tenantId: null,
+            supplierId: null,
+            roles: ['PLATFORM_ADMIN'],
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/platform/enterprise-reviews/ent-supplier-sunrise') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer platform-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          verified: true,
+          reviewStatus: 'approved',
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'ent-supplier-sunrise',
+            name: '晨光科技供应商',
+            type: 'supplier',
+            verified: true,
+            reviewStatus: 'approved',
+          },
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      platformLogin: {
+        account: 'platform',
+        password: 'demo123456',
+        scope: 'PLATFORM',
+      },
+    });
+
+    const review = await client.reviewPlatformEnterprise('ent-supplier-sunrise', {
+      verified: true,
+      reviewStatus: 'approved',
+    });
+
+    expect(review).toEqual({
+      id: 'ent-supplier-sunrise',
+      name: '晨光科技供应商',
+      type: 'supplier',
+      verified: true,
+      reviewStatus: 'approved',
+    });
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/platform/enterprise-reviews/ent-supplier-sunrise',
+    ]);
+  });
+
   it('uses the Java API client to authenticate and load supplier workspace data from the aggregate endpoint', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {

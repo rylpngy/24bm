@@ -486,6 +486,10 @@ export interface JavaProcurementApiClient {
   getPlatformOverview(): Promise<JavaPlatformOverviewDto>;
   listPlatformTenants(): Promise<JavaPlatformTenantDto[]>;
   listPlatformEnterpriseReviews(): Promise<JavaEnterpriseReviewDto[]>;
+  reviewPlatformEnterprise(
+    enterpriseId: string,
+    payload: { verified: boolean; reviewStatus: 'approved' | 'rejected' },
+  ): Promise<JavaEnterpriseReviewDto>;
   getBuyerWorkspace(): Promise<JavaBuyerMasterData>;
   listBuyerSuppliers(): Promise<BuyerSupplierRelationDto[]>;
   submitBuyerSupplierAdmission(relationId: string): Promise<JavaApprovalTaskDto>;
@@ -865,6 +869,16 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     },
     listPlatformEnterpriseReviews() {
       return platformRequest<JavaEnterpriseReviewDto[]>('/api/v1/platform/enterprise-reviews');
+    },
+    reviewPlatformEnterprise(
+      enterpriseId: string,
+      payload: { verified: boolean; reviewStatus: 'approved' | 'rejected' },
+    ) {
+      return platformRequest<JavaEnterpriseReviewDto>(`/api/v1/platform/enterprise-reviews/${enterpriseId}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
     },
     getBuyerWorkspace() {
       return buyerRequest<Omit<JavaBuyerMasterData, 'demands' | 'rfqs' | 'orders' | 'deliveries' | 'invoices'> & {

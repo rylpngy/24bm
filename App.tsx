@@ -198,6 +198,7 @@ const App: React.FC = () => {
   const [awardSubmitBusyId, setAwardSubmitBusyId] = useState<string | null>(null);
   const [orderCreateBusy, setOrderCreateBusy] = useState<string | null>(null);
   const [buyerFulfillmentBusyId, setBuyerFulfillmentBusyId] = useState<string | null>(null);
+  const [platformReviewBusyId, setPlatformReviewBusyId] = useState<string | null>(null);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -223,6 +224,12 @@ const App: React.FC = () => {
     if (!javaApiClient) return currentSupplierData;
     const javaSupplierWorkspaceData = await loadJavaSupplierWorkspaceData(javaApiClient);
     return applyJavaSupplierWorkspaceData(currentSupplierData, javaSupplierWorkspaceData);
+  };
+
+  const refreshJavaPlatformData = async (currentPlatformData: PlatformWorkspaceData) => {
+    if (!javaApiClient) return currentPlatformData;
+    const javaPlatformWorkspaceData = await loadJavaPlatformWorkspaceData(javaApiClient);
+    return applyJavaPlatformWorkspaceData(currentPlatformData, javaPlatformWorkspaceData);
   };
 
   useEffect(() => {
@@ -296,6 +303,24 @@ const App: React.FC = () => {
       setWorkflowStatus(error instanceof Error ? error.message : 'Java 主流程执行失败');
     } finally {
       setWorkflowBusy(false);
+    }
+  };
+
+  const reviewPlatformEnterprise = async (reviewId: string, result: 'approved' | 'rejected') => {
+    if (!javaApiClient || !platformData) return;
+    setPlatformReviewBusyId(`${reviewId}:${result}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.reviewPlatformEnterprise(reviewId, {
+        verified: result === 'approved',
+        reviewStatus: result === 'approved' ? 'approved' : 'rejected',
+      });
+      setPlatformData(await refreshJavaPlatformData(platformData));
+      setWorkflowStatus(`平台企业审核已${result === 'approved' ? '通过' : '驳回'}：${reviewId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '平台企业审核失败');
+    } finally {
+      setPlatformReviewBusyId(null);
     }
   };
 
@@ -640,6 +665,10 @@ const App: React.FC = () => {
               <PlatformWorkspace
                 data={platformData}
                 activeModule={activeModule as PlatformAdminModule}
+                javaEnabled={Boolean(javaApiClient)}
+                workflowStatus={workflowStatus}
+                platformReviewBusyId={platformReviewBusyId}
+                onReviewEnterprise={reviewPlatformEnterprise}
               />
             )}
             {activeRole === 'buyer' && (
@@ -924,6 +953,15 @@ type PlatformEnterpriseReview = {
   status: string;
 };
 
+const buildPlatformEnterpriseReviews = (model: ProcurementMvpModel): PlatformEnterpriseReview[] =>
+  model.enterprises.map((enterprise) => ({
+    id: enterprise.id,
+    name: enterprise.name,
+    type: enterprise.type,
+    industry: enterprise.industry,
+    status: enterprise.verified ? '已认证' : '待审核',
+  }));
+
 type PlatformTenantRow = Omit<PlatformWorkspaceData['tenants'][number], 'status'> & {
   status: string;
   features: string[];
@@ -932,7 +970,18 @@ type PlatformTenantRow = Omit<PlatformWorkspaceData['tenants'][number], 'status'
 const PlatformWorkspace: React.FC<{
   data: PlatformWorkspaceData;
   activeModule: PlatformAdminModule;
-}> = ({ data, activeModule }) => {
+  javaEnabled: boolean;
+  workflowStatus: string | null;
+  platformReviewBusyId: string | null;
+  onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => Promise<void> | void;
+}> = ({
+  data,
+  activeModule,
+  javaEnabled,
+  workflowStatus,
+  platformReviewBusyId,
+  onReviewEnterprise,
+}) => {
   const { model, platformOverview } = data;
   const supplierCount = platformOverview?.publicSupplierCount
     ?? model.enterprises.filter((enterprise) => enterprise.type === 'supplier').length;
@@ -944,6 +993,12 @@ const PlatformWorkspace: React.FC<{
     ...tenant,
     features: tenant.enabledFeatures,
   })));
+  useEffect(() => {
+    setPlatformTenants(data.tenants.map((tenant) => ({
+      ...tenant,
+      features: tenant.enabledFeatures,
+    })));
+  }, [data.tenants]);
   const onUpdateTenantStatus = (tenantId: string, status: '已启用' | '停用') => {
     setPlatformTenants((current) => current.map((tenant) => (
       tenant.id === tenantId ? { ...tenant, status } : tenant
@@ -971,15 +1026,17 @@ const PlatformWorkspace: React.FC<{
       };
     }));
   };
-  const [platformEnterpriseReviews, setPlatformEnterpriseReviews] = useState<PlatformEnterpriseReview[]>(model.enterprises.map((enterprise) => ({
-    id: enterprise.id,
-    name: enterprise.name,
-    type: enterprise.type,
-    industry: enterprise.industry,
-    status: enterprise.verified ? '已认证' : '待审核',
-  })));
+  const [platformEnterpriseReviews, setPlatformEnterpriseReviews] = useState<PlatformEnterpriseReview[]>(() =>
+    buildPlatformEnterpriseReviews(model));
+  useEffect(() => {
+    setPlatformEnterpriseReviews(buildPlatformEnterpriseReviews(model));
+  }, [model]);
   const enterpriseReviews = platformEnterpriseReviews;
-  const onReviewEnterprise = (reviewId: string, result: 'approved' | 'rejected') => {
+  const handleReviewEnterprise = async (reviewId: string, result: 'approved' | 'rejected') => {
+    if (javaEnabled) {
+      await onReviewEnterprise(reviewId, result);
+      return;
+    }
     setPlatformEnterpriseReviews((current) => current.map((review) => (
       review.id === reviewId
         ? { ...review, status: result === 'approved' ? '已认证' : '已驳回' }
@@ -1103,8 +1160,14 @@ const PlatformWorkspace: React.FC<{
           <PlatformEnterpriseReviewSummaryPanel enterpriseReviews={enterpriseReviews} />
           <PlatformEnterpriseReviewActionPanel
             enterpriseReviews={enterpriseReviews}
-            onReviewEnterprise={onReviewEnterprise}
+            reviewBusyId={platformReviewBusyId}
+            onReviewEnterprise={handleReviewEnterprise}
           />
+          {javaEnabled && workflowStatus && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+              {workflowStatus}
+            </div>
+          )}
           <Panel title="企业审核" icon={ClipboardCheck}>
             <div className="space-y-3">
               {enterpriseReviews.map((review) => (
@@ -1266,8 +1329,9 @@ const PlatformAnnouncementSummaryPanel: React.FC<{
 
 const PlatformEnterpriseReviewActionPanel: React.FC<{
   enterpriseReviews: PlatformEnterpriseReview[];
-  onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => void;
-}> = ({ enterpriseReviews, onReviewEnterprise }) => {
+  reviewBusyId: string | null;
+  onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => Promise<void> | void;
+}> = ({ enterpriseReviews, reviewBusyId, onReviewEnterprise }) => {
   const pendingReviews = enterpriseReviews.filter((review) => review.status === '待审核');
 
   return (
@@ -1275,7 +1339,7 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-black text-slate-700">审核操作</p>
-          <p className="mt-1 text-xs font-bold text-slate-500">先支持前端审核状态预览，后续接入 Java 企业审核 API。</p>
+          <p className="mt-1 text-xs font-bold text-slate-500">Java 模式下持久化审核结果，mock 模式保留本地状态预览。</p>
         </div>
         <ClipboardCheck size={18} className="text-amber-600" />
       </div>
@@ -1285,30 +1349,37 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
         </div>
       ) : (
         <div className="mt-4 space-y-3">
-          {pendingReviews.map((review) => (
-            <div key={review.id} className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-slate-900">{review.name}</p>
-                <p className="mt-1 text-xs font-bold text-slate-500">{review.type} · {review.industry}</p>
+          {pendingReviews.map((review) => {
+            const approveBusy = reviewBusyId === `${review.id}:approved`;
+            const rejectBusy = reviewBusyId === `${review.id}:rejected`;
+
+            return (
+              <div key={review.id} className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-900">{review.name}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">{review.type} · {review.industry}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onReviewEnterprise(review.id, 'approved')}
+                    disabled={approveBusy || rejectBusy}
+                    className="inline-flex h-9 items-center justify-center rounded-lg bg-green-600 px-3 text-xs font-black text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {approveBusy ? '审核中' : '通过审核'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onReviewEnterprise(review.id, 'rejected')}
+                    disabled={approveBusy || rejectBusy}
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                  >
+                    {rejectBusy ? '审核中' : '驳回'}
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => onReviewEnterprise(review.id, 'approved')}
-                  className="inline-flex h-9 items-center justify-center rounded-lg bg-green-600 px-3 text-xs font-black text-white transition hover:bg-green-700"
-                >
-                  通过审核
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onReviewEnterprise(review.id, 'rejected')}
-                  className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 transition hover:bg-red-50"
-                >
-                  驳回
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
