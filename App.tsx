@@ -99,6 +99,7 @@ import {
   runJavaMvpWorkflow,
   type CreateDemandPayload,
   type PlatformWorkspaceData,
+  type JavaPlatformAnnouncementDto,
   type JavaApprovalTaskDto,
   type JavaApprovalTemplateDto,
   type JavaNotificationDto,
@@ -200,6 +201,7 @@ const App: React.FC = () => {
   const [buyerFulfillmentBusyId, setBuyerFulfillmentBusyId] = useState<string | null>(null);
   const [platformReviewBusyId, setPlatformReviewBusyId] = useState<string | null>(null);
   const [platformTenantBusyId, setPlatformTenantBusyId] = useState<string | null>(null);
+  const [announcementPublishBusy, setAnnouncementPublishBusy] = useState(false);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -381,6 +383,31 @@ const App: React.FC = () => {
       setWorkflowStatus(error instanceof Error ? error.message : '平台租户功能开关更新失败');
     } finally {
       setPlatformTenantBusyId(null);
+    }
+  };
+
+  const publishPlatformAnnouncement = async (payload: { title: string; targetScope: string }) => {
+    if (!javaApiClient || !platformData) return;
+    setAnnouncementPublishBusy(true);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.publishPlatformAnnouncement({
+        title: payload.title,
+        content: `平台公告：${payload.title}`,
+        audience: payload.targetScope,
+      });
+      const [nextPlatformData, announcements] = await Promise.all([
+        refreshJavaPlatformData(platformData),
+        javaApiClient.listPlatformAnnouncements(),
+      ]);
+      setPlatformData(nextPlatformData);
+      setWorkflowStatus(`平台公告已发布：${payload.title}`);
+      return announcements;
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '平台公告发布失败');
+      return null;
+    } finally {
+      setAnnouncementPublishBusy(false);
     }
   };
 
@@ -729,10 +756,12 @@ const App: React.FC = () => {
                 workflowStatus={workflowStatus}
                 platformReviewBusyId={platformReviewBusyId}
                 platformTenantBusyId={platformTenantBusyId}
+                announcementPublishBusy={announcementPublishBusy}
                 onReviewEnterprise={reviewPlatformEnterprise}
                 onUpdateTenantStatus={updatePlatformTenantStatus}
                 onUpdateTenantPlan={updatePlatformTenantPlan}
                 onToggleTenantFeature={togglePlatformTenantFeature}
+                onPublishAnnouncement={publishPlatformAnnouncement}
               />
             )}
             {activeRole === 'buyer' && (
@@ -1009,6 +1038,14 @@ type PlatformAnnouncement = {
   publishedAt: string;
 };
 
+const buildPlatformAnnouncements = (announcements: JavaPlatformAnnouncementDto[]): PlatformAnnouncement[] =>
+  announcements.map((announcement) => ({
+    id: announcement.id,
+    title: announcement.title,
+    targetScope: announcement.audience,
+    publishedAt: announcement.createdAt,
+  }));
+
 type PlatformEnterpriseReview = {
   id: string;
   name: string;
@@ -1051,10 +1088,12 @@ const PlatformWorkspace: React.FC<{
   workflowStatus: string | null;
   platformReviewBusyId: string | null;
   platformTenantBusyId: string | null;
+  announcementPublishBusy: boolean;
   onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => Promise<void> | void;
   onUpdateTenantStatus: (tenantId: string, status: '已启用' | '停用') => Promise<void> | void;
   onUpdateTenantPlan: (tenantId: string, plan: PlatformTenantRow['plan']) => Promise<void> | void;
   onToggleTenantFeature: (tenantId: string, enabledFeatures: string[], feature: 'rfq') => Promise<void> | void;
+  onPublishAnnouncement: (payload: { title: string; targetScope: string }) => Promise<JavaPlatformAnnouncementDto[] | null> | void;
 }> = ({
   data,
   activeModule,
@@ -1062,10 +1101,12 @@ const PlatformWorkspace: React.FC<{
   workflowStatus,
   platformReviewBusyId,
   platformTenantBusyId,
+  announcementPublishBusy,
   onReviewEnterprise,
   onUpdateTenantStatus,
   onUpdateTenantPlan,
   onToggleTenantFeature,
+  onPublishAnnouncement,
 }) => {
   const { model, platformOverview } = data;
   const supplierCount = platformOverview?.publicSupplierCount
@@ -1142,8 +1183,32 @@ const PlatformWorkspace: React.FC<{
     targetScope: 'all',
     publishedAt: new Date().toISOString(),
   }]);
+  useEffect(() => {
+    if (!javaEnabled || !javaApiClient) return;
+    let active = true;
+    javaApiClient.listPlatformAnnouncements()
+      .then((announcements) => {
+        if (active) {
+          setPlatformAnnouncements(buildPlatformAnnouncements(announcements));
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [javaEnabled, data.platformOverview?.operationSummary?.activeAnnouncementCount]);
   const announcements = platformAnnouncements;
-  const onPublishAnnouncement = (payload: { title: string; targetScope: string }) => {
+  const handlePublishAnnouncement = async (payload: { title: string; targetScope: string }) => {
+    if (javaEnabled) {
+      const nextAnnouncements = await onPublishAnnouncement(payload);
+      if (nextAnnouncements) {
+        setPlatformAnnouncements(buildPlatformAnnouncements(nextAnnouncements));
+      }
+      return;
+    }
     setPlatformAnnouncements((current) => [
       {
         id: `platform-announcement-${Date.now()}`,
@@ -1291,7 +1356,15 @@ const PlatformWorkspace: React.FC<{
             enterpriseReviews={enterpriseReviews}
           />
           <PlatformAnnouncementSummaryPanel announcements={announcements} />
-          <PlatformAnnouncementPublishPanel onPublishAnnouncement={onPublishAnnouncement} />
+          <PlatformAnnouncementPublishPanel
+            publishBusy={announcementPublishBusy}
+            onPublishAnnouncement={handlePublishAnnouncement}
+          />
+          {javaEnabled && workflowStatus && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+              {workflowStatus}
+            </div>
+          )}
           <Panel title="平台公告" icon={Bell}>
             <div className="space-y-3">
               {platformAnnouncements.map((announcement) => (
@@ -1309,8 +1382,9 @@ const PlatformWorkspace: React.FC<{
 };
 
 const PlatformAnnouncementPublishPanel: React.FC<{
-  onPublishAnnouncement: (payload: { title: string; targetScope: string }) => void;
-}> = ({ onPublishAnnouncement }) => {
+  publishBusy: boolean;
+  onPublishAnnouncement: (payload: { title: string; targetScope: string }) => Promise<void> | void;
+}> = ({ publishBusy, onPublishAnnouncement }) => {
   const [title, setTitle] = useState('平台维护窗口通知');
   const [targetScope, setTargetScope] = useState('all');
 
@@ -1319,7 +1393,7 @@ const PlatformAnnouncementPublishPanel: React.FC<{
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-black text-slate-700">发布平台公告</p>
-          <p className="mt-1 text-xs font-bold text-slate-500">先支持本地发布预览，后续接入 Java 平台公告 API。</p>
+          <p className="mt-1 text-xs font-bold text-slate-500">Java 模式下持久化发布公告，mock 模式保留本地发布预览。</p>
         </div>
         <Bell size={18} className="text-green-600" />
       </div>
@@ -1359,9 +1433,10 @@ const PlatformAnnouncementPublishPanel: React.FC<{
         </label>
         <button
           type="submit"
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-green-600 px-4 text-sm font-black text-white transition hover:bg-green-700"
+          disabled={!title.trim() || publishBusy}
+          className="inline-flex h-10 items-center justify-center rounded-lg bg-green-600 px-4 text-sm font-black text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          发布公告
+          {publishBusy ? '发布中' : '发布公告'}
         </button>
       </form>
     </section>

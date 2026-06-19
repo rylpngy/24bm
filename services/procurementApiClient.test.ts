@@ -812,6 +812,100 @@ describe('procurement API clients', () => {
     ]);
   });
 
+  it('uses the Java API client to list and publish platform announcements', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: {
+            accessToken: 'platform-token',
+            tokenType: 'Bearer',
+            expiresIn: 7200,
+            userId: 'user-platform-admin',
+            displayName: '平台管理员',
+            scope: 'PLATFORM',
+            tenantId: null,
+            supplierId: null,
+            roles: ['PLATFORM_ADMIN'],
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/platform/announcements' && init?.method !== 'POST') {
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'announcement-001',
+            title: '平台维护窗口通知',
+            content: '本周五晚间进行例行维护。',
+            audience: 'all',
+            status: 'active',
+            publishedBy: 'user-platform-admin',
+            createdAt: '2026-06-19T08:00:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/platform/announcements' && init?.method === 'POST') {
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer platform-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          title: '采购规则更新',
+          content: '平台公告：采购规则更新',
+          audience: 'buyer',
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'announcement-002',
+            title: '采购规则更新',
+            content: '平台公告：采购规则更新',
+            audience: 'buyer',
+            status: 'active',
+            publishedBy: 'user-platform-admin',
+            createdAt: '2026-06-19T08:30:00+08:00',
+          },
+          message: '',
+        }, { status: 201 });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      platformLogin: {
+        account: 'platform',
+        password: 'demo123456',
+        scope: 'PLATFORM',
+      },
+    });
+
+    const announcements = await client.listPlatformAnnouncements();
+    const published = await client.publishPlatformAnnouncement({
+      title: '采购规则更新',
+      content: '平台公告：采购规则更新',
+      audience: 'buyer',
+    });
+
+    expect(announcements[0].title).toBe('平台维护窗口通知');
+    expect(published).toMatchObject({
+      id: 'announcement-002',
+      title: '采购规则更新',
+      audience: 'buyer',
+      status: 'active',
+    });
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/platform/announcements',
+      'http://java.test/api/v1/platform/announcements',
+    ]);
+  });
+
   it('uses the Java API client to authenticate and load supplier workspace data from the aggregate endpoint', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {

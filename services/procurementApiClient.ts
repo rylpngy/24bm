@@ -476,6 +476,16 @@ export interface JavaEnterpriseReviewDto {
   reviewStatus: string;
 }
 
+export interface JavaPlatformAnnouncementDto {
+  id: string;
+  title: string;
+  content: string;
+  audience: string;
+  status: string;
+  publishedBy: string;
+  createdAt: string;
+}
+
 export interface JavaAuditLogDto extends AuditLogRecord {}
 
 export interface JavaProcurementApiClient {
@@ -495,6 +505,10 @@ export interface JavaProcurementApiClient {
     tenantId: string,
     payload: { enabledFeatures: string[] },
   ): Promise<JavaPlatformTenantDto>;
+  listPlatformAnnouncements(): Promise<JavaPlatformAnnouncementDto[]>;
+  publishPlatformAnnouncement(
+    payload: { title: string; content: string; audience: string },
+  ): Promise<JavaPlatformAnnouncementDto>;
   listPlatformEnterpriseReviews(): Promise<JavaEnterpriseReviewDto[]>;
   reviewPlatformEnterprise(
     enterpriseId: string,
@@ -902,6 +916,16 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       payload: { enabledFeatures: string[] },
     ) {
       return platformRequest<JavaPlatformTenantDto>(`/api/v1/platform/tenants/${tenantId}/features`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    listPlatformAnnouncements() {
+      return platformRequest<JavaPlatformAnnouncementDto[]>('/api/v1/platform/announcements');
+    },
+    publishPlatformAnnouncement(payload: { title: string; content: string; audience: string }) {
+      return platformRequest<JavaPlatformAnnouncementDto>('/api/v1/platform/announcements', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
