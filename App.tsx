@@ -2145,6 +2145,7 @@ const BuyerWorkspaceView: React.FC<{
   const selectedApprovalSource = allApprovalSources.find((approval) =>
     (approval.id ?? `${approval.bizType}:${approval.bizId}`) === selectedApproval);
   const supplierRelationRows = buildSupplierRelationRows(workspace);
+  const rfqListRows = buildRfqListRows(workspace);
   const orderFulfillmentRows = buildOrderFulfillmentRows(workspace);
   const receiptInspectionRows = buildReceiptInspectionRows(workspace);
   const invoicePaymentRows = buildInvoicePaymentRows(workspace);
@@ -2537,6 +2538,12 @@ const BuyerWorkspaceView: React.FC<{
       {activeModule === 'rfqs' && (
       <>
         <Panel title="询价项目" icon={Send}>
+          <ListToolbar
+            title="询价项目池"
+            recordCount={rfqListRows.length}
+            filterLabel="全部询价状态"
+            actionLabel="邀请供应商"
+          />
           {workspace.rfqs.length === 0 ? (
             <EmptyState title="暂无询价项目" desc="需求审批通过后，可从采购需求页选择已准入供应商并创建询价。" />
           ) : (
@@ -2554,7 +2561,7 @@ const BuyerWorkspaceView: React.FC<{
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {buildRfqListRows(workspace).map((rfq) => (
+                {rfqListRows.map((rfq) => (
                   <tr
                     key={rfq.id}
                     className={`align-top ${selectedRfq === rfq.id ? 'bg-blue-50/50' : ''}`}
@@ -2602,6 +2609,12 @@ const BuyerWorkspaceView: React.FC<{
       {activeModule === 'quotes' && (
       <>
       <Panel title="询价比价与定标" icon={BarChart3}>
+        <ListToolbar
+          title="比价定标池"
+          recordCount={workspace.rfqs.length}
+          filterLabel="按询价项目聚合"
+          actionLabel="提交定标审批"
+        />
         {workspace.rfqs.length === 0 ? (
           <EmptyState title="暂无可比价项目" desc="创建询价并收到供应商报价后，可在这里推荐定标并提交审批。" />
         ) : (
@@ -2764,6 +2777,12 @@ const BuyerWorkspaceView: React.FC<{
       {activeModule === 'orders' && (
       <>
       <Panel title="订单履约" icon={PackageCheck}>
+        <ListToolbar
+          title="订单履约池"
+          recordCount={orderFulfillmentRows.length}
+          filterLabel="全部订单状态"
+          actionLabel="生成订单"
+        />
         {orderFulfillmentRows.length === 0 ? (
           <EmptyState title="暂无采购订单" desc="定标审批通过后，可在报价对比页生成采购订单。" />
         ) : (
@@ -2825,6 +2844,12 @@ const BuyerWorkspaceView: React.FC<{
       {activeModule === 'receipts' && (
       <>
         <Panel title="收货验收" icon={PackageCheck}>
+          <ListToolbar
+            title="收货验收池"
+            recordCount={receiptInspectionRows.length}
+            filterLabel="待收货优先"
+            actionLabel="登记收货"
+          />
           {receiptInspectionRows.length === 0 ? (
             <EmptyState title="暂无待收货订单" desc="供应商发货后，待收货订单会出现在这里。" />
           ) : (
@@ -2883,6 +2908,12 @@ const BuyerWorkspaceView: React.FC<{
       {activeModule === 'invoices' && (
       <>
       <Panel title="发票付款" icon={Receipt}>
+        <ListToolbar
+          title="发票付款池"
+          recordCount={invoicePaymentRows.length}
+          filterLabel="待付款优先"
+          actionLabel="登记付款"
+        />
         {invoicePaymentRows.length === 0 ? (
           <EmptyState title="暂无发票" desc="供应商在订单收货后提交发票，采购方在这里登记付款状态。" />
         ) : (
@@ -2960,53 +2991,69 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) =>
 
   if (logs.length === 0) {
     return (
-      <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
-        暂无审计记录
-      </p>
+      <>
+        <ListToolbar
+          title="操作审计池"
+          recordCount={logs.length}
+          filterLabel="最近操作优先"
+          actionLabel="导出预留"
+        />
+        <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
+          暂无审计记录
+        </p>
+      </>
     );
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-      <div className="grid gap-3 md:grid-cols-2">
-        {logs.map((log) => (
-          <div
-            key={log.id}
-            className={`rounded-lg border bg-white p-4 transition ${
-              selectedAuditLog === log.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-            }`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-slate-950">{log.title}</p>
-                <p className="mt-1 truncate text-xs font-bold text-slate-500">{log.targetLabel}</p>
-              </div>
-              <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
-                {log.timeLabel}
-              </span>
-            </div>
-            <InlineFactGrid
-              facts={[
-                { label: '操作人', value: log.actorName },
-                { label: '审计编号', value: log.id },
-              ]}
-            />
-            <button
-              type="button"
-              onClick={() => setSelectedAuditLogId(log.id)}
-              className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                selectedAuditLog === log.id
-                  ? 'border-blue-200 bg-blue-50 text-blue-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+    <>
+      <ListToolbar
+        title="操作审计池"
+        recordCount={logs.length}
+        filterLabel="最近操作优先"
+        actionLabel="导出预留"
+      />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid gap-3 md:grid-cols-2">
+          {logs.map((log) => (
+            <div
+              key={log.id}
+              className={`rounded-lg border bg-white p-4 transition ${
+                selectedAuditLog === log.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
               }`}
             >
-              {selectedAuditLog === log.id ? '当前详情' : '查看详情'}
-            </button>
-          </div>
-        ))}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-950">{log.title}</p>
+                  <p className="mt-1 truncate text-xs font-bold text-slate-500">{log.targetLabel}</p>
+                </div>
+                <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
+                  {log.timeLabel}
+                </span>
+              </div>
+              <InlineFactGrid
+                facts={[
+                  { label: '操作人', value: log.actorName },
+                  { label: '审计编号', value: log.id },
+                ]}
+              />
+              <button
+                type="button"
+                onClick={() => setSelectedAuditLogId(log.id)}
+                className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+                  selectedAuditLog === log.id
+                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {selectedAuditLog === log.id ? '当前详情' : '查看详情'}
+              </button>
+            </div>
+          ))}
+        </div>
+        <AuditLogDetailPanelView detail={selectedAuditDetail} />
       </div>
-      <AuditLogDetailPanelView detail={selectedAuditDetail} />
-    </div>
+    </>
   );
 };
 

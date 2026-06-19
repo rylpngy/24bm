@@ -34,4 +34,39 @@ describe('admin list toolbar UI', () => {
     expect(app).toContain('filterLabel="待报价优先"');
     expect(app).toContain('actionLabel="批量响应预留"');
   });
+
+  it('adds list toolbar context to remaining buyer workflow lists', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('title="询价项目池"');
+    expect(app).toContain('const rfqListRows = buildRfqListRows(workspace);');
+    expect(app).toContain('recordCount={rfqListRows.length}');
+    expect(app).toContain('filterLabel="全部询价状态"');
+    expect(app).toContain('actionLabel="邀请供应商"');
+
+    expect(app).toContain('title="比价定标池"');
+    expect(app).toContain('recordCount={workspace.rfqs.length}');
+    expect(app).toContain('filterLabel="按询价项目聚合"');
+    expect(app).toContain('actionLabel="提交定标审批"');
+
+    expect(app).toContain('title="订单履约池"');
+    expect(app).toContain('recordCount={orderFulfillmentRows.length}');
+    expect(app).toContain('filterLabel="全部订单状态"');
+    expect(app).toContain('actionLabel="生成订单"');
+
+    expect(app).toContain('title="收货验收池"');
+    expect(app).toContain('recordCount={receiptInspectionRows.length}');
+    expect(app).toContain('filterLabel="待收货优先"');
+    expect(app).toContain('actionLabel="登记收货"');
+
+    expect(app).toContain('title="发票付款池"');
+    expect(app).toContain('recordCount={invoicePaymentRows.length}');
+    expect(app).toContain('filterLabel="待付款优先"');
+    expect(app).toContain('actionLabel="登记付款"');
+
+    expect(app).toContain('title="操作审计池"');
+    expect(app).toContain('recordCount={logs.length}');
+    expect(app).toContain('filterLabel="最近操作优先"');
+    expect(app).toContain('actionLabel="导出预留"');
+  });
 });
