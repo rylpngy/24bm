@@ -32,4 +32,27 @@ describe('supplier module header and toolbar UI', () => {
     expect(app).toContain("profile: {");
     expect(app).toContain("primaryAction: '维护企业档案'");
   });
+
+  it('adds list toolbar context to supplier quote, order, and invoice lists', () => {
+    const app = read('App.tsx');
+    const supplierWorkspace = app.slice(
+      app.indexOf('const SupplierWorkspaceView'),
+      app.indexOf('const HeroBand'),
+    );
+
+    expect(supplierWorkspace).toContain('title="报价记录池"');
+    expect(supplierWorkspace).toContain('recordCount={workspace.quotes.length}');
+    expect(supplierWorkspace).toContain('filterLabel="按询价项目聚合"');
+    expect(supplierWorkspace).toContain('actionLabel="跟进定标"');
+
+    expect(supplierWorkspace).toContain('title="销售订单池"');
+    expect(supplierWorkspace).toContain('recordCount={workspace.orders.length}');
+    expect(supplierWorkspace).toContain('filterLabel="待处理优先"');
+    expect(supplierWorkspace).toContain('actionLabel="批量履约预留"');
+
+    expect(supplierWorkspace).toContain('title="发票应收池"');
+    expect(supplierWorkspace).toContain('recordCount={workspace.invoices.length}');
+    expect(supplierWorkspace).toContain('filterLabel="待回款优先"');
+    expect(supplierWorkspace).toContain('actionLabel="对账预留"');
+  });
 });

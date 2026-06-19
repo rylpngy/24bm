@@ -5914,6 +5914,12 @@ const SupplierWorkspaceView: React.FC<{
 
       {activeModule === 'quotes' && (
         <Panel title="报价记录" icon={BarChart3}>
+          <ListToolbar
+            title="报价记录池"
+            recordCount={workspace.quotes.length}
+            filterLabel="按询价项目聚合"
+            actionLabel="跟进定标"
+          />
           {workspace.quotes.length === 0 ? (
             <EmptyState title="暂无报价记录" desc="收到询价邀请并提交报价后，报价历史和关联询价状态会显示在这里。" />
           ) : (
@@ -5985,6 +5991,12 @@ const SupplierWorkspaceView: React.FC<{
     {activeModule === 'orders' && (
     <div className="grid gap-6 lg:grid-cols-2">
       <Panel title="销售订单与发货" icon={Truck}>
+        <ListToolbar
+          title="销售订单池"
+          recordCount={workspace.orders.length}
+          filterLabel="待处理优先"
+          actionLabel="批量履约预留"
+        />
         {workspace.orders.length === 0 ? (
           <EmptyState title="暂无销售订单" desc="采购方定标并生成订单后，供应商会在这里确认订单、提交发货和开票。" />
         ) : (
@@ -6061,6 +6073,12 @@ const SupplierWorkspaceView: React.FC<{
 
     {activeModule === 'invoices' && (
       <Panel title="发票与应收" icon={Receipt}>
+        <ListToolbar
+          title="发票应收池"
+          recordCount={workspace.invoices.length}
+          filterLabel="待回款优先"
+          actionLabel="对账预留"
+        />
         {workspace.invoices.length === 0 ? (
           <EmptyState title="暂无应收发票" desc="订单收货后提交发票，应收和付款状态会显示在这里。" />
         ) : (
