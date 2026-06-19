@@ -2067,8 +2067,8 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
         <ClipboardCheck size={18} className="text-amber-600" />
       </div>
       {pendingReviews.length === 0 ? (
-        <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm font-bold text-slate-500">
-          暂无待审核企业
+        <div className="mt-4">
+          <EmptyState title="暂无待审核企业" desc="企业提交入驻资料后，平台审核任务会在这里显示。" />
         </div>
       ) : (
         <div className="mt-4 space-y-3">
@@ -7382,7 +7382,9 @@ const SupplierWorkspaceView: React.FC<{
             opportunities={filteredSupplierOpportunities}
             supplierId={workspace.supplier.id}
           />
-          {filteredSupplierOpportunities.map((rfq) => {
+          {filteredSupplierOpportunities.length === 0 ? (
+            <EmptyState title="暂无询价邀请" desc="当前筛选条件下没有可响应的询价邀请，可切换商机状态或等待采购方邀请。" />
+          ) : filteredSupplierOpportunities.map((rfq) => {
             const myQuotes = rfq.quotes.filter((quote) => quote.supplierId === workspace.supplier.id);
             const hasMyQuote = myQuotes.length > 0;
             const quoteBusy = supplierActionBusyId === `quote:${rfq.id}`;
@@ -8770,9 +8772,7 @@ const SimpleList: React.FC<{
 }> = ({ rows }) => {
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-sm font-bold text-slate-500">
-        暂无数据
-      </div>
+      <EmptyState title="暂无列表数据" desc="当前列表暂未沉淀业务记录，可切换筛选条件或完成主流程后再查看。" />
     );
   }
 
