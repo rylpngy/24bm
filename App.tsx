@@ -7838,7 +7838,10 @@ const ListToolbar: React.FC<{
   filterLabel: string;
   actionLabel?: string;
 }> = ({ title, recordCount, filterLabel, actionLabel }) => (
-  <div className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+  <div
+    aria-label={`${title} 列表工具条`}
+    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 lg:flex-row lg:items-center lg:justify-between"
+  >
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-black text-slate-900">{title}</p>
@@ -7851,12 +7854,15 @@ const ListToolbar: React.FC<{
       </p>
     </div>
     <div className="flex flex-wrap items-center gap-2">
-      <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-500">
+      <span className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-500">
         <Search size={16} />
-        快速筛选
+        顶部搜索
+      </span>
+      <span className="inline-flex h-9 shrink-0 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-500">
+        状态筛选
       </span>
       {actionLabel && (
-        <span className="inline-flex h-9 items-center rounded-lg bg-slate-900 px-3 text-xs font-black text-white">
+        <span className="inline-flex h-9 shrink-0 items-center rounded-lg bg-slate-900 px-3 text-xs font-black text-white">
           {actionLabel}
         </span>
       )}

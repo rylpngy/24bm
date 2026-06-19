@@ -16,6 +16,20 @@ describe('admin list toolbar UI', () => {
     expect(app).toContain('<Search size={16}');
   });
 
+  it('explains search and status filtering without placeholder-like toolbar copy', () => {
+    const app = read('App.tsx');
+    const listToolbar = app.slice(
+      app.indexOf('const ListToolbar'),
+      app.indexOf('const StatusFilterControl'),
+    );
+
+    expect(listToolbar).toContain('顶部搜索');
+    expect(listToolbar).toContain('状态筛选');
+    expect(listToolbar).toContain('aria-label={`${title} 列表工具条`}');
+    expect(listToolbar).toContain('shrink-0');
+    expect(listToolbar).not.toContain('快速筛选');
+  });
+
   it('does not expose temporary placeholder copy in production-facing toolbars', () => {
     const app = read('App.tsx');
 
