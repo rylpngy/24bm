@@ -194,6 +194,14 @@ type BuyerPaymentDraft = {
   paymentStatus: string;
 };
 
+type BuyerAwardDraft = {
+  reason: string;
+};
+
+type BuyerOrderDraft = {
+  expectedReceiptDate: string;
+};
+
 const App: React.FC = () => {
   const [activeRole, setActiveRole] = useState<AdminRole>(defaultAdminRole);
   const [activeModules, setActiveModules] = useState<Record<AdminRole, string>>(defaultAdminModulesByRole);
@@ -591,16 +599,14 @@ const App: React.FC = () => {
     }
   };
 
-  const createBuyerOrderFromAward = async (awardId: string) => {
+  const createBuyerOrderFromAward = async (awardId: string, draft: BuyerOrderDraft) => {
     if (!javaApiClient || !buyerData) return;
-    const expectedReceiptDate = new Date();
-    expectedReceiptDate.setDate(expectedReceiptDate.getDate() + 14);
     setOrderCreateBusy(awardId);
     setWorkflowStatus(null);
     try {
       const order = await javaApiClient.createBuyerOrder({
         awardId,
-        expectedReceiptDate: expectedReceiptDate.toISOString().slice(0, 10),
+        expectedReceiptDate: draft.expectedReceiptDate,
       });
       setBuyerData(await refreshJavaBuyerData(buyerData));
       setWorkflowStatus(`订单已生成：${order.id}`);
@@ -611,14 +617,14 @@ const App: React.FC = () => {
     }
   };
 
-  const submitBuyerAwardApproval = async (rfqId: string, quoteId: string) => {
+  const submitBuyerAwardApproval = async (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => {
     if (!javaApiClient || !buyerData) return;
     setAwardSubmitBusyId(rfqId);
     setWorkflowStatus(null);
     try {
       const award = await javaApiClient.awardBuyerRfq(rfqId, {
         quoteId,
-        reason: '系统推荐：报价金额最低，交付周期优先',
+        reason: draft.reason,
       });
       setBuyerData(await refreshJavaBuyerData(buyerData));
       setWorkflowStatus(`定标审批已提交：${award.id}`);
@@ -2285,8 +2291,8 @@ const BuyerWorkspaceView: React.FC<{
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
   onSubmitSupplierAdmission: (relationId: string) => void;
   onCreateRfqFromDemand: (demandId: string, supplierIds?: string[], deadline?: string) => void;
-  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
-  onCreateOrderFromAward: (awardId: string) => void;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
+  onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
   onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
   onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
   onUpdateApprovalTemplate: (
@@ -2333,8 +2339,19 @@ const BuyerWorkspaceView: React.FC<{
   const [selectedApprovalId, setSelectedApprovalId] = useState('');
   const [selectedReceiptOrderId, setSelectedReceiptOrderId] = useState(workspace.orders.find((order) => order.status === '已发货' || order.status === '待收货')?.id ?? '');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(workspace.invoices[0]?.id ?? '');
+  const [awardDrafts, setAwardDrafts] = useState<Record<string, BuyerAwardDraft>>({});
+  const [orderDrafts, setOrderDrafts] = useState<Record<string, BuyerOrderDraft>>({});
   const [receiptDrafts, setReceiptDrafts] = useState<Record<string, BuyerReceiptDraft>>({});
   const [paymentDrafts, setPaymentDrafts] = useState<Record<string, BuyerPaymentDraft>>({});
+  const defaultExpectedReceiptDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 14);
+    return date.toISOString().slice(0, 10);
+  };
+  const getAwardDraft = (rfqId: string): BuyerAwardDraft =>
+    awardDrafts[rfqId] ?? { reason: '系统推荐：报价金额最低，交付周期优先' };
+  const getOrderDraft = (awardId: string): BuyerOrderDraft =>
+    orderDrafts[awardId] ?? { expectedReceiptDate: defaultExpectedReceiptDate() };
   const getReceiptDraft = (orderId: string): BuyerReceiptDraft => receiptDrafts[orderId] ?? { result: '验收通过' };
   const getPaymentDraft = (invoiceId: string): BuyerPaymentDraft => paymentDrafts[invoiceId] ?? { paymentStatus: '已付款' };
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
@@ -2936,6 +2953,10 @@ const BuyerWorkspaceView: React.FC<{
           awardSubmitBusyId={awardSubmitBusyId}
           orderCreateBusy={orderCreateBusy}
           javaEnabled={javaEnabled}
+          awardDraft={selectedRfqRecord ? getAwardDraft(selectedRfqRecord.id) : undefined}
+          orderDraft={selectedRfqApprovedAwardId ? getOrderDraft(selectedRfqApprovedAwardId) : undefined}
+          onChangeAwardDraft={(rfqId, draft) => setAwardDrafts((drafts) => ({ ...drafts, [rfqId]: draft }))}
+          onChangeOrderDraft={(awardId, draft) => setOrderDrafts((drafts) => ({ ...drafts, [awardId]: draft }))}
           onSubmitAwardApproval={onSubmitAwardApproval}
           onCreateOrderFromAward={onCreateOrderFromAward}
         />
@@ -2969,6 +2990,10 @@ const BuyerWorkspaceView: React.FC<{
                 awardSubmitBusyId={awardSubmitBusyId}
                 orderCreateBusy={orderCreateBusy}
                 javaEnabled={javaEnabled}
+                awardDraft={getAwardDraft(rfq.id)}
+                orderDraft={approvedAward?.bizId ? getOrderDraft(approvedAward.bizId) : undefined}
+                onChangeAwardDraft={(rfqId, draft) => setAwardDrafts((drafts) => ({ ...drafts, [rfqId]: draft }))}
+                onChangeOrderDraft={(awardId, draft) => setOrderDrafts((drafts) => ({ ...drafts, [awardId]: draft }))}
                 onSubmitAwardApproval={onSubmitAwardApproval}
                 onCreateOrderFromAward={onCreateOrderFromAward}
                 selected={selectedRfq === rfq.id}
@@ -2987,6 +3012,10 @@ const BuyerWorkspaceView: React.FC<{
         awardSubmitBusyId={awardSubmitBusyId}
         orderCreateBusy={orderCreateBusy}
         javaEnabled={javaEnabled}
+        awardDraft={selectedRfqRecord ? getAwardDraft(selectedRfqRecord.id) : undefined}
+        orderDraft={selectedRfqApprovedAwardId ? getOrderDraft(selectedRfqApprovedAwardId) : undefined}
+        onChangeAwardDraft={(rfqId, draft) => setAwardDrafts((drafts) => ({ ...drafts, [rfqId]: draft }))}
+        onChangeOrderDraft={(awardId, draft) => setOrderDrafts((drafts) => ({ ...drafts, [awardId]: draft }))}
         onSubmitAwardApproval={onSubmitAwardApproval}
         onCreateOrderFromAward={onCreateOrderFromAward}
       />
@@ -4090,8 +4119,12 @@ const RfqDetailPanelView: React.FC<{
   awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   javaEnabled: boolean;
-  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
-  onCreateOrderFromAward: (awardId: string) => void;
+  awardDraft?: BuyerAwardDraft;
+  orderDraft?: BuyerOrderDraft;
+  onChangeAwardDraft: (rfqId: string, draft: BuyerAwardDraft) => void;
+  onChangeOrderDraft: (awardId: string, draft: BuyerOrderDraft) => void;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
+  onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
 }> = ({
   detail,
   rfq,
@@ -4100,6 +4133,10 @@ const RfqDetailPanelView: React.FC<{
   awardSubmitBusyId,
   orderCreateBusy,
   javaEnabled,
+  awardDraft,
+  orderDraft,
+  onChangeAwardDraft,
+  onChangeOrderDraft,
   onSubmitAwardApproval,
   onCreateOrderFromAward,
 }) => (
@@ -4261,6 +4298,10 @@ const RfqDetailPanelView: React.FC<{
           awardSubmitBusyId={awardSubmitBusyId}
           orderCreateBusy={orderCreateBusy}
           javaEnabled={javaEnabled}
+          awardDraft={awardDraft}
+          orderDraft={orderDraft}
+          onChangeAwardDraft={onChangeAwardDraft}
+          onChangeOrderDraft={onChangeOrderDraft}
           onSubmitAwardApproval={onSubmitAwardApproval}
           onCreateOrderFromAward={onCreateOrderFromAward}
         />
@@ -4277,8 +4318,12 @@ const RfqDetailOperationPanel: React.FC<{
   awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   javaEnabled: boolean;
-  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
-  onCreateOrderFromAward: (awardId: string) => void;
+  awardDraft?: BuyerAwardDraft;
+  orderDraft?: BuyerOrderDraft;
+  onChangeAwardDraft: (rfqId: string, draft: BuyerAwardDraft) => void;
+  onChangeOrderDraft: (awardId: string, draft: BuyerOrderDraft) => void;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
+  onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
 }> = ({
   detail,
   rfq,
@@ -4287,6 +4332,10 @@ const RfqDetailOperationPanel: React.FC<{
   awardSubmitBusyId,
   orderCreateBusy,
   javaEnabled,
+  awardDraft,
+  orderDraft,
+  onChangeAwardDraft,
+  onChangeOrderDraft,
   onSubmitAwardApproval,
   onCreateOrderFromAward,
 }) => {
@@ -4339,17 +4388,28 @@ const RfqDetailOperationPanel: React.FC<{
         />
       )}
 
-      {canSubmitAward && recommendedQuote && (
-        <PrimaryActionButton
-          onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id)}
-          disabled={awardSubmitBusyId === rfq.id}
-          busy={awardSubmitBusyId === rfq.id}
-          icon={BadgeCheck}
-          pendingLabel="提交中"
-          fullWidth
-        >
-          按推荐报价提交定标审批
-        </PrimaryActionButton>
+      {canSubmitAward && recommendedQuote && awardDraft && (
+        <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3">
+          <label className="block text-xs font-black text-slate-600" htmlFor={`rfq-detail-award-reason-${rfq.id}`}>
+            定标理由
+          </label>
+          <textarea
+            id={`rfq-detail-award-reason-${rfq.id}`}
+            value={awardDraft.reason}
+            onChange={(event) => onChangeAwardDraft(rfq.id, { reason: event.target.value })}
+            className="mt-2 min-h-20 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          />
+          <PrimaryActionButton
+            onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id, awardDraft)}
+            disabled={awardSubmitBusyId === rfq.id || awardDraft.reason.trim().length === 0}
+            busy={awardSubmitBusyId === rfq.id}
+            icon={BadgeCheck}
+            pendingLabel="提交中"
+            fullWidth
+          >
+            按推荐报价提交定标审批
+          </PrimaryActionButton>
+        </div>
       )}
 
       {rfq.quotes.length > 0 && !canSubmitAward && rfq.status === '报价中' && (
@@ -4368,18 +4428,30 @@ const RfqDetailOperationPanel: React.FC<{
         />
       )}
 
-      {canCreateOrder && approvedAwardId && (
-        <PrimaryActionButton
-          onClick={() => onCreateOrderFromAward(approvedAwardId)}
-          disabled={orderCreateBusy === approvedAwardId}
-          busy={orderCreateBusy === approvedAwardId}
-          tone="emerald"
-          icon={ShoppingCart}
-          pendingLabel="生成中"
-          fullWidth
-        >
-          生成采购订单
-        </PrimaryActionButton>
+      {canCreateOrder && approvedAwardId && orderDraft && (
+        <div className="mt-3 rounded-lg border border-emerald-100 bg-white p-3">
+          <label className="block text-xs font-black text-slate-600" htmlFor={`rfq-detail-order-date-${approvedAwardId}`}>
+            预计到货日期
+          </label>
+          <input
+            id={`rfq-detail-order-date-${approvedAwardId}`}
+            type="date"
+            value={orderDraft.expectedReceiptDate}
+            onChange={(event) => onChangeOrderDraft(approvedAwardId, { expectedReceiptDate: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
+          />
+          <PrimaryActionButton
+            onClick={() => onCreateOrderFromAward(approvedAwardId, orderDraft)}
+            disabled={orderCreateBusy === approvedAwardId || !orderDraft.expectedReceiptDate}
+            busy={orderCreateBusy === approvedAwardId}
+            tone="emerald"
+            icon={ShoppingCart}
+            pendingLabel="生成中"
+            fullWidth
+          >
+            生成采购订单
+          </PrimaryActionButton>
+        </div>
       )}
 
       {rfq.status === '已定标' && !canCreateOrder && (
@@ -4401,8 +4473,12 @@ const QuoteComparisonDetailPanelView: React.FC<{
   awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   javaEnabled: boolean;
-  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
-  onCreateOrderFromAward: (awardId: string) => void;
+  awardDraft?: BuyerAwardDraft;
+  orderDraft?: BuyerOrderDraft;
+  onChangeAwardDraft: (rfqId: string, draft: BuyerAwardDraft) => void;
+  onChangeOrderDraft: (awardId: string, draft: BuyerOrderDraft) => void;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
+  onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
 }> = ({
   detail,
   rfq,
@@ -4411,6 +4487,10 @@ const QuoteComparisonDetailPanelView: React.FC<{
   awardSubmitBusyId,
   orderCreateBusy,
   javaEnabled,
+  awardDraft,
+  orderDraft,
+  onChangeAwardDraft,
+  onChangeOrderDraft,
   onSubmitAwardApproval,
   onCreateOrderFromAward,
 }) => (
@@ -4531,6 +4611,10 @@ const QuoteComparisonDetailPanelView: React.FC<{
           awardSubmitBusyId={awardSubmitBusyId}
           orderCreateBusy={orderCreateBusy}
           javaEnabled={javaEnabled}
+          awardDraft={awardDraft}
+          orderDraft={orderDraft}
+          onChangeAwardDraft={onChangeAwardDraft}
+          onChangeOrderDraft={onChangeOrderDraft}
           onSubmitAwardApproval={onSubmitAwardApproval}
           onCreateOrderFromAward={onCreateOrderFromAward}
         />
@@ -4547,8 +4631,12 @@ const QuoteComparisonOperationPanel: React.FC<{
   awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   javaEnabled: boolean;
-  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
-  onCreateOrderFromAward: (awardId: string) => void;
+  awardDraft?: BuyerAwardDraft;
+  orderDraft?: BuyerOrderDraft;
+  onChangeAwardDraft: (rfqId: string, draft: BuyerAwardDraft) => void;
+  onChangeOrderDraft: (awardId: string, draft: BuyerOrderDraft) => void;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
+  onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
 }> = ({
   detail,
   rfq,
@@ -4557,6 +4645,10 @@ const QuoteComparisonOperationPanel: React.FC<{
   awardSubmitBusyId,
   orderCreateBusy,
   javaEnabled,
+  awardDraft,
+  orderDraft,
+  onChangeAwardDraft,
+  onChangeOrderDraft,
   onSubmitAwardApproval,
   onCreateOrderFromAward,
 }) => {
@@ -4609,17 +4701,28 @@ const QuoteComparisonOperationPanel: React.FC<{
         />
       )}
 
-      {canSubmitAward && recommendedQuote && (
-        <PrimaryActionButton
-          onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id)}
-          disabled={awardSubmitBusyId === rfq.id}
-          busy={awardSubmitBusyId === rfq.id}
-          icon={BadgeCheck}
-          pendingLabel="提交中"
-          fullWidth
-        >
-          按推荐报价提交定标审批
-        </PrimaryActionButton>
+      {canSubmitAward && recommendedQuote && awardDraft && (
+        <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3">
+          <label className="block text-xs font-black text-slate-600" htmlFor={`quote-award-reason-${rfq.id}`}>
+            定标理由
+          </label>
+          <textarea
+            id={`quote-award-reason-${rfq.id}`}
+            value={awardDraft.reason}
+            onChange={(event) => onChangeAwardDraft(rfq.id, { reason: event.target.value })}
+            className="mt-2 min-h-20 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          />
+          <PrimaryActionButton
+            onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id, awardDraft)}
+            disabled={awardSubmitBusyId === rfq.id || awardDraft.reason.trim().length === 0}
+            busy={awardSubmitBusyId === rfq.id}
+            icon={BadgeCheck}
+            pendingLabel="提交中"
+            fullWidth
+          >
+            按推荐报价提交定标审批
+          </PrimaryActionButton>
+        </div>
       )}
 
       {rfq.status === '定标审批中' && (
@@ -4630,18 +4733,30 @@ const QuoteComparisonOperationPanel: React.FC<{
         />
       )}
 
-      {canCreateOrder && approvedAwardId && (
-        <PrimaryActionButton
-          onClick={() => onCreateOrderFromAward(approvedAwardId)}
-          disabled={orderCreateBusy === approvedAwardId}
-          busy={orderCreateBusy === approvedAwardId}
-          tone="emerald"
-          icon={ShoppingCart}
-          pendingLabel="生成中"
-          fullWidth
-        >
-          生成采购订单
-        </PrimaryActionButton>
+      {canCreateOrder && approvedAwardId && orderDraft && (
+        <div className="mt-3 rounded-lg border border-emerald-100 bg-white p-3">
+          <label className="block text-xs font-black text-slate-600" htmlFor={`quote-order-date-${approvedAwardId}`}>
+            预计到货日期
+          </label>
+          <input
+            id={`quote-order-date-${approvedAwardId}`}
+            type="date"
+            value={orderDraft.expectedReceiptDate}
+            onChange={(event) => onChangeOrderDraft(approvedAwardId, { expectedReceiptDate: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
+          />
+          <PrimaryActionButton
+            onClick={() => onCreateOrderFromAward(approvedAwardId, orderDraft)}
+            disabled={orderCreateBusy === approvedAwardId || !orderDraft.expectedReceiptDate}
+            busy={orderCreateBusy === approvedAwardId}
+            tone="emerald"
+            icon={ShoppingCart}
+            pendingLabel="生成中"
+            fullWidth
+          >
+            生成采购订单
+          </PrimaryActionButton>
+        </div>
       )}
 
       {rfq.status === '已定标' && !canCreateOrder && (
@@ -7228,8 +7343,12 @@ const RfqCard: React.FC<{
   awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   javaEnabled: boolean;
-  onSubmitAwardApproval: (rfqId: string, quoteId: string) => void;
-  onCreateOrderFromAward: (awardId: string) => void;
+  awardDraft: BuyerAwardDraft;
+  orderDraft?: BuyerOrderDraft;
+  onChangeAwardDraft: (rfqId: string, draft: BuyerAwardDraft) => void;
+  onChangeOrderDraft: (awardId: string, draft: BuyerOrderDraft) => void;
+  onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
+  onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
   selected: boolean;
   onSelectDetail: () => void;
 }> = ({
@@ -7239,6 +7358,10 @@ const RfqCard: React.FC<{
   awardSubmitBusyId,
   orderCreateBusy,
   javaEnabled,
+  awardDraft,
+  orderDraft,
+  onChangeAwardDraft,
+  onChangeOrderDraft,
   onSubmitAwardApproval,
   onCreateOrderFromAward,
   selected,
@@ -7327,30 +7450,53 @@ const RfqCard: React.FC<{
       )}
 
       {canSubmitAward && recommendedQuote && (
-        <PrimaryActionButton
-          onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id)}
-          disabled={awardSubmitBusyId === rfq.id}
-          busy={awardSubmitBusyId === rfq.id}
-          icon={BadgeCheck}
-          pendingLabel="提交中"
-          fullWidth
-        >
-          按推荐报价提交定标审批
-        </PrimaryActionButton>
+        <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+          <label className="block text-xs font-black text-blue-800" htmlFor={`rfq-card-award-reason-${rfq.id}`}>
+            定标理由
+          </label>
+          <textarea
+            id={`rfq-card-award-reason-${rfq.id}`}
+            value={awardDraft.reason}
+            onChange={(event) => onChangeAwardDraft(rfq.id, { reason: event.target.value })}
+            className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          />
+          <PrimaryActionButton
+            onClick={() => onSubmitAwardApproval(rfq.id, recommendedQuote.id, awardDraft)}
+            disabled={awardSubmitBusyId === rfq.id || awardDraft.reason.trim().length === 0}
+            busy={awardSubmitBusyId === rfq.id}
+            icon={BadgeCheck}
+            pendingLabel="提交中"
+            fullWidth
+          >
+            按推荐报价提交定标审批
+          </PrimaryActionButton>
+        </div>
       )}
 
-      {canCreateOrder && (
-        <PrimaryActionButton
-          onClick={() => onCreateOrderFromAward(approvedAwardId)}
-          disabled={orderCreateBusy === approvedAwardId}
-          busy={orderCreateBusy === approvedAwardId}
-          tone="emerald"
-          icon={ShoppingCart}
-          pendingLabel="生成中"
-          fullWidth
-        >
-          生成采购订单
-        </PrimaryActionButton>
+      {canCreateOrder && approvedAwardId && orderDraft && (
+        <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+          <label className="block text-xs font-black text-emerald-800" htmlFor={`rfq-card-order-date-${approvedAwardId}`}>
+            预计到货日期
+          </label>
+          <input
+            id={`rfq-card-order-date-${approvedAwardId}`}
+            type="date"
+            value={orderDraft.expectedReceiptDate}
+            onChange={(event) => onChangeOrderDraft(approvedAwardId, { expectedReceiptDate: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
+          />
+          <PrimaryActionButton
+            onClick={() => onCreateOrderFromAward(approvedAwardId, orderDraft)}
+            disabled={orderCreateBusy === approvedAwardId || !orderDraft.expectedReceiptDate}
+            busy={orderCreateBusy === approvedAwardId}
+            tone="emerald"
+            icon={ShoppingCart}
+            pendingLabel="生成中"
+            fullWidth
+          >
+            生成采购订单
+          </PrimaryActionButton>
+        </div>
       )}
     </div>
   );

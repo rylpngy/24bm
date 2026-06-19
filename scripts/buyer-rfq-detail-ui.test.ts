@@ -41,8 +41,10 @@ describe('buyer RFQ detail UI', () => {
     expect(rfqDetailView).toContain('approvedAwardId?: string');
     expect(rfqDetailView).toContain('awardSubmitBusyId: string | null');
     expect(rfqDetailView).toContain('orderCreateBusy: string | null');
-    expect(rfqDetailView).toContain('onSubmitAwardApproval: (rfqId: string, quoteId: string) => void');
-    expect(rfqDetailView).toContain('onCreateOrderFromAward: (awardId: string) => void');
+    expect(rfqDetailView).toContain('awardDraft?: BuyerAwardDraft');
+    expect(rfqDetailView).toContain('orderDraft?: BuyerOrderDraft');
+    expect(rfqDetailView).toContain('onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void');
+    expect(rfqDetailView).toContain('onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void');
     expect(app).toContain('rfq={selectedRfqRecord}');
     expect(app).toContain('approvedAwardId={selectedRfqApprovedAwardId}');
   });

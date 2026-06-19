@@ -37,8 +37,10 @@ describe('buyer quote comparison detail UI', () => {
     expect(quoteDetailView).toContain('approvedAwardId?: string');
     expect(quoteDetailView).toContain('awardSubmitBusyId: string | null');
     expect(quoteDetailView).toContain('orderCreateBusy: string | null');
-    expect(quoteDetailView).toContain('onSubmitAwardApproval: (rfqId: string, quoteId: string) => void');
-    expect(quoteDetailView).toContain('onCreateOrderFromAward: (awardId: string) => void');
+    expect(quoteDetailView).toContain('awardDraft?: BuyerAwardDraft');
+    expect(quoteDetailView).toContain('orderDraft?: BuyerOrderDraft');
+    expect(quoteDetailView).toContain('onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void');
+    expect(quoteDetailView).toContain('onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void');
     expect(app).toContain('rfq={selectedRfqRecord}');
     expect(app).toContain('approvedAwardId={selectedRfqApprovedAwardId}');
   });
