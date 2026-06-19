@@ -22,6 +22,6 @@ describe('supplier opportunity actions UI', () => {
     expect(supplierWorkspace).toContain('报价截止');
     expect(supplierWorkspace).toContain('邀请供应商');
     expect(supplierWorkspace).toContain('需求编号');
-    expect(supplierWorkspace).toContain("disabled={declinedOpportunityIds.includes(rfq.id) || quoteBusy}");
+    expect(supplierWorkspace).toContain("disabled={declinedOpportunityIds.includes(rfq.id) || quoteBusy || quoteDraft.amount <= 0 || quoteDraft.deliveryDays <= 0}");
   });
 });

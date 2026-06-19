@@ -170,6 +170,22 @@ const javaApiClient = appDataSource.mode === 'java'
     })
   : null;
 
+type SupplierQuoteDraft = {
+  amount: number;
+  taxRate: number;
+  deliveryDays: number;
+};
+
+type SupplierDeliveryDraft = {
+  carrier: string;
+  trackingNo: string;
+};
+
+type SupplierInvoiceDraft = {
+  amount: number;
+  invoiceNo: string;
+};
+
 const App: React.FC = () => {
   const [activeRole, setActiveRole] = useState<AdminRole>(defaultAdminRole);
   const [activeModules, setActiveModules] = useState<Record<AdminRole, string>>(defaultAdminModulesByRole);
@@ -635,15 +651,15 @@ const App: React.FC = () => {
     }
   };
 
-  const submitSupplierQuote = async (rfqId: string) => {
+  const submitSupplierQuote = async (rfqId: string, draft: SupplierQuoteDraft) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`quote:${rfqId}`);
     setWorkflowStatus(null);
     try {
       await javaApiClient.submitSupplierQuote(rfqId, {
-        amount: 118000,
-        taxRate: 13,
-        deliveryDays: 7,
+        amount: draft.amount,
+        taxRate: draft.taxRate,
+        deliveryDays: draft.deliveryDays,
       });
       await refreshAfterSupplierAction();
       setWorkflowStatus(`报价已提交：${rfqId}`);
@@ -669,14 +685,14 @@ const App: React.FC = () => {
     }
   };
 
-  const createSupplierDelivery = async (orderId: string) => {
+  const createSupplierDelivery = async (orderId: string, draft: SupplierDeliveryDraft) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`delivery:${orderId}`);
     setWorkflowStatus(null);
     try {
       await javaApiClient.createSupplierDelivery(orderId, {
-        carrier: '顺丰速运',
-        trackingNo: `SF${Date.now()}`,
+        carrier: draft.carrier,
+        trackingNo: draft.trackingNo,
       });
       await refreshAfterSupplierAction();
       setWorkflowStatus(`发货信息已提交：${orderId}`);
@@ -687,14 +703,14 @@ const App: React.FC = () => {
     }
   };
 
-  const createSupplierInvoice = async (orderId: string, amount: number) => {
+  const createSupplierInvoice = async (orderId: string, draft: SupplierInvoiceDraft) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`invoice:${orderId}`);
     setWorkflowStatus(null);
     try {
       await javaApiClient.createSupplierInvoice(orderId, {
-        amount,
-        invoiceNo: `INV-${Date.now()}`,
+        amount: draft.amount,
+        invoiceNo: draft.invoiceNo,
       });
       await refreshAfterSupplierAction();
       setWorkflowStatus(`发票信息已提交：${orderId}`);
@@ -6121,10 +6137,10 @@ const SupplierWorkspaceView: React.FC<{
   javaEnabled: boolean;
   workflowStatus: string | null;
   supplierActionBusyId: string | null;
-  onSubmitQuote: (rfqId: string) => void;
+  onSubmitQuote: (rfqId: string, draft: SupplierQuoteDraft) => void;
   onConfirmOrder: (orderId: string) => void;
-  onCreateDelivery: (orderId: string) => void;
-  onCreateInvoice: (orderId: string, amount: number) => void;
+  onCreateDelivery: (orderId: string, draft: SupplierDeliveryDraft) => void;
+  onCreateInvoice: (orderId: string, draft: SupplierInvoiceDraft) => void;
 }> = ({
   activeModule,
   workspace,
@@ -6138,6 +6154,9 @@ const SupplierWorkspaceView: React.FC<{
 }) => {
   const [declinedOpportunityIds, setDeclinedOpportunityIds] = useState<string[]>([]);
   const [selectedRequirementRfqId, setSelectedRequirementRfqId] = useState<string | null>(null);
+  const [quoteDrafts, setQuoteDrafts] = useState<Record<string, SupplierQuoteDraft>>({});
+  const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, SupplierDeliveryDraft>>({});
+  const [invoiceDrafts, setInvoiceDrafts] = useState<Record<string, SupplierInvoiceDraft>>({});
   const onDeclineOpportunity = (rfqId: string) => {
     setDeclinedOpportunityIds((current) => (
       current.includes(rfqId) ? current : [...current, rfqId]
@@ -6218,6 +6237,7 @@ const SupplierWorkspaceView: React.FC<{
             const quoteBusy = supplierActionBusyId === `quote:${rfq.id}`;
             const declined = declinedOpportunityIds.includes(rfq.id);
             const requirementVisible = selectedRequirementRfqId === rfq.id;
+            const quoteDraft = quoteDrafts[rfq.id] ?? { amount: 118000, taxRate: 13, deliveryDays: 7 };
             return (
               <div key={rfq.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -6248,14 +6268,66 @@ const SupplierWorkspaceView: React.FC<{
                     </div>
                   ))}
                   {javaEnabled && rfq.status === '报价中' && !hasMyQuote && (
-                    <button
-                      type="button"
-                      onClick={() => onSubmitQuote(rfq.id)}
-                      disabled={declinedOpportunityIds.includes(rfq.id) || quoteBusy}
-                      className="inline-flex min-h-24 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                    >
-                      {quoteBusy ? '提交中' : '提交报价'}
-                    </button>
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 sm:col-span-3">
+                      <div className="grid gap-3 md:grid-cols-[1fr_120px_120px_auto] md:items-end">
+                        <label className="block">
+                          <span className="text-xs font-black text-blue-700">报价金额</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={quoteDraft.amount}
+                            onChange={(event) => setQuoteDrafts((current) => ({
+                              ...current,
+                              [rfq.id]: {
+                                ...quoteDraft,
+                                amount: Number(event.target.value),
+                              },
+                            }))}
+                            className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-blue-400"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black text-blue-700">税率</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={quoteDraft.taxRate}
+                            onChange={(event) => setQuoteDrafts((current) => ({
+                              ...current,
+                              [rfq.id]: {
+                                ...quoteDraft,
+                                taxRate: Number(event.target.value),
+                              },
+                            }))}
+                            className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-blue-400"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black text-blue-700">交付天数</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={quoteDraft.deliveryDays}
+                            onChange={(event) => setQuoteDrafts((current) => ({
+                              ...current,
+                              [rfq.id]: {
+                                ...quoteDraft,
+                                deliveryDays: Number(event.target.value),
+                              },
+                            }))}
+                            className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-blue-400"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => onSubmitQuote(rfq.id, quoteDraft)}
+                          disabled={declinedOpportunityIds.includes(rfq.id) || quoteBusy || quoteDraft.amount <= 0 || quoteDraft.deliveryDays <= 0}
+                          className="inline-flex h-10 items-center justify-center rounded-lg border border-blue-200 bg-white px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                        >
+                          {quoteBusy ? '提交中' : '提交报价'}
+                        </button>
+                      </div>
+                    </div>
                   )}
                   <button
                     type="button"
@@ -6381,6 +6453,8 @@ const SupplierWorkspaceView: React.FC<{
             const invoiceBusy = supplierActionBusyId === `invoice:${order.id}`;
             const delivery = workspace.deliveries.find((item) => item.orderId === order.id);
             const invoice = workspace.invoices.find((item) => item.orderId === order.id);
+            const deliveryDraft = deliveryDrafts[order.id] ?? { carrier: '顺丰速运', trackingNo: '' };
+            const invoiceDraft = invoiceDrafts[order.id] ?? { amount: order.amount, invoiceNo: '' };
             return (
               <div key={order.id} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -6410,28 +6484,102 @@ const SupplierWorkspaceView: React.FC<{
                         </button>
                       )}
                       {order.status === '待发货' && (
-                        <button
-                          type="button"
-                          onClick={() => onCreateDelivery(order.id)}
-                          disabled={deliveryBusy}
-                          className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-                        >
-                          {deliveryBusy ? '提交中' : '提交发货'}
-                        </button>
+                        <span className="text-xs font-black text-emerald-700">填写发货信息</span>
                       )}
                       {order.status === '已收货' && !workspace.invoices.some((invoice) => invoice.orderId === order.id) && (
-                        <button
-                          type="button"
-                          onClick={() => onCreateInvoice(order.id, order.amount)}
-                          disabled={invoiceBusy}
-                          className="inline-flex h-9 items-center justify-center rounded-lg bg-amber-600 px-3 text-xs font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-                        >
-                          {invoiceBusy ? '提交中' : '提交发票'}
-                        </button>
+                        <span className="text-xs font-black text-amber-700">填写发票信息</span>
                       )}
                     </div>
                   )}
                 </div>
+                {javaEnabled && order.status === '待发货' && (
+                  <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+                    <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                      <label className="block">
+                        <span className="text-xs font-black text-emerald-700">承运商</span>
+                        <input
+                          value={deliveryDraft.carrier}
+                          onChange={(event) => setDeliveryDrafts((current) => ({
+                            ...current,
+                            [order.id]: {
+                              ...deliveryDraft,
+                              carrier: event.target.value,
+                            },
+                          }))}
+                          className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black text-emerald-700">物流单号</span>
+                        <input
+                          value={deliveryDraft.trackingNo}
+                          onChange={(event) => setDeliveryDrafts((current) => ({
+                            ...current,
+                            [order.id]: {
+                              ...deliveryDraft,
+                              trackingNo: event.target.value,
+                            },
+                          }))}
+                          className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400"
+                          placeholder="请输入物流单号"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => onCreateDelivery(order.id, deliveryDraft)}
+                        disabled={deliveryBusy || !deliveryDraft.carrier.trim() || !deliveryDraft.trackingNo.trim()}
+                        className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      >
+                        {deliveryBusy ? '提交中' : '提交发货'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {javaEnabled && order.status === '已收货' && !workspace.invoices.some((invoice) => invoice.orderId === order.id) && (
+                  <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-3">
+                    <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                      <label className="block">
+                        <span className="text-xs font-black text-amber-700">发票号</span>
+                        <input
+                          value={invoiceDraft.invoiceNo}
+                          onChange={(event) => setInvoiceDrafts((current) => ({
+                            ...current,
+                            [order.id]: {
+                              ...invoiceDraft,
+                              invoiceNo: event.target.value,
+                            },
+                          }))}
+                          className="mt-2 h-10 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-400"
+                          placeholder="请输入发票号"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black text-amber-700">发票金额</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={invoiceDraft.amount}
+                          onChange={(event) => setInvoiceDrafts((current) => ({
+                            ...current,
+                            [order.id]: {
+                              ...invoiceDraft,
+                              amount: Number(event.target.value),
+                            },
+                          }))}
+                          className="mt-2 h-10 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-400"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => onCreateInvoice(order.id, invoiceDraft)}
+                        disabled={invoiceBusy || !invoiceDraft.invoiceNo.trim() || invoiceDraft.amount <= 0}
+                        className="inline-flex h-10 items-center justify-center rounded-lg bg-amber-600 px-4 text-sm font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      >
+                        {invoiceBusy ? '提交中' : '提交发票'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
