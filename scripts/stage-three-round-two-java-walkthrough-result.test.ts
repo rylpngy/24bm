@@ -27,12 +27,19 @@ describe('stage three round two Java walkthrough result', () => {
     expect(result).toContain('权限差异提示');
 
     expect(result).toContain('## 逐页复核矩阵');
+    expect(result).toContain('21 个页面逐页点击复核已完成');
+    expect(result).toContain('第一段 16 页');
+    expect(result).toContain('第二段补跑 5 页');
+    expect(result).toContain('无加载失败');
+    expect(result).toContain('无 `argument type mismatch`');
+    expect(result).toContain('无控制台错误');
     expect(result).toContain('| 采购方 | 采购需求 |');
     expect(result).toContain('| 采购方 | 询价项目 |');
     expect(result).toContain('| 采购方 | 发票付款 |');
     expect(result).toContain('| 平台 | 企业审核 |');
     expect(result).toContain('| 平台 | 平台公告 |');
     expect(result).toContain('| 供应商 | 企业档案 |');
+    expect(result).not.toContain('待逐页点击复核');
     expect(result).toContain('| 供应商 | 发票应收 |');
 
     expect(result).toContain('## 未收口边界');
@@ -41,6 +48,6 @@ describe('stage three round two Java walkthrough result', () => {
     expect(result).toContain('供应商档案维护入口尚未完成 Java 持久化闭环');
 
     expect(result).toContain('## 结论');
-    expect(result).toContain('第二轮可以继续进入 P1');
+    expect(result).toContain('第二轮 P0 Java 模式逐页联调复核已完成');
   });
 });

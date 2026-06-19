@@ -14,7 +14,7 @@ describe('stage three round two review', () => {
     expect(review).toContain('# 阶段三第二轮阶段性验收复盘');
     expect(review).toContain('## 当前结论');
     expect(review).toContain('后台可操作雏形已经成立');
-    expect(review).toContain('还不能直接宣称第二轮整体收口');
+    expect(review).toContain('第二轮仍不能直接整体收口');
 
     expect(review).toContain('## 已完成能力归类');
     expect(review).toContain('| 采购方主流程 |');
@@ -30,6 +30,7 @@ describe('stage three round two review', () => {
     expect(review).toContain('视觉和移动端人工验收');
 
     expect(review).toContain('## 下一步执行顺序');
+    expect(review).toContain('P0：Java 模式逐页联调复核已完成');
     expect(review).toContain('P0：Java 模式逐页联调复核');
     expect(review).toContain('P1：采购方详情编辑闭环');
     expect(review).toContain('P1：平台和供应商持久化边界补强');
