@@ -177,6 +177,7 @@ const App: React.FC = () => {
   const [supplierId, setSupplierId] = useState('supplier-orbit');
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshBusy, setRefreshBusy] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [platformData, setPlatformData] = useState<PlatformWorkspaceData | null>(null);
   const [buyerData, setBuyerData] = useState<{
     workspace: BuyerWorkspace;
@@ -755,6 +756,8 @@ const App: React.FC = () => {
           setTenantId={setTenantId}
           setSupplierId={setSupplierId}
           javaEnabled={Boolean(javaApiClient)}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
           refreshBusy={refreshBusy}
           workflowBusy={workflowBusy}
           onRefresh={triggerRefresh}
@@ -788,6 +791,7 @@ const App: React.FC = () => {
                 buyerNotifications={buyerData.buyerNotifications}
                 approvalTemplates={buyerData.approvalTemplates}
                 roles={buyerData.roles}
+                searchQuery={searchQuery}
                 approvalBusyId={approvalBusyId}
                 demandCreateBusy={demandCreateBusy}
                 demandSubmitBusyId={demandSubmitBusyId}
@@ -934,6 +938,8 @@ const AppHeader: React.FC<{
   setTenantId: (id: string) => void;
   setSupplierId: (id: string) => void;
   javaEnabled: boolean;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
   refreshBusy: boolean;
   workflowBusy: boolean;
   onRefresh: () => void;
@@ -947,6 +953,8 @@ const AppHeader: React.FC<{
   setTenantId,
   setSupplierId,
   javaEnabled,
+  searchQuery,
+  setSearchQuery,
   refreshBusy,
   workflowBusy,
   onRefresh,
@@ -997,9 +1005,21 @@ const AppHeader: React.FC<{
         <div className="relative hidden w-64 xl:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
           <input
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            aria-label="搜索当前工作区"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-16 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             placeholder="搜索企业、询价、订单、供应商"
           />
+          {searchQuery.trim() && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-black text-slate-500 hover:bg-white hover:text-slate-700"
+            >
+              清空搜索
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -2085,6 +2105,7 @@ const BuyerWorkspaceView: React.FC<{
   buyerNotifications: JavaNotificationDto[];
   approvalTemplates: JavaApprovalTemplateDto[];
   roles: BuyerRoleDto[];
+  searchQuery: string;
   approvalBusyId: string | null;
   demandCreateBusy: boolean;
   demandSubmitBusyId: string | null;
@@ -2118,6 +2139,7 @@ const BuyerWorkspaceView: React.FC<{
   buyerNotifications,
   approvalTemplates,
   roles,
+  searchQuery,
   approvalBusyId,
   demandCreateBusy,
   demandSubmitBusyId,
@@ -2179,6 +2201,114 @@ const BuyerWorkspaceView: React.FC<{
   const orderFulfillmentRows = buildOrderFulfillmentRows(workspace);
   const receiptInspectionRows = buildReceiptInspectionRows(workspace);
   const invoicePaymentRows = buildInvoicePaymentRows(workspace);
+  const demandListRows = buildDemandListRows(workspace);
+  const materialRows = buildMaterialCatalogRows(workspace);
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const matchesSearchQuery = (values: Array<string | number | undefined>) =>
+    !normalizedSearchQuery
+    || values.some((value) => String(value ?? '').toLowerCase().includes(normalizedSearchQuery));
+  const demandMatches = (demandId: string, extraValues: Array<string | number | undefined> = []) => {
+    const demand = workspace.demands.find((item) => item.id === demandId);
+    return matchesSearchQuery([
+      demand?.id,
+      demand?.title,
+      demand?.status,
+      demand?.department,
+      demand?.requester,
+      ...(demand?.lineItems.map((lineItem) => {
+        const material = workspace.materials.find((item) => item.id === lineItem.materialId);
+        return material?.name ?? lineItem.materialId;
+      }) ?? []),
+      ...extraValues,
+    ]);
+  };
+  const filteredApprovalQueueRows = approvalQueueRows.filter((row) => matchesSearchQuery([
+    row.id,
+    row.title,
+    row.typeLabel,
+    row.status,
+    ...row.facts.map((fact) => fact.value),
+  ]));
+  const filteredRecentApprovals = sortedRecentApprovals.filter((approval) => matchesSearchQuery([
+    approval.id,
+    approval.bizId,
+    approval.parentBizId,
+    approval.summaryTitle,
+    approval.status,
+    approval.bizType,
+  ]));
+  const filteredBuyerNotifications = sortedBuyerNotifications.filter((notification) => matchesSearchQuery([
+    notification.id,
+    notification.title,
+    notification.content,
+    notification.type,
+  ]));
+  const filteredDemandListRows = demandListRows.filter((demandRow) => demandMatches(demandRow.id, [
+    demandRow.title,
+    demandRow.status,
+    demandRow.materialSummary,
+    ...demandRow.facts.map((fact) => fact.value),
+  ]));
+  const filteredRfqListRows = rfqListRows.filter((rfq) => matchesSearchQuery([
+    rfq.id,
+    rfq.title,
+    rfq.status,
+    rfq.demandLabel,
+    rfq.supplierLabel,
+    rfq.quoteLabel,
+    rfq.deadlineLabel,
+  ]));
+  const filteredQuoteRfqs = workspace.rfqs.filter((rfq) => matchesSearchQuery([
+    rfq.id,
+    rfq.title,
+    rfq.status,
+    rfq.owner,
+    rfq.awardedSupplierId,
+    ...rfq.demandIds,
+    ...rfq.invitedSupplierIds,
+    ...rfq.quotes.flatMap((quote) => [quote.id, quote.supplierId, quote.amount, quote.status]),
+  ]));
+  const filteredSupplierRelationRows = supplierRelationRows.filter((relationRow) => matchesSearchQuery([
+    relationRow.id,
+    relationRow.supplierName,
+    relationRow.categoryLabel,
+    relationRow.status,
+    relationRow.level,
+    relationRow.action.title,
+    relationRow.action.riskLabel,
+    ...relationRow.facts.map((fact) => fact.value),
+  ]));
+  const filteredMaterialRows = materialRows.filter((material) => matchesSearchQuery([
+    material.id,
+    material.title,
+    material.status,
+    material.usageLabel,
+    ...material.facts.map((fact) => fact.value),
+  ]));
+  const filteredOrderFulfillmentRows = orderFulfillmentRows.filter((orderRow) => matchesSearchQuery([
+    orderRow.id,
+    orderRow.supplierName,
+    orderRow.amountLabel,
+    orderRow.status,
+    orderRow.nextAction.title,
+    ...orderRow.facts.map((fact) => fact.value),
+  ]));
+  const filteredReceiptInspectionRows = receiptInspectionRows.filter((orderRow) => matchesSearchQuery([
+    orderRow.id,
+    orderRow.supplierName,
+    orderRow.logisticsLabel,
+    orderRow.status,
+    orderRow.nextAction.title,
+  ]));
+  const filteredInvoicePaymentRows = invoicePaymentRows.filter((invoiceRow) => matchesSearchQuery([
+    invoiceRow.id,
+    invoiceRow.supplierName,
+    invoiceRow.orderLabel,
+    invoiceRow.amountLabel,
+    invoiceRow.status,
+    invoiceRow.nextAction.title,
+  ]));
+  const searchFilterLabel = normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : undefined;
   const moduleHeader = buyerModuleHeaders[activeModule];
   const selectedDemand = workspace.demands.some((demand) => demand.id === selectedDemandId)
     ? selectedDemandId
@@ -2295,13 +2425,13 @@ const BuyerWorkspaceView: React.FC<{
         <Panel title="审批待办" icon={ClipboardCheck}>
           <ListToolbar
             title="审批待办池"
-            recordCount={approvalQueueRows.length}
-            filterLabel="待审批优先"
+            recordCount={filteredApprovalQueueRows.length}
+            filterLabel={searchFilterLabel ?? '待审批优先'}
             actionLabel="批量审批预留"
           />
-          {approvalQueueRows.length > 0 ? (
+          {filteredApprovalQueueRows.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
-              {approvalQueueRows.map((approvalRow) => {
+              {filteredApprovalQueueRows.map((approvalRow) => {
                 const approval = displayPendingApprovals.find((item) => item.id === approvalRow.id);
                 return (
                   <AdminInfoCard
@@ -2364,13 +2494,13 @@ const BuyerWorkspaceView: React.FC<{
         <Panel title="最近审批记录" icon={ShieldCheck}>
           <ListToolbar
             title="审批记录池"
-            recordCount={sortedRecentApprovals.length}
-            filterLabel="最近处理优先"
+            recordCount={filteredRecentApprovals.length}
+            filterLabel={searchFilterLabel ?? '最近处理优先'}
             actionLabel="审批模板"
           />
-          {javaEnabled && sortedRecentApprovals.length > 0 ? (
+          {javaEnabled && filteredRecentApprovals.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
-              {sortedRecentApprovals.map((approval) => {
+              {filteredRecentApprovals.map((approval) => {
                 const facts = buildApprovalCardFacts(approval);
                 return (
                   <AdminInfoCard
@@ -2411,9 +2541,9 @@ const BuyerWorkspaceView: React.FC<{
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-sm font-bold text-slate-500">未读 {unreadBuyerNotificationCount} 条</p>
           </div>
-          {sortedBuyerNotifications.length > 0 ? (
+          {filteredBuyerNotifications.length > 0 ? (
             <div className="space-y-3">
-              {sortedBuyerNotifications.map((notification) => (
+              {filteredBuyerNotifications.map((notification) => (
                 <div key={notification.id} className="rounded-lg border border-slate-200 bg-white p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -2466,15 +2596,15 @@ const BuyerWorkspaceView: React.FC<{
       <Panel title="采购需求列表" icon={Database}>
         <ListToolbar
           title="需求池"
-          recordCount={workspace.demands.length}
-          filterLabel="全部需求状态"
+          recordCount={filteredDemandListRows.length}
+          filterLabel={searchFilterLabel ?? '全部需求状态'}
           actionLabel="新建需求"
         />
-        {workspace.demands.length === 0 ? (
+        {filteredDemandListRows.length === 0 ? (
           <EmptyState title="暂无采购需求" desc="创建需求后可提交审批，审批通过后再转为询价项目。" />
         ) : (
         <div className="space-y-3">
-          {buildDemandListRows(workspace).map((demandRow) => {
+          {filteredDemandListRows.map((demandRow) => {
             const demand = workspace.demands.find((item) => item.id === demandRow.id);
             if (!demand) return null;
             return (
@@ -2548,11 +2678,11 @@ const BuyerWorkspaceView: React.FC<{
         <Panel title="询价项目" icon={Send}>
           <ListToolbar
             title="询价项目池"
-            recordCount={rfqListRows.length}
-            filterLabel="全部询价状态"
+            recordCount={filteredRfqListRows.length}
+            filterLabel={searchFilterLabel ?? '全部询价状态'}
             actionLabel="邀请供应商"
           />
-          {workspace.rfqs.length === 0 ? (
+          {filteredRfqListRows.length === 0 ? (
             <EmptyState title="暂无询价项目" desc="需求审批通过后，可从采购需求页选择已准入供应商并创建询价。" />
           ) : (
           <div className="overflow-x-auto rounded-lg border border-slate-200">
@@ -2569,7 +2699,7 @@ const BuyerWorkspaceView: React.FC<{
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {rfqListRows.map((rfq) => (
+                {filteredRfqListRows.map((rfq) => (
                   <tr
                     key={rfq.id}
                     className={`align-top ${selectedRfq === rfq.id ? 'bg-blue-50/50' : ''}`}
@@ -2619,15 +2749,15 @@ const BuyerWorkspaceView: React.FC<{
       <Panel title="询价比价与定标" icon={BarChart3}>
         <ListToolbar
           title="比价定标池"
-          recordCount={workspace.rfqs.length}
-          filterLabel="按询价项目聚合"
+          recordCount={filteredQuoteRfqs.length}
+          filterLabel={searchFilterLabel ?? '按询价项目聚合'}
           actionLabel="提交定标审批"
         />
-        {workspace.rfqs.length === 0 ? (
+        {filteredQuoteRfqs.length === 0 ? (
           <EmptyState title="暂无可比价项目" desc="创建询价并收到供应商报价后，可在这里推荐定标并提交审批。" />
         ) : (
         <div className="space-y-4">
-          {workspace.rfqs.map((rfq) => {
+          {filteredQuoteRfqs.map((rfq) => {
             const approvedAward = recentApprovals.find((approval) =>
               approval.bizType === 'rfq_award'
               && approval.parentBizId === rfq.id
@@ -2672,15 +2802,15 @@ const BuyerWorkspaceView: React.FC<{
         <Panel title="物料目录" icon={Database}>
           <ListToolbar
             title="物料服务池"
-            recordCount={workspace.materials.length}
-            filterLabel="全部物料品类"
+            recordCount={filteredMaterialRows.length}
+            filterLabel={searchFilterLabel ?? '全部物料品类'}
             actionLabel="新增物料"
           />
-          {workspace.materials.length === 0 ? (
+          {filteredMaterialRows.length === 0 ? (
             <EmptyState title="暂无物料目录" desc="先维护物料或服务主数据，再用于采购需求明细和询价范围。" />
           ) : (
             <div className="grid gap-3 lg:grid-cols-2">
-              {buildMaterialCatalogRows(workspace).map((material) => (
+              {filteredMaterialRows.map((material) => (
                 <AdminInfoCard
                   key={material.id}
                   title={material.title}
@@ -2705,15 +2835,15 @@ const BuyerWorkspaceView: React.FC<{
       <Panel title="私域供应商关系" icon={Users}>
         <ListToolbar
           title="私域供应商池"
-          recordCount={supplierRelationRows.length}
-          filterLabel="全部合作状态"
+          recordCount={filteredSupplierRelationRows.length}
+          filterLabel={searchFilterLabel ?? '全部合作状态'}
           actionLabel="供应商准入"
         />
-        {supplierRelationRows.length === 0 ? (
+        {filteredSupplierRelationRows.length === 0 ? (
           <EmptyState title="暂无私域供应商" desc="平台公共供应商通过准入后，会形成采购方自己的合作关系和绩效记录。" />
         ) : (
         <div className="space-y-3">
-          {supplierRelationRows.map((relationRow) => {
+          {filteredSupplierRelationRows.map((relationRow) => {
             const relation = workspace.privateSupplierRelations.find((item) => item.id === relationRow.id);
             return (
               <AdminInfoCard
@@ -2764,15 +2894,15 @@ const BuyerWorkspaceView: React.FC<{
       <Panel title="订单履约" icon={PackageCheck}>
         <ListToolbar
           title="订单履约池"
-          recordCount={orderFulfillmentRows.length}
-          filterLabel="全部订单状态"
+          recordCount={filteredOrderFulfillmentRows.length}
+          filterLabel={searchFilterLabel ?? '全部订单状态'}
           actionLabel="生成订单"
         />
-        {orderFulfillmentRows.length === 0 ? (
+        {filteredOrderFulfillmentRows.length === 0 ? (
           <EmptyState title="暂无采购订单" desc="定标审批通过后，可在报价对比页生成采购订单。" />
         ) : (
         <div className="space-y-3">
-          {orderFulfillmentRows.map((orderRow) => {
+          {filteredOrderFulfillmentRows.map((orderRow) => {
             const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
             return (
               <WorkflowListCard
@@ -2817,15 +2947,15 @@ const BuyerWorkspaceView: React.FC<{
         <Panel title="收货验收" icon={PackageCheck}>
           <ListToolbar
             title="收货验收池"
-            recordCount={receiptInspectionRows.length}
-            filterLabel="待收货优先"
+            recordCount={filteredReceiptInspectionRows.length}
+            filterLabel={searchFilterLabel ?? '待收货优先'}
             actionLabel="登记收货"
           />
-          {receiptInspectionRows.length === 0 ? (
+          {filteredReceiptInspectionRows.length === 0 ? (
             <EmptyState title="暂无待收货订单" desc="供应商发货后，待收货订单会出现在这里。" />
           ) : (
           <div className="space-y-3">
-            {receiptInspectionRows
+            {filteredReceiptInspectionRows
               .map((orderRow) => {
                 const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
                 return (
@@ -2870,15 +3000,15 @@ const BuyerWorkspaceView: React.FC<{
       <Panel title="发票付款" icon={Receipt}>
         <ListToolbar
           title="发票付款池"
-          recordCount={invoicePaymentRows.length}
-          filterLabel="待付款优先"
+          recordCount={filteredInvoicePaymentRows.length}
+          filterLabel={searchFilterLabel ?? '待付款优先'}
           actionLabel="登记付款"
         />
-        {invoicePaymentRows.length === 0 ? (
+        {filteredInvoicePaymentRows.length === 0 ? (
           <EmptyState title="暂无发票" desc="供应商在订单收货后提交发票，采购方在这里登记付款状态。" />
         ) : (
         <div className="space-y-3">
-          {invoicePaymentRows.map((invoiceRow) => {
+          {filteredInvoicePaymentRows.map((invoiceRow) => {
             const paymentBusy = buyerFulfillmentBusyId === `payment:${invoiceRow.id}`;
             return (
               <WorkflowListCard
@@ -2920,30 +3050,40 @@ const BuyerWorkspaceView: React.FC<{
 
     {activeModule === 'audit' && (
       <Panel title="最近操作日志" icon={ShieldCheck}>
-        <AuditLogList workspace={workspace} />
+        <AuditLogList workspace={workspace} searchQuery={searchQuery} />
       </Panel>
     )}
     </>
   );
 };
 
-const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) => {
+const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }> = ({ workspace, searchQuery }) => {
   const logs = buildAuditLogRows(workspace);
-  const [selectedAuditLogId, setSelectedAuditLogId] = useState(logs[0]?.id ?? '');
-  const selectedAuditLog = logs.some((log) => log.id === selectedAuditLogId)
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const filteredLogs = logs.filter((log) =>
+    !normalizedSearchQuery
+    || [
+      log.id,
+      log.title,
+      log.targetLabel,
+      log.actorName,
+      log.timeLabel,
+    ].some((value) => value.toLowerCase().includes(normalizedSearchQuery)));
+  const [selectedAuditLogId, setSelectedAuditLogId] = useState(filteredLogs[0]?.id ?? '');
+  const selectedAuditLog = filteredLogs.some((log) => log.id === selectedAuditLogId)
     ? selectedAuditLogId
-    : logs[0]?.id ?? '';
+    : filteredLogs[0]?.id ?? '';
   const selectedAuditDetail = selectedAuditLog
     ? buildAuditLogDetailPanel(workspace, selectedAuditLog)
     : undefined;
 
-  if (logs.length === 0) {
+  if (filteredLogs.length === 0) {
     return (
       <>
         <ListToolbar
           title="操作审计池"
-          recordCount={logs.length}
-          filterLabel="最近操作优先"
+          recordCount={filteredLogs.length}
+          filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}
           actionLabel="导出预留"
         />
         <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
@@ -2957,13 +3097,13 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) =>
     <>
       <ListToolbar
         title="操作审计池"
-        recordCount={logs.length}
-        filterLabel="最近操作优先"
+        recordCount={filteredLogs.length}
+        filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}
         actionLabel="导出预留"
       />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="grid gap-3 md:grid-cols-2">
-          {logs.map((log) => (
+          {filteredLogs.map((log) => (
             <AdminInfoCard
               key={log.id}
               title={log.title}

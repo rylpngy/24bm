@@ -64,6 +64,34 @@ describe('admin shell polish UI', () => {
     expect(appHeader).toContain("{refreshBusy ? '刷新中' : '刷新'}");
   });
 
+  it('makes the header search control filter the active buyer module lists', () => {
+    const app = read('App.tsx');
+    const appHeader = app.slice(
+      app.indexOf('const AppHeader'),
+      app.indexOf('const Select'),
+    );
+    const buyerWorkspace = app.slice(
+      app.indexOf('const BuyerWorkspaceView'),
+      app.indexOf('const DemandDetailPanelView'),
+    );
+
+    expect(app).toContain('const [searchQuery, setSearchQuery] = useState');
+    expect(app).toContain('searchQuery={searchQuery}');
+    expect(app).toContain('setSearchQuery={setSearchQuery}');
+    expect(appHeader).toContain('value={searchQuery}');
+    expect(appHeader).toContain('onChange={(event) => setSearchQuery(event.target.value)}');
+    expect(appHeader).toContain("aria-label=\"搜索当前工作区\"");
+    expect(appHeader).toContain('清空搜索');
+    expect(buyerWorkspace).toContain('searchQuery: string;');
+    expect(buyerWorkspace).toContain('const normalizedSearchQuery = searchQuery.trim().toLowerCase();');
+    expect(buyerWorkspace).toContain('const matchesSearchQuery = (values: Array<string | number | undefined>)');
+    expect(buyerWorkspace).toContain('const filteredDemandListRows = demandListRows.filter');
+    expect(buyerWorkspace).toContain('const filteredRfqListRows = rfqListRows.filter');
+    expect(buyerWorkspace).toContain('const filteredSupplierRelationRows = supplierRelationRows.filter');
+    expect(buyerWorkspace).toContain('const filteredMaterialRows = materialRows.filter');
+    expect(buyerWorkspace).toContain('搜索匹配');
+  });
+
   it('marks active role and module navigation items for accessible admin state', () => {
     const app = read('App.tsx');
 
