@@ -27,6 +27,10 @@ import {
   describeSupplierRelationAction,
 } from './buyerAdminUi';
 
+const cloneWorkspace = () => JSON.parse(JSON.stringify(
+  getBuyerWorkspace(buildProcurementMvpModel(), 'tenant-acme'),
+)) as ReturnType<typeof getBuyerWorkspace>;
+
 describe('buyer admin UI helpers', () => {
   const workspace = getBuyerWorkspace(buildProcurementMvpModel(), 'tenant-acme');
   const pendingApprovals = [
@@ -405,14 +409,14 @@ describe('buyer admin UI helpers', () => {
       ],
       demandRows: [
         {
-          id: 'dem-acme-1',
+          id: 'dem-acme-1:mat-acme-1:0',
           title: '华东总部会议室升级',
           status: '已通过',
           quantityLabel: '12 台',
           referenceAmountLabel: '¥216,000',
         },
         {
-          id: 'dem-acme-4',
+          id: 'dem-acme-4:mat-acme-1:0',
           title: '销售培训设备采购',
           status: '审批中',
           quantityLabel: '3 台',
@@ -673,7 +677,7 @@ describe('buyer admin UI helpers', () => {
       ],
       lineItems: [
         {
-          id: 'dem-acme-1:mat-acme-1',
+          id: 'dem-acme-1:mat-acme-1:0',
           name: '视频会议一体机',
           category: '智能终端',
           quantityLabel: '12 台',
@@ -993,5 +997,59 @@ describe('buyer admin UI helpers', () => {
     });
 
     expect(buildAuditLogDetailPanel(workspace, 'missing-log')).toBeUndefined();
+  });
+
+  it('keeps demand detail line item ids unique when the same material appears twice', () => {
+    const duplicateWorkspace = cloneWorkspace();
+    duplicateWorkspace.demands[0].lineItems = [
+      ...duplicateWorkspace.demands[0].lineItems,
+      { materialId: duplicateWorkspace.demands[0].lineItems[0].materialId, quantity: 1 },
+    ];
+
+    const detail = buildDemandDetailPanel(duplicateWorkspace, duplicateWorkspace.demands[0].id);
+
+    expect(detail?.lineItems.map((item) => item.id)).toEqual([
+      `${duplicateWorkspace.demands[0].id}:mat-acme-1:0`,
+      `${duplicateWorkspace.demands[0].id}:mat-acme-1:1`,
+    ]);
+  });
+
+  it('keeps material demand row ids unique when one demand repeats a material', () => {
+    const duplicateWorkspace = cloneWorkspace();
+    duplicateWorkspace.demands[0].lineItems = [
+      ...duplicateWorkspace.demands[0].lineItems,
+      { materialId: 'mat-acme-1', quantity: 1 },
+    ];
+
+    const detail = buildMaterialDetailPanel(duplicateWorkspace, 'mat-acme-1');
+
+    expect(detail?.demandRows.map((row) => row.id)).toContain('dem-acme-1:mat-acme-1:0');
+    expect(detail?.demandRows.map((row) => row.id)).toContain('dem-acme-1:mat-acme-1:1');
+  });
+
+  it('keeps audit demand related row ids unique when one demand repeats a material', () => {
+    const duplicateWorkspace = cloneWorkspace();
+    duplicateWorkspace.demands[0].lineItems = [
+      ...duplicateWorkspace.demands[0].lineItems,
+      { materialId: 'mat-acme-1', quantity: 1 },
+    ];
+    duplicateWorkspace.auditLogs = [
+      {
+        id: 'audit-demand-repeat',
+        tenantId: duplicateWorkspace.tenant.id,
+        actorId: duplicateWorkspace.users[0].id,
+        action: '更新采购需求',
+        targetType: 'purchase_demand',
+        targetId: duplicateWorkspace.demands[0].id,
+        createdAt: '2026-06-01T00:00:00.000Z',
+      },
+    ];
+
+    const detail = buildAuditLogDetailPanel(duplicateWorkspace, 'audit-demand-repeat');
+
+    expect(detail?.relatedRows.map((row) => row.id)).toEqual([
+      'dem-acme-1:mat-acme-1:0',
+      'dem-acme-1:mat-acme-1:1',
+    ]);
   });
 });

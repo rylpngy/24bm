@@ -860,20 +860,21 @@ export const buildMaterialDetailPanel = (
 
   const materialDemandLines = workspace.demands
     .flatMap((demand) => demand.lineItems
-      .filter((lineItem) => lineItem.materialId === material.id)
-      .map((lineItem) => ({
+      .map((lineItem, lineIndex) => ({
         demand,
         lineItem,
-      })));
+        lineIndex,
+      }))
+      .filter(({ lineItem }) => lineItem.materialId === material.id));
   const demandRows = materialDemandLines
-    .map(({ demand, lineItem }) => ({
-        id: demand.id,
+    .map(({ demand, lineItem, lineIndex }) => ({
+        id: `${demand.id}:${lineItem.materialId}:${lineIndex}`,
         title: demand.title,
         status: demand.status,
         quantityLabel: `${lineItem.quantity} ${material.unit}`,
         referenceAmountLabel: compactCurrency(lineItem.quantity * material.referencePrice),
       }));
-  const demandIds = new Set(demandRows.map((demand) => demand.id));
+  const demandIds = new Set(materialDemandLines.map(({ demand }) => demand.id));
   const rfqRows = workspace.rfqs
     .filter((rfq) => rfq.demandIds.some((demandId) => demandIds.has(demandId)))
     .map((rfq) => ({
@@ -1219,11 +1220,11 @@ export const buildDemandDetailPanel = (
       { label: '预算', value: compactCurrency(demand.budget) },
       { label: '物料行', value: `${demand.lineItems.length} 行` },
     ],
-    lineItems: demand.lineItems.map((item) => {
+    lineItems: demand.lineItems.map((item, index) => {
       const material = workspace.materials.find((record) => record.id === item.materialId);
       const unit = material?.unit ?? '';
       return {
-        id: `${demand.id}:${item.materialId}`,
+        id: `${demand.id}:${item.materialId}:${index}`,
         name: material?.name ?? item.materialId,
         category: material?.category ?? '未维护',
         quantityLabel: `${item.quantity} ${unit}`.trim(),
@@ -1590,10 +1591,10 @@ const buildAuditTargetContext = (
           { label: '申请人', value: demand.requester },
           { label: '预算金额', value: compactCurrency(demand.budget) },
         ],
-        relatedRows: demand.lineItems.map((lineItem) => {
+        relatedRows: demand.lineItems.map((lineItem, index) => {
           const material = workspace.materials.find((item) => item.id === lineItem.materialId);
           return {
-            id: lineItem.materialId,
+            id: `${demand.id}:${lineItem.materialId}:${index}`,
             title: material?.name ?? lineItem.materialId,
             detail: `${lineItem.quantity} ${material?.unit ?? ''}`.trim(),
           };
