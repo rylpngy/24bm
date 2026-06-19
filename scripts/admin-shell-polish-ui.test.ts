@@ -33,6 +33,23 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('variant="empty"');
   });
 
+  it('uses shared empty states for buyer approval, notification, and audit empty results', () => {
+    const app = read('App.tsx');
+    const buyerWorkspace = app.slice(
+      app.indexOf('const BuyerWorkspaceView'),
+      app.indexOf('const AuditLogList'),
+    );
+    const auditLogList = app.slice(
+      app.indexOf('const AuditLogList'),
+      app.indexOf('const AuditLogDetailPanelView'),
+    );
+
+    expect(buyerWorkspace).toContain('<EmptyState title="当前没有待审批事项"');
+    expect(buyerWorkspace).toContain('<EmptyState title="暂无已处理审批记录"');
+    expect(buyerWorkspace).toContain('<EmptyState title="暂无审批结果通知"');
+    expect(auditLogList).toContain('<EmptyState title="暂无审计记录"');
+  });
+
   it('offers a retry action from the full-screen loading failure state', () => {
     const app = read('App.tsx');
     const shellState = app.slice(

@@ -2735,9 +2735,7 @@ const BuyerWorkspaceView: React.FC<{
               })}
             </div>
           ) : (
-            <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
-              当前没有待审批事项
-            </p>
+            <EmptyState title="当前没有待审批事项" desc="当前筛选条件下没有待处理审批，可切换审批状态或清空搜索后再查看。" />
           )}
         </Panel>
 
@@ -2789,9 +2787,7 @@ const BuyerWorkspaceView: React.FC<{
               })}
             </div>
           ) : (
-            <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
-              暂无已处理审批记录
-            </p>
+            <EmptyState title="暂无已处理审批记录" desc="审批通过或驳回后，最近处理记录会在这里沉淀。" />
           )}
         </Panel>
 
@@ -2833,9 +2829,7 @@ const BuyerWorkspaceView: React.FC<{
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
-              暂无审批结果通知
-            </p>
+            <EmptyState title="暂无审批结果通知" desc="审批结果、驳回原因和流程提醒会在这里汇总。" />
           )}
         </Panel>
       </div>
@@ -3502,9 +3496,7 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
           statusOptions={auditTargetOptions}
           onChange={setAuditTargetFilter}
         />
-        <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm font-bold text-slate-500">
-          暂无审计记录
-        </p>
+        <EmptyState title="暂无审计记录" desc="当前对象类型或搜索条件下没有匹配的操作日志。" />
       </>
     );
   }
