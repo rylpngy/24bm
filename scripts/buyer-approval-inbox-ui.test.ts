@@ -31,7 +31,9 @@ describe('buyer approval inbox UI', () => {
     expect(buyerAdminUi).toContain('提交人');
     expect(app).toContain('最近审批记录');
     expect(app).toContain('处理时间');
-    expect(app).toContain('审批结果通知');
+    expect(app).toContain('审批消息中心');
+    expect(app).toContain('审批结果通知、驳回原因、流程提醒');
+    expect(app).toContain('MessageCenterPanel');
     expect(app).toContain('未读');
   });
 });

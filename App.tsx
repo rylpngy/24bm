@@ -1378,6 +1378,45 @@ const buildSupplierModuleFacts = (
   return commonFacts[activeModule];
 };
 
+const buildSupplierMessageCenterNotifications = (workspace: SupplierWorkspace): JavaNotificationDto[] => {
+  const createdAt = new Date().toISOString();
+  const pendingQuoteMessages = workspace.opportunities
+    .filter((rfq) => rfq.status === '报价中' && !rfq.quotes.some((quote) => quote.supplierId === workspace.supplier.id))
+    .map((rfq) => ({
+      id: `supplier-message-rfq-${rfq.id}`,
+      tenantId: rfq.tenantId,
+      recipientId: workspace.supplier.id,
+      title: '收到询价邀请',
+      content: `${rfq.title} 等待报价，报价截止 ${rfq.deadline}。`,
+      read: false,
+      createdAt,
+    }));
+  const orderMessages = workspace.orders
+    .filter((order) => ['待供应商确认', '待发货', '已收货'].includes(order.status))
+    .map((order) => ({
+      id: `supplier-message-order-${order.id}`,
+      tenantId: order.tenantId,
+      recipientId: workspace.supplier.id,
+      title: order.status === '待供应商确认' ? '销售订单待确认' : order.status === '待发货' ? '销售订单待发货' : '销售订单可开票',
+      content: `${order.id} 当前状态为 ${order.status}，订单金额 ${currency(order.amount)}。`,
+      read: order.status === '已收货',
+      createdAt,
+    }));
+  const invoiceMessages = workspace.invoices
+    .filter((invoice) => invoice.paymentStatus !== '已付款')
+    .map((invoice) => ({
+      id: `supplier-message-invoice-${invoice.id}`,
+      tenantId: invoice.tenantId,
+      recipientId: workspace.supplier.id,
+      title: '发票回款待跟进',
+      content: `${invoice.id} 当前付款状态为 ${invoice.paymentStatus}，应收金额 ${currency(invoice.amount)}。`,
+      read: invoice.paymentStatus === '部分付款',
+      createdAt,
+    }));
+
+  return [...pendingQuoteMessages, ...orderMessages, ...invoiceMessages].slice(0, 6);
+};
+
 type PlatformModuleHeaderConfig = {
   title: string;
   desc: string;
@@ -2628,7 +2667,6 @@ const BuyerWorkspaceView: React.FC<{
   const sortedBuyerNotifications = [...buyerNotifications]
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, 6);
-  const unreadBuyerNotificationCount = buyerNotifications.filter((notification) => !notification.read).length;
   const linkedDemandIds = new Set(workspace.rfqs.flatMap((rfq) => rfq.demandIds));
   const displayPendingApprovals = javaEnabled ? sortedPendingApprovals : buildWorkspaceApprovalQueue(workspace);
   const moduleFacts = buildBuyerModuleFacts(activeModule, workspace, displayPendingApprovals);
@@ -2693,6 +2731,7 @@ const BuyerWorkspaceView: React.FC<{
     notification.content,
     notification.type,
   ]));
+  const buyerMessageCenterNotifications = sortedBuyerNotifications;
   const filteredDemandListRows = demandListRows.filter((demandRow) =>
     (demandStatusFilter === '全部状态' || demandRow.status === demandStatusFilter)
     && demandMatches(demandRow.id, [
@@ -2888,6 +2927,14 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {activeModule === 'dashboard' && (
+      <MessageCenterPanel
+        title="采购方消息中心"
+        scopeLabel="审批、询价、订单、发票"
+        notifications={buyerMessageCenterNotifications}
+      />
+    )}
+
+    {activeModule === 'dashboard' && (
       <Panel title="MVP 业务主线" icon={Activity}>
         <WorkflowRail steps={workspace.workflow} />
       </Panel>
@@ -3011,35 +3058,11 @@ const BuyerWorkspaceView: React.FC<{
           </Panel>
         )}
 
-        <Panel title="审批结果通知" icon={Bell}>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-sm font-bold text-slate-500">未读 {unreadBuyerNotificationCount} 条</p>
-          </div>
-          {filteredBuyerNotifications.length > 0 ? (
-            <div className="space-y-3">
-              {filteredBuyerNotifications.map((notification) => (
-                <div key={notification.id} className="rounded-lg border border-slate-200 bg-white p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-slate-950">{notification.title}</p>
-                      <p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-slate-500">
-                        {notification.content}
-                      </p>
-                    </div>
-                    {!notification.read && (
-                      <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
-                        未读
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-3 text-xs font-bold text-slate-400">{formatAuditTime(notification.createdAt)}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState title="暂无审批结果通知" desc="审批结果、驳回原因和流程提醒会在这里汇总。" />
-          )}
-        </Panel>
+        <MessageCenterPanel
+          title="审批消息中心"
+          scopeLabel="审批结果通知、驳回原因、流程提醒"
+          notifications={filteredBuyerNotifications}
+        />
       </div>
     )}
 
@@ -7382,6 +7405,62 @@ const EmptyState: React.FC<{
   <ShellState variant="empty" title={title} desc={desc} />
 );
 
+const MessageCenterPanel: React.FC<{
+  title: string;
+  scopeLabel: string;
+  notifications: JavaNotificationDto[];
+}> = ({ title, scopeLabel, notifications }) => {
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
+
+  return (
+    <Panel title={title} icon={Bell}>
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-blue-700">消息中心入口</p>
+          <p className="mt-1 text-sm font-bold text-slate-500">{scopeLabel}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
+            未读 {unreadCount} 条
+          </span>
+          <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-500">
+            共 {notifications.length} 条
+          </span>
+        </div>
+      </div>
+      {notifications.length > 0 ? (
+        <div className="space-y-3">
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`rounded-lg border p-4 ${
+                notification.read ? 'border-slate-200 bg-white' : 'border-blue-100 bg-blue-50'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-950">{notification.title}</p>
+                  <p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-slate-500">
+                    {notification.content}
+                  </p>
+                </div>
+                {!notification.read && (
+                  <span className="shrink-0 rounded-lg bg-white px-2 py-1 text-xs font-black text-blue-700">
+                    未读
+                  </span>
+                )}
+              </div>
+              <p className="mt-3 text-xs font-bold text-slate-400">{formatAuditTime(notification.createdAt)}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState title="暂无站内通知" desc="审批、询价、订单、发票和付款状态变化会在这里汇总。" />
+      )}
+    </Panel>
+  );
+};
+
 const feedbackNoticeToneClasses: Record<'success' | 'error' | 'info', string> = {
   success: 'border-emerald-100 bg-emerald-50 text-emerald-700',
   error: 'border-red-100 bg-red-50 text-red-700',
@@ -7512,6 +7591,7 @@ const SupplierWorkspaceView: React.FC<{
     supplierOrderStatusFilter === '全部状态' || order.status === supplierOrderStatusFilter);
   const filteredSupplierInvoices = workspace.invoices.filter((invoice) =>
     supplierInvoiceStatusFilter === '全部状态' || invoice.paymentStatus === supplierInvoiceStatusFilter);
+  const supplierMessageCenterNotifications = buildSupplierMessageCenterNotifications(workspace);
   useEffect(() => {
     setSelectedSupplierQuoteId((current) => (
       workspace.quotes.some((quote) => quote.id === current) ? current : workspace.quotes[0]?.id ?? ''
@@ -7548,6 +7628,12 @@ const SupplierWorkspaceView: React.FC<{
       pendingDeliveryCount={pendingDeliveryCount}
       invoiceReadyCount={invoiceReadyCount}
       pendingReceivableCount={pendingReceivableCount}
+    />
+
+    <MessageCenterPanel
+      title="供应商消息中心"
+      scopeLabel="询价邀请、销售订单、发票应收"
+      notifications={supplierMessageCenterNotifications}
     />
 
     {activeModule === 'overview' && (

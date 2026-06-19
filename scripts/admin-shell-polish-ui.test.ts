@@ -47,7 +47,8 @@ describe('admin shell polish UI', () => {
 
     expect(buyerWorkspace).toContain('<EmptyState title="当前没有待审批事项"');
     expect(buyerWorkspace).toContain('<EmptyState title="暂无已处理审批记录"');
-    expect(buyerWorkspace).toContain('<EmptyState title="暂无审批结果通知"');
+    expect(buyerWorkspace).toContain('title="审批消息中心"');
+    expect(app).toContain('<EmptyState title="暂无站内通知"');
     expect(auditLogList).toContain('<EmptyState title="暂无审计记录"');
   });
 

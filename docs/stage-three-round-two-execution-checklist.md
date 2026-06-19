@@ -72,6 +72,7 @@
 | 16 | 提示态一致性 | 平台、采购方、供应商三端主流程运行结果已统一复用 FeedbackNotice，并按成功、失败、普通信息区分反馈样式 | `scripts/feedback-notice-consistency-ui.test.ts` |
 | 17 | 只读页详情入口 | 平台租户、企业审核、公告以及供应商报价、销售订单、应收发票列表已补筛选摘要、已选记录和详情入口 | `scripts/platform-supplier-readonly-detail-affordance-ui.test.ts` |
 | 18 | 附件中心入口 | 采购需求、收货验收、发票付款和供应商资质已补附件中心入口、业务对象关联、可见范围和元数据登记边界说明 | `scripts/attachment-center-entry-ui.test.ts` |
+| 19 | 消息中心入口 | 采购方首页、审批消息区和供应商工作台已补消息中心入口、未读摘要、通知卡片和空态，供应商通知先由商机、订单、发票状态派生 | `scripts/message-center-entry-ui.test.ts` |
 
 ## 第二批候选任务
 
