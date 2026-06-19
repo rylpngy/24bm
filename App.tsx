@@ -2365,6 +2365,10 @@ const BuyerWorkspaceView: React.FC<{
   const [orderDrafts, setOrderDrafts] = useState<Record<string, BuyerOrderDraft>>({});
   const [receiptDrafts, setReceiptDrafts] = useState<Record<string, BuyerReceiptDraft>>({});
   const [paymentDrafts, setPaymentDrafts] = useState<Record<string, BuyerPaymentDraft>>({});
+  const [demandStatusFilter, setDemandStatusFilter] = useState('全部状态');
+  const [rfqStatusFilter, setRfqStatusFilter] = useState('全部状态');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('全部状态');
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('全部状态');
   const defaultExpectedReceiptDate = () => {
     const date = new Date();
     date.setDate(date.getDate() + 14);
@@ -2475,13 +2479,17 @@ const BuyerWorkspaceView: React.FC<{
     notification.content,
     notification.type,
   ]));
-  const filteredDemandListRows = demandListRows.filter((demandRow) => demandMatches(demandRow.id, [
+  const filteredDemandListRows = demandListRows.filter((demandRow) =>
+    (demandStatusFilter === '全部状态' || demandRow.status === demandStatusFilter)
+    && demandMatches(demandRow.id, [
     demandRow.title,
     demandRow.status,
     demandRow.materialSummary,
     ...demandRow.facts.map((fact) => fact.value),
   ]));
-  const filteredRfqListRows = rfqListRows.filter((rfq) => matchesSearchQuery([
+  const filteredRfqListRows = rfqListRows.filter((rfq) =>
+    (rfqStatusFilter === '全部状态' || rfq.status === rfqStatusFilter)
+    && matchesSearchQuery([
     rfq.id,
     rfq.title,
     rfq.status,
@@ -2517,7 +2525,9 @@ const BuyerWorkspaceView: React.FC<{
     material.usageLabel,
     ...material.facts.map((fact) => fact.value),
   ]));
-  const filteredOrderFulfillmentRows = orderFulfillmentRows.filter((orderRow) => matchesSearchQuery([
+  const filteredOrderFulfillmentRows = orderFulfillmentRows.filter((orderRow) =>
+    (orderStatusFilter === '全部状态' || orderRow.status === orderStatusFilter)
+    && matchesSearchQuery([
     orderRow.id,
     orderRow.supplierName,
     orderRow.amountLabel,
@@ -2532,7 +2542,9 @@ const BuyerWorkspaceView: React.FC<{
     orderRow.status,
     orderRow.nextAction.title,
   ]));
-  const filteredInvoicePaymentRows = invoicePaymentRows.filter((invoiceRow) => matchesSearchQuery([
+  const filteredInvoicePaymentRows = invoicePaymentRows.filter((invoiceRow) =>
+    (invoiceStatusFilter === '全部状态' || invoiceRow.status === invoiceStatusFilter)
+    && matchesSearchQuery([
     invoiceRow.id,
     invoiceRow.supplierName,
     invoiceRow.orderLabel,
@@ -2540,6 +2552,10 @@ const BuyerWorkspaceView: React.FC<{
     invoiceRow.status,
     invoiceRow.nextAction.title,
   ]));
+  const demandStatusOptions = Array.from(new Set(demandListRows.map((demandRow) => demandRow.status)));
+  const rfqStatusOptions = Array.from(new Set(rfqListRows.map((rfq) => rfq.status)));
+  const orderStatusOptions = Array.from(new Set(orderFulfillmentRows.map((orderRow) => orderRow.status)));
+  const invoiceStatusOptions = Array.from(new Set(invoicePaymentRows.map((invoiceRow) => invoiceRow.status)));
   const searchFilterLabel = normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : undefined;
   const moduleHeader = buyerModuleHeaders[activeModule];
   const selectedDemand = workspace.demands.some((demand) => demand.id === selectedDemandId)
@@ -2825,6 +2841,12 @@ const BuyerWorkspaceView: React.FC<{
           filterLabel={searchFilterLabel ?? '全部需求状态'}
           actionLabel="新建需求"
         />
+        <StatusFilterControl
+          label="需求状态"
+          value={demandStatusFilter}
+          statusOptions={demandStatusOptions}
+          onChange={setDemandStatusFilter}
+        />
         {filteredDemandListRows.length === 0 ? (
           <EmptyState title="暂无采购需求" desc="创建需求后可提交审批，审批通过后再转为询价项目。" />
         ) : (
@@ -2906,6 +2928,12 @@ const BuyerWorkspaceView: React.FC<{
             recordCount={filteredRfqListRows.length}
             filterLabel={searchFilterLabel ?? '全部询价状态'}
             actionLabel="邀请供应商"
+          />
+          <StatusFilterControl
+            label="询价状态"
+            value={rfqStatusFilter}
+            statusOptions={rfqStatusOptions}
+            onChange={setRfqStatusFilter}
           />
           {filteredRfqListRows.length === 0 ? (
             <EmptyState title="暂无询价项目" desc="需求审批通过后，可从采购需求页选择已准入供应商并创建询价。" />
@@ -3167,6 +3195,12 @@ const BuyerWorkspaceView: React.FC<{
           filterLabel={searchFilterLabel ?? '全部订单状态'}
           actionLabel="生成订单"
         />
+        <StatusFilterControl
+          label="订单状态"
+          value={orderStatusFilter}
+          statusOptions={orderStatusOptions}
+          onChange={setOrderStatusFilter}
+        />
         {filteredOrderFulfillmentRows.length === 0 ? (
           <EmptyState title="暂无采购订单" desc="定标审批通过后，可在报价对比页生成采购订单。" />
         ) : (
@@ -3310,6 +3344,12 @@ const BuyerWorkspaceView: React.FC<{
           recordCount={filteredInvoicePaymentRows.length}
           filterLabel={searchFilterLabel ?? '待付款优先'}
           actionLabel="登记付款"
+        />
+        <StatusFilterControl
+          label="付款状态"
+          value={invoiceStatusFilter}
+          statusOptions={invoiceStatusOptions}
+          onChange={setInvoiceStatusFilter}
         />
         {filteredInvoicePaymentRows.length === 0 ? (
           <EmptyState title="暂无发票" desc="供应商在订单收货后提交发票，采购方在这里登记付款状态。" />
@@ -7734,6 +7774,32 @@ const ListToolbar: React.FC<{
         </span>
       )}
     </div>
+  </div>
+);
+
+const StatusFilterControl: React.FC<{
+  label: string;
+  value: string;
+  statusOptions: string[];
+  onChange: (value: string) => void;
+}> = ({ label, value, statusOptions, onChange }) => (
+  <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3">
+    <label className="text-xs font-black text-slate-500" htmlFor={`status-filter-${label}`}>
+      {label}
+    </label>
+    <select
+      id={`status-filter-${label}`}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+    >
+      <option value="全部状态">全部状态</option>
+      {statusOptions.map((status) => (
+        <option key={status} value={status}>
+          {status}
+        </option>
+      ))}
+    </select>
   </div>
 );
 
