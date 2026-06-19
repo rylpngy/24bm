@@ -55,6 +55,7 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('详情视觉层级');
     expect(checklist).toContain('三端详情层级');
     expect(checklist).toContain('动作按钮反馈');
+    expect(checklist).toContain('移动端布局收口');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-award-order-action-forms-ui.test.ts');
@@ -68,5 +69,6 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('scripts/buyer-detail-visual-hierarchy-ui.test.ts');
     expect(checklist).toContain('scripts/cross-role-detail-visual-hierarchy-ui.test.ts');
     expect(checklist).toContain('scripts/action-button-feedback-consistency-ui.test.ts');
+    expect(checklist).toContain('scripts/mobile-layout-overflow-ui.test.ts');
   });
 });

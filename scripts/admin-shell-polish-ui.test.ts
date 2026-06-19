@@ -7,19 +7,20 @@ describe('admin shell polish UI', () => {
   it('keeps long navigation and workspace content scrollable within the viewport', () => {
     const app = read('App.tsx');
 
-    expect(app).toContain('h-dvh flex-col overflow-hidden');
-    expect(app).toContain('min-h-0 flex-1 flex-col');
+    expect(app).toContain('h-dvh flex-col overflow-hidden overflow-x-hidden');
+    expect(app).toContain('min-h-0 min-w-0 flex-1 flex-col');
     expect(app).toContain('min-h-0 min-w-0 flex-1 overflow-y-auto');
     expect(app).toContain('overscroll-contain');
-    expect(app).toContain('max-w-full');
+    expect(app).toContain('w-full max-w-7xl');
   });
 
   it('prevents nested workspace scroll regions from forcing horizontal overflow', () => {
     const app = read('App.tsx');
 
-    expect(app).toContain('flex min-h-0 flex-1 flex-col min-w-0');
+    expect(app).toContain('flex min-h-0 min-w-0 flex-1 flex-col');
     expect(app).toContain('min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain');
-    expect(app).toContain('mx-auto max-w-7xl max-w-full');
+    expect(app).toContain('mx-auto w-full max-w-7xl');
+    expect(app).not.toContain('max-w-7xl max-w-full');
   });
 
   it('uses shared state components for loading, errors, and empty content', () => {
@@ -117,7 +118,7 @@ describe('admin shell polish UI', () => {
     );
 
     expect(appHeader).not.toContain('hidden w-64 xl:block');
-    expect(appHeader).toContain('relative order-last w-full');
+    expect(appHeader).toContain('relative order-last min-w-0 w-full');
     expect(appHeader).toContain('sm:min-w-[18rem]');
     expect(appHeader).toContain('xl:order-none xl:w-64');
     expect(appHeader).toContain('aria-label="搜索当前工作区"');
@@ -134,7 +135,7 @@ describe('admin shell polish UI', () => {
       app.indexOf('const AppHeader'),
     );
 
-    expect(app).toContain('flex h-dvh flex-col overflow-hidden');
+    expect(app).toContain('flex h-dvh flex-col overflow-hidden overflow-x-hidden');
     expect(app).toContain('lg:flex-row');
     expect(app).toContain('<MobileAdminNav');
     expect(appSidebar).toContain('hidden min-h-0 shrink-0 flex-col');

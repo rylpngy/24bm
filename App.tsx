@@ -789,7 +789,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-slate-50 text-slate-900 lg:flex-row">
+    <div className="flex h-dvh flex-col overflow-hidden overflow-x-hidden bg-slate-50 text-slate-900 lg:flex-row">
       <MobileAdminNav
         activeRole={activeRole}
         activeModules={activeModules}
@@ -802,7 +802,7 @@ const App: React.FC = () => {
         onSelectRole={setActiveRole}
         onSelectModule={setActiveRoleModule}
       />
-      <main className="flex min-h-0 flex-1 flex-col min-w-0">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <AppHeader
           activeRole={activeRole}
           activeModule={activeModule}
@@ -820,7 +820,7 @@ const App: React.FC = () => {
           onRunJavaWorkflow={runJavaWorkflow}
         />
         <section className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="mx-auto max-w-7xl max-w-full space-y-6 p-4 sm:p-6">
+          <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
             {activeRole === 'platform' && (
               <PlatformWorkspace
                 data={platformData}
@@ -1003,7 +1003,7 @@ const MobileAdminNav: React.FC<{
         </div>
       </div>
 
-      <nav aria-label="移动端角色导航" className="flex gap-2 overflow-x-auto px-3 pb-2">
+      <nav aria-label="移动端角色导航" className="flex gap-2 overflow-x-auto px-3 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {adminRoleNavigation.map((role) => {
           const roleActive = activeRole === role.id;
           const RoleIcon = role.id === 'platform' ? Layers3 : role.id === 'buyer' ? ShoppingCart : Truck;
@@ -1025,7 +1025,7 @@ const MobileAdminNav: React.FC<{
         })}
       </nav>
 
-      <nav aria-label="移动端模块导航" className="flex gap-2 overflow-x-auto px-3 pb-3">
+      <nav aria-label="移动端模块导航" className="flex gap-2 overflow-x-auto px-3 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {activeRoleNavigation.modules.map((module) => {
           const moduleActive = activeModules[activeRoleNavigation.id] === module.id;
           const ModuleIcon = moduleIcon(module.id);
@@ -1105,7 +1105,7 @@ const AppHeader: React.FC<{
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 lg:justify-end lg:gap-3">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:justify-end lg:gap-3">
         {activeRole === 'buyer' && (
           <Select value={tenantId} onChange={setTenantId}>
             {buyerTenants.map((tenant) => (
@@ -1124,7 +1124,7 @@ const AppHeader: React.FC<{
             ))}
           </Select>
         )}
-        <div className="relative order-last w-full sm:min-w-[18rem] xl:order-none xl:w-64">
+        <div className="relative order-last min-w-0 w-full sm:min-w-[18rem] xl:order-none xl:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
           <input
             aria-label="搜索当前工作区"
@@ -1148,7 +1148,7 @@ const AppHeader: React.FC<{
           onClick={onRefresh}
           disabled={refreshBusy}
           aria-busy={refreshBusy || undefined}
-          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          className="inline-flex h-9 min-w-0 flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 sm:flex-none"
         >
           {refreshBusy ? '刷新中' : '刷新'}
         </button>
@@ -1157,7 +1157,7 @@ const AppHeader: React.FC<{
             type="button"
             onClick={onRunJavaWorkflow}
             disabled={workflowBusy}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400 sm:px-4"
+            className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400 sm:flex-none sm:px-4"
           >
             <Send size={16} />
             {workflowBusy ? '执行中' : '跑通主流程'}
@@ -1179,11 +1179,11 @@ const Select: React.FC<{
   onChange: (value: string) => void;
   children: React.ReactNode;
 }> = ({ value, onChange, children }) => (
-  <label className="relative">
+  <label className="relative w-full min-w-0 sm:w-auto">
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-9 text-sm font-bold text-slate-700 outline-none hover:bg-slate-50"
+      className="w-full min-w-0 appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-9 text-sm font-bold text-slate-700 outline-none hover:bg-slate-50"
     >
       {children}
     </select>
@@ -8331,7 +8331,7 @@ const StatusFilterControl: React.FC<{
       id={`status-filter-${label}`}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-9 w-full min-w-[12rem] rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-auto"
+      className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-auto sm:min-w-[12rem]"
     >
       <option value="全部状态">全部状态</option>
       {statusOptions.map((status) => (

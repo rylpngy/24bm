@@ -67,6 +67,7 @@
 | 11 | 详情视觉层级 | 采购需求、RFQ、订单、发票详情已统一详情头、摘要事实和分组标题结构 | `scripts/buyer-detail-visual-hierarchy-ui.test.ts` |
 | 12 | 三端详情层级 | 平台企业审核、平台公告、供应商报价记录、供应商发票应收卡片已复用详情头和分组结构 | `scripts/cross-role-detail-visual-hierarchy-ui.test.ts` |
 | 13 | 动作按钮反馈 | 公告发布、企业审核、供应商报价、订单确认、发货和开票动作已统一禁用、处理中和 `aria-busy` 反馈 | `scripts/action-button-feedback-consistency-ui.test.ts` |
+| 14 | 移动端布局收口 | 后台壳、移动端导航、顶部工具栏、工作区选择器和状态筛选器已补窄屏宽度约束，降低横向溢出风险 | `scripts/mobile-layout-overflow-ui.test.ts` |
 
 ## 第二批候选任务
 
