@@ -23,4 +23,23 @@ describe('buyer material summary panel UI details', () => {
     expect(materialDetailView).toContain('detail.usageSummary.find');
     expect(materialDetailView).toContain('detail.procurementReadinessRows.find');
   });
+
+  it('surfaces a material operation summary for procurement readiness', () => {
+    const app = read('App.tsx');
+    const materialDetailView = app.slice(
+      app.indexOf('const MaterialDetailPanelView'),
+      app.indexOf('const DemandCreateForm'),
+    );
+
+    expect(materialDetailView).toContain('MaterialDetailOperationPanel');
+    expect(materialDetailView).toContain('采购就绪摘要');
+    expect(materialDetailView).toContain('物料状态');
+    expect(materialDetailView).toContain('引用次数');
+    expect(materialDetailView).toContain('覆盖供应商');
+    expect(materialDetailView).toContain('可采购状态');
+    expect(materialDetailView).toContain('推荐动作');
+    expect(materialDetailView).toContain('detail.procurementReadinessRows.find');
+    expect(materialDetailView).toContain('detail.usageSummary.find');
+    expect(materialDetailView).toContain('detail.supplierCoverageRows.length');
+  });
 });

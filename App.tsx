@@ -5074,6 +5074,7 @@ const MaterialDetailPanelView: React.FC<{
         </div>
 
         <MaterialDetailSummaryPanel detail={detail} />
+        <MaterialDetailOperationPanel detail={detail} />
 
         <section>
           <p className="mb-2 text-xs font-black text-slate-500">使用概览</p>
@@ -5203,6 +5204,40 @@ const MaterialDetailSummaryPanel: React.FC<{
         <MiniFact label="引用需求" value={demandUsage} />
         <MiniFact label="准入供应商" value={supplierCoverage} />
         <MiniFact label="下一步" value={nextAction} />
+      </div>
+    </section>
+  );
+};
+
+const MaterialDetailOperationPanel: React.FC<{
+  detail: MaterialDetailPanel;
+}> = ({ detail }) => {
+  const demandUsage = detail.usageSummary.find((row) => row.label === '引用需求')?.value ?? `${detail.demandRows.length} 条`;
+  const supplierCoverage = detail.usageSummary.find((row) => row.label === '准入供应商')?.value ?? `${detail.supplierCoverageRows.length} 家`;
+  const readiness = detail.procurementReadinessRows.find((row) => row.label === '可采购')?.value ?? detail.status;
+  const nextAction = detail.procurementReadinessRows.find((row) => row.label === '下一步')?.value ?? '待确认';
+
+  return (
+    <section className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-emerald-700">采购就绪摘要</p>
+          <p className="mt-1 text-sm font-black text-slate-950">{detail.title}</p>
+        </div>
+        <StatusPill label={detail.status} />
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        <MiniFact label="物料状态" value={detail.status} />
+        <MiniFact label="引用次数" value={demandUsage} />
+        <MiniFact label="覆盖供应商" value={supplierCoverage} />
+        <MiniFact label="可采购状态" value={readiness} />
+      </div>
+      <div className="mt-3 rounded-lg border border-emerald-100 bg-white p-3">
+        <p className="text-xs font-black text-slate-500">推荐动作</p>
+        <p className="mt-1 text-sm font-black leading-5 text-slate-950">{nextAction}</p>
+        <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
+          已覆盖 {detail.supplierCoverageRows.length} 家供应商，可结合引用需求和关联询价决定是否补充目录或发起采购。
+        </p>
       </div>
     </section>
   );
