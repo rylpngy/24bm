@@ -1872,6 +1872,11 @@ const PlatformAnnouncementPublishPanel: React.FC<{
   const [title, setTitle] = useState('平台维护窗口通知');
   const [content, setContent] = useState('平台将在周五晚间进行采购协同服务维护，期间询价、报价和订单确认能力正常可用。');
   const [targetScope, setTargetScope] = useState('all');
+  const validAnnouncementScopes = ['all', 'buyer', 'supplier'];
+  const announcementTitleInvalid = title.trim().length === 0;
+  const announcementContentInvalid = content.trim().length === 0;
+  const announcementScopeInvalid = !validAnnouncementScopes.includes(targetScope);
+  const announcementPublishInvalid = announcementTitleInvalid || announcementContentInvalid || announcementScopeInvalid;
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
@@ -1888,7 +1893,7 @@ const PlatformAnnouncementPublishPanel: React.FC<{
           event.preventDefault();
           const nextTitle = title.trim();
           const nextContent = content.trim();
-          if (!nextTitle || !nextContent) {
+          if (announcementPublishInvalid) {
             return;
           }
           onPublishAnnouncement({ title: nextTitle, content: nextContent, targetScope });
@@ -1928,9 +1933,28 @@ const PlatformAnnouncementPublishPanel: React.FC<{
             <option value="supplier">供应商企业</option>
           </select>
         </label>
+        {announcementPublishInvalid && (
+          <div aria-live="polite" className="space-y-2 lg:col-span-4">
+            {announcementTitleInvalid && (
+              <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                请填写公告标题后再发布。
+              </p>
+            )}
+            {announcementContentInvalid && (
+              <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                请填写公告正文后再发布。
+              </p>
+            )}
+            {announcementScopeInvalid && (
+              <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                请选择有效发布范围。
+              </p>
+            )}
+          </div>
+        )}
         <button
           type="submit"
-          disabled={!title.trim() || !content.trim() || publishBusy}
+          disabled={announcementPublishInvalid || publishBusy}
           className="inline-flex h-10 items-center justify-center rounded-lg bg-green-600 px-4 text-sm font-black text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           {publishBusy ? '发布中' : '发布公告'}

@@ -24,4 +24,22 @@ describe('platform announcement publish form UI', () => {
     expect(platformWorkspace).toContain('content: nextContent');
     expect(platformWorkspace).toContain('platformAnnouncements.map');
   });
+
+  it('shows validation feedback before publishing platform announcements', () => {
+    const app = read('App.tsx');
+    const publishPanel = app.slice(
+      app.indexOf('const PlatformAnnouncementPublishPanel'),
+      app.indexOf('const formatAnnouncementScope'),
+    );
+
+    expect(publishPanel).toContain('announcementTitleInvalid');
+    expect(publishPanel).toContain('announcementContentInvalid');
+    expect(publishPanel).toContain('announcementScopeInvalid');
+    expect(publishPanel).toContain('announcementPublishInvalid');
+    expect(publishPanel).toContain('请填写公告标题后再发布。');
+    expect(publishPanel).toContain('请填写公告正文后再发布。');
+    expect(publishPanel).toContain('请选择有效发布范围。');
+    expect(publishPanel).toContain('aria-live="polite"');
+    expect(publishPanel).toContain('disabled={announcementPublishInvalid || publishBusy}');
+  });
 });

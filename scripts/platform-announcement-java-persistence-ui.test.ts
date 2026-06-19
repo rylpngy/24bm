@@ -27,7 +27,8 @@ describe('platform announcement Java persistence UI', () => {
     expect(platformWorkspace).toContain('publishBusy');
     expect(publishPanel).toContain('Java 模式下持久化发布公告');
     expect(publishPanel).toContain('公告正文');
-    expect(publishPanel).toContain('disabled={!title.trim() || !content.trim() || publishBusy}');
+    expect(publishPanel).toContain('announcementPublishInvalid');
+    expect(publishPanel).toContain('disabled={announcementPublishInvalid || publishBusy}');
     expect(publishPanel).toContain('发布中');
   });
 });
