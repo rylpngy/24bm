@@ -79,6 +79,7 @@
 | 23 | 供应商报价与履约详情 | 供应商报价记录和销售订单页已补选中详情面板，覆盖关联询价、定标结果、发货详情、发票应收和履约轨迹 | `scripts/supplier-quote-order-detail-panels-ui.test.ts` |
 | 24 | 平台公告生命周期入口 | 平台公告页已补编辑草稿、撤回公告、影响范围、站内通知和审计留痕说明，Java API 后续扩展 | `scripts/platform-announcement-lifecycle-entry-ui.test.ts` |
 | 25 | 平台租户功能开关详情 | 平台租户列表已补选中租户详情面板，覆盖套餐容量、功能开关、多租户数据隔离和审计动作说明 | `scripts/platform-tenant-detail-panel-ui.test.ts` |
+| 26 | 平台企业审核详情 | 平台企业审核页已补选中审核详情面板，覆盖入驻资料、风险检查、审核轨迹和处理建议 | `scripts/platform-enterprise-review-detail-panel-ui.test.ts` |
 
 ## 第二批候选任务
 

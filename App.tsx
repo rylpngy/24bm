@@ -1646,6 +1646,8 @@ const PlatformWorkspace: React.FC<{
     ));
   }, [model]);
   const enterpriseReviews = platformEnterpriseReviews;
+  const selectedPlatformReview = enterpriseReviews.find((review) => review.id === selectedPlatformReviewId)
+    ?? enterpriseReviews[0];
   const handleReviewEnterprise = async (reviewId: string, result: 'approved' | 'rejected') => {
     if (javaEnabled) {
       await onReviewEnterprise(reviewId, result);
@@ -1922,15 +1924,18 @@ const PlatformWorkspace: React.FC<{
               selectedLabel={selectedPlatformReviewId}
               onClear={() => setSelectedPlatformReviewId(enterpriseReviews[0]?.id ?? '')}
             />
-            <div className="space-y-3">
-              {enterpriseReviews.map((review) => (
-                <PlatformEnterpriseReviewCard
-                  key={review.id}
-                  review={review}
-                  selected={selectedPlatformReviewId === review.id}
-                  onSelectDetail={() => setSelectedPlatformReviewId(review.id)}
-                />
-              ))}
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+              <div className="space-y-3">
+                {enterpriseReviews.map((review) => (
+                  <PlatformEnterpriseReviewCard
+                    key={review.id}
+                    review={review}
+                    selected={selectedPlatformReviewId === review.id}
+                    onSelectDetail={() => setSelectedPlatformReviewId(review.id)}
+                  />
+                ))}
+              </div>
+              <PlatformEnterpriseReviewDetailPanel review={selectedPlatformReview} />
             </div>
           </Panel>
         </>
@@ -2421,6 +2426,74 @@ const formatEnterpriseType = (type: string) => {
     return '供应商企业';
   }
   return type;
+};
+
+const PlatformEnterpriseReviewDetailPanel: React.FC<{
+  review?: PlatformEnterpriseReview;
+}> = ({ review }) => {
+  if (!review) {
+    return (
+      <Panel title="审核详情" icon={ClipboardCheck}>
+        <EmptyState title="暂无审核详情" desc="选择一家入驻企业后，可查看入驻资料、风险检查、审核轨迹和处理建议。" />
+      </Panel>
+    );
+  }
+
+  const handlingAdvice = review.status === '待审核'
+    ? '核对入驻资料并完成风险检查'
+    : review.status === '已认证'
+      ? '维护认证档案'
+      : '等待企业重新提交资料';
+
+  return (
+    <Panel title="审核详情" icon={ClipboardCheck}>
+      <div className="space-y-4">
+        <DetailHeroCard
+          eyebrow="审核详情"
+          title={review.name}
+          meta={`企业编号 ${review.id}`}
+          status={review.status}
+          facts={[
+            { label: '企业类型', value: formatEnterpriseType(review.type) },
+            { label: '所属行业', value: review.industry },
+            { label: '审核状态', value: review.status },
+            { label: '处理建议', value: handlingAdvice },
+          ]}
+        />
+
+        <DetailSection title="入驻资料">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="企业名称" value={review.name} />
+            <DetailKeyValueRow label="企业类型" value={formatEnterpriseType(review.type)} />
+            <DetailKeyValueRow label="所属行业" value={review.industry} />
+            <DetailKeyValueRow label="资料状态" value={review.status === '待审核' ? '待平台核对' : '已进入审核记录'} />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="风险检查">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="重复企业" value="需核对统一社会信用代码" />
+            <DetailKeyValueRow label="黑名单风险" value="需核对平台公共企业档案" />
+            <DetailKeyValueRow label="业务边界" value="平台只审核入驻，不参与采购业务决策" />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="审核轨迹">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="当前状态" value={review.status} />
+            <DetailKeyValueRow label="审计动作" value="enterprise.reviewed" />
+            <DetailKeyValueRow label="留痕对象" value={review.id} />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="处理建议">
+          <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+            {handlingAdvice}
+          </p>
+        </DetailSection>
+      </div>
+    </Panel>
+  );
 };
 
 const PlatformEnterpriseReviewCard: React.FC<{
