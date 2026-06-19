@@ -1673,7 +1673,27 @@ const PlatformWorkspace: React.FC<{
               filterLabel="全部采购企业租户"
               actionLabel="租户配置"
             />
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <ResponsiveTableFrame
+              mobileCards={platformTenants.map((tenant) => (
+                <div
+                  key={tenant.id}
+                  aria-label={`${tenant.name} 租户摘要`}
+                  className="rounded-lg border border-slate-200 bg-white p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="break-words font-black text-slate-950">{tenant.name}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">{tenant.plan}</p>
+                    </div>
+                    <StatusPill label={tenant.status} />
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    <MiniFact label="功能开关" value={tenant.features.join('、') || '未启用'} />
+                    <MiniFact label="用户上限" value={`${tenant.userLimit}`} />
+                  </div>
+                </div>
+              ))}
+            >
               <table className="min-w-[860px] w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
                   <tr>
@@ -1698,7 +1718,7 @@ const PlatformWorkspace: React.FC<{
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveTableFrame>
           </Panel>
         </>
       )}
@@ -2757,7 +2777,37 @@ const BuyerWorkspaceView: React.FC<{
           {filteredRfqListRows.length === 0 ? (
             <EmptyState title="暂无询价项目" desc="需求审批通过后，可从采购需求页选择已准入供应商并创建询价。" />
           ) : (
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <ResponsiveTableFrame
+            mobileCards={filteredRfqListRows.map((rfq) => (
+              <div
+                key={rfq.id}
+                aria-label={`${rfq.title} 询价摘要`}
+                className={`rounded-lg border bg-white p-4 transition ${
+                  selectedRfq === rfq.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                }`}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="break-words font-black text-slate-950">{rfq.title}</p>
+                    <p className="mt-1 font-mono text-xs font-bold text-slate-500">{rfq.id}</p>
+                  </div>
+                  <StatusPill label={rfq.status} />
+                </div>
+                <div className="mt-3 grid gap-2">
+                  <MiniFact label="关联需求" value={rfq.demandLabel} />
+                  <MiniFact label="供应商" value={rfq.supplierLabel} />
+                  <MiniFact label="响应" value={rfq.quoteLabel} />
+                  <MiniFact label="截止时间" value={rfq.deadlineLabel} />
+                </div>
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <TableDetailButton
+                    selected={selectedRfq === rfq.id}
+                    onClick={() => setSelectedRfqId(rfq.id)}
+                  />
+                </div>
+              </div>
+            ))}
+          >
             <table className="min-w-[860px] w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
                 <tr>
@@ -2799,7 +2849,7 @@ const BuyerWorkspaceView: React.FC<{
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTableFrame>
           )}
         </Panel>
         <RfqDetailPanelView
@@ -6790,6 +6840,20 @@ const ListToolbar: React.FC<{
           {actionLabel}
         </span>
       )}
+    </div>
+  </div>
+);
+
+const ResponsiveTableFrame: React.FC<{
+  mobileCards: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ mobileCards, children }) => (
+  <div className="space-y-3">
+    <div className="grid gap-3 lg:hidden">
+      {mobileCards}
+    </div>
+    <div className="hidden overflow-x-auto rounded-lg border border-slate-200 lg:block">
+      {children}
     </div>
   </div>
 );
