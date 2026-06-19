@@ -1877,6 +1877,17 @@ const PlatformAnnouncementPublishPanel: React.FC<{
   const announcementContentInvalid = content.trim().length === 0;
   const announcementScopeInvalid = !validAnnouncementScopes.includes(targetScope);
   const announcementPublishInvalid = announcementTitleInvalid || announcementContentInvalid || announcementScopeInvalid;
+  const publishAnnouncement = () => {
+    const nextTitle = title.trim();
+    const nextContent = content.trim();
+    if (announcementPublishInvalid) {
+      return;
+    }
+    onPublishAnnouncement({ title: nextTitle, content: nextContent, targetScope });
+    setTitle('');
+    setContent('');
+    setTargetScope('all');
+  };
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
@@ -1891,15 +1902,7 @@ const PlatformAnnouncementPublishPanel: React.FC<{
         className="mt-4 grid gap-3 lg:grid-cols-[minmax(180px,0.8fr)_minmax(260px,1.2fr)_180px_auto] lg:items-end"
         onSubmit={(event) => {
           event.preventDefault();
-          const nextTitle = title.trim();
-          const nextContent = content.trim();
-          if (announcementPublishInvalid) {
-            return;
-          }
-          onPublishAnnouncement({ title: nextTitle, content: nextContent, targetScope });
-          setTitle('');
-          setContent('');
-          setTargetScope('all');
+          publishAnnouncement();
         }}
       >
         <label className="block">
@@ -1952,13 +1955,17 @@ const PlatformAnnouncementPublishPanel: React.FC<{
             )}
           </div>
         )}
-        <button
-          type="submit"
+        <PrimaryActionButton
+          onClick={publishAnnouncement}
           disabled={announcementPublishInvalid || publishBusy}
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-green-600 px-4 text-sm font-black text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+          busy={publishBusy}
+          pendingLabel="发布中"
+          tone="emerald"
+          size="md"
+          flushTop
         >
-          {publishBusy ? '发布中' : '发布公告'}
-        </button>
+          发布公告
+        </PrimaryActionButton>
       </form>
     </section>
   );
@@ -2082,22 +2089,26 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
                     <p className="mt-1 text-xs font-bold text-slate-500">{review.type} · {review.industry}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
+                    <PrimaryActionButton
                       onClick={() => onReviewEnterprise(review.id, 'approved')}
                       disabled={approveBusy || rejectBusy || enterpriseReviewInvalid}
-                      className="inline-flex h-9 items-center justify-center rounded-lg bg-green-600 px-3 text-xs font-black text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      busy={approveBusy}
+                      pendingLabel="审核中"
+                      tone="emerald"
+                      flushTop
                     >
-                      {approveBusy ? '审核中' : '通过审核'}
-                    </button>
-                    <button
-                      type="button"
+                      通过审核
+                    </PrimaryActionButton>
+                    <PrimaryActionButton
                       onClick={() => onReviewEnterprise(review.id, 'rejected')}
                       disabled={approveBusy || rejectBusy || enterpriseReviewInvalid}
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                      busy={rejectBusy}
+                      pendingLabel="审核中"
+                      tone="red"
+                      flushTop
                     >
-                      {rejectBusy ? '审核中' : '驳回'}
-                    </button>
+                      驳回
+                    </PrimaryActionButton>
                   </div>
                 </div>
                 <label className="mt-3 block text-xs font-black text-slate-600" htmlFor={`platform-review-comment-${review.id}`}>
@@ -7458,14 +7469,16 @@ const SupplierWorkspaceView: React.FC<{
                             className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-blue-400"
                           />
                         </label>
-                        <button
-                          type="button"
+                        <PrimaryActionButton
                           onClick={() => onSubmitQuote(rfq.id, quoteDraft)}
                           disabled={declinedOpportunityIds.includes(rfq.id) || quoteBusy || quoteDraft.amount <= 0 || quoteDraft.deliveryDays <= 0}
-                          className="inline-flex h-10 items-center justify-center rounded-lg border border-blue-200 bg-white px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                          busy={quoteBusy}
+                          pendingLabel="提交中"
+                          size="md"
+                          flushTop
                         >
-                          {quoteBusy ? '提交中' : '提交报价'}
-                        </button>
+                          提交报价
+                        </PrimaryActionButton>
                       </div>
                     </div>
                   )}
@@ -7642,14 +7655,15 @@ const SupplierWorkspaceView: React.FC<{
                   {javaEnabled && (
                     <div className="flex flex-wrap justify-end gap-2">
                       {order.status === '待供应商确认' && (
-                        <button
-                          type="button"
+                        <PrimaryActionButton
                           onClick={() => onConfirmOrder(order.id)}
                           disabled={confirmBusy}
-                          className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                          busy={confirmBusy}
+                          pendingLabel="确认中"
+                          flushTop
                         >
-                          {confirmBusy ? '确认中' : '确认订单'}
-                        </button>
+                          确认订单
+                        </PrimaryActionButton>
                       )}
                       {order.status === '待发货' && (
                         <span className="text-xs font-black text-emerald-700">填写发货信息</span>
@@ -7692,14 +7706,17 @@ const SupplierWorkspaceView: React.FC<{
                           placeholder="请输入物流单号"
                         />
                       </label>
-                      <button
-                        type="button"
+                      <PrimaryActionButton
                         onClick={() => onCreateDelivery(order.id, deliveryDraft)}
                         disabled={deliveryBusy || !deliveryDraft.carrier.trim() || !deliveryDraft.trackingNo.trim()}
-                        className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                        busy={deliveryBusy}
+                        pendingLabel="提交中"
+                        tone="emerald"
+                        size="md"
+                        flushTop
                       >
-                        {deliveryBusy ? '提交中' : '提交发货'}
-                      </button>
+                        提交发货
+                      </PrimaryActionButton>
                     </div>
                   </div>
                 )}
@@ -7737,14 +7754,17 @@ const SupplierWorkspaceView: React.FC<{
                           className="mt-2 h-10 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-400"
                         />
                       </label>
-                      <button
-                        type="button"
+                      <PrimaryActionButton
                         onClick={() => onCreateInvoice(order.id, invoiceDraft)}
                         disabled={invoiceBusy || !invoiceDraft.invoiceNo.trim() || invoiceDraft.amount <= 0}
-                        className="inline-flex h-10 items-center justify-center rounded-lg bg-amber-600 px-4 text-sm font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                        busy={invoiceBusy}
+                        pendingLabel="提交中"
+                        tone="amber"
+                        size="md"
+                        flushTop
                       >
-                        {invoiceBusy ? '提交中' : '提交发票'}
-                      </button>
+                        提交发票
+                      </PrimaryActionButton>
                     </div>
                   </div>
                 )}
@@ -8827,6 +8847,7 @@ const PrimaryActionButton: React.FC<{
   icon?: React.ElementType;
   fullWidth?: boolean;
   flushTop?: boolean;
+  size?: 'sm' | 'md';
   tone?: 'blue' | 'emerald' | 'amber' | 'red';
 }> = ({
   children,
@@ -8837,6 +8858,7 @@ const PrimaryActionButton: React.FC<{
   icon: Icon,
   fullWidth = false,
   flushTop = false,
+  size = 'sm',
   tone = 'blue',
 }) => {
   const toneClasses = {
@@ -8845,15 +8867,19 @@ const PrimaryActionButton: React.FC<{
     amber: 'bg-amber-600 hover:bg-amber-700',
     red: 'bg-red-600 hover:bg-red-700',
   };
+  const sizeClasses = {
+    sm: 'h-9 px-3 text-xs',
+    md: 'h-10 px-4 text-sm',
+  };
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       aria-busy={busy || undefined}
-      className={`${flushTop ? '' : 'mt-3'} inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3 text-xs font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 ${
+      className={`${flushTop ? '' : 'mt-3'} inline-flex items-center justify-center gap-2 rounded-lg font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 ${
         fullWidth ? 'w-full' : ''
-      } ${toneClasses[tone]}`}
+      } ${sizeClasses[size]} ${toneClasses[tone]}`}
     >
       {Icon && <Icon size={14} />}
       {busy && pendingLabel ? pendingLabel : children}
