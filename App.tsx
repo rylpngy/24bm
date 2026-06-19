@@ -6148,6 +6148,17 @@ const SupplierWorkspaceView: React.FC<{
   };
   const supplierModuleFacts = buildSupplierModuleFacts(workspace, activeModule);
   const supplierModuleHeader = supplierModuleHeaders[activeModule];
+  const pendingQuoteCount = workspace.opportunities.filter((rfq) =>
+    rfq.status === '报价中'
+    && !rfq.quotes.some((quote) => quote.supplierId === workspace.supplier.id),
+  ).length;
+  const pendingConfirmCount = workspace.orders.filter((order) => order.status === '待供应商确认').length;
+  const pendingDeliveryCount = workspace.orders.filter((order) => order.status === '待发货').length;
+  const invoiceReadyCount = workspace.orders.filter((order) =>
+    order.status === '已收货'
+    && !workspace.invoices.some((invoice) => invoice.orderId === order.id),
+  ).length;
+  const pendingReceivableCount = workspace.invoices.filter((invoice) => invoice.paymentStatus !== '已付款').length;
 
   return (
     <>
@@ -6167,6 +6178,14 @@ const SupplierWorkspaceView: React.FC<{
       header={supplierModuleHeader}
       facts={supplierModuleFacts}
       javaEnabled={javaEnabled}
+    />
+
+    <SupplierActionLoopSummaryPanel
+      pendingQuoteCount={pendingQuoteCount}
+      pendingConfirmCount={pendingConfirmCount}
+      pendingDeliveryCount={pendingDeliveryCount}
+      invoiceReadyCount={invoiceReadyCount}
+      pendingReceivableCount={pendingReceivableCount}
     />
 
     {activeModule === 'overview' && (
@@ -6501,6 +6520,56 @@ const SupplierProfileCapabilityCard: React.FC<{
     </div>
   </div>
 );
+
+const SupplierActionLoopSummaryPanel: React.FC<{
+  pendingQuoteCount: number;
+  pendingConfirmCount: number;
+  pendingDeliveryCount: number;
+  invoiceReadyCount: number;
+  pendingReceivableCount: number;
+}> = ({
+  pendingQuoteCount,
+  pendingConfirmCount,
+  pendingDeliveryCount,
+  invoiceReadyCount,
+  pendingReceivableCount,
+}) => {
+  const totalActionCount = pendingQuoteCount
+    + pendingConfirmCount
+    + pendingDeliveryCount
+    + invoiceReadyCount
+    + pendingReceivableCount;
+  const nextAction = pendingQuoteCount > 0
+    ? '优先处理询价报价'
+    : pendingConfirmCount > 0
+      ? '确认采购订单'
+      : pendingDeliveryCount > 0
+        ? '提交发货信息'
+        : invoiceReadyCount > 0
+          ? '提交发票信息'
+          : pendingReceivableCount > 0
+            ? '跟进回款状态'
+            : '暂无待处理动作';
+
+  return (
+    <section className="rounded-lg border border-orange-100 bg-orange-50 p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-orange-800">操作闭环摘要</p>
+          <p className="mt-1 text-sm font-black text-slate-950">{nextAction}</p>
+        </div>
+        <StatusPill label={totalActionCount > 0 ? `${totalActionCount} 个待办` : '已清空'} />
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <MiniFact label="待报价" value={`${pendingQuoteCount} 个`} />
+        <MiniFact label="待确认" value={`${pendingConfirmCount} 单`} />
+        <MiniFact label="待发货" value={`${pendingDeliveryCount} 单`} />
+        <MiniFact label="可开票" value={`${invoiceReadyCount} 单`} />
+        <MiniFact label="待回款" value={`${pendingReceivableCount} 张`} />
+      </div>
+    </section>
+  );
+};
 
 const SupplierOpportunityResponseSummaryPanel: React.FC<{
   opportunities: SupplierWorkspace['opportunities'];
