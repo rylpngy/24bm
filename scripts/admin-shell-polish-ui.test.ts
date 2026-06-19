@@ -92,6 +92,20 @@ describe('admin shell polish UI', () => {
     expect(buyerWorkspace).toContain('搜索匹配');
   });
 
+  it('keeps the workspace search usable below the xl breakpoint', () => {
+    const app = read('App.tsx');
+    const appHeader = app.slice(
+      app.indexOf('const AppHeader'),
+      app.indexOf('const Select'),
+    );
+
+    expect(appHeader).not.toContain('hidden w-64 xl:block');
+    expect(appHeader).toContain('relative order-last w-full');
+    expect(appHeader).toContain('sm:min-w-[18rem]');
+    expect(appHeader).toContain('xl:order-none xl:w-64');
+    expect(appHeader).toContain('aria-label="搜索当前工作区"');
+  });
+
   it('marks active role and module navigation items for accessible admin state', () => {
     const app = read('App.tsx');
 

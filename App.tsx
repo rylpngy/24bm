@@ -1002,7 +1002,7 @@ const AppHeader: React.FC<{
             ))}
           </Select>
         )}
-        <div className="relative hidden w-64 xl:block">
+        <div className="relative order-last w-full sm:min-w-[18rem] xl:order-none xl:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
           <input
             aria-label="搜索当前工作区"
