@@ -2790,29 +2790,17 @@ const BuyerWorkspaceView: React.FC<{
           {orderFulfillmentRows.map((orderRow) => {
             const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
             return (
-              <div
+              <WorkflowListCard
                 key={orderRow.id}
-                className={`rounded-lg border bg-white p-4 transition ${
-                  selectedOrder === orderRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-black text-slate-900">{orderRow.id}</p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {orderRow.supplierName}
-                    </p>
-                  </div>
-                  <p className="shrink-0 font-mono font-black text-slate-900">{orderRow.amountLabel}</p>
-                </div>
-                <InlineFactGrid facts={orderRow.facts} />
-                <DetailToggleButton
-                  selected={selectedOrder === orderRow.id}
-                  onClick={() => setSelectedOrderId(orderRow.id)}
-                />
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <StatusPill label={orderRow.status} />
-                  {javaEnabled && orderRow.canRegisterReceipt && (
+                title={orderRow.id}
+                meta={orderRow.supplierName}
+                amountLabel={orderRow.amountLabel}
+                facts={orderRow.facts}
+                status={orderRow.status}
+                nextAction={orderRow.nextAction}
+                detailSelected={selectedOrder === orderRow.id}
+                onSelectDetail={() => setSelectedOrderId(orderRow.id)}
+                action={javaEnabled && orderRow.canRegisterReceipt ? (
                     <PrimaryActionButton
                       onClick={() => onCreateReceipt(orderRow.id)}
                       disabled={receiptBusy}
@@ -2822,10 +2810,8 @@ const BuyerWorkspaceView: React.FC<{
                     >
                       登记收货
                     </PrimaryActionButton>
-                  )}
-                </div>
-                <NextActionNotice action={orderRow.nextAction} />
-              </div>
+                  ) : undefined}
+              />
             );
           })}
         </div>
@@ -2858,26 +2844,16 @@ const BuyerWorkspaceView: React.FC<{
               .map((orderRow) => {
                 const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
                 return (
-                  <div
+                  <WorkflowListCard
                     key={orderRow.id}
-                    className={`rounded-lg border bg-white p-4 transition ${
-                      selectedReceiptOrder === orderRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-black text-slate-900">{orderRow.id}</p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {orderRow.supplierName} · {orderRow.logisticsLabel}
-                        </p>
-                      </div>
-                      <StatusPill label={orderRow.status} />
-                    </div>
-                    <DetailToggleButton
-                      selected={selectedReceiptOrder === orderRow.id}
-                      onClick={() => setSelectedReceiptOrderId(orderRow.id)}
-                    />
-                    {javaEnabled && orderRow.canRegisterReceipt && (
+                    title={orderRow.id}
+                    meta={`${orderRow.supplierName} · ${orderRow.logisticsLabel}`}
+                    facts={[{ label: '物流单号', value: orderRow.logisticsLabel }]}
+                    status={orderRow.status}
+                    nextAction={orderRow.nextAction}
+                    detailSelected={selectedReceiptOrder === orderRow.id}
+                    onSelectDetail={() => setSelectedReceiptOrderId(orderRow.id)}
+                    action={javaEnabled && orderRow.canRegisterReceipt ? (
                       <PrimaryActionButton
                         onClick={() => onCreateReceipt(orderRow.id)}
                         disabled={receiptBusy}
@@ -2887,9 +2863,8 @@ const BuyerWorkspaceView: React.FC<{
                       >
                         登记收货
                       </PrimaryActionButton>
-                    )}
-                    <NextActionNotice action={orderRow.nextAction} />
-                  </div>
+                    ) : undefined}
+                  />
                 );
               })}
           </div>
@@ -2921,26 +2896,16 @@ const BuyerWorkspaceView: React.FC<{
           {invoicePaymentRows.map((invoiceRow) => {
             const paymentBusy = buyerFulfillmentBusyId === `payment:${invoiceRow.id}`;
             return (
-              <div
+              <WorkflowListCard
                 key={invoiceRow.id}
-                className={`rounded-lg border bg-white p-4 transition ${
-                  selectedInvoice === invoiceRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-black text-slate-900">{invoiceRow.id}</p>
-                    <p className="mt-1 text-sm text-slate-500">{invoiceRow.supplierName} · {invoiceRow.orderLabel}</p>
-                  </div>
-                  <p className="shrink-0 font-mono font-black text-slate-900">{invoiceRow.amountLabel}</p>
-                </div>
-                <DetailToggleButton
-                  selected={selectedInvoice === invoiceRow.id}
-                  onClick={() => setSelectedInvoiceId(invoiceRow.id)}
-                />
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <StatusPill label={invoiceRow.status} />
-                  {javaEnabled && invoiceRow.canRegisterPayment && (
+                title={invoiceRow.id}
+                meta={`${invoiceRow.supplierName} · ${invoiceRow.orderLabel}`}
+                amountLabel={invoiceRow.amountLabel}
+                status={invoiceRow.status}
+                nextAction={invoiceRow.nextAction}
+                detailSelected={selectedInvoice === invoiceRow.id}
+                onSelectDetail={() => setSelectedInvoiceId(invoiceRow.id)}
+                action={javaEnabled && invoiceRow.canRegisterPayment ? (
                     <PrimaryActionButton
                       onClick={() => onRegisterPayment(invoiceRow.id)}
                       disabled={paymentBusy}
@@ -2949,10 +2914,8 @@ const BuyerWorkspaceView: React.FC<{
                     >
                       登记付款
                     </PrimaryActionButton>
-                  )}
-                </div>
-                <NextActionNotice action={invoiceRow.nextAction} />
-              </div>
+                  ) : undefined}
+              />
             );
           })}
         </div>
@@ -6730,6 +6693,63 @@ const RfqCard: React.FC<{
   );
 };
 
+const WorkflowListCard: React.FC<{
+  title: string;
+  meta: string;
+  amountLabel?: string;
+  status: string;
+  facts?: Array<{ label: string; value: string }>;
+  nextAction: BuyerNextAction;
+  detailSelected: boolean;
+  onSelectDetail: () => void;
+  action?: React.ReactNode;
+}> = ({
+  title,
+  meta,
+  amountLabel,
+  status,
+  facts = [],
+  nextAction,
+  detailSelected,
+  onSelectDetail,
+  action,
+}) => (
+  <div
+    className={`rounded-lg border bg-white p-4 transition ${
+      detailSelected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+    }`}
+  >
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <p className="truncate font-black text-slate-900">{title}</p>
+        <p className="mt-1 text-sm text-slate-500">{meta}</p>
+      </div>
+      {amountLabel && (
+        <p className="shrink-0 font-mono font-black text-slate-900">{amountLabel}</p>
+      )}
+    </div>
+
+    {facts.length > 0 && <InlineFactGrid facts={facts} />}
+
+    <div
+      aria-label={`${title} 操作区`}
+      className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusPill label={status} />
+        <DetailToggleButton
+          compact
+          selected={detailSelected}
+          onClick={onSelectDetail}
+        />
+      </div>
+      {action}
+    </div>
+
+    <NextActionNotice action={nextAction} />
+  </div>
+);
+
 const SimpleList: React.FC<{
   rows: Array<{
     id: string;
@@ -6771,13 +6791,14 @@ const DetailToggleButton: React.FC<{
   selected: boolean;
   onClick: () => void;
   fullWidth?: boolean;
-}> = ({ selected, onClick, fullWidth = false }) => (
+  compact?: boolean;
+}> = ({ selected, onClick, fullWidth = false, compact = false }) => (
   <button
     type="button"
     onClick={onClick}
     aria-current={selected ? 'true' : undefined}
     aria-pressed={selected}
-    className={`mt-3 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+    className={`${compact ? '' : 'mt-3'} inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
       fullWidth ? 'w-full' : ''
     } ${
       selected

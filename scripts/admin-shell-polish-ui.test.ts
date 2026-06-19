@@ -48,7 +48,10 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('const DetailToggleButton');
     expect(app).toContain('aria-current={selected ?');
     expect(app).toContain('aria-pressed={selected}');
-    expect(app.match(/<DetailToggleButton/g)?.length).toBeGreaterThanOrEqual(5);
+    expect(app).toContain('const WorkflowListCard');
+    expect(app).toContain('detailSelected: boolean;');
+    expect(app).toContain('onSelectDetail: () => void;');
+    expect(app.match(/<DetailToggleButton/g)?.length).toBeGreaterThanOrEqual(3);
   });
 
   it('uses a shared primary action button for buyer workflow commands', () => {
