@@ -2268,31 +2268,16 @@ const BuyerWorkspaceView: React.FC<{
               {approvalQueueRows.map((approvalRow) => {
                 const approval = displayPendingApprovals.find((item) => item.id === approvalRow.id);
                 return (
-                  <div
+                  <AdminInfoCard
                     key={approvalRow.id}
-                    className={`rounded-lg border bg-amber-50 p-4 transition ${
-                      selectedApproval === approvalRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-amber-100'
-                    }`}
+                    title={approvalRow.title}
+                    meta={approvalRow.typeLabel}
+                    status={approvalRow.status}
+                    facts={approvalRow.facts}
+                    detailSelected={selectedApproval === approvalRow.id}
+                    onSelectDetail={() => setSelectedApprovalId(approvalRow.id)}
+                    tone="warning"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-slate-950">{approvalRow.title}</p>
-                        <p className="mt-1 text-xs font-bold text-amber-700">{approvalRow.typeLabel}</p>
-                      </div>
-                      <StatusPill label={approvalRow.status} />
-                    </div>
-                    <InlineFactGrid facts={approvalRow.facts} />
-                    <button
-                      type="button"
-                      onClick={() => setSelectedApprovalId(approvalRow.id)}
-                      className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                        selectedApproval === approvalRow.id
-                          ? 'border-blue-200 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {selectedApproval === approvalRow.id ? '当前详情' : '查看详情'}
-                    </button>
                     {javaEnabled && approval && approvalRow.canReview ? (
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <button
@@ -2317,7 +2302,7 @@ const BuyerWorkspaceView: React.FC<{
                         Java 模式下可直接通过或驳回，mock 模式仅展示审批队列。
                       </div>
                     )}
-                  </div>
+                  </AdminInfoCard>
                 );
               })}
             </div>
@@ -2346,37 +2331,18 @@ const BuyerWorkspaceView: React.FC<{
               {sortedRecentApprovals.map((approval) => {
                 const facts = buildApprovalCardFacts(approval);
                 return (
-                  <div
+                  <AdminInfoCard
                     key={approval.id}
-                    className={`rounded-lg border bg-white p-4 transition ${
-                      selectedApproval === approval.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-slate-950">
-                          {approval.summaryTitle || approval.bizId}
-                        </p>
-                        <p className="mt-1 text-xs font-bold text-slate-500">{approvalTypeLabel(approval.bizType)}</p>
-                      </div>
-                      <StatusPill label={approval.status} />
-                    </div>
-                    <InlineFactGrid facts={[
+                    title={approval.summaryTitle || approval.bizId}
+                    meta={approvalTypeLabel(approval.bizType)}
+                    status={approval.status}
+                    facts={[
                       ...facts.slice(0, 4),
                       { label: '处理时间', value: formatAuditTime(approval.actedAt ?? approval.createdAt) },
-                    ]} />
-                    <button
-                      type="button"
-                      onClick={() => setSelectedApprovalId(approval.id)}
-                      className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                        selectedApproval === approval.id
-                          ? 'border-blue-200 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {selectedApproval === approval.id ? '当前详情' : '查看详情'}
-                    </button>
-                  </div>
+                    ]}
+                    detailSelected={selectedApproval === approval.id}
+                    onSelectDetail={() => setSelectedApprovalId(approval.id)}
+                  />
                 );
               })}
             </div>
@@ -2667,32 +2633,15 @@ const BuyerWorkspaceView: React.FC<{
           ) : (
             <div className="grid gap-3 lg:grid-cols-2">
               {buildMaterialCatalogRows(workspace).map((material) => (
-                <div
+                <AdminInfoCard
                   key={material.id}
-                  className={`rounded-lg border bg-white p-4 transition ${
-                    selectedMaterial === material.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-black text-slate-900">{material.title}</p>
-                      <p className="mt-1 text-xs font-bold text-slate-400">{material.usageLabel}</p>
-                    </div>
-                    <StatusPill label={material.status} />
-                  </div>
-                  <InlineFactGrid facts={material.facts} />
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMaterialId(material.id)}
-                    className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                      selectedMaterial === material.id
-                        ? 'border-blue-200 bg-blue-50 text-blue-700'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    {selectedMaterial === material.id ? '当前详情' : '查看详情'}
-                  </button>
-                </div>
+                  title={material.title}
+                  meta={material.usageLabel}
+                  status={material.status}
+                  facts={material.facts}
+                  detailSelected={selectedMaterial === material.id}
+                  onSelectDetail={() => setSelectedMaterialId(material.id)}
+                />
               ))}
             </div>
           )}
@@ -2713,40 +2662,22 @@ const BuyerWorkspaceView: React.FC<{
           {supplierRelationRows.map((relationRow) => {
             const relation = workspace.privateSupplierRelations.find((item) => item.id === relationRow.id);
             return (
-              <div
+              <AdminInfoCard
                 key={relationRow.id}
-                className={`rounded-lg border bg-white p-4 transition ${
-                  selectedSupplierRelation === relationRow.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                }`}
+                title={relationRow.supplierName}
+                meta={relationRow.categoryLabel}
+                status={relationRow.status}
+                badge={relationRow.level}
+                facts={relationRow.facts}
+                detailSelected={selectedSupplierRelation === relationRow.id}
+                onSelectDetail={() => setSelectedSupplierRelationId(relationRow.id)}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-black text-slate-900">{relationRow.supplierName}</p>
-                    <p className="mt-1 truncate text-xs font-bold text-slate-400">{relationRow.categoryLabel}</p>
-                  </div>
-                  <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
-                    {relationRow.level}
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-3 text-sm">
-                  <StatusPill label={relationRow.status} />
+                <div className="mt-3 flex justify-end">
                   <span className="rounded-lg bg-slate-50 px-2 py-1 font-mono text-xs font-black text-slate-700">
                     {relationRow.action.riskLabel}
                   </span>
                 </div>
-                <InlineFactGrid facts={relationRow.facts} />
                 <SupplierRelationNotice action={relationRow.action} />
-                <button
-                  type="button"
-                  onClick={() => setSelectedSupplierRelationId(relationRow.id)}
-                  className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                    selectedSupplierRelation === relationRow.id
-                      ? 'border-blue-200 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {selectedSupplierRelation === relationRow.id ? '当前详情' : '查看详情'}
-                </button>
                 {javaEnabled && relation && relationRow.status === '待准入' && (
                   <button
                     type="button"
@@ -2758,7 +2689,7 @@ const BuyerWorkspaceView: React.FC<{
                     {supplierAdmissionBusyId === relationRow.id ? '提交中' : '提交准入'}
                   </button>
                 )}
-              </div>
+              </AdminInfoCard>
             );
           })}
         </div>
@@ -2979,39 +2910,18 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace }> = ({ workspace }) =>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="grid gap-3 md:grid-cols-2">
           {logs.map((log) => (
-            <div
+            <AdminInfoCard
               key={log.id}
-              className={`rounded-lg border bg-white p-4 transition ${
-                selectedAuditLog === log.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-slate-950">{log.title}</p>
-                  <p className="mt-1 truncate text-xs font-bold text-slate-500">{log.targetLabel}</p>
-                </div>
-                <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
-                  {log.timeLabel}
-                </span>
-              </div>
-              <InlineFactGrid
-                facts={[
-                  { label: '操作人', value: log.actorName },
-                  { label: '审计编号', value: log.id },
-                ]}
-              />
-              <button
-                type="button"
-                onClick={() => setSelectedAuditLogId(log.id)}
-                className={`mt-4 inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
-                  selectedAuditLog === log.id
-                    ? 'border-blue-200 bg-blue-50 text-blue-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {selectedAuditLog === log.id ? '当前详情' : '查看详情'}
-              </button>
-            </div>
+              title={log.title}
+              meta={log.targetLabel}
+              badge={log.timeLabel}
+              facts={[
+                { label: '操作人', value: log.actorName },
+                { label: '审计编号', value: log.id },
+              ]}
+              detailSelected={selectedAuditLog === log.id}
+              onSelectDetail={() => setSelectedAuditLogId(log.id)}
+            />
           ))}
         </div>
         <AuditLogDetailPanelView detail={selectedAuditDetail} />
@@ -6689,6 +6599,68 @@ const RfqCard: React.FC<{
           生成采购订单
         </PrimaryActionButton>
       )}
+    </div>
+  );
+};
+
+const AdminInfoCard: React.FC<{
+  title: string;
+  meta: string;
+  status?: string;
+  badge?: string;
+  facts?: Array<{ label: string; value: string }>;
+  detailSelected: boolean;
+  onSelectDetail: () => void;
+  tone?: 'default' | 'warning';
+  children?: React.ReactNode;
+}> = ({
+  title,
+  meta,
+  status,
+  badge,
+  facts = [],
+  detailSelected,
+  onSelectDetail,
+  tone = 'default',
+  children,
+}) => {
+  const baseTone = tone === 'warning'
+    ? 'border-amber-100 bg-amber-50'
+    : 'border-slate-200 bg-white';
+  const activeTone = 'border-blue-200 ring-2 ring-blue-100';
+  const metaTone = tone === 'warning' ? 'text-amber-700' : 'text-slate-500';
+
+  return (
+    <div
+      aria-label={`${title} 信息卡片`}
+      className={`rounded-lg border p-4 transition ${detailSelected ? activeTone : baseTone}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black text-slate-950">{title}</p>
+          <p className={`mt-1 truncate text-xs font-bold ${metaTone}`}>{meta}</p>
+        </div>
+        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          {status && <StatusPill label={status} />}
+          {badge && (
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
+              {badge}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {facts.length > 0 && <InlineFactGrid facts={facts} />}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <DetailToggleButton
+          compact
+          selected={detailSelected}
+          onClick={onSelectDetail}
+        />
+      </div>
+
+      {children}
     </div>
   );
 };
