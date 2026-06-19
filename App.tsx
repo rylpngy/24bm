@@ -5130,122 +5130,130 @@ const OrderDetailPanelView: React.FC<{
   receiptDraft,
   onChangeReceiptDraft,
   onCreateReceipt,
-}) => (
-  <Panel title="订单详情" icon={PackageCheck}>
-    {!detail ? (
-      <EmptyState title="暂无订单详情" desc="选择一张采购订单后，可查看询价来源、物流、发票和付款状态。" />
-    ) : (
-      <DetailPanelBody>
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-base font-black text-slate-950">{detail.id}</p>
-              <p className="mt-1 text-xs font-bold text-slate-400">{detail.supplierName}</p>
-            </div>
-            <StatusPill label={detail.status} />
-          </div>
-          <p className="mt-3 font-mono text-xl font-black text-slate-950">{detail.amountLabel}</p>
-          <InlineFactGrid facts={detail.facts} />
-        </div>
+}) => {
+  const logisticsStatus = detail?.facts.find((fact) => fact.label === '物流状态')?.value ?? '待发货';
+  const invoicePaymentStatus = detail?.facts.find((fact) => fact.label === '发票状态')?.value ?? '待开票';
 
-        <section>
-          <p className="mb-2 text-xs font-black text-slate-500">询价来源</p>
-          <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
-            <p className="truncate text-sm font-black text-slate-900">{detail.rfqLabel}</p>
-          </div>
-        </section>
-
-        <section>
-          <p className="mb-2 text-xs font-black text-slate-500">物流信息</p>
-          {detail.delivery ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-slate-900">{detail.delivery.carrier}</p>
-                  <p className="mt-1 font-mono text-xs font-bold text-slate-500">{detail.delivery.trackingNo}</p>
-                </div>
-                <StatusPill label={detail.delivery.status} />
+  return (
+    <Panel title="订单详情" icon={PackageCheck}>
+      {!detail ? (
+        <EmptyState title="暂无订单详情" desc="选择一张采购订单后，可查看询价来源、物流、发票和付款状态。" />
+      ) : (
+        <DetailPanelBody>
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-base font-black text-slate-950">{detail.id}</p>
+                <p className="mt-1 text-xs font-bold text-slate-400">{detail.supplierName}</p>
               </div>
+              <StatusPill label={detail.status} />
             </div>
-          ) : (
-            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
-              暂无物流信息，等待供应商发货。
-            </p>
-          )}
-        </section>
+            <p className="mt-3 font-mono text-xl font-black text-slate-950">{detail.amountLabel}</p>
+            <InlineFactGrid facts={detail.facts} />
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <MiniFact label="物流状态" value={logisticsStatus} />
+              <MiniFact label="发票付款" value={invoicePaymentStatus} />
+              <MiniFact label="下一步" value={detail.nextActionTitle} />
+            </div>
+          </div>
 
-        <section>
-          <p className="mb-2 text-xs font-black text-slate-500">发票付款</p>
-          {detail.invoice ? (
-            <div className="rounded-lg border border-slate-200 bg-white p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-slate-900">{detail.invoice.id}</p>
-                  <p className="mt-1 font-mono text-xs font-bold text-slate-500">{detail.invoice.amountLabel}</p>
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">询价来源</p>
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+              <p className="truncate text-sm font-black text-slate-900">{detail.rfqLabel}</p>
+            </div>
+          </section>
+
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">物流信息</p>
+            {detail.delivery ? (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-slate-900">{detail.delivery.carrier}</p>
+                    <p className="mt-1 font-mono text-xs font-bold text-slate-500">{detail.delivery.trackingNo}</p>
+                  </div>
+                  <StatusPill label={detail.delivery.status} />
                 </div>
-                <StatusPill label={detail.invoice.paymentStatus} />
               </div>
-            </div>
-          ) : (
-            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
-              暂无发票，订单收货后供应商可提交发票。
-            </p>
-          )}
-        </section>
+            ) : (
+              <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+                暂无物流信息，等待供应商发货。
+              </p>
+            )}
+          </section>
 
-        <section>
-          <p className="mb-2 text-xs font-black text-slate-500">履约检查</p>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            {detail.fulfillmentCheckRows.map((row) => (
-              <MiniFact key={row.label} label={row.label} value={row.value} />
-            ))}
-          </div>
-        </section>
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">发票付款</p>
+            {detail.invoice ? (
+              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-slate-900">{detail.invoice.id}</p>
+                    <p className="mt-1 font-mono text-xs font-bold text-slate-500">{detail.invoice.amountLabel}</p>
+                  </div>
+                  <StatusPill label={detail.invoice.paymentStatus} />
+                </div>
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+                暂无发票，订单收货后供应商可提交发票。
+              </p>
+            )}
+          </section>
 
-        <section>
-          <p className="mb-2 text-xs font-black text-slate-500">履约轨迹</p>
-          <div className="space-y-2">
-            {detail.fulfillmentTimelineRows.map((row) => (
-              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs font-black text-slate-500">关联业务</p>
-            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
-              {detail.relatedRows.length} 条
-            </span>
-          </div>
-          {detail.relatedRows.length > 0 ? (
-            <div className="space-y-2">
-              {detail.relatedRows.map((row) => (
-                <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">履约检查</p>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              {detail.fulfillmentCheckRows.map((row) => (
+                <MiniFact key={row.label} label={row.label} value={row.value} />
               ))}
             </div>
-          ) : (
-            <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
-              暂无关联业务记录。
-            </p>
-          )}
-        </section>
+          </section>
 
-        <MiniFact label="下一步" value={detail.nextActionTitle} />
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">履约轨迹</p>
+            <div className="space-y-2">
+              {detail.fulfillmentTimelineRows.map((row) => (
+                <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
+              ))}
+            </div>
+          </section>
 
-        <OrderDetailOperationPanel
-          detail={detail}
-          order={order}
-          javaEnabled={javaEnabled}
-          buyerFulfillmentBusyId={buyerFulfillmentBusyId}
-          receiptDraft={receiptDraft}
-          onChangeReceiptDraft={onChangeReceiptDraft}
-          onCreateReceipt={onCreateReceipt}
-        />
-      </DetailPanelBody>
-    )}
-  </Panel>
-);
+          <section>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-xs font-black text-slate-500">关联业务</p>
+              <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+                {detail.relatedRows.length} 条
+              </span>
+            </div>
+            {detail.relatedRows.length > 0 ? (
+              <div className="space-y-2">
+                {detail.relatedRows.map((row) => (
+                  <RelatedBusinessRow key={row.id} title={row.title} detail={row.detail} />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+                暂无关联业务记录。
+              </p>
+            )}
+          </section>
+
+          <OrderDetailOperationPanel
+            detail={detail}
+            order={order}
+            javaEnabled={javaEnabled}
+            buyerFulfillmentBusyId={buyerFulfillmentBusyId}
+            receiptDraft={receiptDraft}
+            onChangeReceiptDraft={onChangeReceiptDraft}
+            onCreateReceipt={onCreateReceipt}
+          />
+        </DetailPanelBody>
+      )}
+    </Panel>
+  );
+};
 
 const OrderDetailOperationPanel: React.FC<{
   detail: OrderDetailPanel;

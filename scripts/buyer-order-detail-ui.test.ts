@@ -52,4 +52,22 @@ describe('buyer order detail UI', () => {
     expect(app).toContain('buyerFulfillmentBusyId={buyerFulfillmentBusyId}');
     expect(app).toContain('onCreateReceipt={onCreateReceipt}');
   });
+
+  it('places logistics, invoice, and next action summary in the top order detail card', () => {
+    const app = read('App.tsx');
+    const orderDetailView = app.slice(
+      app.indexOf('const OrderDetailPanelView'),
+      app.indexOf('const OrderDetailOperationPanel'),
+    );
+    const topCard = orderDetailView.slice(
+      orderDetailView.indexOf('<InlineFactGrid facts={detail.facts} />'),
+      orderDetailView.indexOf('<section>'),
+    );
+
+    expect(orderDetailView).toContain('const logisticsStatus = detail?.facts.find((fact) => fact.label === \'物流状态\')?.value ?? \'待发货\';');
+    expect(orderDetailView).toContain('const invoicePaymentStatus = detail?.facts.find((fact) => fact.label === \'发票状态\')?.value ?? \'待开票\';');
+    expect(topCard).toContain('<MiniFact label="物流状态" value={logisticsStatus} />');
+    expect(topCard).toContain('<MiniFact label="发票付款" value={invoicePaymentStatus} />');
+    expect(topCard).toContain('<MiniFact label="下一步" value={detail.nextActionTitle} />');
+  });
 });
