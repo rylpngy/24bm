@@ -6345,7 +6345,8 @@ const DemandCreateForm: React.FC<{
     return sum + ((material?.referencePrice ?? 0) * lineItem.quantity);
   }, 0);
   const budgetBalance = budget - estimatedAmount;
-  const canSubmit = !disabled && title.trim() && department.trim() && budget > 0 && validLineItems.length > 0;
+  const budgetExceeded = budgetBalance < 0;
+  const canSubmit = !disabled && title.trim() && department.trim() && budget > 0 && validLineItems.length > 0 && !budgetExceeded;
   const updateDemandLineItem = (index: number, nextLineItem: Partial<(typeof demandLineItems)[number]>) => {
     setDemandLineItems((current) => current.map((lineItem, lineIndex) =>
       lineIndex === index ? { ...lineItem, ...nextLineItem } : lineItem,
@@ -6513,6 +6514,14 @@ const DemandCreateForm: React.FC<{
         <MiniFact label="预估金额" value={currency(estimatedAmount)} />
         <MiniFact label="预算差额" value={currency(budgetBalance)} />
       </div>
+      {budgetExceeded && (
+        <div
+          aria-live="polite"
+          className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800"
+        >
+          预估金额已超出预算，请调整预算或物料数量后再提交审批。
+        </div>
+      )}
 
       <section className="rounded-lg border border-dashed border-slate-200 bg-white p-3">
         <p className="text-xs font-black text-slate-500">需求附件</p>

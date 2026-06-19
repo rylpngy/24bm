@@ -31,4 +31,18 @@ describe('buyer demand create form UI', () => {
     expect(demandCreateForm).toContain('filter((lineItem) => lineItem.materialId && lineItem.quantity > 0)');
     expect(demandCreateForm).toContain('disabled={materials.length === 0}');
   });
+
+  it('warns and blocks submission when estimated material amount exceeds budget', () => {
+    const app = read('App.tsx');
+    const demandCreateForm = app.slice(
+      app.indexOf('const DemandCreateForm'),
+      app.indexOf('const RfqCreateForm'),
+    );
+
+    expect(demandCreateForm).toContain('const budgetExceeded = budgetBalance < 0;');
+    expect(demandCreateForm).toContain('!budgetExceeded');
+    expect(demandCreateForm).toContain('预估金额已超出预算');
+    expect(demandCreateForm).toContain('请调整预算或物料数量后再提交审批');
+    expect(demandCreateForm).toContain('aria-live="polite"');
+  });
 });
