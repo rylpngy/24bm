@@ -7238,6 +7238,10 @@ const SupplierWorkspaceView: React.FC<{
   const [quoteDrafts, setQuoteDrafts] = useState<Record<string, SupplierQuoteDraft>>({});
   const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, SupplierDeliveryDraft>>({});
   const [invoiceDrafts, setInvoiceDrafts] = useState<Record<string, SupplierInvoiceDraft>>({});
+  const [opportunityStatusFilter, setOpportunityStatusFilter] = useState('全部状态');
+  const [quoteStatusFilter, setQuoteStatusFilter] = useState('全部状态');
+  const [supplierOrderStatusFilter, setSupplierOrderStatusFilter] = useState('全部状态');
+  const [supplierInvoiceStatusFilter, setSupplierInvoiceStatusFilter] = useState('全部状态');
   const onDeclineOpportunity = (rfqId: string) => {
     setDeclinedOpportunityIds((current) => (
       current.includes(rfqId) ? current : [...current, rfqId]
@@ -7259,6 +7263,23 @@ const SupplierWorkspaceView: React.FC<{
     && !workspace.invoices.some((invoice) => invoice.orderId === order.id),
   ).length;
   const pendingReceivableCount = workspace.invoices.filter((invoice) => invoice.paymentStatus !== '已付款').length;
+  const opportunityStatus = (rfq: SupplierWorkspace['opportunities'][number]) =>
+    declinedOpportunityIds.includes(rfq.id) ? '已拒绝' : rfq.status;
+  const opportunityStatusOptions = Array.from(new Set([
+    ...workspace.opportunities.map(opportunityStatus),
+    '已拒绝',
+  ]));
+  const quoteStatusOptions = Array.from(new Set(workspace.quotes.map((quote) => quote.status)));
+  const supplierOrderStatusOptions = Array.from(new Set(workspace.orders.map((order) => order.status)));
+  const supplierInvoiceStatusOptions = Array.from(new Set(workspace.invoices.map((invoice) => invoice.paymentStatus)));
+  const filteredSupplierOpportunities = workspace.opportunities.filter((rfq) =>
+    opportunityStatusFilter === '全部状态' || opportunityStatus(rfq) === opportunityStatusFilter);
+  const filteredSupplierQuotes = workspace.quotes.filter((quote) =>
+    quoteStatusFilter === '全部状态' || quote.status === quoteStatusFilter);
+  const filteredSupplierOrders = workspace.orders.filter((order) =>
+    supplierOrderStatusFilter === '全部状态' || order.status === supplierOrderStatusFilter);
+  const filteredSupplierInvoices = workspace.invoices.filter((invoice) =>
+    supplierInvoiceStatusFilter === '全部状态' || invoice.paymentStatus === supplierInvoiceStatusFilter);
 
   return (
     <>
@@ -7308,11 +7329,25 @@ const SupplierWorkspaceView: React.FC<{
             filterLabel="待报价优先"
             actionLabel="批量响应"
           />
+          <StatusFilterControl
+            label="商机状态"
+            value={opportunityStatusFilter}
+            statusOptions={opportunityStatusOptions}
+            onChange={setOpportunityStatusFilter}
+          />
+          <FilterResultSummary
+            label="询价邀请筛选结果"
+            filterLabel={opportunityStatusFilter}
+            resultCount={filteredSupplierOpportunities.length}
+            totalCount={workspace.opportunities.length}
+            selectedLabel={selectedRequirementRfqId ?? undefined}
+            onClear={() => setOpportunityStatusFilter('全部状态')}
+          />
           <SupplierOpportunityResponseSummaryPanel
-            opportunities={workspace.opportunities}
+            opportunities={filteredSupplierOpportunities}
             supplierId={workspace.supplier.id}
           />
-          {workspace.opportunities.map((rfq) => {
+          {filteredSupplierOpportunities.map((rfq) => {
             const myQuotes = rfq.quotes.filter((quote) => quote.supplierId === workspace.supplier.id);
             const hasMyQuote = myQuotes.length > 0;
             const quoteBusy = supplierActionBusyId === `quote:${rfq.id}`;
@@ -7443,15 +7478,29 @@ const SupplierWorkspaceView: React.FC<{
             filterLabel="按询价项目聚合"
             actionLabel="跟进定标"
           />
-          {workspace.quotes.length === 0 ? (
+          <StatusFilterControl
+            label="报价状态"
+            value={quoteStatusFilter}
+            statusOptions={quoteStatusOptions}
+            onChange={setQuoteStatusFilter}
+          />
+          <FilterResultSummary
+            label="报价记录筛选结果"
+            filterLabel={quoteStatusFilter}
+            resultCount={filteredSupplierQuotes.length}
+            totalCount={workspace.quotes.length}
+            selectedLabel={filteredSupplierQuotes[0]?.id}
+            onClear={() => setQuoteStatusFilter('全部状态')}
+          />
+          {filteredSupplierQuotes.length === 0 ? (
             <EmptyState title="暂无报价记录" desc="收到询价邀请并提交报价后，报价历史和关联询价状态会显示在这里。" />
           ) : (
             <div className="space-y-3">
               <SupplierQuoteHistorySummaryPanel
-                quotes={workspace.quotes}
+                quotes={filteredSupplierQuotes}
                 opportunities={workspace.opportunities}
               />
-              {workspace.quotes.map((quote) => {
+              {filteredSupplierQuotes.map((quote) => {
                 const rfq = workspace.opportunities.find((rfq) => rfq.id === quote.rfqId);
                 return (
                   <SupplierQuoteHistoryCard
@@ -7520,15 +7569,29 @@ const SupplierWorkspaceView: React.FC<{
           filterLabel="待处理优先"
           actionLabel="批量履约"
         />
-        {workspace.orders.length === 0 ? (
+        <StatusFilterControl
+          label="销售订单状态"
+          value={supplierOrderStatusFilter}
+          statusOptions={supplierOrderStatusOptions}
+          onChange={setSupplierOrderStatusFilter}
+        />
+        <FilterResultSummary
+          label="销售订单筛选结果"
+          filterLabel={supplierOrderStatusFilter}
+          resultCount={filteredSupplierOrders.length}
+          totalCount={workspace.orders.length}
+          selectedLabel={filteredSupplierOrders[0]?.id}
+          onClear={() => setSupplierOrderStatusFilter('全部状态')}
+        />
+        {filteredSupplierOrders.length === 0 ? (
           <EmptyState title="暂无销售订单" desc="采购方定标并生成订单后，供应商会在这里确认订单、提交发货和开票。" />
         ) : (
         <div className="space-y-3">
           <SupplierOrderFulfillmentSummaryPanel
-            orders={workspace.orders}
+            orders={filteredSupplierOrders}
             invoices={workspace.invoices}
           />
-          {workspace.orders.map((order) => {
+          {filteredSupplierOrders.map((order) => {
             const confirmBusy = supplierActionBusyId === `confirm:${order.id}`;
             const deliveryBusy = supplierActionBusyId === `delivery:${order.id}`;
             const invoiceBusy = supplierActionBusyId === `invoice:${order.id}`;
@@ -7678,13 +7741,27 @@ const SupplierWorkspaceView: React.FC<{
           filterLabel="待回款优先"
           actionLabel="对账处理"
         />
-        {workspace.invoices.length === 0 ? (
+        <StatusFilterControl
+          label="应收状态"
+          value={supplierInvoiceStatusFilter}
+          statusOptions={supplierInvoiceStatusOptions}
+          onChange={setSupplierInvoiceStatusFilter}
+        />
+        <FilterResultSummary
+          label="发票应收筛选结果"
+          filterLabel={supplierInvoiceStatusFilter}
+          resultCount={filteredSupplierInvoices.length}
+          totalCount={workspace.invoices.length}
+          selectedLabel={filteredSupplierInvoices[0]?.id}
+          onClear={() => setSupplierInvoiceStatusFilter('全部状态')}
+        />
+        {filteredSupplierInvoices.length === 0 ? (
           <EmptyState title="暂无应收发票" desc="订单收货后提交发票，应收和付款状态会显示在这里。" />
         ) : (
           <div className="space-y-4">
-            <SupplierInvoiceReceivableSummaryPanel invoices={workspace.invoices} />
+            <SupplierInvoiceReceivableSummaryPanel invoices={filteredSupplierInvoices} />
             <div className="space-y-3">
-              {workspace.invoices.map((invoice) => {
+              {filteredSupplierInvoices.map((invoice) => {
                 const order = workspace.orders.find((order) => order.id === invoice.orderId);
                 return (
                   <SupplierInvoiceReceivableCard
