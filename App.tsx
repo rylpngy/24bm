@@ -1931,6 +1931,7 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
   onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => Promise<void> | void;
 }> = ({ enterpriseReviews, reviewBusyId, onReviewEnterprise }) => {
   const pendingReviews = enterpriseReviews.filter((review) => review.status === '待审核');
+  const reviewedResults = enterpriseReviews.filter((review) => review.status !== '待审核');
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
@@ -1978,6 +1979,32 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
               </div>
             );
           })}
+        </div>
+      )}
+      {reviewedResults.length > 0 && (
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-700">最近审核结果</p>
+            <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+              {reviewedResults.length} 条
+            </span>
+          </div>
+          <div className="space-y-2">
+            {reviewedResults.map((review) => (
+              <div key={`${review.id}:${review.status}`} className="rounded-lg border border-slate-100 bg-white p-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-black text-slate-900">{review.name}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">{formatEnterpriseType(review.type)} · {review.industry}</p>
+                  </div>
+                  <StatusPill label={review.status} />
+                </div>
+                <p className={`mt-2 text-xs font-bold ${review.status === '已驳回' ? 'text-red-600' : 'text-emerald-700'}`}>
+                  {review.status === '已驳回' ? '等待重新提交' : '认证档案可维护'}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </section>
