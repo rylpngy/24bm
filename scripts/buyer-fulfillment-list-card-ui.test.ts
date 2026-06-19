@@ -69,6 +69,32 @@ describe('buyer fulfillment list card UI', () => {
     expect(app).toContain('右侧详情可补充付款备注、付款申请状态和对账说明。');
   });
 
+  it('keeps compact inline action buttons aligned with their fields', () => {
+    const app = read('App.tsx');
+    const primaryActionButton = app.slice(
+      app.indexOf('const PrimaryActionButton'),
+      app.indexOf('const CapabilityList'),
+    );
+    const orderModule = app.slice(
+      app.indexOf("{activeModule === 'orders'"),
+      app.indexOf('<OrderDetailPanelView'),
+    );
+    const receiptModule = app.slice(
+      app.indexOf("{activeModule === 'receipts'"),
+      app.indexOf('<ReceiptInspectionDetailPanelView'),
+    );
+    const invoiceModule = app.slice(
+      app.indexOf("{activeModule === 'invoices'"),
+      app.indexOf('<InvoicePaymentDetailPanelView'),
+    );
+
+    expect(primaryActionButton).toContain('flushTop?: boolean;');
+    expect(primaryActionButton).toContain("flushTop ? '' : 'mt-3'");
+    expect(orderModule).toContain('flushTop');
+    expect(receiptModule).toContain('flushTop');
+    expect(invoiceModule).toContain('flushTop');
+  });
+
   it('applies the shared workflow card to demand and fulfillment list modules', () => {
     const app = read('App.tsx');
 

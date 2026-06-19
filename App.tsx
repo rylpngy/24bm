@@ -3283,6 +3283,7 @@ const BuyerWorkspaceView: React.FC<{
                       busy={receiptBusy}
                       tone="emerald"
                       pendingLabel="登记中"
+                      flushTop
                     >
                       登记收货
                     </PrimaryActionButton>
@@ -3362,6 +3363,7 @@ const BuyerWorkspaceView: React.FC<{
                           busy={receiptBusy}
                           tone="emerald"
                           pendingLabel="登记中"
+                          flushTop
                         >
                           登记收货
                         </PrimaryActionButton>
@@ -3438,6 +3440,7 @@ const BuyerWorkspaceView: React.FC<{
                       disabled={paymentBusy || !paymentDraft.paymentStatus.trim()}
                       busy={paymentBusy}
                       pendingLabel="登记中"
+                      flushTop
                     >
                       登记付款
                     </PrimaryActionButton>
@@ -8353,6 +8356,7 @@ const PrimaryActionButton: React.FC<{
   pendingLabel?: string;
   icon?: React.ElementType;
   fullWidth?: boolean;
+  flushTop?: boolean;
   tone?: 'blue' | 'emerald' | 'amber' | 'red';
 }> = ({
   children,
@@ -8362,6 +8366,7 @@ const PrimaryActionButton: React.FC<{
   pendingLabel,
   icon: Icon,
   fullWidth = false,
+  flushTop = false,
   tone = 'blue',
 }) => {
   const toneClasses = {
@@ -8376,7 +8381,7 @@ const PrimaryActionButton: React.FC<{
       onClick={onClick}
       disabled={disabled}
       aria-busy={busy || undefined}
-      className={`mt-3 inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3 text-xs font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 ${
+      className={`${flushTop ? '' : 'mt-3'} inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3 text-xs font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 ${
         fullWidth ? 'w-full' : ''
       } ${toneClasses[tone]}`}
     >
