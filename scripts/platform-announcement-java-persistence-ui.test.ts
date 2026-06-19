@@ -19,12 +19,15 @@ describe('platform announcement Java persistence UI', () => {
     expect(app).toContain('publishPlatformAnnouncement');
     expect(app).toContain('javaApiClient.listPlatformAnnouncements');
     expect(app).toContain('javaApiClient.publishPlatformAnnouncement');
+    expect(app).toContain('content: payload.content');
     expect(app).toContain('setWorkflowStatus(`平台公告已发布');
     expect(app).toContain('buildPlatformAnnouncements');
+    expect(app).toContain('content: announcement.content');
     expect(platformWorkspace).toContain('announcementPublishBusy');
     expect(platformWorkspace).toContain('publishBusy');
     expect(publishPanel).toContain('Java 模式下持久化发布公告');
-    expect(publishPanel).toContain('disabled={!title.trim() || publishBusy}');
+    expect(publishPanel).toContain('公告正文');
+    expect(publishPanel).toContain('disabled={!title.trim() || !content.trim() || publishBusy}');
     expect(publishPanel).toContain('发布中');
   });
 });

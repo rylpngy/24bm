@@ -398,14 +398,14 @@ const App: React.FC = () => {
     }
   };
 
-  const publishPlatformAnnouncement = async (payload: { title: string; targetScope: string }) => {
+  const publishPlatformAnnouncement = async (payload: { title: string; content: string; targetScope: string }) => {
     if (!javaApiClient || !platformData) return;
     setAnnouncementPublishBusy(true);
     setWorkflowStatus(null);
     try {
       await javaApiClient.publishPlatformAnnouncement({
         title: payload.title,
-        content: `平台公告：${payload.title}`,
+        content: payload.content,
         audience: payload.targetScope,
       });
       const [nextPlatformData, announcements] = await Promise.all([
@@ -1144,6 +1144,7 @@ const Select: React.FC<{
 type PlatformAnnouncement = {
   id: string;
   title: string;
+  content: string;
   targetScope: string;
   publishedAt: string;
 };
@@ -1413,6 +1414,7 @@ const buildPlatformAnnouncements = (announcements: JavaPlatformAnnouncementDto[]
   announcements.map((announcement) => ({
     id: announcement.id,
     title: announcement.title,
+    content: announcement.content,
     targetScope: announcement.audience,
     publishedAt: announcement.createdAt,
   }));
@@ -1464,7 +1466,7 @@ const PlatformWorkspace: React.FC<{
   onUpdateTenantStatus: (tenantId: string, status: '已启用' | '停用') => Promise<void> | void;
   onUpdateTenantPlan: (tenantId: string, plan: PlatformTenantRow['plan']) => Promise<void> | void;
   onToggleTenantFeature: (tenantId: string, enabledFeatures: string[], feature: 'rfq') => Promise<void> | void;
-  onPublishAnnouncement: (payload: { title: string; targetScope: string }) => Promise<JavaPlatformAnnouncementDto[] | null> | void;
+  onPublishAnnouncement: (payload: { title: string; content: string; targetScope: string }) => Promise<JavaPlatformAnnouncementDto[] | null> | void;
 }> = ({
   data,
   activeModule,
@@ -1551,6 +1553,7 @@ const PlatformWorkspace: React.FC<{
   const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformAnnouncement[]>([{
     id: 'platform-announcement-stage3',
     title: '阶段三后台化改造进行中',
+    content: '采购方后台菜单、核心列表和主流程操作入口已进入联调优化阶段。',
     targetScope: 'all',
     publishedAt: new Date().toISOString(),
   }]);
@@ -1581,7 +1584,7 @@ const PlatformWorkspace: React.FC<{
     supplierCount,
   );
   const platformModuleHeader = platformModuleHeaders[activeModule];
-  const handlePublishAnnouncement = async (payload: { title: string; targetScope: string }) => {
+  const handlePublishAnnouncement = async (payload: { title: string; content: string; targetScope: string }) => {
     if (javaEnabled) {
       const nextAnnouncements = await onPublishAnnouncement(payload);
       if (nextAnnouncements) {
@@ -1593,6 +1596,7 @@ const PlatformWorkspace: React.FC<{
       {
         id: `platform-announcement-${Date.now()}`,
         title: payload.title,
+        content: payload.content,
         targetScope: payload.targetScope,
         publishedAt: new Date().toISOString(),
       },
@@ -1807,9 +1811,10 @@ const PlatformWorkspace: React.FC<{
 
 const PlatformAnnouncementPublishPanel: React.FC<{
   publishBusy: boolean;
-  onPublishAnnouncement: (payload: { title: string; targetScope: string }) => Promise<void> | void;
+  onPublishAnnouncement: (payload: { title: string; content: string; targetScope: string }) => Promise<void> | void;
 }> = ({ publishBusy, onPublishAnnouncement }) => {
   const [title, setTitle] = useState('平台维护窗口通知');
+  const [content, setContent] = useState('平台将在周五晚间进行采购协同服务维护，期间询价、报价和订单确认能力正常可用。');
   const [targetScope, setTargetScope] = useState('all');
 
   return (
@@ -1822,15 +1827,17 @@ const PlatformAnnouncementPublishPanel: React.FC<{
         <Bell size={18} className="text-green-600" />
       </div>
       <form
-        className="mt-4 grid gap-3 lg:grid-cols-[1fr_180px_auto] lg:items-end"
+        className="mt-4 grid gap-3 lg:grid-cols-[minmax(180px,0.8fr)_minmax(260px,1.2fr)_180px_auto] lg:items-end"
         onSubmit={(event) => {
           event.preventDefault();
           const nextTitle = title.trim();
-          if (!nextTitle) {
+          const nextContent = content.trim();
+          if (!nextTitle || !nextContent) {
             return;
           }
-          onPublishAnnouncement({ title: nextTitle, targetScope });
+          onPublishAnnouncement({ title: nextTitle, content: nextContent, targetScope });
           setTitle('');
+          setContent('');
           setTargetScope('all');
         }}
       >
@@ -1841,6 +1848,16 @@ const PlatformAnnouncementPublishPanel: React.FC<{
             onChange={(event) => setTitle(event.target.value)}
             className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-green-400"
             placeholder="请输入公告标题"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-black text-slate-500">公告正文</span>
+          <textarea
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            className="mt-2 min-h-10 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-green-400"
+            placeholder="请输入公告正文"
+            rows={2}
           />
         </label>
         <label className="block">
@@ -1857,7 +1874,7 @@ const PlatformAnnouncementPublishPanel: React.FC<{
         </label>
         <button
           type="submit"
-          disabled={!title.trim() || publishBusy}
+          disabled={!title.trim() || !content.trim() || publishBusy}
           className="inline-flex h-10 items-center justify-center rounded-lg bg-green-600 px-4 text-sm font-black text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           {publishBusy ? '发布中' : '发布公告'}
@@ -1896,6 +1913,10 @@ const PlatformAnnouncementCard: React.FC<{
       <MiniFact label="发布范围" value={formatAnnouncementScope(announcement.targetScope)} />
       <MiniFact label="发布时间" value={formatAuditTime(announcement.publishedAt)} />
       <MiniFact label="发布状态" value="已发布" />
+    </div>
+    <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+      <p className="text-xs font-black text-slate-500">公告正文</p>
+      <p className="mt-1 break-words text-sm font-bold leading-6 text-slate-700">{announcement.content}</p>
     </div>
   </div>
 );
