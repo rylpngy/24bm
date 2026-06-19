@@ -42,7 +42,8 @@ describe('buyer supplier detail UI', () => {
     expect(supplierDetailView).toContain('relation?: BuyerWorkspace[\'privateSupplierRelations\'][number]');
     expect(supplierDetailView).toContain('javaEnabled: boolean');
     expect(supplierDetailView).toContain('supplierAdmissionBusyId: string | null');
-    expect(supplierDetailView).toContain('onSubmitSupplierAdmission: (relationId: string) => void');
+    expect(supplierDetailView).toContain('admissionDraft?: BuyerSupplierAdmissionDraft');
+    expect(supplierDetailView).toContain('onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void');
     expect(app).toContain('relation={selectedSupplierRelationRecord}');
     expect(app).toContain('supplierAdmissionBusyId={supplierAdmissionBusyId}');
     expect(app).toContain('onSubmitSupplierAdmission={onSubmitSupplierAdmission}');

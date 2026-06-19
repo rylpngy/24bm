@@ -202,6 +202,11 @@ type BuyerOrderDraft = {
   expectedReceiptDate: string;
 };
 
+type BuyerSupplierAdmissionDraft = {
+  reason: string;
+  categoryConfirmed: boolean;
+};
+
 const App: React.FC = () => {
   const [activeRole, setActiveRole] = useState<AdminRole>(defaultAdminRole);
   const [activeModules, setActiveModules] = useState<Record<AdminRole, string>>(defaultAdminModulesByRole);
@@ -481,14 +486,14 @@ const App: React.FC = () => {
     }
   };
 
-  const submitSupplierAdmission = async (relationId: string) => {
+  const submitSupplierAdmission = async (relationId: string, draft: BuyerSupplierAdmissionDraft) => {
     if (!javaApiClient || !buyerData) return;
     setSupplierAdmissionBusyId(relationId);
     setWorkflowStatus(null);
     try {
       const approval = await javaApiClient.submitBuyerSupplierAdmission(relationId);
       setBuyerData(await refreshJavaBuyerData(buyerData));
-      setWorkflowStatus(`供应商准入已提交：${approval.summaryTitle || approval.bizId}`);
+      setWorkflowStatus(`供应商准入已提交：${approval.summaryTitle || approval.bizId}，准入说明：${draft.reason}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '供应商准入提交失败');
     } finally {
@@ -2289,7 +2294,7 @@ const BuyerWorkspaceView: React.FC<{
   onCreateDemand: (payload: CreateDemandPayload, submitForApproval: boolean) => void;
   onSubmitDemand: (demandId: string) => void;
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean) => void;
-  onSubmitSupplierAdmission: (relationId: string) => void;
+  onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
   onCreateRfqFromDemand: (demandId: string, supplierIds?: string[], deadline?: string) => void;
   onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
   onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
@@ -2339,6 +2344,7 @@ const BuyerWorkspaceView: React.FC<{
   const [selectedApprovalId, setSelectedApprovalId] = useState('');
   const [selectedReceiptOrderId, setSelectedReceiptOrderId] = useState(workspace.orders.find((order) => order.status === '已发货' || order.status === '待收货')?.id ?? '');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(workspace.invoices[0]?.id ?? '');
+  const [supplierAdmissionDrafts, setSupplierAdmissionDrafts] = useState<Record<string, BuyerSupplierAdmissionDraft>>({});
   const [awardDrafts, setAwardDrafts] = useState<Record<string, BuyerAwardDraft>>({});
   const [orderDrafts, setOrderDrafts] = useState<Record<string, BuyerOrderDraft>>({});
   const [receiptDrafts, setReceiptDrafts] = useState<Record<string, BuyerReceiptDraft>>({});
@@ -2352,6 +2358,12 @@ const BuyerWorkspaceView: React.FC<{
     awardDrafts[rfqId] ?? { reason: '系统推荐：报价金额最低，交付周期优先' };
   const getOrderDraft = (awardId: string): BuyerOrderDraft =>
     orderDrafts[awardId] ?? { expectedReceiptDate: defaultExpectedReceiptDate() };
+  const getSupplierAdmissionDraft = (
+    relation: BuyerWorkspace['privateSupplierRelations'][number],
+  ): BuyerSupplierAdmissionDraft => supplierAdmissionDrafts[relation.id] ?? {
+    reason: `申请将该供应商纳入私域供应商库，授权品类：${relation.categories.join('、') || '待补充'}`,
+    categoryConfirmed: false,
+  };
   const getReceiptDraft = (orderId: string): BuyerReceiptDraft => receiptDrafts[orderId] ?? { result: '验收通过' };
   const getPaymentDraft = (invoiceId: string): BuyerPaymentDraft => paymentDrafts[invoiceId] ?? { paymentStatus: '已付款' };
   const sortedPendingApprovals = [...pendingApprovals].sort((left, right) => {
@@ -3072,6 +3084,7 @@ const BuyerWorkspaceView: React.FC<{
         <div className="space-y-3">
           {filteredSupplierRelationRows.map((relationRow) => {
             const relation = workspace.privateSupplierRelations.find((item) => item.id === relationRow.id);
+            const supplierAdmissionDraft = relation ? getSupplierAdmissionDraft(relation) : undefined;
             return (
               <AdminInfoCard
                 key={relationRow.id}
@@ -3089,16 +3102,15 @@ const BuyerWorkspaceView: React.FC<{
                   </span>
                 </div>
                 <SupplierRelationNotice action={relationRow.action} />
-                {javaEnabled && relation && relationRow.status === '待准入' && (
-                  <button
-                    type="button"
-                    onClick={() => onSubmitSupplierAdmission(relationRow.id)}
-                    disabled={supplierAdmissionBusyId === relationRow.id}
-                    className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-                  >
-                    <Send size={14} />
-                    {supplierAdmissionBusyId === relationRow.id ? '提交中' : '提交准入'}
-                  </button>
+                {javaEnabled && relation && supplierAdmissionDraft && relationRow.status === '待准入' && (
+                  <SupplierAdmissionForm
+                    relationId={relationRow.id}
+                    categoryLabel={relation.categories.join(' / ')}
+                    draft={supplierAdmissionDraft}
+                    busy={supplierAdmissionBusyId === relationRow.id}
+                    onChange={(draft) => setSupplierAdmissionDrafts((drafts) => ({ ...drafts, [relationRow.id]: draft }))}
+                    onSubmit={() => onSubmitSupplierAdmission(relationRow.id, supplierAdmissionDraft)}
+                  />
                 )}
               </AdminInfoCard>
             );
@@ -3111,6 +3123,8 @@ const BuyerWorkspaceView: React.FC<{
         relation={selectedSupplierRelationRecord}
         javaEnabled={javaEnabled}
         supplierAdmissionBusyId={supplierAdmissionBusyId}
+        admissionDraft={selectedSupplierRelationRecord ? getSupplierAdmissionDraft(selectedSupplierRelationRecord) : undefined}
+        onChangeAdmissionDraft={(relationId, draft) => setSupplierAdmissionDrafts((drafts) => ({ ...drafts, [relationId]: draft }))}
         onSubmitSupplierAdmission={onSubmitSupplierAdmission}
       />
       </>
@@ -5370,17 +5384,65 @@ const InvoicePaymentOperationPanel: React.FC<{
   );
 };
 
+const SupplierAdmissionForm: React.FC<{
+  relationId: string;
+  categoryLabel: string;
+  draft: BuyerSupplierAdmissionDraft;
+  busy: boolean;
+  onChange: (draft: BuyerSupplierAdmissionDraft) => void;
+  onSubmit: () => void;
+}> = ({ relationId, categoryLabel, draft, busy, onChange, onSubmit }) => (
+  <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+    <label className="block text-xs font-black text-blue-800" htmlFor={`supplier-admission-reason-${relationId}`}>
+      准入说明
+    </label>
+    <textarea
+      id={`supplier-admission-reason-${relationId}`}
+      value={draft.reason}
+      onChange={(event) => onChange({ ...draft, reason: event.target.value })}
+      className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+    />
+    <label
+      htmlFor={`supplier-admission-category-${relationId}`}
+      className="mt-3 flex items-start gap-2 rounded-lg border border-blue-100 bg-white p-3 text-xs font-bold text-slate-600"
+    >
+      <input
+        id={`supplier-admission-category-${relationId}`}
+        type="checkbox"
+        checked={draft.categoryConfirmed}
+        onChange={(event) => onChange({ ...draft, categoryConfirmed: event.target.checked })}
+        className="mt-0.5 h-4 w-4 rounded border-blue-200 text-blue-600"
+      />
+      <span>授权品类已确认：{categoryLabel || '待补充'}</span>
+    </label>
+    <PrimaryActionButton
+      onClick={onSubmit}
+      disabled={busy || draft.reason.trim().length === 0 || !draft.categoryConfirmed}
+      busy={busy}
+      icon={Send}
+      pendingLabel="提交中"
+      fullWidth
+    >
+      提交准入
+    </PrimaryActionButton>
+  </div>
+);
+
 const SupplierDetailPanelView: React.FC<{
   detail?: SupplierDetailPanel;
   relation?: BuyerWorkspace['privateSupplierRelations'][number];
   javaEnabled: boolean;
   supplierAdmissionBusyId: string | null;
-  onSubmitSupplierAdmission: (relationId: string) => void;
+  admissionDraft?: BuyerSupplierAdmissionDraft;
+  onChangeAdmissionDraft: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
+  onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
 }> = ({
   detail,
   relation,
   javaEnabled,
   supplierAdmissionBusyId,
+  admissionDraft,
+  onChangeAdmissionDraft,
   onSubmitSupplierAdmission,
 }) => (
   <Panel title="供应商详情" icon={Users}>
@@ -5493,6 +5555,8 @@ const SupplierDetailPanelView: React.FC<{
           relation={relation}
           javaEnabled={javaEnabled}
           supplierAdmissionBusyId={supplierAdmissionBusyId}
+          admissionDraft={admissionDraft}
+          onChangeAdmissionDraft={onChangeAdmissionDraft}
           onSubmitSupplierAdmission={onSubmitSupplierAdmission}
         />
       </DetailPanelBody>
@@ -5505,12 +5569,16 @@ const SupplierDetailOperationPanel: React.FC<{
   relation?: BuyerWorkspace['privateSupplierRelations'][number];
   javaEnabled: boolean;
   supplierAdmissionBusyId: string | null;
-  onSubmitSupplierAdmission: (relationId: string) => void;
+  admissionDraft?: BuyerSupplierAdmissionDraft;
+  onChangeAdmissionDraft: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
+  onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
 }> = ({
   detail,
   relation,
   javaEnabled,
   supplierAdmissionBusyId,
+  admissionDraft,
+  onChangeAdmissionDraft,
   onSubmitSupplierAdmission,
 }) => {
   const authorizedCategories = detail.facts.find((fact) => fact.label === '授权品类')?.value ?? '未维护';
@@ -5571,17 +5639,15 @@ const SupplierDetailOperationPanel: React.FC<{
 
       {renderSupplierRelationSummary()}
 
-      {relation.status === '待准入' && (
-        <PrimaryActionButton
-          onClick={() => onSubmitSupplierAdmission(relation.id)}
-          disabled={supplierAdmissionBusyId === relation.id}
+      {relation.status === '待准入' && admissionDraft && (
+        <SupplierAdmissionForm
+          relationId={relation.id}
+          categoryLabel={relation.categories.join(' / ')}
+          draft={admissionDraft}
           busy={supplierAdmissionBusyId === relation.id}
-          icon={Send}
-          pendingLabel="提交中"
-          fullWidth
-        >
-          提交准入
-        </PrimaryActionButton>
+          onChange={(draft) => onChangeAdmissionDraft(relation.id, draft)}
+          onSubmit={() => onSubmitSupplierAdmission(relation.id, admissionDraft)}
+        />
       )}
 
       {relation.status === '准入审批中' && (
