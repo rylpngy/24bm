@@ -3249,6 +3249,9 @@ const BuyerWorkspaceView: React.FC<{
           {filteredOrderFulfillmentRows.map((orderRow) => {
             const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
             const receiptDraft = getReceiptDraft(orderRow.id);
+            const receiptDraftInvalid = receiptDraft.result.trim().length === 0
+              || receiptDraft.receiptRemark.trim().length === 0
+              || (receiptDraft.result === '异常待处理' && receiptDraft.exceptionReason.trim().length === 0);
             return (
               <WorkflowListCard
                 key={orderRow.id}
@@ -3279,7 +3282,7 @@ const BuyerWorkspaceView: React.FC<{
                     </label>
                     <PrimaryActionButton
                       onClick={() => onCreateReceipt(orderRow.id, receiptDraft)}
-                      disabled={receiptBusy || !receiptDraft.result.trim()}
+                      disabled={receiptBusy || receiptDraftInvalid}
                       busy={receiptBusy}
                       tone="emerald"
                       pendingLabel="登记中"
@@ -3330,6 +3333,9 @@ const BuyerWorkspaceView: React.FC<{
               .map((orderRow) => {
                 const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
                 const receiptDraft = getReceiptDraft(orderRow.id);
+                const receiptDraftInvalid = receiptDraft.result.trim().length === 0
+                  || receiptDraft.receiptRemark.trim().length === 0
+                  || (receiptDraft.result === '异常待处理' && receiptDraft.exceptionReason.trim().length === 0);
                 return (
                   <WorkflowListCard
                     key={orderRow.id}
@@ -3359,7 +3365,7 @@ const BuyerWorkspaceView: React.FC<{
                         </label>
                         <PrimaryActionButton
                           onClick={() => onCreateReceipt(orderRow.id, receiptDraft)}
-                          disabled={receiptBusy || !receiptDraft.result.trim()}
+                          disabled={receiptBusy || receiptDraftInvalid}
                           busy={receiptBusy}
                           tone="emerald"
                           pendingLabel="登记中"
@@ -3409,6 +3415,10 @@ const BuyerWorkspaceView: React.FC<{
           {filteredInvoicePaymentRows.map((invoiceRow) => {
             const paymentBusy = buyerFulfillmentBusyId === `payment:${invoiceRow.id}`;
             const paymentDraft = getPaymentDraft(invoiceRow.id);
+            const paymentDraftInvalid = paymentDraft.paymentStatus.trim().length === 0
+              || paymentDraft.paymentRemark.trim().length === 0
+              || paymentDraft.paymentRequestStatus.trim().length === 0
+              || paymentDraft.reconciliationNote.trim().length === 0;
             return (
               <WorkflowListCard
                 key={invoiceRow.id}
@@ -3437,7 +3447,7 @@ const BuyerWorkspaceView: React.FC<{
                     </label>
                     <PrimaryActionButton
                       onClick={() => onRegisterPayment(invoiceRow.id, paymentDraft)}
-                      disabled={paymentBusy || !paymentDraft.paymentStatus.trim()}
+                      disabled={paymentBusy || paymentDraftInvalid}
                       busy={paymentBusy}
                       pendingLabel="登记中"
                       flushTop
@@ -5017,70 +5027,91 @@ const ReceiptRegistrationForm: React.FC<{
   busy: boolean;
   onChange: (draft: BuyerReceiptDraft) => void;
   onSubmit: () => void;
-}> = ({ orderId, draft, busy, onChange, onSubmit }) => (
-  <div className="mt-3 rounded-lg border border-emerald-100 bg-white p-3">
-    <label className="block text-xs font-black text-emerald-700" htmlFor={`receipt-result-${orderId}`}>
-      验收结果
-    </label>
-    <select
-      id={`receipt-result-${orderId}`}
-      value={draft.result}
-      onChange={(event) => onChange({ ...draft, result: event.target.value })}
-      className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-    >
-      <option value="验收通过">验收通过</option>
-      <option value="异常待处理">异常待处理</option>
-    </select>
-    <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-1">
-      <label className="block text-xs font-black text-emerald-700" htmlFor={`receipt-remark-${orderId}`}>
-        验收备注
+}> = ({ orderId, draft, busy, onChange, onSubmit }) => {
+  const receiptResultInvalid = draft.result.trim().length === 0;
+  const receiptRemarkInvalid = draft.receiptRemark.trim().length === 0;
+  const receiptExceptionInvalid = draft.result === '异常待处理' && draft.exceptionReason.trim().length === 0;
+  const receiptDraftInvalid = receiptResultInvalid || receiptRemarkInvalid || receiptExceptionInvalid;
+
+  return (
+    <div className="mt-3 rounded-lg border border-emerald-100 bg-white p-3">
+      <label className="block text-xs font-black text-emerald-700" htmlFor={`receipt-result-${orderId}`}>
+        验收结果
+      </label>
+      <select
+        id={`receipt-result-${orderId}`}
+        value={draft.result}
+        onChange={(event) => onChange({ ...draft, result: event.target.value })}
+        className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+      >
+        <option value="验收通过">验收通过</option>
+        <option value="异常待处理">异常待处理</option>
+      </select>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-1">
+        <label className="block text-xs font-black text-emerald-700" htmlFor={`receipt-remark-${orderId}`}>
+          验收备注
+          <textarea
+            id={`receipt-remark-${orderId}`}
+            value={draft.receiptRemark}
+            onChange={(event) => onChange({ ...draft, receiptRemark: event.target.value })}
+            className="mt-2 min-h-20 w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
+        <label className="block text-xs font-black text-emerald-700" htmlFor={`receipt-exception-${orderId}`}>
+          异常原因
+          <textarea
+            id={`receipt-exception-${orderId}`}
+            value={draft.exceptionReason}
+            onChange={(event) => onChange({ ...draft, exceptionReason: event.target.value })}
+            className="mt-2 min-h-20 w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
+      </div>
+      <label className="mt-3 block text-xs font-black text-emerald-700" htmlFor={`receipt-attachments-${orderId}`}>
+        附件清单
         <textarea
-          id={`receipt-remark-${orderId}`}
-          value={draft.receiptRemark}
-          onChange={(event) => onChange({ ...draft, receiptRemark: event.target.value })}
+          id={`receipt-attachments-${orderId}`}
+          value={draft.attachmentNames}
+          onChange={(event) => onChange({ ...draft, attachmentNames: event.target.value })}
           className="mt-2 min-h-20 w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
         />
       </label>
-      <label className="block text-xs font-black text-emerald-700" htmlFor={`receipt-exception-${orderId}`}>
-        异常原因
-        <textarea
-          id={`receipt-exception-${orderId}`}
-          value={draft.exceptionReason}
-          onChange={(event) => onChange({ ...draft, exceptionReason: event.target.value })}
-          className="mt-2 min-h-20 w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-        />
-      </label>
+      <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+        差异处理提示：如选择异常待处理，请填写异常原因并在附件清单中登记照片、验收单或差异说明；后续将衔接差异处理和补发/退换流程。
+      </div>
+      {receiptDraftInvalid && (
+        <div aria-live="polite" className="mt-3 space-y-2">
+          {receiptResultInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请选择验收结果后再登记收货。
+            </p>
+          )}
+          {receiptRemarkInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请填写验收备注后再登记收货。
+            </p>
+          )}
+          {receiptExceptionInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              异常待处理时必须填写异常原因。
+            </p>
+          )}
+        </div>
+      )}
+      <PrimaryActionButton
+        onClick={onSubmit}
+        disabled={busy || receiptDraftInvalid}
+        busy={busy}
+        tone="emerald"
+        icon={PackageCheck}
+        pendingLabel="登记中"
+        fullWidth
+      >
+        登记收货
+      </PrimaryActionButton>
     </div>
-    <label className="mt-3 block text-xs font-black text-emerald-700" htmlFor={`receipt-attachments-${orderId}`}>
-      附件清单
-      <textarea
-        id={`receipt-attachments-${orderId}`}
-        value={draft.attachmentNames}
-        onChange={(event) => onChange({ ...draft, attachmentNames: event.target.value })}
-        className="mt-2 min-h-20 w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-      />
-    </label>
-    <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
-      差异处理提示：如选择异常待处理，请填写异常原因并在附件清单中登记照片、验收单或差异说明；后续将衔接差异处理和补发/退换流程。
-    </div>
-    <PrimaryActionButton
-      onClick={onSubmit}
-      disabled={
-        busy
-        || draft.result.trim().length === 0
-        || draft.receiptRemark.trim().length === 0
-        || (draft.result === '异常待处理' && draft.exceptionReason.trim().length === 0)
-      }
-      busy={busy}
-      tone="emerald"
-      icon={PackageCheck}
-      pendingLabel="登记中"
-      fullWidth
-    >
-      登记收货
-    </PrimaryActionButton>
-  </div>
-);
+  );
+};
 
 const PaymentRegistrationForm: React.FC<{
   invoiceId: string;
@@ -5088,74 +5119,103 @@ const PaymentRegistrationForm: React.FC<{
   busy: boolean;
   onChange: (draft: BuyerPaymentDraft) => void;
   onSubmit: () => void;
-}> = ({ invoiceId, draft, busy, onChange, onSubmit }) => (
-  <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3">
-    <label className="block text-xs font-black text-blue-700" htmlFor={`payment-status-${invoiceId}`}>
-      付款状态
-    </label>
-    <select
-      id={`payment-status-${invoiceId}`}
-      value={draft.paymentStatus}
-      onChange={(event) => onChange({ ...draft, paymentStatus: event.target.value })}
-      className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-    >
-      <option value="部分付款">部分付款</option>
-      <option value="已付款">已付款</option>
-    </select>
-    <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-1">
-      <label className="block text-xs font-black text-blue-700" htmlFor={`payment-remark-${invoiceId}`}>
-        付款备注
+}> = ({ invoiceId, draft, busy, onChange, onSubmit }) => {
+  const paymentStatusInvalid = draft.paymentStatus.trim().length === 0;
+  const paymentRemarkInvalid = draft.paymentRemark.trim().length === 0;
+  const paymentRequestStatusInvalid = draft.paymentRequestStatus.trim().length === 0;
+  const paymentReconciliationInvalid = draft.reconciliationNote.trim().length === 0;
+  const paymentDraftInvalid = paymentStatusInvalid
+    || paymentRemarkInvalid
+    || paymentRequestStatusInvalid
+    || paymentReconciliationInvalid;
+
+  return (
+    <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3">
+      <label className="block text-xs font-black text-blue-700" htmlFor={`payment-status-${invoiceId}`}>
+        付款状态
+      </label>
+      <select
+        id={`payment-status-${invoiceId}`}
+        value={draft.paymentStatus}
+        onChange={(event) => onChange({ ...draft, paymentStatus: event.target.value })}
+        className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+      >
+        <option value="部分付款">部分付款</option>
+        <option value="已付款">已付款</option>
+      </select>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-1">
+        <label className="block text-xs font-black text-blue-700" htmlFor={`payment-remark-${invoiceId}`}>
+          付款备注
+          <textarea
+            id={`payment-remark-${invoiceId}`}
+            value={draft.paymentRemark}
+            onChange={(event) => onChange({ ...draft, paymentRemark: event.target.value })}
+            className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+        <label className="block text-xs font-black text-blue-700" htmlFor={`payment-request-status-${invoiceId}`}>
+          付款申请状态
+          <select
+            id={`payment-request-status-${invoiceId}`}
+            value={draft.paymentRequestStatus}
+            onChange={(event) => onChange({ ...draft, paymentRequestStatus: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="付款申请待提交">付款申请待提交</option>
+            <option value="付款申请审批中">付款申请审批中</option>
+            <option value="付款申请已通过">付款申请已通过</option>
+          </select>
+        </label>
+      </div>
+      <label className="mt-3 block text-xs font-black text-blue-700" htmlFor={`payment-reconciliation-${invoiceId}`}>
+        对账入口
         <textarea
-          id={`payment-remark-${invoiceId}`}
-          value={draft.paymentRemark}
-          onChange={(event) => onChange({ ...draft, paymentRemark: event.target.value })}
+          id={`payment-reconciliation-${invoiceId}`}
+          value={draft.reconciliationNote}
+          onChange={(event) => onChange({ ...draft, reconciliationNote: event.target.value })}
           className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
         />
       </label>
-      <label className="block text-xs font-black text-blue-700" htmlFor={`payment-request-status-${invoiceId}`}>
-        付款申请状态
-        <select
-          id={`payment-request-status-${invoiceId}`}
-          value={draft.paymentRequestStatus}
-          onChange={(event) => onChange({ ...draft, paymentRequestStatus: event.target.value })}
-          className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        >
-          <option value="付款申请待提交">付款申请待提交</option>
-          <option value="付款申请审批中">付款申请审批中</option>
-          <option value="付款申请已通过">付款申请已通过</option>
-        </select>
-      </label>
+      <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-xs font-bold leading-5 text-indigo-800">
+        三单匹配提示：付款前请核对采购订单、收货验收和发票金额；如存在差异，应先完成对账处理再登记付款。
+      </div>
+      {paymentDraftInvalid && (
+        <div aria-live="polite" className="mt-3 space-y-2">
+          {paymentStatusInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请选择付款状态后再登记付款。
+            </p>
+          )}
+          {paymentRemarkInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请填写付款备注后再登记付款。
+            </p>
+          )}
+          {paymentRequestStatusInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请选择付款申请状态后再登记付款。
+            </p>
+          )}
+          {paymentReconciliationInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请填写对账说明后再登记付款。
+            </p>
+          )}
+        </div>
+      )}
+      <PrimaryActionButton
+        onClick={onSubmit}
+        disabled={busy || paymentDraftInvalid}
+        busy={busy}
+        icon={CreditCard}
+        pendingLabel="登记中"
+        fullWidth
+      >
+        登记付款
+      </PrimaryActionButton>
     </div>
-    <label className="mt-3 block text-xs font-black text-blue-700" htmlFor={`payment-reconciliation-${invoiceId}`}>
-      对账入口
-      <textarea
-        id={`payment-reconciliation-${invoiceId}`}
-        value={draft.reconciliationNote}
-        onChange={(event) => onChange({ ...draft, reconciliationNote: event.target.value })}
-        className="mt-2 min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-      />
-    </label>
-    <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-xs font-bold leading-5 text-indigo-800">
-      三单匹配提示：付款前请核对采购订单、收货验收和发票金额；如存在差异，应先完成对账处理再登记付款。
-    </div>
-    <PrimaryActionButton
-      onClick={onSubmit}
-      disabled={
-        busy
-        || draft.paymentStatus.trim().length === 0
-        || draft.paymentRemark.trim().length === 0
-        || draft.paymentRequestStatus.trim().length === 0
-        || draft.reconciliationNote.trim().length === 0
-      }
-      busy={busy}
-      icon={CreditCard}
-      pendingLabel="登记中"
-      fullWidth
-    >
-      登记付款
-    </PrimaryActionButton>
-  </div>
-);
+  );
+};
 
 const OrderDetailPanelView: React.FC<{
   detail?: OrderDetailPanel;
