@@ -176,6 +176,7 @@ const App: React.FC = () => {
   const [tenantId, setTenantId] = useState('tenant-acme');
   const [supplierId, setSupplierId] = useState('supplier-orbit');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshBusy, setRefreshBusy] = useState(false);
   const [platformData, setPlatformData] = useState<PlatformWorkspaceData | null>(null);
   const [buyerData, setBuyerData] = useState<{
     workspace: BuyerWorkspace;
@@ -238,6 +239,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (configurationError) return;
     let active = true;
+    setRefreshBusy(true);
     setLoadError(null);
     Promise.all([
       mockApiClient.getPlatformWorkspace(),
@@ -280,12 +282,21 @@ const App: React.FC = () => {
       .catch((error) => {
         if (!active) return;
         setLoadError(error instanceof Error ? error.message : '工作台数据加载失败');
+      })
+      .finally(() => {
+        if (active) setRefreshBusy(false);
       });
 
     return () => {
       active = false;
     };
   }, [configurationError, tenantId, supplierId, refreshKey]);
+
+  const triggerRefresh = () => {
+    if (refreshBusy) return;
+    setRefreshBusy(true);
+    setRefreshKey((value) => value + 1);
+  };
 
   const runJavaWorkflow = async () => {
     if (!javaApiClient || !buyerData) return;
@@ -744,8 +755,9 @@ const App: React.FC = () => {
           setTenantId={setTenantId}
           setSupplierId={setSupplierId}
           javaEnabled={Boolean(javaApiClient)}
+          refreshBusy={refreshBusy}
           workflowBusy={workflowBusy}
-          onRefresh={() => setRefreshKey((value) => value + 1)}
+          onRefresh={triggerRefresh}
           onRunJavaWorkflow={runJavaWorkflow}
         />
         <section className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
@@ -922,6 +934,7 @@ const AppHeader: React.FC<{
   setTenantId: (id: string) => void;
   setSupplierId: (id: string) => void;
   javaEnabled: boolean;
+  refreshBusy: boolean;
   workflowBusy: boolean;
   onRefresh: () => void;
   onRunJavaWorkflow: () => void;
@@ -934,6 +947,7 @@ const AppHeader: React.FC<{
   setTenantId,
   setSupplierId,
   javaEnabled,
+  refreshBusy,
   workflowBusy,
   onRefresh,
   onRunJavaWorkflow,
@@ -990,9 +1004,11 @@ const AppHeader: React.FC<{
         <button
           type="button"
           onClick={onRefresh}
-          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 hover:bg-slate-50"
+          disabled={refreshBusy}
+          aria-busy={refreshBusy || undefined}
+          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
         >
-          刷新
+          {refreshBusy ? '刷新中' : '刷新'}
         </button>
         {javaEnabled && activeRole === 'buyer' && (
           <button

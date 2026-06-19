@@ -47,6 +47,23 @@ describe('admin shell polish UI', () => {
     expect(app).toContain('onAction={() => setRefreshKey((value) => value + 1)}');
   });
 
+  it('prevents repeated refresh clicks while workspace data is reloading', () => {
+    const app = read('App.tsx');
+    const appHeader = app.slice(
+      app.indexOf('const AppHeader'),
+      app.indexOf('const Select'),
+    );
+
+    expect(app).toContain('const [refreshBusy, setRefreshBusy] = useState(false)');
+    expect(app).toContain('const triggerRefresh = () => {');
+    expect(app).toContain('if (refreshBusy) return;');
+    expect(app).toContain('refreshBusy={refreshBusy}');
+    expect(appHeader).toContain('refreshBusy: boolean;');
+    expect(appHeader).toContain('disabled={refreshBusy}');
+    expect(appHeader).toContain("aria-busy={refreshBusy || undefined}");
+    expect(appHeader).toContain("{refreshBusy ? '刷新中' : '刷新'}");
+  });
+
   it('marks active role and module navigation items for accessible admin state', () => {
     const app = read('App.tsx');
 
