@@ -51,4 +51,29 @@ describe('buyer supplier admission UI', () => {
     expect(app).toContain('!draft.categoryConfirmed');
     expect(app).toContain('!draft.riskConfirmed');
   });
+
+  it('shows validation feedback before supplier admission submission', () => {
+    const app = read('App.tsx');
+    const supplierAdmissionForm = app.slice(
+      app.indexOf('const SupplierAdmissionForm'),
+      app.indexOf('const SupplierDetailPanelView'),
+    );
+
+    expect(supplierAdmissionForm).toContain('admissionReasonInvalid');
+    expect(supplierAdmissionForm).toContain('admissionQualificationInvalid');
+    expect(supplierAdmissionForm).toContain('admissionContactInvalid');
+    expect(supplierAdmissionForm).toContain('admissionPhoneInvalid');
+    expect(supplierAdmissionForm).toContain('admissionCategoryInvalid');
+    expect(supplierAdmissionForm).toContain('admissionRiskInvalid');
+    expect(supplierAdmissionForm).toContain('supplierAdmissionInvalid');
+    expect(supplierAdmissionForm).toContain('supplier-admission-qualification');
+    expect(supplierAdmissionForm).toContain('min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2');
+    expect(supplierAdmissionForm).toContain('请填写准入说明后再提交。');
+    expect(supplierAdmissionForm).toContain('请填写资质摘要后再提交。');
+    expect(supplierAdmissionForm).toContain('请填写联系人和联系电话后再提交。');
+    expect(supplierAdmissionForm).toContain('请先确认授权品类。');
+    expect(supplierAdmissionForm).toContain('请先复核黑名单与风险状态。');
+    expect(supplierAdmissionForm).toContain('aria-live="polite"');
+    expect(supplierAdmissionForm).toContain('disabled={busy || supplierAdmissionInvalid}');
+  });
 });
