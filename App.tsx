@@ -7876,15 +7876,21 @@ const StatusFilterControl: React.FC<{
   statusOptions: string[];
   onChange: (value: string) => void;
 }> = ({ label, value, statusOptions, onChange }) => (
-  <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3">
-    <label className="text-xs font-black text-slate-500" htmlFor={`status-filter-${label}`}>
-      {label}
-    </label>
+  <div
+    aria-label={`${label}筛选器`}
+    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div className="min-w-0">
+      <label className="text-xs font-black text-slate-500" htmlFor={`status-filter-${label}`}>
+        {label}
+      </label>
+      <p className="mt-1 text-xs font-bold text-slate-400">可选 {statusOptions.length} 项</p>
+    </div>
     <select
       id={`status-filter-${label}`}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+      className="h-9 w-full min-w-[12rem] rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-auto"
     >
       <option value="全部状态">全部状态</option>
       {statusOptions.map((status) => (

@@ -34,6 +34,22 @@ describe('buyer workflow status filters UI', () => {
     expect(buyerWorkspace).toContain('invoiceRow.status === invoiceStatusFilter');
   });
 
+  it('makes the reusable status filter accessible and stable on narrow screens', () => {
+    const app = read('App.tsx');
+    const statusFilter = app.slice(
+      app.indexOf('const StatusFilterControl'),
+      app.indexOf('const ResponsiveTableFrame'),
+    );
+
+    expect(statusFilter).toContain('aria-label={`${label}筛选器`}');
+    expect(statusFilter).toContain('可选 {statusOptions.length} 项');
+    expect(statusFilter).toContain('flex-col');
+    expect(statusFilter).toContain('sm:flex-row');
+    expect(statusFilter).toContain('min-w-[12rem]');
+    expect(statusFilter).toContain('w-full');
+    expect(statusFilter).toContain('sm:w-auto');
+  });
+
   it('adds status or type filters to buyer approval, supplier, material, and audit lists', () => {
     const app = read('App.tsx');
     const buyerWorkspace = app.slice(
