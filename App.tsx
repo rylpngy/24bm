@@ -1217,6 +1217,88 @@ const buildSupplierModuleFacts = (
   return commonFacts[activeModule];
 };
 
+type PlatformModuleHeaderConfig = {
+  title: string;
+  desc: string;
+  primaryAction: string;
+  currentFilter: string;
+};
+
+const platformModuleHeaders: Record<PlatformAdminModule, PlatformModuleHeaderConfig> = {
+  overview: {
+    title: '平台看板',
+    desc: '汇总 SaaS 租户、公共供应商、企业审核和平台公告运营状态。',
+    primaryAction: '查看运营概览',
+    currentFilter: '全部平台运营数据',
+  },
+  tenants: {
+    title: '租户列表',
+    desc: '管理采购方企业租户、套餐版本、用户容量和基础功能开关。',
+    primaryAction: '启停租户 / 调整套餐',
+    currentFilter: '全部采购企业租户',
+  },
+  reviews: {
+    title: '企业审核',
+    desc: '处理采购方与供应商企业入驻认证，维护平台公共企业身份。',
+    primaryAction: '通过 / 驳回企业审核',
+    currentFilter: '待审核优先',
+  },
+  announcements: {
+    title: '平台公告',
+    desc: '面向采购方、供应商或全部企业发布平台运营通知。',
+    primaryAction: '发布平台公告',
+    currentFilter: '已发布公告',
+  },
+};
+
+const buildPlatformModuleFacts = (
+  activeModule: PlatformAdminModule,
+  tenants: PlatformTenantRow[],
+  enterpriseReviews: PlatformEnterpriseReview[],
+  announcements: PlatformAnnouncement[],
+  buyerCount: number,
+  supplierCount: number,
+): Array<{ label: string; value: string }> => {
+  const activeTenantCount = tenants.filter((tenant) =>
+    tenant.status === 'active' || tenant.status === '启用' || tenant.status === '已启用'
+  ).length;
+  const pendingReviewCount = enterpriseReviews.filter((review) => review.status === '待审核').length;
+  const verifiedReviewCount = enterpriseReviews.filter((review) => review.status === '已认证').length;
+  const planCount = new Set(tenants.map((tenant) => tenant.plan)).size;
+  const latestAnnouncement = announcements
+    .slice()
+    .sort((left, right) => right.publishedAt.localeCompare(left.publishedAt))[0];
+
+  const facts = {
+    overview: [
+      { label: '采购租户', value: `${buyerCount} 家` },
+      { label: '公共供应商', value: `${supplierCount} 家` },
+      { label: '待审核企业', value: `${pendingReviewCount} 家` },
+      { label: '公告数量', value: `${announcements.length} 条` },
+    ],
+    tenants: [
+      { label: '租户总数', value: `${tenants.length} 家` },
+      { label: '启用租户', value: `${activeTenantCount} 家` },
+      { label: '套餐覆盖', value: `${planCount} 类` },
+      { label: '用户容量', value: `${tenants.reduce((sum, tenant) => sum + tenant.userLimit, 0)} 人` },
+    ],
+    reviews: [
+      { label: '待审核', value: `${pendingReviewCount} 家` },
+      { label: '已认证', value: `${verifiedReviewCount} 家` },
+      { label: '采购方企业', value: `${enterpriseReviews.filter((review) => review.type === 'buyer').length} 家` },
+      { label: '供应商企业', value: `${enterpriseReviews.filter((review) => review.type === 'supplier').length} 家` },
+    ],
+    announcements: [
+      { label: '公告数量', value: `${announcements.length} 条` },
+      { label: '发布范围', value: `${new Set(announcements.map((announcement) => announcement.targetScope)).size} 类` },
+      { label: '最近发布', value: latestAnnouncement ? formatAuditTime(latestAnnouncement.publishedAt) : '暂无' },
+      { label: '下一步', value: announcements.length > 0 ? '维护公告内容' : '发布平台公告' },
+    ],
+  } satisfies Record<PlatformAdminModule, Array<{ label: string; value: string }>>;
+
+  return facts[activeModule];
+};
+
 const buildPlatformAnnouncements = (announcements: JavaPlatformAnnouncementDto[]): PlatformAnnouncement[] =>
   announcements.map((announcement) => ({
     id: announcement.id,
@@ -1380,6 +1462,15 @@ const PlatformWorkspace: React.FC<{
     };
   }, [javaEnabled, data.platformOverview?.operationSummary?.activeAnnouncementCount]);
   const announcements = platformAnnouncements;
+  const platformModuleFacts = buildPlatformModuleFacts(
+    activeModule,
+    platformTenants,
+    enterpriseReviews,
+    announcements,
+    buyerCount,
+    supplierCount,
+  );
+  const platformModuleHeader = platformModuleHeaders[activeModule];
   const handlePublishAnnouncement = async (payload: { title: string; targetScope: string }) => {
     if (javaEnabled) {
       const nextAnnouncements = await onPublishAnnouncement(payload);
@@ -1402,6 +1493,12 @@ const PlatformWorkspace: React.FC<{
 
   return (
     <>
+      <PlatformModuleHeader
+        header={platformModuleHeader}
+        facts={platformModuleFacts}
+        javaEnabled={javaEnabled}
+      />
+
       {activeModule === 'overview' && (
         <>
           <HeroBand
@@ -6324,6 +6421,38 @@ const SupplierModuleHeader: React.FC<{
       <div className="shrink-0 rounded-lg border border-orange-100 bg-orange-50 p-3 lg:w-64">
         <p className="text-xs font-black text-orange-800">供应商当前动作</p>
         <p className="mt-1 text-sm font-black text-orange-950">{header.primaryAction}</p>
+      </div>
+    </div>
+    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      {facts.slice(0, 4).map((fact) => (
+        <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+      ))}
+    </div>
+  </section>
+);
+
+const PlatformModuleHeader: React.FC<{
+  header: PlatformModuleHeaderConfig;
+  facts: Array<{ label: string; value: string }>;
+  javaEnabled: boolean;
+}> = ({ header, facts, javaEnabled }) => (
+  <section className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
+            {javaEnabled ? 'Java 数据源' : 'Mock 数据源'}
+          </span>
+          <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-500">
+            当前筛选：{header.currentFilter}
+          </span>
+        </div>
+        <h3 className="mt-3 text-lg font-black text-slate-950">{header.title}</h3>
+        <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
+      </div>
+      <div className="shrink-0 rounded-lg border border-emerald-100 bg-emerald-50 p-3 lg:w-64">
+        <p className="text-xs font-black text-emerald-800">平台当前动作</p>
+        <p className="mt-1 text-sm font-black text-emerald-950">{header.primaryAction}</p>
       </div>
     </div>
     <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
