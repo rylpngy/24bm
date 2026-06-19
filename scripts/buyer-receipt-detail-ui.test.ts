@@ -48,4 +48,22 @@ describe('buyer receipt detail UI', () => {
     expect(app).toContain('busy={buyerFulfillmentBusyId === `receipt:${selectedReceiptOrder}`}');
     expect(app).toContain('onCreateReceipt={onCreateReceipt}');
   });
+
+  it('places logistics, acceptance, and next action summary in the top receipt detail card', () => {
+    const app = read('App.tsx');
+    const receiptDetailView = app.slice(
+      app.indexOf('const ReceiptInspectionDetailPanelView'),
+      app.indexOf('const ReceiptInspectionOperationPanel'),
+    );
+    const topCard = receiptDetailView.slice(
+      receiptDetailView.indexOf('<InlineFactGrid facts={detail.facts} />'),
+      receiptDetailView.indexOf('<section>'),
+    );
+
+    expect(receiptDetailView).toContain('const logisticsStatus = detail?.logisticsFacts.find((fact) => fact.label === \'物流状态\')?.value ?? \'待发货\';');
+    expect(receiptDetailView).toContain('const acceptanceStatus = detail?.acceptanceChecks.find((check) => check.label === \'验收结果\')?.value ?? \'待登记\';');
+    expect(topCard).toContain('<MiniFact label="物流状态" value={logisticsStatus} />');
+    expect(topCard).toContain('<MiniFact label="验收状态" value={acceptanceStatus} />');
+    expect(topCard).toContain('<MiniFact label="下一步" value={detail.nextActionTitle} />');
+  });
 });
