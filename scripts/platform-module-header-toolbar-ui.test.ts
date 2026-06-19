@@ -30,4 +30,22 @@ describe('platform module header and toolbar UI', () => {
     expect(app).toContain("announcements: {");
     expect(app).toContain("primaryAction: '发布平台公告'");
   });
+
+  it('adds list toolbar context to platform review and announcement lists', () => {
+    const app = read('App.tsx');
+    const platformWorkspace = app.slice(
+      app.indexOf('const PlatformWorkspace'),
+      app.indexOf('const PlatformAnnouncementPublishPanel'),
+    );
+
+    expect(platformWorkspace).toContain('title="企业审核池"');
+    expect(platformWorkspace).toContain('recordCount={enterpriseReviews.length}');
+    expect(platformWorkspace).toContain('filterLabel="待审核优先"');
+    expect(platformWorkspace).toContain('actionLabel="批量审核预留"');
+
+    expect(platformWorkspace).toContain('title="公告发布池"');
+    expect(platformWorkspace).toContain('recordCount={announcements.length}');
+    expect(platformWorkspace).toContain('filterLabel="已发布公告"');
+    expect(platformWorkspace).toContain('actionLabel="发布公告"');
+  });
 });

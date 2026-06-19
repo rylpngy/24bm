@@ -1615,6 +1615,12 @@ const PlatformWorkspace: React.FC<{
             </div>
           )}
           <Panel title="企业审核" icon={ClipboardCheck}>
+            <ListToolbar
+              title="企业审核池"
+              recordCount={enterpriseReviews.length}
+              filterLabel="待审核优先"
+              actionLabel="批量审核预留"
+            />
             <div className="space-y-3">
               {enterpriseReviews.map((review) => (
                 <PlatformEnterpriseReviewCard
@@ -1648,6 +1654,12 @@ const PlatformWorkspace: React.FC<{
             </div>
           )}
           <Panel title="平台公告" icon={Bell}>
+            <ListToolbar
+              title="公告发布池"
+              recordCount={announcements.length}
+              filterLabel="已发布公告"
+              actionLabel="发布公告"
+            />
             <div className="space-y-3">
               {platformAnnouncements.map((announcement) => (
                 <PlatformAnnouncementCard
