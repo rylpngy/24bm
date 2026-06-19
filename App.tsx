@@ -2493,7 +2493,7 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {activeModule === 'approvals' && (
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
         <Panel title="审批待办" icon={ClipboardCheck}>
           <ListToolbar
             title="审批待办池"
@@ -2646,8 +2646,8 @@ const BuyerWorkspaceView: React.FC<{
     {(activeModule === 'demands' || activeModule === 'rfqs' || activeModule === 'quotes') && (
     <div className={`grid gap-6 ${
       activeModule === 'demands'
-        ? 'xl:grid-cols-[340px_minmax(0,1fr)_420px]'
-        : 'xl:grid-cols-[minmax(0,1fr)_420px]'
+        ? '2xl:grid-cols-[340px_minmax(0,1fr)_420px]'
+        : '2xl:grid-cols-[minmax(0,1fr)_420px]'
     }`}
     >
       {activeModule === 'demands' && (
@@ -2870,7 +2870,7 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {activeModule === 'materials' && (
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
         <Panel title="物料目录" icon={Database}>
           <ListToolbar
             title="物料服务池"
@@ -2901,7 +2901,7 @@ const BuyerWorkspaceView: React.FC<{
     )}
 
     {(activeModule === 'suppliers' || activeModule === 'orders' || activeModule === 'invoices' || activeModule === 'receipts') && (
-    <div className={`grid gap-6 ${activeModule === 'suppliers' ? 'xl:grid-cols-[minmax(0,1fr)_420px]' : 'xl:grid-cols-[minmax(0,1fr)_420px]'}`}>
+    <div className={`grid gap-6 ${activeModule === 'suppliers' ? '2xl:grid-cols-[minmax(0,1fr)_420px]' : '2xl:grid-cols-[minmax(0,1fr)_420px]'}`}>
       {activeModule === 'suppliers' && (
       <>
       <Panel title="私域供应商关系" icon={Users}>
@@ -3173,7 +3173,7 @@ const AuditLogList: React.FC<{ workspace: BuyerWorkspace; searchQuery: string }>
         filterLabel={normalizedSearchQuery ? `搜索匹配：${searchQuery.trim()}` : '最近操作优先'}
         actionLabel="导出日志"
       />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="grid gap-3 md:grid-cols-2">
           {filteredLogs.map((log) => (
             <AdminInfoCard

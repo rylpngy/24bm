@@ -188,6 +188,16 @@ describe('admin shell polish UI', () => {
     expect(app.match(/<DetailPanelBody>/g)?.length).toBeGreaterThanOrEqual(6);
   });
 
+  it('keeps buyer list and detail columns stacked until very wide screens', () => {
+    const app = read('App.tsx');
+
+    expect(app).not.toMatch(/(?<!2)xl:grid-cols-\[minmax\(0,1fr\)_420px\]/);
+    expect(app).not.toMatch(/(?<!2)xl:grid-cols-\[340px_minmax\(0,1fr\)_420px\]/);
+    expect(app).toContain('2xl:grid-cols-[minmax(0,1fr)_420px]');
+    expect(app).toContain('2xl:grid-cols-[340px_minmax(0,1fr)_420px]');
+    expect(app.match(/2xl:grid-cols-\[minmax\(0,1fr\)_420px\]/g)?.length).toBeGreaterThanOrEqual(4);
+  });
+
   it('uses shared detail row components for trace and related business sections', () => {
     const app = read('App.tsx');
 
