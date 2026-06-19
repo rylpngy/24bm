@@ -1980,24 +1980,22 @@ const formatAnnouncementScope = (scope: string) => {
 const PlatformAnnouncementCard: React.FC<{
   announcement: PlatformAnnouncement;
 }> = ({ announcement }) => (
-  <div className="rounded-lg border border-slate-200 bg-white p-4">
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div className="min-w-0">
-        <p className="font-black text-slate-900">公告明细卡片 {announcement.title}</p>
-        <p className="mt-1 break-words text-sm text-slate-500">公告编号 {announcement.id}</p>
-      </div>
-      <StatusPill label="已发布" />
-    </div>
-    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-      <MiniFact label="公告编号" value={announcement.id} />
-      <MiniFact label="发布范围" value={formatAnnouncementScope(announcement.targetScope)} />
-      <MiniFact label="发布时间" value={formatAuditTime(announcement.publishedAt)} />
-      <MiniFact label="发布状态" value="已发布" />
-    </div>
-    <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
-      <p className="text-xs font-black text-slate-500">公告正文</p>
-      <p className="mt-1 break-words text-sm font-bold leading-6 text-slate-700">{announcement.content}</p>
-    </div>
+  <div className="space-y-3">
+    <DetailHeroCard
+      eyebrow="平台公告"
+      title={`公告明细卡片 ${announcement.title}`}
+      meta={`公告编号 ${announcement.id}`}
+      status="已发布"
+      facts={[
+        { label: '公告编号', value: announcement.id },
+        { label: '发布范围', value: formatAnnouncementScope(announcement.targetScope) },
+        { label: '发布时间', value: formatAuditTime(announcement.publishedAt) },
+        { label: '发布状态', value: '已发布' },
+      ]}
+    />
+    <DetailSection title="公告正文">
+      <p className="break-words text-sm font-bold leading-6 text-slate-700">{announcement.content}</p>
+    </DetailSection>
   </div>
 );
 
@@ -2213,21 +2211,22 @@ const PlatformEnterpriseReviewCard: React.FC<{
       : '维护认证档案';
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <p className="font-black text-slate-900">企业审核卡片 {review.name}</p>
-          <p className="mt-1 break-words text-sm text-slate-500">审核编号 {review.id}</p>
-        </div>
-        <StatusPill label={review.status} />
-      </div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        <MiniFact label="企业类型" value={formatEnterpriseType(review.type)} />
-        <MiniFact label="所属行业" value={review.industry} />
-        <MiniFact label="审核状态" value={review.status} />
-        <MiniFact label="下一步" value={nextAction} />
-      </div>
-    </div>
+    <DetailHeroCard
+      eyebrow="企业审核"
+      title={`企业审核卡片 ${review.name}`}
+      meta={`审核编号 ${review.id}`}
+      status={review.status}
+      facts={[
+        { label: '企业类型', value: formatEnterpriseType(review.type) },
+        { label: '所属行业', value: review.industry },
+        { label: '审核状态', value: review.status },
+        { label: '下一步', value: nextAction },
+      ]}
+      summaryFacts={[
+        { label: '企业类型', value: formatEnterpriseType(review.type) },
+        { label: '下一步', value: nextAction },
+      ]}
+    />
   );
 };
 
@@ -8003,21 +8002,18 @@ const SupplierQuoteHistoryCard: React.FC<{
   quote: SupplierWorkspace['quotes'][number];
   rfq?: SupplierWorkspace['opportunities'][number];
 }> = ({ quote, rfq }) => (
-  <div className="rounded-lg border border-slate-200 bg-white p-4">
-    <div className="flex items-start justify-between gap-3">
-      <div>
-        <p className="font-black text-slate-900">{rfq?.title ?? `报价 ${quote.rfqId}`}</p>
-        <p className="mt-1 text-sm text-slate-500">关联询价 {quote.rfqId} · {rfq?.status ?? '未知状态'}</p>
-      </div>
-      <StatusPill label={quote.status} />
-    </div>
-    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-      <MiniFact label="报价金额" value={currency(quote.amount)} />
-      <MiniFact label="税率" value={`${quote.taxRate}%`} />
-      <MiniFact label="交付周期" value={`${quote.deliveryDays} 天`} />
-      <MiniFact label="下一步" value={rfq?.status === '已定标' ? '查看订单' : '等待定标'} />
-    </div>
-  </div>
+  <DetailHeroCard
+    eyebrow="报价记录"
+    title={rfq?.title ?? `报价 ${quote.rfqId}`}
+    meta={`关联询价 ${quote.rfqId} · ${rfq?.status ?? '未知状态'}`}
+    status={quote.status}
+    facts={[
+      { label: '报价金额', value: currency(quote.amount) },
+      { label: '税率', value: `${quote.taxRate}%` },
+      { label: '交付周期', value: `${quote.deliveryDays} 天` },
+      { label: '下一步', value: rfq?.status === '已定标' ? '查看订单' : '等待定标' },
+    ]}
+  />
 );
 
 const SupplierInvoiceReceivableSummaryPanel: React.FC<{
@@ -8060,22 +8056,19 @@ const SupplierInvoiceReceivableCard: React.FC<{
       : '跟进回款';
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-black text-slate-900">发票应收卡片 {invoice.id}</p>
-          <p className="mt-1 text-sm text-slate-500">关联订单 {invoice.orderId} · {order?.status ?? '订单状态待同步'}</p>
-        </div>
-        <StatusPill label={invoice.paymentStatus} />
-      </div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-        <MiniFact label="关联订单" value={invoice.orderId} />
-        <MiniFact label="应收金额" value={currency(invoice.amount)} />
-        <MiniFact label="付款状态" value={invoice.paymentStatus} />
-        <MiniFact label="回款进度" value={paymentProgress} />
-        <MiniFact label="下一步" value={nextAction} />
-      </div>
-    </div>
+    <DetailHeroCard
+      eyebrow="发票应收"
+      title={`发票应收卡片 ${invoice.id}`}
+      meta={`关联订单 ${invoice.orderId} · ${order?.status ?? '订单状态待同步'}`}
+      status={invoice.paymentStatus}
+      facts={[
+        { label: '关联订单', value: invoice.orderId },
+        { label: '应收金额', value: currency(invoice.amount) },
+        { label: '付款状态', value: invoice.paymentStatus },
+        { label: '回款进度', value: paymentProgress },
+        { label: '下一步', value: nextAction },
+      ]}
+    />
   );
 };
 
