@@ -1689,6 +1689,8 @@ const PlatformWorkspace: React.FC<{
     };
   }, [javaEnabled, data.platformOverview?.operationSummary?.activeAnnouncementCount]);
   const announcements = platformAnnouncements;
+  const selectedPlatformAnnouncement = announcements.find((announcement) => announcement.id === selectedPlatformAnnouncementId)
+    ?? announcements[0];
   const platformModuleFacts = buildPlatformModuleFacts(
     activeModule,
     platformTenants,
@@ -1944,6 +1946,10 @@ const PlatformWorkspace: React.FC<{
             publishBusy={announcementPublishBusy}
             onPublishAnnouncement={handlePublishAnnouncement}
           />
+          <PlatformAnnouncementLifecyclePanel
+            announcement={selectedPlatformAnnouncement}
+            javaEnabled={javaEnabled}
+          />
           {javaEnabled && workflowStatus && (
             <FeedbackNotice message={workflowStatus} />
           )}
@@ -1978,6 +1984,86 @@ const PlatformWorkspace: React.FC<{
     </>
   );
 };
+
+const PlatformAnnouncementLifecyclePanel: React.FC<{
+  announcement?: PlatformAnnouncement;
+  javaEnabled: boolean;
+}> = ({ announcement, javaEnabled }) => (
+  <section className="rounded-lg border border-violet-100 bg-violet-50 p-4">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-violet-700">公告生命周期</p>
+        <h3 className="mt-1 text-base font-black text-slate-950">
+          {announcement ? announcement.title : '请选择公告'}
+        </h3>
+        <p className="mt-1 text-xs font-bold leading-5 text-violet-700">
+          {javaEnabled
+            ? 'Java API 待扩展：后续接入公告编辑、撤回公告和状态审计接口。'
+            : 'Mock 模式仅更新页面草稿，不影响真实公告发布状态。'}
+        </p>
+      </div>
+      <StatusPill label={announcement ? '已发布' : '未选择'} />
+    </div>
+
+    {announcement ? (
+      <>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-lg border border-white bg-white p-3">
+            <p className="text-xs font-black text-slate-700">编辑草稿</p>
+            <div className="mt-3 space-y-3">
+              <label className="block">
+                <span className="text-xs font-black text-slate-500">公告标题</span>
+                <input
+                  value={announcement.title}
+                  readOnly
+                  className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-black text-slate-500">公告正文</span>
+                <textarea
+                  value={announcement.content}
+                  readOnly
+                  rows={3}
+                  className="mt-2 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold leading-6 text-slate-800 outline-none"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-white bg-white p-3">
+            <p className="text-xs font-black text-slate-700">撤回公告</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <MiniFact label="影响范围" value={formatAnnouncementScope(announcement.targetScope)} />
+              <MiniFact label="站内通知" value="需同步撤回提醒" />
+              <MiniFact label="审计留痕" value="记录撤回人和原因" />
+              <MiniFact label="发布时间" value={formatAuditTime(announcement.publishedAt)} />
+            </div>
+            <button
+              type="button"
+              disabled
+              className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg border border-violet-200 bg-violet-50 px-3 text-xs font-black text-violet-500 disabled:cursor-not-allowed"
+            >
+              撤回公告
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-violet-100 bg-white p-3">
+          <CapabilityList
+            items={[
+              '编辑草稿用于复核标题、正文和发布范围，后续接入保存接口。',
+              '撤回公告需要同步站内通知，并沉淀平台公告审计留痕。',
+              '公告生命周期不影响采购方业务数据，只影响公告可见性。',
+            ]}
+          />
+        </div>
+      </>
+    ) : (
+      <EmptyState title="暂无公告可维护" desc="发布公告后，可在这里查看编辑草稿、撤回公告和影响范围。" />
+    )}
+  </section>
+);
 
 const PlatformAnnouncementPublishPanel: React.FC<{
   publishBusy: boolean;
