@@ -48,4 +48,23 @@ describe('buyer RFQ detail UI', () => {
     expect(app).toContain('rfq={selectedRfqRecord}');
     expect(app).toContain('approvedAwardId={selectedRfqApprovedAwardId}');
   });
+
+  it('places recommendation, order, and next action summary in the top RFQ detail card', () => {
+    const app = read('App.tsx');
+    const rfqDetail = app.slice(
+      app.indexOf('const RfqDetailPanelView'),
+      app.indexOf('const RfqDetailOperationPanel'),
+    );
+    const topCard = rfqDetail.slice(
+      rfqDetail.indexOf('<InlineFactGrid facts={detail.facts} />'),
+      rfqDetail.indexOf('<section>'),
+    );
+
+    expect(topCard).toContain('<MiniFact label="推荐结果" value={detail.recommendedSupplierLabel} />');
+    expect(topCard).toContain('<MiniFact label="订单状态" value={detail.orderLabel} />');
+    expect(topCard).toContain('<MiniFact label="下一步" value={detail.nextActionTitle} />');
+    expect(topCard.indexOf('<MiniFact label="推荐结果" value={detail.recommendedSupplierLabel} />')).toBeGreaterThan(
+      topCard.indexOf('<InlineFactGrid facts={detail.facts} />'),
+    );
+  });
 });

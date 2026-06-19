@@ -4353,6 +4353,11 @@ const RfqDetailPanelView: React.FC<{
             <StatusPill label={detail.status} />
           </div>
           <InlineFactGrid facts={detail.facts} />
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <MiniFact label="推荐结果" value={detail.recommendedSupplierLabel} />
+            <MiniFact label="订单状态" value={detail.orderLabel} />
+            <MiniFact label="下一步" value={detail.nextActionTitle} />
+          </div>
         </div>
 
         <section>
@@ -4482,12 +4487,6 @@ const RfqDetailPanelView: React.FC<{
             </p>
           )}
         </section>
-
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-          <MiniFact label="推荐结果" value={detail.recommendedSupplierLabel} />
-          <MiniFact label="订单状态" value={detail.orderLabel} />
-          <MiniFact label="下一步" value={detail.nextActionTitle} />
-        </div>
 
         <RfqDetailOperationPanel
           detail={detail}
