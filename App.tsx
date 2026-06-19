@@ -8013,6 +8013,7 @@ const SupplierWorkspaceView: React.FC<{
               workspace.supplier.verified ? '授权代理资质.pdf' : '资质材料待补充',
             ]}
           />
+          <SupplierProfileMaintenancePanel workspace={workspace} javaEnabled={javaEnabled} />
           <div className="grid gap-3 lg:grid-cols-2">
             <SupplierProfileCapabilityCard
               title="企业档案卡片"
@@ -8341,6 +8342,93 @@ const SupplierProfileCapabilityCard: React.FC<{
     </div>
   </div>
 );
+
+const SupplierProfileMaintenancePanel: React.FC<{
+  workspace: SupplierWorkspace;
+  javaEnabled: boolean;
+}> = ({ workspace, javaEnabled }) => {
+  const contactName = workspace.orders[0]?.supplierName ?? workspace.supplier.name;
+  const authorizedCategories = Array.from(new Set(
+    workspace.opportunities.flatMap((rfq) => rfq.demandIds.length > 0 ? rfq.demandIds : ['通用采购']),
+  )).slice(0, 3);
+
+  return (
+    <section className="rounded-lg border border-orange-100 bg-white p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-orange-700">档案维护入口</p>
+          <h3 className="mt-1 text-base font-black text-slate-950">企业档案草稿</h3>
+          <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+            {javaEnabled
+              ? 'Java 模式下可调用 POST /api/v1/supplier/profile 保存企业档案。'
+              : 'Mock 模式先保留页面草稿和上传入口，后续切换 Java 模式联调保存。'}
+          </p>
+        </div>
+        <StatusPill label={workspace.supplier.verified ? '资料有效' : '待补充资料'} />
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        <label className="block rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <span className="text-xs font-black text-slate-600">企业名称</span>
+          <input
+            value={workspace.supplier.name}
+            readOnly
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none"
+          />
+        </label>
+        <label className="block rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <span className="text-xs font-black text-slate-600">所属行业</span>
+          <input
+            value={workspace.supplier.industry}
+            readOnly
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none"
+          />
+        </label>
+        <label className="block rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <span className="text-xs font-black text-slate-600">联系人维护</span>
+          <input
+            value={contactName}
+            readOnly
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none"
+          />
+        </label>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+          <p className="text-xs font-black text-blue-700">授权品类</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(authorizedCategories.length > 0 ? authorizedCategories : ['通用采购']).map((category) => (
+              <span key={category} className="rounded-lg bg-white px-3 py-2 text-xs font-black text-blue-700">
+                {category}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
+          <p className="text-xs font-black text-amber-700">资质上传入口</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <MiniFact label="附件元数据" value="待登记" />
+            <MiniFact label="营业执照" value={workspace.supplier.verified ? '已上传' : '待上传'} />
+            <MiniFact label="授权代理证书" value={workspace.supplier.verified ? '已上传' : '待补充'} />
+            <MiniFact label="可见范围" value="供应商共享" />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <CapabilityList
+          items={[
+            '维护企业基础档案、联系人维护和授权品类',
+            '登记营业执照、授权代理证书和服务能力证明附件元数据',
+            '提交后供采购方准入、询价邀请和合作评价参考',
+          ]}
+        />
+      </div>
+    </section>
+  );
+};
 
 const SupplierActionLoopSummaryPanel: React.FC<{
   pendingQuoteCount: number;

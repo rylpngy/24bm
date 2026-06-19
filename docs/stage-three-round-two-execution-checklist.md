@@ -75,6 +75,7 @@
 | 19 | 消息中心入口 | 采购方首页、审批消息区和供应商工作台已补消息中心入口、未读摘要、通知卡片和空态，供应商通知先由商机、订单、发票状态派生 | `scripts/message-center-entry-ui.test.ts` |
 | 20 | 权限差异提示 | 平台、采购方、供应商工作台已补角色能力、不可执行动作、数据边界和 Java/Mock 模式差异说明 | `scripts/permission-boundary-hints-ui.test.ts` |
 | 21 | 操作日志筛选 | 采购方审计日志已补对象类型、动作类型组合筛选、命中摘要、已选详情和清空筛选入口 | `scripts/buyer-audit-log-filtering-ui.test.ts` |
+| 22 | 供应商档案维护入口 | 供应商企业档案页已补企业档案草稿、联系人维护、授权品类、资质上传入口和附件元数据边界说明 | `scripts/supplier-profile-maintenance-entry-ui.test.ts` |
 
 ## 第二批候选任务
 
