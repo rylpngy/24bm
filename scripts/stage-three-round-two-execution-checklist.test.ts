@@ -95,6 +95,8 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('操作面板按钮密度收口');
     expect(checklist).toContain('DetailActionPanel');
     expect(checklist).toContain('PrimaryActionButton');
+    expect(checklist).toContain('共享表格滚动可读性收口');
+    expect(checklist).toContain('ResponsiveTableFrame');
     expect(checklist).toContain('scripts/invoice-reconciliation-ledger-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');

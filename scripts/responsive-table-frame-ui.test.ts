@@ -11,7 +11,8 @@ describe('responsive table frame UI', () => {
     expect(app).toContain('mobileCards: React.ReactNode;');
     expect(app).toContain('children: React.ReactNode;');
     expect(app).toContain('className="grid gap-3 lg:hidden"');
-    expect(app).toContain('className="hidden overflow-x-auto rounded-lg border border-slate-200 lg:block"');
+    expect(app).toContain('className="hidden overflow-x-auto overscroll-x-contain rounded-lg border border-slate-200 bg-white shadow-sm lg:block"');
+    expect(app).toContain('className="min-w-max"');
   });
 
   it('uses mobile summary cards for tenant and RFQ tables', () => {
