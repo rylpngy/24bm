@@ -4,6 +4,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.api.SubmitQuoteRequest;
+import com.procurement.sourcing.api.UpdateQuoteRequest;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
@@ -101,6 +102,32 @@ public class QuoteApplicationService {
         QuoteStatus.SUBMITTED);
 
     return toResponse(quoteMapper.findByTenantAndId(rfq.tenantId(), quoteId));
+  }
+
+  @Transactional
+  public QuoteResponse update(String quoteId, UpdateQuoteRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    Quote quote = quoteMapper.findBySupplierAndId(supplierId, quoteId);
+    if (quote == null) {
+      throw new IllegalArgumentException("Quote not found for supplier: " + quoteId);
+    }
+
+    Rfq rfq = findRfqForInvitedSupplier(quote.rfqId(), supplierId);
+    rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfq.id());
+
+    int updated = quoteMapper.updateSubmittedQuote(
+        quote.tenantId(),
+        quoteId,
+        supplierId,
+        request.amount(),
+        request.taxRate(),
+        request.deliveryDays(),
+        QuoteStatus.SUBMITTED);
+    if (updated == 0) {
+      throw new IllegalStateException("Only submitted supplier quote can be updated: " + quoteId);
+    }
+
+    return toResponse(quoteMapper.findByTenantAndId(quote.tenantId(), quoteId));
   }
 
   private Rfq findRfqForInvitedSupplier(String rfqId, String supplierId) {

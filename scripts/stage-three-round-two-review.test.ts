@@ -40,7 +40,8 @@ describe('stage three round two review', () => {
     expect(review).toContain('平台公告编辑和撤回已完成');
     expect(review).toContain('供应商档案维护已完成');
     expect(review).toContain('企业审核详情持久化已完成');
-    expect(review).toContain('下一步继续补供应商报价/履约详情持久化或应收对账入口');
+    expect(review).toContain('供应商报价修改已完成');
+    expect(review).toContain('下一步继续补供应商履约详情持久化或应收对账入口');
     expect(review).toContain('P1：平台和供应商持久化边界补强');
     expect(review).toContain('P2：视觉 QA 和移动端收口');
 

@@ -652,6 +652,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'Quote',
   },
   {
+    method: 'PUT',
+    path: '/supplier/quotes/{quoteId}',
+    audience: 'supplier',
+    action: '供应商修改已提交报价',
+    requestSchema: 'UpdateQuoteRequest',
+    responseSchema: 'Quote',
+  },
+  {
     method: 'POST',
     path: '/buyer/rfqs/{rfqId}/award',
     audience: 'buyer',
@@ -1111,6 +1119,7 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'SupplierRfqList',
           'ChangeSupplierQualificationStatusRequest',
           'SubmitQuoteRequest',
+          'UpdateQuoteRequest',
           'Quote',
           'AwardRfqRequest',
           'ReviewAwardApprovalRequest',

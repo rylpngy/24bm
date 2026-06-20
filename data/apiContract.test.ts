@@ -80,6 +80,7 @@ describe('procurement SaaS API contract draft', () => {
       'POST /supplier/users/{userId}/status',
       'GET /supplier/rfqs',
       'POST /supplier/rfqs/{rfqId}/quotes',
+      'PUT /supplier/quotes/{quoteId}',
       'POST /buyer/rfqs/{rfqId}/award',
       'POST /buyer/rfqs/{rfqId}/award/approval',
       'GET /buyer/orders',
@@ -224,6 +225,9 @@ describe('procurement SaaS API contract draft', () => {
         expect.objectContaining({ name: 'rfqId', in: 'query', required: false }),
         expect.objectContaining({ name: 'status', in: 'query', required: false }),
       ]),
+    );
+    expect(openApi.paths['/supplier/quotes/{quoteId}'].put.parameters).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'quoteId', in: 'path', required: true })]),
     );
     expect(openApi.paths['/buyer/orders'].get.parameters).toEqual(
       expect.arrayContaining([

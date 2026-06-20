@@ -836,6 +836,25 @@ const App: React.FC = () => {
     }
   };
 
+  const updateSupplierQuote = async (quoteId: string, draft: SupplierQuoteDraft) => {
+    if (!javaApiClient || !supplierData) return;
+    setSupplierActionBusyId(`quote-update:${quoteId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.updateSupplierQuote(quoteId, {
+        amount: draft.amount,
+        taxRate: draft.taxRate,
+        deliveryDays: draft.deliveryDays,
+      });
+      await refreshAfterSupplierAction();
+      setWorkflowStatus(`报价记录已保存并刷新：${quoteId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '报价记录保存失败');
+    } finally {
+      setSupplierActionBusyId(null);
+    }
+  };
+
   const confirmSupplierOrder = async (orderId: string) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`confirm:${orderId}`);
@@ -1048,6 +1067,7 @@ const App: React.FC = () => {
                 supplierActionBusyId={supplierActionBusyId}
                 supplierProfileBusy={supplierProfileBusy}
                 onSubmitQuote={submitSupplierQuote}
+                onUpdateQuote={updateSupplierQuote}
                 onConfirmOrder={confirmSupplierOrder}
                 onCreateDelivery={createSupplierDelivery}
                 onCreateInvoice={createSupplierInvoice}
@@ -8609,6 +8629,7 @@ const SupplierWorkspaceView: React.FC<{
   supplierActionBusyId: string | null;
   supplierProfileBusy: boolean;
   onSubmitQuote: (rfqId: string, draft: SupplierQuoteDraft) => void;
+  onUpdateQuote: (quoteId: string, draft: SupplierQuoteDraft) => void;
   onConfirmOrder: (orderId: string) => void;
   onCreateDelivery: (orderId: string, draft: SupplierDeliveryDraft) => void;
   onCreateInvoice: (orderId: string, draft: SupplierInvoiceDraft) => void;
@@ -8621,6 +8642,7 @@ const SupplierWorkspaceView: React.FC<{
   supplierActionBusyId,
   supplierProfileBusy,
   onSubmitQuote,
+  onUpdateQuote,
   onConfirmOrder,
   onCreateDelivery,
   onCreateInvoice,
@@ -8632,6 +8654,7 @@ const SupplierWorkspaceView: React.FC<{
   const [selectedSupplierOrderId, setSelectedSupplierOrderId] = useState(workspace.orders[0]?.id ?? '');
   const [selectedSupplierInvoiceId, setSelectedSupplierInvoiceId] = useState(workspace.invoices[0]?.id ?? '');
   const [quoteDrafts, setQuoteDrafts] = useState<Record<string, SupplierQuoteDraft>>({});
+  const [quoteUpdateDrafts, setQuoteUpdateDrafts] = useState<Record<string, SupplierQuoteDraft>>({});
   const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, SupplierDeliveryDraft>>({});
   const [invoiceDrafts, setInvoiceDrafts] = useState<Record<string, SupplierInvoiceDraft>>({});
   const [opportunityStatusFilter, setOpportunityStatusFilter] = useState('全部状态');
@@ -8646,6 +8669,12 @@ const SupplierWorkspaceView: React.FC<{
   const onViewRequirement = (rfqId: string) => {
     setSelectedRequirementRfqId((current) => (current === rfqId ? null : rfqId));
   };
+  const getQuoteUpdateDraft = (quote: SupplierWorkspace['quotes'][number]): SupplierQuoteDraft =>
+    quoteUpdateDrafts[quote.id] ?? {
+      amount: quote.amount,
+      taxRate: quote.taxRate,
+      deliveryDays: quote.deliveryDays,
+    };
   const supplierModuleFacts = buildSupplierModuleFacts(workspace, activeModule);
   const supplierModuleHeader = supplierModuleHeaders[activeModule];
   const pendingQuoteCount = workspace.opportunities.filter((rfq) =>
@@ -8960,6 +8989,11 @@ const SupplierWorkspaceView: React.FC<{
               <SupplierQuoteDetailPanel
                 quote={selectedSupplierQuoteDetail}
                 rfq={selectedSupplierQuoteRfq}
+                javaEnabled={javaEnabled}
+                quoteUpdateDraft={selectedSupplierQuoteDetail ? getQuoteUpdateDraft(selectedSupplierQuoteDetail) : undefined}
+                supplierActionBusyId={supplierActionBusyId}
+                onChangeQuoteUpdateDraft={(quoteId, draft) => setQuoteUpdateDrafts((current) => ({ ...current, [quoteId]: draft }))}
+                onUpdateQuote={onUpdateQuote}
               />
             </div>
           )}
@@ -9646,7 +9680,20 @@ const SupplierQuoteHistoryCard: React.FC<{
 const SupplierQuoteDetailPanel: React.FC<{
   quote?: SupplierWorkspace['quotes'][number];
   rfq?: SupplierWorkspace['opportunities'][number];
-}> = ({ quote, rfq }) => {
+  javaEnabled: boolean;
+  quoteUpdateDraft?: SupplierQuoteDraft;
+  supplierActionBusyId: string | null;
+  onChangeQuoteUpdateDraft: (quoteId: string, draft: SupplierQuoteDraft) => void;
+  onUpdateQuote: (quoteId: string, draft: SupplierQuoteDraft) => void;
+}> = ({
+  quote,
+  rfq,
+  javaEnabled,
+  quoteUpdateDraft,
+  supplierActionBusyId,
+  onChangeQuoteUpdateDraft,
+  onUpdateQuote,
+}) => {
   if (!quote) {
     return (
       <Panel title="报价详情" icon={BarChart3}>
@@ -9665,6 +9712,16 @@ const SupplierQuoteDetailPanel: React.FC<{
     : awardLabel === '等待定标'
       ? '等待采购方定标'
       : '跟进询价状态';
+  const canUpdateQuote = javaEnabled && quote.status === '已提交' && rfq?.status === '报价中';
+  const quoteUpdateBusy = supplierActionBusyId === `quote-update:${quote.id}`;
+  const updateDraft = quoteUpdateDraft ?? {
+    amount: quote.amount,
+    taxRate: quote.taxRate,
+    deliveryDays: quote.deliveryDays,
+  };
+  const updateInvalid = updateDraft.amount <= 0
+    || updateDraft.taxRate <= 0
+    || updateDraft.deliveryDays <= 0;
 
   return (
     <Panel title="报价详情" icon={BarChart3}>
@@ -9698,6 +9755,67 @@ const SupplierQuoteDetailPanel: React.FC<{
             <DetailKeyValueRow label="下一步建议" value={nextAction} />
           </div>
         </DetailSection>
+
+        <DetailActionPanel
+          title="修改报价"
+          desc={canUpdateQuote ? '报价仍在 RFQ 报价期内时可修改，保存后采购方比价页将读取最新报价。' : '当前报价不在可修改状态，仅保留历史报价详情。'}
+          status={canUpdateQuote ? '可修改' : '只读'}
+          tone={canUpdateQuote ? 'blue' : 'slate'}
+        >
+          <div className="grid gap-3 md:grid-cols-[1fr_120px_120px_auto] md:items-end">
+            <label className="block">
+              <span className="text-xs font-black">报价金额</span>
+              <input
+                type="number"
+                min={1}
+                value={updateDraft.amount}
+                disabled={!canUpdateQuote || quoteUpdateBusy}
+                onChange={(event) => onChangeQuoteUpdateDraft(quote.id, {
+                  ...updateDraft,
+                  amount: Number(event.target.value),
+                })}
+                className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-blue-400 disabled:bg-slate-100 disabled:text-slate-500"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-black">税率</span>
+              <input
+                type="number"
+                min={1}
+                value={updateDraft.taxRate}
+                disabled={!canUpdateQuote || quoteUpdateBusy}
+                onChange={(event) => onChangeQuoteUpdateDraft(quote.id, {
+                  ...updateDraft,
+                  taxRate: Number(event.target.value),
+                })}
+                className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-blue-400 disabled:bg-slate-100 disabled:text-slate-500"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-black">交付天数</span>
+              <input
+                type="number"
+                min={1}
+                value={updateDraft.deliveryDays}
+                disabled={!canUpdateQuote || quoteUpdateBusy}
+                onChange={(event) => onChangeQuoteUpdateDraft(quote.id, {
+                  ...updateDraft,
+                  deliveryDays: Number(event.target.value),
+                })}
+                className="mt-2 h-10 w-full rounded-lg border border-blue-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-blue-400 disabled:bg-slate-100 disabled:text-slate-500"
+              />
+            </label>
+            <PrimaryActionButton
+              onClick={() => onUpdateQuote(quote.id, updateDraft)}
+              disabled={!canUpdateQuote || quoteUpdateBusy || updateInvalid}
+              busy={quoteUpdateBusy}
+              pendingLabel="保存中"
+              flushTop
+            >
+              保存报价修改
+            </PrimaryActionButton>
+          </div>
+        </DetailActionPanel>
 
         <AttachmentCenterEntryPanel
           title="报价附件"

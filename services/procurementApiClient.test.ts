@@ -1186,6 +1186,86 @@ describe('procurement API clients', () => {
     ]);
   });
 
+  it('uses the Java API client to update a supplier quote with the supplier token', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: {
+            accessToken: 'supplier-token',
+            tokenType: 'Bearer',
+            expiresIn: 7200,
+            userId: 'user-supplier-sales',
+            displayName: '供应商销售',
+            scope: 'SUPPLIER',
+            tenantId: null,
+            supplierId: 'ent-supplier-sunrise',
+            roles: ['SUPPLIER_SALES'],
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/supplier/quotes/quote-java-001') {
+        expect(init?.method).toBe('PUT');
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer supplier-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          amount: 116000,
+          taxRate: 13,
+          deliveryDays: 6,
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'quote-java-001',
+            tenantId: 'tenant-acme',
+            rfqId: 'rfq-java-new',
+            supplierId: 'ent-supplier-sunrise',
+            amount: 116000,
+            taxRate: 13,
+            deliveryDays: 6,
+            status: '已提交',
+            submittedAt: '2026-06-15T12:20:00+08:00',
+          },
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      supplierLogin: {
+        account: 'supplier',
+        password: 'demo123456',
+        scope: 'SUPPLIER',
+        supplierId: 'ent-supplier-sunrise',
+      },
+    });
+
+    const quote = await client.updateSupplierQuote('quote-java-001', {
+      amount: 116000,
+      taxRate: 13,
+      deliveryDays: 6,
+    });
+
+    expect(quote).toMatchObject({
+      id: 'quote-java-001',
+      amount: 116000,
+      deliveryDays: 6,
+      status: '已提交',
+    });
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/supplier/quotes/quote-java-001',
+    ]);
+  });
+
   it('uses the Java API client to list, create, and submit buyer purchase demands', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {

@@ -118,6 +118,7 @@ import com.procurement.sourcing.api.SupplierQuoteController;
 import com.procurement.sourcing.application.AwardApplicationService;
 import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.application.RfqApplicationService;
+import com.procurement.sourcing.api.UpdateQuoteRequest;
 import com.procurement.supplier.api.BuyerSupplierController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
@@ -1211,6 +1212,19 @@ class HttpSecurityContractTests {
             7,
             "已提交",
             OffsetDateTime.parse("2026-06-15T13:00:00+08:00"))));
+    when(quoteApplicationService.update(
+        org.mockito.ArgumentMatchers.eq("quote-demo"),
+        org.mockito.ArgumentMatchers.any(UpdateQuoteRequest.class)))
+        .thenReturn(new QuoteResponse(
+            "quote-demo",
+            "tenant-acme",
+            "rfq-demo",
+            "ent-supplier-sunrise",
+            BigDecimal.valueOf(97000),
+            BigDecimal.valueOf(13),
+            6,
+            "已提交",
+            OffsetDateTime.parse("2026-06-15T13:00:00+08:00")));
     when(purchaseOrderApplicationService.listCurrentSupplierOrders(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull()))
@@ -1390,6 +1404,30 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("quote-demo"));
+    mockMvc.perform(put("/api/v1/supplier/quotes/quote-demo")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "amount": 97000,
+                  "taxRate": 13,
+                  "deliveryDays": 6
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.amount").value(97000))
+        .andExpect(jsonPath("$.data.deliveryDays").value(6));
+    mockMvc.perform(put("/api/v1/supplier/quotes/quote-demo")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "amount": 97000,
+                  "taxRate": 13,
+                  "deliveryDays": 6
+                }
+                """))
+        .andExpect(status().isForbidden());
     mockMvc.perform(get("/api/v1/supplier/orders")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())

@@ -87,6 +87,7 @@
 | 31 | 平台公告生命周期持久化 | 平台公告页已补公告编辑、撤回、Java 更新接口、状态撤回接口和刷新后回显反馈，撤回后公告不再进入活跃列表 | `scripts/platform-announcement-java-persistence-ui.test.ts`、`PlatformAnnouncementLifecycleTests` |
 | 32 | 供应商档案维护持久化 | 供应商企业档案页已补企业名称、行业、统一社会信用代码、法人/联系人草稿编辑，保存后调用 Java 供应商档案接口并刷新工作台回显 | `scripts/supplier-profile-java-persistence-ui.test.ts`、`services/procurementApiClient.test.ts` |
 | 33 | 平台企业审核详情持久化 | 平台企业审核已补审核意见、资料确认、风险确认的 Java 请求传递、数据库字段、接口回显和详情页展示 | `scripts/platform-enterprise-review-java-persistence-ui.test.ts`、`PlatformAuditLogTests` |
+| 34 | 供应商报价修改持久化 | 供应商报价详情页已补报价金额、税率、交付天数编辑，保存后调用 Java 报价更新接口并刷新工作台回显，非报价中 RFQ 保持只读边界 | `scripts/supplier-quote-java-persistence-ui.test.ts`、`SupplierQuoteListFilterTests` |
 
 ## 第二批候选任务
 

@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface QuoteMapper {
@@ -45,6 +46,33 @@ public interface QuoteMapper {
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Quote findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("""
+      select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
+      from quotes
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
+        and id = #{id}
+      """)
+  Quote findBySupplierAndId(@Param("supplierId") String supplierId, @Param("id") String id);
+
+  @Update("""
+      update quotes
+      set amount = #{amount},
+          tax_rate = #{taxRate},
+          delivery_days = #{deliveryDays}
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and supplier_id = #{supplierId,jdbcType=VARCHAR}
+        and status = #{status,jdbcType=VARCHAR}
+      """)
+  int updateSubmittedQuote(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("supplierId") String supplierId,
+      @Param("amount") BigDecimal amount,
+      @Param("taxRate") BigDecimal taxRate,
+      @Param("deliveryDays") Integer deliveryDays,
+      @Param("status") String status);
 
   @Select("""
       select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at

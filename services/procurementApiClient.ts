@@ -79,6 +79,8 @@ export interface SubmitQuotePayload {
   deliveryDays: number;
 }
 
+export type UpdateQuotePayload = SubmitQuotePayload;
+
 export interface AwardRfqPayload {
   quoteId: string;
   reason: string;
@@ -606,6 +608,7 @@ export interface JavaProcurementApiClient {
   createBuyerRfq(payload: CreateRfqPayload): Promise<Rfq>;
   updateBuyerRfq(rfqId: string, payload: UpdateRfqPayload): Promise<Rfq>;
   submitSupplierQuote(rfqId: string, payload: SubmitQuotePayload): Promise<RfqQuote>;
+  updateSupplierQuote(quoteId: string, payload: UpdateQuotePayload): Promise<RfqQuote>;
   awardBuyerRfq(rfqId: string, payload: AwardRfqPayload): Promise<JavaAwardDecisionDto>;
   listBuyerOrders(): Promise<PurchaseOrder[]>;
   createBuyerOrder(payload: CreateOrderPayload): Promise<PurchaseOrder>;
@@ -1195,6 +1198,14 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     async submitSupplierQuote(rfqId: string, payload: SubmitQuotePayload) {
       const quote = await supplierRequest<JavaQuoteDto>(`/api/v1/supplier/rfqs/${rfqId}/quotes`, {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toQuote(quote);
+    },
+    async updateSupplierQuote(quoteId: string, payload: UpdateQuotePayload) {
+      const quote = await supplierRequest<JavaQuoteDto>(`/api/v1/supplier/quotes/${quoteId}`, {
+        method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
