@@ -3247,6 +3247,7 @@ const BuyerWorkspaceView: React.FC<{
   const [orderStatusFilter, setOrderStatusFilter] = useState('全部状态');
   const [receiptStatusFilter, setReceiptStatusFilter] = useState('全部状态');
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('全部状态');
+  const [reconciliationLedgerStatusFilter, setReconciliationLedgerStatusFilter] = useState('全部状态');
   const [approvalStatusFilter, setApprovalStatusFilter] = useState('全部状态');
   const [supplierStatusFilter, setSupplierStatusFilter] = useState('全部状态');
   const [materialStatusFilter, setMaterialStatusFilter] = useState('全部状态');
@@ -4326,6 +4327,13 @@ const BuyerWorkspaceView: React.FC<{
           totalCount={invoicePaymentRows.length}
           selectedLabel={selectedInvoiceDetail?.id}
           onClear={() => setInvoiceStatusFilter('全部状态')}
+        />
+        <ReconciliationLedgerPanel
+          title="应付对账单台账"
+          invoices={workspace.invoices}
+          statusFilter={reconciliationLedgerStatusFilter}
+          onChangeStatusFilter={setReconciliationLedgerStatusFilter}
+          scope="buyer"
         />
         {filteredInvoicePaymentRows.length === 0 ? (
           <EmptyState title="暂无发票" desc="供应商在订单收货后提交发票，采购方在这里登记付款状态。" />
@@ -8721,6 +8729,7 @@ const SupplierWorkspaceView: React.FC<{
   const [quoteStatusFilter, setQuoteStatusFilter] = useState('全部状态');
   const [supplierOrderStatusFilter, setSupplierOrderStatusFilter] = useState('全部状态');
   const [supplierInvoiceStatusFilter, setSupplierInvoiceStatusFilter] = useState('全部状态');
+  const [reconciliationLedgerStatusFilter, setReconciliationLedgerStatusFilter] = useState('全部状态');
   const onDeclineOpportunity = (rfqId: string) => {
     setDeclinedOpportunityIds((current) => (
       current.includes(rfqId) ? current : [...current, rfqId]
@@ -9367,6 +9376,13 @@ const SupplierWorkspaceView: React.FC<{
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
             <div className="space-y-4">
+              <ReconciliationLedgerPanel
+                title="应收对账单台账"
+                invoices={workspace.invoices}
+                statusFilter={reconciliationLedgerStatusFilter}
+                onChangeStatusFilter={setReconciliationLedgerStatusFilter}
+                scope="supplier"
+              />
               <SupplierInvoiceReceivableSummaryPanel invoices={filteredSupplierInvoices} />
               <div className="space-y-3">
                 {filteredSupplierInvoices.map((invoice) => {
@@ -10074,6 +10090,75 @@ const SupplierInvoiceReceivableSummaryPanel: React.FC<{
         <MiniFact label="下一步" value={nextAction} />
       </div>
     </div>
+  );
+};
+
+const ReconciliationLedgerPanel: React.FC<{
+  title: string;
+  invoices: BuyerWorkspace['invoices'];
+  statusFilter: string;
+  onChangeStatusFilter: (status: string) => void;
+  scope: 'buyer' | 'supplier';
+}> = ({ title, invoices, statusFilter, onChangeStatusFilter, scope }) => {
+  const statusOptions = Array.from(new Set(invoices.map((invoice) => invoice.reconciliationStatus ?? '待同步')));
+  const filteredInvoices = invoices.filter((invoice) => (
+    statusFilter === '全部状态' || (invoice.reconciliationStatus ?? '待同步') === statusFilter
+  ));
+  const varianceTotal = filteredInvoices.reduce((sum, invoice) => sum + Math.abs(invoice.varianceAmount ?? 0), 0);
+  const pendingCount = filteredInvoices.filter((invoice) => (invoice.reconciliationStatus ?? '待同步') !== '三单一致').length;
+  const roleLabel = scope === 'buyer' ? '应付' : '应收';
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-sm font-black text-slate-950">{title}</p>
+          <p className="mt-1 text-xs font-bold text-slate-500">
+            {roleLabel}对账单台账 · {filteredInvoices.length} 张发票 · 待处理 {pendingCount} 张
+          </p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 md:w-[360px]">
+          <MiniFact label="差异金额" value={currency(varianceTotal)} />
+          <MiniFact label="对账状态" value={pendingCount > 0 ? '待处理' : '三单一致'} />
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <StatusFilterControl
+          label="对账状态筛选"
+          value={statusFilter}
+          statusOptions={statusOptions}
+          onChange={onChangeStatusFilter}
+        />
+      </div>
+
+      {filteredInvoices.length === 0 ? (
+        <EmptyState title="暂无对账单台账" desc="切换筛选条件，或在发票登记后查看订单、收货、发票的对账状态。" />
+      ) : (
+        <div className="mt-3 space-y-2">
+          {filteredInvoices.map((invoice) => (
+            <div key={invoice.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="break-words text-sm font-black text-slate-900">{invoice.invoiceNo ?? invoice.id}</p>
+                  <p className="mt-1 break-words text-xs font-bold text-slate-500">
+                    订单 {invoice.orderId} · 发票 {invoice.id}
+                  </p>
+                </div>
+                <StatusPill label={invoice.reconciliationStatus ?? '待同步'} />
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                <MiniFact label="订单金额" value={invoice.orderAmount == null ? '待同步' : currency(invoice.orderAmount)} />
+                <MiniFact label="发票金额" value={currency(invoice.amount)} />
+                <MiniFact label="差异金额" value={invoice.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount)} />
+                <MiniFact label="收货状态" value={invoice.receiptStatus ?? '待同步'} />
+                <MiniFact label="付款状态" value={invoice.paymentStatus} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 };
 
