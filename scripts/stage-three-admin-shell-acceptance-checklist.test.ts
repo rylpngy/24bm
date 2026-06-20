@@ -96,5 +96,8 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('筛选结果表面节奏收口');
     expect(checklist).toContain('查询条件、结果摘要、命中记录、已选详情和清空筛选');
     expect(checklist).toContain('scripts/stage-three-filter-surface-rhythm-ui.test.ts');
+    expect(checklist).toContain('列表操作表面节奏收口');
+    expect(checklist).toContain('操作状态、状态与详情、快捷动作');
+    expect(checklist).toContain('scripts/stage-three-list-action-surface-ui.test.ts');
   });
 });

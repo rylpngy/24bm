@@ -78,6 +78,7 @@ describe('stage three first round UI polish', () => {
     expect(panel).toContain('break-words font-black text-slate-950');
     expect(adminInfoCard).toContain('border-l-4');
     expect(workflowCard).toContain('border-l-4');
-    expect(workflowCard).toContain('rounded-lg bg-slate-50/70 p-2');
+    expect(workflowCard).toContain('rounded-lg border border-slate-200 bg-slate-50/80 p-3');
+    expect(workflowCard).toContain('操作状态');
   });
 });

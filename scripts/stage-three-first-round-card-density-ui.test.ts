@@ -30,6 +30,7 @@ describe('stage three first round card density polish', () => {
     expect(workflowCard).toContain('min-w-0 max-w-full');
     expect(workflowCard).toContain('max-w-full self-start');
     expect(workflowCard).toContain('min-w-0');
-    expect(workflowCard).toContain('sm:min-w-[12rem]');
+    expect(workflowCard).toContain('md:min-w-[12rem]');
+    expect(workflowCard).toContain('md:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)]');
   });
 });

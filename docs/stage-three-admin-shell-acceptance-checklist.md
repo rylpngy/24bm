@@ -170,6 +170,7 @@
 | 共享表单密度收口 | 详情编辑面板和主操作按钮补齐响应式头部、浅底内容区、按钮文本居中和图标抗挤压能力 | `DetailActionPanel`、`PrimaryActionButton`、`scripts/stage-three-first-round-form-density-ui.test.ts` |
 | 工作台页面节奏收口 | 主滚动区 scrollbar-gutter、顶部栏半透明阴影、详情体分段边界和移动摘要卡片按压反馈已补齐，降低长页面滚动时的漂浮感和层级割裂 | `AppHeader`、`DetailPanelBody`、`ResponsiveSummaryCard`、`scripts/stage-three-admin-workbench-rhythm-ui.test.ts` |
 | 筛选结果表面节奏收口 | 查询条件、结果摘要、命中记录、已选详情和清空筛选形成统一查询表面，三端列表筛选区不再像散落表单控件 | `StatusFilterControl`、`FilterResultSummary`、`scripts/stage-three-filter-surface-rhythm-ui.test.ts` |
+| 列表操作表面节奏收口 | 工作流卡片中的操作状态、状态与详情、快捷动作已形成明确分区，快捷操作面板补内阴影和分割线，降低状态、详情按钮和表单混在一起的粗糙感 | `WorkflowListCard`、`InlineWorkflowAction`、`scripts/stage-three-list-action-surface-ui.test.ts` |
 
 第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。
 
@@ -220,3 +221,14 @@
 - 采购方、平台、供应商所有复用筛选摘要的页面同步受益，当前不改变数据筛选逻辑。
 
 验收依据：`scripts/stage-three-filter-surface-rhythm-ui.test.ts`。
+
+## 十三、列表操作表面节奏收口记录
+
+本轮继续补列表卡片的操作区细节，不改变任何业务动作：
+
+- `WorkflowListCard` 的操作区从普通浅底行升级为带边界的双列操作表面。
+- 状态和详情入口合并到 `操作状态` 区块，并增加 `状态与详情` 语义标签。
+- 快捷表单入口独立为 `快捷动作` 区块，避免和状态胶囊、详情按钮混在一起。
+- `InlineWorkflowAction` 增加内阴影、分割线和 `快捷动作` 小标题，让收货、付款、订单等行内表单更像后台操作面板。
+
+验收依据：`scripts/stage-three-list-action-surface-ui.test.ts`。

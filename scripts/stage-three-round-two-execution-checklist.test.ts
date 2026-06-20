@@ -113,6 +113,10 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('查询条件');
     expect(checklist).toContain('结果摘要');
     expect(checklist).toContain('scripts/stage-three-filter-surface-rhythm-ui.test.ts');
+    expect(checklist).toContain('列表操作表面节奏收口');
+    expect(checklist).toContain('操作状态');
+    expect(checklist).toContain('快捷动作');
+    expect(checklist).toContain('scripts/stage-three-list-action-surface-ui.test.ts');
     expect(checklist).toContain('scripts/invoice-reconciliation-ledger-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');

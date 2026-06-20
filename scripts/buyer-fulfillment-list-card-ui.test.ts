@@ -32,8 +32,8 @@ describe('buyer fulfillment list card UI', () => {
     expect(workflowCard).toContain('flex flex-col gap-3 md:flex-row md:items-start md:justify-between');
     expect(workflowCard).toContain('break-words');
     expect(workflowCard).toContain('self-start rounded-lg bg-slate-50 px-2 py-1');
-    expect(workflowCard).toContain('sm:w-auto');
-    expect(workflowCard).toContain('sm:justify-between');
+    expect(workflowCard).toContain('md:w-auto');
+    expect(workflowCard).toContain('md:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)]');
     expect(workflowCard).not.toContain('sm:flex-row sm:items-start sm:justify-between');
   });
 

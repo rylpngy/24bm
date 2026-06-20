@@ -11081,12 +11081,15 @@ const InlineWorkflowAction: React.FC<{
   return (
     <div
       aria-label={`${title} 快捷操作`}
-      className={`rounded-lg border p-3 ${panelTone}`}
+      className={`rounded-lg border p-3 shadow-inner shadow-white/60 ${panelTone}`}
     >
       <p className={`text-xs font-black ${textTone}`}>{title}</p>
       <p className={`mt-1 text-xs font-bold leading-5 ${textTone}`}>{desc}</p>
-      <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-[minmax(0,160px)_minmax(0,1fr)] sm:items-end">
+      <div className="mt-3 border-t border-white/70 pt-3">
+        <p className={`mb-2 text-[11px] font-black uppercase ${textTone}`}>快捷动作</p>
+        <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,160px)_minmax(0,1fr)] sm:items-end">
         {children}
+        </div>
       </div>
     </div>
   );
@@ -11135,17 +11138,20 @@ const WorkflowListCard: React.FC<{
 
     <div
       aria-label={`${title} 操作区`}
-      className="mt-3 flex flex-col gap-3 rounded-lg bg-slate-50/70 p-2 sm:flex-row sm:items-center sm:justify-between"
+      className="mt-3 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3 md:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)] md:items-start"
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusPill label={status} />
-        <DetailToggleButton
-          compact
-          selected={detailSelected}
-          onClick={onSelectDetail}
-        />
+      <div aria-label={`${title} 状态与详情`} className="min-w-0 rounded-md border border-white/80 bg-white/70 p-2">
+        <p className="mb-2 text-[11px] font-black uppercase text-slate-500">操作状态</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusPill label={status} />
+          <DetailToggleButton
+            compact
+            selected={detailSelected}
+            onClick={onSelectDetail}
+          />
+        </div>
       </div>
-      <div className="min-w-0 w-full sm:min-w-[12rem] sm:w-auto">
+      <div aria-label={`${title} 快捷动作`} className="min-w-0 w-full md:min-w-[12rem] md:w-auto">
         {action}
       </div>
     </div>
