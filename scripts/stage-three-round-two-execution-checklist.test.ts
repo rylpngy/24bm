@@ -73,6 +73,7 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('订单详情编辑闭环');
     expect(checklist).toContain('发票付款详情编辑闭环');
     expect(checklist).toContain('平台公告生命周期持久化');
+    expect(checklist).toContain('供应商档案维护持久化');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-award-order-action-forms-ui.test.ts');
@@ -109,5 +110,7 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('InvoicePaymentUpdateDetailTests');
     expect(checklist).toContain('scripts/platform-announcement-java-persistence-ui.test.ts');
     expect(checklist).toContain('PlatformAnnouncementLifecycleTests');
+    expect(checklist).toContain('scripts/supplier-profile-java-persistence-ui.test.ts');
+    expect(checklist).toContain('services/procurementApiClient.test.ts');
   });
 });

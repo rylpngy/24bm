@@ -102,6 +102,7 @@ import {
    type UpdateRfqPayload,
    type UpdateOrderPayload,
    type UpdateInvoicePayload,
+   type UpdateSupplierProfilePayload,
    type PlatformWorkspaceData,
   type JavaPlatformAnnouncementDto,
   type JavaApprovalTaskDto,
@@ -192,6 +193,8 @@ type SupplierInvoiceDraft = {
   invoiceNo: string;
 };
 
+type SupplierProfileDraft = UpdateSupplierProfilePayload;
+
 type BuyerReceiptDraft = {
   result: string;
   receiptRemark: string;
@@ -267,6 +270,7 @@ const App: React.FC = () => {
   const [platformTenantBusyId, setPlatformTenantBusyId] = useState<string | null>(null);
   const [announcementPublishBusy, setAnnouncementPublishBusy] = useState(false);
   const [announcementLifecycleBusyId, setAnnouncementLifecycleBusyId] = useState<string | null>(null);
+  const [supplierProfileBusy, setSupplierProfileBusy] = useState(false);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -875,6 +879,32 @@ const App: React.FC = () => {
     }
   };
 
+  const updateSupplierProfile = async (payload: SupplierProfileDraft) => {
+    if (!supplierData) return;
+    setSupplierProfileBusy(true);
+    setWorkflowStatus(null);
+    try {
+      if (javaApiClient) {
+        await javaApiClient.updateSupplierProfile(payload);
+        setSupplierData(await refreshJavaSupplierData(supplierData));
+      } else {
+        setSupplierData({
+          ...supplierData,
+          supplier: {
+            ...supplierData.supplier,
+            ...payload,
+            profileStatus: '资料草稿已保存',
+          },
+        });
+      }
+      setWorkflowStatus(`供应商企业档案已保存并刷新：${payload.name}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '供应商企业档案保存失败');
+    } finally {
+      setSupplierProfileBusy(false);
+    }
+  };
+
   if (configurationError || loadError) {
     return (
       <ShellState
@@ -1008,10 +1038,12 @@ const App: React.FC = () => {
                 javaEnabled={Boolean(javaApiClient)}
                 workflowStatus={workflowStatus}
                 supplierActionBusyId={supplierActionBusyId}
+                supplierProfileBusy={supplierProfileBusy}
                 onSubmitQuote={submitSupplierQuote}
                 onConfirmOrder={confirmSupplierOrder}
                 onCreateDelivery={createSupplierDelivery}
                 onCreateInvoice={createSupplierInvoice}
+                onUpdateSupplierProfile={updateSupplierProfile}
               />
             )}
           </div>
@@ -8546,20 +8578,24 @@ const SupplierWorkspaceView: React.FC<{
   javaEnabled: boolean;
   workflowStatus: string | null;
   supplierActionBusyId: string | null;
+  supplierProfileBusy: boolean;
   onSubmitQuote: (rfqId: string, draft: SupplierQuoteDraft) => void;
   onConfirmOrder: (orderId: string) => void;
   onCreateDelivery: (orderId: string, draft: SupplierDeliveryDraft) => void;
   onCreateInvoice: (orderId: string, draft: SupplierInvoiceDraft) => void;
+  onUpdateSupplierProfile: (draft: SupplierProfileDraft) => void;
 }> = ({
   activeModule,
   workspace,
   javaEnabled,
   workflowStatus,
   supplierActionBusyId,
+  supplierProfileBusy,
   onSubmitQuote,
   onConfirmOrder,
   onCreateDelivery,
   onCreateInvoice,
+  onUpdateSupplierProfile,
 }) => {
   const [declinedOpportunityIds, setDeclinedOpportunityIds] = useState<string[]>([]);
   const [selectedRequirementRfqId, setSelectedRequirementRfqId] = useState<string | null>(null);
@@ -8916,7 +8952,12 @@ const SupplierWorkspaceView: React.FC<{
               workspace.supplier.verified ? '授权代理资质.pdf' : '资质材料待补充',
             ]}
           />
-          <SupplierProfileMaintenancePanel workspace={workspace} javaEnabled={javaEnabled} />
+          <SupplierProfileMaintenancePanel
+            workspace={workspace}
+            javaEnabled={javaEnabled}
+            supplierProfileBusy={supplierProfileBusy}
+            onUpdateSupplierProfile={onUpdateSupplierProfile}
+          />
           <div className="grid gap-3 lg:grid-cols-2">
             <SupplierProfileCapabilityCard
               title="企业档案卡片"
@@ -9256,11 +9297,41 @@ const SupplierProfileCapabilityCard: React.FC<{
 const SupplierProfileMaintenancePanel: React.FC<{
   workspace: SupplierWorkspace;
   javaEnabled: boolean;
-}> = ({ workspace, javaEnabled }) => {
-  const contactName = workspace.orders[0]?.supplierName ?? workspace.supplier.name;
+  supplierProfileBusy: boolean;
+  onUpdateSupplierProfile: (draft: SupplierProfileDraft) => void;
+}> = ({ workspace, javaEnabled, supplierProfileBusy, onUpdateSupplierProfile }) => {
+  const [profileDraft, setProfileDraft] = useState<SupplierProfileDraft>({
+    name: workspace.supplier.name,
+    industry: workspace.supplier.industry,
+    creditCode: workspace.supplier.creditCode ?? '91310000MA1K000001',
+    legalPerson: workspace.supplier.legalPerson ?? workspace.orders[0]?.supplierName ?? workspace.supplier.name,
+  });
   const authorizedCategories = Array.from(new Set(
     workspace.opportunities.flatMap((rfq) => rfq.demandIds.length > 0 ? rfq.demandIds : ['通用采购']),
   )).slice(0, 3);
+  const profileInvalid = !profileDraft.name.trim()
+    || !profileDraft.industry.trim()
+    || !profileDraft.creditCode.trim()
+    || !profileDraft.legalPerson.trim();
+
+  useEffect(() => {
+    setProfileDraft({
+      name: workspace.supplier.name,
+      industry: workspace.supplier.industry,
+      creditCode: workspace.supplier.creditCode ?? '91310000MA1K000001',
+      legalPerson: workspace.supplier.legalPerson ?? workspace.orders[0]?.supplierName ?? workspace.supplier.name,
+    });
+  }, [
+    workspace.supplier.name,
+    workspace.supplier.industry,
+    workspace.supplier.creditCode,
+    workspace.supplier.legalPerson,
+    workspace.orders,
+  ]);
+
+  const updateDraft = (patch: Partial<SupplierProfileDraft>) => {
+    setProfileDraft((current) => ({ ...current, ...patch }));
+  };
 
   return (
     <section className="rounded-lg border border-orange-100 bg-white p-4">
@@ -9274,32 +9345,40 @@ const SupplierProfileMaintenancePanel: React.FC<{
               : 'Mock 模式先保留页面草稿和上传入口，后续切换 Java 模式联调保存。'}
           </p>
         </div>
-        <StatusPill label={workspace.supplier.verified ? '资料有效' : '待补充资料'} />
+        <StatusPill label={workspace.supplier.profileStatus ?? (workspace.supplier.verified ? '资料有效' : '待补充资料')} />
       </div>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+      <div className="mt-4 grid gap-3 lg:grid-cols-4">
         <label className="block rounded-lg border border-slate-200 bg-slate-50 p-3">
           <span className="text-xs font-black text-slate-600">企业名称</span>
           <input
-            value={workspace.supplier.name}
-            readOnly
-            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none"
+            value={profileDraft.name}
+            onChange={(event) => updateDraft({ name: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
           />
         </label>
         <label className="block rounded-lg border border-slate-200 bg-slate-50 p-3">
           <span className="text-xs font-black text-slate-600">所属行业</span>
           <input
-            value={workspace.supplier.industry}
-            readOnly
-            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none"
+            value={profileDraft.industry}
+            onChange={(event) => updateDraft({ industry: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
+          />
+        </label>
+        <label className="block rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <span className="text-xs font-black text-slate-600">统一社会信用代码</span>
+          <input
+            value={profileDraft.creditCode}
+            onChange={(event) => updateDraft({ creditCode: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
           />
         </label>
         <label className="block rounded-lg border border-slate-200 bg-slate-50 p-3">
           <span className="text-xs font-black text-slate-600">联系人维护</span>
           <input
-            value={contactName}
-            readOnly
-            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none"
+            value={profileDraft.legalPerson}
+            onChange={(event) => updateDraft({ legalPerson: event.target.value })}
+            className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
           />
         </label>
       </div>
@@ -9335,6 +9414,28 @@ const SupplierProfileMaintenancePanel: React.FC<{
             '提交后供采购方准入、询价邀请和合作评价参考',
           ]}
         />
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs font-bold leading-5 text-slate-500">
+            {javaEnabled
+              ? '保存后会刷新供应商工作台，采购方准入和询价邀请将读取最新企业档案。'
+              : 'Mock 模式可查看草稿结构，保存动作在 Java 模式启用。'}
+          </p>
+          <PrimaryActionButton
+            onClick={() => onUpdateSupplierProfile({
+              name: profileDraft.name.trim(),
+              industry: profileDraft.industry.trim(),
+              creditCode: profileDraft.creditCode.trim(),
+              legalPerson: profileDraft.legalPerson.trim(),
+            })}
+            disabled={!javaEnabled || supplierProfileBusy || profileInvalid}
+            busy={supplierProfileBusy}
+            pendingLabel="保存中"
+            size="md"
+            flushTop
+          >
+            保存企业档案
+          </PrimaryActionButton>
+        </div>
       </div>
     </section>
   );

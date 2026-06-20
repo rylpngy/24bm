@@ -23,6 +23,10 @@ export interface Enterprise {
   type: EnterpriseType;
   industry: string;
   verified: boolean;
+  creditCode?: string;
+  legalPerson?: string;
+  verifiedStatus?: string;
+  profileStatus?: string;
 }
 
 export interface UserAccount {

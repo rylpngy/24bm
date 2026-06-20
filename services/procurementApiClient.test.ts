@@ -1088,6 +1088,92 @@ describe('procurement API clients', () => {
     ]);
   });
 
+  it('uses the Java API client to update the current supplier profile', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: {
+            accessToken: 'supplier-token',
+            tokenType: 'Bearer',
+            expiresIn: 7200,
+            userId: 'user-supplier-sales',
+            displayName: '供应商销售',
+            scope: 'SUPPLIER',
+            tenantId: null,
+            supplierId: 'ent-supplier-sunrise',
+            roles: ['SUPPLIER_SALES'],
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/supplier/profile') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer supplier-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          name: '晨光科技供应商',
+          industry: '办公设备',
+          creditCode: '91310000MA1K000001',
+          legalPerson: '李晨',
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'ent-supplier-sunrise',
+            name: '晨光科技供应商',
+            type: 'supplier',
+            industry: '办公设备',
+            verified: true,
+            creditCode: '91310000MA1K000001',
+            legalPerson: '李晨',
+            verifiedStatus: '已认证',
+            profileStatus: '资料有效',
+            connectedBuyerNames: ['Acme 采购公司'],
+          },
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      buyerLogin: {
+        account: 'buyer',
+        password: 'demo123456',
+        scope: 'BUYER',
+        tenantId: 'tenant-acme',
+      },
+      supplierLogin: {
+        account: 'supplier',
+        password: 'demo123456',
+        scope: 'SUPPLIER',
+        supplierId: 'ent-supplier-sunrise',
+      },
+    });
+
+    const profile = await client.updateSupplierProfile({
+      name: '晨光科技供应商',
+      industry: '办公设备',
+      creditCode: '91310000MA1K000001',
+      legalPerson: '李晨',
+    });
+
+    expect(profile.creditCode).toBe('91310000MA1K000001');
+    expect(profile.legalPerson).toBe('李晨');
+    expect(profile.profileStatus).toBe('资料有效');
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/supplier/profile',
+    ]);
+  });
+
   it('uses the Java API client to list, create, and submit buyer purchase demands', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {

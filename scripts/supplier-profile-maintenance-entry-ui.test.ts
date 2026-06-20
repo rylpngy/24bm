@@ -26,7 +26,13 @@ describe('supplier profile maintenance entry UI', () => {
     expect(maintenancePanel).toContain('授权代理证书');
     expect(maintenancePanel).toContain('Java 模式下可调用 POST /api/v1/supplier/profile');
     expect(maintenancePanel).toContain('Mock 模式先保留页面草稿和上传入口');
-    expect(maintenancePanel).toContain('workspace.supplier.name');
-    expect(maintenancePanel).toContain('workspace.supplier.industry');
+    expect(maintenancePanel).toContain('profileDraft');
+    expect(maintenancePanel).toContain('setProfileDraft');
+    expect(maintenancePanel).toContain('onUpdateSupplierProfile');
+    expect(maintenancePanel).toContain('supplierProfileBusy');
+    expect(maintenancePanel).toContain('保存企业档案');
+    expect(maintenancePanel).toContain('creditCode');
+    expect(maintenancePanel).toContain('legalPerson');
+    expect(maintenancePanel).toContain('disabled={!javaEnabled || supplierProfileBusy');
   });
 });

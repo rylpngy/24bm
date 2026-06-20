@@ -85,6 +85,7 @@
 | 29 | 订单详情编辑闭环 | 订单详情页已补预计到货日期编辑、Java 更新接口和刷新后回显反馈，已收货订单保持不可编辑边界 | `scripts/buyer-order-detail-edit-ui.test.ts`、`PurchaseOrderUpdateExpectedReceiptTests` |
 | 30 | 发票付款详情编辑闭环 | 发票详情页已补付款状态编辑、Java 更新接口和刷新后回显反馈，已付款发票保持不可编辑边界 | `scripts/buyer-invoice-detail-edit-ui.test.ts`、`InvoicePaymentUpdateDetailTests` |
 | 31 | 平台公告生命周期持久化 | 平台公告页已补公告编辑、撤回、Java 更新接口、状态撤回接口和刷新后回显反馈，撤回后公告不再进入活跃列表 | `scripts/platform-announcement-java-persistence-ui.test.ts`、`PlatformAnnouncementLifecycleTests` |
+| 32 | 供应商档案维护持久化 | 供应商企业档案页已补企业名称、行业、统一社会信用代码、法人/联系人草稿编辑，保存后调用 Java 供应商档案接口并刷新工作台回显 | `scripts/supplier-profile-java-persistence-ui.test.ts`、`services/procurementApiClient.test.ts` |
 
 ## 第二批候选任务
 

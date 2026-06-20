@@ -478,8 +478,19 @@ export interface JavaSupplierProfileDto {
   type: 'supplier';
   industry: string;
   verified: boolean;
+  creditCode?: string;
+  legalPerson?: string;
+  verifiedStatus?: string;
+  profileStatus?: string;
   connectedBuyerNames: string[];
 }
+
+export type UpdateSupplierProfilePayload = {
+  name: string;
+  industry: string;
+  creditCode: string;
+  legalPerson: string;
+};
 
 export interface JavaPlatformOverviewDto {
   scope: 'platform';
@@ -597,6 +608,7 @@ export interface JavaProcurementApiClient {
   updateBuyerInvoice(invoiceId: string, payload: UpdateInvoicePayload): Promise<InvoiceRecord>;
   getSupplierWorkspace(): Promise<JavaSupplierWorkspaceData>;
   getSupplierProfile(): Promise<JavaSupplierProfileDto>;
+  updateSupplierProfile(payload: UpdateSupplierProfilePayload): Promise<JavaSupplierProfileDto>;
   listSupplierRfqs(): Promise<Rfq[]>;
   listSupplierQuotes(): Promise<RfqQuote[]>;
   listSupplierOrders(): Promise<PurchaseOrder[]>;
@@ -1274,6 +1286,13 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     getSupplierProfile() {
       return supplierRequest<JavaSupplierProfileDto>('/api/v1/supplier/profile');
     },
+    updateSupplierProfile(payload: UpdateSupplierProfilePayload) {
+      return supplierRequest<JavaSupplierProfileDto>('/api/v1/supplier/profile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
     async listSupplierRfqs() {
       const rfqs = await supplierRequest<JavaRfqDto[]>('/api/v1/supplier/rfqs');
       return rfqs.map(toRfq);
@@ -1467,6 +1486,10 @@ export const applyJavaSupplierWorkspaceData = (
       type: 'supplier',
       industry: supplierData.profile.industry,
       verified: supplierData.profile.verified,
+      creditCode: supplierData.profile.creditCode,
+      legalPerson: supplierData.profile.legalPerson,
+      verifiedStatus: supplierData.profile.verifiedStatus,
+      profileStatus: supplierData.profile.profileStatus,
     },
     connectedBuyerNames: supplierData.profile.connectedBuyerNames,
     opportunities,
