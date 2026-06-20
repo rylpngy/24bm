@@ -62,4 +62,18 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('ProcessStateNotice');
     expect(checklist).toContain('第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。');
   });
+
+  it('records the browser visual QA pass for the final first-round polish', () => {
+    expect(existsSync(checklistPath)).toBe(true);
+
+    const checklist = readFileSync(checklistPath, 'utf8');
+
+    expect(checklist).toContain('## 九、第一轮浏览器视觉复核记录');
+    expect(checklist).toContain('390x844');
+    expect(checklist).toContain('1440x900');
+    expect(checklist).toContain('采购方：询价项目、发票付款、对账单台账');
+    expect(checklist).toContain('平台：租户列表');
+    expect(checklist).toContain('供应商：发票应收');
+    expect(checklist).toContain('无加载失败、无 argument type mismatch、无整页横向溢出');
+  });
 });
