@@ -140,6 +140,10 @@ export interface InvoiceRecord {
   dueDate?: string;
   overdue?: boolean;
   overdueDays?: number;
+  orderAmount?: number;
+  varianceAmount?: number;
+  receiptStatus?: string;
+  reconciliationStatus?: string;
 }
 
 export interface AuditLogRecord {

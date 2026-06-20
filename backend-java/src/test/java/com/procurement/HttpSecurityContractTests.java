@@ -1274,6 +1274,10 @@ class HttpSecurityContractTests {
             LocalDate.parse("2026-07-15"),
             false,
             0L,
+            BigDecimal.valueOf(98000),
+            BigDecimal.ZERO,
+            "已收货",
+            "三单一致",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"))));
     when(invoiceApplicationService.listCurrentSupplierPaymentAuditLogs("invoice-demo"))
@@ -1300,6 +1304,10 @@ class HttpSecurityContractTests {
             LocalDate.parse("2026-07-15"),
             false,
             0L,
+            BigDecimal.valueOf(98000),
+            BigDecimal.ZERO,
+            "已收货",
+            "三单一致",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00")));
 
@@ -3333,6 +3341,10 @@ class HttpSecurityContractTests {
         LocalDate.parse("2026-07-15"),
         false,
         0L,
+        BigDecimal.valueOf(98000),
+        BigDecimal.ZERO,
+        "已收货",
+        "三单一致",
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
   }

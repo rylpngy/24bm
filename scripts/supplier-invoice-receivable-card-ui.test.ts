@@ -18,6 +18,11 @@ describe('supplier invoice receivable card UI', () => {
     expect(supplierWorkspace).toContain('应收截止');
     expect(supplierWorkspace).toContain('逾期提醒');
     expect(supplierWorkspace).toContain('逾期天数');
+    expect(supplierWorkspace).toContain('对账单摘要');
+    expect(supplierWorkspace).toContain('invoice.orderAmount');
+    expect(supplierWorkspace).toContain('invoice.varianceAmount');
+    expect(supplierWorkspace).toContain('invoice.receiptStatus');
+    expect(supplierWorkspace).toContain('invoice.reconciliationStatus');
     expect(supplierWorkspace).toContain('invoice.overdue');
     expect(supplierWorkspace).toContain('invoice.overdueDays');
     expect(supplierWorkspace).toContain('保存对账备注');

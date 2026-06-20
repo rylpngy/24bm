@@ -76,6 +76,10 @@ class BuyerTodoSummaryAssemblerTests {
         LocalDate.parse("2026-07-15"),
         false,
         0L,
+        BigDecimal.valueOf(100),
+        BigDecimal.ZERO,
+        "已收货",
+        "三单一致",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
   }

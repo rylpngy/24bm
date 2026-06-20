@@ -2638,7 +2638,7 @@
         "tags": [
           "buyer"
         ],
-        "summary": "加载采购方发票付款列表，支持按付款状态、供应商和订单筛选",
+        "summary": "加载采购方发票付款列表，支持按付款状态、供应商和订单筛选，并返回发票对账单摘要",
         "parameters": [
           {
             "name": "paymentStatus",
@@ -2688,7 +2688,7 @@
         "tags": [
           "buyer"
         ],
-        "summary": "维护发票付款状态",
+        "summary": "维护发票付款状态，并返回最新发票对账单摘要",
         "parameters": [
           {
             "name": "invoiceId",
@@ -2764,7 +2764,7 @@
         "tags": [
           "supplier"
         ],
-        "summary": "加载供应商应收发票列表，支持按付款状态和订单筛选，并返回应收截止和逾期提醒",
+        "summary": "加载供应商应收发票列表，支持按付款状态和订单筛选，并返回应收截止、逾期提醒和对账单摘要",
         "parameters": [
           {
             "name": "paymentStatus",
@@ -2840,7 +2840,7 @@
         "tags": [
           "supplier"
         ],
-        "summary": "供应商维护应收发票对账备注",
+        "summary": "供应商维护应收发票对账备注，并返回最新对账单摘要",
         "parameters": [
           {
             "name": "invoiceId",
@@ -2874,7 +2874,7 @@
         "tags": [
           "supplier"
         ],
-        "summary": "供应商登记发票",
+        "summary": "供应商登记发票，并返回初始对账单摘要",
         "parameters": [
           {
             "name": "orderId",

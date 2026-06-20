@@ -6989,7 +6989,10 @@ const InvoicePaymentDetailPanelView: React.FC<{
   const paymentStatus = detail?.facts.find((fact) => fact.label === '付款状态')?.value ?? '待付款';
   const invoiceAmount = detail?.facts.find((fact) => fact.label === '发票金额')?.value ?? detail?.amountLabel ?? '未找到';
   const orderAmount = detail?.orderFacts.find((fact) => fact.label === '订单金额')?.value ?? '未找到';
-  const reconciliationStatus = detail && invoiceAmount === orderAmount ? '金额一致' : '待核对';
+  const reconciliationStatus = invoice?.reconciliationStatus ?? (detail && invoiceAmount === orderAmount ? '金额一致' : '待核对');
+  const statementOrderAmount = invoice?.orderAmount == null ? orderAmount : currency(invoice.orderAmount);
+  const statementVarianceAmount = invoice?.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount);
+  const statementReceiptStatus = invoice?.receiptStatus ?? '待同步';
   const invoiceUpdateBusy = Boolean(invoice && invoiceUpdateBusyId === invoice.id);
   const invoicePaymentEditable = Boolean(javaEnabled && invoice && invoice.paymentStatus !== '已付款');
   const invoicePaymentEditDisabled = !invoicePaymentEditable || invoiceUpdateBusy || editableInvoicePaymentStatus.trim().length === 0;
@@ -7026,6 +7029,16 @@ const InvoicePaymentDetailPanelView: React.FC<{
               ))}
             </div>
           </section>
+
+          <DetailSection title="对账单摘要">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              <MiniFact label="订单金额" value={statementOrderAmount} />
+              <MiniFact label="发票金额" value={invoiceAmount} />
+              <MiniFact label="差异金额" value={statementVarianceAmount} />
+              <MiniFact label="收货状态" value={statementReceiptStatus} />
+              <MiniFact label="对账状态" value={reconciliationStatus} />
+            </div>
+          </DetailSection>
 
           <section>
             <p className="mb-2 text-xs font-black text-slate-500">付款检查</p>
@@ -10141,6 +10154,8 @@ const SupplierInvoiceReceivableDetailPanel: React.FC<{
       : '跟进回款';
   const overdueLabel = invoice.overdue ? '已逾期' : '未逾期';
   const overdueDaysLabel = `${invoice.overdueDays ?? 0} 天`;
+  const statementOrderAmount = invoice.orderAmount == null ? '待同步' : currency(invoice.orderAmount);
+  const statementVarianceAmount = invoice.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount);
 
   return (
     <Panel title="应收对账详情" icon={CreditCard}>
@@ -10173,6 +10188,16 @@ const SupplierInvoiceReceivableDetailPanel: React.FC<{
             <DetailKeyValueRow label="应收截止" value={invoice.dueDate ?? '待同步'} />
             <DetailKeyValueRow label="逾期状态" value={overdueLabel} />
             <DetailKeyValueRow label="逾期天数" value={overdueDaysLabel} />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="对账单摘要">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="订单金额" value={statementOrderAmount} />
+            <DetailKeyValueRow label="发票金额" value={currency(invoice.amount)} />
+            <DetailKeyValueRow label="差异金额" value={statementVarianceAmount} />
+            <DetailKeyValueRow label="收货状态" value={invoice.receiptStatus ?? '待同步'} />
+            <DetailKeyValueRow label="对账状态" value={invoice.reconciliationStatus ?? '待同步'} />
           </div>
         </DetailSection>
 

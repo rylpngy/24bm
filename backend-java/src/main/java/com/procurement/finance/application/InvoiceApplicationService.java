@@ -134,7 +134,9 @@ public class InvoiceApplicationService {
   }
 
   private InvoiceResponse toResponse(Invoice invoice) {
-    return InvoiceResponseAssembler.from(invoice);
+    return InvoiceResponseAssembler.from(
+        invoice,
+        purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()));
   }
 
   private String newId(String prefix) {

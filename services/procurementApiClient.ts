@@ -482,6 +482,10 @@ export interface JavaInvoiceDto {
   dueDate?: string | null;
   overdue?: boolean;
   overdueDays?: number;
+  orderAmount?: number | null;
+  varianceAmount?: number | null;
+  receiptStatus?: string | null;
+  reconciliationStatus?: string | null;
 }
 
 export interface JavaSupplierProfileDto {
@@ -962,6 +966,10 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     dueDate: invoice.dueDate ?? undefined,
     overdue: invoice.overdue ?? false,
     overdueDays: invoice.overdueDays ?? 0,
+    orderAmount: invoice.orderAmount == null ? undefined : Number(invoice.orderAmount),
+    varianceAmount: invoice.varianceAmount == null ? undefined : Number(invoice.varianceAmount),
+    receiptStatus: invoice.receiptStatus ?? undefined,
+    reconciliationStatus: invoice.reconciliationStatus ?? undefined,
   });
 
   return {

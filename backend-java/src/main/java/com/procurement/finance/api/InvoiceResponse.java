@@ -16,6 +16,10 @@ public record InvoiceResponse(
     LocalDate dueDate,
     boolean overdue,
     long overdueDays,
+    BigDecimal orderAmount,
+    BigDecimal varianceAmount,
+    String receiptStatus,
+    String reconciliationStatus,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {
 }

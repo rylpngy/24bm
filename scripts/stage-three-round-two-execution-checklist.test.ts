@@ -79,6 +79,7 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('供应商物流信息维护持久化');
     expect(checklist).toContain('供应商应收对账备注持久化');
     expect(checklist).toContain('供应商应收逾期提醒');
+    expect(checklist).toContain('发票对账单摘要');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-award-order-action-forms-ui.test.ts');

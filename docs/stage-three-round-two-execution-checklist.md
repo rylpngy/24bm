@@ -91,6 +91,7 @@
 | 35 | 供应商物流信息维护持久化 | 供应商销售订单详情页已补承运商、物流单号编辑，采购方收货前可调用 Java 发货单更新接口并刷新工作台回显，已收货订单保持只读边界 | `scripts/supplier-quote-order-detail-panels-ui.test.ts`、`DeliveryNotificationTests` |
 | 36 | 供应商应收对账备注持久化 | 供应商发票应收页已补选中详情、对账备注编辑、Java 应收更新接口和刷新后回显，付款状态仍由采购方登记 | `scripts/supplier-invoice-receivable-card-ui.test.ts`、`FinancePaymentStateTransitionTests` |
 | 37 | 供应商应收逾期提醒 | Java 发票响应已基于发票创建日派生 30 天应收截止日、逾期状态和逾期天数，供应商应收详情页展示应收截止和逾期提醒 | `scripts/supplier-invoice-receivable-card-ui.test.ts`、`FinancePaymentStateTransitionTests` |
+| 38 | 发票对账单摘要 | Java 发票响应已派生订单金额、发票差异、收货状态和对账状态，采购方发票详情和供应商应收详情均展示对账单摘要 | `scripts/buyer-invoice-detail-ui.test.ts`、`scripts/supplier-invoice-receivable-card-ui.test.ts`、`FinancePaymentStateTransitionTests` |
 
 ## 第二批候选任务
 

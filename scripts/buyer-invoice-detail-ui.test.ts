@@ -24,6 +24,7 @@ describe('buyer invoice detail UI', () => {
     expect(app).toContain('InvoicePaymentDetailPanelView');
     expect(invoiceDetailView).toContain('发票详情');
     expect(invoiceDetailView).toContain('订单上下文');
+    expect(invoiceDetailView).toContain('对账单摘要');
     expect(invoiceDetailView).toContain('付款检查');
     expect(invoiceDetailView).toContain('paymentCheckRows');
     expect(invoiceDetailView).toContain('关联业务');
@@ -61,7 +62,10 @@ describe('buyer invoice detail UI', () => {
     );
 
     expect(invoiceDetailView).toContain('const paymentStatus = detail?.facts.find((fact) => fact.label === \'付款状态\')?.value ?? \'待付款\';');
-    expect(invoiceDetailView).toContain('const reconciliationStatus = detail && invoiceAmount === orderAmount ? \'金额一致\' : \'待核对\';');
+    expect(invoiceDetailView).toContain('const reconciliationStatus = invoice?.reconciliationStatus ?? (detail && invoiceAmount === orderAmount ? \'金额一致\' : \'待核对\');');
+    expect(invoiceDetailView).toContain('invoice?.orderAmount');
+    expect(invoiceDetailView).toContain('invoice?.varianceAmount');
+    expect(invoiceDetailView).toContain('invoice?.receiptStatus');
     expect(topCard).toContain('summaryFacts={[');
     expect(topCard).toContain("{ label: '付款状态', value: paymentStatus }");
     expect(topCard).toContain("{ label: '对账状态', value: reconciliationStatus }");
