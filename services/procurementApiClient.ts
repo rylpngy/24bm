@@ -533,6 +533,11 @@ export interface ListBuyerInvoiceReconciliationsParams {
   orderId?: string;
 }
 
+export interface ListSupplierInvoiceReconciliationsParams {
+  stage?: string;
+  orderId?: string;
+}
+
 export interface JavaSupplierProfileDto {
   id: string;
   name: string;
@@ -680,6 +685,9 @@ export interface JavaProcurementApiClient {
   listBuyerInvoiceReconciliations(
     params?: ListBuyerInvoiceReconciliationsParams,
   ): Promise<InvoiceReconciliationRecord[]>;
+  listSupplierInvoiceReconciliations(
+    params?: ListSupplierInvoiceReconciliationsParams,
+  ): Promise<InvoiceReconciliationRecord[]>;
   createSupplierInvoice(orderId: string, payload: CreateInvoicePayload): Promise<InvoiceRecord>;
   updateSupplierReceivable(invoiceId: string, payload: UpdateSupplierReceivablePayload): Promise<InvoiceRecord>;
   registerBuyerPayment(invoiceId: string, payload: RegisterPaymentPayload): Promise<InvoiceRecord>;
@@ -719,6 +727,7 @@ export interface JavaSupplierWorkspaceData {
   orders: PurchaseOrder[];
   deliveries: Delivery[];
   invoices: InvoiceRecord[];
+  invoiceReconciliations?: InvoiceReconciliationRecord[];
 }
 
 export interface JavaPlatformWorkspaceData {
@@ -1046,6 +1055,14 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     const searchParams = new URLSearchParams();
     if (params?.stage) searchParams.set('stage', params.stage);
     if (params?.supplierId) searchParams.set('supplierId', params.supplierId);
+    if (params?.orderId) searchParams.set('orderId', params.orderId);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
+
+  const supplierReconciliationQuery = (params?: ListSupplierInvoiceReconciliationsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.stage) searchParams.set('stage', params.stage);
     if (params?.orderId) searchParams.set('orderId', params.orderId);
     const query = searchParams.toString();
     return query ? `?${query}` : '';
@@ -1381,6 +1398,12 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       );
       return reconciliations.map(toInvoiceReconciliation);
     },
+    async listSupplierInvoiceReconciliations(params?: ListSupplierInvoiceReconciliationsParams) {
+      const reconciliations = await supplierRequest<JavaInvoiceReconciliationDto[]>(
+        `/api/v1/supplier/invoice-reconciliations${supplierReconciliationQuery(params)}`,
+      );
+      return reconciliations.map(toInvoiceReconciliation);
+    },
     async createSupplierInvoice(orderId: string, payload: CreateInvoicePayload) {
       const invoice = await supplierRequest<JavaInvoiceDto>(`/api/v1/supplier/orders/${orderId}/invoices`, {
         method: 'POST',
@@ -1636,7 +1659,14 @@ export const applyJavaPlatformWorkspaceData = (
 export const loadJavaSupplierWorkspaceData = async (
   client: JavaProcurementApiClient,
 ): Promise<JavaSupplierWorkspaceData> => {
-  return client.getSupplierWorkspace();
+  const [workspace, invoiceReconciliations] = await Promise.all([
+    client.getSupplierWorkspace(),
+    client.listSupplierInvoiceReconciliations(),
+  ]);
+  return {
+    ...workspace,
+    invoiceReconciliations,
+  };
 };
 
 export const applyJavaSupplierWorkspaceData = (
@@ -1647,6 +1677,23 @@ export const applyJavaSupplierWorkspaceData = (
     ...rfq,
     quotes: supplierData.quotes.filter((quote) => quote.rfqId === rfq.id),
   }));
+  const reconciliationsByInvoice = new Map(
+    (supplierData.invoiceReconciliations ?? []).map((reconciliation) => [reconciliation.invoiceId, reconciliation]),
+  );
+  const invoices = supplierData.invoices.map((invoice) => {
+    const reconciliation = reconciliationsByInvoice.get(invoice.id);
+    if (!reconciliation) return invoice;
+    return {
+      ...invoice,
+      orderAmount: reconciliation.orderAmount,
+      varianceAmount: reconciliation.varianceAmount,
+      receiptStatus: reconciliation.receiptStatus,
+      reconciliationStatus: reconciliation.stage,
+      reconciliationNo: reconciliation.reconciliationNo,
+      reconciliationStage: reconciliation.stage,
+      nextReconciliationAction: reconciliation.nextAction,
+    };
+  });
 
   return {
     ...workspace,
@@ -1666,7 +1713,7 @@ export const applyJavaSupplierWorkspaceData = (
     quotes: supplierData.quotes,
     orders: supplierData.orders,
     deliveries: supplierData.deliveries,
-    invoices: supplierData.invoices,
+    invoices,
   };
 };
 

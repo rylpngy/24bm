@@ -98,6 +98,7 @@ describe('procurement SaaS API contract draft', () => {
       'PUT /buyer/invoices/{invoiceId}',
       'GET /supplier/quotes',
       'GET /supplier/invoices',
+      'GET /supplier/invoice-reconciliations',
       'GET /supplier/invoices/{invoiceId}/payment-audit-logs',
       'PUT /supplier/invoices/{invoiceId}/reconciliation',
       'POST /supplier/orders/{orderId}/invoices',

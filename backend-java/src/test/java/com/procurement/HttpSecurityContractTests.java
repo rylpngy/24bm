@@ -62,6 +62,7 @@ import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.InvoiceReconciliationResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.SupplierInvoiceController;
+import com.procurement.finance.api.SupplierInvoiceReconciliationController;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.api.UpdateSupplierReceivableRequest;
@@ -193,6 +194,7 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerReceiptController.class,
     SupplierDeliveryController.class,
     BuyerInvoiceReconciliationController.class,
+    SupplierInvoiceReconciliationController.class,
     BuyerPaymentController.class,
     SupplierInvoiceController.class,
     SupplierReceivableController.class,
@@ -1286,6 +1288,10 @@ class HttpSecurityContractTests {
             "登记付款",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"))));
+    when(invoiceApplicationService.listCurrentSupplierReconciliations(
+        org.mockito.ArgumentMatchers.eq("待付款"),
+        org.mockito.ArgumentMatchers.eq("po-demo")))
+        .thenReturn(List.of(invoiceReconciliationResponse("recon-supplier-demo", "invoice-demo", "待付款")));
     when(invoiceApplicationService.listCurrentSupplierPaymentAuditLogs("invoice-demo"))
         .thenReturn(List.of(new AuditLogResponse(
             "audit-supplier-payment-demo",
@@ -1493,6 +1499,17 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("invoice-demo"));
+    mockMvc.perform(get("/api/v1/supplier/invoice-reconciliations")
+            .queryParam("stage", "待付款")
+            .queryParam("orderId", "po-demo")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("recon-supplier-demo"))
+        .andExpect(jsonPath("$.data[0].invoiceId").value("invoice-demo"))
+        .andExpect(jsonPath("$.data[0].stage").value("待付款"));
+    mockMvc.perform(get("/api/v1/supplier/invoice-reconciliations")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
     mockMvc.perform(get("/api/v1/supplier/invoices/invoice-demo/payment-audit-logs")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())

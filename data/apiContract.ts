@@ -805,6 +805,15 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
   },
   {
     method: 'GET',
+    path: '/supplier/invoice-reconciliations',
+    audience: 'supplier',
+    action: '加载供应商独立应收对账单台账，支持按对账阶段和订单筛选',
+    requestSchema: 'SupplierInvoiceReconciliationListRequest',
+    responseSchema: 'SupplierInvoiceReconciliationList',
+    queryParameters: ['stage', 'orderId'],
+  },
+  {
+    method: 'GET',
     path: '/supplier/invoices/{invoiceId}/payment-audit-logs',
     audience: 'supplier',
     action: '查看供应商应收发票付款审计明细',

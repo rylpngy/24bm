@@ -76,4 +76,40 @@ public interface InvoiceReconciliationMapper {
       @Param("stage") String stage,
       @Param("supplierId") String supplierId,
       @Param("orderId") String orderId);
+
+  @Select("""
+      select
+        reconciliation.id,
+        reconciliation.tenant_id,
+        reconciliation.invoice_id,
+        reconciliation.supplier_id,
+        reconciliation.order_id,
+        reconciliation.stage,
+        reconciliation.next_action,
+        purchase_order.amount as order_amount,
+        invoice.amount as invoice_amount,
+        invoice.amount - purchase_order.amount as variance_amount,
+        case
+          when purchase_order.status in ('已收货', '已完成') then '已收货'
+          else '待收货'
+        end as receipt_status,
+        invoice.payment_status,
+        reconciliation.created_at,
+        reconciliation.updated_at
+      from invoice_reconciliations reconciliation
+      join invoices invoice
+        on invoice.tenant_id = reconciliation.tenant_id
+       and invoice.id = reconciliation.invoice_id
+      join purchase_orders purchase_order
+        on purchase_order.tenant_id = reconciliation.tenant_id
+       and purchase_order.id = reconciliation.order_id
+      where reconciliation.supplier_id = #{supplierId}
+        and (#{stage} is null or reconciliation.stage = #{stage})
+        and (#{orderId} is null or reconciliation.order_id = #{orderId})
+      order by reconciliation.updated_at desc, reconciliation.created_at desc
+      """)
+  List<InvoiceReconciliation> listBySupplierFiltered(
+      @Param("supplierId") String supplierId,
+      @Param("stage") String stage,
+      @Param("orderId") String orderId);
 }

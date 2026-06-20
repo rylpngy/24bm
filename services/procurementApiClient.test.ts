@@ -453,6 +453,78 @@ describe('procurement API clients', () => {
     expect(calls.map((call) => call.input)).toContain('http://java.test/api/v1/buyer/invoice-reconciliations?stage=%E5%BE%85%E4%BB%98%E6%AC%BE&supplierId=ent-supplier-sunrise');
   });
 
+  it('uses the Java API client to load supplier invoice reconciliations from the independent receivable ledger endpoint', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: { accessToken: 'supplier-token', tokenType: 'Bearer' },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/supplier/invoice-reconciliations?stage=%E5%BE%85%E4%BB%98%E6%AC%BE&orderId=po-java-001') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'recon-java-001',
+            tenantId: 'tenant-acme',
+            reconciliationNo: 'REC-invoice-java-001',
+            invoiceId: 'invoice-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            orderId: 'po-java-001',
+            stage: '待付款',
+            nextAction: '跟进回款',
+            orderAmount: 118000,
+            invoiceAmount: 118000,
+            varianceAmount: 0,
+            receiptStatus: '已收货',
+            paymentStatus: '待付款',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      supplierLogin: {
+        account: 'supplier',
+        password: 'demo123456',
+        scope: 'SUPPLIER',
+        supplierId: 'ent-supplier-sunrise',
+      },
+    });
+
+    const reconciliations = await client.listSupplierInvoiceReconciliations({
+      stage: '待付款',
+      orderId: 'po-java-001',
+    });
+
+    expect(reconciliations[0]).toMatchObject({
+      id: 'recon-java-001',
+      tenantId: 'tenant-acme',
+      reconciliationNo: 'REC-invoice-java-001',
+      invoiceId: 'invoice-java-001',
+      supplierId: 'ent-supplier-sunrise',
+      orderId: 'po-java-001',
+      stage: '待付款',
+      nextAction: '跟进回款',
+      orderAmount: 118000,
+      invoiceAmount: 118000,
+      varianceAmount: 0,
+      receiptStatus: '已收货',
+      paymentStatus: '待付款',
+    });
+    expect(calls.map((call) => call.input)).toContain('http://java.test/api/v1/supplier/invoice-reconciliations?stage=%E5%BE%85%E4%BB%98%E6%AC%BE&orderId=po-java-001');
+  });
+
   it('loads Java buyer master data from the aggregated workspace endpoint', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
@@ -1174,6 +1246,30 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/supplier/invoice-reconciliations') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'recon-java-001',
+            tenantId: 'tenant-acme',
+            reconciliationNo: 'REC-invoice-java-001',
+            invoiceId: 'invoice-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            orderId: 'po-java-001',
+            stage: '待付款',
+            nextAction: '跟进回款',
+            orderAmount: 118000,
+            invoiceAmount: 118000,
+            varianceAmount: 0,
+            receiptStatus: '已收货',
+            paymentStatus: '待付款',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          }],
+          message: '',
+        });
+      }
       throw new Error(`Unexpected request: ${input}`);
     };
 
@@ -1202,9 +1298,11 @@ describe('procurement API clients', () => {
     expect(supplierData.orders[0].status).toBe('待供应商确认');
     expect(supplierData.deliveries[0].trackingNo).toBe('SF-SUPPLIER-001');
     expect(supplierData.invoices[0].paymentStatus).toBe('待付款');
+    expect(supplierData.invoiceReconciliations?.[0].nextAction).toBe('跟进回款');
     expect(calls.map((call) => call.input)).toEqual([
       'http://java.test/api/v1/auth/login',
       'http://java.test/api/v1/supplier/workspace',
+      'http://java.test/api/v1/supplier/invoice-reconciliations',
     ]);
   });
 
@@ -2785,6 +2883,23 @@ describe('procurement API clients', () => {
         receiptStatus: '已收货',
         reconciliationStatus: '三单一致',
       }],
+      invoiceReconciliations: [{
+        id: 'recon-java-001',
+        tenantId: 'tenant-acme',
+        reconciliationNo: 'REC-invoice-java-001',
+        invoiceId: 'invoice-java-001',
+        supplierId: 'ent-supplier-sunrise',
+        orderId: 'po-java-001',
+        stage: '待付款',
+        nextAction: '跟进回款',
+        orderAmount: 118000,
+        invoiceAmount: 118000,
+        varianceAmount: 0,
+        receiptStatus: '已收货',
+        paymentStatus: '待付款',
+        createdAt: '2026-06-15T13:10:00+08:00',
+        updatedAt: '2026-06-15T13:20:00+08:00',
+      }],
     });
 
     expect(nextWorkspace).not.toBe(supplier);
@@ -2810,6 +2925,15 @@ describe('procurement API clients', () => {
     expect(nextWorkspace.orders[0].id).toBe('po-java-001');
     expect(nextWorkspace.deliveries[0].trackingNo).toBe('SF-SUPPLIER-001');
     expect(nextWorkspace.invoices[0].id).toBe('invoice-java-001');
+    expect(nextWorkspace.invoices[0]).toMatchObject({
+      reconciliationNo: 'REC-invoice-java-001',
+      reconciliationStage: '待付款',
+      nextReconciliationAction: '跟进回款',
+      orderAmount: 118000,
+      varianceAmount: 0,
+      receiptStatus: '已收货',
+      reconciliationStatus: '待付款',
+    });
   });
 
   it('runs the Java MVP workflow through the Java API client from demand to payment', async () => {

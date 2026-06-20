@@ -108,6 +108,29 @@ class FinancePaymentStateTransitionTests {
   }
 
   @Test
+  void listSupplierReconciliationsUsesIndependentLedgerInsideCurrentSupplier() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(invoiceReconciliationMapper.listBySupplierFiltered("supplier-1", "待付款", "po-1"))
+        .thenReturn(List.of(reconciliation("recon-1", "invoice-1", "待付款", "登记付款")));
+
+    InvoiceReconciliationResponse response = invoiceApplicationService
+        .listCurrentSupplierReconciliations("待付款", "po-1")
+        .getFirst();
+
+    verify(invoiceReconciliationMapper).listBySupplierFiltered("supplier-1", "待付款", "po-1");
+    org.assertj.core.api.Assertions.assertThat(response.id()).isEqualTo("recon-1");
+    org.assertj.core.api.Assertions.assertThat(response.reconciliationNo()).isEqualTo("REC-invoice-1");
+    org.assertj.core.api.Assertions.assertThat(response.invoiceId()).isEqualTo("invoice-1");
+    org.assertj.core.api.Assertions.assertThat(response.orderAmount()).isEqualByComparingTo("100");
+    org.assertj.core.api.Assertions.assertThat(response.invoiceAmount()).isEqualByComparingTo("100");
+    org.assertj.core.api.Assertions.assertThat(response.varianceAmount()).isEqualByComparingTo("0");
+    org.assertj.core.api.Assertions.assertThat(response.receiptStatus()).isEqualTo("已收货");
+    org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("待付款");
+    org.assertj.core.api.Assertions.assertThat(response.stage()).isEqualTo("待付款");
+    org.assertj.core.api.Assertions.assertThat(response.nextAction()).isEqualTo("登记付款");
+  }
+
+  @Test
   void listPaymentAuditLogsAppliesInvoicePaymentScopeInsideCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(auditLogApplicationService.listCurrentTenantTargetActions(

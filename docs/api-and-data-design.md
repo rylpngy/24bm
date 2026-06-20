@@ -100,7 +100,7 @@ API 分组在 [data/apiContract.ts](../data/apiContract.ts) 中以 `apiModules` 
 10. `GET /buyer/orders`、`POST /buyer/orders`：加载采购方订单并根据已通过定标结果生成采购订单。
 11. `GET /supplier/orders`、`POST /supplier/orders/{orderId}/confirm`、`POST /supplier/orders/{orderId}/deliveries`：供应商查看销售订单、确认订单并提交发货信息。
 12. `POST /buyer/orders/{orderId}/receipts`：采购方收货验收。
-13. `GET /supplier/quotes`、`GET /supplier/invoices`：供应商查看报价历史和应收发票。
+13. `GET /supplier/quotes`、`GET /supplier/invoices`、`GET /supplier/invoice-reconciliations`：供应商查看报价历史、应收发票和独立应收对账单台账。
 14. `GET /buyer/invoices`、`GET /buyer/invoice-reconciliations`、`POST /supplier/orders/{orderId}/invoices`：采购方查看发票付款列表和独立对账单台账，供应商登记发票。
 15. `POST /buyer/invoices/{invoiceId}/payments`：采购方登记付款状态并同步对账阶段。
 

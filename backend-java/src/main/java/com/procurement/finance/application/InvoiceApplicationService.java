@@ -6,12 +6,14 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.InvoiceResponse;
+import com.procurement.finance.api.InvoiceReconciliationResponse;
 import com.procurement.finance.api.UpdateSupplierReceivableRequest;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoiceAmountPolicy;
 import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoiceCreationStatusPolicy;
 import com.procurement.finance.domain.InvoicePaymentStatus;
+import com.procurement.finance.domain.InvoiceReconciliation;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -82,6 +84,17 @@ public class InvoiceApplicationService {
         50);
   }
 
+  public List<InvoiceReconciliationResponse> listCurrentSupplierReconciliations(String stage, String orderId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("invoice APIs");
+    return invoiceReconciliationMapper.listBySupplierFiltered(
+            supplierId,
+            blankToNull(stage),
+            blankToNull(orderId))
+        .stream()
+        .map(this::toReconciliationResponse)
+        .toList();
+  }
+
   @Transactional
   public InvoiceResponse create(String orderId, CreateInvoiceRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("invoice APIs");
@@ -150,6 +163,25 @@ public class InvoiceApplicationService {
     return InvoiceResponseAssembler.from(
         invoice,
         purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()));
+  }
+
+  private InvoiceReconciliationResponse toReconciliationResponse(InvoiceReconciliation reconciliation) {
+    return new InvoiceReconciliationResponse(
+        reconciliation.id(),
+        reconciliation.tenantId(),
+        "REC-" + reconciliation.invoiceId(),
+        reconciliation.invoiceId(),
+        reconciliation.supplierId(),
+        reconciliation.orderId(),
+        reconciliation.stage(),
+        reconciliation.nextAction(),
+        reconciliation.orderAmount(),
+        reconciliation.invoiceAmount(),
+        reconciliation.varianceAmount(),
+        reconciliation.receiptStatus(),
+        reconciliation.paymentStatus(),
+        reconciliation.createdAt(),
+        reconciliation.updatedAt());
   }
 
   private String newId(String prefix) {
