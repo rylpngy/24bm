@@ -154,6 +154,7 @@
 | 采购方列表详情并排延后到 2xl | 普通笔记本和中屏下先保持上下结构，避免列表和详情面板互相挤压 | `2xl:grid-cols[...]`、`scripts/admin-shell-polish-ui.test.ts` |
 | 通用卡片小屏换行 | 审批、供应商、物料、审计、订单履约等卡片标题、状态、金额和操作区可自然换行 | `AdminInfoCard`、`WorkflowListCard` |
 | 响应式表格摘要卡片 | 租户列表和询价项目在小屏显示摘要卡片，桌面端保留表格密度 | `ResponsiveTableFrame`、`scripts/responsive-table-frame-ui.test.ts` |
+| 共享移动摘要卡片 | 租户列表、询价项目和对账单台账统一移动端标题、状态、事实网格、选中态和详情入口样式 | `ResponsiveSummaryCard`、`ResponsiveTableFrame`、`scripts/stage-three-first-round-responsive-summary-card-ui.test.ts` |
 | 采购方定标和订单动作表单化 | 报价对比页定标原因、采购订单页预计收货日期不再是单按钮裸操作 | `BuyerAwardDraft`、`BuyerOrderDraft`、`scripts/buyer-award-order-action-forms-ui.test.ts` |
 | 供应商准入动作表单化 | 供应商详情页补准入理由和授权品类确认，避免准入动作缺少上下文 | `BuyerSupplierAdmissionDraft`、`scripts/buyer-supplier-admission-action-form-ui.test.ts` |
 | 审批处理动作表单化 | 审批中心通过/驳回前需要填写审批意见，固定审批模板下也能保留处理上下文 | `BuyerApprovalReviewDraft`、`scripts/buyer-approval-action-forms-ui.test.ts` |

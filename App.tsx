@@ -2125,32 +2125,20 @@ const PlatformWorkspace: React.FC<{
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
               <ResponsiveTableFrame
                 mobileCards={platformTenants.map((tenant) => (
-                  <div
+                  <ResponsiveSummaryCard
                     key={tenant.id}
-                    aria-label={`${tenant.name} 租户摘要`}
-                    className={`rounded-lg border bg-white p-4 transition ${
-                      selectedPlatformTenantId === tenant.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                    }`}
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <p className="break-words font-black text-slate-950">{tenant.name}</p>
-                        <p className="mt-1 text-xs font-bold text-slate-500">{tenant.plan}</p>
-                      </div>
-                      <StatusPill label={tenant.status} />
-                    </div>
-                    <div className="mt-3 grid gap-2">
-                      <MiniFact label="功能开关" value={tenant.features.join('、') || '未启用'} />
-                      <MiniFact label="用户上限" value={`${tenant.userLimit}`} />
-                    </div>
-                    <div className="mt-3">
-                      <DetailToggleButton
-                        selected={selectedPlatformTenantId === tenant.id}
-                        onClick={() => setSelectedPlatformTenantId(tenant.id)}
-                        compact
-                      />
-                    </div>
-                  </div>
+                    ariaLabel={`${tenant.name} 租户摘要`}
+                    title={tenant.name}
+                    meta={tenant.plan}
+                    status={tenant.status}
+                    selected={selectedPlatformTenantId === tenant.id}
+                    facts={[
+                      { label: '功能开关', value: tenant.features.join('、') || '未启用' },
+                      { label: '用户上限', value: `${tenant.userLimit}` },
+                    ]}
+                    detailButton="detail"
+                    onSelectDetail={() => setSelectedPlatformTenantId(tenant.id)}
+                  />
                 ))}
               >
                 <table className="min-w-[860px] w-full text-left text-sm">
@@ -3861,33 +3849,22 @@ const BuyerWorkspaceView: React.FC<{
           ) : (
           <ResponsiveTableFrame
             mobileCards={filteredRfqListRows.map((rfq) => (
-              <div
+              <ResponsiveSummaryCard
                 key={rfq.id}
-                aria-label={`${rfq.title} 询价摘要`}
-                className={`rounded-lg border bg-white p-4 transition ${
-                  selectedRfq === rfq.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
-                }`}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="break-words font-black text-slate-950">{rfq.title}</p>
-                    <p className="mt-1 font-mono text-xs font-bold text-slate-500">{rfq.id}</p>
-                  </div>
-                  <StatusPill label={rfq.status} />
-                </div>
-                <div className="mt-3 grid gap-2">
-                  <MiniFact label="关联需求" value={rfq.demandLabel} />
-                  <MiniFact label="供应商" value={rfq.supplierLabel} />
-                  <MiniFact label="响应" value={rfq.quoteLabel} />
-                  <MiniFact label="截止时间" value={rfq.deadlineLabel} />
-                </div>
-                <div className="mt-3 border-t border-slate-100 pt-3">
-                  <TableDetailButton
-                    selected={selectedRfq === rfq.id}
-                    onClick={() => setSelectedRfqId(rfq.id)}
-                  />
-                </div>
-              </div>
+                ariaLabel={`${rfq.title} 询价摘要`}
+                title={rfq.title}
+                meta={rfq.id}
+                status={rfq.status}
+                selected={selectedRfq === rfq.id}
+                facts={[
+                  { label: '关联需求', value: rfq.demandLabel },
+                  { label: '供应商', value: rfq.supplierLabel },
+                  { label: '响应', value: rfq.quoteLabel },
+                  { label: '截止时间', value: rfq.deadlineLabel },
+                ]}
+                detailButton="table"
+                onSelectDetail={() => setSelectedRfqId(rfq.id)}
+              />
             ))}
           >
             <table className="min-w-[860px] w-full text-left text-sm">
@@ -10139,26 +10116,22 @@ const ReconciliationLedgerPanel: React.FC<{
       ) : (
         <div className="mt-3 space-y-2">
           {filteredInvoices.map((invoice) => (
-            <div key={invoice.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <p className="break-words text-sm font-black text-slate-900">{invoice.reconciliationNo ?? `REC-${invoice.id}`}</p>
-                  <p className="mt-1 break-words text-xs font-bold text-slate-500">
-                    对账单编号 {invoice.reconciliationNo ?? `REC-${invoice.id}`} · 订单 {invoice.orderId} · 发票 {invoice.id}
-                  </p>
-                </div>
-                <StatusPill label={invoice.reconciliationStatus ?? '待同步'} />
-              </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                <MiniFact label="订单金额" value={invoice.orderAmount == null ? '待同步' : currency(invoice.orderAmount)} />
-                <MiniFact label="发票金额" value={currency(invoice.amount)} />
-                <MiniFact label="差异金额" value={invoice.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount)} />
-                <MiniFact label="收货状态" value={invoice.receiptStatus ?? '待同步'} />
-                <MiniFact label="付款状态" value={invoice.paymentStatus} />
-                <MiniFact label="状态流转" value={invoice.reconciliationStage ?? '待同步'} />
-                <MiniFact label="下一步动作" value={invoice.nextReconciliationAction ?? '同步订单'} />
-              </div>
-            </div>
+            <ResponsiveSummaryCard
+              key={invoice.id}
+              ariaLabel={`${invoice.reconciliationNo ?? `REC-${invoice.id}`} 对账单摘要`}
+              title={invoice.reconciliationNo ?? `REC-${invoice.id}`}
+              meta={`对账单编号 ${invoice.reconciliationNo ?? `REC-${invoice.id}`} · 订单 ${invoice.orderId} · 发票 ${invoice.id}`}
+              status={invoice.reconciliationStatus ?? '待同步'}
+              facts={[
+                { label: '订单金额', value: invoice.orderAmount == null ? '待同步' : currency(invoice.orderAmount) },
+                { label: '发票金额', value: currency(invoice.amount) },
+                { label: '差异金额', value: invoice.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount) },
+                { label: '收货状态', value: invoice.receiptStatus ?? '待同步' },
+                { label: '付款状态', value: invoice.paymentStatus },
+                { label: '状态流转', value: invoice.reconciliationStage ?? '待同步' },
+                { label: '下一步动作', value: invoice.nextReconciliationAction ?? '同步订单' },
+              ]}
+            />
           ))}
         </div>
       )}
@@ -10632,6 +10605,61 @@ const ResponsiveTableFrame: React.FC<{
     <div className="hidden overflow-x-auto rounded-lg border border-slate-200 lg:block">
       {children}
     </div>
+  </div>
+);
+
+const ResponsiveSummaryCard: React.FC<{
+  ariaLabel: string;
+  title: string;
+  meta: string;
+  status?: string;
+  selected?: boolean;
+  facts?: Array<{ label: string; value: string }>;
+  detailButton?: 'detail' | 'table';
+  onSelectDetail?: () => void;
+}> = ({
+  ariaLabel,
+  title,
+  meta,
+  status,
+  selected = false,
+  facts = [],
+  detailButton = 'detail',
+  onSelectDetail,
+}) => (
+  <div
+    aria-label={ariaLabel}
+    className={`rounded-lg border bg-white p-4 transition hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
+      selected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+    }`}
+  >
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0 max-w-full">
+        <p className="break-words font-black text-slate-950">{title}</p>
+        <p className="mt-1 break-words text-xs font-bold text-slate-500">{meta}</p>
+      </div>
+      {status && (
+        <span className="self-start">
+          <StatusPill label={status} />
+        </span>
+      )}
+    </div>
+    {facts.length > 0 && (
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {facts.map((fact) => (
+          <MiniFact key={fact.label} label={fact.label} value={fact.value} />
+        ))}
+      </div>
+    )}
+    {onSelectDetail && (
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+        {detailButton === 'table' ? (
+          <TableDetailButton selected={selected} onClick={onSelectDetail} />
+        ) : (
+          <DetailToggleButton selected={selected} onClick={onSelectDetail} compact />
+        )}
+      </div>
+    )}
   </div>
 );
 

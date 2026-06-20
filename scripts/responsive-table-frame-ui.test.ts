@@ -27,12 +27,14 @@ describe('responsive table frame UI', () => {
 
     expect(tenantList).toContain('<ResponsiveTableFrame');
     expect(tenantList).toContain('mobileCards={platformTenants.map((tenant) => (');
-    expect(tenantList).toContain('aria-label={`${tenant.name} 租户摘要`}');
+    expect(tenantList).toContain('<ResponsiveSummaryCard');
+    expect(tenantList).toContain('ariaLabel={`${tenant.name} 租户摘要`}');
     expect(tenantList).toContain('功能开关');
 
     expect(rfqList).toContain('<ResponsiveTableFrame');
     expect(rfqList).toContain('mobileCards={filteredRfqListRows.map((rfq) => (');
-    expect(rfqList).toContain('aria-label={`${rfq.title} 询价摘要`}');
-    expect(rfqList).toContain('<TableDetailButton');
+    expect(rfqList).toContain('<ResponsiveSummaryCard');
+    expect(rfqList).toContain('ariaLabel={`${rfq.title} 询价摘要`}');
+    expect(rfqList).toContain('detailButton="table"');
   });
 });
