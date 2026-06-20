@@ -90,5 +90,8 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('供应商：供应商看板、询价邀请');
     expect(checklist).toContain('无浏览器错误日志');
     expect(checklist).toContain('documentElement.scrollWidth 等于 clientWidth');
+    expect(checklist).toContain('工作台页面节奏收口');
+    expect(checklist).toContain('主滚动区 scrollbar-gutter、顶部栏半透明阴影、详情体分段边界和移动摘要卡片按压反馈');
+    expect(checklist).toContain('scripts/stage-three-admin-workbench-rhythm-ui.test.ts');
   });
 });

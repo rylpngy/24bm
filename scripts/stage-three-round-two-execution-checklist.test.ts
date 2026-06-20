@@ -106,6 +106,9 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('Java smoke 回归复核记录');
     expect(checklist).toContain('schema public 当前版本 101');
     expect(checklist).toContain('Created demand dem-46fe98c4-eb93-4304-b40a-9ccc6a3673d1');
+    expect(checklist).toContain('工作台页面节奏收口');
+    expect(checklist).toContain('scrollbar-gutter:stable');
+    expect(checklist).toContain('scripts/stage-three-admin-workbench-rhythm-ui.test.ts');
     expect(checklist).toContain('scripts/invoice-reconciliation-ledger-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');

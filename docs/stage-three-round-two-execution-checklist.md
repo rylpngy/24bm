@@ -105,6 +105,7 @@
 | 49 | 共享空态稳定区域收口 | `ShellState` 已补非全屏空态最小高度、居中排布和长文本换行，降低列表筛选无结果时页面跳动和空态观感松散的风险 | `scripts/empty-state-consistency-ui.test.ts`、`ShellState`、`EmptyState` |
 | 50 | mock 浏览器视觉复核记录 | 已在 `http://localhost:5173/` 的 mock 视觉模式下完成 1280x720 与 390x844 两个视口复核，覆盖采购方首页、采购需求、询价项目、采购订单、发票付款，以及供应商看板和询价邀请；页面无加载失败、无浏览器错误日志、无整页横向溢出 | `docs/stage-three-admin-shell-acceptance-checklist.md`、`scripts/stage-three-admin-shell-acceptance-checklist.test.ts` |
 | 51 | Java smoke 回归复核记录 | 已在 Java 后端 `schema public 当前版本 101`、Flyway `Successfully validated 9 migrations` 的环境下完成 `GET /api/v1/health` 和 `npm run java:smoke` 回归；本轮主流程创建 `Created demand dem-46fe98c4-eb93-4304-b40a-9ccc6a3673d1` 并跑通 RFQ、报价、定标、订单、发货、收货、发票和 `payment status 已付款` | `docs/stage-three-round-two-java-walkthrough-result.md`、`scripts/stage-three-round-two-java-walkthrough-result.test.ts` |
+| 52 | 工作台页面节奏收口 | 后台壳主滚动区已补 `scrollbar-gutter:stable` 和稳定工作台底色，顶部栏补半透明阴影与 backdrop blur，列表工具条、详情体、详情头和移动摘要卡片补层级边界与按压反馈，降低长页面滚动和移动端点击时的粗糙感 | `scripts/stage-three-admin-workbench-rhythm-ui.test.ts`、`AppHeader`、`DetailPanelBody`、`ResponsiveSummaryCard` |
 
 ## 第二批候选任务
 

@@ -1005,7 +1005,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden overflow-x-hidden bg-slate-50 text-slate-900 lg:flex-row">
+    <div className="flex h-dvh flex-col overflow-hidden overflow-x-hidden bg-slate-100/70 text-slate-900 lg:flex-row">
       <MobileAdminNav
         activeRole={activeRole}
         activeModules={activeModules}
@@ -1035,8 +1035,8 @@ const App: React.FC = () => {
           onRefresh={triggerRefresh}
           onRunJavaWorkflow={runJavaWorkflow}
         />
-        <section className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
+        <section className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-slate-100/70 [scrollbar-gutter:stable]">
+          <div className="mx-auto w-full max-w-7xl space-y-5 p-3 pb-8 sm:space-y-6 sm:p-6 lg:p-8">
             {activeRole === 'platform' && (
               <PlatformWorkspace
                 data={platformData}
@@ -1326,7 +1326,7 @@ const AppHeader: React.FC<{
         : suppliers.find((supplier) => supplier.id === supplierId)?.name;
 
   return (
-    <header className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+    <header className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm shadow-slate-200/70 backdrop-blur lg:flex-row lg:items-center lg:justify-between lg:px-6">
       <div className="flex min-w-0 items-center gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400">当前工作区</p>
@@ -8177,7 +8177,7 @@ const Field: React.FC<{
 );
 
 const DetailPanelBody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="space-y-3 rounded-lg bg-slate-50/70 p-2 sm:space-y-4 sm:p-3">
+  <div className="space-y-3 rounded-lg border border-slate-200/70 bg-slate-50/70 p-2 shadow-inner shadow-slate-200/50 sm:space-y-4 sm:p-3">
     {children}
   </div>
 );
@@ -8199,7 +8199,7 @@ const DetailHeroCard: React.FC<{
   facts,
   summaryFacts = [],
 }) => (
-  <div className="rounded-lg border border-slate-200 bg-white p-4">
+  <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/60">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 max-w-full">
         <p className="text-[11px] font-black uppercase tracking-widest text-blue-600">{eyebrow}</p>
@@ -10605,7 +10605,7 @@ const ListToolbar: React.FC<{
 }> = ({ title, recordCount, filterLabel, actionLabel }) => (
   <div
     aria-label={`${title} 列表工具条`}
-    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 border-l-4 border-l-blue-500 bg-white/90 p-3 shadow-sm shadow-slate-200/50 lg:flex-row lg:items-center lg:justify-between"
+    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 border-l-4 border-l-blue-500 bg-white/95 p-3 shadow-sm shadow-slate-200/70 lg:flex-row lg:items-start lg:justify-between"
   >
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2">
@@ -10749,7 +10749,7 @@ const ResponsiveSummaryCard: React.FC<{
 }) => (
   <div
     aria-label={ariaLabel}
-    className={`rounded-lg border bg-white p-4 transition hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
+    className={`rounded-lg border bg-white p-4 shadow-sm shadow-slate-200/50 transition hover:border-blue-200 hover:shadow-sm active:scale-[0.995] focus-within:ring-2 focus-within:ring-blue-100 ${
       selected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
     }`}
   >

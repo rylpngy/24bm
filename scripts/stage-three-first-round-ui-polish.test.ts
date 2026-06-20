@@ -27,7 +27,8 @@ describe('stage three first round UI polish', () => {
       app.indexOf('export default App'),
     );
 
-    expect(detailPanelBody).toContain('rounded-lg bg-slate-50/70 p-2');
+    expect(detailPanelBody).toContain('rounded-lg border border-slate-200/70 bg-slate-50/70 p-2');
+    expect(detailPanelBody).toContain('shadow-inner shadow-slate-200/50');
     expect(detailPanelBody).toContain('sm:p-3');
     expect(detailSection).toContain('border border-slate-200 bg-white p-3 shadow-sm');
     expect(panel).toContain('shadow-sm shadow-slate-200/50');
@@ -64,7 +65,8 @@ describe('stage three first round UI polish', () => {
       app.indexOf('const SimpleList'),
     );
 
-    expect(listToolbar).toContain('bg-white/90');
+    expect(listToolbar).toContain('bg-white/95');
+    expect(listToolbar).toContain('shadow-sm shadow-slate-200/70');
     expect(listToolbar).toContain('aria-label="使用顶部搜索框筛选当前列表"');
     expect(listToolbar).toContain('aria-label="使用下方状态筛选器筛选当前列表"');
     expect(listToolbar).toContain('border-l-4 border-l-blue-500');

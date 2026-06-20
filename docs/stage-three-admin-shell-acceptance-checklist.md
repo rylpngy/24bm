@@ -168,6 +168,7 @@
 | 共享卡片密度收口 | 通用信息卡和主流程卡片标题、元信息、金额和快捷操作区补齐长文本换行、最小宽度和窄屏抗挤压能力 | `AdminInfoCard`、`WorkflowListCard`、`InlineWorkflowAction`、`scripts/stage-three-first-round-card-density-ui.test.ts` |
 | 共享详情密度收口 | 详情头、分组标题、Key/Value 行和事实网格补齐长文本换行、移动端单列和计数标签抗挤压能力 | `DetailHeroCard`、`DetailSection`、`DetailKeyValueRow`、`InlineFactGrid`、`scripts/stage-three-first-round-detail-density-ui.test.ts` |
 | 共享表单密度收口 | 详情编辑面板和主操作按钮补齐响应式头部、浅底内容区、按钮文本居中和图标抗挤压能力 | `DetailActionPanel`、`PrimaryActionButton`、`scripts/stage-three-first-round-form-density-ui.test.ts` |
+| 工作台页面节奏收口 | 主滚动区 scrollbar-gutter、顶部栏半透明阴影、详情体分段边界和移动摘要卡片按压反馈已补齐，降低长页面滚动时的漂浮感和层级割裂 | `AppHeader`、`DetailPanelBody`、`ResponsiveSummaryCard`、`scripts/stage-three-admin-workbench-rhythm-ui.test.ts` |
 
 第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。
 
@@ -195,3 +196,15 @@
 | 390x844 | 供应商：供应商看板、询价邀请 | 无加载失败、无 argument type mismatch、无浏览器错误日志；documentElement.scrollWidth 等于 clientWidth，供应商移动端模块切换稳定 |
 
 第二次视觉复核结论：共享组件收口后的采购方核心页和供应商询价入口暂未发现阻塞性样式问题。下一步可以继续补 Java 模式回归或进入更深的财务台账、平台/供应商持久化动作。
+
+## 十一、工作台页面节奏收口记录
+
+本轮继续处理“菜单有了但页面细节还粗”的问题，不新增业务接口，只补共享后台壳和共享表面层级：
+
+- 主滚动区增加 `scrollbar-gutter:stable`，降低滚动条出现/消失带来的横向抖动。
+- 后台主体背景从纯白/浅灰块过渡为更稳定的工作台底色，内容区改为移动端更紧凑、桌面端更舒展的内边距节奏。
+- 顶部栏增加半透明白底、浅阴影和 backdrop blur，滚动长页面时工作区标题、搜索和主流程按钮更像固定操作区。
+- 详情体和详情头补分段边界与浅阴影，降低详情信息堆在一起的视觉噪声。
+- 移动摘要卡片增加轻微按压反馈，列表详情入口更有可点击感。
+
+验收依据：`scripts/stage-three-admin-workbench-rhythm-ui.test.ts`。
