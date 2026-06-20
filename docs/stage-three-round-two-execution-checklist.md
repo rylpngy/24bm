@@ -100,6 +100,7 @@
 | 44 | 对账台账表格化 | 采购方应付台账和供应商应收台账已从摘要卡片扩展为桌面表格 + 移动卡片双形态，补齐台账范围、应付/应收金额、差异金额、逾期提醒、状态流转和下一步动作摘要 | `scripts/invoice-reconciliation-ledger-ui.test.ts`、`ReconciliationLedgerPanel` |
 | 45 | 对账差异处理和付款计划提示 | 采购方应付台账和供应商应收台账已补差异处理建议、付款/回款计划、逾期跟进和行级处理提示，能把金额差异、逾期、待处理状态转成下一步处理线索 | `scripts/invoice-reconciliation-ledger-ui.test.ts`、`ReconciliationLedgerPanel` |
 | 46 | 共享组件长文本抗挤压 | 指标卡片、三端模块页头和状态徽标已补 `min-w-0`、长文本换行和去截断处理，降低长编号、长状态、长动作说明导致小屏横向溢出的风险 | `scripts/mobile-layout-overflow-ui.test.ts`、`MetricCard`、`BuyerModuleHeader`、`SupplierModuleHeader`、`PlatformModuleHeader`、`StatusPill` |
+| 47 | 操作面板按钮密度收口 | 详情操作面板内容区已补局部横向滚动，主操作按钮文本已补独立换行容器，降低多按钮、长动作文本在窄屏下撑开整页的风险 | `scripts/stage-three-first-round-form-density-ui.test.ts`、`DetailActionPanel`、`PrimaryActionButton` |
 
 ## 第二批候选任务
 

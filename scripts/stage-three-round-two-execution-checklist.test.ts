@@ -92,6 +92,9 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('共享组件长文本抗挤压');
     expect(checklist).toContain('MetricCard');
     expect(checklist).toContain('StatusPill');
+    expect(checklist).toContain('操作面板按钮密度收口');
+    expect(checklist).toContain('DetailActionPanel');
+    expect(checklist).toContain('PrimaryActionButton');
     expect(checklist).toContain('scripts/invoice-reconciliation-ledger-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');

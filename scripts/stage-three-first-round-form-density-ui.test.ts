@@ -17,10 +17,12 @@ describe('stage three first round form density UI', () => {
     expect(detailActionPanel).toContain('break-words text-xs font-bold leading-5');
     expect(detailActionPanel).toContain('self-start');
     expect(detailActionPanel).toContain('rounded-lg border border-white/70 bg-white/60 p-3');
-    expect(detailActionPanel).toContain('min-w-0 space-y-3');
+    expect(detailActionPanel).toContain('min-w-0 space-y-3 overflow-x-auto');
 
     expect(primaryActionButton).toContain('min-w-0');
     expect(primaryActionButton).toContain('text-center leading-4');
+    expect(primaryActionButton).toContain('max-w-full min-w-0 break-words');
+    expect(primaryActionButton).toContain('{busy && pendingLabel ? pendingLabel : children}');
     expect(primaryActionButton).toContain('disabled:text-white/80');
     expect(primaryActionButton).toContain('Icon && <Icon size={14} className="shrink-0" />');
   });

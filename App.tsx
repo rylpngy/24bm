@@ -8330,7 +8330,7 @@ const DetailActionPanel: React.FC<{
         </div>
         {status && <span className="self-start"><StatusPill label={status} /></span>}
       </div>
-      <div className="min-w-0 space-y-3 rounded-lg border border-white/70 bg-white/60 p-3">
+      <div className="min-w-0 space-y-3 overflow-x-auto rounded-lg border border-white/70 bg-white/60 p-3">
         {children}
       </div>
     </section>
@@ -11271,7 +11271,7 @@ const PrimaryActionButton: React.FC<{
       } ${sizeClasses[size]} ${toneClasses[tone]}`}
     >
       {Icon && <Icon size={14} className="shrink-0" />}
-      {busy && pendingLabel ? pendingLabel : children}
+      <span className="max-w-full min-w-0 break-words">{busy && pendingLabel ? pendingLabel : children}</span>
     </button>
   );
 };
