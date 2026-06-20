@@ -17,6 +17,15 @@ describe('stage three round two Java walkthrough result', () => {
     expect(result).toContain('http://localhost:3000/');
     expect(result).toContain('npm run java:smoke');
     expect(result).toContain('Java local API smoke passed');
+    expect(result).toContain('## 2026-06-20 Java smoke 回归复核');
+    expect(result).toContain('schema public 当前版本 101');
+    expect(result).toContain('Successfully validated 9 migrations');
+    expect(result).toContain('GET /api/v1/health');
+    expect(result).toContain('Loaded 23 purchase demands');
+    expect(result).toContain('Loaded 19 purchase orders, 18 invoices, 50 audit logs');
+    expect(result).toContain('Loaded supplier 晨光科技供应商, 21 RFQs, 20 quotes, 19 orders, 18 invoices');
+    expect(result).toContain('Created demand dem-46fe98c4-eb93-4304-b40a-9ccc6a3673d1');
+    expect(result).toContain('payment status 已付款');
 
     expect(result).toContain('## 第二轮新增能力复核');
     expect(result).toContain('详情面板');

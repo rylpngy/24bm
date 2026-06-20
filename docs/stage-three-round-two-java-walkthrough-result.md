@@ -18,6 +18,28 @@
 - 供应商侧加载晨光科技供应商、6 个 RFQ、5 条报价、4 个订单和 3 张发票。
 - 本轮 smoke 新增一组需求、RFQ、报价、定标、订单、发货、收货、发票和付款记录。
 
+## 2026-06-20 Java smoke 回归复核
+
+本轮在 Java 后端重新启动后完成一次回归复核，后端 Flyway 启动日志显示 `Successfully validated 9 migrations`，`schema public 当前版本 101`。健康检查 `GET /api/v1/health` 通过，返回服务状态 `ok`。
+
+回归命令：`NO_PROXY=localhost,127.0.0.1 npm run java:smoke`
+
+回归结果：`Java local API smoke passed at http://localhost:8080`
+
+本次输出显示：
+
+- 平台侧加载 1 个租户、2 个公共供应商、0 条待审核企业记录。
+- 平台工作台聚合加载 1 个租户和 0 条待审核企业记录。
+- 采购方侧加载 2 个供应商、2 个物料、2 个部门、2 个采购用户。
+- 采购方工作台聚合加载 2 个供应商和 50 条审计日志。
+- 采购方列表加载 `Loaded 23 purchase demands`。
+- 采购方履约数据加载 `Loaded 19 purchase orders, 18 invoices, 50 audit logs`。
+- 供应商侧加载 `Loaded supplier 晨光科技供应商, 21 RFQs, 20 quotes, 19 orders, 18 invoices`。
+- 供应商工作台聚合加载 21 个商机和 19 个订单。
+- 主流程新建记录：`Created demand dem-46fe98c4-eb93-4304-b40a-9ccc6a3673d1, RFQ rfq-96870261-8e3e-49ae-a44a-8f8573d78bf8, quote quote-a980ec94-98ec-4b07-8752-0a2ce9dae24d, approved award award-e5290b69-6170-4017-ae97-1a10a79fdf98, order po-30e02106-495a-417c-8de9-2591ac4cfe64, confirmed status 待发货`。
+- 后续履约记录：`Created delivery delivery-487e0fe5-7a79-448c-bc31-d98a540f6947, receipt receipt-f5799627-d428-4d59-bce7-41ea0aa794ba`。
+- 发票付款记录：`Created invoice invoice-25900914-3acd-4865-b2db-f5d252cabcbb, payment status 已付款`。
+
 ## 第二轮新增能力复核
 
 | 能力 | Java 模式复核结论 | 说明 |

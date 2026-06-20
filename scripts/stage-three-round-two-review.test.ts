@@ -21,7 +21,7 @@ describe('stage three round two review', () => {
     expect(review).toContain('| 平台运营端 |');
     expect(review).toContain('| 供应商协同端 |');
     expect(review).toContain('| 通用后台能力 |');
-    expect(review).toContain('50 个小步增量');
+    expect(review).toContain('51 个小步增量');
 
     expect(review).toContain('## 仍未收口的缺口');
     expect(review).toContain('Java 模式逐页联调');
@@ -57,6 +57,8 @@ describe('stage three round two review', () => {
     expect(review).toContain('共享表格滚动可读性收口已完成');
     expect(review).toContain('共享空态稳定区域收口已完成');
     expect(review).toContain('mock 浏览器视觉复核记录已完成');
+    expect(review).toContain('Java smoke 回归复核记录已完成');
+    expect(review).toContain('Created demand dem-46fe98c4-eb93-4304-b40a-9ccc6a3673d1');
     expect(review).toContain('采购方首页、需求、RFQ、订单、发票和供应商询价邀请');
     expect(review).toContain('P1：平台和供应商持久化边界补强');
     expect(review).toContain('P2：视觉 QA 和移动端收口');
