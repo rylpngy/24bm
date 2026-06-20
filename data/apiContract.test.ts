@@ -48,6 +48,7 @@ describe('procurement SaaS API contract draft', () => {
       'POST /buyer/users/{userId}/status',
       'GET /buyer/demands',
       'POST /buyer/demands',
+      'PUT /buyer/demands/{demandId}',
       'POST /buyer/demands/{demandId}/submit',
       'POST /buyer/demands/{demandId}/approval',
       'GET /buyer/approvals/pending',
@@ -160,6 +161,9 @@ describe('procurement SaaS API contract draft', () => {
         expect.objectContaining({ name: 'keyword', in: 'query', required: false }),
       ]),
     );
+    expect(openApi.paths['/buyer/demands/{demandId}'].put.parameters).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'demandId', in: 'path', required: true })]),
+    );
     expect(openApi.paths['/buyer/audit-logs'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/attachments'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/notifications'].get.tags).toContain('buyer');
@@ -264,6 +268,7 @@ describe('procurement SaaS API contract draft', () => {
     expect(json).toContain('"openapi": "3.1.0"');
     expect(json).toContain('"GET /dictionaries"');
     expect(json).toContain('"POST /buyer/demands"');
+    expect(json).toContain('"PUT /buyer/demands/{demandId}"');
     expect(json).toContain('"GET /buyer/approvals/pending"');
     expect(json).toContain('"GET /buyer/approvals/recent"');
     expect(json).toContain('"GET /buyer/audit-logs"');

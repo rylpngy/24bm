@@ -96,9 +96,10 @@ import {
   loadJavaSupplierWorkspaceData,
   mockApiClient,
   resolveAppRuntimeDataSource,
-  runJavaMvpWorkflow,
-  type CreateDemandPayload,
-  type PlatformWorkspaceData,
+   runJavaMvpWorkflow,
+   type CreateDemandPayload,
+   type UpdateDemandPayload,
+   type PlatformWorkspaceData,
   type JavaPlatformAnnouncementDto,
   type JavaApprovalTaskDto,
   type JavaApprovalTemplateDto,
@@ -249,6 +250,7 @@ const App: React.FC = () => {
   const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
   const [demandCreateBusy, setDemandCreateBusy] = useState(false);
   const [demandSubmitBusyId, setDemandSubmitBusyId] = useState<string | null>(null);
+  const [demandUpdateBusyId, setDemandUpdateBusyId] = useState<string | null>(null);
   const [supplierAdmissionBusyId, setSupplierAdmissionBusyId] = useState<string | null>(null);
   const [supplierActionBusyId, setSupplierActionBusyId] = useState<string | null>(null);
   const [rfqCreateBusy, setRfqCreateBusy] = useState<string | null>(null);
@@ -577,6 +579,21 @@ const App: React.FC = () => {
     }
   };
 
+  const updateBuyerDemandDetail = async (demandId: string, payload: UpdateDemandPayload) => {
+    if (!javaApiClient || !buyerData) return;
+    setDemandUpdateBusyId(demandId);
+    setWorkflowStatus(null);
+    try {
+      const demand = await javaApiClient.updateBuyerDemand(demandId, payload);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`采购需求已保存并刷新后回显：${demand.title}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '采购需求保存失败');
+    } finally {
+      setDemandUpdateBusyId(null);
+    }
+  };
+
   const refreshAfterSupplierAction = async () => {
     if (!supplierData) return;
     const [nextSupplierData, nextBuyerData] = await Promise.all([
@@ -853,6 +870,7 @@ const App: React.FC = () => {
                 approvalBusyId={approvalBusyId}
                 demandCreateBusy={demandCreateBusy}
                 demandSubmitBusyId={demandSubmitBusyId}
+                demandUpdateBusyId={demandUpdateBusyId}
                 supplierAdmissionBusyId={supplierAdmissionBusyId}
                 rfqCreateBusy={rfqCreateBusy}
                 awardSubmitBusyId={awardSubmitBusyId}
@@ -862,6 +880,7 @@ const App: React.FC = () => {
                 workflowStatus={workflowStatus}
                 onCreateDemand={createBuyerDemand}
                 onSubmitDemand={submitBuyerDemandApproval}
+                onUpdateDemand={updateBuyerDemandDetail}
                 onReviewApproval={reviewApprovalTask}
                 onSubmitSupplierAdmission={submitSupplierAdmission}
                 onCreateRfqFromDemand={createBuyerRfqFromDemand}
@@ -2789,6 +2808,7 @@ const BuyerWorkspaceView: React.FC<{
   approvalBusyId: string | null;
   demandCreateBusy: boolean;
   demandSubmitBusyId: string | null;
+  demandUpdateBusyId: string | null;
   supplierAdmissionBusyId: string | null;
   rfqCreateBusy: string | null;
   awardSubmitBusyId: string | null;
@@ -2798,6 +2818,7 @@ const BuyerWorkspaceView: React.FC<{
   workflowStatus: string | null;
   onCreateDemand: (payload: CreateDemandPayload, submitForApproval: boolean) => void;
   onSubmitDemand: (demandId: string) => void;
+  onUpdateDemand: (demandId: string, payload: UpdateDemandPayload) => void;
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean, draft: BuyerApprovalReviewDraft) => void;
   onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
   onCreateRfqFromDemand: (demandId: string, supplierIds?: string[], deadline?: string) => void;
@@ -2823,6 +2844,7 @@ const BuyerWorkspaceView: React.FC<{
   approvalBusyId,
   demandCreateBusy,
   demandSubmitBusyId,
+  demandUpdateBusyId,
   supplierAdmissionBusyId,
   rfqCreateBusy,
   awardSubmitBusyId,
@@ -2832,6 +2854,7 @@ const BuyerWorkspaceView: React.FC<{
   workflowStatus,
   onCreateDemand,
   onSubmitDemand,
+  onUpdateDemand,
   onReviewApproval,
   onSubmitSupplierAdmission,
   onCreateRfqFromDemand,
@@ -3436,8 +3459,10 @@ const BuyerWorkspaceView: React.FC<{
         javaEnabled={javaEnabled}
         linkedDemandIds={linkedDemandIds}
         demandSubmitBusyId={demandSubmitBusyId}
+        demandUpdateBusyId={demandUpdateBusyId}
         rfqCreateBusy={rfqCreateBusy}
         onSubmitDemand={onSubmitDemand}
+        onUpdateDemand={onUpdateDemand}
         onCreateRfqFromDemand={onCreateRfqFromDemand}
       />
       </>
@@ -4265,8 +4290,10 @@ const DemandDetailPanelView: React.FC<{
   javaEnabled: boolean;
   linkedDemandIds: Set<string>;
   demandSubmitBusyId: string | null;
+  demandUpdateBusyId: string | null;
   rfqCreateBusy: string | null;
   onSubmitDemand: (demandId: string) => void;
+  onUpdateDemand: (demandId: string, payload: UpdateDemandPayload) => void;
   onCreateRfqFromDemand: (demandId: string, supplierIds: string[], deadline: string) => void;
 }> = ({
   detail,
@@ -4275,26 +4302,69 @@ const DemandDetailPanelView: React.FC<{
   javaEnabled,
   linkedDemandIds,
   demandSubmitBusyId,
+  demandUpdateBusyId,
   rfqCreateBusy,
   onSubmitDemand,
+  onUpdateDemand,
   onCreateRfqFromDemand,
-}) => (
-  <Panel title="需求详情" icon={FileText}>
-    {!detail ? (
-      <EmptyState title="暂无需求详情" desc="选择一条采购需求后，可查看物料明细、关联询价和审批上下文。" />
-    ) : (
-      <DetailPanelBody>
-        <DetailHeroCard
-          eyebrow="采购需求"
-          title={detail.title}
-          meta={detail.id}
-          status={detail.status}
-          facts={detail.facts}
-          summaryFacts={[
-            { label: '审批状态', value: detail.approvalLabel },
-            { label: '下一步', value: detail.nextActionTitle },
-          ]}
-        />
+}) => {
+  const [editableDemandTitle, setEditableDemandTitle] = useState(demand?.title ?? '');
+  const [editableDemandDepartment, setEditableDemandDepartment] = useState(demand?.department ?? '');
+  const [editableDemandBudget, setEditableDemandBudget] = useState(demand?.budget ?? 0);
+  const [editableDemandLineItems, setEditableDemandLineItems] = useState(
+    demand?.lineItems.length ? demand.lineItems : [{ materialId: workspace.materials[0]?.id ?? '', quantity: 1 }],
+  );
+
+  useEffect(() => {
+    setEditableDemandTitle(demand?.title ?? '');
+    setEditableDemandDepartment(demand?.department ?? '');
+    setEditableDemandBudget(demand?.budget ?? 0);
+    setEditableDemandLineItems(
+      demand?.lineItems.length ? demand.lineItems : [{ materialId: workspace.materials[0]?.id ?? '', quantity: 1 }],
+    );
+  }, [demand?.id, demand?.title, demand?.department, demand?.budget, demand?.lineItems, workspace.materials]);
+
+  const updateEditableDemandLineItem = (index: number, nextLineItem: Partial<(typeof editableDemandLineItems)[number]>) => {
+    setEditableDemandLineItems((current) => current.map((lineItem, currentIndex) =>
+      currentIndex === index ? { ...lineItem, ...nextLineItem } : lineItem,
+    ));
+  };
+
+  const addEditableDemandLineItem = () => {
+    setEditableDemandLineItems((current) => [...current, { materialId: workspace.materials[0]?.id ?? '', quantity: 1 }]);
+  };
+
+  const removeEditableDemandLineItem = (index: number) => {
+    setEditableDemandLineItems((current) => current.length === 1
+      ? current
+      : current.filter((_, currentIndex) => currentIndex !== index));
+  };
+
+  const validEditableLineItems = editableDemandLineItems
+    .filter((lineItem) => lineItem.materialId && lineItem.quantity > 0)
+    .map((lineItem) => ({ materialId: lineItem.materialId, quantity: Number(lineItem.quantity) }));
+  const editableDemandInvalid = !editableDemandTitle.trim()
+    || !editableDemandDepartment
+    || editableDemandBudget <= 0
+    || validEditableLineItems.length === 0;
+
+  return (
+    <Panel title="需求详情" icon={FileText}>
+      {!detail ? (
+        <EmptyState title="暂无需求详情" desc="选择一条采购需求后，可查看物料明细、关联询价和审批上下文。" />
+      ) : (
+        <DetailPanelBody>
+          <DetailHeroCard
+            eyebrow="采购需求"
+            title={detail.title}
+            meta={detail.id}
+            status={detail.status}
+            facts={detail.facts}
+            summaryFacts={[
+              { label: '审批状态', value: detail.approvalLabel },
+              { label: '下一步', value: detail.nextActionTitle },
+            ]}
+          />
 
         <DetailSection title="物料明细" countLabel={`${detail.lineItems.length} 行`}>
           <div className="space-y-2">
@@ -4312,6 +4382,120 @@ const DemandDetailPanelView: React.FC<{
                 <p className="mt-2 text-xs font-bold text-slate-500">数量 {item.quantityLabel}</p>
               </div>
             ))}
+          </div>
+        </DetailSection>
+
+        <DetailSection title="需求编辑">
+          <div className="space-y-3">
+            <p className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-700">
+              只能编辑草稿需求。保存后会重新刷新 Java 工作台数据，验证刷新后回显。
+            </p>
+            <label className="block text-xs font-black text-slate-500" htmlFor={`edit-demand-title-${detail.id}`}>
+              需求标题
+            </label>
+            <input
+              id={`edit-demand-title-${detail.id}`}
+              value={editableDemandTitle}
+              onChange={(event) => setEditableDemandTitle(event.target.value)}
+              disabled={!javaEnabled || demand?.status !== '草稿'}
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-black text-slate-500" htmlFor={`edit-demand-department-${detail.id}`}>
+                  申请部门
+                </label>
+                <select
+                  id={`edit-demand-department-${detail.id}`}
+                  value={editableDemandDepartment}
+                  onChange={(event) => setEditableDemandDepartment(event.target.value)}
+                  disabled={!javaEnabled || demand?.status !== '草稿'}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  {workspace.departments.map((department) => (
+                    <option key={department.id} value={department.id}>{department.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-black text-slate-500" htmlFor={`edit-demand-budget-${detail.id}`}>
+                  预算金额
+                </label>
+                <input
+                  id={`edit-demand-budget-${detail.id}`}
+                  type="number"
+                  min={1}
+                  value={editableDemandBudget}
+                  onChange={(event) => setEditableDemandBudget(Number(event.target.value))}
+                  disabled={!javaEnabled || demand?.status !== '草稿'}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-black text-slate-500">物料行</p>
+                <button
+                  type="button"
+                  onClick={addEditableDemandLineItem}
+                  disabled={!javaEnabled || demand?.status !== '草稿'}
+                  className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-black text-blue-700 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  增加物料
+                </button>
+              </div>
+              {editableDemandLineItems.map((lineItem, index) => (
+                <div key={`${lineItem.materialId}:${index}`} className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_90px_64px]">
+                  <select
+                    value={lineItem.materialId}
+                    onChange={(event) => updateEditableDemandLineItem(index, { materialId: event.target.value })}
+                    disabled={!javaEnabled || demand?.status !== '草稿'}
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700 disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    {workspace.materials.map((material) => (
+                      <option key={material.id} value={material.id}>{material.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={1}
+                    value={lineItem.quantity}
+                    onChange={(event) => updateEditableDemandLineItem(index, { quantity: Number(event.target.value) })}
+                    disabled={!javaEnabled || demand?.status !== '草稿'}
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700 disabled:bg-slate-100 disabled:text-slate-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeEditableDemandLineItem(index)}
+                    disabled={!javaEnabled || demand?.status !== '草稿' || editableDemandLineItems.length === 1}
+                    className="h-9 rounded-lg border border-red-100 bg-red-50 px-2 text-xs font-black text-red-700 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    删除
+                  </button>
+                </div>
+              ))}
+            </div>
+            {editableDemandInvalid && (
+              <p aria-live="polite" className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                请填写标题、部门、预算和至少一行有效物料后再保存需求修改。
+              </p>
+            )}
+            <PrimaryActionButton
+              onClick={() => demand && onUpdateDemand(demand.id, {
+                title: editableDemandTitle.trim(),
+                department: editableDemandDepartment,
+                requester: demand.requester,
+                budget: editableDemandBudget,
+                lineItems: validEditableLineItems,
+              })}
+              disabled={!javaEnabled || demand?.status !== '草稿' || !demand || editableDemandInvalid || demandUpdateBusyId === demand?.id}
+              busy={demandUpdateBusyId === demand?.id}
+              icon={FileText}
+              pendingLabel="保存中"
+              fullWidth
+            >
+              保存需求修改
+            </PrimaryActionButton>
           </div>
         </DetailSection>
 
@@ -4394,7 +4578,8 @@ const DemandDetailPanelView: React.FC<{
       </DetailPanelBody>
     )}
   </Panel>
-);
+  );
+};
 
 const DemandDetailOperationPanel: React.FC<{
   detail: DemandDetailPanel;

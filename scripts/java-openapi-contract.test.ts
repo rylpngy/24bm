@@ -37,7 +37,7 @@ const extractJavaControllerRoutes = (): JavaRoute[] => {
     const source = read(file.replace(`${root}/`, ''));
     const basePath = annotationPath(source.match(/@RequestMapping\(([^)]*)\)/)?.[1]);
     const routes: JavaRoute[] = [];
-    const mappingPattern = /@(GetMapping|PostMapping|PatchMapping|DeleteMapping)(?:\(([^)]*)\))?/g;
+    const mappingPattern = /@(GetMapping|PostMapping|PutMapping|PatchMapping|DeleteMapping)(?:\(([^)]*)\))?/g;
     let match: RegExpExecArray | null;
 
     while ((match = mappingPattern.exec(source))) {
@@ -78,7 +78,7 @@ const extractJavaAdapterRoutes = (): JavaRoute[] => {
     const callEnd = javaAdapterSource.indexOf(');', routePattern.lastIndex);
     const callOptions = javaAdapterSource.slice(routePattern.lastIndex, callEnd >= 0 ? callEnd : routePattern.lastIndex + 320);
     routes.push({
-      method: /method:\s*'POST'/.test(callOptions) ? 'POST' : 'GET',
+      method: callOptions.match(/method:\s*'(GET|POST|PUT|PATCH|DELETE)'/)?.[1] ?? 'GET',
       path: match[3]
         .replace(/\$\{[^}]+\}/g, (placeholder) => `{${placeholder.slice(2, -1).split('.').pop()}}`)
         .replace(/\{demandId\}/g, '{demandId}')

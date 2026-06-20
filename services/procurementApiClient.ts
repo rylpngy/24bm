@@ -49,6 +49,14 @@ export interface CreateDemandPayload {
   lineItems: PurchaseDemand['lineItems'];
 }
 
+export interface UpdateDemandPayload {
+  title: string;
+  department: string;
+  requester?: string;
+  budget: number;
+  lineItems: PurchaseDemand['lineItems'];
+}
+
 export interface CreateRfqPayload {
   title: string;
   demandIds: string[];
@@ -539,6 +547,7 @@ export interface JavaProcurementApiClient {
   changeBuyerUserStatus(userId: string, status: 'active' | 'inactive'): Promise<BuyerUserDto>;
   listBuyerDemands(): Promise<PurchaseDemand[]>;
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
+  updateBuyerDemand(demandId: string, payload: UpdateDemandPayload): Promise<PurchaseDemand>;
   submitBuyerDemand(demandId: string): Promise<JavaApprovalTaskDto>;
   listBuyerPendingApprovals(): Promise<JavaApprovalTaskDto[]>;
   listBuyerRecentApprovals(): Promise<JavaApprovalTaskDto[]>;
@@ -1026,6 +1035,19 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     async createBuyerDemand(payload: CreateDemandPayload) {
       const demand = await buyerRequest<JavaPurchaseDemandDto>('/api/v1/buyer/demands', {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          title: payload.title,
+          departmentId: payload.department,
+          budget: payload.budget,
+          lineItems: payload.lineItems,
+        }),
+      });
+      return toPurchaseDemand(demand);
+    },
+    async updateBuyerDemand(demandId: string, payload: UpdateDemandPayload) {
+      const demand = await buyerRequest<JavaPurchaseDemandDto>(`/api/v1/buyer/demands/${demandId}`, {
+        method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           title: payload.title,

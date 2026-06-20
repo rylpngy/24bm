@@ -392,6 +392,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'PurchaseDemand',
   },
   {
+    method: 'PUT',
+    path: '/buyer/demands/{demandId}',
+    audience: 'buyer',
+    action: '更新草稿采购需求',
+    requestSchema: 'UpdatePurchaseDemandRequest',
+    responseSchema: 'PurchaseDemand',
+  },
+  {
     method: 'POST',
     path: '/buyer/demands/{demandId}/submit',
     audience: 'buyer',
@@ -1020,6 +1028,7 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'PurchaseDemandListRequest',
           'PurchaseDemandList',
           'CreatePurchaseDemandRequest',
+          'UpdatePurchaseDemandRequest',
           'PurchaseDemand',
           'SubmitApprovalRequest',
           'ApprovalTask',

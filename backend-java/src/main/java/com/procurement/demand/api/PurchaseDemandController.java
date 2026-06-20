@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,6 +39,13 @@ public class PurchaseDemandController {
   @ResponseStatus(HttpStatus.CREATED)
   public ApiResponse<PurchaseDemandResponse> create(@Valid @RequestBody CreatePurchaseDemandRequest request) {
     return ApiResponse.ok(purchaseDemandApplicationService.create(request));
+  }
+
+  @PutMapping("/{demandId}")
+  public ApiResponse<PurchaseDemandResponse> update(
+      @PathVariable String demandId,
+      @Valid @RequestBody UpdatePurchaseDemandRequest request) {
+    return ApiResponse.ok(purchaseDemandApplicationService.update(demandId, request));
   }
 
   @PostMapping("/{demandId}/submit")

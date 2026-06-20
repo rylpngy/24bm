@@ -1113,6 +1113,34 @@ describe('procurement API clients', () => {
           message: '',
         }, { status: 201 });
       }
+      if (input === 'http://java.test/api/v1/buyer/demands/dem-java-new' && init?.method === 'PUT') {
+        expect(init.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init.body))).toEqual({
+          title: '更新 Java 需求',
+          departmentId: 'dept-it',
+          budget: 88000,
+          lineItems: [{ materialId: 'mat-laptop', quantity: 4 }],
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'dem-java-new',
+            tenantId: 'tenant-acme',
+            title: '更新 Java 需求',
+            departmentId: 'dept-it',
+            requesterId: 'user-buyer-owner',
+            budget: 88000,
+            status: '草稿',
+            createdAt: '2026-06-15T11:00:00+08:00',
+            updatedAt: '2026-06-15T11:30:00+08:00',
+            lineItems: [{ id: 'item-updated', materialId: 'mat-laptop', quantity: 4 }],
+          },
+          message: '',
+        });
+      }
       if (input === 'http://java.test/api/v1/buyer/approvals/pending') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
         return Response.json({
@@ -1227,6 +1255,13 @@ describe('procurement API clients', () => {
       lineItems: [{ materialId: 'mat-laptop', quantity: 3 }],
     });
     const approval = await client.submitBuyerDemand(created.id);
+    const updated = await client.updateBuyerDemand(created.id, {
+      title: '更新 Java 需求',
+      department: 'dept-it',
+      requester: '页面不会提交 requester',
+      budget: 88000,
+      lineItems: [{ materialId: 'mat-laptop', quantity: 4 }],
+    });
     const pendingApprovals = await client.listBuyerPendingApprovals();
     const recentApprovals = await client.listBuyerRecentApprovals();
     const approvalTemplates = await client.listBuyerApprovalTemplates();
@@ -1246,6 +1281,13 @@ describe('procurement API clients', () => {
       lineItems: [{ materialId: 'mat-laptop', quantity: 2 }],
     });
     expect(created.department).toBe('dept-admin');
+    expect(updated).toMatchObject({
+      id: 'dem-java-new',
+      title: '更新 Java 需求',
+      department: 'dept-it',
+      budget: 88000,
+      lineItems: [{ materialId: 'mat-laptop', quantity: 4 }],
+    });
     expect(approval.bizId).toBe('dem-java-new');
     expect(pendingApprovals[0]).toMatchObject({
       id: 'approval-001',
