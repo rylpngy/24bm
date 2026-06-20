@@ -10083,9 +10083,37 @@ const ReconciliationLedgerPanel: React.FC<{
   const filteredInvoices = invoices.filter((invoice) => (
     statusFilter === '全部状态' || (invoice.reconciliationStatus ?? '待同步') === statusFilter
   ));
+  const invoiceTotal = filteredInvoices.reduce((sum, invoice) => sum + invoice.amount, 0);
   const varianceTotal = filteredInvoices.reduce((sum, invoice) => sum + Math.abs(invoice.varianceAmount ?? 0), 0);
   const pendingCount = filteredInvoices.filter((invoice) => (invoice.reconciliationStatus ?? '待同步') !== '三单一致').length;
+  const overdueCount = filteredInvoices.filter((invoice) => invoice.overdue).length;
+  const nextActionSummary = pendingCount > 0
+    ? (scope === 'buyer' ? '优先处理付款和差异' : '优先跟进回款和差异')
+    : '归档对账';
   const roleLabel = scope === 'buyer' ? '应付' : '应收';
+  const ledgerMobileCards = (
+    <div className="grid gap-3">
+      {filteredInvoices.map((invoice) => (
+        <ResponsiveSummaryCard
+          key={invoice.id}
+          ariaLabel={`${invoice.reconciliationNo ?? `REC-${invoice.id}`} 对账单摘要`}
+          title={invoice.reconciliationNo ?? `REC-${invoice.id}`}
+          meta={`对账单编号 ${invoice.reconciliationNo ?? `REC-${invoice.id}`} · 订单 ${invoice.orderId} · 发票 ${invoice.id}`}
+          status={invoice.reconciliationStatus ?? '待同步'}
+          facts={[
+            { label: '订单金额', value: invoice.orderAmount == null ? '待同步' : currency(invoice.orderAmount) },
+            { label: '发票金额', value: currency(invoice.amount) },
+            { label: '差异金额', value: invoice.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount) },
+            { label: '收货状态', value: invoice.receiptStatus ?? '待同步' },
+            { label: '付款状态', value: invoice.paymentStatus },
+            { label: '状态流转', value: invoice.reconciliationStage ?? '待同步' },
+            { label: '下一步动作', value: invoice.nextReconciliationAction ?? '同步订单' },
+            { label: '逾期提醒', value: invoice.overdue ? `逾期 ${invoice.overdueDays ?? 0} 天` : (invoice.dueDate ?? '未逾期') },
+          ]}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
@@ -10096,9 +10124,18 @@ const ReconciliationLedgerPanel: React.FC<{
             {roleLabel}对账单台账 · {filteredInvoices.length} 张发票 · 待处理 {pendingCount} 张
           </p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 md:w-[360px]">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 xl:w-[640px]">
+          <MiniFact label={`${roleLabel}金额`} value={currency(invoiceTotal)} />
           <MiniFact label="差异金额" value={currency(varianceTotal)} />
+          <MiniFact label="逾期提醒" value={overdueCount > 0 ? `${overdueCount} 张逾期` : '无逾期'} />
           <MiniFact label="对账状态" value={pendingCount > 0 ? '待处理' : '三单一致'} />
+        </div>
+      </div>
+      <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+        <div className="grid gap-2 sm:grid-cols-3">
+          <MiniFact label="台账范围" value={`${filteredInvoices.length} / ${invoices.length} 张`} />
+          <MiniFact label="下一步动作" value={nextActionSummary} />
+          <MiniFact label="当前筛选" value={statusFilter} />
         </div>
       </div>
 
@@ -10114,25 +10151,58 @@ const ReconciliationLedgerPanel: React.FC<{
       {filteredInvoices.length === 0 ? (
         <EmptyState title="暂无对账单台账" desc="切换筛选条件，或在发票登记后查看订单、收货、发票的对账状态。" />
       ) : (
-        <div className="mt-3 space-y-2">
-          {filteredInvoices.map((invoice) => (
-            <ResponsiveSummaryCard
-              key={invoice.id}
-              ariaLabel={`${invoice.reconciliationNo ?? `REC-${invoice.id}`} 对账单摘要`}
-              title={invoice.reconciliationNo ?? `REC-${invoice.id}`}
-              meta={`对账单编号 ${invoice.reconciliationNo ?? `REC-${invoice.id}`} · 订单 ${invoice.orderId} · 发票 ${invoice.id}`}
-              status={invoice.reconciliationStatus ?? '待同步'}
-              facts={[
-                { label: '订单金额', value: invoice.orderAmount == null ? '待同步' : currency(invoice.orderAmount) },
-                { label: '发票金额', value: currency(invoice.amount) },
-                { label: '差异金额', value: invoice.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount) },
-                { label: '收货状态', value: invoice.receiptStatus ?? '待同步' },
-                { label: '付款状态', value: invoice.paymentStatus },
-                { label: '状态流转', value: invoice.reconciliationStage ?? '待同步' },
-                { label: '下一步动作', value: invoice.nextReconciliationAction ?? '同步订单' },
-              ]}
-            />
-          ))}
+        <div className="mt-3">
+          <ResponsiveTableFrame mobileCards={ledgerMobileCards}>
+            <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-3 py-2">对账单</th>
+                  <th className="px-3 py-2">订单 / 发票</th>
+                  <th className="px-3 py-2 text-right">订单金额</th>
+                  <th className="px-3 py-2 text-right">发票金额</th>
+                  <th className="px-3 py-2 text-right">差异</th>
+                  <th className="px-3 py-2">收货 / 付款</th>
+                  <th className="px-3 py-2">状态流转</th>
+                  <th className="px-3 py-2">下一步</th>
+                  <th className="px-3 py-2">逾期提醒</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {filteredInvoices.map((invoice) => (
+                  <tr key={invoice.id} className="align-top hover:bg-slate-50">
+                    <td className="px-3 py-3">
+                      <p className="font-black text-slate-950">{invoice.reconciliationNo ?? `REC-${invoice.id}`}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">{roleLabel}对账单</p>
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="font-mono text-xs font-black text-slate-800">{invoice.orderId}</p>
+                      <p className="mt-1 font-mono text-xs font-bold text-slate-500">{invoice.id}</p>
+                    </td>
+                    <td className="px-3 py-3 text-right font-mono font-black text-slate-900">
+                      {invoice.orderAmount == null ? '待同步' : currency(invoice.orderAmount)}
+                    </td>
+                    <td className="px-3 py-3 text-right font-mono font-black text-slate-900">{currency(invoice.amount)}</td>
+                    <td className="px-3 py-3 text-right font-mono font-black text-slate-900">
+                      {invoice.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount)}
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="text-xs font-black text-slate-700">{invoice.receiptStatus ?? '待同步'}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">{invoice.paymentStatus}</p>
+                    </td>
+                    <td className="px-3 py-3">
+                      <StatusPill label={invoice.reconciliationStage ?? invoice.reconciliationStatus ?? '待同步'} />
+                    </td>
+                    <td className="px-3 py-3 text-xs font-bold leading-5 text-slate-600">
+                      {invoice.nextReconciliationAction ?? '同步订单'}
+                    </td>
+                    <td className="px-3 py-3 text-xs font-bold leading-5 text-slate-600">
+                      {invoice.overdue ? `逾期 ${invoice.overdueDays ?? 0} 天` : (invoice.dueDate ?? '未逾期')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ResponsiveTableFrame>
         </div>
       )}
     </section>

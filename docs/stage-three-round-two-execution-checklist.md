@@ -97,6 +97,7 @@
 | 41 | 独立对账单落库 | Java 后端已新增 `invoice_reconciliations` 表，供应商创建发票时写入初始对账单，采购方更新付款状态时同步对账阶段和下一步动作，并对历史发票做迁移回填 | `V101__invoice_reconciliations.sql`、`InvoiceReconciliationMapper`、`FinancePaymentStateTransitionTests` |
 | 42 | 独立对账单查询 API | Java 后端已新增 `GET /api/v1/buyer/invoice-reconciliations`，支持按阶段、供应商和订单筛选独立对账单台账；前端 Java master data 会拉取该接口并合并回发票付款/对账单台账展示 | `BuyerInvoiceReconciliationController`、`InvoiceReconciliationMapper`、`services/procurementApiClient.test.ts`、`HttpSecurityContractTests` |
 | 43 | 供应商独立应收对账查询 API | Java 后端已新增 `GET /api/v1/supplier/invoice-reconciliations`，支持按阶段和订单筛选当前供应商的独立应收对账单台账；前端 Java supplier workspace 会拉取该接口并合并回发票应收/对账单台账展示 | `SupplierInvoiceReconciliationController`、`InvoiceReconciliationMapper`、`services/procurementApiClient.test.ts`、`HttpSecurityContractTests` |
+| 44 | 对账台账表格化 | 采购方应付台账和供应商应收台账已从摘要卡片扩展为桌面表格 + 移动卡片双形态，补齐台账范围、应付/应收金额、差异金额、逾期提醒、状态流转和下一步动作摘要 | `scripts/invoice-reconciliation-ledger-ui.test.ts`、`ReconciliationLedgerPanel` |
 
 ## 第二批候选任务
 

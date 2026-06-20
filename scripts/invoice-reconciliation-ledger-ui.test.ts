@@ -43,4 +43,28 @@ describe('invoice reconciliation ledger UI', () => {
     expect(supplierInvoicesModule).toContain('invoices={workspace.invoices}');
     expect(supplierInvoicesModule).toContain('scope="supplier"');
   });
+
+  it('upgrades reconciliation ledger into a finance-style table with mobile cards', () => {
+    const app = read('App.tsx');
+    const ledgerPanel = app.slice(
+      app.indexOf('const ReconciliationLedgerPanel'),
+      app.indexOf('const SupplierInvoiceReceivableCard'),
+    );
+
+    expect(ledgerPanel).toContain('invoiceTotal');
+    expect(ledgerPanel).toContain('overdueCount');
+    expect(ledgerPanel).toContain('nextActionSummary');
+    expect(ledgerPanel).toContain('<ResponsiveTableFrame');
+    expect(ledgerPanel).toContain('mobileCards={');
+    expect(ledgerPanel).toContain('<table className="min-w-full divide-y divide-slate-200 text-left text-sm">');
+    expect(ledgerPanel).toContain('<th className="px-3 py-2">对账单</th>');
+    expect(ledgerPanel).toContain('<th className="px-3 py-2">订单 / 发票</th>');
+    expect(ledgerPanel).toContain('<th className="px-3 py-2 text-right">订单金额</th>');
+    expect(ledgerPanel).toContain('<th className="px-3 py-2 text-right">发票金额</th>');
+    expect(ledgerPanel).toContain('<th className="px-3 py-2 text-right">差异</th>');
+    expect(ledgerPanel).toContain('<th className="px-3 py-2">状态流转</th>');
+    expect(ledgerPanel).toContain('<th className="px-3 py-2">下一步</th>');
+    expect(ledgerPanel).toContain('逾期提醒');
+    expect(ledgerPanel).toContain('invoice.dueDate');
+  });
 });

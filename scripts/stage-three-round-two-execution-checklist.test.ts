@@ -86,6 +86,8 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('GET /api/v1/buyer/invoice-reconciliations');
     expect(checklist).toContain('供应商独立应收对账查询 API');
     expect(checklist).toContain('GET /api/v1/supplier/invoice-reconciliations');
+    expect(checklist).toContain('对账台账表格化');
+    expect(checklist).toContain('scripts/invoice-reconciliation-ledger-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-award-order-action-forms-ui.test.ts');
