@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   CreditCard,
   Database,
+  Eye,
   FileText,
   Layers3,
   LayoutDashboard,
@@ -8279,7 +8280,7 @@ const MiniFact: React.FC<{
   label: string;
   value: string;
 }> = ({ label, value }) => (
-  <div className="min-w-0 rounded-lg bg-slate-50 px-3 py-2">
+  <div className="min-w-0 rounded-lg border border-slate-100 bg-white/80 px-3 py-2">
     <p className="text-[11px] font-black text-slate-400">{label}</p>
     <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">{value}</p>
   </div>
@@ -8324,9 +8325,9 @@ const ModuleSummaryStrip: React.FC<{
 const InlineFactGrid: React.FC<{
   facts: BuyerModuleFact[];
 }> = ({ facts }) => (
-  <div className="mt-3 grid gap-2 md:grid-cols-2">
+  <div className="mt-3 grid grid-cols-2 xl:grid-cols-4 md:grid-cols-2 gap-2">
     {facts.map((fact) => (
-      <div key={`${fact.label}:${fact.value}`} className="rounded-lg bg-white/70 px-3 py-2">
+      <div key={`${fact.label}:${fact.value}`} className="min-w-0 rounded-md border border-slate-100 bg-white/80 px-3 py-2">
         <p className="text-[11px] font-black text-slate-400">{fact.label}</p>
         <p className="mt-1 break-words text-xs font-bold text-slate-700">{fact.value}</p>
       </div>
@@ -9878,22 +9879,22 @@ const HeroBand: React.FC<{
   title: string;
   desc: string;
 }> = ({ eyebrow, title, desc }) => (
-  <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-    <div className="grid gap-4 p-5 lg:grid-cols-[1fr_280px] lg:items-center">
-      <div>
-        <p className="text-xs font-black uppercase tracking-widest text-blue-600">{eyebrow}</p>
-        <h2 className="mt-2 max-w-3xl text-xl font-black leading-tight text-slate-950 lg:text-2xl">{title}</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{desc}</p>
+  <section aria-label={`${eyebrow} 页面摘要`} className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
+    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <div className="min-w-0">
+        <p className="text-[11px] font-black uppercase tracking-widest text-blue-600">{eyebrow}</p>
+        <h2 className="mt-1 break-words text-base font-black leading-tight text-slate-950 sm:text-lg">{title}</h2>
+        <p className="mt-1 max-w-4xl text-xs font-semibold leading-5 text-slate-600 sm:text-sm">{desc}</p>
       </div>
-      <div className="rounded-lg bg-slate-950 p-3 text-white">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-300">
+      <div className="rounded-lg border border-slate-200 bg-white p-3">
+        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500">
           <CheckCircle2 size={15} />
-          Phase 1 MVP
+          流程边界
         </div>
-        <div className="mt-3 grid gap-2 text-sm font-semibold sm:grid-cols-2 lg:grid-cols-1">
+        <div className="mt-3 grid grid-cols-2 sm:flex gap-2 sm:flex-wrap">
           {['多企业 SaaS', '平台公共库 + 私域关系', '询价比价闭环', '站内通知与附件'].map((item) => (
-            <div key={item} className="flex items-center gap-2">
-              <ArrowRight size={14} className="text-blue-300" />
+            <div key={item} className="inline-flex min-w-0 items-center gap-1.5 rounded-md bg-slate-50 px-2 py-1 text-[11px] font-black text-slate-600">
+              <ArrowRight size={13} className="shrink-0 text-blue-500" />
               {item}
             </div>
           ))}
@@ -9931,8 +9932,8 @@ const BuyerModuleHeader: React.FC<{
   facts: BuyerModuleFact[];
   javaEnabled: boolean;
 }> = ({ header, facts, javaEnabled }) => (
-  <section className="rounded-lg border border-slate-200 bg-white p-4">
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <section className="overflow-hidden rounded-lg border border-l-4 border-slate-200 border-l-blue-500 bg-white p-4 shadow-sm">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-stretch">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
@@ -9945,13 +9946,13 @@ const BuyerModuleHeader: React.FC<{
         <h3 className="mt-3 text-lg font-black text-slate-950">{header.title}</h3>
         <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
       </div>
-      <div className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 p-3 lg:w-64">
+      <div className="self-stretch rounded-lg border border-blue-100 bg-blue-50 p-3 lg:w-72">
         <p className="text-xs font-black text-blue-800">本页关键动作</p>
         <p className="mt-1 text-sm font-black text-blue-950">{header.primaryAction}</p>
       </div>
     </div>
     {facts.length > 0 && (
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))]">
         {facts.slice(0, 4).map((fact) => (
           <MiniFact key={fact.label} label={fact.label} value={fact.value} />
         ))}
@@ -9965,8 +9966,8 @@ const SupplierModuleHeader: React.FC<{
   facts: Array<{ label: string; value: string }>;
   javaEnabled: boolean;
 }> = ({ header, facts, javaEnabled }) => (
-  <section className="rounded-lg border border-slate-200 bg-white p-4">
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <section className="overflow-hidden rounded-lg border border-l-4 border-slate-200 border-l-orange-500 bg-white p-4 shadow-sm">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-stretch">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-lg bg-orange-50 px-2 py-1 text-xs font-black text-orange-700">
@@ -9979,12 +9980,12 @@ const SupplierModuleHeader: React.FC<{
         <h3 className="mt-3 text-lg font-black text-slate-950">{header.title}</h3>
         <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
       </div>
-      <div className="shrink-0 rounded-lg border border-orange-100 bg-orange-50 p-3 lg:w-64">
+      <div className="self-stretch rounded-lg border border-orange-100 bg-orange-50 p-3 lg:w-72">
         <p className="text-xs font-black text-orange-800">供应商当前动作</p>
         <p className="mt-1 text-sm font-black text-orange-950">{header.primaryAction}</p>
       </div>
     </div>
-    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))]">
       {facts.slice(0, 4).map((fact) => (
         <MiniFact key={fact.label} label={fact.label} value={fact.value} />
       ))}
@@ -9997,8 +9998,8 @@ const PlatformModuleHeader: React.FC<{
   facts: Array<{ label: string; value: string }>;
   javaEnabled: boolean;
 }> = ({ header, facts, javaEnabled }) => (
-  <section className="rounded-lg border border-slate-200 bg-white p-4">
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <section className="overflow-hidden rounded-lg border border-l-4 border-slate-200 border-l-emerald-500 bg-white p-4 shadow-sm">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-stretch">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
@@ -10011,12 +10012,12 @@ const PlatformModuleHeader: React.FC<{
         <h3 className="mt-3 text-lg font-black text-slate-950">{header.title}</h3>
         <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
       </div>
-      <div className="shrink-0 rounded-lg border border-emerald-100 bg-emerald-50 p-3 lg:w-64">
+      <div className="self-stretch rounded-lg border border-emerald-100 bg-emerald-50 p-3 lg:w-72">
         <p className="text-xs font-black text-emerald-800">平台当前动作</p>
         <p className="mt-1 text-sm font-black text-emerald-950">{header.primaryAction}</p>
       </div>
     </div>
-    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))]">
       {facts.slice(0, 4).map((fact) => (
         <MiniFact key={fact.label} label={fact.label} value={fact.value} />
       ))}
@@ -10394,7 +10395,7 @@ const AdminInfoCard: React.FC<{
   return (
     <div
       aria-label={`${title} 信息卡片`}
-      className={`rounded-lg border p-4 transition ${detailSelected ? activeTone : baseTone}`}
+      className={`rounded-lg border p-4 transition hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${detailSelected ? activeTone : baseTone}`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
@@ -10475,7 +10476,8 @@ const WorkflowListCard: React.FC<{
   children,
 }) => (
   <div
-    className={`rounded-lg border bg-white p-4 transition hover:border-blue-200 hover:shadow-sm ${
+    aria-label={`${title} 工作流卡片`}
+    className={`rounded-lg border bg-white p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
       detailSelected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
     }`}
   >
@@ -10559,7 +10561,7 @@ const DetailToggleButton: React.FC<{
     onClick={onClick}
     aria-current={selected ? 'true' : undefined}
     aria-pressed={selected}
-    className={`${compact ? '' : 'mt-3'} inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-black transition ${
+    className={`${compact ? '' : 'mt-3'} inline-flex h-8 min-w-[5.5rem] items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-black transition ${
       fullWidth ? 'w-full' : ''
     } ${
       selected
@@ -10567,6 +10569,7 @@ const DetailToggleButton: React.FC<{
         : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
     }`}
   >
+    <Eye size={14} />
     {selected ? '当前详情' : '查看详情'}
   </button>
 );
@@ -10580,12 +10583,13 @@ const TableDetailButton: React.FC<{
     onClick={onClick}
     aria-current={selected ? 'true' : undefined}
     aria-pressed={selected}
-    className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-lg border px-3 text-xs font-black transition ${
+    className={`inline-flex h-8 min-w-[5.5rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-xs font-black transition ${
       selected
         ? 'border-blue-200 bg-blue-50 text-blue-700'
         : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
     }`}
   >
+    <Eye size={14} />
     {selected ? '当前详情' : '查看详情'}
   </button>
 );
