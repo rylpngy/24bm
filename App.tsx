@@ -8346,14 +8346,16 @@ const DetailActionPanel: React.FC<{
 
   return (
     <section className={`rounded-lg border p-4 ${toneClass}`}>
-      <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-black">{title}</p>
-          {desc && <p className="mt-1 text-xs font-bold leading-5">{desc}</p>}
+          <p className="break-words text-xs font-black">{title}</p>
+          {desc && <p className="mt-1 break-words text-xs font-bold leading-5">{desc}</p>}
         </div>
-        {status && <StatusPill label={status} />}
+        {status && <span className="self-start"><StatusPill label={status} /></span>}
       </div>
-      {children}
+      <div className="min-w-0 space-y-3 rounded-lg border border-white/70 bg-white/60 p-3">
+        {children}
+      </div>
     </section>
   );
 };
@@ -11118,11 +11120,11 @@ const PrimaryActionButton: React.FC<{
       onClick={onClick}
       disabled={disabled}
       aria-busy={busy || undefined}
-      className={`${flushTop ? '' : 'mt-3'} inline-flex items-center justify-center gap-2 rounded-lg font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 ${
+      className={`${flushTop ? '' : 'mt-3'} inline-flex min-w-0 items-center justify-center gap-2 rounded-lg text-center leading-4 font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-white/80 ${
         fullWidth ? 'w-full' : ''
       } ${sizeClasses[size]} ${toneClasses[tone]}`}
     >
-      {Icon && <Icon size={14} />}
+      {Icon && <Icon size={14} className="shrink-0" />}
       {busy && pendingLabel ? pendingLabel : children}
     </button>
   );

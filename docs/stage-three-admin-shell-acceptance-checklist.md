@@ -166,5 +166,6 @@
 | 共享视觉原语收口 | 面板、详情分组、流程卡片和状态标签补齐浅阴影、分隔线、详情浅底和不换行状态胶囊，让三端后台页面更接近可演示后台形态 | `Panel`、`DetailPanelBody`、`DetailSection`、`WorkflowListCard`、`StatusPill`、`scripts/stage-three-first-round-ui-polish.test.ts` |
 | 共享卡片密度收口 | 通用信息卡和主流程卡片标题、元信息、金额和快捷操作区补齐长文本换行、最小宽度和窄屏抗挤压能力 | `AdminInfoCard`、`WorkflowListCard`、`InlineWorkflowAction`、`scripts/stage-three-first-round-card-density-ui.test.ts` |
 | 共享详情密度收口 | 详情头、分组标题、Key/Value 行和事实网格补齐长文本换行、移动端单列和计数标签抗挤压能力 | `DetailHeroCard`、`DetailSection`、`DetailKeyValueRow`、`InlineFactGrid`、`scripts/stage-three-first-round-detail-density-ui.test.ts` |
+| 共享表单密度收口 | 详情编辑面板和主操作按钮补齐响应式头部、浅底内容区、按钮文本居中和图标抗挤压能力 | `DetailActionPanel`、`PrimaryActionButton`、`scripts/stage-three-first-round-form-density-ui.test.ts` |
 
 第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。
