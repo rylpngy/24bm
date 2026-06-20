@@ -56,8 +56,10 @@ import com.procurement.identity.infrastructure.AuthenticationUserMapper;
 import com.procurement.identity.security.JwtAuthenticationFilter;
 import com.procurement.identity.security.JwtTokenService;
 import com.procurement.finance.api.SupplierReceivableController;
+import com.procurement.finance.api.BuyerInvoiceReconciliationController;
 import com.procurement.finance.api.BuyerPaymentController;
 import com.procurement.finance.api.InvoiceResponse;
+import com.procurement.finance.api.InvoiceReconciliationResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.SupplierInvoiceController;
 import com.procurement.finance.application.InvoiceApplicationService;
@@ -190,6 +192,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierOrderController.class,
     BuyerReceiptController.class,
     SupplierDeliveryController.class,
+    BuyerInvoiceReconciliationController.class,
     BuyerPaymentController.class,
     SupplierInvoiceController.class,
     SupplierReceivableController.class,
@@ -3010,6 +3013,9 @@ class HttpSecurityContractTests {
     mockMvc.perform(get("/api/v1/buyer/invoices")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/invoice-reconciliations")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
     mockMvc.perform(post("/api/v1/buyer/invoices/invoice-demo/payments")
             .header("Authorization", "Bearer " + supplierToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -3062,6 +3068,11 @@ class HttpSecurityContractTests {
         org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
         org.mockito.ArgumentMatchers.eq("po-demo")))
         .thenReturn(List.of(invoiceResponse("invoice-filtered", "待付款")));
+    when(paymentApplicationService.listCurrentTenantReconciliations(
+        org.mockito.ArgumentMatchers.eq("待付款"),
+        org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
+        org.mockito.ArgumentMatchers.eq("po-demo")))
+        .thenReturn(List.of(invoiceReconciliationResponse("recon-demo", "invoice-demo", "待付款")));
     when(paymentApplicationService.register(
         org.mockito.ArgumentMatchers.eq("invoice-demo"),
         org.mockito.ArgumentMatchers.any(RegisterPaymentRequest.class)))
@@ -3116,6 +3127,15 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("invoice-filtered"));
+    mockMvc.perform(get("/api/v1/buyer/invoice-reconciliations")
+            .queryParam("stage", "待付款")
+            .queryParam("supplierId", "ent-supplier-sunrise")
+            .queryParam("orderId", "po-demo")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("recon-demo"))
+        .andExpect(jsonPath("$.data[0].invoiceId").value("invoice-demo"))
+        .andExpect(jsonPath("$.data[0].stage").value("待付款"));
     mockMvc.perform(post("/api/v1/buyer/invoices/invoice-demo/payments")
             .header("Authorization", "Bearer " + buyerToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -3354,6 +3374,25 @@ class HttpSecurityContractTests {
         "REC-" + id,
         "待付款",
         "登记付款",
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+  }
+
+  private InvoiceReconciliationResponse invoiceReconciliationResponse(String id, String invoiceId, String stage) {
+    return new InvoiceReconciliationResponse(
+        id,
+        "tenant-acme",
+        "REC-" + invoiceId,
+        invoiceId,
+        "ent-supplier-sunrise",
+        "po-demo",
+        stage,
+        "登记付款",
+        BigDecimal.valueOf(98000),
+        BigDecimal.valueOf(98000),
+        BigDecimal.ZERO,
+        "已收货",
+        "待付款",
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
   }

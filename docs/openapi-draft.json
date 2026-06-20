@@ -2683,6 +2683,56 @@
         }
       }
     },
+    "/buyer/invoice-reconciliations": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方独立对账单台账，支持按对账阶段、供应商和订单筛选",
+        "parameters": [
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerInvoiceReconciliationList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/invoices/{invoiceId}": {
       "put": {
         "tags": [
@@ -3436,6 +3486,7 @@
     "GET /buyer/receipts",
     "POST /buyer/orders/{orderId}/receipts",
     "GET /buyer/invoices",
+    "GET /buyer/invoice-reconciliations",
     "PUT /buyer/invoices/{invoiceId}",
     "GET /supplier/quotes",
     "GET /supplier/invoices",

@@ -531,10 +531,12 @@ Example invoice payload:
 The buyer-side payment endpoint is:
 
 - `GET /api/v1/buyer/invoices`
+- `GET /api/v1/buyer/invoice-reconciliations`
 - `POST /api/v1/buyer/invoices/{invoiceId}/payments`
 - `GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs`
 
 The buyer invoice list accepts optional `paymentStatus`, `supplierId`, and `orderId` filters inside the current buyer tenant.
+The buyer invoice reconciliation list accepts optional `stage`, `supplierId`, and `orderId` filters inside the current buyer tenant, and reads the independent `invoice_reconciliations` ledger joined with invoice and order amounts.
 The buyer payment audit log list returns current-tenant `invoice.paid` and `invoice.partial_paid` audit entries for the selected invoice.
 
 Example payment payload:

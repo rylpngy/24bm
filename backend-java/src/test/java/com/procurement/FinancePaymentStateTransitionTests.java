@@ -8,10 +8,12 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.InvoiceResponse;
+import com.procurement.finance.api.InvoiceReconciliationResponse;
 import com.procurement.finance.api.UpdateSupplierReceivableRequest;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.Invoice;
+import com.procurement.finance.domain.InvoiceReconciliation;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
@@ -80,6 +82,29 @@ class FinancePaymentStateTransitionTests {
     org.assertj.core.api.Assertions.assertThat(response.reconciliationNo()).isEqualTo("REC-invoice-1");
     org.assertj.core.api.Assertions.assertThat(response.reconciliationStage()).isEqualTo("待付款");
     org.assertj.core.api.Assertions.assertThat(response.nextReconciliationAction()).isEqualTo("登记付款");
+  }
+
+  @Test
+  void listBuyerReconciliationsUsesIndependentLedgerInsideCurrentTenant() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceReconciliationMapper.listByTenantFiltered("tenant-1", "待付款", "supplier-1", "po-1"))
+        .thenReturn(List.of(reconciliation("recon-1", "invoice-1", "待付款", "登记付款")));
+
+    InvoiceReconciliationResponse response = paymentApplicationService
+        .listCurrentTenantReconciliations("待付款", "supplier-1", "po-1")
+        .getFirst();
+
+    verify(invoiceReconciliationMapper).listByTenantFiltered("tenant-1", "待付款", "supplier-1", "po-1");
+    org.assertj.core.api.Assertions.assertThat(response.id()).isEqualTo("recon-1");
+    org.assertj.core.api.Assertions.assertThat(response.reconciliationNo()).isEqualTo("REC-invoice-1");
+    org.assertj.core.api.Assertions.assertThat(response.invoiceId()).isEqualTo("invoice-1");
+    org.assertj.core.api.Assertions.assertThat(response.orderAmount()).isEqualByComparingTo("100");
+    org.assertj.core.api.Assertions.assertThat(response.invoiceAmount()).isEqualByComparingTo("100");
+    org.assertj.core.api.Assertions.assertThat(response.varianceAmount()).isEqualByComparingTo("0");
+    org.assertj.core.api.Assertions.assertThat(response.receiptStatus()).isEqualTo("已收货");
+    org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("待付款");
+    org.assertj.core.api.Assertions.assertThat(response.stage()).isEqualTo("待付款");
+    org.assertj.core.api.Assertions.assertThat(response.nextAction()).isEqualTo("登记付款");
   }
 
   @Test
@@ -349,6 +374,24 @@ class FinancePaymentStateTransitionTests {
         amount,
         "已收货",
         LocalDate.parse("2026-06-20"),
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+  }
+
+  private InvoiceReconciliation reconciliation(String id, String invoiceId, String stage, String nextAction) {
+    return new InvoiceReconciliation(
+        id,
+        "tenant-1",
+        invoiceId,
+        "supplier-1",
+        "po-1",
+        stage,
+        nextAction,
+        BigDecimal.valueOf(100),
+        BigDecimal.valueOf(100),
+        BigDecimal.ZERO,
+        "已收货",
+        "待付款",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
   }

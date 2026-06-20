@@ -5,6 +5,7 @@ import com.procurement.audit.api.AuditLogResponse;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.InvoiceResponse;
+import com.procurement.finance.api.InvoiceReconciliationResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.UpdateInvoicePaymentRequest;
 import com.procurement.finance.domain.Invoice;
@@ -12,6 +13,7 @@ import com.procurement.finance.domain.InvoiceAmountPolicy;
 import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
+import com.procurement.finance.domain.InvoiceReconciliation;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
 import com.procurement.notification.application.NotificationApplicationService;
@@ -84,6 +86,21 @@ public class PaymentApplicationService {
         50);
   }
 
+  public List<InvoiceReconciliationResponse> listCurrentTenantReconciliations(
+      String stage,
+      String supplierId,
+      String orderId) {
+    String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
+    return invoiceReconciliationMapper.listByTenantFiltered(
+            tenantId,
+            blankToNull(stage),
+            blankToNull(supplierId),
+            blankToNull(orderId))
+        .stream()
+        .map(this::toReconciliationResponse)
+        .toList();
+  }
+
   @Transactional
   public InvoiceResponse register(String invoiceId, RegisterPaymentRequest request) {
     return applyPaymentStatus(invoiceId, request.paymentStatus());
@@ -143,6 +160,25 @@ public class PaymentApplicationService {
     return InvoiceResponseAssembler.from(
         invoice,
         purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()));
+  }
+
+  private InvoiceReconciliationResponse toReconciliationResponse(InvoiceReconciliation reconciliation) {
+    return new InvoiceReconciliationResponse(
+        reconciliation.id(),
+        reconciliation.tenantId(),
+        "REC-" + reconciliation.invoiceId(),
+        reconciliation.invoiceId(),
+        reconciliation.supplierId(),
+        reconciliation.orderId(),
+        reconciliation.stage(),
+        reconciliation.nextAction(),
+        reconciliation.orderAmount(),
+        reconciliation.invoiceAmount(),
+        reconciliation.varianceAmount(),
+        reconciliation.receiptStatus(),
+        reconciliation.paymentStatus(),
+        reconciliation.createdAt(),
+        reconciliation.updatedAt());
   }
 
   private void requireSupplierPayable(String tenantId, Invoice invoice) {

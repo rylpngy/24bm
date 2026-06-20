@@ -491,6 +491,48 @@ export interface JavaInvoiceDto {
   nextReconciliationAction?: string | null;
 }
 
+export interface JavaInvoiceReconciliationDto {
+  id: string;
+  tenantId: string;
+  reconciliationNo: string;
+  invoiceId: string;
+  supplierId: string;
+  orderId: string;
+  stage: string;
+  nextAction: string;
+  orderAmount: number;
+  invoiceAmount: number;
+  varianceAmount: number;
+  receiptStatus: string;
+  paymentStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceReconciliationRecord {
+  id: string;
+  tenantId: string;
+  reconciliationNo: string;
+  invoiceId: string;
+  supplierId: string;
+  orderId: string;
+  stage: string;
+  nextAction: string;
+  orderAmount: number;
+  invoiceAmount: number;
+  varianceAmount: number;
+  receiptStatus: string;
+  paymentStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListBuyerInvoiceReconciliationsParams {
+  stage?: string;
+  supplierId?: string;
+  orderId?: string;
+}
+
 export interface JavaSupplierProfileDto {
   id: string;
   name: string;
@@ -635,6 +677,9 @@ export interface JavaProcurementApiClient {
   updateSupplierDelivery(deliveryId: string, payload: UpdateDeliveryPayload): Promise<Delivery>;
   createBuyerReceipt(orderId: string, payload: CreateReceiptPayload): Promise<JavaReceiptDto>;
   listBuyerInvoices(): Promise<InvoiceRecord[]>;
+  listBuyerInvoiceReconciliations(
+    params?: ListBuyerInvoiceReconciliationsParams,
+  ): Promise<InvoiceReconciliationRecord[]>;
   createSupplierInvoice(orderId: string, payload: CreateInvoicePayload): Promise<InvoiceRecord>;
   updateSupplierReceivable(invoiceId: string, payload: UpdateSupplierReceivablePayload): Promise<InvoiceRecord>;
   registerBuyerPayment(invoiceId: string, payload: RegisterPaymentPayload): Promise<InvoiceRecord>;
@@ -659,6 +704,7 @@ export interface JavaBuyerMasterData {
   orders: PurchaseOrder[];
   deliveries?: Delivery[];
   invoices: InvoiceRecord[];
+  invoiceReconciliations?: InvoiceReconciliationRecord[];
   pendingApprovals: JavaApprovalTaskDto[];
   recentApprovals: JavaApprovalTaskDto[];
   notifications: JavaNotificationDto[];
@@ -977,6 +1023,33 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     reconciliationStage: invoice.reconciliationStage ?? undefined,
     nextReconciliationAction: invoice.nextReconciliationAction ?? undefined,
   });
+
+  const toInvoiceReconciliation = (reconciliation: JavaInvoiceReconciliationDto): InvoiceReconciliationRecord => ({
+    id: reconciliation.id,
+    tenantId: reconciliation.tenantId,
+    reconciliationNo: reconciliation.reconciliationNo,
+    invoiceId: reconciliation.invoiceId,
+    supplierId: reconciliation.supplierId,
+    orderId: reconciliation.orderId,
+    stage: reconciliation.stage,
+    nextAction: reconciliation.nextAction,
+    orderAmount: Number(reconciliation.orderAmount),
+    invoiceAmount: Number(reconciliation.invoiceAmount),
+    varianceAmount: Number(reconciliation.varianceAmount),
+    receiptStatus: reconciliation.receiptStatus,
+    paymentStatus: reconciliation.paymentStatus,
+    createdAt: reconciliation.createdAt,
+    updatedAt: reconciliation.updatedAt,
+  });
+
+  const reconciliationQuery = (params?: ListBuyerInvoiceReconciliationsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.stage) searchParams.set('stage', params.stage);
+    if (params?.supplierId) searchParams.set('supplierId', params.supplierId);
+    if (params?.orderId) searchParams.set('orderId', params.orderId);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
 
   return {
     loginPlatform,
@@ -1302,6 +1375,12 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       const invoices = await buyerRequest<JavaInvoiceDto[]>('/api/v1/buyer/invoices');
       return invoices.map(toInvoice);
     },
+    async listBuyerInvoiceReconciliations(params?: ListBuyerInvoiceReconciliationsParams) {
+      const reconciliations = await buyerRequest<JavaInvoiceReconciliationDto[]>(
+        `/api/v1/buyer/invoice-reconciliations${reconciliationQuery(params)}`,
+      );
+      return reconciliations.map(toInvoiceReconciliation);
+    },
     async createSupplierInvoice(orderId: string, payload: CreateInvoicePayload) {
       const invoice = await supplierRequest<JavaInvoiceDto>(`/api/v1/supplier/orders/${orderId}/invoices`, {
         method: 'POST',
@@ -1382,17 +1461,19 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 };
 
 export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient): Promise<JavaBuyerMasterData> => {
-  const [workspace, departments, roles, approvalTemplates] = await Promise.all([
+  const [workspace, departments, roles, approvalTemplates, invoiceReconciliations] = await Promise.all([
     client.getBuyerWorkspace(),
     client.listBuyerDepartments(),
     client.listBuyerRoles(),
     client.listBuyerApprovalTemplates(),
+    client.listBuyerInvoiceReconciliations(),
   ]);
   return {
     ...workspace,
     departments,
     roles,
     approvalTemplates,
+    invoiceReconciliations,
   };
 };
 
@@ -1443,6 +1524,23 @@ export const applyJavaBuyerMasterData = (
     parentId: department.parentId,
     status: department.status,
   }));
+  const reconciliationsByInvoice = new Map(
+    (masterData.invoiceReconciliations ?? []).map((reconciliation) => [reconciliation.invoiceId, reconciliation]),
+  );
+  const invoices = masterData.invoices.map((invoice) => {
+    const reconciliation = reconciliationsByInvoice.get(invoice.id);
+    if (!reconciliation) return invoice;
+    return {
+      ...invoice,
+      orderAmount: reconciliation.orderAmount,
+      varianceAmount: reconciliation.varianceAmount,
+      receiptStatus: reconciliation.receiptStatus,
+      reconciliationStatus: reconciliation.stage,
+      reconciliationNo: reconciliation.reconciliationNo,
+      reconciliationStage: reconciliation.stage,
+      nextReconciliationAction: reconciliation.nextAction,
+    };
+  });
 
   return {
     ...workspace,
@@ -1452,7 +1550,7 @@ export const applyJavaBuyerMasterData = (
     rfqs: masterData.rfqs,
     orders: masterData.orders,
     deliveries: masterData.deliveries ?? [],
-    invoices: masterData.invoices,
+    invoices,
     auditLogs: masterData.auditLogs,
     privateSupplierRelations,
     suppliers,

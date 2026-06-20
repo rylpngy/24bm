@@ -769,6 +769,15 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     queryParameters: ['paymentStatus', 'supplierId', 'orderId'],
   },
   {
+    method: 'GET',
+    path: '/buyer/invoice-reconciliations',
+    audience: 'buyer',
+    action: '加载采购方独立对账单台账，支持按对账阶段、供应商和订单筛选',
+    requestSchema: 'BuyerInvoiceReconciliationListRequest',
+    responseSchema: 'BuyerInvoiceReconciliationList',
+    queryParameters: ['stage', 'supplierId', 'orderId'],
+  },
+  {
     method: 'PUT',
     path: '/buyer/invoices/{invoiceId}',
     audience: 'buyer',

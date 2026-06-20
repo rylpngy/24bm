@@ -94,6 +94,7 @@ describe('procurement SaaS API contract draft', () => {
       'GET /buyer/receipts',
       'POST /buyer/orders/{orderId}/receipts',
       'GET /buyer/invoices',
+      'GET /buyer/invoice-reconciliations',
       'PUT /buyer/invoices/{invoiceId}',
       'GET /supplier/quotes',
       'GET /supplier/invoices',
@@ -269,6 +270,13 @@ describe('procurement SaaS API contract draft', () => {
     expect(openApi.paths['/buyer/invoices'].get.parameters).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: 'paymentStatus', in: 'query', required: false }),
+        expect.objectContaining({ name: 'supplierId', in: 'query', required: false }),
+        expect.objectContaining({ name: 'orderId', in: 'query', required: false }),
+      ]),
+    );
+    expect(openApi.paths['/buyer/invoice-reconciliations'].get.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'stage', in: 'query', required: false }),
         expect.objectContaining({ name: 'supplierId', in: 'query', required: false }),
         expect.objectContaining({ name: 'orderId', in: 'query', required: false }),
       ]),

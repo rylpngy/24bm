@@ -514,6 +514,7 @@ MVP 审批模块采用固定审批模板，前端通过统一待办入口读取�
 第九批 Java 业务接口落在 `finance` 模块：
 
 - `GET /api/v1/buyer/invoices`：采购方查看发票付款列表。
+- `GET /api/v1/buyer/invoice-reconciliations`：采购方查看独立对账单台账，支持按对账阶段、供应商和订单筛选。
 - `POST /api/v1/supplier/orders/{orderId}/invoices`：供应商对已收货订单登记发票。
 - `POST /api/v1/buyer/invoices/{invoiceId}/payments`：采购方登记发票付款状态。
 - `GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs`：采购方查看发票付款操作审计明细。

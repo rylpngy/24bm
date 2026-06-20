@@ -95,6 +95,7 @@
 | 39 | 对账单台账雏形 | 采购方发票付款和供应商发票应收模块已补独立对账单台账区块，支持按对账状态筛选并展示订单金额、发票金额、差异金额、收货状态和付款状态 | `scripts/invoice-reconciliation-ledger-ui.test.ts` |
 | 40 | 对账单编号和状态流转 | Java 发票响应已派生对账单编号、对账阶段和下一步动作，采购方/供应商对账单台账展示编号、状态流转和下一步动作 | `scripts/invoice-reconciliation-ledger-ui.test.ts`、`FinancePaymentStateTransitionTests` |
 | 41 | 独立对账单落库 | Java 后端已新增 `invoice_reconciliations` 表，供应商创建发票时写入初始对账单，采购方更新付款状态时同步对账阶段和下一步动作，并对历史发票做迁移回填 | `V101__invoice_reconciliations.sql`、`InvoiceReconciliationMapper`、`FinancePaymentStateTransitionTests` |
+| 42 | 独立对账单查询 API | Java 后端已新增 `GET /api/v1/buyer/invoice-reconciliations`，支持按阶段、供应商和订单筛选独立对账单台账；前端 Java master data 会拉取该接口并合并回发票付款/对账单台账展示 | `BuyerInvoiceReconciliationController`、`InvoiceReconciliationMapper`、`services/procurementApiClient.test.ts`、`HttpSecurityContractTests` |
 
 ## 第二批候选任务
 
