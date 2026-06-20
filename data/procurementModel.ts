@@ -137,6 +137,9 @@ export interface InvoiceRecord {
   invoiceNo?: string;
   paymentStatus: PaymentStatus;
   reconciliationNote?: string;
+  dueDate?: string;
+  overdue?: boolean;
+  overdueDays?: number;
 }
 
 export interface AuditLogRecord {

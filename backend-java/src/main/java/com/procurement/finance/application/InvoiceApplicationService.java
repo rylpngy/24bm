@@ -134,17 +134,7 @@ public class InvoiceApplicationService {
   }
 
   private InvoiceResponse toResponse(Invoice invoice) {
-    return new InvoiceResponse(
-        invoice.id(),
-        invoice.tenantId(),
-        invoice.supplierId(),
-        invoice.orderId(),
-        invoice.amount(),
-        invoice.invoiceNo(),
-        invoice.paymentStatus(),
-        invoice.reconciliationNote(),
-        invoice.createdAt(),
-        invoice.updatedAt());
+    return InvoiceResponseAssembler.from(invoice);
   }
 
   private String newId(String prefix) {

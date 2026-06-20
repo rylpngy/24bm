@@ -146,6 +146,9 @@ class BuyerWorkspaceTodoSummaryTests {
         "INV-001",
         paymentStatus,
         null,
+        LocalDate.parse("2026-07-15"),
+        false,
+        0L,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
   }

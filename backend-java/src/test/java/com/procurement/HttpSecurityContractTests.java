@@ -1271,6 +1271,9 @@ class HttpSecurityContractTests {
             "INV-20260615-001",
             "待付款",
             null,
+            LocalDate.parse("2026-07-15"),
+            false,
+            0L,
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"))));
     when(invoiceApplicationService.listCurrentSupplierPaymentAuditLogs("invoice-demo"))
@@ -1294,6 +1297,9 @@ class HttpSecurityContractTests {
             "INV-20260615-001",
             "部分付款",
             "已与采购方确认 6 月底付尾款",
+            LocalDate.parse("2026-07-15"),
+            false,
+            0L,
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00")));
 
@@ -3324,6 +3330,9 @@ class HttpSecurityContractTests {
         "INV-20260615",
         paymentStatus,
         null,
+        LocalDate.parse("2026-07-15"),
+        false,
+        0L,
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
   }

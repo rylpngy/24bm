@@ -2139,6 +2139,9 @@ describe('procurement API clients', () => {
             invoiceNo: 'INV-20260620-001',
             paymentStatus: '部分付款',
             reconciliationNote: '已与采购方确认 6 月底付尾款',
+            dueDate: '2026-07-20',
+            overdue: false,
+            overdueDays: 0,
           },
           message: '',
         });
@@ -2162,6 +2165,9 @@ describe('procurement API clients', () => {
       id: 'invoice-java-001',
       paymentStatus: '部分付款',
       reconciliationNote: '已与采购方确认 6 月底付尾款',
+      dueDate: '2026-07-20',
+      overdue: false,
+      overdueDays: 0,
     });
   });
 

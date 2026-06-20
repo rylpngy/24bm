@@ -15,6 +15,11 @@ describe('supplier invoice receivable card UI', () => {
     expect(supplierWorkspace).toContain('SupplierInvoiceReceivableDetailPanel');
     expect(supplierWorkspace).toContain('发票应收卡片');
     expect(supplierWorkspace).toContain('应收对账详情');
+    expect(supplierWorkspace).toContain('应收截止');
+    expect(supplierWorkspace).toContain('逾期提醒');
+    expect(supplierWorkspace).toContain('逾期天数');
+    expect(supplierWorkspace).toContain('invoice.overdue');
+    expect(supplierWorkspace).toContain('invoice.overdueDays');
     expect(supplierWorkspace).toContain('保存对账备注');
     expect(supplierWorkspace).toContain('receivableUpdateDrafts');
     expect(supplierWorkspace).toContain('onUpdateReceivable(invoice.id');

@@ -2764,7 +2764,7 @@
         "tags": [
           "supplier"
         ],
-        "summary": "加载供应商应收发票列表，支持按付款状态和订单筛选",
+        "summary": "加载供应商应收发票列表，支持按付款状态和订单筛选，并返回应收截止和逾期提醒",
         "parameters": [
           {
             "name": "paymentStatus",

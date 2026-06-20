@@ -130,17 +130,7 @@ public class PaymentApplicationService {
   }
 
   private InvoiceResponse toResponse(Invoice invoice) {
-    return new InvoiceResponse(
-        invoice.id(),
-        invoice.tenantId(),
-        invoice.supplierId(),
-        invoice.orderId(),
-        invoice.amount(),
-        invoice.invoiceNo(),
-        invoice.paymentStatus(),
-        invoice.reconciliationNote(),
-        invoice.createdAt(),
-        invoice.updatedAt());
+    return InvoiceResponseAssembler.from(invoice);
   }
 
   private void requireSupplierPayable(String tenantId, Invoice invoice) {

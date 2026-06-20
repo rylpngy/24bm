@@ -789,7 +789,7 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     method: 'GET',
     path: '/supplier/invoices',
     audience: 'supplier',
-    action: '加载供应商应收发票列表，支持按付款状态和订单筛选',
+    action: '加载供应商应收发票列表，支持按付款状态和订单筛选，并返回应收截止和逾期提醒',
     requestSchema: 'SupplierInvoiceListRequest',
     responseSchema: 'SupplierInvoiceList',
     queryParameters: ['paymentStatus', 'orderId'],

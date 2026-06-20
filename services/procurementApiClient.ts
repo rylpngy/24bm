@@ -479,6 +479,9 @@ export interface JavaInvoiceDto {
   invoiceNo: string;
   paymentStatus: string;
   reconciliationNote?: string | null;
+  dueDate?: string | null;
+  overdue?: boolean;
+  overdueDays?: number;
 }
 
 export interface JavaSupplierProfileDto {
@@ -956,6 +959,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     invoiceNo: invoice.invoiceNo,
     paymentStatus: invoice.paymentStatus as InvoiceRecord['paymentStatus'],
     reconciliationNote: invoice.reconciliationNote ?? undefined,
+    dueDate: invoice.dueDate ?? undefined,
+    overdue: invoice.overdue ?? false,
+    overdueDays: invoice.overdueDays ?? 0,
   });
 
   return {

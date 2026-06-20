@@ -253,6 +253,9 @@ class FinancePaymentStateTransitionTests {
 
     org.assertj.core.api.Assertions.assertThat(response.reconciliationNote()).isEqualTo("已与采购方确认 6 月底付尾款");
     org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("部分付款");
+    org.assertj.core.api.Assertions.assertThat(response.dueDate()).isEqualTo(LocalDate.parse("2026-07-15"));
+    org.assertj.core.api.Assertions.assertThat(response.overdue()).isFalse();
+    org.assertj.core.api.Assertions.assertThat(response.overdueDays()).isZero();
     verify(invoiceMapper).updateSupplierReconciliationNote(
         "tenant-1",
         "invoice-1",

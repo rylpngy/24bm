@@ -10139,6 +10139,8 @@ const SupplierInvoiceReceivableDetailPanel: React.FC<{
     : invoice.paymentStatus === '部分付款'
       ? '跟进尾款'
       : '跟进回款';
+  const overdueLabel = invoice.overdue ? '已逾期' : '未逾期';
+  const overdueDaysLabel = `${invoice.overdueDays ?? 0} 天`;
 
   return (
     <Panel title="应收对账详情" icon={CreditCard}>
@@ -10152,6 +10154,8 @@ const SupplierInvoiceReceivableDetailPanel: React.FC<{
             { label: '应收金额', value: currency(invoice.amount) },
             { label: '付款状态', value: invoice.paymentStatus },
             { label: '关联订单', value: invoice.orderId },
+            { label: '应收截止', value: invoice.dueDate ?? '待同步' },
+            { label: '逾期提醒', value: overdueLabel },
             { label: '下一步', value: nextAction },
           ]}
         />
@@ -10161,6 +10165,14 @@ const SupplierInvoiceReceivableDetailPanel: React.FC<{
             <DetailKeyValueRow label="订单编号" value={invoice.orderId} />
             <DetailKeyValueRow label="订单状态" value={order?.status ?? '待同步'} />
             <DetailKeyValueRow label="预计收货" value={order?.expectedReceiptDate ?? '待同步'} />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="逾期提醒">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="应收截止" value={invoice.dueDate ?? '待同步'} />
+            <DetailKeyValueRow label="逾期状态" value={overdueLabel} />
+            <DetailKeyValueRow label="逾期天数" value={overdueDaysLabel} />
           </div>
         </DetailSection>
 
