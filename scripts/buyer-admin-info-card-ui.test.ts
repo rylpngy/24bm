@@ -32,8 +32,10 @@ describe('buyer admin info card UI', () => {
     );
 
     expect(adminInfoCard).toContain('flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between');
-    expect(adminInfoCard).toContain('w-full sm:w-auto');
-    expect(adminInfoCard).toContain('justify-start sm:justify-end');
+    expect(adminInfoCard).toContain('min-w-0 max-w-full');
+    expect(adminInfoCard).toContain('break-words text-sm font-black text-slate-950');
+    expect(adminInfoCard).toContain('break-words text-xs font-bold');
+    expect(adminInfoCard).toContain('w-full shrink-0 flex-wrap justify-start gap-2 sm:w-auto sm:justify-end');
     expect(inlineFactGrid).toContain('md:grid-cols-2');
     expect(inlineFactGrid).toContain('break-words');
     expect(inlineFactGrid).not.toContain('sm:grid-cols-2');

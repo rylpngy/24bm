@@ -10883,11 +10883,11 @@ const AdminInfoCard: React.FC<{
       className={`rounded-lg border p-4 transition hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${detailSelected ? activeTone : baseTone}`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-black text-slate-950">{title}</p>
-          <p className={`mt-1 truncate text-xs font-bold ${metaTone}`}>{meta}</p>
+        <div className="min-w-0 max-w-full">
+          <p className="break-words text-sm font-black text-slate-950">{title}</p>
+          <p className={`mt-1 break-words text-xs font-bold ${metaTone}`}>{meta}</p>
         </div>
-        <div className="flex w-full sm:w-auto shrink-0 flex-wrap justify-start sm:justify-end gap-2">
+        <div className="flex w-full shrink-0 flex-wrap justify-start gap-2 sm:w-auto sm:justify-end">
           {status && <StatusPill label={status} />}
           {badge && (
             <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
@@ -10930,7 +10930,7 @@ const InlineWorkflowAction: React.FC<{
     >
       <p className={`text-xs font-black ${textTone}`}>{title}</p>
       <p className={`mt-1 text-xs font-bold leading-5 ${textTone}`}>{desc}</p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-[160px_auto] sm:items-end">
+      <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-[minmax(0,160px)_minmax(0,1fr)] sm:items-end">
         {children}
       </div>
     </div>
@@ -10967,12 +10967,12 @@ const WorkflowListCard: React.FC<{
     }`}
   >
     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-      <div className="min-w-0">
+      <div className="min-w-0 max-w-full">
         <p className="break-words font-black text-slate-900">{title}</p>
         <p className="mt-1 break-words text-sm text-slate-500">{meta}</p>
       </div>
       {amountLabel && (
-        <p className="self-start rounded-lg bg-slate-50 px-2 py-1 font-mono font-black text-slate-900">{amountLabel}</p>
+        <p className="max-w-full self-start rounded-lg bg-slate-50 px-2 py-1 font-mono font-black text-slate-900">{amountLabel}</p>
       )}
     </div>
 
@@ -10990,7 +10990,7 @@ const WorkflowListCard: React.FC<{
           onClick={onSelectDetail}
         />
       </div>
-      <div className="w-full sm:w-auto">
+      <div className="min-w-0 w-full sm:min-w-[12rem] sm:w-auto">
         {action}
       </div>
     </div>
