@@ -2835,6 +2835,40 @@
         }
       }
     },
+    "/supplier/invoices/{invoiceId}/reconciliation": {
+      "put": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "供应商维护应收发票对账备注",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/supplier/orders/{orderId}/invoices": {
       "post": {
         "tags": [
@@ -3291,6 +3325,10 @@
         "type": "object",
         "additionalProperties": true
       },
+      "UpdateSupplierReceivableRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "CreateInvoiceRequest": {
         "type": "object",
         "additionalProperties": true
@@ -3402,6 +3440,7 @@
     "GET /supplier/quotes",
     "GET /supplier/invoices",
     "GET /supplier/invoices/{invoiceId}/payment-audit-logs",
+    "PUT /supplier/invoices/{invoiceId}/reconciliation",
     "POST /supplier/orders/{orderId}/invoices",
     "POST /buyer/invoices/{invoiceId}/payments",
     "GET /buyer/invoices/{invoiceId}/payment-audit-logs"

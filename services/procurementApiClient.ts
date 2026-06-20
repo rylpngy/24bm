@@ -114,6 +114,10 @@ export interface CreateInvoicePayload {
   invoiceNo: string;
 }
 
+export interface UpdateSupplierReceivablePayload {
+  reconciliationNote: string;
+}
+
 export interface RegisterPaymentPayload {
   paymentStatus: string;
   paymentRemark?: string;
@@ -474,6 +478,7 @@ export interface JavaInvoiceDto {
   amount: number;
   invoiceNo: string;
   paymentStatus: string;
+  reconciliationNote?: string | null;
 }
 
 export interface JavaSupplierProfileDto {
@@ -621,6 +626,7 @@ export interface JavaProcurementApiClient {
   createBuyerReceipt(orderId: string, payload: CreateReceiptPayload): Promise<JavaReceiptDto>;
   listBuyerInvoices(): Promise<InvoiceRecord[]>;
   createSupplierInvoice(orderId: string, payload: CreateInvoicePayload): Promise<InvoiceRecord>;
+  updateSupplierReceivable(invoiceId: string, payload: UpdateSupplierReceivablePayload): Promise<InvoiceRecord>;
   registerBuyerPayment(invoiceId: string, payload: RegisterPaymentPayload): Promise<InvoiceRecord>;
   updateBuyerInvoice(invoiceId: string, payload: UpdateInvoicePayload): Promise<InvoiceRecord>;
   getSupplierWorkspace(): Promise<JavaSupplierWorkspaceData>;
@@ -947,7 +953,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     supplierId: invoice.supplierId,
     orderId: invoice.orderId,
     amount: Number(invoice.amount),
+    invoiceNo: invoice.invoiceNo,
     paymentStatus: invoice.paymentStatus as InvoiceRecord['paymentStatus'],
+    reconciliationNote: invoice.reconciliationNote ?? undefined,
   });
 
   return {
@@ -1277,6 +1285,14 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     async createSupplierInvoice(orderId: string, payload: CreateInvoicePayload) {
       const invoice = await supplierRequest<JavaInvoiceDto>(`/api/v1/supplier/orders/${orderId}/invoices`, {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toInvoice(invoice);
+    },
+    async updateSupplierReceivable(invoiceId: string, payload: UpdateSupplierReceivablePayload) {
+      const invoice = await supplierRequest<JavaInvoiceDto>(`/api/v1/supplier/invoices/${invoiceId}/reconciliation`, {
+        method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });

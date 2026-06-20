@@ -8,6 +8,8 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.InvoiceResponse;
+import com.procurement.finance.api.UpdateSupplierReceivableRequest;
+import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
@@ -43,6 +45,12 @@ class FinancePaymentStateTransitionTests {
       tenantFeatureApplicationService,
       notificationApplicationService,
       new InvoicePaymentStatusTransition());
+  private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
+      purchaseOrderMapper,
+      invoiceMapper,
+      auditLogApplicationService,
+      tenantFeatureApplicationService,
+      notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {
@@ -226,7 +234,42 @@ class FinancePaymentStateTransitionTests {
     verify(auditLogApplicationService).recordTenantAction("invoice.paid", "invoice", "invoice-1");
   }
 
+  @Test
+  void supplierCanUpdateReceivableReconciliationNoteInsideOwnScope() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(invoiceMapper.findBySupplierAndId("supplier-1", "invoice-1"))
+        .thenReturn(invoice("invoice-1", "tenant-1", "部分付款"))
+        .thenReturn(invoice("invoice-1", "tenant-1", "部分付款", "已与采购方确认 6 月底付尾款"));
+    when(invoiceMapper.updateSupplierReconciliationNote(
+        "tenant-1",
+        "invoice-1",
+        "supplier-1",
+        "已与采购方确认 6 月底付尾款"))
+        .thenReturn(1);
+
+    InvoiceResponse response = invoiceApplicationService.updateReceivable(
+        "invoice-1",
+        new UpdateSupplierReceivableRequest("已与采购方确认 6 月底付尾款"));
+
+    org.assertj.core.api.Assertions.assertThat(response.reconciliationNote()).isEqualTo("已与采购方确认 6 月底付尾款");
+    org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("部分付款");
+    verify(invoiceMapper).updateSupplierReconciliationNote(
+        "tenant-1",
+        "invoice-1",
+        "supplier-1",
+        "已与采购方确认 6 月底付尾款");
+    verify(invoiceMapper, org.mockito.Mockito.never()).updatePaymentStatus(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
   private Invoice invoice(String id, String tenantId, String paymentStatus) {
+    return invoice(id, tenantId, paymentStatus, null);
+  }
+
+  private Invoice invoice(String id, String tenantId, String paymentStatus, String reconciliationNote) {
     return new Invoice(
         id,
         tenantId,
@@ -235,6 +278,7 @@ class FinancePaymentStateTransitionTests {
         BigDecimal.valueOf(100),
         "INV-001",
         paymentStatus,
+        reconciliationNote,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
   }

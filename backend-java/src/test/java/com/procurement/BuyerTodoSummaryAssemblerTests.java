@@ -72,6 +72,7 @@ class BuyerTodoSummaryAssemblerTests {
         BigDecimal.valueOf(100),
         "INV-001",
         paymentStatus,
+        null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
   }

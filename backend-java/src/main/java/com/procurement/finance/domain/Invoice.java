@@ -11,6 +11,7 @@ public record Invoice(
     BigDecimal amount,
     String invoiceNo,
     String paymentStatus,
+    String reconciliationNote,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {
 }

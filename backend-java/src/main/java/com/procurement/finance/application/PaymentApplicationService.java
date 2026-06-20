@@ -138,6 +138,7 @@ public class PaymentApplicationService {
         invoice.amount(),
         invoice.invoiceNo(),
         invoice.paymentStatus(),
+        invoice.reconciliationNote(),
         invoice.createdAt(),
         invoice.updatedAt());
   }

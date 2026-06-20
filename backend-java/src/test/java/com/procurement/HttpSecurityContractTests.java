@@ -62,6 +62,7 @@ import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.SupplierInvoiceController;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
+import com.procurement.finance.api.UpdateSupplierReceivableRequest;
 import com.procurement.notification.api.BuyerNotificationController;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.api.SupplierNotificationController;
@@ -1269,6 +1270,7 @@ class HttpSecurityContractTests {
             BigDecimal.valueOf(98000),
             "INV-20260615-001",
             "待付款",
+            null,
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"))));
     when(invoiceApplicationService.listCurrentSupplierPaymentAuditLogs("invoice-demo"))
@@ -1280,6 +1282,20 @@ class HttpSecurityContractTests {
             "invoice",
             "invoice-demo",
             OffsetDateTime.parse("2026-06-15T15:00:00+08:00"))));
+    when(invoiceApplicationService.updateReceivable(
+        org.mockito.ArgumentMatchers.eq("invoice-demo"),
+        org.mockito.ArgumentMatchers.any(UpdateSupplierReceivableRequest.class)))
+        .thenReturn(new InvoiceResponse(
+            "invoice-demo",
+            "tenant-acme",
+            "ent-supplier-sunrise",
+            "po-demo",
+            BigDecimal.valueOf(98000),
+            "INV-20260615-001",
+            "部分付款",
+            "已与采购方确认 6 月底付尾款",
+            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-15T14:00:00+08:00")));
 
     mockMvc.perform(post("/api/v1/supplier/rfqs/rfq-demo/quotes")
             .header("Authorization", "Bearer " + supplierToken)
@@ -1459,6 +1475,16 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("audit-supplier-payment-demo"))
         .andExpect(jsonPath("$.data[0].action").value("invoice.paid"));
+    mockMvc.perform(put("/api/v1/supplier/invoices/invoice-demo/reconciliation")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "reconciliationNote": "已与采购方确认 6 月底付尾款"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.reconciliationNote").value("已与采购方确认 6 月底付尾款"));
 
     mockMvc.perform(get("/api/v1/platform/overview")
             .header("Authorization", "Bearer " + buyerToken))
@@ -3123,6 +3149,15 @@ class HttpSecurityContractTests {
     mockMvc.perform(get("/api/v1/supplier/invoices/invoice-demo/payment-audit-logs")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isForbidden());
+    mockMvc.perform(put("/api/v1/supplier/invoices/invoice-demo/reconciliation")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "reconciliationNote": "已与采购方确认 6 月底付尾款"
+                }
+                """))
+        .andExpect(status().isForbidden());
 
     when(deliveryApplicationService.create(
         org.mockito.ArgumentMatchers.eq("po-demo"),
@@ -3288,6 +3323,7 @@ class HttpSecurityContractTests {
         BigDecimal.valueOf(98000),
         "INV-20260615",
         paymentStatus,
+        null,
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
   }

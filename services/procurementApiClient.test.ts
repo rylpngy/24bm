@@ -2103,6 +2103,68 @@ describe('procurement API clients', () => {
     });
   });
 
+  it('uses the Java API client to update supplier receivable reconciliation notes with the supplier token', async () => {
+    const calls: { url: string; init?: RequestInit }[] = [];
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      buyerLogin: { phone: 'buyer', password: 'buyer-pass' },
+      supplierLogin: { phone: 'supplier', password: 'supplier-pass' },
+      fetcher: async (url, init) => {
+        calls.push({ url: String(url), init });
+        if (String(url).endsWith('/api/v1/auth/login')) {
+          return Response.json({
+            success: true,
+            data: {
+              accessToken: 'supplier-token',
+              tokenType: 'Bearer',
+              expiresIn: 7200,
+              userId: 'supplier-user',
+              displayName: '供应商账号',
+              scope: 'SUPPLIER',
+              tenantId: null,
+              supplierId: 'supplier-java-001',
+              roles: ['SUPPLIER_ADMIN'],
+            },
+            message: '',
+          });
+        }
+        return Response.json({
+          success: true,
+          data: {
+            id: 'invoice-java-001',
+            tenantId: 'tenant-java-001',
+            supplierId: 'supplier-java-001',
+            orderId: 'po-java-001',
+            amount: 128000,
+            invoiceNo: 'INV-20260620-001',
+            paymentStatus: '部分付款',
+            reconciliationNote: '已与采购方确认 6 月底付尾款',
+          },
+          message: '',
+        });
+      },
+    });
+
+    const invoice = await client.updateSupplierReceivable('invoice-java-001', {
+      reconciliationNote: '已与采购方确认 6 月底付尾款',
+    });
+
+    const updateCall = calls.find((call) => call.url.endsWith('/api/v1/supplier/invoices/invoice-java-001/reconciliation'));
+    expect(updateCall?.init?.method).toBe('PUT');
+    expect(updateCall?.init?.headers).toMatchObject({
+      Authorization: 'Bearer supplier-token',
+      'content-type': 'application/json',
+    });
+    expect(JSON.parse(String(updateCall?.init?.body))).toEqual({
+      reconciliationNote: '已与采购方确认 6 月底付尾款',
+    });
+    expect(invoice).toMatchObject({
+      id: 'invoice-java-001',
+      paymentStatus: '部分付款',
+      reconciliationNote: '已与采购方确认 6 月底付尾款',
+    });
+  });
+
   it('uses the Java API client to review buyer approval tasks by business type', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {

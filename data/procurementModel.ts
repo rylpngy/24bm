@@ -134,7 +134,9 @@ export interface InvoiceRecord {
   supplierId: string;
   orderId: string;
   amount: number;
+  invoiceNo?: string;
   paymentStatus: PaymentStatus;
+  reconciliationNote?: string;
 }
 
 export interface AuditLogRecord {

@@ -12,7 +12,12 @@ describe('supplier invoice receivable card UI', () => {
     );
 
     expect(supplierWorkspace).toContain('SupplierInvoiceReceivableCard');
+    expect(supplierWorkspace).toContain('SupplierInvoiceReceivableDetailPanel');
     expect(supplierWorkspace).toContain('发票应收卡片');
+    expect(supplierWorkspace).toContain('应收对账详情');
+    expect(supplierWorkspace).toContain('保存对账备注');
+    expect(supplierWorkspace).toContain('receivableUpdateDrafts');
+    expect(supplierWorkspace).toContain('onUpdateReceivable(invoice.id');
     expect(supplierWorkspace).toContain('关联订单');
     expect(supplierWorkspace).toContain('应收金额');
     expect(supplierWorkspace).toContain('付款状态');

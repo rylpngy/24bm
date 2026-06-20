@@ -6,6 +6,7 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.api.InvoiceResponse;
+import com.procurement.finance.api.UpdateSupplierReceivableRequest;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoiceAmountPolicy;
 import com.procurement.finance.domain.InvoiceAuditAction;
@@ -113,6 +114,25 @@ public class InvoiceApplicationService {
     return toResponse(invoiceMapper.findByTenantAndId(order.tenantId(), invoiceId));
   }
 
+  @Transactional
+  public InvoiceResponse updateReceivable(String invoiceId, UpdateSupplierReceivableRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("invoice APIs");
+    Invoice invoice = invoiceMapper.findBySupplierAndId(supplierId, invoiceId);
+    if (invoice == null) {
+      throw new IllegalArgumentException("Invoice not found for supplier scope: " + invoiceId);
+    }
+    tenantFeatureApplicationService.requireEnabled(invoice.tenantId(), TenantFeatureKey.FINANCE);
+    int updated = invoiceMapper.updateSupplierReconciliationNote(
+        invoice.tenantId(),
+        invoice.id(),
+        supplierId,
+        request.reconciliationNote());
+    if (updated == 0) {
+      throw new IllegalStateException("Invoice changed before reconciliation note could be recorded: " + invoiceId);
+    }
+    return toResponse(invoiceMapper.findBySupplierAndId(supplierId, invoiceId));
+  }
+
   private InvoiceResponse toResponse(Invoice invoice) {
     return new InvoiceResponse(
         invoice.id(),
@@ -122,6 +142,7 @@ public class InvoiceApplicationService {
         invoice.amount(),
         invoice.invoiceNo(),
         invoice.paymentStatus(),
+        invoice.reconciliationNote(),
         invoice.createdAt(),
         invoice.updatedAt());
   }

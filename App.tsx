@@ -194,6 +194,10 @@ type SupplierInvoiceDraft = {
   invoiceNo: string;
 };
 
+type SupplierReceivableDraft = {
+  reconciliationNote: string;
+};
+
 type SupplierProfileDraft = UpdateSupplierProfilePayload;
 
 type BuyerReceiptDraft = {
@@ -924,6 +928,23 @@ const App: React.FC = () => {
     }
   };
 
+  const updateSupplierReceivable = async (invoiceId: string, draft: SupplierReceivableDraft) => {
+    if (!javaApiClient || !supplierData) return;
+    setSupplierActionBusyId(`receivable-update:${invoiceId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.updateSupplierReceivable(invoiceId, {
+        reconciliationNote: draft.reconciliationNote,
+      });
+      await refreshAfterSupplierAction();
+      setWorkflowStatus(`应收对账备注已保存并刷新：${invoiceId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '应收对账备注保存失败');
+    } finally {
+      setSupplierActionBusyId(null);
+    }
+  };
+
   const updateSupplierProfile = async (payload: SupplierProfileDraft) => {
     if (!supplierData) return;
     setSupplierProfileBusy(true);
@@ -1090,6 +1111,7 @@ const App: React.FC = () => {
                 onCreateDelivery={createSupplierDelivery}
                 onUpdateDelivery={updateSupplierDelivery}
                 onCreateInvoice={createSupplierInvoice}
+                onUpdateReceivable={updateSupplierReceivable}
                 onUpdateSupplierProfile={updateSupplierProfile}
               />
             )}
@@ -8653,6 +8675,7 @@ const SupplierWorkspaceView: React.FC<{
   onCreateDelivery: (orderId: string, draft: SupplierDeliveryDraft) => void;
   onUpdateDelivery: (deliveryId: string, draft: SupplierDeliveryDraft) => void;
   onCreateInvoice: (orderId: string, draft: SupplierInvoiceDraft) => void;
+  onUpdateReceivable: (invoiceId: string, draft: SupplierReceivableDraft) => void;
   onUpdateSupplierProfile: (draft: SupplierProfileDraft) => void;
 }> = ({
   activeModule,
@@ -8667,6 +8690,7 @@ const SupplierWorkspaceView: React.FC<{
   onCreateDelivery,
   onUpdateDelivery,
   onCreateInvoice,
+  onUpdateReceivable,
   onUpdateSupplierProfile,
 }) => {
   const [declinedOpportunityIds, setDeclinedOpportunityIds] = useState<string[]>([]);
@@ -8679,6 +8703,7 @@ const SupplierWorkspaceView: React.FC<{
   const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, SupplierDeliveryDraft>>({});
   const [deliveryUpdateDrafts, setDeliveryUpdateDrafts] = useState<Record<string, SupplierDeliveryDraft>>({});
   const [invoiceDrafts, setInvoiceDrafts] = useState<Record<string, SupplierInvoiceDraft>>({});
+  const [receivableUpdateDrafts, setReceivableUpdateDrafts] = useState<Record<string, SupplierReceivableDraft>>({});
   const [opportunityStatusFilter, setOpportunityStatusFilter] = useState('全部状态');
   const [quoteStatusFilter, setQuoteStatusFilter] = useState('全部状态');
   const [supplierOrderStatusFilter, setSupplierOrderStatusFilter] = useState('全部状态');
@@ -8701,6 +8726,10 @@ const SupplierWorkspaceView: React.FC<{
     deliveryUpdateDrafts[delivery.id] ?? {
       carrier: delivery.carrier,
       trackingNo: delivery.trackingNo,
+    };
+  const getReceivableUpdateDraft = (invoice: SupplierWorkspace['invoices'][number]): SupplierReceivableDraft =>
+    receivableUpdateDrafts[invoice.id] ?? {
+      reconciliationNote: invoice.reconciliationNote ?? '',
     };
   const supplierModuleFacts = buildSupplierModuleFacts(workspace, activeModule);
   const supplierModuleHeader = supplierModuleHeaders[activeModule];
@@ -8744,6 +8773,11 @@ const SupplierWorkspaceView: React.FC<{
     : undefined;
   const selectedSupplierOrderInvoice = selectedSupplierOrderDetail
     ? workspace.invoices.find((invoice) => invoice.orderId === selectedSupplierOrderDetail.id)
+    : undefined;
+  const selectedSupplierInvoiceDetail = filteredSupplierInvoices.find((invoice) => invoice.id === selectedSupplierInvoiceId)
+    ?? filteredSupplierInvoices[0];
+  const selectedSupplierInvoiceOrder = selectedSupplierInvoiceDetail
+    ? workspace.orders.find((order) => order.id === selectedSupplierInvoiceDetail.orderId)
     : undefined;
   const supplierMessageCenterNotifications = buildSupplierMessageCenterNotifications(workspace);
   useEffect(() => {
@@ -9318,22 +9352,33 @@ const SupplierWorkspaceView: React.FC<{
         {filteredSupplierInvoices.length === 0 ? (
           <EmptyState title="暂无应收发票" desc="订单收货后提交发票，应收和付款状态会显示在这里。" />
         ) : (
-          <div className="space-y-4">
-            <SupplierInvoiceReceivableSummaryPanel invoices={filteredSupplierInvoices} />
-            <div className="space-y-3">
-              {filteredSupplierInvoices.map((invoice) => {
-                const order = workspace.orders.find((order) => order.id === invoice.orderId);
-                return (
-                  <SupplierInvoiceReceivableCard
-                    key={invoice.id}
-                    invoice={invoice}
-                    order={order}
-                    selected={selectedSupplierInvoiceId === invoice.id}
-                    onSelectDetail={() => setSelectedSupplierInvoiceId(invoice.id)}
-                  />
-                );
-              })}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+            <div className="space-y-4">
+              <SupplierInvoiceReceivableSummaryPanel invoices={filteredSupplierInvoices} />
+              <div className="space-y-3">
+                {filteredSupplierInvoices.map((invoice) => {
+                  const order = workspace.orders.find((order) => order.id === invoice.orderId);
+                  return (
+                    <SupplierInvoiceReceivableCard
+                      key={invoice.id}
+                      invoice={invoice}
+                      order={order}
+                      selected={selectedSupplierInvoiceId === invoice.id}
+                      onSelectDetail={() => setSelectedSupplierInvoiceId(invoice.id)}
+                    />
+                  );
+                })}
+              </div>
             </div>
+            <SupplierInvoiceReceivableDetailPanel
+              invoice={selectedSupplierInvoiceDetail}
+              order={selectedSupplierInvoiceOrder}
+              javaEnabled={javaEnabled}
+              receivableUpdateDraft={selectedSupplierInvoiceDetail ? getReceivableUpdateDraft(selectedSupplierInvoiceDetail) : undefined}
+              supplierActionBusyId={supplierActionBusyId}
+              onChangeReceivableUpdateDraft={(invoiceId, draft) => setReceivableUpdateDrafts((current) => ({ ...current, [invoiceId]: draft }))}
+              onUpdateReceivable={onUpdateReceivable}
+            />
           </div>
         )}
       </Panel>
@@ -10056,6 +10101,107 @@ const SupplierInvoiceReceivableCard: React.FC<{
         onClick={onSelectDetail}
       />
     </div>
+  );
+};
+
+const SupplierInvoiceReceivableDetailPanel: React.FC<{
+  invoice?: SupplierWorkspace['invoices'][number];
+  order?: SupplierWorkspace['orders'][number];
+  javaEnabled: boolean;
+  receivableUpdateDraft?: SupplierReceivableDraft;
+  supplierActionBusyId: string | null;
+  onChangeReceivableUpdateDraft: (invoiceId: string, draft: SupplierReceivableDraft) => void;
+  onUpdateReceivable: (invoiceId: string, draft: SupplierReceivableDraft) => void;
+}> = ({
+  invoice,
+  order,
+  javaEnabled,
+  receivableUpdateDraft,
+  supplierActionBusyId,
+  onChangeReceivableUpdateDraft,
+  onUpdateReceivable,
+}) => {
+  if (!invoice) {
+    return (
+      <Panel title="应收对账详情" icon={CreditCard}>
+        <EmptyState title="暂无应收详情" desc="选择一张发票后，可查看关联订单、付款状态和对账备注。" />
+      </Panel>
+    );
+  }
+
+  const updateDraft = receivableUpdateDraft ?? {
+    reconciliationNote: invoice.reconciliationNote ?? '',
+  };
+  const receivableUpdateBusy = supplierActionBusyId === `receivable-update:${invoice.id}`;
+  const updateInvalid = !updateDraft.reconciliationNote.trim();
+  const nextAction = invoice.paymentStatus === '已付款'
+    ? '归档对账'
+    : invoice.paymentStatus === '部分付款'
+      ? '跟进尾款'
+      : '跟进回款';
+
+  return (
+    <Panel title="应收对账详情" icon={CreditCard}>
+      <div className="space-y-4">
+        <DetailHeroCard
+          eyebrow="应收对账详情"
+          title={invoice.invoiceNo ?? invoice.id}
+          meta={`关联订单 ${invoice.orderId} · 采购方租户 ${invoice.tenantId}`}
+          status={invoice.paymentStatus}
+          facts={[
+            { label: '应收金额', value: currency(invoice.amount) },
+            { label: '付款状态', value: invoice.paymentStatus },
+            { label: '关联订单', value: invoice.orderId },
+            { label: '下一步', value: nextAction },
+          ]}
+        />
+
+        <DetailSection title="关联订单">
+          <div className="space-y-2">
+            <DetailKeyValueRow label="订单编号" value={invoice.orderId} />
+            <DetailKeyValueRow label="订单状态" value={order?.status ?? '待同步'} />
+            <DetailKeyValueRow label="预计收货" value={order?.expectedReceiptDate ?? '待同步'} />
+          </div>
+        </DetailSection>
+
+        <DetailActionPanel
+          title="维护对账备注"
+          desc={javaEnabled ? '供应商可记录与采购方确认的尾款时间、对账口径和回款跟进说明，付款状态仍由采购方登记。' : 'Mock 模式先保留对账备注草稿，Java 模式下保存后刷新回显。'}
+          status={javaEnabled ? '可维护' : '草稿'}
+          tone={javaEnabled ? 'amber' : 'slate'}
+        >
+          <div className="space-y-3">
+            <label className="block">
+              <span className="text-xs font-black">对账备注</span>
+              <textarea
+                value={updateDraft.reconciliationNote}
+                disabled={!javaEnabled || receivableUpdateBusy}
+                onChange={(event) => onChangeReceivableUpdateDraft(invoice.id, {
+                  reconciliationNote: event.target.value,
+                })}
+                rows={4}
+                className="mt-2 w-full rounded-lg border border-amber-100 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-amber-400 disabled:bg-slate-100 disabled:text-slate-500"
+                placeholder="记录对账口径、尾款时间或回款跟进说明"
+              />
+            </label>
+            <PrimaryActionButton
+              onClick={() => onUpdateReceivable(invoice.id, updateDraft)}
+              disabled={!javaEnabled || receivableUpdateBusy || updateInvalid}
+              busy={receivableUpdateBusy}
+              pendingLabel="保存中"
+              tone="amber"
+              flushTop
+            >
+              保存对账备注
+            </PrimaryActionButton>
+          </div>
+        </DetailActionPanel>
+
+        <DetailSection title="当前备注">
+          <DetailKeyValueRow label="对账说明" value={invoice.reconciliationNote ?? '暂无备注'} />
+        </DetailSection>
+      </div>
+    </Panel>
   );
 };
 

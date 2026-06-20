@@ -803,6 +803,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'AuditLogList',
   },
   {
+    method: 'PUT',
+    path: '/supplier/invoices/{invoiceId}/reconciliation',
+    audience: 'supplier',
+    action: '供应商维护应收发票对账备注',
+    requestSchema: 'UpdateSupplierReceivableRequest',
+    responseSchema: 'Invoice',
+  },
+  {
     method: 'POST',
     path: '/supplier/orders/{orderId}/invoices',
     audience: 'supplier',
@@ -1151,6 +1159,7 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'SupplierQuoteList',
           'SupplierInvoiceListRequest',
           'SupplierInvoiceList',
+          'UpdateSupplierReceivableRequest',
           'CreateInvoiceRequest',
           'Invoice',
           'RegisterPaymentRequest',
