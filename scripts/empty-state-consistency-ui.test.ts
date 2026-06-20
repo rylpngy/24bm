@@ -10,7 +10,13 @@ describe('empty state consistency UI', () => {
   it('routes shared list empty states through EmptyState instead of one-off empty boxes', () => {
     const app = read('App.tsx');
 
+    const shellState = sliceBetween(app, 'const ShellState', 'const EmptyState');
     const emptyState = sliceBetween(app, 'const EmptyState', 'const processStateToneClasses');
+    expect(shellState).toContain('min-h-[12rem]');
+    expect(shellState).toContain('items-center justify-center');
+    expect(shellState).toContain('text-center');
+    expect(shellState).toContain('break-words text-sm font-black');
+    expect(shellState).toContain('break-words text-xs font-bold leading-5');
     expect(emptyState).toContain('<ShellState variant="empty"');
 
     const simpleList = sliceBetween(app, 'const SimpleList', 'const DetailToggleButton');

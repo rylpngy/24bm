@@ -8452,14 +8452,14 @@ const ShellState: React.FC<{
 }> = ({ variant, title, desc, fullScreen = false, actionLabel, onAction }) => {
   const Icon = variant === 'error' ? ShieldCheck : variant === 'loading' ? Activity : Database;
   const body = (
-    <div className={`rounded-lg border p-6 ${shellStateToneClasses[variant]}`}>
-      <div className="flex items-start gap-3">
+    <div className={`flex min-h-[12rem] items-center justify-center rounded-lg border p-6 text-center ${shellStateToneClasses[variant]}`}>
+      <div className="flex max-w-xl flex-col items-center justify-center gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/80">
           <Icon size={18} />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-black">{title}</p>
-          <p className="mt-1 text-xs font-bold leading-5 opacity-80">{desc}</p>
+          <p className="break-words text-sm font-black">{title}</p>
+          <p className="mt-1 break-words text-xs font-bold leading-5 opacity-80">{desc}</p>
           {actionLabel && onAction && (
             <button
               type="button"

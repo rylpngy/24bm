@@ -102,6 +102,7 @@
 | 46 | 共享组件长文本抗挤压 | 指标卡片、三端模块页头和状态徽标已补 `min-w-0`、长文本换行和去截断处理，降低长编号、长状态、长动作说明导致小屏横向溢出的风险 | `scripts/mobile-layout-overflow-ui.test.ts`、`MetricCard`、`BuyerModuleHeader`、`SupplierModuleHeader`、`PlatformModuleHeader`、`StatusPill` |
 | 47 | 操作面板按钮密度收口 | 详情操作面板内容区已补局部横向滚动，主操作按钮文本已补独立换行容器，降低多按钮、长动作文本在窄屏下撑开整页的风险 | `scripts/stage-three-first-round-form-density-ui.test.ts`、`DetailActionPanel`、`PrimaryActionButton` |
 | 48 | 共享表格滚动可读性收口 | 桌面表格共享框架已补横向滚动约束、背景和阴影，并增加 `min-w-max` 内层容器，降低长列内容挤压表格、破坏列表观感的风险 | `scripts/responsive-table-frame-ui.test.ts`、`ResponsiveTableFrame` |
+| 49 | 共享空态稳定区域收口 | `ShellState` 已补非全屏空态最小高度、居中排布和长文本换行，降低列表筛选无结果时页面跳动和空态观感松散的风险 | `scripts/empty-state-consistency-ui.test.ts`、`ShellState`、`EmptyState` |
 
 ## 第二批候选任务
 
