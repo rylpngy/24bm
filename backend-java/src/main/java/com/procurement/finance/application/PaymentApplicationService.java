@@ -6,6 +6,7 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
+import com.procurement.finance.api.UpdateInvoicePaymentRequest;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoiceAmountPolicy;
 import com.procurement.finance.domain.InvoiceAuditAction;
@@ -81,17 +82,26 @@ public class PaymentApplicationService {
 
   @Transactional
   public InvoiceResponse register(String invoiceId, RegisterPaymentRequest request) {
+    return applyPaymentStatus(invoiceId, request.paymentStatus());
+  }
+
+  @Transactional
+  public InvoiceResponse update(String invoiceId, UpdateInvoicePaymentRequest request) {
+    return applyPaymentStatus(invoiceId, request.paymentStatus());
+  }
+
+  private InvoiceResponse applyPaymentStatus(String invoiceId, String paymentStatus) {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
     }
-    invoicePaymentStatusTransition.requireSupportedTarget(request.paymentStatus());
-    if (invoicePaymentStatusTransition.isIdempotentRegistration(invoice.paymentStatus(), request.paymentStatus())) {
+    invoicePaymentStatusTransition.requireSupportedTarget(paymentStatus);
+    if (invoicePaymentStatusTransition.isIdempotentRegistration(invoice.paymentStatus(), paymentStatus)) {
       return toResponse(invoice);
     }
-    invoicePaymentStatusTransition.requireTransition(invoice.paymentStatus(), request.paymentStatus(), invoiceId);
+    invoicePaymentStatusTransition.requireTransition(invoice.paymentStatus(), paymentStatus, invoiceId);
     requireInvoiceAmountMatchesOrder(tenantId, invoice);
     requireSupplierPayable(tenantId, invoice);
 
@@ -99,12 +109,12 @@ public class PaymentApplicationService {
         tenantId,
         invoiceId,
         invoice.paymentStatus(),
-        request.paymentStatus());
+        paymentStatus);
     if (updated == 0) {
       throw new IllegalStateException("Invoice status changed before payment could be recorded: " + invoiceId);
     }
     auditLogApplicationService.recordTenantAction(
-        InvoicePaymentStatus.PAID.equals(request.paymentStatus())
+        InvoicePaymentStatus.PAID.equals(paymentStatus)
             ? InvoiceAuditAction.PAID
             : InvoiceAuditAction.PARTIAL_PAID,
         AuditTargetType.INVOICE,
@@ -112,10 +122,10 @@ public class PaymentApplicationService {
     notificationApplicationService.notifyActiveSupplierUsers(
         tenantId,
         invoice.supplierId(),
-        InvoicePaymentStatus.PAID.equals(request.paymentStatus())
+        InvoicePaymentStatus.PAID.equals(paymentStatus)
             ? NotificationTitle.INVOICE_PAID
             : NotificationTitle.INVOICE_PARTIAL_PAID,
-        "采购方已登记发票 " + invoice.invoiceNo() + " 的付款状态：" + request.paymentStatus() + "。");
+        "采购方已登记发票 " + invoice.invoiceNo() + " 的付款状态：" + paymentStatus + "。");
     return toResponse(invoiceMapper.findByTenantAndId(tenantId, invoiceId));
   }
 

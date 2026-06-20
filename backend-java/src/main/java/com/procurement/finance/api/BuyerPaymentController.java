@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,6 +34,11 @@ public class BuyerPaymentController {
   @PostMapping("/{invoiceId}/payments")
   public ApiResponse<InvoiceResponse> register(@PathVariable String invoiceId, @Valid @RequestBody RegisterPaymentRequest request) {
     return ApiResponse.ok(paymentApplicationService.register(invoiceId, request));
+  }
+
+  @PutMapping("/{invoiceId}")
+  public ApiResponse<InvoiceResponse> update(@PathVariable String invoiceId, @Valid @RequestBody UpdateInvoicePaymentRequest request) {
+    return ApiResponse.ok(paymentApplicationService.update(invoiceId, request));
   }
 
   @GetMapping("/{invoiceId}/payment-audit-logs")

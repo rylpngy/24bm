@@ -101,6 +101,7 @@ import {
    type UpdateDemandPayload,
    type UpdateRfqPayload,
    type UpdateOrderPayload,
+   type UpdateInvoicePayload,
    type PlatformWorkspaceData,
   type JavaPlatformAnnouncementDto,
   type JavaApprovalTaskDto,
@@ -260,6 +261,7 @@ const App: React.FC = () => {
   const [awardSubmitBusyId, setAwardSubmitBusyId] = useState<string | null>(null);
   const [orderCreateBusy, setOrderCreateBusy] = useState<string | null>(null);
   const [orderUpdateBusyId, setOrderUpdateBusyId] = useState<string | null>(null);
+  const [invoiceUpdateBusyId, setInvoiceUpdateBusyId] = useState<string | null>(null);
   const [buyerFulfillmentBusyId, setBuyerFulfillmentBusyId] = useState<string | null>(null);
   const [platformReviewBusyId, setPlatformReviewBusyId] = useState<string | null>(null);
   const [platformTenantBusyId, setPlatformTenantBusyId] = useState<string | null>(null);
@@ -738,6 +740,21 @@ const App: React.FC = () => {
     }
   };
 
+  const updateBuyerInvoiceDetail = async (invoiceId: string, payload: UpdateInvoicePayload) => {
+    if (!javaApiClient || !buyerData) return;
+    setInvoiceUpdateBusyId(invoiceId);
+    setWorkflowStatus(null);
+    try {
+      const invoice = await javaApiClient.updateBuyerInvoice(invoiceId, payload);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`发票付款已保存并刷新后回显：${invoice.id}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '发票付款保存失败');
+    } finally {
+      setInvoiceUpdateBusyId(null);
+    }
+  };
+
   const submitSupplierQuote = async (rfqId: string, draft: SupplierQuoteDraft) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`quote:${rfqId}`);
@@ -911,6 +928,7 @@ const App: React.FC = () => {
                 awardSubmitBusyId={awardSubmitBusyId}
                 orderCreateBusy={orderCreateBusy}
                 orderUpdateBusyId={orderUpdateBusyId}
+                invoiceUpdateBusyId={invoiceUpdateBusyId}
                 buyerFulfillmentBusyId={buyerFulfillmentBusyId}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowStatus={workflowStatus}
@@ -926,6 +944,7 @@ const App: React.FC = () => {
                 onUpdateOrder={updateBuyerOrderDetail}
                 onCreateReceipt={createBuyerReceiptFromOrder}
                 onRegisterPayment={registerBuyerInvoicePayment}
+                onUpdateInvoice={updateBuyerInvoiceDetail}
                 onUpdateApprovalTemplate={updateApprovalTemplate}
               />
             )}
@@ -2853,6 +2872,7 @@ const BuyerWorkspaceView: React.FC<{
   awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   orderUpdateBusyId: string | null;
+  invoiceUpdateBusyId: string | null;
   buyerFulfillmentBusyId: string | null;
   javaEnabled: boolean;
   workflowStatus: string | null;
@@ -2868,6 +2888,7 @@ const BuyerWorkspaceView: React.FC<{
   onUpdateOrder: (orderId: string, payload: UpdateOrderPayload) => void;
   onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
   onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onUpdateInvoice: (invoiceId: string, payload: UpdateInvoicePayload) => void;
   onUpdateApprovalTemplate: (
     templateCode: string,
     defaultApproverRoleId: string,
@@ -2893,6 +2914,7 @@ const BuyerWorkspaceView: React.FC<{
   awardSubmitBusyId,
   orderCreateBusy,
   orderUpdateBusyId,
+  invoiceUpdateBusyId,
   buyerFulfillmentBusyId,
   javaEnabled,
   workflowStatus,
@@ -2908,6 +2930,7 @@ const BuyerWorkspaceView: React.FC<{
   onUpdateOrder,
   onCreateReceipt,
   onRegisterPayment,
+  onUpdateInvoice,
   onUpdateApprovalTemplate,
 }) => {
   const [selectedDemandId, setSelectedDemandId] = useState(workspace.demands[0]?.id ?? '');
@@ -4067,10 +4090,12 @@ const BuyerWorkspaceView: React.FC<{
         detail={selectedInvoiceDetail}
         invoice={selectedInvoiceRecord}
         busy={buyerFulfillmentBusyId === `payment:${selectedInvoice}`}
+        invoiceUpdateBusyId={invoiceUpdateBusyId}
         javaEnabled={javaEnabled}
         paymentDraft={selectedInvoiceRecord ? getPaymentDraft(selectedInvoiceRecord.id) : undefined}
         onChangePaymentDraft={(invoiceId, draft) => setPaymentDrafts((drafts) => ({ ...drafts, [invoiceId]: draft }))}
         onRegisterPayment={onRegisterPayment}
+        onUpdateInvoice={onUpdateInvoice}
       />
       </>
       )}
@@ -6644,15 +6669,39 @@ const InvoicePaymentDetailPanelView: React.FC<{
   detail?: InvoicePaymentDetailPanel;
   invoice?: BuyerWorkspace['invoices'][number];
   busy: boolean;
+  invoiceUpdateBusyId: string | null;
   javaEnabled: boolean;
   paymentDraft?: BuyerPaymentDraft;
   onChangePaymentDraft: (invoiceId: string, draft: BuyerPaymentDraft) => void;
   onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
-}> = ({ detail, invoice, busy, javaEnabled, paymentDraft, onChangePaymentDraft, onRegisterPayment }) => {
+  onUpdateInvoice: (invoiceId: string, payload: UpdateInvoicePayload) => void;
+}> = ({
+  detail,
+  invoice,
+  busy,
+  invoiceUpdateBusyId,
+  javaEnabled,
+  paymentDraft,
+  onChangePaymentDraft,
+  onRegisterPayment,
+  onUpdateInvoice,
+}) => {
+  const normalizeEditableInvoicePaymentStatus = (status?: string) =>
+    status === '已付款' || status === '部分付款' ? status : '部分付款';
+  const [editableInvoicePaymentStatus, setEditableInvoicePaymentStatus] = useState(
+    normalizeEditableInvoicePaymentStatus(invoice?.paymentStatus),
+  );
   const paymentStatus = detail?.facts.find((fact) => fact.label === '付款状态')?.value ?? '待付款';
   const invoiceAmount = detail?.facts.find((fact) => fact.label === '发票金额')?.value ?? detail?.amountLabel ?? '未找到';
   const orderAmount = detail?.orderFacts.find((fact) => fact.label === '订单金额')?.value ?? '未找到';
   const reconciliationStatus = detail && invoiceAmount === orderAmount ? '金额一致' : '待核对';
+  const invoiceUpdateBusy = Boolean(invoice && invoiceUpdateBusyId === invoice.id);
+  const invoicePaymentEditable = Boolean(javaEnabled && invoice && invoice.paymentStatus !== '已付款');
+  const invoicePaymentEditDisabled = !invoicePaymentEditable || invoiceUpdateBusy || editableInvoicePaymentStatus.trim().length === 0;
+
+  useEffect(() => {
+    setEditableInvoicePaymentStatus(normalizeEditableInvoicePaymentStatus(invoice?.paymentStatus));
+  }, [invoice?.id, invoice?.paymentStatus]);
 
   return (
     <Panel title="发票详情" icon={Receipt}>
@@ -6711,6 +6760,36 @@ const InvoicePaymentDetailPanelView: React.FC<{
               {detail.paymentTimelineRows.map((row) => (
                 <DetailKeyValueRow key={row.label} label={row.label} value={row.value} fontMono />
               ))}
+            </div>
+          </DetailSection>
+
+          <DetailSection title="发票付款编辑">
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <label className="block">
+                  <span className="text-xs font-black text-slate-500">付款状态</span>
+                  <select
+                    value={editableInvoicePaymentStatus}
+                    onChange={(event) => setEditableInvoicePaymentStatus(event.target.value)}
+                    disabled={!invoicePaymentEditable}
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-blue-400 disabled:bg-slate-50 disabled:text-slate-400"
+                  >
+                    <option value="部分付款">部分付款</option>
+                    <option value="已付款">已付款</option>
+                  </select>
+                </label>
+                <PrimaryActionButton
+                  onClick={() => invoice && onUpdateInvoice(invoice.id, { paymentStatus: editableInvoicePaymentStatus })}
+                  disabled={invoicePaymentEditDisabled}
+                  busy={invoiceUpdateBusy}
+                  pendingLabel="保存中"
+                >
+                  保存发票付款修改
+                </PrimaryActionButton>
+              </div>
+              <p className="text-xs font-bold text-slate-500">
+                保存后会重新加载 Java 数据并刷新后回显；已付款发票不可再修改付款状态。
+              </p>
             </div>
           </DetailSection>
 
@@ -7805,7 +7884,7 @@ const Field: React.FC<{
 );
 
 const DetailPanelBody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="space-y-3 sm:space-y-4">
+  <div className="space-y-3 rounded-lg bg-slate-50/70 p-2 sm:space-y-4 sm:p-3">
     {children}
   </div>
 );
@@ -7853,7 +7932,7 @@ const DetailSection: React.FC<{
   countLabel?: string;
   children: React.ReactNode;
 }> = ({ title, countLabel, children }) => (
-  <section className="rounded-lg border border-slate-100 bg-white p-3">
+  <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
     <div className="mb-2 flex items-center justify-between gap-3">
       <p className="text-xs font-black text-slate-600">{title}</p>
       {countLabel && (
@@ -9771,12 +9850,15 @@ const Panel: React.FC<{
   icon: React.ElementType;
   children: React.ReactNode;
 }> = ({ title, icon: Icon, children }) => (
-  <section className="rounded-lg border border-slate-200 bg-white p-5">
-    <div className="mb-4 flex items-center gap-2">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+  <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
+    <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
         <Icon size={17} />
       </div>
-      <h3 className="font-black text-slate-950">{title}</h3>
+      <div className="min-w-0">
+        <h3 className="truncate font-black text-slate-950">{title}</h3>
+        <p className="mt-0.5 text-xs font-bold text-slate-400">列表、详情和操作入口</p>
+      </div>
     </div>
     {children}
   </section>
@@ -10091,7 +10173,7 @@ const WorkflowListCard: React.FC<{
   children,
 }) => (
   <div
-    className={`rounded-lg border bg-white p-4 transition ${
+    className={`rounded-lg border bg-white p-4 transition hover:border-blue-200 hover:shadow-sm ${
       detailSelected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
     }`}
   >
@@ -10275,7 +10357,7 @@ const StatusPill: React.FC<{ label: string }> = ({ label }) => {
       ? 'bg-amber-50 text-amber-700 border-amber-100'
       : 'bg-slate-100 text-slate-600 border-slate-200';
 
-  return <span className={`inline-flex rounded-lg border px-2 py-1 text-xs font-black ${classes}`}>{label}</span>;
+  return <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-lg border px-2 py-1 text-xs font-black ${classes}`}>{label}</span>;
 };
 
 export default App;

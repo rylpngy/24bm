@@ -50,7 +50,7 @@
 
 ## 已完成的小步验收记录
 
-当前第二轮第一批已经完成一组表单校验和反馈收尾：采购方主流程的高频动作已经从“按钮入口”推进到“可填写、可校验、有反馈”的后台操作形态，并同步补到了平台端企业审核和公告发布。第二轮后续已经开始补详情编辑和 Java 持久化闭环，采购需求草稿编辑、RFQ 报价中编辑和订单预计到货日期编辑已形成页面细节优化样板，后续继续扩展到发票等高频对象。
+当前第二轮第一批已经完成一组表单校验和反馈收尾：采购方主流程的高频动作已经从“按钮入口”推进到“可填写、可校验、有反馈”的后台操作形态，并同步补到了平台端企业审核和公告发布。第二轮后续已经开始补详情编辑和 Java 持久化闭环，采购需求草稿编辑、RFQ 报价中编辑、订单预计到货日期编辑和发票付款状态编辑已形成页面细节优化样板。
 
 | 序号 | 增量 | 当前结论 | 验收依据 |
 | --- | --- | --- | --- |
@@ -83,6 +83,7 @@
 | 27 | 采购需求详情编辑闭环 | 采购需求详情页已补草稿需求编辑、保存、Java 更新接口和刷新后回显反馈，非草稿状态保持不可编辑边界 | `scripts/buyer-demand-detail-edit-ui.test.ts`、`PurchaseDemandUpdateDraftTests` |
 | 28 | RFQ 详情编辑闭环 | RFQ 详情页已补报价中询价编辑、邀请供应商重选、Java 更新接口和刷新后回显反馈，定标审批中和已定标状态保持不可编辑边界 | `scripts/buyer-rfq-detail-edit-ui.test.ts`、`RfqUpdateQuotingTests` |
 | 29 | 订单详情编辑闭环 | 订单详情页已补预计到货日期编辑、Java 更新接口和刷新后回显反馈，已收货订单保持不可编辑边界 | `scripts/buyer-order-detail-edit-ui.test.ts`、`PurchaseOrderUpdateExpectedReceiptTests` |
+| 30 | 发票付款详情编辑闭环 | 发票详情页已补付款状态编辑、Java 更新接口和刷新后回显反馈，已付款发票保持不可编辑边界 | `scripts/buyer-invoice-detail-edit-ui.test.ts`、`InvoicePaymentUpdateDetailTests` |
 
 ## 第二批候选任务
 

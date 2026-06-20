@@ -1,5 +1,5 @@
 export type ApiAudience = 'platform' | 'buyer' | 'supplier' | 'shared';
-export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export interface ApiModule {
   key: ApiAudience;
@@ -737,6 +737,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     queryParameters: ['paymentStatus', 'supplierId', 'orderId'],
   },
   {
+    method: 'PUT',
+    path: '/buyer/invoices/{invoiceId}',
+    audience: 'buyer',
+    action: '维护发票付款状态',
+    requestSchema: 'UpdateInvoicePaymentRequest',
+    responseSchema: 'Invoice',
+  },
+  {
     method: 'GET',
     path: '/supplier/quotes',
     audience: 'supplier',
@@ -1099,6 +1107,7 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'CreateInvoiceRequest',
           'Invoice',
           'RegisterPaymentRequest',
+          'UpdateInvoicePaymentRequest',
           'PaymentRecord',
         ].map((name) => [name, { type: 'object', additionalProperties: true }]),
       ),

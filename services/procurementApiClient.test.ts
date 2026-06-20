@@ -1665,6 +1665,28 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/invoices/invoice-java-001' && init?.method === 'PUT') {
+        expect(init.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init.body))).toEqual({ paymentStatus: '部分付款' });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'invoice-java-001',
+            tenantId: 'tenant-acme',
+            supplierId: 'ent-supplier-sunrise',
+            orderId: 'po-java-001',
+            amount: 118000,
+            invoiceNo: 'INV-2026-0001',
+            paymentStatus: '部分付款',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:18:00+08:00',
+          },
+          message: '',
+        });
+      }
       throw new Error(`Unexpected request: ${input}`);
     };
 
@@ -1713,6 +1735,7 @@ describe('procurement API clients', () => {
       attachmentNames: ['收货照片.jpg', '验收单.pdf'],
     });
     const invoice = await client.createSupplierInvoice(order.id, { amount: 118000, invoiceNo: 'INV-2026-0001' });
+    const updatedInvoice = await client.updateBuyerInvoice(invoice.id, { paymentStatus: '部分付款' });
     const paidInvoice = await client.registerBuyerPayment(invoice.id, {
       paymentStatus: '已付款',
       paymentRemark: '已完成银行付款登记',
@@ -1768,6 +1791,10 @@ describe('procurement API clients', () => {
       orderId: 'po-java-001',
       amount: 118000,
       paymentStatus: '待付款',
+    });
+    expect(updatedInvoice).toMatchObject({
+      id: 'invoice-java-001',
+      paymentStatus: '部分付款',
     });
     expect(paidInvoice.paymentStatus).toBe('已付款');
     expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(2);

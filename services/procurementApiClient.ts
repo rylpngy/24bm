@@ -117,6 +117,10 @@ export interface RegisterPaymentPayload {
   reconciliationNote?: string;
 }
 
+export interface UpdateInvoicePayload {
+  paymentStatus: string;
+}
+
 export interface CreateDepartmentPayload {
   name: string;
   parentId?: string | null;
@@ -585,6 +589,7 @@ export interface JavaProcurementApiClient {
   listBuyerInvoices(): Promise<InvoiceRecord[]>;
   createSupplierInvoice(orderId: string, payload: CreateInvoicePayload): Promise<InvoiceRecord>;
   registerBuyerPayment(invoiceId: string, payload: RegisterPaymentPayload): Promise<InvoiceRecord>;
+  updateBuyerInvoice(invoiceId: string, payload: UpdateInvoicePayload): Promise<InvoiceRecord>;
   getSupplierWorkspace(): Promise<JavaSupplierWorkspaceData>;
   getSupplierProfile(): Promise<JavaSupplierProfileDto>;
   listSupplierRfqs(): Promise<Rfq[]>;
@@ -1218,6 +1223,14 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     async registerBuyerPayment(invoiceId: string, payload: RegisterPaymentPayload) {
       const invoice = await buyerRequest<JavaInvoiceDto>(`/api/v1/buyer/invoices/${invoiceId}/payments`, {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ paymentStatus: payload.paymentStatus }),
+      });
+      return toInvoice(invoice);
+    },
+    async updateBuyerInvoice(invoiceId: string, payload: UpdateInvoicePayload) {
+      const invoice = await buyerRequest<JavaInvoiceDto>(`/api/v1/buyer/invoices/${invoiceId}`, {
+        method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ paymentStatus: payload.paymentStatus }),
       });

@@ -208,7 +208,7 @@ describe('admin shell polish UI', () => {
     const app = read('App.tsx');
 
     expect(app).toContain('const DetailPanelBody');
-    expect(app).toContain('className="space-y-3 sm:space-y-4"');
+    expect(app).toContain('className="space-y-3 rounded-lg bg-slate-50/70 p-2 sm:space-y-4 sm:p-3"');
     expect(app).toContain('break-words');
     expect(app).toContain('min-w-0');
     expect(app.match(/<DetailPanelBody>/g)?.length).toBeGreaterThanOrEqual(6);

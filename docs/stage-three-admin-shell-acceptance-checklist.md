@@ -163,5 +163,6 @@
 | 列表工具条提示优化 | 列表工具条不再显示误导性的“快速筛选”，改为明确提示顶部搜索和状态筛选，并增强窄屏标签稳定性 | `ListToolbar`、`scripts/admin-list-toolbar-ui.test.ts` |
 | 状态筛选组件优化 | 状态筛选补充筛选器语义、可选项数量和移动端上下布局，避免小屏下选择框挤压 | `StatusFilterControl`、`scripts/buyer-workflow-status-filters-ui.test.ts` |
 | 流程状态提示语义优化 | 等待、已处理等流程提示补充可访问标签和长文本换行，减少详情区状态提示在窄屏下的割裂感 | `ProcessStateNotice`、`scripts/admin-shell-polish-ui.test.ts` |
+| 共享视觉原语收口 | 面板、详情分组、流程卡片和状态标签补齐浅阴影、分隔线、详情浅底和不换行状态胶囊，让三端后台页面更接近可演示后台形态 | `Panel`、`DetailPanelBody`、`DetailSection`、`WorkflowListCard`、`StatusPill`、`scripts/stage-three-first-round-ui-polish.test.ts` |
 
 第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。
