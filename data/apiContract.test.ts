@@ -104,6 +104,9 @@ describe('procurement SaaS API contract draft', () => {
 
   it('declares tenant-scoped database tables and public supplier identity tables', () => {
     expect(databaseTables.find((table) => table.name === 'supplier_enterprises')?.tenantScoped).toBe(false);
+    expect(databaseTables.find((table) => table.name === 'supplier_enterprises')?.requiredColumns).toEqual(
+      expect.arrayContaining(['review_comment', 'profile_confirmed', 'risk_confirmed']),
+    );
     expect(databaseTables.find((table) => table.name === 'dictionaries')?.tenantScoped).toBe(false);
     expect(databaseTables.find((table) => table.name === 'dictionaries')?.requiredColumns).toContain('sort_order');
     expect(databaseTables.find((table) => table.name === 'platform_announcements')?.tenantScoped).toBe(false);

@@ -829,7 +829,16 @@ export const databaseTables: DatabaseTable[] = [
     name: 'supplier_enterprises',
     tenantScoped: false,
     purpose: '供应商公共企业身份、认证和平台级基础档案。',
-    requiredColumns: ['enterprise_id', 'credit_code', 'legal_person', 'verified_status', 'profile_status'],
+    requiredColumns: [
+      'enterprise_id',
+      'credit_code',
+      'legal_person',
+      'verified_status',
+      'profile_status',
+      'review_comment',
+      'profile_confirmed',
+      'risk_confirmed',
+    ],
   },
   {
     name: 'platform_announcements',

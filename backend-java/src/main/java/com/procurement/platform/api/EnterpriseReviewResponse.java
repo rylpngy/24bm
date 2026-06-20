@@ -5,5 +5,8 @@ public record EnterpriseReviewResponse(
     String name,
     String type,
     Boolean verified,
-    String reviewStatus) {
+    String reviewStatus,
+    String reviewComment,
+    Boolean profileConfirmed,
+    Boolean riskConfirmed) {
 }

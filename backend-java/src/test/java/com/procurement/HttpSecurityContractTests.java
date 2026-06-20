@@ -1464,7 +1464,15 @@ class HttpSecurityContractTests {
         new PlatformOverviewResponse("platform", 2, 3, 1),
         new PlatformOperationSummaryResponse(2, 1, 3, 1),
         List.of(new TenantResponse("tenant-acme", "Acme 采购公司", "MVP", "active", List.of("rfq"), 100)),
-        List.of(new EnterpriseReviewResponse("ent-supplier-sunrise", "晨光科技供应商", "supplier", false, "pending"))));
+        List.of(new EnterpriseReviewResponse(
+            "ent-supplier-sunrise",
+            "晨光科技供应商",
+            "supplier",
+            false,
+            "pending",
+            null,
+            false,
+            false))));
 
     mockMvc.perform(get("/api/v1/platform/workspace")
             .header("Authorization", "Bearer " + platformToken))
@@ -2082,7 +2090,10 @@ class HttpSecurityContractTests {
         "晨光供应商",
         "supplier",
         false,
-        "pending")));
+        "pending",
+        null,
+        false,
+        false)));
 
     mockMvc.perform(get("/api/v1/platform/enterprise-reviews")
             .header("Authorization", "Bearer " + platformToken))
@@ -2098,7 +2109,10 @@ class HttpSecurityContractTests {
             "晨光供应商",
             "supplier",
             true,
-            "approved"));
+            "approved",
+            "资料齐全，准入通过。",
+            true,
+            true));
 
     mockMvc.perform(post("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise")
             .header("Authorization", "Bearer " + platformToken)
@@ -2106,12 +2120,18 @@ class HttpSecurityContractTests {
             .content("""
                 {
                   "verified": true,
-                  "reviewStatus": "approved"
+                  "reviewStatus": "approved",
+                  "reviewComment": "资料齐全，准入通过。",
+                  "profileConfirmed": true,
+                  "riskConfirmed": true
                 }
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.verified").value(true))
-        .andExpect(jsonPath("$.data.reviewStatus").value("approved"));
+        .andExpect(jsonPath("$.data.reviewStatus").value("approved"))
+        .andExpect(jsonPath("$.data.reviewComment").value("资料齐全，准入通过。"))
+        .andExpect(jsonPath("$.data.profileConfirmed").value(true))
+        .andExpect(jsonPath("$.data.riskConfirmed").value(true));
   }
 
   @Test

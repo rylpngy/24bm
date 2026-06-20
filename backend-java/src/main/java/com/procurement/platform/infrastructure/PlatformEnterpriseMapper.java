@@ -12,7 +12,10 @@ public interface PlatformEnterpriseMapper {
 
   @Select("""
       select e.id, e.name, e.type, e.verified,
-             coalesce(s.verified_status, case when e.verified then 'approved' else 'pending' end) as review_status
+             coalesce(s.verified_status, case when e.verified then 'approved' else 'pending' end) as review_status,
+             s.review_comment,
+             coalesce(s.profile_confirmed, false) as profile_confirmed,
+             coalesce(s.risk_confirmed, false) as risk_confirmed
       from enterprises e
       left join supplier_enterprises s on s.enterprise_id = e.id
       where e.verified = false
@@ -30,7 +33,10 @@ public interface PlatformEnterpriseMapper {
 
   @Select("""
       select e.id, e.name, e.type, e.verified,
-             coalesce(s.verified_status, case when e.verified then 'approved' else 'pending' end) as review_status
+             coalesce(s.verified_status, case when e.verified then 'approved' else 'pending' end) as review_status,
+             s.review_comment,
+             coalesce(s.profile_confirmed, false) as profile_confirmed,
+             coalesce(s.risk_confirmed, false) as risk_confirmed
       from enterprises e
       left join supplier_enterprises s on s.enterprise_id = e.id
       where e.id = #{enterpriseId}
@@ -55,4 +61,17 @@ public interface PlatformEnterpriseMapper {
   int updateSupplierReviewStatus(
       @Param("enterpriseId") String enterpriseId,
       @Param("reviewStatus") String reviewStatus);
+
+  @Update("""
+      update supplier_enterprises
+      set review_comment = #{reviewComment},
+          profile_confirmed = #{profileConfirmed},
+          risk_confirmed = #{riskConfirmed}
+      where enterprise_id = #{enterpriseId}
+      """)
+  int updateSupplierReviewDetail(
+      @Param("enterpriseId") String enterpriseId,
+      @Param("reviewComment") String reviewComment,
+      @Param("profileConfirmed") Boolean profileConfirmed,
+      @Param("riskConfirmed") Boolean riskConfirmed);
 }

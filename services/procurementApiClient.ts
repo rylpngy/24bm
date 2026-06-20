@@ -519,7 +519,18 @@ export interface JavaEnterpriseReviewDto {
   type: Enterprise['type'];
   verified: boolean;
   reviewStatus: string;
+  reviewComment?: string;
+  profileConfirmed?: boolean;
+  riskConfirmed?: boolean;
 }
+
+export type PlatformEnterpriseReviewPayload = {
+  verified: boolean;
+  reviewStatus: 'approved' | 'rejected';
+  reviewComment?: string;
+  profileConfirmed?: boolean;
+  riskConfirmed?: boolean;
+};
 
 export interface JavaPlatformAnnouncementDto {
   id: string;
@@ -562,7 +573,7 @@ export interface JavaProcurementApiClient {
   listPlatformEnterpriseReviews(): Promise<JavaEnterpriseReviewDto[]>;
   reviewPlatformEnterprise(
     enterpriseId: string,
-    payload: { verified: boolean; reviewStatus: 'approved' | 'rejected' },
+    payload: PlatformEnterpriseReviewPayload,
   ): Promise<JavaEnterpriseReviewDto>;
   getBuyerWorkspace(): Promise<JavaBuyerMasterData>;
   listBuyerSuppliers(): Promise<BuyerSupplierRelationDto[]>;
@@ -1003,7 +1014,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     },
     reviewPlatformEnterprise(
       enterpriseId: string,
-      payload: { verified: boolean; reviewStatus: 'approved' | 'rejected' },
+      payload: PlatformEnterpriseReviewPayload,
     ) {
       return platformRequest<JavaEnterpriseReviewDto>(`/api/v1/platform/enterprise-reviews/${enterpriseId}`, {
         method: 'POST',
@@ -1446,6 +1457,9 @@ export const applyJavaPlatformWorkspaceData = (
     type: enterprise.type,
     industry: enterprise.type === 'supplier' ? '待审核企业' : '平台企业',
     verified: enterprise.verified,
+    reviewComment: enterprise.reviewComment,
+    profileConfirmed: enterprise.profileConfirmed,
+    riskConfirmed: enterprise.riskConfirmed,
   }));
 
   const nextModel: ProcurementMvpModel = {

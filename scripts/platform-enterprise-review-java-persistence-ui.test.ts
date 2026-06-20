@@ -19,12 +19,17 @@ describe('platform enterprise review Java persistence UI', () => {
     expect(app).toContain('reviewPlatformEnterprise');
     expect(app).toContain('javaApiClient.reviewPlatformEnterprise');
     expect(app).toContain("reviewStatus: result === 'approved' ? 'approved' : 'rejected'");
+    expect(app).toContain('reviewComment: draft.comment.trim()');
+    expect(app).toContain('profileConfirmed: draft.profileConfirmed');
+    expect(app).toContain('riskConfirmed: draft.riskConfirmed');
     expect(app).toContain('setWorkflowStatus(`平台企业审核已${result ===');
     expect(platformWorkspace).toContain('platformReviewBusyId');
     expect(platformWorkspace).toContain('reviewBusyId');
     expect(platformReviewActionPanel).toContain("reviewBusyId === `${review.id}:approved`");
     expect(platformReviewActionPanel).toContain("reviewBusyId === `${review.id}:rejected`");
     expect(platformReviewActionPanel).toContain('enterpriseReviewInvalid');
+    expect(platformReviewActionPanel).toContain("onReviewEnterprise(review.id, 'approved', draft)");
+    expect(platformReviewActionPanel).toContain("onReviewEnterprise(review.id, 'rejected', draft)");
     expect(platformReviewActionPanel).toContain('disabled={approveBusy || rejectBusy || enterpriseReviewInvalid}');
     expect(platformReviewActionPanel).toContain('审核中');
     expect(platformReviewActionPanel).toContain('最近审核结果');

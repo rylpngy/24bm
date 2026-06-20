@@ -661,6 +661,9 @@ describe('procurement API clients', () => {
         expect(JSON.parse(String(init?.body))).toEqual({
           verified: true,
           reviewStatus: 'approved',
+          reviewComment: '资料齐全，准入通过。',
+          profileConfirmed: true,
+          riskConfirmed: true,
         });
         return Response.json({
           success: true,
@@ -670,6 +673,9 @@ describe('procurement API clients', () => {
             type: 'supplier',
             verified: true,
             reviewStatus: 'approved',
+            reviewComment: '资料齐全，准入通过。',
+            profileConfirmed: true,
+            riskConfirmed: true,
           },
           message: '',
         });
@@ -690,6 +696,9 @@ describe('procurement API clients', () => {
     const review = await client.reviewPlatformEnterprise('ent-supplier-sunrise', {
       verified: true,
       reviewStatus: 'approved',
+      reviewComment: '资料齐全，准入通过。',
+      profileConfirmed: true,
+      riskConfirmed: true,
     });
 
     expect(review).toEqual({
@@ -698,6 +707,9 @@ describe('procurement API clients', () => {
       type: 'supplier',
       verified: true,
       reviewStatus: 'approved',
+      reviewComment: '资料齐全，准入通过。',
+      profileConfirmed: true,
+      riskConfirmed: true,
     });
     expect(calls.map((call) => call.input)).toEqual([
       'http://java.test/api/v1/auth/login',
@@ -2278,6 +2290,9 @@ describe('procurement API clients', () => {
         type: 'supplier',
         verified: false,
         reviewStatus: 'pending',
+        reviewComment: '待补充授权材料',
+        profileConfirmed: true,
+        riskConfirmed: false,
       }],
     });
 
@@ -2305,6 +2320,9 @@ describe('procurement API clients', () => {
         type: 'supplier',
         industry: '待审核企业',
         verified: false,
+        reviewComment: '待补充授权材料',
+        profileConfirmed: true,
+        riskConfirmed: false,
       },
     ]);
     expect(nextPlatform.platformOverview).toEqual({

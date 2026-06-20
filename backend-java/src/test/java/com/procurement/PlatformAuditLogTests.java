@@ -170,11 +170,25 @@ class PlatformAuditLogTests {
             "晨光供应商",
             "supplier",
             true,
-            "approved"));
+            "approved",
+            "资料齐全，准入通过。",
+            true,
+            true));
 
     platformEnterpriseApplicationService.reviewEnterprise(
         "ent-supplier-1",
-        new EnterpriseReviewRequest(true, "approved"));
+        new EnterpriseReviewRequest(
+            true,
+            "approved",
+            "资料齐全，准入通过。",
+            true,
+            true));
+
+    verify(platformEnterpriseMapper).updateSupplierReviewDetail(
+        "ent-supplier-1",
+        "资料齐全，准入通过。",
+        true,
+        true);
 
     verify(auditLogApplicationService).recordTenantAction(
         null,

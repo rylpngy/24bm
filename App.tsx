@@ -388,7 +388,11 @@ const App: React.FC = () => {
     }
   };
 
-  const reviewPlatformEnterprise = async (reviewId: string, result: 'approved' | 'rejected') => {
+  const reviewPlatformEnterprise = async (
+    reviewId: string,
+    result: 'approved' | 'rejected',
+    draft: PlatformEnterpriseReviewDraft,
+  ) => {
     if (!javaApiClient || !platformData) return;
     setPlatformReviewBusyId(`${reviewId}:${result}`);
     setWorkflowStatus(null);
@@ -396,9 +400,12 @@ const App: React.FC = () => {
       await javaApiClient.reviewPlatformEnterprise(reviewId, {
         verified: result === 'approved',
         reviewStatus: result === 'approved' ? 'approved' : 'rejected',
+        reviewComment: draft.comment.trim(),
+        profileConfirmed: draft.profileConfirmed,
+        riskConfirmed: draft.riskConfirmed,
       });
       setPlatformData(await refreshJavaPlatformData(platformData));
-      setWorkflowStatus(`平台企业审核已${result === 'approved' ? '通过' : '驳回'}：${reviewId}`);
+      setWorkflowStatus(`平台企业审核已${result === 'approved' ? '通过' : '驳回'}：${reviewId}，审核意见：${draft.comment.trim()}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '平台企业审核失败');
     } finally {
@@ -1677,6 +1684,9 @@ type PlatformEnterpriseReview = {
   type: string;
   industry: string;
   status: string;
+  reviewComment?: string;
+  profileConfirmed?: boolean;
+  riskConfirmed?: boolean;
 };
 
 type PlatformEnterpriseReviewDraft = {
@@ -1692,6 +1702,9 @@ const buildPlatformEnterpriseReviews = (model: ProcurementMvpModel): PlatformEnt
     type: enterprise.type,
     industry: enterprise.industry,
     status: enterprise.verified ? '已认证' : '待审核',
+    reviewComment: enterprise.reviewComment,
+    profileConfirmed: enterprise.profileConfirmed,
+    riskConfirmed: enterprise.riskConfirmed,
   }));
 
 type PlatformTenantRow = Omit<PlatformWorkspaceData['tenants'][number], 'status'> & {
@@ -1721,7 +1734,11 @@ const PlatformWorkspace: React.FC<{
   platformTenantBusyId: string | null;
   announcementPublishBusy: boolean;
   announcementLifecycleBusyId: string | null;
-  onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => Promise<void> | void;
+  onReviewEnterprise: (
+    reviewId: string,
+    result: 'approved' | 'rejected',
+    draft: PlatformEnterpriseReviewDraft,
+  ) => Promise<void> | void;
   onUpdateTenantStatus: (tenantId: string, status: '已启用' | '停用') => Promise<void> | void;
   onUpdateTenantPlan: (tenantId: string, plan: PlatformTenantRow['plan']) => Promise<void> | void;
   onToggleTenantFeature: (tenantId: string, enabledFeatures: string[], feature: 'rfq') => Promise<void> | void;
@@ -1818,9 +1835,13 @@ const PlatformWorkspace: React.FC<{
   const enterpriseReviews = platformEnterpriseReviews;
   const selectedPlatformReview = enterpriseReviews.find((review) => review.id === selectedPlatformReviewId)
     ?? enterpriseReviews[0];
-  const handleReviewEnterprise = async (reviewId: string, result: 'approved' | 'rejected') => {
+  const handleReviewEnterprise = async (
+    reviewId: string,
+    result: 'approved' | 'rejected',
+    draft: PlatformEnterpriseReviewDraft,
+  ) => {
     if (javaEnabled) {
-      await onReviewEnterprise(reviewId, result);
+      await onReviewEnterprise(reviewId, result, draft);
       return;
     }
     setPlatformEnterpriseReviews((current) => current.map((review) => (
@@ -2531,7 +2552,11 @@ const PlatformAnnouncementSummaryPanel: React.FC<{
 const PlatformEnterpriseReviewActionPanel: React.FC<{
   enterpriseReviews: PlatformEnterpriseReview[];
   reviewBusyId: string | null;
-  onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => Promise<void> | void;
+  onReviewEnterprise: (
+    reviewId: string,
+    result: 'approved' | 'rejected',
+    draft: PlatformEnterpriseReviewDraft,
+  ) => Promise<void> | void;
 }> = ({ enterpriseReviews, reviewBusyId, onReviewEnterprise }) => {
   const pendingReviews = enterpriseReviews.filter((review) => review.status === '待审核');
   const reviewedResults = enterpriseReviews.filter((review) => review.status !== '待审核');
@@ -2587,7 +2612,7 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <PrimaryActionButton
-                      onClick={() => onReviewEnterprise(review.id, 'approved')}
+                      onClick={() => onReviewEnterprise(review.id, 'approved', draft)}
                       disabled={approveBusy || rejectBusy || enterpriseReviewInvalid}
                       busy={approveBusy}
                       pendingLabel="审核中"
@@ -2597,7 +2622,7 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
                       通过审核
                     </PrimaryActionButton>
                     <PrimaryActionButton
-                      onClick={() => onReviewEnterprise(review.id, 'rejected')}
+                      onClick={() => onReviewEnterprise(review.id, 'rejected', draft)}
                       disabled={approveBusy || rejectBusy || enterpriseReviewInvalid}
                       busy={rejectBusy}
                       pendingLabel="审核中"
@@ -2762,6 +2787,9 @@ const PlatformEnterpriseReviewDetailPanel: React.FC<{
         <DetailSection title="审核轨迹">
           <div className="space-y-2">
             <DetailKeyValueRow label="当前状态" value={review.status} />
+            <DetailKeyValueRow label="审核意见" value={review.reviewComment ?? '待填写'} />
+            <DetailKeyValueRow label="资料确认" value={review.profileConfirmed ? '已确认' : '待确认'} />
+            <DetailKeyValueRow label="风险确认" value={review.riskConfirmed ? '已确认' : '待确认'} />
             <DetailKeyValueRow label="审计动作" value="enterprise.reviewed" />
             <DetailKeyValueRow label="留痕对象" value={review.id} />
           </div>

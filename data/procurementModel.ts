@@ -27,6 +27,9 @@ export interface Enterprise {
   legalPerson?: string;
   verifiedStatus?: string;
   profileStatus?: string;
+  reviewComment?: string;
+  profileConfirmed?: boolean;
+  riskConfirmed?: boolean;
 }
 
 export interface UserAccount {

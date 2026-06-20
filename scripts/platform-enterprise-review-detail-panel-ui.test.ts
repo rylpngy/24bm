@@ -23,6 +23,9 @@ describe('platform enterprise review detail panel UI', () => {
     expect(reviewDetailPanel).toContain('入驻资料');
     expect(reviewDetailPanel).toContain('风险检查');
     expect(reviewDetailPanel).toContain('审核轨迹');
+    expect(reviewDetailPanel).toContain('审核意见');
+    expect(reviewDetailPanel).toContain('资料确认');
+    expect(reviewDetailPanel).toContain('风险确认');
     expect(reviewDetailPanel).toContain('处理建议');
     expect(reviewDetailPanel).toContain('review.name');
     expect(reviewDetailPanel).toContain('formatEnterpriseType(review.type)');
