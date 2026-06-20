@@ -36,9 +36,9 @@ describe('buyer admin info card UI', () => {
     expect(adminInfoCard).toContain('break-words text-sm font-black text-slate-950');
     expect(adminInfoCard).toContain('break-words text-xs font-bold');
     expect(adminInfoCard).toContain('w-full shrink-0 flex-wrap justify-start gap-2 sm:w-auto sm:justify-end');
-    expect(inlineFactGrid).toContain('md:grid-cols-2');
+    expect(inlineFactGrid).toContain('grid gap-2 sm:grid-cols-2 xl:grid-cols-4');
     expect(inlineFactGrid).toContain('break-words');
-    expect(inlineFactGrid).not.toContain('sm:grid-cols-2');
+    expect(inlineFactGrid).not.toContain('grid-cols-2 xl:grid-cols-4 md:grid-cols-2');
     expect(inlineFactGrid).not.toContain('truncate text-xs font-bold text-slate-700');
   });
 

@@ -8223,15 +8223,15 @@ const DetailHeroCard: React.FC<{
   summaryFacts = [],
 }) => (
   <div className="rounded-lg border border-slate-200 bg-white p-4">
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0 max-w-full">
         <p className="text-[11px] font-black uppercase tracking-widest text-blue-600">{eyebrow}</p>
-        <p className="mt-1 truncate text-base font-black text-slate-950">{title}</p>
+        <p className="mt-1 break-words text-base font-black text-slate-950">{title}</p>
         <p className="mt-1 break-words text-xs font-bold text-slate-400">{meta}</p>
       </div>
       {status && <StatusPill label={status} />}
     </div>
-    {amountLabel && <p className="mt-3 font-mono text-xl font-black text-slate-950">{amountLabel}</p>}
+    {amountLabel && <p className="mt-3 max-w-full font-mono text-xl font-black text-slate-950">{amountLabel}</p>}
     <InlineFactGrid facts={facts} />
     {summaryFacts.length > 0 && (
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -8249,10 +8249,10 @@ const DetailSection: React.FC<{
   children: React.ReactNode;
 }> = ({ title, countLabel, children }) => (
   <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-    <div className="mb-2 flex items-center justify-between gap-3">
-      <p className="text-xs font-black text-slate-600">{title}</p>
+    <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p className="break-words text-xs font-black text-slate-600">{title}</p>
       {countLabel && (
-        <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
+        <span className="self-start rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">
           {countLabel}
         </span>
       )}
@@ -8373,9 +8373,9 @@ const DetailKeyValueRow: React.FC<{
   value: string;
   fontMono?: boolean;
 }> = ({ label, value, fontMono = false }) => (
-  <div className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-    <span className="text-xs font-black text-slate-500">{label}</span>
-    <span className={`break-words text-xs font-black text-slate-900 sm:text-right ${fontMono ? 'font-mono' : ''}`}>
+  <div className="flex min-w-0 flex-col gap-1 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <span className="text-xs font-black text-slate-500 sm:min-w-[7rem]">{label}</span>
+    <span className={`max-w-full break-words text-xs font-black text-slate-900 sm:text-right ${fontMono ? 'font-mono' : ''}`}>
       {value}
     </span>
   </div>
@@ -8407,7 +8407,7 @@ const ModuleSummaryStrip: React.FC<{
 const InlineFactGrid: React.FC<{
   facts: BuyerModuleFact[];
 }> = ({ facts }) => (
-  <div className="mt-3 grid grid-cols-2 xl:grid-cols-4 md:grid-cols-2 gap-2">
+  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
     {facts.map((fact) => (
       <div key={`${fact.label}:${fact.value}`} className="min-w-0 rounded-md border border-slate-100 bg-white/80 px-3 py-2">
         <p className="text-[11px] font-black text-slate-400">{fact.label}</p>
