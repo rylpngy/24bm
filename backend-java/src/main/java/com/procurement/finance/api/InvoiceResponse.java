@@ -20,6 +20,9 @@ public record InvoiceResponse(
     BigDecimal varianceAmount,
     String receiptStatus,
     String reconciliationStatus,
+    String reconciliationNo,
+    String reconciliationStage,
+    String nextReconciliationAction,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {
 }

@@ -10140,19 +10140,21 @@ const ReconciliationLedgerPanel: React.FC<{
             <div key={invoice.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="break-words text-sm font-black text-slate-900">{invoice.invoiceNo ?? invoice.id}</p>
+                  <p className="break-words text-sm font-black text-slate-900">{invoice.reconciliationNo ?? `REC-${invoice.id}`}</p>
                   <p className="mt-1 break-words text-xs font-bold text-slate-500">
-                    订单 {invoice.orderId} · 发票 {invoice.id}
+                    对账单编号 {invoice.reconciliationNo ?? `REC-${invoice.id}`} · 订单 {invoice.orderId} · 发票 {invoice.id}
                   </p>
                 </div>
                 <StatusPill label={invoice.reconciliationStatus ?? '待同步'} />
               </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                 <MiniFact label="订单金额" value={invoice.orderAmount == null ? '待同步' : currency(invoice.orderAmount)} />
                 <MiniFact label="发票金额" value={currency(invoice.amount)} />
                 <MiniFact label="差异金额" value={invoice.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount)} />
                 <MiniFact label="收货状态" value={invoice.receiptStatus ?? '待同步'} />
                 <MiniFact label="付款状态" value={invoice.paymentStatus} />
+                <MiniFact label="状态流转" value={invoice.reconciliationStage ?? '待同步'} />
+                <MiniFact label="下一步动作" value={invoice.nextReconciliationAction ?? '同步订单'} />
               </div>
             </div>
           ))}

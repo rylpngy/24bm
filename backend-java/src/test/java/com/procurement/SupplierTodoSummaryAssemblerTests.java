@@ -81,6 +81,9 @@ class SupplierTodoSummaryAssemblerTests {
         BigDecimal.ZERO,
         "已收货",
         "三单一致",
+        "REC-" + id,
+        "待付款",
+        "登记付款",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
   }

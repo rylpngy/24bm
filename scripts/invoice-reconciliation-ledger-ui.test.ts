@@ -19,9 +19,15 @@ describe('invoice reconciliation ledger UI', () => {
     expect(app).toContain('reconciliationLedgerStatusFilter');
     expect(app).toContain('setReconciliationLedgerStatusFilter');
     expect(app).toContain('invoice.reconciliationStatus');
+    expect(app).toContain('invoice.reconciliationNo');
+    expect(app).toContain('invoice.reconciliationStage');
+    expect(app).toContain('invoice.nextReconciliationAction');
     expect(app).toContain('invoice.orderAmount');
     expect(app).toContain('invoice.varianceAmount');
     expect(app).toContain('invoice.receiptStatus');
+    expect(app).toContain('对账单编号');
+    expect(app).toContain('状态流转');
+    expect(app).toContain('下一步动作');
     expect(app).toContain('对账单台账');
     expect(app).toContain('对账状态筛选');
     expect(app).toContain('差异金额');

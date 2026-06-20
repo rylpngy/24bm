@@ -21,7 +21,7 @@ describe('stage three round two review', () => {
     expect(review).toContain('| 平台运营端 |');
     expect(review).toContain('| 供应商协同端 |');
     expect(review).toContain('| 通用后台能力 |');
-    expect(review).toContain('39 个小步增量');
+    expect(review).toContain('40 个小步增量');
 
     expect(review).toContain('## 仍未收口的缺口');
     expect(review).toContain('Java 模式逐页联调');
@@ -46,7 +46,8 @@ describe('stage three round two review', () => {
     expect(review).toContain('供应商应收逾期提醒已完成');
     expect(review).toContain('发票对账单摘要已完成');
     expect(review).toContain('对账单台账雏形已完成');
-    expect(review).toContain('下一步继续补独立对账单编号和状态流转');
+    expect(review).toContain('对账单编号和状态流转已完成');
+    expect(review).toContain('下一步继续补独立对账单落库');
     expect(review).toContain('P1：平台和供应商持久化边界补强');
     expect(review).toContain('P2：视觉 QA 和移动端收口');
 

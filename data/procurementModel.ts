@@ -144,6 +144,9 @@ export interface InvoiceRecord {
   varianceAmount?: number;
   receiptStatus?: string;
   reconciliationStatus?: string;
+  reconciliationNo?: string;
+  reconciliationStage?: string;
+  nextReconciliationAction?: string;
 }
 
 export interface AuditLogRecord {

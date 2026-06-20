@@ -486,6 +486,9 @@ export interface JavaInvoiceDto {
   varianceAmount?: number | null;
   receiptStatus?: string | null;
   reconciliationStatus?: string | null;
+  reconciliationNo?: string | null;
+  reconciliationStage?: string | null;
+  nextReconciliationAction?: string | null;
 }
 
 export interface JavaSupplierProfileDto {
@@ -970,6 +973,9 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     varianceAmount: invoice.varianceAmount == null ? undefined : Number(invoice.varianceAmount),
     receiptStatus: invoice.receiptStatus ?? undefined,
     reconciliationStatus: invoice.reconciliationStatus ?? undefined,
+    reconciliationNo: invoice.reconciliationNo ?? undefined,
+    reconciliationStage: invoice.reconciliationStage ?? undefined,
+    nextReconciliationAction: invoice.nextReconciliationAction ?? undefined,
   });
 
   return {

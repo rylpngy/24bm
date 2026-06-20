@@ -72,6 +72,9 @@ class FinancePaymentStateTransitionTests {
     org.assertj.core.api.Assertions.assertThat(response.varianceAmount()).isEqualByComparingTo("0");
     org.assertj.core.api.Assertions.assertThat(response.receiptStatus()).isEqualTo("已收货");
     org.assertj.core.api.Assertions.assertThat(response.reconciliationStatus()).isEqualTo("三单一致");
+    org.assertj.core.api.Assertions.assertThat(response.reconciliationNo()).isEqualTo("REC-invoice-1");
+    org.assertj.core.api.Assertions.assertThat(response.reconciliationStage()).isEqualTo("待付款");
+    org.assertj.core.api.Assertions.assertThat(response.nextReconciliationAction()).isEqualTo("登记付款");
   }
 
   @Test
@@ -268,6 +271,9 @@ class FinancePaymentStateTransitionTests {
     org.assertj.core.api.Assertions.assertThat(response.varianceAmount()).isEqualByComparingTo("0");
     org.assertj.core.api.Assertions.assertThat(response.receiptStatus()).isEqualTo("已收货");
     org.assertj.core.api.Assertions.assertThat(response.reconciliationStatus()).isEqualTo("三单一致");
+    org.assertj.core.api.Assertions.assertThat(response.reconciliationNo()).isEqualTo("REC-invoice-1");
+    org.assertj.core.api.Assertions.assertThat(response.reconciliationStage()).isEqualTo("待付款");
+    org.assertj.core.api.Assertions.assertThat(response.nextReconciliationAction()).isEqualTo("登记付款");
     verify(invoiceMapper).updateSupplierReconciliationNote(
         "tenant-1",
         "invoice-1",

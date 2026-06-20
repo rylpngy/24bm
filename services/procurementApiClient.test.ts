@@ -1886,6 +1886,9 @@ describe('procurement API clients', () => {
             varianceAmount: 0,
             receiptStatus: '已收货',
             reconciliationStatus: '三单一致',
+            reconciliationNo: 'REC-invoice-java-001',
+            reconciliationStage: '待付款',
+            nextReconciliationAction: '登记付款',
             createdAt: '2026-06-15T13:10:00+08:00',
             updatedAt: '2026-06-15T13:10:00+08:00',
           },
@@ -2053,6 +2056,9 @@ describe('procurement API clients', () => {
       varianceAmount: 0,
       receiptStatus: '已收货',
       reconciliationStatus: '三单一致',
+      reconciliationNo: 'REC-invoice-java-001',
+      reconciliationStage: '待付款',
+      nextReconciliationAction: '登记付款',
     });
     expect(updatedInvoice).toMatchObject({
       id: 'invoice-java-001',
@@ -2170,6 +2176,9 @@ describe('procurement API clients', () => {
             varianceAmount: 0,
             receiptStatus: '已收货',
             reconciliationStatus: '三单一致',
+            reconciliationNo: 'REC-invoice-java-001',
+            reconciliationStage: '待付款',
+            nextReconciliationAction: '登记付款',
           },
           message: '',
         });
@@ -2200,6 +2209,9 @@ describe('procurement API clients', () => {
       varianceAmount: 0,
       receiptStatus: '已收货',
       reconciliationStatus: '三单一致',
+      reconciliationNo: 'REC-invoice-java-001',
+      reconciliationStage: '待付款',
+      nextReconciliationAction: '登记付款',
     });
   });
 

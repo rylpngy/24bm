@@ -1278,6 +1278,9 @@ class HttpSecurityContractTests {
             BigDecimal.ZERO,
             "已收货",
             "三单一致",
+            "REC-invoice-demo",
+            "待付款",
+            "登记付款",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"))));
     when(invoiceApplicationService.listCurrentSupplierPaymentAuditLogs("invoice-demo"))
@@ -1308,6 +1311,9 @@ class HttpSecurityContractTests {
             BigDecimal.ZERO,
             "已收货",
             "三单一致",
+            "REC-invoice-demo",
+            "待付款",
+            "登记付款",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00")));
 
@@ -3345,6 +3351,9 @@ class HttpSecurityContractTests {
         BigDecimal.ZERO,
         "已收货",
         "三单一致",
+        "REC-" + id,
+        "待付款",
+        "登记付款",
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
   }

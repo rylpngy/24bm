@@ -30,6 +30,8 @@ final class InvoiceResponseAssembler {
         ? "订单待同步"
         : ("已收货".equals(order.status()) || "已完成".equals(order.status()) ? "已收货" : "待收货");
     String reconciliationStatus = toReconciliationStatus(orderAmount, varianceAmount, receiptStatus);
+    String reconciliationStage = toReconciliationStage(invoice.paymentStatus(), reconciliationStatus);
+    String nextReconciliationAction = toNextReconciliationAction(reconciliationStage);
 
     return new InvoiceResponse(
         invoice.id(),
@@ -47,6 +49,9 @@ final class InvoiceResponseAssembler {
         varianceAmount,
         receiptStatus,
         reconciliationStatus,
+        "REC-" + invoice.id(),
+        reconciliationStage,
+        nextReconciliationAction,
         invoice.createdAt(),
         invoice.updatedAt());
   }
@@ -65,5 +70,28 @@ final class InvoiceResponseAssembler {
       return "待收货";
     }
     return "三单一致";
+  }
+
+  private static String toReconciliationStage(String paymentStatus, String reconciliationStatus) {
+    if ("金额差异".equals(reconciliationStatus)) {
+      return "差异处理中";
+    }
+    if ("待收货".equals(reconciliationStatus) || "订单待同步".equals(reconciliationStatus)) {
+      return reconciliationStatus;
+    }
+    if (InvoicePaymentStatus.PAID.equals(paymentStatus)) {
+      return "已完成";
+    }
+    return "待付款";
+  }
+
+  private static String toNextReconciliationAction(String reconciliationStage) {
+    return switch (reconciliationStage) {
+      case "已完成" -> "归档对账";
+      case "待付款" -> "登记付款";
+      case "差异处理中" -> "处理差异";
+      case "待收货" -> "等待收货";
+      default -> "同步订单";
+    };
   }
 }
