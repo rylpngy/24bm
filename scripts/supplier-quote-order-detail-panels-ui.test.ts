@@ -40,5 +40,10 @@ describe('supplier quote and order detail panels UI', () => {
     expect(orderDetailPanel).toContain('delivery?.trackingNo');
     expect(orderDetailPanel).toContain('invoice?.paymentStatus');
     expect(orderDetailPanel).toContain('order.expectedReceiptDate');
+    expect(orderDetailPanel).toContain('维护物流信息');
+    expect(orderDetailPanel).toContain('保存物流信息');
+    expect(orderDetailPanel).toContain('onUpdateDelivery(delivery.id');
+    expect(supplierWorkspace).toContain('deliveryUpdateDrafts');
+    expect(supplierWorkspace).toContain('onUpdateDelivery');
   });
 });

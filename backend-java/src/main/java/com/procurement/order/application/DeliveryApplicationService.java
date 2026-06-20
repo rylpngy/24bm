@@ -5,6 +5,7 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.order.api.CreateDeliveryRequest;
 import com.procurement.order.api.DeliveryResponse;
+import com.procurement.order.api.UpdateDeliveryRequest;
 import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderAuditAction;
@@ -105,6 +106,39 @@ public class DeliveryApplicationService {
         "采购订单 " + order.id() + " 已发货，物流：" + request.carrier() + " " + request.trackingNo() + "。");
 
     return toResponse(deliveryMapper.findByTenantAndId(order.tenantId(), deliveryId));
+  }
+
+  @Transactional
+  public DeliveryResponse update(String deliveryId, UpdateDeliveryRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("delivery APIs");
+    Delivery delivery = deliveryMapper.findBySupplierAndId(supplierId, deliveryId);
+    if (delivery == null) {
+      throw new IllegalArgumentException("Delivery not found for supplier scope: " + deliveryId);
+    }
+    PurchaseOrder order = purchaseOrderMapper.findBySupplierAndId(supplierId, delivery.orderId());
+    if (order == null) {
+      throw new IllegalArgumentException("Purchase order not found for supplier scope: " + delivery.orderId());
+    }
+    if (!PurchaseOrderStatus.SHIPPED.equals(order.status())) {
+      throw new IllegalStateException("Only shipped purchase orders can update delivery tracking: " + order.id());
+    }
+    tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.ORDER);
+    int updated = deliveryMapper.updateSupplierDelivery(
+        order.tenantId(),
+        delivery.id(),
+        supplierId,
+        request.carrier(),
+        request.trackingNo());
+    if (updated == 0) {
+      throw new IllegalStateException("Delivery changed before tracking could be updated: " + deliveryId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        order.tenantId(),
+        PurchaseOrderAuditAction.SHIPPED,
+        AuditTargetType.PURCHASE_ORDER,
+        order.id());
+
+    return toResponse(deliveryMapper.findByTenantAndId(order.tenantId(), delivery.id()));
   }
 
   private DeliveryResponse toResponse(Delivery delivery) {

@@ -11,6 +11,7 @@ import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.infrastructure.NotificationMapper;
 import com.procurement.order.api.CreateDeliveryRequest;
+import com.procurement.order.api.UpdateDeliveryRequest;
 import com.procurement.order.application.DeliveryApplicationService;
 import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
@@ -79,6 +80,45 @@ class DeliveryNotificationTests {
         org.mockito.ArgumentMatchers.eq("disabled-1"),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void supplierCanUpdateDeliveryTrackingBeforeBuyerReceipt() {
+    TenantContext.set(null, "supplier-1", "user-supplier");
+    when(deliveryMapper.findBySupplierAndId("supplier-1", "delivery-1"))
+        .thenReturn(delivery("delivery-1"));
+    when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "已发货"));
+    when(deliveryMapper.updateSupplierDelivery(
+        "tenant-1",
+        "delivery-1",
+        "supplier-1",
+        "京东物流",
+        "JD987654321"))
+        .thenReturn(1);
+    when(deliveryMapper.findByTenantAndId("tenant-1", "delivery-1"))
+        .thenReturn(new Delivery(
+            "delivery-1",
+            "tenant-1",
+            "po-1",
+            "supplier-1",
+            "京东物流",
+            "JD987654321",
+            "已发货",
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+
+    var response = deliveryApplicationService.update(
+        "delivery-1",
+        new UpdateDeliveryRequest("京东物流", "JD987654321"));
+
+    org.assertj.core.api.Assertions.assertThat(response.carrier()).isEqualTo("京东物流");
+    org.assertj.core.api.Assertions.assertThat(response.trackingNo()).isEqualTo("JD987654321");
+    verify(deliveryMapper).updateSupplierDelivery(
+        "tenant-1",
+        "delivery-1",
+        "supplier-1",
+        "京东物流",
+        "JD987654321");
   }
 
   private PurchaseOrder order(String id, String tenantId, String supplierId, String status) {

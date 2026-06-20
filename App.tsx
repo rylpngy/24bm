@@ -888,6 +888,24 @@ const App: React.FC = () => {
     }
   };
 
+  const updateSupplierDelivery = async (deliveryId: string, draft: SupplierDeliveryDraft) => {
+    if (!javaApiClient || !supplierData) return;
+    setSupplierActionBusyId(`delivery-update:${deliveryId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.updateSupplierDelivery(deliveryId, {
+        carrier: draft.carrier,
+        trackingNo: draft.trackingNo,
+      });
+      await refreshAfterSupplierAction();
+      setWorkflowStatus(`物流信息已保存并刷新：${deliveryId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '物流信息保存失败');
+    } finally {
+      setSupplierActionBusyId(null);
+    }
+  };
+
   const createSupplierInvoice = async (orderId: string, draft: SupplierInvoiceDraft) => {
     if (!javaApiClient || !supplierData) return;
     setSupplierActionBusyId(`invoice:${orderId}`);
@@ -1070,6 +1088,7 @@ const App: React.FC = () => {
                 onUpdateQuote={updateSupplierQuote}
                 onConfirmOrder={confirmSupplierOrder}
                 onCreateDelivery={createSupplierDelivery}
+                onUpdateDelivery={updateSupplierDelivery}
                 onCreateInvoice={createSupplierInvoice}
                 onUpdateSupplierProfile={updateSupplierProfile}
               />
@@ -8632,6 +8651,7 @@ const SupplierWorkspaceView: React.FC<{
   onUpdateQuote: (quoteId: string, draft: SupplierQuoteDraft) => void;
   onConfirmOrder: (orderId: string) => void;
   onCreateDelivery: (orderId: string, draft: SupplierDeliveryDraft) => void;
+  onUpdateDelivery: (deliveryId: string, draft: SupplierDeliveryDraft) => void;
   onCreateInvoice: (orderId: string, draft: SupplierInvoiceDraft) => void;
   onUpdateSupplierProfile: (draft: SupplierProfileDraft) => void;
 }> = ({
@@ -8645,6 +8665,7 @@ const SupplierWorkspaceView: React.FC<{
   onUpdateQuote,
   onConfirmOrder,
   onCreateDelivery,
+  onUpdateDelivery,
   onCreateInvoice,
   onUpdateSupplierProfile,
 }) => {
@@ -8656,6 +8677,7 @@ const SupplierWorkspaceView: React.FC<{
   const [quoteDrafts, setQuoteDrafts] = useState<Record<string, SupplierQuoteDraft>>({});
   const [quoteUpdateDrafts, setQuoteUpdateDrafts] = useState<Record<string, SupplierQuoteDraft>>({});
   const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, SupplierDeliveryDraft>>({});
+  const [deliveryUpdateDrafts, setDeliveryUpdateDrafts] = useState<Record<string, SupplierDeliveryDraft>>({});
   const [invoiceDrafts, setInvoiceDrafts] = useState<Record<string, SupplierInvoiceDraft>>({});
   const [opportunityStatusFilter, setOpportunityStatusFilter] = useState('全部状态');
   const [quoteStatusFilter, setQuoteStatusFilter] = useState('全部状态');
@@ -8674,6 +8696,11 @@ const SupplierWorkspaceView: React.FC<{
       amount: quote.amount,
       taxRate: quote.taxRate,
       deliveryDays: quote.deliveryDays,
+    };
+  const getDeliveryUpdateDraft = (delivery: SupplierWorkspace['deliveries'][number]): SupplierDeliveryDraft =>
+    deliveryUpdateDrafts[delivery.id] ?? {
+      carrier: delivery.carrier,
+      trackingNo: delivery.trackingNo,
     };
   const supplierModuleFacts = buildSupplierModuleFacts(workspace, activeModule);
   const supplierModuleHeader = supplierModuleHeaders[activeModule];
@@ -9254,6 +9281,11 @@ const SupplierWorkspaceView: React.FC<{
             order={selectedSupplierOrderDetail}
             delivery={selectedSupplierOrderDelivery}
             invoice={selectedSupplierOrderInvoice}
+            javaEnabled={javaEnabled}
+            deliveryUpdateDraft={selectedSupplierOrderDelivery ? getDeliveryUpdateDraft(selectedSupplierOrderDelivery) : undefined}
+            supplierActionBusyId={supplierActionBusyId}
+            onChangeDeliveryUpdateDraft={(deliveryId, draft) => setDeliveryUpdateDrafts((current) => ({ ...current, [deliveryId]: draft }))}
+            onUpdateDelivery={onUpdateDelivery}
           />
         </div>
         )}
@@ -9834,7 +9866,21 @@ const SupplierOrderFulfillmentDetailPanel: React.FC<{
   order?: SupplierWorkspace['orders'][number];
   delivery?: SupplierWorkspace['deliveries'][number];
   invoice?: SupplierWorkspace['invoices'][number];
-}> = ({ order, delivery, invoice }) => {
+  javaEnabled: boolean;
+  deliveryUpdateDraft?: SupplierDeliveryDraft;
+  supplierActionBusyId: string | null;
+  onChangeDeliveryUpdateDraft: (deliveryId: string, draft: SupplierDeliveryDraft) => void;
+  onUpdateDelivery: (deliveryId: string, draft: SupplierDeliveryDraft) => void;
+}> = ({
+  order,
+  delivery,
+  invoice,
+  javaEnabled,
+  deliveryUpdateDraft,
+  supplierActionBusyId,
+  onChangeDeliveryUpdateDraft,
+  onUpdateDelivery,
+}) => {
   if (!order) {
     return (
       <Panel title="销售订单详情" icon={Truck}>
@@ -9852,6 +9898,13 @@ const SupplierOrderFulfillmentDetailPanel: React.FC<{
         : invoice?.paymentStatus === '已付款'
           ? '归档履约'
           : '跟进回款';
+  const canUpdateDelivery = javaEnabled && Boolean(delivery) && order.status === '已发货';
+  const deliveryUpdateBusy = delivery ? supplierActionBusyId === `delivery-update:${delivery.id}` : false;
+  const updateDraft = deliveryUpdateDraft ?? {
+    carrier: delivery?.carrier ?? '',
+    trackingNo: delivery?.trackingNo ?? '',
+  };
+  const updateInvalid = !updateDraft.carrier.trim() || !updateDraft.trackingNo.trim();
 
   return (
     <Panel title="销售订单详情" icon={Truck}>
@@ -9873,10 +9926,54 @@ const SupplierOrderFulfillmentDetailPanel: React.FC<{
           <div className="space-y-2">
             <DetailKeyValueRow label="承运商" value={delivery?.carrier ?? '待发货'} />
             <DetailKeyValueRow label="物流单号" value={delivery?.trackingNo ?? '待登记'} />
-            <DetailKeyValueRow label="发货时间" value={delivery?.shippedAt ? formatAuditTime(delivery.shippedAt) : '待登记'} />
+            <DetailKeyValueRow label="发货时间" value={delivery?.createdAt ? formatAuditTime(delivery.createdAt) : '待登记'} />
             <DetailKeyValueRow label="物流状态" value={delivery?.trackingNo ? '已提交发货' : '等待供应商发货'} />
           </div>
         </DetailSection>
+
+        <DetailActionPanel
+          title="维护物流信息"
+          desc={canUpdateDelivery ? '采购方收货前可修正承运商和物流单号，保存后采购方收货页会读取最新信息。' : '当前订单没有可维护的发货记录，或采购方已经完成收货。'}
+          status={canUpdateDelivery ? '可维护' : '只读'}
+          tone={canUpdateDelivery ? 'emerald' : 'slate'}
+        >
+          <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+            <label className="block">
+              <span className="text-xs font-black">承运商</span>
+              <input
+                value={updateDraft.carrier}
+                disabled={!canUpdateDelivery || deliveryUpdateBusy}
+                onChange={(event) => delivery && onChangeDeliveryUpdateDraft(delivery.id, {
+                  ...updateDraft,
+                  carrier: event.target.value,
+                })}
+                className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 disabled:bg-slate-100 disabled:text-slate-500"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-black">物流单号</span>
+              <input
+                value={updateDraft.trackingNo}
+                disabled={!canUpdateDelivery || deliveryUpdateBusy}
+                onChange={(event) => delivery && onChangeDeliveryUpdateDraft(delivery.id, {
+                  ...updateDraft,
+                  trackingNo: event.target.value,
+                })}
+                className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 disabled:bg-slate-100 disabled:text-slate-500"
+              />
+            </label>
+            <PrimaryActionButton
+              onClick={() => delivery && onUpdateDelivery(delivery.id, updateDraft)}
+              disabled={!canUpdateDelivery || deliveryUpdateBusy || updateInvalid}
+              busy={deliveryUpdateBusy}
+              pendingLabel="保存中"
+              tone="emerald"
+              flushTop
+            >
+              保存物流信息
+            </PrimaryActionButton>
+          </div>
+        </DetailActionPanel>
 
         <DetailSection title="发票应收">
           <div className="space-y-2">

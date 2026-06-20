@@ -735,6 +735,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     queryParameters: ['status', 'orderId'],
   },
   {
+    method: 'PUT',
+    path: '/supplier/deliveries/{deliveryId}',
+    audience: 'supplier',
+    action: '供应商在采购方收货前维护物流信息',
+    requestSchema: 'UpdateDeliveryRequest',
+    responseSchema: 'Delivery',
+  },
+  {
     method: 'GET',
     path: '/buyer/receipts',
     audience: 'buyer',
@@ -1133,6 +1141,7 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'SupplierOrderList',
           'ConfirmSupplierOrderRequest',
           'CreateDeliveryRequest',
+          'UpdateDeliveryRequest',
           'Delivery',
           'CreateReceiptRequest',
           'Receipt',

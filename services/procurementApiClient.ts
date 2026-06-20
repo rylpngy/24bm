@@ -100,6 +100,8 @@ export interface CreateDeliveryPayload {
   trackingNo: string;
 }
 
+export type UpdateDeliveryPayload = CreateDeliveryPayload;
+
 export interface CreateReceiptPayload {
   result: string;
   receiptRemark?: string;
@@ -615,6 +617,7 @@ export interface JavaProcurementApiClient {
   updateBuyerOrder(orderId: string, payload: UpdateOrderPayload): Promise<PurchaseOrder>;
   confirmSupplierOrder(orderId: string): Promise<PurchaseOrder>;
   createSupplierDelivery(orderId: string, payload: CreateDeliveryPayload): Promise<Delivery>;
+  updateSupplierDelivery(deliveryId: string, payload: UpdateDeliveryPayload): Promise<Delivery>;
   createBuyerReceipt(orderId: string, payload: CreateReceiptPayload): Promise<JavaReceiptDto>;
   listBuyerInvoices(): Promise<InvoiceRecord[]>;
   createSupplierInvoice(orderId: string, payload: CreateInvoicePayload): Promise<InvoiceRecord>;
@@ -1247,6 +1250,14 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     async createSupplierDelivery(orderId: string, payload: CreateDeliveryPayload) {
       const delivery = await supplierRequest<JavaDeliveryDto>(`/api/v1/supplier/orders/${orderId}/deliveries`, {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toDelivery(delivery);
+    },
+    async updateSupplierDelivery(deliveryId: string, payload: UpdateDeliveryPayload) {
+      const delivery = await supplierRequest<JavaDeliveryDto>(`/api/v1/supplier/deliveries/${deliveryId}`, {
+        method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });

@@ -2038,6 +2038,71 @@ describe('procurement API clients', () => {
     expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(2);
   });
 
+  it('uses the Java API client to update supplier delivery tracking with the supplier token', async () => {
+    const calls: { url: string; init?: RequestInit }[] = [];
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      buyerLogin: { phone: 'buyer', password: 'buyer-pass' },
+      supplierLogin: { phone: 'supplier', password: 'supplier-pass' },
+      fetcher: async (url, init) => {
+        calls.push({ url: String(url), init });
+        if (String(url).endsWith('/api/v1/auth/login')) {
+          return Response.json({
+            success: true,
+            data: {
+              accessToken: 'supplier-token',
+              tokenType: 'Bearer',
+              expiresIn: 7200,
+              userId: 'supplier-user',
+              displayName: '供应商账号',
+              scope: 'SUPPLIER',
+              tenantId: null,
+              supplierId: 'supplier-java-001',
+              roles: ['SUPPLIER_ADMIN'],
+            },
+            message: '',
+          });
+        }
+        return Response.json({
+          success: true,
+          data: {
+            id: 'delivery-java-001',
+            tenantId: 'tenant-java-001',
+            supplierId: 'supplier-java-001',
+            orderId: 'po-java-001',
+            carrier: '京东物流',
+            trackingNo: 'JD987654321',
+            status: '已发货',
+            createdAt: '2026-06-18T08:00:00+08:00',
+          },
+          message: '',
+        });
+      },
+    });
+
+    const delivery = await client.updateSupplierDelivery('delivery-java-001', {
+      carrier: '京东物流',
+      trackingNo: 'JD987654321',
+    });
+
+    const updateCall = calls.find((call) => call.url.endsWith('/api/v1/supplier/deliveries/delivery-java-001'));
+    expect(updateCall?.init?.method).toBe('PUT');
+    expect(updateCall?.init?.headers).toMatchObject({
+      Authorization: 'Bearer supplier-token',
+      'content-type': 'application/json',
+    });
+    expect(JSON.parse(String(updateCall?.init?.body))).toEqual({
+      carrier: '京东物流',
+      trackingNo: 'JD987654321',
+    });
+    expect(delivery).toMatchObject({
+      id: 'delivery-java-001',
+      carrier: '京东物流',
+      trackingNo: 'JD987654321',
+      status: '已发货',
+    });
+  });
+
   it('uses the Java API client to review buyer approval tasks by business type', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {

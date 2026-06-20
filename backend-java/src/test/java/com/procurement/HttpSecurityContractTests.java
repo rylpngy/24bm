@@ -77,6 +77,7 @@ import com.procurement.order.api.SupplierOrderController;
 import com.procurement.order.api.CreateDeliveryRequest;
 import com.procurement.order.api.DeliveryResponse;
 import com.procurement.order.api.SupplierDeliveryController;
+import com.procurement.order.api.UpdateDeliveryRequest;
 import com.procurement.order.api.PurchaseOrderController;
 import com.procurement.order.api.PurchaseOrderResponse;
 import com.procurement.order.application.DeliveryApplicationService;
@@ -3109,6 +3110,11 @@ class HttpSecurityContractTests {
     mockMvc.perform(get("/api/v1/supplier/deliveries")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isForbidden());
+    mockMvc.perform(put("/api/v1/supplier/deliveries/delivery-demo")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validDeliveryPayload()))
+        .andExpect(status().isForbidden());
     mockMvc.perform(post("/api/v1/supplier/orders/po-demo/invoices")
             .header("Authorization", "Bearer " + buyerToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -3142,6 +3148,18 @@ class HttpSecurityContractTests {
             "SF123",
             "已发货",
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
+    when(deliveryApplicationService.update(
+        org.mockito.ArgumentMatchers.eq("delivery-demo"),
+        org.mockito.ArgumentMatchers.any(UpdateDeliveryRequest.class)))
+        .thenReturn(new DeliveryResponse(
+            "delivery-demo",
+            "tenant-acme",
+            "po-demo",
+            "ent-supplier-sunrise",
+            "京东物流",
+            "JD987654321",
+            "已发货",
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
     when(invoiceApplicationService.create(
         org.mockito.ArgumentMatchers.eq("po-demo"),
         org.mockito.ArgumentMatchers.any()))
@@ -3159,6 +3177,18 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("delivery-demo"));
+    mockMvc.perform(put("/api/v1/supplier/deliveries/delivery-demo")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "carrier": "京东物流",
+                  "trackingNo": "JD987654321"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.carrier").value("京东物流"))
+        .andExpect(jsonPath("$.data.trackingNo").value("JD987654321"));
     mockMvc.perform(post("/api/v1/supplier/orders/po-demo/invoices")
             .header("Authorization", "Bearer " + supplierToken)
             .contentType(MediaType.APPLICATION_JSON)
