@@ -49,7 +49,8 @@ class DatabaseMigrationIT {
             'dictionaries',
             'rfqs',
             'purchase_orders',
-            'invoices'
+            'invoices',
+            'invoice_reconciliations'
           )
         order by table_name
         """, String.class);
@@ -57,6 +58,7 @@ class DatabaseMigrationIT {
     assertThat(tableNames).containsExactly(
         "dictionaries",
         "invoices",
+        "invoice_reconciliations",
         "materials",
         "purchase_demand_items",
         "purchase_demands",

@@ -985,6 +985,12 @@ export const databaseTables: DatabaseTable[] = [
     requiredColumns: ['id', 'tenant_id', 'supplier_id', 'order_id', 'amount', 'invoice_no', 'payment_status'],
   },
   {
+    name: 'invoice_reconciliations',
+    tenantScoped: true,
+    purpose: '发票对账单阶段、下一步动作和供应商/订单关联。',
+    requiredColumns: ['id', 'tenant_id', 'invoice_id', 'supplier_id', 'order_id', 'stage', 'next_action'],
+  },
+  {
     name: 'attachments',
     tenantScoped: true,
     purpose: '资质、需求、报价、发票等附件元数据。',

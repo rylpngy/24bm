@@ -13,6 +13,7 @@ import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoiceCreationStatusPolicy;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class InvoiceApplicationService {
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final InvoiceMapper invoiceMapper;
+  private final InvoiceReconciliationMapper invoiceReconciliationMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -36,11 +38,13 @@ public class InvoiceApplicationService {
   public InvoiceApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
       InvoiceMapper invoiceMapper,
+      InvoiceReconciliationMapper invoiceReconciliationMapper,
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       NotificationApplicationService notificationApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.invoiceMapper = invoiceMapper;
+    this.invoiceReconciliationMapper = invoiceReconciliationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -111,7 +115,16 @@ public class InvoiceApplicationService {
         NotificationTitle.INVOICE_CREATED,
         "采购订单 " + order.id() + " 已登记发票 " + request.invoiceNo() + "，金额：" + request.amount() + "。");
 
-    return toResponse(invoiceMapper.findByTenantAndId(order.tenantId(), invoiceId));
+    InvoiceResponse response = toResponse(invoiceMapper.findByTenantAndId(order.tenantId(), invoiceId));
+    invoiceReconciliationMapper.insert(
+        newId("recon"),
+        order.tenantId(),
+        invoiceId,
+        supplierId,
+        order.id(),
+        response.reconciliationStage(),
+        response.nextReconciliationAction());
+    return response;
   }
 
   @Transactional

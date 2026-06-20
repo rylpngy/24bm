@@ -11,6 +11,7 @@ import com.procurement.finance.api.CreateInvoiceRequest;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -26,6 +27,8 @@ class FinanceInvoiceAuditLogTests {
 
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
+  private final InvoiceReconciliationMapper invoiceReconciliationMapper =
+      org.mockito.Mockito.mock(InvoiceReconciliationMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
@@ -34,6 +37,7 @@ class FinanceInvoiceAuditLogTests {
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
       invoiceMapper,
+      invoiceReconciliationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService);

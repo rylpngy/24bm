@@ -13,6 +13,7 @@ import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PaymentApplicationService {
   private final InvoiceMapper invoiceMapper;
+  private final InvoiceReconciliationMapper invoiceReconciliationMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -38,6 +40,7 @@ public class PaymentApplicationService {
 
   public PaymentApplicationService(
       InvoiceMapper invoiceMapper,
+      InvoiceReconciliationMapper invoiceReconciliationMapper,
       PurchaseOrderMapper purchaseOrderMapper,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AuditLogApplicationService auditLogApplicationService,
@@ -45,6 +48,7 @@ public class PaymentApplicationService {
       NotificationApplicationService notificationApplicationService,
       InvoicePaymentStatusTransition invoicePaymentStatusTransition) {
     this.invoiceMapper = invoiceMapper;
+    this.invoiceReconciliationMapper = invoiceReconciliationMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -126,7 +130,13 @@ public class PaymentApplicationService {
             ? NotificationTitle.INVOICE_PAID
             : NotificationTitle.INVOICE_PARTIAL_PAID,
         "采购方已登记发票 " + invoice.invoiceNo() + " 的付款状态：" + paymentStatus + "。");
-    return toResponse(invoiceMapper.findByTenantAndId(tenantId, invoiceId));
+    InvoiceResponse response = toResponse(invoiceMapper.findByTenantAndId(tenantId, invoiceId));
+    invoiceReconciliationMapper.updateStageByInvoice(
+        tenantId,
+        invoiceId,
+        response.reconciliationStage(),
+        response.nextReconciliationAction());
+    return response;
   }
 
   private InvoiceResponse toResponse(Invoice invoice) {

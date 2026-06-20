@@ -127,6 +127,10 @@ describe('procurement SaaS API contract draft', () => {
     expect(databaseTables.find((table) => table.name === 'rfqs')?.requiredColumns).toEqual(
       expect.arrayContaining(['tenant_id', 'status', 'deadline_at']),
     );
+    expect(databaseTables.find((table) => table.name === 'invoice_reconciliations')?.tenantScoped).toBe(true);
+    expect(databaseTables.find((table) => table.name === 'invoice_reconciliations')?.requiredColumns).toEqual(
+      expect.arrayContaining(['tenant_id', 'invoice_id', 'supplier_id', 'order_id', 'stage', 'next_action']),
+    );
   });
 
   it('builds an OpenAPI draft with tenant and supplier isolation parameters', () => {

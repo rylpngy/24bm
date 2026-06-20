@@ -14,6 +14,7 @@ import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -29,6 +30,8 @@ import org.junit.jupiter.api.Test;
 class FinancePaymentStateTransitionTests {
 
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
+  private final InvoiceReconciliationMapper invoiceReconciliationMapper =
+      org.mockito.Mockito.mock(InvoiceReconciliationMapper.class);
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
@@ -39,6 +42,7 @@ class FinancePaymentStateTransitionTests {
       org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
+      invoiceReconciliationMapper,
       purchaseOrderMapper,
       buyerSupplierRelationMapper,
       auditLogApplicationService,
@@ -48,6 +52,7 @@ class FinancePaymentStateTransitionTests {
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
       invoiceMapper,
+      invoiceReconciliationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService);
@@ -221,7 +226,38 @@ class FinancePaymentStateTransitionTests {
         new RegisterPaymentRequest("已付款"));
 
     org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("已付款");
+    verify(invoiceReconciliationMapper).updateStageByInvoice("tenant-1", "invoice-1", "已完成", "归档对账");
     verify(auditLogApplicationService).recordTenantAction("invoice.paid", "invoice", "invoice-1");
+  }
+
+  @Test
+  void invoiceCreationPersistsInitialReconciliationStatement() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    PurchaseOrder order = order(BigDecimal.valueOf(100));
+    when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))
+        .thenReturn(order);
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order);
+    when(invoiceMapper.countByTenantAndOrder("tenant-1", "po-1"))
+        .thenReturn(0);
+    when(invoiceMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.startsWith("invoice-")))
+        .thenAnswer(invocation -> invoice(invocation.getArgument(1), "tenant-1", "待付款"));
+
+    InvoiceResponse response = invoiceApplicationService.create(
+        "po-1",
+        new com.procurement.finance.api.CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001"));
+
+    org.assertj.core.api.Assertions.assertThat(response.reconciliationStage()).isEqualTo("待付款");
+    org.mockito.ArgumentCaptor<String> invoiceIdCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+    verify(invoiceReconciliationMapper).insert(
+        org.mockito.ArgumentMatchers.startsWith("recon-"),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        invoiceIdCaptor.capture(),
+        org.mockito.ArgumentMatchers.eq("supplier-1"),
+        org.mockito.ArgumentMatchers.eq("po-1"),
+        org.mockito.ArgumentMatchers.eq("待付款"),
+        org.mockito.ArgumentMatchers.eq("登记付款"));
+    org.assertj.core.api.Assertions.assertThat(invoiceIdCaptor.getValue()).startsWith("invoice-");
   }
 
   @Test
