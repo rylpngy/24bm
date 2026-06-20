@@ -21,7 +21,7 @@ describe('stage three round two review', () => {
     expect(review).toContain('| 平台运营端 |');
     expect(review).toContain('| 供应商协同端 |');
     expect(review).toContain('| 通用后台能力 |');
-    expect(review).toContain('27 个小步增量');
+    expect(review).toContain('28 个小步增量');
 
     expect(review).toContain('## 仍未收口的缺口');
     expect(review).toContain('Java 模式逐页联调');
@@ -34,6 +34,7 @@ describe('stage three round two review', () => {
     expect(review).toContain('P0：Java 模式逐页联调复核');
     expect(review).toContain('P1：采购方详情编辑闭环');
     expect(review).toContain('采购需求草稿编辑已完成');
+    expect(review).toContain('RFQ 报价中编辑已完成');
     expect(review).toContain('P1：平台和供应商持久化边界补强');
     expect(review).toContain('P2：视觉 QA 和移动端收口');
 

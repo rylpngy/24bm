@@ -521,6 +521,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'RFQ',
   },
   {
+    method: 'PUT',
+    path: '/buyer/rfqs/{rfqId}',
+    audience: 'buyer',
+    action: '更新报价中 RFQ 的标题、截止时间和邀请供应商',
+    requestSchema: 'UpdateRfqRequest',
+    responseSchema: 'RFQ',
+  },
+  {
     method: 'GET',
     path: '/supplier/workspace',
     audience: 'supplier',
@@ -1047,6 +1055,7 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'RfqListRequest',
           'RfqList',
           'CreateRfqRequest',
+          'UpdateRfqRequest',
           'RFQ',
           'SupplierWorkspaceRequest',
           'SupplierWorkspace',

@@ -69,6 +69,7 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('平台租户功能开关详情');
     expect(checklist).toContain('平台企业审核详情');
     expect(checklist).toContain('采购需求详情编辑闭环');
+    expect(checklist).toContain('RFQ 详情编辑闭环');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-award-order-action-forms-ui.test.ts');
@@ -97,5 +98,7 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('scripts/platform-enterprise-review-detail-panel-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-demand-detail-edit-ui.test.ts');
     expect(checklist).toContain('PurchaseDemandUpdateDraftTests');
+    expect(checklist).toContain('scripts/buyer-rfq-detail-edit-ui.test.ts');
+    expect(checklist).toContain('RfqUpdateQuotingTests');
   });
 });

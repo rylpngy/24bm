@@ -67,6 +67,12 @@ export interface CreateRfqPayload {
   invitationNote?: string;
 }
 
+export interface UpdateRfqPayload {
+  title: string;
+  invitedSupplierIds: string[];
+  deadline: string;
+}
+
 export interface SubmitQuotePayload {
   amount: number;
   taxRate: number;
@@ -563,6 +569,7 @@ export interface JavaProcurementApiClient {
   reviewBuyerAwardApproval(rfqId: string, awardId: string, approved: boolean): Promise<JavaAwardDecisionDto>;
   listBuyerRfqs(): Promise<Rfq[]>;
   createBuyerRfq(payload: CreateRfqPayload): Promise<Rfq>;
+  updateBuyerRfq(rfqId: string, payload: UpdateRfqPayload): Promise<Rfq>;
   submitSupplierQuote(rfqId: string, payload: SubmitQuotePayload): Promise<RfqQuote>;
   awardBuyerRfq(rfqId: string, payload: AwardRfqPayload): Promise<JavaAwardDecisionDto>;
   listBuyerOrders(): Promise<PurchaseOrder[]>;
@@ -1117,6 +1124,18 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
         body: JSON.stringify({
           title: payload.title,
           demandIds: payload.demandIds,
+          invitedSupplierIds: payload.invitedSupplierIds,
+          deadlineAt: payload.deadline,
+        }),
+      });
+      return toRfq(rfq);
+    },
+    async updateBuyerRfq(rfqId: string, payload: UpdateRfqPayload) {
+      const rfq = await buyerRequest<JavaRfqDto>(`/api/v1/buyer/rfqs/${rfqId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          title: payload.title,
           invitedSupplierIds: payload.invitedSupplierIds,
           deadlineAt: payload.deadline,
         }),

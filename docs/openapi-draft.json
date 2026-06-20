@@ -1654,6 +1654,40 @@
         }
       }
     },
+    "/buyer/rfqs/{rfqId}": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "更新报价中 RFQ 的标题、截止时间和邀请供应商",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RFQ"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/supplier/workspace": {
       "get": {
         "tags": [
@@ -2897,6 +2931,10 @@
         "type": "object",
         "additionalProperties": true
       },
+      "UpdateRfqRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "RFQ": {
         "type": "object",
         "additionalProperties": true
@@ -3094,6 +3132,7 @@
     "POST /supplier/notifications/{notificationId}/read",
     "GET /buyer/rfqs",
     "POST /buyer/rfqs",
+    "PUT /buyer/rfqs/{rfqId}",
     "GET /supplier/workspace",
     "GET /supplier/announcements",
     "GET /supplier/profile",

@@ -6,6 +6,7 @@ import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.RfqResponse;
+import com.procurement.sourcing.api.UpdateRfqRequest;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqDemandLinkPolicy;
@@ -89,6 +90,35 @@ public class RfqApplicationService {
       rfqDemandMapper.insert(newId("rfq-demand"), tenantId, rfqId, demandId);
     }
 
+    for (String supplierId : request.invitedSupplierIds()) {
+      rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
+    }
+
+    return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
+  }
+
+  @Transactional
+  public RfqResponse update(String rfqId, UpdateRfqRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    if (rfq == null) {
+      throw new IllegalArgumentException("RFQ not found: " + rfqId);
+    }
+    if (!RfqStatus.QUOTING.equals(rfq.status())) {
+      throw new IllegalStateException("Only quoting RFQ can be updated: " + rfqId);
+    }
+    validateSuppliers(tenantId, request.invitedSupplierIds());
+
+    int updated = rfqMapper.updateQuotingDetails(
+        tenantId,
+        rfqId,
+        request.title(),
+        request.deadlineAt());
+    if (updated == 0) {
+      throw new IllegalStateException("RFQ status changed before update could be saved: " + rfqId);
+    }
+
+    rfqInviteMapper.deleteByRfq(tenantId, rfqId);
     for (String supplierId : request.invitedSupplierIds()) {
       rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
     }

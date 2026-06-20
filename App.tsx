@@ -99,6 +99,7 @@ import {
    runJavaMvpWorkflow,
    type CreateDemandPayload,
    type UpdateDemandPayload,
+   type UpdateRfqPayload,
    type PlatformWorkspaceData,
   type JavaPlatformAnnouncementDto,
   type JavaApprovalTaskDto,
@@ -254,6 +255,7 @@ const App: React.FC = () => {
   const [supplierAdmissionBusyId, setSupplierAdmissionBusyId] = useState<string | null>(null);
   const [supplierActionBusyId, setSupplierActionBusyId] = useState<string | null>(null);
   const [rfqCreateBusy, setRfqCreateBusy] = useState<string | null>(null);
+  const [rfqUpdateBusyId, setRfqUpdateBusyId] = useState<string | null>(null);
   const [awardSubmitBusyId, setAwardSubmitBusyId] = useState<string | null>(null);
   const [orderCreateBusy, setOrderCreateBusy] = useState<string | null>(null);
   const [buyerFulfillmentBusyId, setBuyerFulfillmentBusyId] = useState<string | null>(null);
@@ -638,6 +640,21 @@ const App: React.FC = () => {
     }
   };
 
+  const updateBuyerRfqDetail = async (rfqId: string, payload: UpdateRfqPayload) => {
+    if (!javaApiClient || !buyerData) return;
+    setRfqUpdateBusyId(rfqId);
+    setWorkflowStatus(null);
+    try {
+      const rfq = await javaApiClient.updateBuyerRfq(rfqId, payload);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`询价项目已保存并刷新后回显：${rfq.title}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '询价项目保存失败');
+    } finally {
+      setRfqUpdateBusyId(null);
+    }
+  };
+
   const createBuyerOrderFromAward = async (awardId: string, draft: BuyerOrderDraft) => {
     if (!javaApiClient || !buyerData) return;
     setOrderCreateBusy(awardId);
@@ -873,6 +890,7 @@ const App: React.FC = () => {
                 demandUpdateBusyId={demandUpdateBusyId}
                 supplierAdmissionBusyId={supplierAdmissionBusyId}
                 rfqCreateBusy={rfqCreateBusy}
+                rfqUpdateBusyId={rfqUpdateBusyId}
                 awardSubmitBusyId={awardSubmitBusyId}
                 orderCreateBusy={orderCreateBusy}
                 buyerFulfillmentBusyId={buyerFulfillmentBusyId}
@@ -884,6 +902,7 @@ const App: React.FC = () => {
                 onReviewApproval={reviewApprovalTask}
                 onSubmitSupplierAdmission={submitSupplierAdmission}
                 onCreateRfqFromDemand={createBuyerRfqFromDemand}
+                onUpdateRfq={updateBuyerRfqDetail}
                 onSubmitAwardApproval={submitBuyerAwardApproval}
                 onCreateOrderFromAward={createBuyerOrderFromAward}
                 onCreateReceipt={createBuyerReceiptFromOrder}
@@ -2811,6 +2830,7 @@ const BuyerWorkspaceView: React.FC<{
   demandUpdateBusyId: string | null;
   supplierAdmissionBusyId: string | null;
   rfqCreateBusy: string | null;
+  rfqUpdateBusyId: string | null;
   awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   buyerFulfillmentBusyId: string | null;
@@ -2822,6 +2842,7 @@ const BuyerWorkspaceView: React.FC<{
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean, draft: BuyerApprovalReviewDraft) => void;
   onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
   onCreateRfqFromDemand: (demandId: string, supplierIds?: string[], deadline?: string) => void;
+  onUpdateRfq: (rfqId: string, payload: UpdateRfqPayload) => void;
   onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
   onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
   onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
@@ -2847,6 +2868,7 @@ const BuyerWorkspaceView: React.FC<{
   demandUpdateBusyId,
   supplierAdmissionBusyId,
   rfqCreateBusy,
+  rfqUpdateBusyId,
   awardSubmitBusyId,
   orderCreateBusy,
   buyerFulfillmentBusyId,
@@ -2858,6 +2880,7 @@ const BuyerWorkspaceView: React.FC<{
   onReviewApproval,
   onSubmitSupplierAdmission,
   onCreateRfqFromDemand,
+  onUpdateRfq,
   onSubmitAwardApproval,
   onCreateOrderFromAward,
   onCreateReceipt,
@@ -3574,6 +3597,7 @@ const BuyerWorkspaceView: React.FC<{
           rfq={selectedRfqRecord}
           workspace={workspace}
           approvedAwardId={selectedRfqApprovedAwardId}
+          rfqUpdateBusyId={rfqUpdateBusyId}
           awardSubmitBusyId={awardSubmitBusyId}
           orderCreateBusy={orderCreateBusy}
           javaEnabled={javaEnabled}
@@ -3581,6 +3605,7 @@ const BuyerWorkspaceView: React.FC<{
           orderDraft={selectedRfqApprovedAwardId ? getOrderDraft(selectedRfqApprovedAwardId) : undefined}
           onChangeAwardDraft={(rfqId, draft) => setAwardDrafts((drafts) => ({ ...drafts, [rfqId]: draft }))}
           onChangeOrderDraft={(awardId, draft) => setOrderDrafts((drafts) => ({ ...drafts, [awardId]: draft }))}
+          onUpdateRfq={onUpdateRfq}
           onSubmitAwardApproval={onSubmitAwardApproval}
           onCreateOrderFromAward={onCreateOrderFromAward}
         />
@@ -5106,6 +5131,7 @@ const RfqDetailPanelView: React.FC<{
   rfq?: Rfq;
   workspace: BuyerWorkspace;
   approvedAwardId?: string;
+  rfqUpdateBusyId: string | null;
   awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
   javaEnabled: boolean;
@@ -5113,6 +5139,7 @@ const RfqDetailPanelView: React.FC<{
   orderDraft?: BuyerOrderDraft;
   onChangeAwardDraft: (rfqId: string, draft: BuyerAwardDraft) => void;
   onChangeOrderDraft: (awardId: string, draft: BuyerOrderDraft) => void;
+  onUpdateRfq: (rfqId: string, payload: UpdateRfqPayload) => void;
   onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
   onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
 }> = ({
@@ -5120,6 +5147,7 @@ const RfqDetailPanelView: React.FC<{
   rfq,
   workspace,
   approvedAwardId,
+  rfqUpdateBusyId,
   awardSubmitBusyId,
   orderCreateBusy,
   javaEnabled,
@@ -5127,14 +5155,39 @@ const RfqDetailPanelView: React.FC<{
   orderDraft,
   onChangeAwardDraft,
   onChangeOrderDraft,
+  onUpdateRfq,
   onSubmitAwardApproval,
   onCreateOrderFromAward,
-}) => (
-  <Panel title="询价详情" icon={Send}>
-    {!detail ? (
-      <EmptyState title="暂无询价详情" desc="选择一个询价项目后，可查看关联需求、邀请供应商、报价排行和履约状态。" />
-    ) : (
-      <DetailPanelBody>
+}) => {
+  const [editableRfqTitle, setEditableRfqTitle] = useState(rfq?.title ?? '');
+  const [editableRfqDeadline, setEditableRfqDeadline] = useState(rfq?.deadline.slice(0, 16) ?? '');
+  const [editableRfqSupplierIds, setEditableRfqSupplierIds] = useState<string[]>(rfq?.invitedSupplierIds ?? []);
+
+  useEffect(() => {
+    setEditableRfqTitle(rfq?.title ?? '');
+    setEditableRfqDeadline(rfq?.deadline.slice(0, 16) ?? '');
+    setEditableRfqSupplierIds(rfq?.invitedSupplierIds ?? []);
+  }, [rfq?.id, rfq?.title, rfq?.deadline, rfq?.invitedSupplierIds]);
+
+  const admittedRelations = workspace.privateSupplierRelations.filter((relation) => relation.status === '已准入');
+  const editableRfqInvalid = !editableRfqTitle.trim()
+    || !editableRfqDeadline
+    || editableRfqSupplierIds.length === 0;
+  const updateEditableRfqSupplier = (supplierId: string, checked: boolean) => {
+    setEditableRfqSupplierIds((current) =>
+      checked
+        ? Array.from(new Set([...current, supplierId]))
+        : current.filter((item) => item !== supplierId),
+    );
+  };
+  const canEditRfq = javaEnabled && rfq?.status === '报价中';
+
+  return (
+    <Panel title="询价详情" icon={Send}>
+      {!detail ? (
+        <EmptyState title="暂无询价详情" desc="选择一个询价项目后，可查看关联需求、邀请供应商、报价排行和履约状态。" />
+      ) : (
+        <DetailPanelBody>
         <DetailHeroCard
           eyebrow="询价项目"
           title={detail.title}
@@ -5264,6 +5317,89 @@ const RfqDetailPanelView: React.FC<{
           )}
         </DetailSection>
 
+        <DetailSection title="询价编辑">
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-700">
+            只能编辑报价中的 RFQ。保存后会重新刷新 Java 工作台数据，验证刷新后回显。
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <Field label="询价标题">
+              <input
+                value={editableRfqTitle}
+                onChange={(event) => setEditableRfqTitle(event.target.value)}
+                disabled={!canEditRfq}
+                className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+              />
+            </Field>
+            <Field label="报价截止时间">
+              <input
+                type="datetime-local"
+                value={editableRfqDeadline}
+                onChange={(event) => setEditableRfqDeadline(event.target.value)}
+                disabled={!canEditRfq}
+                className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+              />
+            </Field>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-black text-slate-500">邀请供应商</p>
+            {admittedRelations.length === 0 ? (
+              <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                暂无已准入供应商，无法编辑邀请列表。
+              </p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                {admittedRelations.map((relation) => {
+                  const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
+                  const checked = editableRfqSupplierIds.includes(relation.supplierId);
+                  return (
+                    <label
+                      key={relation.id}
+                      className={`rounded-lg border bg-white p-3 transition ${
+                        checked ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={!canEditRfq}
+                          onChange={(event) => updateEditableRfqSupplier(relation.supplierId, event.target.checked)}
+                          className="mt-1 h-4 w-4 rounded border-slate-300"
+                        />
+                        <div className="min-w-0">
+                          <p className="break-words text-xs font-black text-slate-800">{supplier?.name ?? relation.supplierId}</p>
+                          <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-500">
+                            {relation.level} 级 · 绩效 {relation.performanceScore} 分
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {(!canEditRfq || editableRfqInvalid) && (
+            <p aria-live="polite" className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              {!canEditRfq ? '只能编辑报价中的 RFQ。' : '请填写询价标题、报价截止时间并至少选择一家供应商。'}
+            </p>
+          )}
+          <PrimaryActionButton
+            onClick={() => rfq && onUpdateRfq(rfq.id, {
+              title: editableRfqTitle.trim(),
+              invitedSupplierIds: editableRfqSupplierIds,
+              deadline: `${editableRfqDeadline}:00+08:00`,
+            })}
+            disabled={!rfq || !canEditRfq || editableRfqInvalid || rfqUpdateBusyId === rfq?.id}
+            busy={rfqUpdateBusyId === rfq?.id}
+            icon={Send}
+            pendingLabel="保存中"
+            fullWidth
+          >
+            保存询价修改
+          </PrimaryActionButton>
+        </DetailSection>
+
         <RfqDetailOperationPanel
           detail={detail}
           rfq={rfq}
@@ -5279,10 +5415,11 @@ const RfqDetailPanelView: React.FC<{
           onSubmitAwardApproval={onSubmitAwardApproval}
           onCreateOrderFromAward={onCreateOrderFromAward}
         />
-      </DetailPanelBody>
-    )}
-  </Panel>
-);
+        </DetailPanelBody>
+      )}
+    </Panel>
+  );
+};
 
 const RfqDetailOperationPanel: React.FC<{
   detail: RfqDetailPanel;

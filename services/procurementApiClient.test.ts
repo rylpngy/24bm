@@ -1426,6 +1426,34 @@ describe('procurement API clients', () => {
           message: '',
         }, { status: 201 });
       }
+      if (input === 'http://java.test/api/v1/buyer/rfqs/rfq-java-new' && init?.method === 'PUT') {
+        expect(init.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init.body))).toEqual({
+          title: 'Java 更新 RFQ',
+          invitedSupplierIds: ['ent-supplier-sunrise', 'ent-supplier-mingguang'],
+          deadlineAt: '2026-07-05T18:00:00+08:00',
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'rfq-java-new',
+            tenantId: 'tenant-acme',
+            title: 'Java 更新 RFQ',
+            status: '报价中',
+            deadlineAt: '2026-07-05T18:00:00+08:00',
+            ownerId: 'user-buyer-owner',
+            awardedSupplierId: null,
+            createdAt: '2026-06-15T12:10:00+08:00',
+            updatedAt: '2026-06-15T12:30:00+08:00',
+            demandIds: ['dem-local-laptop'],
+            invitedSupplierIds: ['ent-supplier-sunrise', 'ent-supplier-mingguang'],
+          },
+          message: '',
+        });
+      }
       if (input === 'http://java.test/api/v1/supplier/rfqs/rfq-java-new/quotes') {
         expect(init?.method).toBe('POST');
         expect(init?.headers).toMatchObject({
@@ -1643,6 +1671,11 @@ describe('procurement API clients', () => {
       deliveryRequirement: '中标后 7 个自然日内送达华东总部。',
       invitationNote: '本次询价优先考虑准时交付和售后响应。',
     });
+    const updatedRfq = await client.updateBuyerRfq(rfq.id, {
+      title: 'Java 更新 RFQ',
+      invitedSupplierIds: ['ent-supplier-sunrise', 'ent-supplier-mingguang'],
+      deadline: '2026-07-05T18:00:00+08:00',
+    });
     const quote = await client.submitSupplierQuote(rfq.id, { amount: 118000, taxRate: 13, deliveryDays: 7 });
     const award = await client.awardBuyerRfq(rfq.id, { quoteId: quote.id, reason: '价格和交期最优' });
     const order = await client.createBuyerOrder({ awardId: award.id, expectedReceiptDate: '2026-07-10' });
@@ -1669,6 +1702,12 @@ describe('procurement API clients', () => {
       quotes: [],
     });
     expect(rfq.invitedSupplierIds).toEqual(['ent-supplier-sunrise']);
+    expect(updatedRfq).toMatchObject({
+      id: 'rfq-java-new',
+      title: 'Java 更新 RFQ',
+      invitedSupplierIds: ['ent-supplier-sunrise', 'ent-supplier-mingguang'],
+      deadline: '2026-07-05T18:00:00+08:00',
+    });
     expect(quote).toMatchObject({ id: 'quote-java-001', supplierId: 'ent-supplier-sunrise', amount: 118000 });
     expect(award).toMatchObject({ id: 'award-java-001', quoteId: 'quote-java-001', approvedStatus: '已通过' });
     expect(order).toMatchObject({
