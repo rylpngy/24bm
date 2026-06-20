@@ -105,5 +105,11 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('跨角色只读卡片密度收口');
     expect(checklist).toContain('只读详情卡片');
     expect(checklist).toContain('scripts/cross-role-readonly-card-density-ui.test.ts');
+    expect(checklist).toContain('## 十六、跨角色只读卡片浏览器点检记录');
+    expect(checklist).toContain('平台：企业审核、平台公告');
+    expect(checklist).toContain('供应商：报价记录、发票应收');
+    expect(checklist).toContain('1280x720');
+    expect(checklist).toContain('390x844');
+    expect(checklist).toContain('无加载失败、无浏览器错误日志、无整页横向溢出');
   });
 });
