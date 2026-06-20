@@ -76,4 +76,19 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('供应商：发票应收');
     expect(checklist).toContain('无加载失败、无 argument type mismatch、无整页横向溢出');
   });
+
+  it('records the second browser visual QA pass after shared component polish', () => {
+    expect(existsSync(checklistPath)).toBe(true);
+
+    const checklist = readFileSync(checklistPath, 'utf8');
+
+    expect(checklist).toContain('## 十、共享组件收口后的浏览器视觉复核记录');
+    expect(checklist).toContain('http://localhost:5173/');
+    expect(checklist).toContain('1280x720');
+    expect(checklist).toContain('390x844');
+    expect(checklist).toContain('采购方：首页看板、采购需求、询价项目、采购订单、发票付款');
+    expect(checklist).toContain('供应商：供应商看板、询价邀请');
+    expect(checklist).toContain('无浏览器错误日志');
+    expect(checklist).toContain('documentElement.scrollWidth 等于 clientWidth');
+  });
 });

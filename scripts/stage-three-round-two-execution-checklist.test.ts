@@ -100,6 +100,9 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('共享空态稳定区域收口');
     expect(checklist).toContain('ShellState');
     expect(checklist).toContain('EmptyState');
+    expect(checklist).toContain('mock 浏览器视觉复核记录');
+    expect(checklist).toContain('1280x720');
+    expect(checklist).toContain('390x844');
     expect(checklist).toContain('scripts/invoice-reconciliation-ledger-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');

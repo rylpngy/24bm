@@ -103,6 +103,7 @@
 | 47 | 操作面板按钮密度收口 | 详情操作面板内容区已补局部横向滚动，主操作按钮文本已补独立换行容器，降低多按钮、长动作文本在窄屏下撑开整页的风险 | `scripts/stage-three-first-round-form-density-ui.test.ts`、`DetailActionPanel`、`PrimaryActionButton` |
 | 48 | 共享表格滚动可读性收口 | 桌面表格共享框架已补横向滚动约束、背景和阴影，并增加 `min-w-max` 内层容器，降低长列内容挤压表格、破坏列表观感的风险 | `scripts/responsive-table-frame-ui.test.ts`、`ResponsiveTableFrame` |
 | 49 | 共享空态稳定区域收口 | `ShellState` 已补非全屏空态最小高度、居中排布和长文本换行，降低列表筛选无结果时页面跳动和空态观感松散的风险 | `scripts/empty-state-consistency-ui.test.ts`、`ShellState`、`EmptyState` |
+| 50 | mock 浏览器视觉复核记录 | 已在 `http://localhost:5173/` 的 mock 视觉模式下完成 1280x720 与 390x844 两个视口复核，覆盖采购方首页、采购需求、询价项目、采购订单、发票付款，以及供应商看板和询价邀请；页面无加载失败、无浏览器错误日志、无整页横向溢出 | `docs/stage-three-admin-shell-acceptance-checklist.md`、`scripts/stage-three-admin-shell-acceptance-checklist.test.ts` |
 
 ## 第二批候选任务
 
