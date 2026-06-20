@@ -109,6 +109,7 @@
 | 53 | 筛选结果表面节奏收口 | 状态筛选和结果摘要已从散落控件收口为统一查询表面，补齐 `查询条件`、`结果摘要`、命中记录、已选详情、清空筛选禁用态和 `aria-disabled`，三端列表复用筛选区的页面同步受益 | `scripts/stage-three-filter-surface-rhythm-ui.test.ts`、`StatusFilterControl`、`FilterResultSummary` |
 | 54 | 列表操作表面节奏收口 | 工作流卡片操作区已从普通浅底行升级为带边界的双列操作表面，补齐 `操作状态`、`状态与详情`、`快捷动作` 和快捷面板分割线，订单、收货、付款等行内动作更接近后台操作面板 | `scripts/stage-three-list-action-surface-ui.test.ts`、`WorkflowListCard`、`InlineWorkflowAction` |
 | 55 | 跨角色详情操作表面收口 | 平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片的详情入口已从孤立按钮收口为 `详情操作` 表面，和采购方工作流操作区形成一致的后台操作语言 | `scripts/cross-role-detail-action-surface-ui.test.ts`、`DetailSelectionSurface` |
+| 56 | 跨角色只读卡片密度收口 | 平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片已统一为 `只读详情卡片` 表面，补齐左边界、浅阴影、选中态、hover 和 focus 层级，降低跨角色只读列表的松散感 | `scripts/cross-role-readonly-card-density-ui.test.ts`、`ReadonlyDetailCardSurface` |
 
 ## 第二批候选任务
 

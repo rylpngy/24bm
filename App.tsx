@@ -2551,7 +2551,7 @@ const PlatformAnnouncementCard: React.FC<{
   selected: boolean;
   onSelectDetail: () => void;
 }> = ({ announcement, selected, onSelectDetail }) => (
-  <div className="space-y-3">
+  <ReadonlyDetailCardSurface title={announcement.title} selected={selected}>
     <DetailHeroCard
       eyebrow="平台公告"
       title={`公告明细卡片 ${announcement.title}`}
@@ -2572,7 +2572,7 @@ const PlatformAnnouncementCard: React.FC<{
     <DetailSection title="公告正文">
       <p className="break-words text-sm font-bold leading-6 text-slate-700">{announcement.content}</p>
     </DetailSection>
-  </div>
+  </ReadonlyDetailCardSurface>
 );
 
 const PlatformAnnouncementSummaryPanel: React.FC<{
@@ -2868,7 +2868,7 @@ const PlatformEnterpriseReviewCard: React.FC<{
       : '维护认证档案';
 
   return (
-    <div className="space-y-3">
+    <ReadonlyDetailCardSurface title={review.name} selected={selected}>
       <DetailHeroCard
         eyebrow="企业审核"
         title={`企业审核卡片 ${review.name}`}
@@ -2890,7 +2890,7 @@ const PlatformEnterpriseReviewCard: React.FC<{
         selected={selected}
         onSelectDetail={onSelectDetail}
       />
-    </div>
+    </ReadonlyDetailCardSurface>
   );
 };
 
@@ -9744,7 +9744,7 @@ const SupplierQuoteHistoryCard: React.FC<{
   selected: boolean;
   onSelectDetail: () => void;
 }> = ({ quote, rfq, selected, onSelectDetail }) => (
-  <div className="space-y-3">
+  <ReadonlyDetailCardSurface title={rfq?.title ?? quote.rfqId} selected={selected}>
     <DetailHeroCard
       eyebrow="报价记录"
       title={rfq?.title ?? `报价 ${quote.rfqId}`}
@@ -9762,7 +9762,7 @@ const SupplierQuoteHistoryCard: React.FC<{
       selected={selected}
       onSelectDetail={onSelectDetail}
     />
-  </div>
+  </ReadonlyDetailCardSurface>
 );
 
 const SupplierQuoteDetailPanel: React.FC<{
@@ -10272,7 +10272,7 @@ const SupplierInvoiceReceivableCard: React.FC<{
       : '跟进回款';
 
   return (
-    <div className="space-y-3">
+    <ReadonlyDetailCardSurface title={invoice.invoiceNo ?? invoice.id} selected={selected}>
       <DetailHeroCard
         eyebrow="发票应收"
         title={`发票应收卡片 ${invoice.id}`}
@@ -10291,7 +10291,7 @@ const SupplierInvoiceReceivableCard: React.FC<{
         selected={selected}
         onSelectDetail={onSelectDetail}
       />
-    </div>
+    </ReadonlyDetailCardSurface>
   );
 };
 
@@ -11199,6 +11199,21 @@ const SimpleList: React.FC<{
     </div>
   );
 };
+
+const ReadonlyDetailCardSurface: React.FC<{
+  title: string;
+  selected: boolean;
+  children: React.ReactNode;
+}> = ({ title, selected, children }) => (
+  <div
+    aria-label={`${title} 只读详情卡片`}
+    className={`space-y-3 rounded-lg border border-l-4 bg-white p-4 shadow-sm shadow-slate-200/50 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
+      selected ? 'border-blue-200 border-l-blue-400 ring-2 ring-blue-100' : 'border-slate-200 border-l-slate-300'
+    }`}
+  >
+    {children}
+  </div>
+);
 
 const DetailSelectionSurface: React.FC<{
   title: string;

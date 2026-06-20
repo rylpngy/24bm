@@ -172,6 +172,7 @@
 | 筛选结果表面节奏收口 | 查询条件、结果摘要、命中记录、已选详情和清空筛选形成统一查询表面，三端列表筛选区不再像散落表单控件 | `StatusFilterControl`、`FilterResultSummary`、`scripts/stage-three-filter-surface-rhythm-ui.test.ts` |
 | 列表操作表面节奏收口 | 工作流卡片中的操作状态、状态与详情、快捷动作已形成明确分区，快捷操作面板补内阴影和分割线，降低状态、详情按钮和表单混在一起的粗糙感 | `WorkflowListCard`、`InlineWorkflowAction`、`scripts/stage-three-list-action-surface-ui.test.ts` |
 | 跨角色详情操作表面收口 | 平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片的详情入口统一为 `详情操作` 表面，降低平台/供应商只读卡片和采购方操作卡片之间的割裂感 | `DetailSelectionSurface`、`scripts/cross-role-detail-action-surface-ui.test.ts` |
+| 跨角色只读卡片密度收口 | 平台公告、平台企业审核、供应商报价记录和供应商发票应收统一为 `只读详情卡片` 表面，补齐选中态、左边界、浅阴影和 hover/focus 反馈 | `ReadonlyDetailCardSurface`、`scripts/cross-role-readonly-card-density-ui.test.ts` |
 
 第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。
 
@@ -244,3 +245,14 @@
 - 原 `DetailToggleButton` 保持为底层按钮，避免影响租户表格、RFQ 表格和其他紧凑详情入口。
 
 验收依据：`scripts/cross-role-detail-action-surface-ui.test.ts`。
+
+## 十五、跨角色只读卡片密度收口记录
+
+本轮继续补平台端和供应商端只读列表的卡片密度，不改变详情选择和数据展示逻辑：
+
+- 新增 `ReadonlyDetailCardSurface`，统一平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片外层。
+- 只读卡片补 `只读详情卡片` 可访问语义、左边界、浅阴影、选中态、hover 和 focus 层级。
+- 内部仍保留原有 `DetailHeroCard`、`DetailSelectionSurface` 和正文/事实信息，不影响业务字段、筛选或详情切换。
+- 该表面让平台/供应商只读列表和采购方工作流卡片在密度与点击反馈上更一致。
+
+验收依据：`scripts/cross-role-readonly-card-density-ui.test.ts`。

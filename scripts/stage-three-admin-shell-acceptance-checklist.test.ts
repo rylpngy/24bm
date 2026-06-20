@@ -102,5 +102,8 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('跨角色详情操作表面收口');
     expect(checklist).toContain('详情操作');
     expect(checklist).toContain('scripts/cross-role-detail-action-surface-ui.test.ts');
+    expect(checklist).toContain('跨角色只读卡片密度收口');
+    expect(checklist).toContain('只读详情卡片');
+    expect(checklist).toContain('scripts/cross-role-readonly-card-density-ui.test.ts');
   });
 });
