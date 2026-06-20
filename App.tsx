@@ -10086,11 +10086,21 @@ const ReconciliationLedgerPanel: React.FC<{
   const invoiceTotal = filteredInvoices.reduce((sum, invoice) => sum + invoice.amount, 0);
   const varianceTotal = filteredInvoices.reduce((sum, invoice) => sum + Math.abs(invoice.varianceAmount ?? 0), 0);
   const pendingCount = filteredInvoices.filter((invoice) => (invoice.reconciliationStatus ?? '待同步') !== '三单一致').length;
+  const varianceHandlingCount = filteredInvoices.filter((invoice) => Math.abs(invoice.varianceAmount ?? 0) > 0).length;
   const overdueCount = filteredInvoices.filter((invoice) => invoice.overdue).length;
   const nextActionSummary = pendingCount > 0
     ? (scope === 'buyer' ? '优先处理付款和差异' : '优先跟进回款和差异')
     : '归档对账';
+  const paymentPlanSummary = scope === 'buyer'
+    ? (pendingCount > 0 ? '按付款申请批次登记付款' : '付款状态已归档')
+    : (pendingCount > 0 ? '按采购方付款计划跟进回款' : '回款状态已归档');
   const roleLabel = scope === 'buyer' ? '应付' : '应收';
+  const buildLedgerRiskLabel = (invoice: BuyerWorkspace['invoices'][number]) => {
+    if (Math.abs(invoice.varianceAmount ?? 0) > 0) return '需核对差异';
+    if (invoice.overdue) return '已逾期';
+    if ((invoice.reconciliationStatus ?? '待同步') !== '三单一致') return '按计划跟进';
+    return '可归档';
+  };
   const ledgerMobileCards = (
     <div className="grid gap-3">
       {filteredInvoices.map((invoice) => (
@@ -10109,6 +10119,7 @@ const ReconciliationLedgerPanel: React.FC<{
             { label: '状态流转', value: invoice.reconciliationStage ?? '待同步' },
             { label: '下一步动作', value: invoice.nextReconciliationAction ?? '同步订单' },
             { label: '逾期提醒', value: invoice.overdue ? `逾期 ${invoice.overdueDays ?? 0} 天` : (invoice.dueDate ?? '未逾期') },
+            { label: '处理提示', value: buildLedgerRiskLabel(invoice) },
           ]}
         />
       ))}
@@ -10138,6 +10149,31 @@ const ReconciliationLedgerPanel: React.FC<{
           <MiniFact label="当前筛选" value={statusFilter} />
         </div>
       </div>
+      <div className="mt-3 grid gap-3 lg:grid-cols-3">
+        <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
+          <p className="text-xs font-black text-amber-800">差异处理建议</p>
+          <p className="mt-1 text-sm font-black text-slate-950">
+            {varianceHandlingCount > 0 ? `${varianceHandlingCount} 张需核对差异` : '暂无金额差异'}
+          </p>
+          <p className="mt-1 text-xs font-bold leading-5 text-amber-700">
+            {varianceHandlingCount > 0 ? '核对订单、收货和发票金额后再继续付款或回款确认。' : '订单金额和发票金额一致，可继续按计划推进。'}
+          </p>
+        </div>
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+          <p className="text-xs font-black text-blue-800">付款/回款计划</p>
+          <p className="mt-1 text-sm font-black text-slate-950">{paymentPlanSummary}</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
+            {scope === 'buyer' ? '采购方关注付款申请状态、付款批次和付款登记。' : '供应商关注采购方付款节点、尾款跟进和应收归档。'}
+          </p>
+        </div>
+        <div className="rounded-lg border border-red-100 bg-red-50 p-3">
+          <p className="text-xs font-black text-red-800">逾期跟进</p>
+          <p className="mt-1 text-sm font-black text-slate-950">{overdueCount > 0 ? `${overdueCount} 张已逾期` : '暂无逾期'}</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-red-700">
+            {overdueCount > 0 ? '优先联系责任人确认付款或回款计划。' : '继续监控应付/应收截止日期。'}
+          </p>
+        </div>
+      </div>
 
       <div className="mt-3">
         <StatusFilterControl
@@ -10165,6 +10201,7 @@ const ReconciliationLedgerPanel: React.FC<{
                   <th className="px-3 py-2">状态流转</th>
                   <th className="px-3 py-2">下一步</th>
                   <th className="px-3 py-2">逾期提醒</th>
+                  <th className="px-3 py-2">处理提示</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
@@ -10197,6 +10234,11 @@ const ReconciliationLedgerPanel: React.FC<{
                     </td>
                     <td className="px-3 py-3 text-xs font-bold leading-5 text-slate-600">
                       {invoice.overdue ? `逾期 ${invoice.overdueDays ?? 0} 天` : (invoice.dueDate ?? '未逾期')}
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-black text-slate-700">
+                        {buildLedgerRiskLabel(invoice)}
+                      </span>
                     </td>
                   </tr>
                 ))}

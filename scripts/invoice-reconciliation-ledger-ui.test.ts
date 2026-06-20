@@ -67,4 +67,23 @@ describe('invoice reconciliation ledger UI', () => {
     expect(ledgerPanel).toContain('逾期提醒');
     expect(ledgerPanel).toContain('invoice.dueDate');
   });
+
+  it('adds handling guidance for variance, overdue, and payment planning in the ledger', () => {
+    const app = read('App.tsx');
+    const ledgerPanel = app.slice(
+      app.indexOf('const ReconciliationLedgerPanel'),
+      app.indexOf('const SupplierInvoiceReceivableCard'),
+    );
+
+    expect(ledgerPanel).toContain('varianceHandlingCount');
+    expect(ledgerPanel).toContain('paymentPlanSummary');
+    expect(ledgerPanel).toContain('buildLedgerRiskLabel');
+    expect(ledgerPanel).toContain('差异处理建议');
+    expect(ledgerPanel).toContain('付款/回款计划');
+    expect(ledgerPanel).toContain('逾期跟进');
+    expect(ledgerPanel).toContain('需核对差异');
+    expect(ledgerPanel).toContain('已逾期');
+    expect(ledgerPanel).toContain('按计划跟进');
+    expect(ledgerPanel).toContain('<th className="px-3 py-2">处理提示</th>');
+  });
 });
