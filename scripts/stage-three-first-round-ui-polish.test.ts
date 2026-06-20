@@ -72,8 +72,9 @@ describe('stage three first round UI polish', () => {
     expect(listToolbar).toContain('border-l-4 border-l-blue-500');
     expect(statusFilter).toContain('md:flex-row md:items-center md:justify-between');
     expect(statusFilter).toContain('当前值：{value}');
-    expect(filterResult).toContain('border-slate-200 bg-white');
-    expect(filterResult).toContain('rounded-md bg-blue-50');
+    expect(filterResult).toContain('border-slate-200 border-l-4 border-l-slate-300 bg-white/95');
+    expect(filterResult).toContain('结果摘要');
+    expect(filterResult).toContain('rounded-md border border-blue-100 bg-blue-50');
     expect(panel).toContain('break-words font-black text-slate-950');
     expect(adminInfoCard).toContain('border-l-4');
     expect(workflowCard).toContain('border-l-4');

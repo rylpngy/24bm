@@ -35,7 +35,7 @@ describe('mobile layout overflow UI', () => {
     expect(selectComponent).toContain('className="w-full min-w-0 appearance-none');
 
     const statusFilter = sliceBetween(app, 'const StatusFilter', 'const FilterResultSummary');
-    expect(statusFilter).toContain('className="h-9 w-full min-w-0 rounded-lg');
+    expect(statusFilter).toContain('className="h-9 w-full min-w-0 rounded-md');
     expect(statusFilter).toContain('sm:min-w-[12rem]');
   });
 

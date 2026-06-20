@@ -10649,10 +10649,11 @@ const StatusFilterControl: React.FC<{
 }> = ({ label, value, statusOptions, onChange }) => (
   <div
     aria-label={`${label}筛选器`}
-    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:flex-row sm:items-center sm:justify-between md:flex-row md:items-center md:justify-between"
+    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 border-l-4 border-l-blue-500 bg-white/95 p-3 shadow-sm shadow-slate-200/60 sm:flex-row sm:items-center sm:justify-between md:flex-row md:items-center md:justify-between"
   >
     <div className="min-w-0">
-      <label className="text-xs font-black text-slate-500" htmlFor={`status-filter-${label}`}>
+      <p className="text-[11px] font-black uppercase text-blue-600">查询条件</p>
+      <label className="mt-1 block text-xs font-black text-slate-700" htmlFor={`status-filter-${label}`}>
         {label}
       </label>
       <p className="mt-1 text-xs font-bold text-slate-400">可选 {statusOptions.length} 项 · 当前值：{value}</p>
@@ -10661,7 +10662,7 @@ const StatusFilterControl: React.FC<{
       id={`status-filter-${label}`}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-auto sm:min-w-[12rem]"
+      className="h-9 w-full min-w-0 rounded-md border border-blue-100 bg-blue-50 px-3 text-xs font-black text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 sm:w-auto sm:min-w-[12rem]"
     >
       <option value="全部状态">全部状态</option>
       {statusOptions.map((status) => (
@@ -10693,18 +10694,22 @@ const FilterResultSummary: React.FC<{
   return (
     <div
       aria-label={label}
-      className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/40 lg:flex-row lg:items-center lg:justify-between"
+      className="mb-4 grid gap-3 rounded-lg border border-slate-200 border-l-4 border-l-slate-300 bg-white/95 p-3 shadow-sm shadow-slate-200/60 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
     >
-      <div className="grid gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap">
-        <MiniFact label="当前筛选" value={filterLabel} />
-        <MiniFact label="命中记录" value={`${resultCount} / ${totalCount}`} />
-        <MiniFact label="已选详情" value={selectedLabel ?? '暂无'} />
+      <div className="min-w-0">
+        <p className="mb-2 text-[11px] font-black uppercase text-slate-500">结果摘要</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <MiniFact label="当前筛选" value={filterLabel} />
+          <MiniFact label="命中记录" value={`${resultCount} / ${totalCount}`} />
+          <MiniFact label="已选详情" value={selectedLabel ?? '暂无'} />
+        </div>
       </div>
       <button
         type="button"
         onClick={onClear}
         disabled={!filtered}
-        className="inline-flex h-9 items-center justify-center rounded-md bg-blue-50 px-3 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+        aria-disabled={!filtered}
+        className="inline-flex h-9 items-center justify-center rounded-md border border-blue-100 bg-blue-50 px-3 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400"
       >
         清空筛选
       </button>

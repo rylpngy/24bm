@@ -169,6 +169,7 @@
 | 共享详情密度收口 | 详情头、分组标题、Key/Value 行和事实网格补齐长文本换行、移动端单列和计数标签抗挤压能力 | `DetailHeroCard`、`DetailSection`、`DetailKeyValueRow`、`InlineFactGrid`、`scripts/stage-three-first-round-detail-density-ui.test.ts` |
 | 共享表单密度收口 | 详情编辑面板和主操作按钮补齐响应式头部、浅底内容区、按钮文本居中和图标抗挤压能力 | `DetailActionPanel`、`PrimaryActionButton`、`scripts/stage-three-first-round-form-density-ui.test.ts` |
 | 工作台页面节奏收口 | 主滚动区 scrollbar-gutter、顶部栏半透明阴影、详情体分段边界和移动摘要卡片按压反馈已补齐，降低长页面滚动时的漂浮感和层级割裂 | `AppHeader`、`DetailPanelBody`、`ResponsiveSummaryCard`、`scripts/stage-three-admin-workbench-rhythm-ui.test.ts` |
+| 筛选结果表面节奏收口 | 查询条件、结果摘要、命中记录、已选详情和清空筛选形成统一查询表面，三端列表筛选区不再像散落表单控件 | `StatusFilterControl`、`FilterResultSummary`、`scripts/stage-three-filter-surface-rhythm-ui.test.ts` |
 
 第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。
 
@@ -208,3 +209,14 @@
 - 移动摘要卡片增加轻微按压反馈，列表详情入口更有可点击感。
 
 验收依据：`scripts/stage-three-admin-workbench-rhythm-ui.test.ts`。
+
+## 十二、筛选结果表面节奏收口记录
+
+本轮继续补三端列表的后台细节，不新增查询接口，只优化已有筛选组件和结果摘要组件：
+
+- `StatusFilterControl` 增加 `查询条件` 标题、蓝色左边界、白底浅阴影和更明确的选择框焦点态。
+- `FilterResultSummary` 增加 `结果摘要` 标题、左边界、桌面双列布局和移动端三事实网格，统一承载当前筛选、命中记录、已选详情。
+- 清空筛选按钮增加边界、禁用态和 `aria-disabled`，让可执行/不可执行状态更清楚。
+- 采购方、平台、供应商所有复用筛选摘要的页面同步受益，当前不改变数据筛选逻辑。
+
+验收依据：`scripts/stage-three-filter-surface-rhythm-ui.test.ts`。

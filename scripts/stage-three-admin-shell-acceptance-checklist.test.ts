@@ -93,5 +93,8 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('工作台页面节奏收口');
     expect(checklist).toContain('主滚动区 scrollbar-gutter、顶部栏半透明阴影、详情体分段边界和移动摘要卡片按压反馈');
     expect(checklist).toContain('scripts/stage-three-admin-workbench-rhythm-ui.test.ts');
+    expect(checklist).toContain('筛选结果表面节奏收口');
+    expect(checklist).toContain('查询条件、结果摘要、命中记录、已选详情和清空筛选');
+    expect(checklist).toContain('scripts/stage-three-filter-surface-rhythm-ui.test.ts');
   });
 });
