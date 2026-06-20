@@ -40,6 +40,26 @@
 - 后续履约记录：`Created delivery delivery-487e0fe5-7a79-448c-bc31-d98a540f6947, receipt receipt-f5799627-d428-4d59-bce7-41ea0aa794ba`。
 - 发票付款记录：`Created invoice invoice-25900914-3acd-4865-b2db-f5d252cabcbb, payment status 已付款`。
 
+## 2026-06-20 跨角色只读卡片 Java 回归准备
+
+本轮在准备复跑平台和供应商只读详情卡片 Java 视觉回归时，先发现 `http://localhost:3000/` 首屏 Java 数据加载失败。排查后确认不是前端页面样式问题，而是首屏 Java API 中两个独立对账单台账接口在无筛选参数时触发 PostgreSQL 空参数类型推断错误。
+
+已完成修复：
+
+- Java 后端健康检查返回 `ok`。
+- 前端 Java 模式 `http://localhost:3000/` 返回 `200 OK`。
+- 首屏 Java API 探针全部返回 `200`，覆盖平台 workspace、采购方 workspace、采购方部门、采购方角色、审批模板、供应商 workspace。
+- 已修复 `/api/v1/buyer/invoice-reconciliations` 和 `/api/v1/supplier/invoice-reconciliations` 无筛选参数查询，MyBatis mapper 改为动态 SQL 条件，不再使用 `#{stage} is null` 这类 PostgreSQL 无法推断空参数类型的写法。
+- 前端 Java API 客户端已增强错误信息，后续若接口失败会显示具体 API 路径，避免只看到 `API request failed with 403`。
+- 修复后重新执行 `npm run java:smoke`，结果为 `Java local API smoke passed at http://localhost:8080`。本次输出加载 `25 purchase demands`、`21 purchase orders`、`20 invoices`、供应商侧 `23 RFQs`、`22 quotes`、`21 orders` 和 `20 invoices`，并完成新需求 `dem-57473fca-9288-4cec-83a8-bdfaf270e106` 到发票 `invoice-f8d41b69-d1bd-4a60-baf3-79993579ba33` 的付款闭环。
+
+待补跑视觉项：
+
+- 平台：企业审核、平台公告。
+- 供应商：报价记录、发票应收。
+- 本组页面仍以 `ReadonlyDetailCardSurface` 为验收目标，需确认 Java 数据源下无加载失败、无浏览器错误日志、无整页横向溢出。
+- 当前浏览器自动化待恢复后补跑；本节只记录 Java 数据源前置阻塞已解除，不替代视觉回归结论。
+
 ## 第二轮新增能力复核
 
 | 能力 | Java 模式复核结论 | 说明 |

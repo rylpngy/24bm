@@ -26,6 +26,17 @@ describe('stage three round two Java walkthrough result', () => {
     expect(result).toContain('Loaded supplier 晨光科技供应商, 21 RFQs, 20 quotes, 19 orders, 18 invoices');
     expect(result).toContain('Created demand dem-46fe98c4-eb93-4304-b40a-9ccc6a3673d1');
     expect(result).toContain('payment status 已付款');
+    expect(result).toContain('## 2026-06-20 跨角色只读卡片 Java 回归准备');
+    expect(result).toContain('Java 后端健康检查返回 `ok`');
+    expect(result).toContain('前端 Java 模式 `http://localhost:3000/` 返回 `200 OK`');
+    expect(result).toContain('首屏 Java API 探针全部返回 `200`');
+    expect(result).toContain('`/api/v1/buyer/invoice-reconciliations`');
+    expect(result).toContain('`/api/v1/supplier/invoice-reconciliations`');
+    expect(result).toContain('平台：企业审核、平台公告');
+    expect(result).toContain('供应商：报价记录、发票应收');
+    expect(result).toContain('Java 数据源');
+    expect(result).toContain('ReadonlyDetailCardSurface');
+    expect(result).toContain('浏览器自动化待恢复后补跑');
 
     expect(result).toContain('## 第二轮新增能力复核');
     expect(result).toContain('详情面板');

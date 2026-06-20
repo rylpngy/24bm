@@ -1796,7 +1796,7 @@ describe('procurement API clients', () => {
       },
     });
 
-    await expect(client.listBuyerRfqs()).rejects.toThrow('API request failed with 403');
+    await expect(client.listBuyerRfqs()).rejects.toThrow('API request failed with 403 at /api/v1/buyer/rfqs');
   });
 
   it('uses the Java API client to create RFQs, submit supplier quotes, award quotes, create orders, ship, receive, invoice, and pay with scoped tokens', async () => {

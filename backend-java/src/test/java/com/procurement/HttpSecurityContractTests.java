@@ -1289,6 +1289,10 @@ class HttpSecurityContractTests {
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"))));
     when(invoiceApplicationService.listCurrentSupplierReconciliations(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(invoiceReconciliationResponse("recon-supplier-all", "invoice-demo", "待付款")));
+    when(invoiceApplicationService.listCurrentSupplierReconciliations(
         org.mockito.ArgumentMatchers.eq("待付款"),
         org.mockito.ArgumentMatchers.eq("po-demo")))
         .thenReturn(List.of(invoiceReconciliationResponse("recon-supplier-demo", "invoice-demo", "待付款")));
@@ -1499,6 +1503,10 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("invoice-demo"));
+    mockMvc.perform(get("/api/v1/supplier/invoice-reconciliations")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("recon-supplier-all"));
     mockMvc.perform(get("/api/v1/supplier/invoice-reconciliations")
             .queryParam("stage", "待付款")
             .queryParam("orderId", "po-demo")
@@ -3086,6 +3094,11 @@ class HttpSecurityContractTests {
         org.mockito.ArgumentMatchers.eq("po-demo")))
         .thenReturn(List.of(invoiceResponse("invoice-filtered", "待付款")));
     when(paymentApplicationService.listCurrentTenantReconciliations(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(invoiceReconciliationResponse("recon-all", "invoice-demo", "待付款")));
+    when(paymentApplicationService.listCurrentTenantReconciliations(
         org.mockito.ArgumentMatchers.eq("待付款"),
         org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
         org.mockito.ArgumentMatchers.eq("po-demo")))
@@ -3144,6 +3157,10 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("invoice-filtered"));
+    mockMvc.perform(get("/api/v1/buyer/invoice-reconciliations")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("recon-all"));
     mockMvc.perform(get("/api/v1/buyer/invoice-reconciliations")
             .queryParam("stage", "待付款")
             .queryParam("supplierId", "ent-supplier-sunrise")

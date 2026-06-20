@@ -40,6 +40,7 @@ public interface InvoiceReconciliationMapper {
       @Param("nextAction") String nextAction);
 
   @Select("""
+      <script>
       select
         reconciliation.id,
         reconciliation.tenant_id,
@@ -66,10 +67,17 @@ public interface InvoiceReconciliationMapper {
         on purchase_order.tenant_id = reconciliation.tenant_id
        and purchase_order.id = reconciliation.order_id
       where reconciliation.tenant_id = #{tenantId}
-        and (#{stage} is null or reconciliation.stage = #{stage})
-        and (#{supplierId} is null or reconciliation.supplier_id = #{supplierId})
-        and (#{orderId} is null or reconciliation.order_id = #{orderId})
+      <if test="stage != null">
+        and reconciliation.stage = #{stage}
+      </if>
+      <if test="supplierId != null">
+        and reconciliation.supplier_id = #{supplierId}
+      </if>
+      <if test="orderId != null">
+        and reconciliation.order_id = #{orderId}
+      </if>
       order by reconciliation.updated_at desc, reconciliation.created_at desc
+      </script>
       """)
   List<InvoiceReconciliation> listByTenantFiltered(
       @Param("tenantId") String tenantId,
@@ -78,6 +86,7 @@ public interface InvoiceReconciliationMapper {
       @Param("orderId") String orderId);
 
   @Select("""
+      <script>
       select
         reconciliation.id,
         reconciliation.tenant_id,
@@ -104,9 +113,14 @@ public interface InvoiceReconciliationMapper {
         on purchase_order.tenant_id = reconciliation.tenant_id
        and purchase_order.id = reconciliation.order_id
       where reconciliation.supplier_id = #{supplierId}
-        and (#{stage} is null or reconciliation.stage = #{stage})
-        and (#{orderId} is null or reconciliation.order_id = #{orderId})
+      <if test="stage != null">
+        and reconciliation.stage = #{stage}
+      </if>
+      <if test="orderId != null">
+        and reconciliation.order_id = #{orderId}
+      </if>
       order by reconciliation.updated_at desc, reconciliation.created_at desc
+      </script>
       """)
   List<InvoiceReconciliation> listBySupplierFiltered(
       @Param("supplierId") String supplierId,

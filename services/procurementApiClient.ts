@@ -761,11 +761,12 @@ export interface JavaProcurementApiClientOptions {
   supplierLogin?: JavaLoginPayload;
 }
 
-const parseData = async <T>(response: Response): Promise<T> => {
+const parseData = async <T>(response: Response, path?: string): Promise<T> => {
   const text = await response.text();
   const payload = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    throw new Error(payload?.error?.message ?? payload?.message ?? `API request failed with ${response.status}`);
+    const suffix = path ? ` at ${path}` : '';
+    throw new Error(payload?.error?.message ?? payload?.message ?? `API request failed with ${response.status}${suffix}`);
   }
   return payload?.data as T;
 };
@@ -790,7 +791,7 @@ export const createHttpApiClient = (options: HttpApiClientOptions): ProcurementA
 
   const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
     const response = await fetcher(`${baseUrl}${path}`, init);
-    return parseData<T>(response);
+    return parseData<T>(response, path);
   };
 
   return {
@@ -864,7 +865,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 
   const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
     const response = await fetcher(`${baseUrl}${path}`, init);
-    return parseData<T>(response);
+    return parseData<T>(response, path);
   };
 
   const loginBuyer = async (): Promise<JavaLoginResponse> => {
