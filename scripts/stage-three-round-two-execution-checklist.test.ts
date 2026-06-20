@@ -89,6 +89,9 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('对账台账表格化');
     expect(checklist).toContain('对账差异处理和付款计划提示');
     expect(checklist).toContain('差异处理建议');
+    expect(checklist).toContain('共享组件长文本抗挤压');
+    expect(checklist).toContain('MetricCard');
+    expect(checklist).toContain('StatusPill');
     expect(checklist).toContain('scripts/invoice-reconciliation-ledger-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');

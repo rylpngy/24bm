@@ -38,4 +38,26 @@ describe('mobile layout overflow UI', () => {
     expect(statusFilter).toContain('className="h-9 w-full min-w-0 rounded-lg');
     expect(statusFilter).toContain('sm:min-w-[12rem]');
   });
+
+  it('keeps shared cards, module headers, and status pills resilient to long text', () => {
+    const app = read('App.tsx');
+
+    const metricCard = sliceBetween(app, 'const MetricCard', 'const BuyerModuleHeader');
+    expect(metricCard).toContain('min-w-0 rounded-lg border');
+    expect(metricCard).toContain('break-words text-xl font-black text-slate-950');
+    expect(metricCard).not.toContain('truncate text-xl font-black');
+
+    const buyerHeader = sliceBetween(app, 'const BuyerModuleHeader', 'const SupplierModuleHeader');
+    const supplierHeader = sliceBetween(app, 'const SupplierModuleHeader', 'const PlatformModuleHeader');
+    const platformHeader = sliceBetween(app, 'const PlatformModuleHeader', 'const ListToolbar');
+    for (const header of [buyerHeader, supplierHeader, platformHeader]) {
+      expect(header).toContain('min-w-0 self-stretch');
+      expect(header).toContain('break-words text-sm font-black');
+      expect(header).toContain('break-words text-sm font-semibold');
+    }
+
+    const statusPill = sliceBetween(app, 'const StatusPill', 'export default App');
+    expect(statusPill).toContain('break-words');
+    expect(statusPill).not.toContain('whitespace-nowrap');
+  });
 });

@@ -33,7 +33,8 @@ describe('stage three first round UI polish', () => {
     expect(panel).toContain('shadow-sm shadow-slate-200/50');
     expect(panel).toContain('border-b border-slate-100 pb-3');
     expect(workflowCard).toContain('hover:border-blue-200 hover:shadow-sm');
-    expect(statusPill).toContain('max-w-full items-center whitespace-nowrap');
+    expect(statusPill).toContain('max-w-full min-w-0 items-center break-words');
+    expect(statusPill).not.toContain('whitespace-nowrap');
   });
 
   it('makes shared list surfaces feel like dense admin pages instead of placeholder cards', () => {

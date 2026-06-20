@@ -10489,12 +10489,12 @@ const MetricCard: React.FC<{
     slate: 'bg-slate-100 text-slate-700',
   };
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
       <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg ${tones[tone]}`}>
         <Icon size={20} />
       </div>
       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</p>
-      <p className="mt-1 truncate text-xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 break-words text-xl font-black text-slate-950">{value}</p>
     </div>
   );
 };
@@ -10515,12 +10515,12 @@ const BuyerModuleHeader: React.FC<{
             当前筛选：{header.currentFilter}
           </span>
         </div>
-        <h3 className="mt-3 text-lg font-black text-slate-950">{header.title}</h3>
-        <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
+        <h3 className="mt-3 break-words text-lg font-black text-slate-950">{header.title}</h3>
+        <p className="mt-1 max-w-3xl break-words text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
       </div>
-      <div className="self-stretch rounded-lg border border-blue-100 bg-blue-50 p-3 lg:w-72">
+      <div className="min-w-0 self-stretch rounded-lg border border-blue-100 bg-blue-50 p-3 lg:w-72">
         <p className="text-xs font-black text-blue-800">本页关键动作</p>
-        <p className="mt-1 text-sm font-black text-blue-950">{header.primaryAction}</p>
+        <p className="mt-1 break-words text-sm font-black text-blue-950">{header.primaryAction}</p>
       </div>
     </div>
     {facts.length > 0 && (
@@ -10549,12 +10549,12 @@ const SupplierModuleHeader: React.FC<{
             当前筛选：{header.currentFilter}
           </span>
         </div>
-        <h3 className="mt-3 text-lg font-black text-slate-950">{header.title}</h3>
-        <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
+        <h3 className="mt-3 break-words text-lg font-black text-slate-950">{header.title}</h3>
+        <p className="mt-1 max-w-3xl break-words text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
       </div>
-      <div className="self-stretch rounded-lg border border-orange-100 bg-orange-50 p-3 lg:w-72">
+      <div className="min-w-0 self-stretch rounded-lg border border-orange-100 bg-orange-50 p-3 lg:w-72">
         <p className="text-xs font-black text-orange-800">供应商当前动作</p>
-        <p className="mt-1 text-sm font-black text-orange-950">{header.primaryAction}</p>
+        <p className="mt-1 break-words text-sm font-black text-orange-950">{header.primaryAction}</p>
       </div>
     </div>
     <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))]">
@@ -10581,12 +10581,12 @@ const PlatformModuleHeader: React.FC<{
             当前筛选：{header.currentFilter}
           </span>
         </div>
-        <h3 className="mt-3 text-lg font-black text-slate-950">{header.title}</h3>
-        <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
+        <h3 className="mt-3 break-words text-lg font-black text-slate-950">{header.title}</h3>
+        <p className="mt-1 max-w-3xl break-words text-sm font-semibold leading-6 text-slate-600">{header.desc}</p>
       </div>
-      <div className="self-stretch rounded-lg border border-emerald-100 bg-emerald-50 p-3 lg:w-72">
+      <div className="min-w-0 self-stretch rounded-lg border border-emerald-100 bg-emerald-50 p-3 lg:w-72">
         <p className="text-xs font-black text-emerald-800">平台当前动作</p>
-        <p className="mt-1 text-sm font-black text-emerald-950">{header.primaryAction}</p>
+        <p className="mt-1 break-words text-sm font-black text-emerald-950">{header.primaryAction}</p>
       </div>
     </div>
     <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))]">
@@ -11296,7 +11296,7 @@ const StatusPill: React.FC<{ label: string }> = ({ label }) => {
       ? 'bg-amber-50 text-amber-700 border-amber-100'
       : 'bg-slate-100 text-slate-600 border-slate-200';
 
-  return <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-lg border px-2 py-1 text-xs font-black ${classes}`}>{label}</span>;
+  return <span className={`inline-flex max-w-full min-w-0 items-center break-words rounded-lg border px-2 py-1 text-xs font-black leading-4 ${classes}`}>{label}</span>;
 };
 
 export default App;
