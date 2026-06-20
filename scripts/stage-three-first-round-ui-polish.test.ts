@@ -35,4 +35,45 @@ describe('stage three first round UI polish', () => {
     expect(workflowCard).toContain('hover:border-blue-200 hover:shadow-sm');
     expect(statusPill).toContain('max-w-full items-center whitespace-nowrap');
   });
+
+  it('makes shared list surfaces feel like dense admin pages instead of placeholder cards', () => {
+    const app = read('App.tsx');
+    const listToolbar = app.slice(
+      app.indexOf('const ListToolbar'),
+      app.indexOf('const StatusFilterControl'),
+    );
+    const statusFilter = app.slice(
+      app.indexOf('const StatusFilterControl'),
+      app.indexOf('const FilterResultSummary'),
+    );
+    const filterResult = app.slice(
+      app.indexOf('const FilterResultSummary'),
+      app.indexOf('const ResponsiveTableFrame'),
+    );
+    const panel = app.slice(
+      app.indexOf('const Panel'),
+      app.indexOf('const WorkflowRail'),
+    );
+    const adminInfoCard = app.slice(
+      app.indexOf('const AdminInfoCard'),
+      app.indexOf('const InlineWorkflowAction'),
+    );
+    const workflowCard = app.slice(
+      app.indexOf('const WorkflowListCard'),
+      app.indexOf('const SimpleList'),
+    );
+
+    expect(listToolbar).toContain('bg-white/90');
+    expect(listToolbar).toContain('aria-label="使用顶部搜索框筛选当前列表"');
+    expect(listToolbar).toContain('aria-label="使用下方状态筛选器筛选当前列表"');
+    expect(listToolbar).toContain('border-l-4 border-l-blue-500');
+    expect(statusFilter).toContain('md:flex-row md:items-center md:justify-between');
+    expect(statusFilter).toContain('当前值：{value}');
+    expect(filterResult).toContain('border-slate-200 bg-white');
+    expect(filterResult).toContain('rounded-md bg-blue-50');
+    expect(panel).toContain('break-words font-black text-slate-950');
+    expect(adminInfoCard).toContain('border-l-4');
+    expect(workflowCard).toContain('border-l-4');
+    expect(workflowCard).toContain('rounded-lg bg-slate-50/70 p-2');
+  });
 });

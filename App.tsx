@@ -10493,12 +10493,12 @@ const ListToolbar: React.FC<{
 }> = ({ title, recordCount, filterLabel, actionLabel }) => (
   <div
     aria-label={`${title} 列表工具条`}
-    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 lg:flex-row lg:items-center lg:justify-between"
+    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 border-l-4 border-l-blue-500 bg-white/90 p-3 shadow-sm shadow-slate-200/50 lg:flex-row lg:items-center lg:justify-between"
   >
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-black text-slate-900">{title}</p>
-        <span className="rounded-lg bg-white px-2 py-1 text-xs font-black text-slate-500">
+        <p className="break-words text-sm font-black text-slate-950">{title}</p>
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-black text-slate-600">
           共 {recordCount} 条
         </span>
       </div>
@@ -10507,15 +10507,21 @@ const ListToolbar: React.FC<{
       </p>
     </div>
     <div className="flex flex-wrap items-center gap-2">
-      <span className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-500">
+      <span
+        aria-label="使用顶部搜索框筛选当前列表"
+        className="inline-flex h-8 shrink-0 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-black text-slate-600"
+      >
         <Search size={16} />
         顶部搜索
       </span>
-      <span className="inline-flex h-9 shrink-0 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-500">
+      <span
+        aria-label="使用下方状态筛选器筛选当前列表"
+        className="inline-flex h-8 shrink-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-black text-slate-600"
+      >
         状态筛选
       </span>
       {actionLabel && (
-        <span className="inline-flex h-9 shrink-0 items-center rounded-lg bg-slate-900 px-3 text-xs font-black text-white">
+        <span className="inline-flex h-8 shrink-0 items-center rounded-md bg-slate-900 px-2.5 text-xs font-black text-white">
           {actionLabel}
         </span>
       )}
@@ -10531,13 +10537,13 @@ const StatusFilterControl: React.FC<{
 }> = ({ label, value, statusOptions, onChange }) => (
   <div
     aria-label={`${label}筛选器`}
-    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+    className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:flex-row sm:items-center sm:justify-between md:flex-row md:items-center md:justify-between"
   >
     <div className="min-w-0">
       <label className="text-xs font-black text-slate-500" htmlFor={`status-filter-${label}`}>
         {label}
       </label>
-      <p className="mt-1 text-xs font-bold text-slate-400">可选 {statusOptions.length} 项</p>
+      <p className="mt-1 text-xs font-bold text-slate-400">可选 {statusOptions.length} 项 · 当前值：{value}</p>
     </div>
     <select
       id={`status-filter-${label}`}
@@ -10575,7 +10581,7 @@ const FilterResultSummary: React.FC<{
   return (
     <div
       aria-label={label}
-      className="mb-4 flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50 p-3 lg:flex-row lg:items-center lg:justify-between"
+      className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/40 lg:flex-row lg:items-center lg:justify-between"
     >
       <div className="grid gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap">
         <MiniFact label="当前筛选" value={filterLabel} />
@@ -10586,7 +10592,7 @@ const FilterResultSummary: React.FC<{
         type="button"
         onClick={onClear}
         disabled={!filtered}
-        className="inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white"
+        className="inline-flex h-9 items-center justify-center rounded-md bg-blue-50 px-3 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
       >
         清空筛选
       </button>
@@ -10669,12 +10675,12 @@ const Panel: React.FC<{
   children: React.ReactNode;
 }> = ({ title, icon: Icon, children }) => (
   <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-    <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
+    <div className="mb-4 flex items-start gap-2 border-b border-slate-100 pb-3">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
         <Icon size={17} />
       </div>
       <div className="min-w-0">
-        <h3 className="truncate font-black text-slate-950">{title}</h3>
+        <h3 className="break-words font-black text-slate-950">{title}</h3>
         <p className="mt-0.5 text-xs font-bold text-slate-400">列表、详情和操作入口</p>
       </div>
     </div>
@@ -10902,15 +10908,15 @@ const AdminInfoCard: React.FC<{
   children,
 }) => {
   const baseTone = tone === 'warning'
-    ? 'border-amber-100 bg-amber-50'
-    : 'border-slate-200 bg-white';
+    ? 'border-amber-100 border-l-amber-400 bg-amber-50'
+    : 'border-slate-200 border-l-slate-300 bg-white';
   const activeTone = 'border-blue-200 ring-2 ring-blue-100';
   const metaTone = tone === 'warning' ? 'text-amber-700' : 'text-slate-500';
 
   return (
     <div
       aria-label={`${title} 信息卡片`}
-      className={`rounded-lg border p-4 transition hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${detailSelected ? activeTone : baseTone}`}
+      className={`rounded-lg border border-l-4 p-4 transition hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${detailSelected ? activeTone : baseTone}`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 max-w-full">
@@ -10992,7 +10998,7 @@ const WorkflowListCard: React.FC<{
 }) => (
   <div
     aria-label={`${title} 工作流卡片`}
-    className={`rounded-lg border bg-white p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
+    className={`rounded-lg border border-l-4 bg-white p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
       detailSelected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
     }`}
   >
@@ -11010,7 +11016,7 @@ const WorkflowListCard: React.FC<{
 
     <div
       aria-label={`${title} 操作区`}
-      className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between"
+      className="mt-3 flex flex-col gap-3 rounded-lg bg-slate-50/70 p-2 sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill label={status} />
