@@ -669,6 +669,14 @@ export const mvpFlowEndpoints: FlowEndpoint[] = [
     responseSchema: 'PurchaseOrder',
   },
   {
+    method: 'PUT',
+    path: '/buyer/orders/{orderId}',
+    audience: 'buyer',
+    action: '维护未收货采购订单的预计到货日期',
+    requestSchema: 'UpdatePurchaseOrderRequest',
+    responseSchema: 'PurchaseOrder',
+  },
+  {
     method: 'GET',
     path: '/supplier/orders',
     audience: 'supplier',
@@ -1073,6 +1081,7 @@ export const buildOpenApiDraft = (): OpenApiDraft => {
           'BuyerOrderListRequest',
           'BuyerOrderList',
           'CreatePurchaseOrderRequest',
+          'UpdatePurchaseOrderRequest',
           'PurchaseOrder',
           'SupplierOrderListRequest',
           'SupplierOrderList',

@@ -89,6 +89,10 @@ export interface CreateOrderPayload {
   expectedReceiptDate: string;
 }
 
+export interface UpdateOrderPayload {
+  expectedReceiptDate: string;
+}
+
 export interface CreateDeliveryPayload {
   carrier: string;
   trackingNo: string;
@@ -574,6 +578,7 @@ export interface JavaProcurementApiClient {
   awardBuyerRfq(rfqId: string, payload: AwardRfqPayload): Promise<JavaAwardDecisionDto>;
   listBuyerOrders(): Promise<PurchaseOrder[]>;
   createBuyerOrder(payload: CreateOrderPayload): Promise<PurchaseOrder>;
+  updateBuyerOrder(orderId: string, payload: UpdateOrderPayload): Promise<PurchaseOrder>;
   confirmSupplierOrder(orderId: string): Promise<PurchaseOrder>;
   createSupplierDelivery(orderId: string, payload: CreateDeliveryPayload): Promise<Delivery>;
   createBuyerReceipt(orderId: string, payload: CreateReceiptPayload): Promise<JavaReceiptDto>;
@@ -1164,6 +1169,14 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     async createBuyerOrder(payload: CreateOrderPayload) {
       const order = await buyerRequest<JavaPurchaseOrderDto>('/api/v1/buyer/orders', {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toPurchaseOrder(order);
+    },
+    async updateBuyerOrder(orderId: string, payload: UpdateOrderPayload) {
+      const order = await buyerRequest<JavaPurchaseOrderDto>(`/api/v1/buyer/orders/${orderId}`, {
+        method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });

@@ -100,6 +100,7 @@ import {
    type CreateDemandPayload,
    type UpdateDemandPayload,
    type UpdateRfqPayload,
+   type UpdateOrderPayload,
    type PlatformWorkspaceData,
   type JavaPlatformAnnouncementDto,
   type JavaApprovalTaskDto,
@@ -258,6 +259,7 @@ const App: React.FC = () => {
   const [rfqUpdateBusyId, setRfqUpdateBusyId] = useState<string | null>(null);
   const [awardSubmitBusyId, setAwardSubmitBusyId] = useState<string | null>(null);
   const [orderCreateBusy, setOrderCreateBusy] = useState<string | null>(null);
+  const [orderUpdateBusyId, setOrderUpdateBusyId] = useState<string | null>(null);
   const [buyerFulfillmentBusyId, setBuyerFulfillmentBusyId] = useState<string | null>(null);
   const [platformReviewBusyId, setPlatformReviewBusyId] = useState<string | null>(null);
   const [platformTenantBusyId, setPlatformTenantBusyId] = useState<string | null>(null);
@@ -673,6 +675,21 @@ const App: React.FC = () => {
     }
   };
 
+  const updateBuyerOrderDetail = async (orderId: string, payload: UpdateOrderPayload) => {
+    if (!javaApiClient || !buyerData) return;
+    setOrderUpdateBusyId(orderId);
+    setWorkflowStatus(null);
+    try {
+      const order = await javaApiClient.updateBuyerOrder(orderId, payload);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`采购订单已保存并刷新后回显：${order.id}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '采购订单保存失败');
+    } finally {
+      setOrderUpdateBusyId(null);
+    }
+  };
+
   const submitBuyerAwardApproval = async (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => {
     if (!javaApiClient || !buyerData) return;
     setAwardSubmitBusyId(rfqId);
@@ -893,6 +910,7 @@ const App: React.FC = () => {
                 rfqUpdateBusyId={rfqUpdateBusyId}
                 awardSubmitBusyId={awardSubmitBusyId}
                 orderCreateBusy={orderCreateBusy}
+                orderUpdateBusyId={orderUpdateBusyId}
                 buyerFulfillmentBusyId={buyerFulfillmentBusyId}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowStatus={workflowStatus}
@@ -905,6 +923,7 @@ const App: React.FC = () => {
                 onUpdateRfq={updateBuyerRfqDetail}
                 onSubmitAwardApproval={submitBuyerAwardApproval}
                 onCreateOrderFromAward={createBuyerOrderFromAward}
+                onUpdateOrder={updateBuyerOrderDetail}
                 onCreateReceipt={createBuyerReceiptFromOrder}
                 onRegisterPayment={registerBuyerInvoicePayment}
                 onUpdateApprovalTemplate={updateApprovalTemplate}
@@ -2833,6 +2852,7 @@ const BuyerWorkspaceView: React.FC<{
   rfqUpdateBusyId: string | null;
   awardSubmitBusyId: string | null;
   orderCreateBusy: string | null;
+  orderUpdateBusyId: string | null;
   buyerFulfillmentBusyId: string | null;
   javaEnabled: boolean;
   workflowStatus: string | null;
@@ -2845,6 +2865,7 @@ const BuyerWorkspaceView: React.FC<{
   onUpdateRfq: (rfqId: string, payload: UpdateRfqPayload) => void;
   onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
   onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
+  onUpdateOrder: (orderId: string, payload: UpdateOrderPayload) => void;
   onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
   onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
   onUpdateApprovalTemplate: (
@@ -2871,6 +2892,7 @@ const BuyerWorkspaceView: React.FC<{
   rfqUpdateBusyId,
   awardSubmitBusyId,
   orderCreateBusy,
+  orderUpdateBusyId,
   buyerFulfillmentBusyId,
   javaEnabled,
   workflowStatus,
@@ -2883,6 +2905,7 @@ const BuyerWorkspaceView: React.FC<{
   onUpdateRfq,
   onSubmitAwardApproval,
   onCreateOrderFromAward,
+  onUpdateOrder,
   onCreateReceipt,
   onRegisterPayment,
   onUpdateApprovalTemplate,
@@ -3862,9 +3885,11 @@ const BuyerWorkspaceView: React.FC<{
         detail={selectedOrderDetail}
         order={selectedOrderRecord}
         javaEnabled={javaEnabled}
+        orderUpdateBusyId={orderUpdateBusyId}
         buyerFulfillmentBusyId={buyerFulfillmentBusyId}
         receiptDraft={selectedOrderRecord ? getReceiptDraft(selectedOrderRecord.id) : undefined}
         onChangeReceiptDraft={(orderId, draft) => setReceiptDrafts((drafts) => ({ ...drafts, [orderId]: draft }))}
+        onUpdateOrder={onUpdateOrder}
         onCreateReceipt={onCreateReceipt}
       />
       </>
@@ -6119,21 +6144,33 @@ const OrderDetailPanelView: React.FC<{
   detail?: OrderDetailPanel;
   order?: BuyerWorkspace['orders'][number];
   javaEnabled: boolean;
+  orderUpdateBusyId: string | null;
   buyerFulfillmentBusyId: string | null;
   receiptDraft?: BuyerReceiptDraft;
   onChangeReceiptDraft: (orderId: string, draft: BuyerReceiptDraft) => void;
+  onUpdateOrder: (orderId: string, payload: UpdateOrderPayload) => void;
   onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
 }> = ({
   detail,
   order,
   javaEnabled,
+  orderUpdateBusyId,
   buyerFulfillmentBusyId,
   receiptDraft,
   onChangeReceiptDraft,
+  onUpdateOrder,
   onCreateReceipt,
 }) => {
   const logisticsStatus = detail?.facts.find((fact) => fact.label === '物流状态')?.value ?? '待发货';
   const invoicePaymentStatus = detail?.facts.find((fact) => fact.label === '发票状态')?.value ?? '待开票';
+  const [editableOrderExpectedReceiptDate, setEditableOrderExpectedReceiptDate] = useState(order?.expectedReceiptDate ?? '');
+
+  useEffect(() => {
+    setEditableOrderExpectedReceiptDate(order?.expectedReceiptDate ?? '');
+  }, [order?.id, order?.expectedReceiptDate]);
+
+  const canEditOrder = javaEnabled && order?.status !== '已收货';
+  const orderEditInvalid = !editableOrderExpectedReceiptDate;
 
   return (
     <Panel title="订单详情" icon={PackageCheck}>
@@ -6214,6 +6251,38 @@ const OrderDetailPanelView: React.FC<{
                 <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
               ))}
             </div>
+          </DetailSection>
+
+          <DetailSection title="订单编辑">
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-700">
+              维护预计到货日期。保存后会重新刷新 Java 工作台数据，验证刷新后回显。
+            </div>
+            <Field label="预计到货日期">
+              <input
+                type="date"
+                value={editableOrderExpectedReceiptDate}
+                onChange={(event) => setEditableOrderExpectedReceiptDate(event.target.value)}
+                disabled={!canEditOrder}
+                className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+              />
+            </Field>
+            {(!canEditOrder || orderEditInvalid) && (
+              <p aria-live="polite" className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+                {!canEditOrder ? '已收货订单不可再修改预计到货日期。' : '请维护预计到货日期后再保存。'}
+              </p>
+            )}
+            <PrimaryActionButton
+              onClick={() => order && onUpdateOrder(order.id, {
+                expectedReceiptDate: editableOrderExpectedReceiptDate,
+              })}
+              disabled={!order || !canEditOrder || orderEditInvalid || orderUpdateBusyId === order?.id}
+              busy={orderUpdateBusyId === order?.id}
+              icon={ShoppingCart}
+              pendingLabel="保存中"
+              fullWidth
+            >
+              保存订单修改
+            </PrimaryActionButton>
           </DetailSection>
 
           <section>

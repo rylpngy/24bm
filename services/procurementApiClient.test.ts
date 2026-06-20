@@ -1526,6 +1526,30 @@ describe('procurement API clients', () => {
           message: '',
         }, { status: 201 });
       }
+      if (input === 'http://java.test/api/v1/buyer/orders/po-java-001' && init?.method === 'PUT') {
+        expect(init.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init.body))).toEqual({
+          expectedReceiptDate: '2026-07-12',
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'po-java-001',
+            tenantId: 'tenant-acme',
+            rfqId: 'rfq-java-new',
+            supplierId: 'ent-supplier-sunrise',
+            amount: 118000,
+            status: '待供应商确认',
+            expectedReceiptDate: '2026-07-12',
+            createdAt: '2026-06-15T12:40:00+08:00',
+            updatedAt: '2026-06-15T12:45:00+08:00',
+          },
+          message: '',
+        });
+      }
       if (input === 'http://java.test/api/v1/supplier/orders/po-java-001/confirm') {
         expect(init?.method).toBe('POST');
         expect(init?.headers).toMatchObject({
@@ -1679,6 +1703,7 @@ describe('procurement API clients', () => {
     const quote = await client.submitSupplierQuote(rfq.id, { amount: 118000, taxRate: 13, deliveryDays: 7 });
     const award = await client.awardBuyerRfq(rfq.id, { quoteId: quote.id, reason: '价格和交期最优' });
     const order = await client.createBuyerOrder({ awardId: award.id, expectedReceiptDate: '2026-07-10' });
+    const updatedOrder = await client.updateBuyerOrder(order.id, { expectedReceiptDate: '2026-07-12' });
     const confirmedOrder = await client.confirmSupplierOrder(order.id);
     const delivery = await client.createSupplierDelivery(confirmedOrder.id, { carrier: '顺丰速运', trackingNo: 'SF1234567890' });
     const receipt = await client.createBuyerReceipt(order.id, {
@@ -1715,6 +1740,11 @@ describe('procurement API clients', () => {
       supplierId: 'ent-supplier-sunrise',
       rfqId: 'rfq-java-new',
       amount: 118000,
+      status: '待供应商确认',
+    });
+    expect(updatedOrder).toMatchObject({
+      id: 'po-java-001',
+      expectedReceiptDate: '2026-07-12',
       status: '待供应商确认',
     });
     expect(confirmedOrder).toMatchObject({

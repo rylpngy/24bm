@@ -7,6 +7,7 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.PurchaseOrderResponse;
+import com.procurement.order.api.UpdatePurchaseOrderRequest;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderAuditAction;
 import com.procurement.order.domain.PurchaseOrderStatus;
@@ -112,6 +113,32 @@ public class PurchaseOrderApplicationService {
         "采购订单 " + order.id() + " 已由供应商确认，进入待发货。");
 
     return toResponse(purchaseOrderMapper.findByTenantAndId(order.tenantId(), order.id()));
+  }
+
+  @Transactional
+  public PurchaseOrderResponse update(String orderId, UpdatePurchaseOrderRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    PurchaseOrder order = purchaseOrderMapper.findByTenantAndId(tenantId, orderId);
+    if (order == null) {
+      throw new IllegalArgumentException("Purchase order not found: " + orderId);
+    }
+    if (PurchaseOrderStatus.RECEIVED.equals(order.status())) {
+      throw new IllegalStateException("Received purchase order cannot be updated: " + orderId);
+    }
+
+    int updated = purchaseOrderMapper.updateExpectedReceiptDate(
+        tenantId,
+        orderId,
+        request.expectedReceiptDate());
+    if (updated == 0) {
+      throw new IllegalStateException("Purchase order status changed before update could be saved: " + orderId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        PurchaseOrderAuditAction.UPDATED,
+        AuditTargetType.PURCHASE_ORDER,
+        orderId);
+
+    return toResponse(purchaseOrderMapper.findByTenantAndId(tenantId, orderId));
   }
 
   @Transactional

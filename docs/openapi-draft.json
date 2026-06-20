@@ -2235,6 +2235,40 @@
         }
       }
     },
+    "/buyer/orders/{orderId}": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "维护未收货采购订单的预计到货日期",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PurchaseOrder"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/supplier/orders": {
       "get": {
         "tags": [
@@ -3003,6 +3037,10 @@
         "type": "object",
         "additionalProperties": true
       },
+      "UpdatePurchaseOrderRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "PurchaseOrder": {
         "type": "object",
         "additionalProperties": true
@@ -3150,6 +3188,7 @@
     "POST /buyer/rfqs/{rfqId}/award/approval",
     "GET /buyer/orders",
     "POST /buyer/orders",
+    "PUT /buyer/orders/{orderId}",
     "GET /supplier/orders",
     "POST /supplier/orders/{orderId}/confirm",
     "POST /supplier/orders/{orderId}/deliveries",
