@@ -432,6 +432,74 @@
         }
       }
     },
+    "/platform/announcements/{announcementId}": {
+      "put": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "编辑平台公告标题、正文和发布范围",
+        "parameters": [
+          {
+            "name": "announcementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PlatformAnnouncement"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/platform/announcements/{announcementId}/withdraw": {
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "撤回平台公告",
+        "parameters": [
+          {
+            "name": "announcementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PlatformAnnouncement"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/workspace": {
       "get": {
         "tags": [
@@ -2843,6 +2911,22 @@
         "type": "object",
         "additionalProperties": true
       },
+      "CreatePlatformAnnouncementRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "UpdatePlatformAnnouncementRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "WithdrawPlatformAnnouncementRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "PlatformAnnouncement": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "BuyerWorkspaceRequest": {
         "type": "object",
         "additionalProperties": true
@@ -3169,6 +3253,8 @@
     "POST /platform/enterprise-reviews/{enterpriseId}",
     "GET /platform/announcements",
     "POST /platform/announcements",
+    "PUT /platform/announcements/{announcementId}",
+    "POST /platform/announcements/{announcementId}/withdraw",
     "GET /buyer/workspace",
     "GET /buyer/announcements",
     "GET /buyer/suppliers",

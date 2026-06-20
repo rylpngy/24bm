@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface PlatformAnnouncementMapper {
@@ -47,4 +48,30 @@ public interface PlatformAnnouncementMapper {
       @Param("audience") String audience,
       @Param("status") String status,
       @Param("publishedBy") String publishedBy);
+
+  @Update("""
+      update platform_announcements
+      set title = #{title},
+          content = #{content},
+          audience = #{audience}
+      where id = #{id}
+        and status = #{expectedStatus}
+      """)
+  int updateContent(
+      @Param("id") String id,
+      @Param("title") String title,
+      @Param("content") String content,
+      @Param("audience") String audience,
+      @Param("expectedStatus") String expectedStatus);
+
+  @Update("""
+      update platform_announcements
+      set status = #{nextStatus}
+      where id = #{id}
+        and status = #{expectedStatus}
+      """)
+  int updateStatus(
+      @Param("id") String id,
+      @Param("expectedStatus") String expectedStatus,
+      @Param("nextStatus") String nextStatus);
 }

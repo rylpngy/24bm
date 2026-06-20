@@ -25,6 +25,8 @@ describe('procurement SaaS API contract draft', () => {
       'POST /platform/enterprise-reviews/{enterpriseId}',
       'GET /platform/announcements',
       'POST /platform/announcements',
+      'PUT /platform/announcements/{announcementId}',
+      'POST /platform/announcements/{announcementId}/withdraw',
       'GET /buyer/workspace',
       'GET /buyer/announcements',
       'GET /buyer/suppliers',
@@ -129,6 +131,12 @@ describe('procurement SaaS API contract draft', () => {
     expect(openApi.paths['/dictionaries'].get.tags).toContain('shared');
     expect(openApi.paths['/platform/overview'].get.tags).toContain('platform');
     expect(openApi.paths['/platform/announcements'].post.tags).toContain('platform');
+    expect(openApi.paths['/platform/announcements/{announcementId}'].put.parameters).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'announcementId', in: 'path', required: true })]),
+    );
+    expect(openApi.paths['/platform/announcements/{announcementId}/withdraw'].post.parameters).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'announcementId', in: 'path', required: true })]),
+    );
     expect(openApi.paths['/buyer/approvals/pending'].get.tags).toContain('buyer');
     expect(openApi.paths['/buyer/approvals/templates/{templateCode}/config'].post.tags).toContain('buyer');
     expect(openApi.paths['/buyer/departments'].get.tags).toContain('buyer');
@@ -279,6 +287,8 @@ describe('procurement SaaS API contract draft', () => {
 
     expect(json).toContain('"openapi": "3.1.0"');
     expect(json).toContain('"GET /dictionaries"');
+    expect(json).toContain('"PUT /platform/announcements/{announcementId}"');
+    expect(json).toContain('"POST /platform/announcements/{announcementId}/withdraw"');
     expect(json).toContain('"POST /buyer/demands"');
     expect(json).toContain('"PUT /buyer/demands/{demandId}"');
     expect(json).toContain('"GET /buyer/approvals/pending"');

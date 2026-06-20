@@ -266,6 +266,7 @@ const App: React.FC = () => {
   const [platformReviewBusyId, setPlatformReviewBusyId] = useState<string | null>(null);
   const [platformTenantBusyId, setPlatformTenantBusyId] = useState<string | null>(null);
   const [announcementPublishBusy, setAnnouncementPublishBusy] = useState(false);
+  const [announcementLifecycleBusyId, setAnnouncementLifecycleBusyId] = useState<string | null>(null);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -482,6 +483,55 @@ const App: React.FC = () => {
       return null;
     } finally {
       setAnnouncementPublishBusy(false);
+    }
+  };
+
+  const updatePlatformAnnouncement = async (
+    announcementId: string,
+    payload: { title: string; content: string; targetScope: string },
+  ) => {
+    if (!javaApiClient || !platformData) return null;
+    setAnnouncementLifecycleBusyId(`update:${announcementId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.updatePlatformAnnouncement(announcementId, {
+        title: payload.title,
+        content: payload.content,
+        audience: payload.targetScope,
+      });
+      const [nextPlatformData, announcements] = await Promise.all([
+        refreshJavaPlatformData(platformData),
+        javaApiClient.listPlatformAnnouncements(),
+      ]);
+      setPlatformData(nextPlatformData);
+      setWorkflowStatus(`平台公告已保存并刷新：${payload.title}`);
+      return announcements;
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '平台公告保存失败');
+      return null;
+    } finally {
+      setAnnouncementLifecycleBusyId(null);
+    }
+  };
+
+  const withdrawPlatformAnnouncement = async (announcementId: string) => {
+    if (!javaApiClient || !platformData) return null;
+    setAnnouncementLifecycleBusyId(`withdraw:${announcementId}`);
+    setWorkflowStatus(null);
+    try {
+      const announcement = await javaApiClient.withdrawPlatformAnnouncement(announcementId);
+      const [nextPlatformData, announcements] = await Promise.all([
+        refreshJavaPlatformData(platformData),
+        javaApiClient.listPlatformAnnouncements(),
+      ]);
+      setPlatformData(nextPlatformData);
+      setWorkflowStatus(`平台公告已撤回：${announcement.title}`);
+      return announcements;
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '平台公告撤回失败');
+      return null;
+    } finally {
+      setAnnouncementLifecycleBusyId(null);
     }
   };
 
@@ -900,11 +950,14 @@ const App: React.FC = () => {
                 platformReviewBusyId={platformReviewBusyId}
                 platformTenantBusyId={platformTenantBusyId}
                 announcementPublishBusy={announcementPublishBusy}
+                announcementLifecycleBusyId={announcementLifecycleBusyId}
                 onReviewEnterprise={reviewPlatformEnterprise}
                 onUpdateTenantStatus={updatePlatformTenantStatus}
                 onUpdateTenantPlan={updatePlatformTenantPlan}
                 onToggleTenantFeature={togglePlatformTenantFeature}
                 onPublishAnnouncement={publishPlatformAnnouncement}
+                onUpdateAnnouncement={updatePlatformAnnouncement}
+                onWithdrawAnnouncement={withdrawPlatformAnnouncement}
               />
             )}
             {activeRole === 'buyer' && (
@@ -1635,11 +1688,17 @@ const PlatformWorkspace: React.FC<{
   platformReviewBusyId: string | null;
   platformTenantBusyId: string | null;
   announcementPublishBusy: boolean;
+  announcementLifecycleBusyId: string | null;
   onReviewEnterprise: (reviewId: string, result: 'approved' | 'rejected') => Promise<void> | void;
   onUpdateTenantStatus: (tenantId: string, status: '已启用' | '停用') => Promise<void> | void;
   onUpdateTenantPlan: (tenantId: string, plan: PlatformTenantRow['plan']) => Promise<void> | void;
   onToggleTenantFeature: (tenantId: string, enabledFeatures: string[], feature: 'rfq') => Promise<void> | void;
   onPublishAnnouncement: (payload: { title: string; content: string; targetScope: string }) => Promise<JavaPlatformAnnouncementDto[] | null> | void;
+  onUpdateAnnouncement: (
+    announcementId: string,
+    payload: { title: string; content: string; targetScope: string },
+  ) => Promise<JavaPlatformAnnouncementDto[] | null> | void;
+  onWithdrawAnnouncement: (announcementId: string) => Promise<JavaPlatformAnnouncementDto[] | null> | void;
 }> = ({
   data,
   activeModule,
@@ -1648,11 +1707,14 @@ const PlatformWorkspace: React.FC<{
   platformReviewBusyId,
   platformTenantBusyId,
   announcementPublishBusy,
+  announcementLifecycleBusyId,
   onReviewEnterprise,
   onUpdateTenantStatus,
   onUpdateTenantPlan,
   onToggleTenantFeature,
   onPublishAnnouncement,
+  onUpdateAnnouncement,
+  onWithdrawAnnouncement,
 }) => {
   const { model, platformOverview } = data;
   const supplierCount = platformOverview?.publicSupplierCount
@@ -1800,6 +1862,56 @@ const PlatformWorkspace: React.FC<{
       ...current,
     ]);
     setSelectedPlatformAnnouncementId(nextAnnouncement.id);
+  };
+  const handleUpdateAnnouncement = async (
+    announcementId: string,
+    payload: { title: string; content: string; targetScope: string },
+  ) => {
+    if (javaEnabled) {
+      const nextAnnouncements = await onUpdateAnnouncement(announcementId, payload);
+      if (nextAnnouncements) {
+        const mappedAnnouncements = buildPlatformAnnouncements(nextAnnouncements);
+        setPlatformAnnouncements(mappedAnnouncements);
+        setSelectedPlatformAnnouncementId((current) => (
+          mappedAnnouncements.some((announcement) => announcement.id === current)
+            ? current
+            : mappedAnnouncements[0]?.id ?? ''
+        ));
+      }
+      return;
+    }
+    setPlatformAnnouncements((current) => current.map((announcement) => (
+      announcement.id === announcementId
+        ? {
+            ...announcement,
+            title: payload.title,
+            content: payload.content,
+            targetScope: payload.targetScope,
+          }
+        : announcement
+    )));
+  };
+  const handleWithdrawAnnouncement = async (announcementId: string) => {
+    if (javaEnabled) {
+      const nextAnnouncements = await onWithdrawAnnouncement(announcementId);
+      if (nextAnnouncements) {
+        const mappedAnnouncements = buildPlatformAnnouncements(nextAnnouncements);
+        setPlatformAnnouncements(mappedAnnouncements);
+        setSelectedPlatformAnnouncementId((current) => (
+          mappedAnnouncements.some((announcement) => announcement.id === current)
+            ? current
+            : mappedAnnouncements[0]?.id ?? ''
+        ));
+      }
+      return;
+    }
+    setPlatformAnnouncements((current) => {
+      const nextAnnouncements = current.filter((announcement) => announcement.id !== announcementId);
+      setSelectedPlatformAnnouncementId((selected) => (
+        selected === announcementId ? nextAnnouncements[0]?.id ?? '' : selected
+      ));
+      return nextAnnouncements;
+    });
   };
   const operationSummary = platformOverview?.operationSummary;
 
@@ -2035,6 +2147,9 @@ const PlatformWorkspace: React.FC<{
           <PlatformAnnouncementLifecyclePanel
             announcement={selectedPlatformAnnouncement}
             javaEnabled={javaEnabled}
+            announcementLifecycleBusyId={announcementLifecycleBusyId}
+            onUpdateAnnouncement={handleUpdateAnnouncement}
+            onWithdrawAnnouncement={handleWithdrawAnnouncement}
           />
           {javaEnabled && workflowStatus && (
             <FeedbackNotice message={workflowStatus} />
@@ -2074,82 +2189,140 @@ const PlatformWorkspace: React.FC<{
 const PlatformAnnouncementLifecyclePanel: React.FC<{
   announcement?: PlatformAnnouncement;
   javaEnabled: boolean;
-}> = ({ announcement, javaEnabled }) => (
-  <section className="rounded-lg border border-violet-100 bg-violet-50 p-4">
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-      <div className="min-w-0">
-        <p className="text-xs font-black text-violet-700">公告生命周期</p>
-        <h3 className="mt-1 text-base font-black text-slate-950">
-          {announcement ? announcement.title : '请选择公告'}
-        </h3>
-        <p className="mt-1 text-xs font-bold leading-5 text-violet-700">
-          {javaEnabled
-            ? 'Java API 待扩展：后续接入公告编辑、撤回公告和状态审计接口。'
-            : 'Mock 模式仅更新页面草稿，不影响真实公告发布状态。'}
-        </p>
+  announcementLifecycleBusyId: string | null;
+  onUpdateAnnouncement: (
+    announcementId: string,
+    payload: { title: string; content: string; targetScope: string },
+  ) => Promise<void> | void;
+  onWithdrawAnnouncement: (announcementId: string) => Promise<void> | void;
+}> = ({
+  announcement,
+  javaEnabled,
+  announcementLifecycleBusyId,
+  onUpdateAnnouncement,
+  onWithdrawAnnouncement,
+}) => {
+  const [editableAnnouncementTitle, setEditableAnnouncementTitle] = useState(announcement?.title ?? '');
+  const [editableAnnouncementContent, setEditableAnnouncementContent] = useState(announcement?.content ?? '');
+  const [editableAnnouncementScope, setEditableAnnouncementScope] = useState(announcement?.targetScope ?? 'all');
+  const updateBusy = Boolean(announcement && announcementLifecycleBusyId === `update:${announcement.id}`);
+  const withdrawBusy = Boolean(announcement && announcementLifecycleBusyId === `withdraw:${announcement.id}`);
+  const validAnnouncementScopes = ['all', 'buyer', 'supplier'];
+  const editInvalid = editableAnnouncementTitle.trim().length === 0
+    || editableAnnouncementContent.trim().length === 0
+    || !validAnnouncementScopes.includes(editableAnnouncementScope);
+
+  useEffect(() => {
+    setEditableAnnouncementTitle(announcement?.title ?? '');
+    setEditableAnnouncementContent(announcement?.content ?? '');
+    setEditableAnnouncementScope(announcement?.targetScope ?? 'all');
+  }, [announcement?.id, announcement?.title, announcement?.content, announcement?.targetScope]);
+
+  return (
+    <section className="rounded-lg border border-violet-100 bg-violet-50 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-violet-700">公告生命周期</p>
+          <h3 className="mt-1 text-base font-black text-slate-950">
+            {announcement ? announcement.title : '请选择公告'}
+          </h3>
+          <p className="mt-1 text-xs font-bold leading-5 text-violet-700">
+            {javaEnabled
+              ? 'Java 模式下可保存公告修改和撤回公告，并同步审计留痕。'
+              : 'Mock 模式仅更新页面草稿，不影响真实公告发布状态。'}
+          </p>
+        </div>
+        <StatusPill label={announcement ? '已发布' : '未选择'} />
       </div>
-      <StatusPill label={announcement ? '已发布' : '未选择'} />
-    </div>
 
-    {announcement ? (
-      <>
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          <div className="rounded-lg border border-white bg-white p-3">
-            <p className="text-xs font-black text-slate-700">编辑草稿</p>
-            <div className="mt-3 space-y-3">
-              <label className="block">
-                <span className="text-xs font-black text-slate-500">公告标题</span>
-                <input
-                  value={announcement.title}
-                  readOnly
-                  className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none"
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-black text-slate-500">公告正文</span>
-                <textarea
-                  value={announcement.content}
-                  readOnly
-                  rows={3}
-                  className="mt-2 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold leading-6 text-slate-800 outline-none"
-                />
-              </label>
+      {announcement ? (
+        <>
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-lg border border-white bg-white p-3">
+              <p className="text-xs font-black text-slate-700">编辑草稿</p>
+              <div className="mt-3 space-y-3">
+                <label className="block">
+                  <span className="text-xs font-black text-slate-500">公告标题</span>
+                  <input
+                    value={editableAnnouncementTitle}
+                    onChange={(event) => setEditableAnnouncementTitle(event.target.value)}
+                    className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-violet-400"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-black text-slate-500">公告正文</span>
+                  <textarea
+                    value={editableAnnouncementContent}
+                    onChange={(event) => setEditableAnnouncementContent(event.target.value)}
+                    rows={3}
+                    className="mt-2 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold leading-6 text-slate-800 outline-none focus:border-violet-400"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-black text-slate-500">发布范围</span>
+                  <select
+                    value={editableAnnouncementScope}
+                    onChange={(event) => setEditableAnnouncementScope(event.target.value)}
+                    className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-violet-400"
+                  >
+                    <option value="all">全部企业</option>
+                    <option value="buyer">采购方企业</option>
+                    <option value="supplier">供应商企业</option>
+                  </select>
+                </label>
+                <PrimaryActionButton
+                  onClick={() => onUpdateAnnouncement(announcement.id, {
+                    title: editableAnnouncementTitle.trim(),
+                    content: editableAnnouncementContent.trim(),
+                    targetScope: editableAnnouncementScope,
+                  })}
+                  disabled={editInvalid || updateBusy}
+                  busy={updateBusy}
+                  pendingLabel="保存中"
+                  fullWidth
+                >
+                  保存公告修改
+                </PrimaryActionButton>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-white bg-white p-3">
+              <p className="text-xs font-black text-slate-700">撤回公告</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <MiniFact label="影响范围" value={formatAnnouncementScope(announcement.targetScope)} />
+                <MiniFact label="站内通知" value="需同步撤回提醒" />
+                <MiniFact label="审计留痕" value="记录撤回人和原因" />
+                <MiniFact label="发布时间" value={formatAuditTime(announcement.publishedAt)} />
+              </div>
+              <PrimaryActionButton
+                onClick={() => onWithdrawAnnouncement(announcement.id)}
+                disabled={withdrawBusy}
+                busy={withdrawBusy}
+                pendingLabel="撤回中"
+                tone="red"
+                fullWidth
+              >
+                撤回公告
+              </PrimaryActionButton>
             </div>
           </div>
 
-          <div className="rounded-lg border border-white bg-white p-3">
-            <p className="text-xs font-black text-slate-700">撤回公告</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <MiniFact label="影响范围" value={formatAnnouncementScope(announcement.targetScope)} />
-              <MiniFact label="站内通知" value="需同步撤回提醒" />
-              <MiniFact label="审计留痕" value="记录撤回人和原因" />
-              <MiniFact label="发布时间" value={formatAuditTime(announcement.publishedAt)} />
-            </div>
-            <button
-              type="button"
-              disabled
-              className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg border border-violet-200 bg-violet-50 px-3 text-xs font-black text-violet-500 disabled:cursor-not-allowed"
-            >
-              撤回公告
-            </button>
+          <div className="mt-4 rounded-lg border border-violet-100 bg-white p-3">
+            <CapabilityList
+              items={[
+                '编辑草稿用于复核标题、正文和发布范围，保存后刷新公告列表。',
+                '撤回公告需要同步站内通知，并沉淀平台公告审计留痕。',
+                '公告生命周期不影响采购方业务数据，只影响公告可见性。',
+              ]}
+            />
           </div>
-        </div>
-
-        <div className="mt-4 rounded-lg border border-violet-100 bg-white p-3">
-          <CapabilityList
-            items={[
-              '编辑草稿用于复核标题、正文和发布范围，后续接入保存接口。',
-              '撤回公告需要同步站内通知，并沉淀平台公告审计留痕。',
-              '公告生命周期不影响采购方业务数据，只影响公告可见性。',
-            ]}
-          />
-        </div>
-      </>
-    ) : (
-      <EmptyState title="暂无公告可维护" desc="发布公告后，可在这里查看编辑草稿、撤回公告和影响范围。" />
-    )}
-  </section>
-);
+        </>
+      ) : (
+        <EmptyState title="暂无公告可维护" desc="发布公告后，可在这里查看编辑草稿、撤回公告和影响范围。" />
+      )}
+    </section>
+  );
+};
 
 const PlatformAnnouncementPublishPanel: React.FC<{
   publishBusy: boolean;

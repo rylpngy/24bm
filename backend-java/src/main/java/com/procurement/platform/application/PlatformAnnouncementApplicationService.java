@@ -5,6 +5,7 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.platform.api.CreatePlatformAnnouncementRequest;
 import com.procurement.platform.api.PlatformAnnouncementResponse;
+import com.procurement.platform.api.UpdatePlatformAnnouncementRequest;
 import com.procurement.platform.domain.PlatformAnnouncement;
 import com.procurement.platform.domain.PlatformAnnouncementAudience;
 import com.procurement.platform.domain.PlatformAnnouncementAudiencePolicy;
@@ -71,6 +72,55 @@ public class PlatformAnnouncementApplicationService {
         AuditTargetType.PLATFORM_ANNOUNCEMENT,
         announcementId);
     return toResponse(platformAnnouncementMapper.findById(announcementId));
+  }
+
+  @Transactional
+  public PlatformAnnouncementResponse update(String announcementId, UpdatePlatformAnnouncementRequest request) {
+    platformAnnouncementAudiencePolicy.requireSupported(request.audience());
+    requireActiveAnnouncement(announcementId);
+    int updated = platformAnnouncementMapper.updateContent(
+        announcementId,
+        request.title(),
+        request.content(),
+        request.audience(),
+        PlatformAnnouncementStatus.ACTIVE);
+    if (updated == 0) {
+      throw new IllegalStateException("Platform announcement status changed before update could be applied: " + announcementId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        null,
+        PlatformAnnouncementAuditAction.UPDATED,
+        AuditTargetType.PLATFORM_ANNOUNCEMENT,
+        announcementId);
+    return toResponse(platformAnnouncementMapper.findById(announcementId));
+  }
+
+  @Transactional
+  public PlatformAnnouncementResponse withdraw(String announcementId) {
+    requireActiveAnnouncement(announcementId);
+    int updated = platformAnnouncementMapper.updateStatus(
+        announcementId,
+        PlatformAnnouncementStatus.ACTIVE,
+        PlatformAnnouncementStatus.WITHDRAWN);
+    if (updated == 0) {
+      throw new IllegalStateException("Platform announcement status changed before withdraw could be applied: " + announcementId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        null,
+        PlatformAnnouncementAuditAction.WITHDRAWN,
+        AuditTargetType.PLATFORM_ANNOUNCEMENT,
+        announcementId);
+    return toResponse(platformAnnouncementMapper.findById(announcementId));
+  }
+
+  private void requireActiveAnnouncement(String announcementId) {
+    PlatformAnnouncement announcement = platformAnnouncementMapper.findById(announcementId);
+    if (announcement == null) {
+      throw new IllegalArgumentException("Platform announcement not found: " + announcementId);
+    }
+    if (!PlatformAnnouncementStatus.ACTIVE.equals(announcement.status())) {
+      throw new IllegalStateException("Platform announcement is not active: " + announcementId);
+    }
   }
 
   private PlatformAnnouncementResponse toResponse(PlatformAnnouncement announcement) {

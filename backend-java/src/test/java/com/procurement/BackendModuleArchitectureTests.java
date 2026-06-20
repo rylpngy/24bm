@@ -429,7 +429,9 @@ class BackendModuleArchitectureTests {
         .contains("SUPPLIER = \"supplier\"");
     assertThat(Files.readString(status)).contains("ACTIVE = \"active\"");
     assertThat(Files.readString(auditAction))
-        .contains("PUBLISHED = \"platform_announcement.published\"");
+        .contains("PUBLISHED = \"platform_announcement.published\"")
+        .contains("UPDATED = \"platform_announcement.updated\"")
+        .contains("WITHDRAWN = \"platform_announcement.withdrawn\"");
     assertThat(Files.readString(policy))
         .contains("void requireSupported")
         .contains("PlatformAnnouncementAudience.ALL")
@@ -443,7 +445,10 @@ class BackendModuleArchitectureTests {
         .contains("PlatformAnnouncementAudience.BUYER")
         .contains("PlatformAnnouncementAudience.SUPPLIER")
         .contains("PlatformAnnouncementStatus.ACTIVE")
+        .contains("PlatformAnnouncementStatus.WITHDRAWN")
         .contains("PlatformAnnouncementAuditAction.PUBLISHED")
+        .contains("PlatformAnnouncementAuditAction.UPDATED")
+        .contains("PlatformAnnouncementAuditAction.WITHDRAWN")
         .doesNotContain("private static final String ACTIVE_STATUS")
         .doesNotContain("private static final String PLATFORM_ANNOUNCEMENT_PUBLISHED_ACTION")
         .doesNotContain("private static final String ALL_AUDIENCE")

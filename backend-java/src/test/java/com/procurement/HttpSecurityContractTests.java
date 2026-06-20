@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -98,6 +99,7 @@ import com.procurement.platform.api.PlatformWorkspaceController;
 import com.procurement.platform.api.SupplierAnnouncementController;
 import com.procurement.platform.api.PlatformWorkspaceResponse;
 import com.procurement.platform.api.TenantResponse;
+import com.procurement.platform.api.UpdatePlatformAnnouncementRequest;
 import com.procurement.platform.api.UpdateTenantPlanRequest;
 import com.procurement.platform.application.PlatformEnterpriseApplicationService;
 import com.procurement.platform.application.PlatformAnnouncementApplicationService;
@@ -1541,6 +1543,77 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + platformToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].title").value("系统维护通知"));
+  }
+
+  @Test
+  void platformCanUpdateAndWithdrawAnnouncementsButBuyerCannot() throws Exception {
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+    String platformToken = loginAndExtractToken("""
+        {
+          "account": "platform",
+          "password": "demo123456",
+          "scope": "PLATFORM"
+        }
+        """);
+
+    mockMvc.perform(put("/api/v1/platform/announcements/announcement-demo")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "title": "系统维护通知更新",
+                  "content": "维护窗口已调整。",
+                  "audience": "buyer"
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(platformAnnouncementApplicationService.update(
+        org.mockito.ArgumentMatchers.eq("announcement-demo"),
+        org.mockito.ArgumentMatchers.any(UpdatePlatformAnnouncementRequest.class)))
+        .thenReturn(new PlatformAnnouncementResponse(
+            "announcement-demo",
+            "系统维护通知更新",
+            "维护窗口已调整。",
+            "buyer",
+            "active",
+            "user-platform-admin",
+            OffsetDateTime.parse("2026-06-16T10:00:00+08:00")));
+    when(platformAnnouncementApplicationService.withdraw("announcement-demo"))
+        .thenReturn(new PlatformAnnouncementResponse(
+            "announcement-demo",
+            "系统维护通知更新",
+            "维护窗口已调整。",
+            "buyer",
+            "withdrawn",
+            "user-platform-admin",
+            OffsetDateTime.parse("2026-06-16T10:00:00+08:00")));
+
+    mockMvc.perform(put("/api/v1/platform/announcements/announcement-demo")
+            .header("Authorization", "Bearer " + platformToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "title": "系统维护通知更新",
+                  "content": "维护窗口已调整。",
+                  "audience": "buyer"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.title").value("系统维护通知更新"))
+        .andExpect(jsonPath("$.data.audience").value("buyer"));
+
+    mockMvc.perform(post("/api/v1/platform/announcements/announcement-demo/withdraw")
+            .header("Authorization", "Bearer " + platformToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("withdrawn"));
   }
 
   @Test

@@ -812,7 +812,7 @@ describe('procurement API clients', () => {
     ]);
   });
 
-  it('uses the Java API client to list and publish platform announcements', async () => {
+  it('uses the Java API client to list, publish, update, and withdraw platform announcements', async () => {
     const calls: Array<{ input: string; init?: RequestInit }> = [];
     const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
       calls.push({ input, init });
@@ -872,6 +872,48 @@ describe('procurement API clients', () => {
           message: '',
         }, { status: 201 });
       }
+      if (input === 'http://java.test/api/v1/platform/announcements/announcement-001' && init?.method === 'PUT') {
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer platform-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          title: '维护窗口已更新',
+          content: '维护窗口改为周六晚间。',
+          audience: 'supplier',
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'announcement-001',
+            title: '维护窗口已更新',
+            content: '维护窗口改为周六晚间。',
+            audience: 'supplier',
+            status: 'active',
+            publishedBy: 'user-platform-admin',
+            createdAt: '2026-06-19T08:00:00+08:00',
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/platform/announcements/announcement-001/withdraw' && init?.method === 'POST') {
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer platform-token',
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'announcement-001',
+            title: '维护窗口已更新',
+            content: '维护窗口改为周六晚间。',
+            audience: 'supplier',
+            status: 'withdrawn',
+            publishedBy: 'user-platform-admin',
+            createdAt: '2026-06-19T08:00:00+08:00',
+          },
+          message: '',
+        });
+      }
       throw new Error(`Unexpected request: ${input}`);
     };
 
@@ -891,6 +933,12 @@ describe('procurement API clients', () => {
       content: '平台公告：采购规则更新',
       audience: 'buyer',
     });
+    const updated = await client.updatePlatformAnnouncement('announcement-001', {
+      title: '维护窗口已更新',
+      content: '维护窗口改为周六晚间。',
+      audience: 'supplier',
+    });
+    const withdrawn = await client.withdrawPlatformAnnouncement('announcement-001');
 
     expect(announcements[0].title).toBe('平台维护窗口通知');
     expect(published).toMatchObject({
@@ -899,10 +947,22 @@ describe('procurement API clients', () => {
       audience: 'buyer',
       status: 'active',
     });
+    expect(updated).toMatchObject({
+      id: 'announcement-001',
+      title: '维护窗口已更新',
+      audience: 'supplier',
+      status: 'active',
+    });
+    expect(withdrawn).toMatchObject({
+      id: 'announcement-001',
+      status: 'withdrawn',
+    });
     expect(calls.map((call) => call.input)).toEqual([
       'http://java.test/api/v1/auth/login',
       'http://java.test/api/v1/platform/announcements',
       'http://java.test/api/v1/platform/announcements',
+      'http://java.test/api/v1/platform/announcements/announcement-001',
+      'http://java.test/api/v1/platform/announcements/announcement-001/withdraw',
     ]);
   });
 

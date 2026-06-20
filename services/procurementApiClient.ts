@@ -543,6 +543,11 @@ export interface JavaProcurementApiClient {
   publishPlatformAnnouncement(
     payload: { title: string; content: string; audience: string },
   ): Promise<JavaPlatformAnnouncementDto>;
+  updatePlatformAnnouncement(
+    announcementId: string,
+    payload: { title: string; content: string; audience: string },
+  ): Promise<JavaPlatformAnnouncementDto>;
+  withdrawPlatformAnnouncement(announcementId: string): Promise<JavaPlatformAnnouncementDto>;
   listPlatformEnterpriseReviews(): Promise<JavaEnterpriseReviewDto[]>;
   reviewPlatformEnterprise(
     enterpriseId: string,
@@ -967,6 +972,18 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
+      });
+    },
+    updatePlatformAnnouncement(announcementId: string, payload: { title: string; content: string; audience: string }) {
+      return platformRequest<JavaPlatformAnnouncementDto>(`/api/v1/platform/announcements/${announcementId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    withdrawPlatformAnnouncement(announcementId: string) {
+      return platformRequest<JavaPlatformAnnouncementDto>(`/api/v1/platform/announcements/${announcementId}/withdraw`, {
+        method: 'POST',
       });
     },
     listPlatformEnterpriseReviews() {
