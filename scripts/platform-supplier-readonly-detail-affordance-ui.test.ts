@@ -3,8 +3,13 @@ import { describe, expect, it } from 'vitest';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
-const sliceBetween = (source: string, start: string, end: string) =>
-  source.slice(source.indexOf(start), source.indexOf(end));
+const sliceBetween = (source: string, start: string, end: string) => {
+  const startIndex = source.indexOf(start);
+  const endIndex = source.indexOf(end, startIndex + start.length);
+  expect(startIndex).toBeGreaterThanOrEqual(0);
+  expect(endIndex).toBeGreaterThan(startIndex);
+  return source.slice(startIndex, endIndex);
+};
 
 describe('platform and supplier readonly detail affordance UI', () => {
   it('adds filter summaries and detail affordances to platform readonly lists', () => {
@@ -21,9 +26,9 @@ describe('platform and supplier readonly detail affordance UI', () => {
     expect(platformWorkspace).toContain('label="平台公告筛选结果"');
     expect(platformWorkspace).toContain('selectedLabel={selectedPlatformTenantId}');
     expect(platformWorkspace).toContain('selected={selectedPlatformTenantId === tenant.id}');
-    expect(reviewCard).toContain('<DetailToggleButton');
+    expect(reviewCard).toContain('<DetailSelectionSurface');
     expect(reviewCard).toContain('selected={selected}');
-    expect(announcementCard).toContain('<DetailToggleButton');
+    expect(announcementCard).toContain('<DetailSelectionSurface');
     expect(announcementCard).toContain('selected={selected}');
   });
 
@@ -39,9 +44,9 @@ describe('platform and supplier readonly detail affordance UI', () => {
     expect(supplierWorkspace).toContain('selectedLabel={selectedSupplierQuoteId}');
     expect(supplierWorkspace).toContain('selected={selectedSupplierOrderId === order.id}');
     expect(supplierWorkspace).toContain('onClick={() => setSelectedSupplierOrderId(order.id)}');
-    expect(quoteCard).toContain('<DetailToggleButton');
+    expect(quoteCard).toContain('<DetailSelectionSurface');
     expect(quoteCard).toContain('selected={selected}');
-    expect(invoiceCard).toContain('<DetailToggleButton');
+    expect(invoiceCard).toContain('<DetailSelectionSurface');
     expect(invoiceCard).toContain('selected={selected}');
   });
 });

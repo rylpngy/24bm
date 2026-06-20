@@ -99,5 +99,8 @@ describe('stage three admin shell acceptance checklist', () => {
     expect(checklist).toContain('列表操作表面节奏收口');
     expect(checklist).toContain('操作状态、状态与详情、快捷动作');
     expect(checklist).toContain('scripts/stage-three-list-action-surface-ui.test.ts');
+    expect(checklist).toContain('跨角色详情操作表面收口');
+    expect(checklist).toContain('详情操作');
+    expect(checklist).toContain('scripts/cross-role-detail-action-surface-ui.test.ts');
   });
 });

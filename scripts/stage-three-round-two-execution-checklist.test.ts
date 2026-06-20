@@ -117,6 +117,10 @@ describe('stage three round two execution checklist', () => {
     expect(checklist).toContain('操作状态');
     expect(checklist).toContain('快捷动作');
     expect(checklist).toContain('scripts/stage-three-list-action-surface-ui.test.ts');
+    expect(checklist).toContain('跨角色详情操作表面收口');
+    expect(checklist).toContain('详情操作');
+    expect(checklist).toContain('DetailSelectionSurface');
+    expect(checklist).toContain('scripts/cross-role-detail-action-surface-ui.test.ts');
     expect(checklist).toContain('scripts/invoice-reconciliation-ledger-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-demand-create-form-ui.test.ts');
     expect(checklist).toContain('scripts/buyer-rfq-create-form-ui.test.ts');

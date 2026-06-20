@@ -2564,9 +2564,10 @@ const PlatformAnnouncementCard: React.FC<{
         { label: '发布状态', value: '已发布' },
       ]}
     />
-    <DetailToggleButton
+    <DetailSelectionSurface
+      title={announcement.title}
       selected={selected}
-      onClick={onSelectDetail}
+      onSelectDetail={onSelectDetail}
     />
     <DetailSection title="公告正文">
       <p className="break-words text-sm font-bold leading-6 text-slate-700">{announcement.content}</p>
@@ -2884,9 +2885,10 @@ const PlatformEnterpriseReviewCard: React.FC<{
           { label: '下一步', value: nextAction },
         ]}
       />
-      <DetailToggleButton
+      <DetailSelectionSurface
+        title={review.name}
         selected={selected}
-        onClick={onSelectDetail}
+        onSelectDetail={onSelectDetail}
       />
     </div>
   );
@@ -9755,9 +9757,10 @@ const SupplierQuoteHistoryCard: React.FC<{
         { label: '下一步', value: rfq?.status === '已定标' ? '查看订单' : '等待定标' },
       ]}
     />
-    <DetailToggleButton
+    <DetailSelectionSurface
+      title={rfq?.title ?? quote.rfqId}
       selected={selected}
-      onClick={onSelectDetail}
+      onSelectDetail={onSelectDetail}
     />
   </div>
 );
@@ -10283,9 +10286,10 @@ const SupplierInvoiceReceivableCard: React.FC<{
           { label: '下一步', value: nextAction },
         ]}
       />
-      <DetailToggleButton
+      <DetailSelectionSurface
+        title={invoice.invoiceNo ?? invoice.id}
         selected={selected}
-        onClick={onSelectDetail}
+        onSelectDetail={onSelectDetail}
       />
     </div>
   );
@@ -11195,6 +11199,26 @@ const SimpleList: React.FC<{
     </div>
   );
 };
+
+const DetailSelectionSurface: React.FC<{
+  title: string;
+  selected: boolean;
+  onSelectDetail: () => void;
+}> = ({ title, selected, onSelectDetail }) => (
+  <div
+    aria-label={`${title} 详情操作`}
+    className="mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3"
+  >
+    <div className="rounded-md border border-white/80 bg-white/70 p-2">
+      <p className="mb-2 text-[11px] font-black uppercase text-slate-500">详情操作</p>
+      <DetailToggleButton
+        compact
+        selected={selected}
+        onClick={onSelectDetail}
+      />
+    </div>
+  </div>
+);
 
 const DetailToggleButton: React.FC<{
   selected: boolean;

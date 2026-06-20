@@ -171,6 +171,7 @@
 | 工作台页面节奏收口 | 主滚动区 scrollbar-gutter、顶部栏半透明阴影、详情体分段边界和移动摘要卡片按压反馈已补齐，降低长页面滚动时的漂浮感和层级割裂 | `AppHeader`、`DetailPanelBody`、`ResponsiveSummaryCard`、`scripts/stage-three-admin-workbench-rhythm-ui.test.ts` |
 | 筛选结果表面节奏收口 | 查询条件、结果摘要、命中记录、已选详情和清空筛选形成统一查询表面，三端列表筛选区不再像散落表单控件 | `StatusFilterControl`、`FilterResultSummary`、`scripts/stage-three-filter-surface-rhythm-ui.test.ts` |
 | 列表操作表面节奏收口 | 工作流卡片中的操作状态、状态与详情、快捷动作已形成明确分区，快捷操作面板补内阴影和分割线，降低状态、详情按钮和表单混在一起的粗糙感 | `WorkflowListCard`、`InlineWorkflowAction`、`scripts/stage-three-list-action-surface-ui.test.ts` |
+| 跨角色详情操作表面收口 | 平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片的详情入口统一为 `详情操作` 表面，降低平台/供应商只读卡片和采购方操作卡片之间的割裂感 | `DetailSelectionSurface`、`scripts/cross-role-detail-action-surface-ui.test.ts` |
 
 第一轮收口结论：可以进入第二轮，但第二轮开始前应保留 Java 模式逐页联调作为回归门槛。
 
@@ -232,3 +233,14 @@
 - `InlineWorkflowAction` 增加内阴影、分割线和 `快捷动作` 小标题，让收货、付款、订单等行内表单更像后台操作面板。
 
 验收依据：`scripts/stage-three-list-action-surface-ui.test.ts`。
+
+## 十四、跨角色详情操作表面收口记录
+
+本轮继续补平台端和供应商端只读卡片的细节，不改变详情选择逻辑：
+
+- 新增 `DetailSelectionSurface`，把孤立的查看详情按钮放入统一的 `详情操作` 表面。
+- 平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片统一使用该表面。
+- 表面采用与采购方工作流操作区一致的浅底、边界和内层白底，让平台/供应商只读列表也具备后台操作区语义。
+- 原 `DetailToggleButton` 保持为底层按钮，避免影响租户表格、RFQ 表格和其他紧凑详情入口。
+
+验收依据：`scripts/cross-role-detail-action-surface-ui.test.ts`。
