@@ -770,7 +770,7 @@ class BackendModuleArchitectureTests {
     assertThat(transitionSource)
         .contains("boolean isSupportedTarget")
         .contains("void requireSupportedTarget")
-        .contains("boolean isIdempotentRegistration")
+        .contains("boolean isDuplicateRegistration")
         .contains("void requireTransition")
         .contains("Unsupported payment status")
         .contains("InvoicePaymentStatus.PENDING_PAYMENT")
@@ -783,7 +783,7 @@ class BackendModuleArchitectureTests {
         .contains("invoicePaymentStatusTransition.requireTransition")
         .doesNotContain("Unsupported payment status")
         .doesNotContain("private boolean isSupportedPaymentTarget")
-        .doesNotContain("private boolean isIdempotentPaymentRegistration")
+        .doesNotContain("private boolean isDuplicatePaymentRegistration")
         .doesNotContain("private void requirePaymentTransition");
   }
 

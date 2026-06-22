@@ -106,6 +106,8 @@ class DeliveryNotificationTests {
             "JD987654321",
             "已发货",
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+    when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester")));
 
     var response = deliveryApplicationService.update(
         "delivery-1",
@@ -119,6 +121,12 @@ class DeliveryNotificationTests {
         "supplier-1",
         "京东物流",
         "JD987654321");
+    verify(notificationMapper).insert(
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("buyer-1"),
+        org.mockito.ArgumentMatchers.eq("采购订单已发货"),
+        org.mockito.ArgumentMatchers.eq("采购订单 po-1 物流信息已更新，物流：京东物流 JD987654321。"));
   }
 
   private PurchaseOrder order(String id, String tenantId, String supplierId, String status) {

@@ -16,6 +16,7 @@ import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.domain.InvoiceReconciliation;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
+import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
@@ -33,6 +34,7 @@ public class InvoiceApplicationService {
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final InvoiceMapper invoiceMapper;
   private final InvoiceReconciliationMapper invoiceReconciliationMapper;
+  private final ThreeWayMatchMapper threeWayMatchMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -41,12 +43,14 @@ public class InvoiceApplicationService {
       PurchaseOrderMapper purchaseOrderMapper,
       InvoiceMapper invoiceMapper,
       InvoiceReconciliationMapper invoiceReconciliationMapper,
+      ThreeWayMatchMapper threeWayMatchMapper,
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       NotificationApplicationService notificationApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.invoiceMapper = invoiceMapper;
     this.invoiceReconciliationMapper = invoiceReconciliationMapper;
+    this.threeWayMatchMapper = threeWayMatchMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -137,6 +141,7 @@ public class InvoiceApplicationService {
         order.id(),
         response.reconciliationStage(),
         response.nextReconciliationAction());
+    threeWayMatchMapper.upsertFromInvoice(newId("match"), order.tenantId(), invoiceId);
     return response;
   }
 
@@ -156,6 +161,15 @@ public class InvoiceApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("Invoice changed before reconciliation note could be recorded: " + invoiceId);
     }
+    auditLogApplicationService.recordTenantAction(
+        invoice.tenantId(),
+        InvoiceAuditAction.RECEIVABLE_NOTE_UPDATED,
+        AuditTargetType.INVOICE,
+        invoiceId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        invoice.tenantId(),
+        NotificationTitle.INVOICE_CREATED,
+        "发票 " + invoice.invoiceNo() + " 的供应商应收对账备注已更新：" + request.reconciliationNote() + "。");
     return toResponse(invoiceMapper.findBySupplierAndId(supplierId, invoiceId));
   }
 

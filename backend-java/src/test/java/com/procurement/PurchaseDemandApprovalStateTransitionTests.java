@@ -61,16 +61,25 @@ class PurchaseDemandApprovalStateTransitionTests {
         .thenReturn(demand("demand-1", "tenant-1", "审批中"));
     when(approvalTaskMapper.findPendingByBiz("tenant-1", "purchase_demand", "demand-1", "待审批"))
         .thenReturn(task("approval-1", "tenant-1", "demand-1", "待审批"));
-    when(approvalTaskMapper.updateStatus("tenant-1", "approval-1", "待审批", "已通过", "approver-1"))
+    when(approvalTaskMapper.updateStatus(
+        "tenant-1",
+        "approval-1",
+        "待审批",
+        "已通过",
+        "approver-1",
+        "预算和物料明细已核对，同意进入询价。"))
+        .thenReturn(1);
+    when(purchaseDemandMapper.updateStatus("tenant-1", "demand-1", "已通过"))
         .thenReturn(1);
     when(approvalTaskMapper.findByTenantAndId("tenant-1", "approval-1"))
-        .thenReturn(task("approval-1", "tenant-1", "demand-1", "已通过"));
+        .thenReturn(task("approval-1", "tenant-1", "demand-1", "已通过", "预算和物料明细已核对，同意进入询价。"));
 
     ApprovalTaskResponse response = purchaseDemandApplicationService.review(
         "demand-1",
-        new ReviewPurchaseDemandRequest(true));
+        new ReviewPurchaseDemandRequest(true, "预算和物料明细已核对，同意进入询价。"));
 
     assertThat(response.status()).isEqualTo("已通过");
+    assertThat(response.reviewComment()).isEqualTo("预算和物料明细已核对，同意进入询价。");
     verify(purchaseDemandMapper).updateStatus("tenant-1", "demand-1", "已通过");
     verify(auditLogApplicationService).recordTenantAction("purchase_demand.approved", "purchase_demand", "demand-1");
     verify(notificationApplicationService).notifyActiveTenantUsers(
@@ -92,6 +101,27 @@ class PurchaseDemandApprovalStateTransitionTests {
         .hasMessageContaining("Only in-approval purchase demands can be reviewed");
   }
 
+  @Test
+  void approvalFailsWhenDemandStatusChangesBeforeReviewCanBeSaved() {
+    TenantContext.set("tenant-1", null, "approver-1");
+    when(purchaseDemandMapper.findByTenantAndId("tenant-1", "demand-1"))
+        .thenReturn(demand("demand-1", "tenant-1", "审批中"));
+    when(approvalTaskMapper.findPendingByBiz("tenant-1", "purchase_demand", "demand-1", "待审批"))
+        .thenReturn(task("approval-1", "tenant-1", "demand-1", "待审批"));
+    when(approvalTaskMapper.updateStatus("tenant-1", "approval-1", "待审批", "已通过", "approver-1", null))
+        .thenReturn(1);
+    when(purchaseDemandMapper.updateStatus("tenant-1", "demand-1", "已通过"))
+        .thenReturn(0);
+    when(approvalTaskMapper.findByTenantAndId("tenant-1", "approval-1"))
+        .thenReturn(task("approval-1", "tenant-1", "demand-1", "已通过"));
+
+    assertThatThrownBy(() -> purchaseDemandApplicationService.review(
+        "demand-1",
+        new ReviewPurchaseDemandRequest(true)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Purchase demand status changed before review could be saved");
+  }
+
   private PurchaseDemand demand(String id, String tenantId, String status) {
     return new PurchaseDemand(
         id,
@@ -106,6 +136,10 @@ class PurchaseDemandApprovalStateTransitionTests {
   }
 
   private ApprovalTask task(String id, String tenantId, String demandId, String status) {
+    return task(id, tenantId, demandId, status, null);
+  }
+
+  private ApprovalTask task(String id, String tenantId, String demandId, String status, String reviewComment) {
     return new ApprovalTask(
         id,
         tenantId,
@@ -113,6 +147,7 @@ class PurchaseDemandApprovalStateTransitionTests {
         demandId,
         "approver-1",
         status,
+        reviewComment,
         OffsetDateTime.parse("2026-06-15T10:30:00+08:00"),
         null);
   }

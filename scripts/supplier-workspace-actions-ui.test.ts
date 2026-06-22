@@ -18,6 +18,9 @@ describe('supplier workspace Java actions UI', () => {
     expect(app).toContain('确认订单');
     expect(app).toContain('提交发货');
     expect(app).toContain('提交发票');
+    expect(app).toContain('已同步采购方订单状态');
+    expect(app).toContain('已同步采购方收货验收');
+    expect(app).toContain('已同步采购方待付款台账');
     expect(app).toContain(`order.status === '待供应商确认'`);
     expect(app).toContain(`order.status === '待发货'`);
     expect(app).toContain(`order.status === '已收货'`);

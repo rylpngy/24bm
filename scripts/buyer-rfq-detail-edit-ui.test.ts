@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const read = (path: string) => readFileSync(path, 'utf8');
 
 describe('buyer RFQ detail edit UI', () => {
-  it('adds an editable RFQ detail form with Java save and refresh feedback', () => {
+  it('adds an editable RFQ detail form with Java save, supplier notification, and refresh feedback', () => {
     const app = read('App.tsx');
     const rfqDetail = app.slice(
       app.indexOf('const RfqDetailPanelView'),
@@ -21,7 +21,8 @@ describe('buyer RFQ detail edit UI', () => {
     expect(buyerWorkspace).toContain('onUpdateRfq={onUpdateRfq}');
     expect(rfqDetail).toContain('询价编辑');
     expect(rfqDetail).toContain('保存询价修改');
-    expect(rfqDetail).toContain('刷新后回显');
+    expect(app).toContain('询价项目已保存、已通知供应商并刷新后回显');
+    expect(rfqDetail).toContain('保存后会通知供应商按最新要求报价，并刷新 Java 工作台数据');
     expect(rfqDetail).toContain('只能编辑报价中的 RFQ');
     expect(rfqDetail).toContain('editableRfqTitle');
     expect(rfqDetail).toContain('editableRfqDeadline');

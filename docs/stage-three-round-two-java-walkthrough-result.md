@@ -40,11 +40,11 @@
 - 后续履约记录：`Created delivery delivery-487e0fe5-7a79-448c-bc31-d98a540f6947, receipt receipt-f5799627-d428-4d59-bce7-41ea0aa794ba`。
 - 发票付款记录：`Created invoice invoice-25900914-3acd-4865-b2db-f5d252cabcbb, payment status 已付款`。
 
-## 2026-06-20 跨角色只读卡片 Java 回归准备
+## 2026-06-20 跨角色只读卡片 Java 视觉回归补跑
 
-本轮在准备复跑平台和供应商只读详情卡片 Java 视觉回归时，先发现 `http://localhost:3000/` 首屏 Java 数据加载失败。排查后确认不是前端页面样式问题，而是首屏 Java API 中两个独立对账单台账接口在无筛选参数时触发 PostgreSQL 空参数类型推断错误。
+本轮在准备复跑平台和供应商只读详情卡片 Java 视觉回归时，先发现 `http://localhost:3000/` 首屏 Java 数据加载失败。排查后确认不是前端页面样式问题，而是首屏 Java API 中两个独立对账单台账接口在无筛选参数时触发 PostgreSQL 空参数类型推断错误。修复后按 Java 数据源重新启动前端，并使用本机 Chrome headless CDP 完成桌面与移动视口补跑。
 
-已完成修复：
+已完成修复和前置探针：
 
 - Java 后端健康检查返回 `ok`。
 - 前端 Java 模式 `http://localhost:3000/` 返回 `200 OK`。
@@ -53,12 +53,45 @@
 - 前端 Java API 客户端已增强错误信息，后续若接口失败会显示具体 API 路径，避免只看到 `API request failed with 403`。
 - 修复后重新执行 `npm run java:smoke`，结果为 `Java local API smoke passed at http://localhost:8080`。本次输出加载 `25 purchase demands`、`21 purchase orders`、`20 invoices`、供应商侧 `23 RFQs`、`22 quotes`、`21 orders` 和 `20 invoices`，并完成新需求 `dem-57473fca-9288-4cec-83a8-bdfaf270e106` 到发票 `invoice-f8d41b69-d1bd-4a60-baf3-79993579ba33` 的付款闭环。
 
-待补跑视觉项：
+Java 视觉补跑结果：
 
-- 平台：企业审核、平台公告。
-- 供应商：报价记录、发票应收。
-- 本组页面仍以 `ReadonlyDetailCardSurface` 为验收目标，需确认 Java 数据源下无加载失败、无浏览器错误日志、无整页横向溢出。
-- 当前浏览器自动化待恢复后补跑；本节只记录 Java 数据源前置阻塞已解除，不替代视觉回归结论。
+| 视口 | 覆盖页面 | 验收结果 |
+| --- | --- | --- |
+| `1280x720` | 平台：企业审核、平台公告 | Java 数据源可见；`ReadonlyDetailCardSurface` 渲染；无加载失败、无 `argument type mismatch`、无 React runtime error、无浏览器错误日志、无整页横向溢出 |
+| `1280x720` | 供应商：报价记录、发票应收 | Java 数据源可见；`ReadonlyDetailCardSurface` 渲染；无加载失败、无 `argument type mismatch`、无 React runtime error、无浏览器错误日志、无整页横向溢出 |
+| `1280x720` | 采购方：询价项目、采购订单、发票付款 | Java 数据源可见；页面可切换；无加载失败、无 `argument type mismatch`、无 React runtime error、无浏览器错误日志、无整页横向溢出 |
+| `390x844` | 平台：企业审核、平台公告 | Java 数据源可见；移动端短角色入口可切换；`ReadonlyDetailCardSurface` 渲染；无加载失败、无 `argument type mismatch`、无 React runtime error、无浏览器错误日志、无整页横向溢出 |
+| `390x844` | 供应商：报价记录、发票应收 | Java 数据源可见；移动端短角色入口可切换；`ReadonlyDetailCardSurface` 渲染；无加载失败、无 `argument type mismatch`、无 React runtime error、无浏览器错误日志、无整页横向溢出 |
+| `390x844` | 采购方：询价项目、采购订单、发票付款 | Java 数据源可见；页面可切换；无加载失败、无 `argument type mismatch`、无 React runtime error、无浏览器错误日志、无整页横向溢出 |
+
+补充说明：内置浏览器控制接口本轮仍被环境元数据问题拦截，因此实际视觉补跑使用本机 Chrome headless CDP；验收项仍覆盖真实浏览器渲染、控制台错误、页面错误文本和横向溢出。
+
+## 2026-06-20 发票付款推进摘要 Java 视觉复核
+
+本轮在采购方 `发票付款` 模块补齐 `发票付款推进摘要` 后，重新执行 Java 主流程 smoke 和发票付款页视觉脚本，确认新增摘要在真实 Java 数据源下不会破坏页面加载、付款批次详情、处理记录台账和移动端渲染。
+
+复核入口：`http://127.0.0.1:3001/?role=buyer&module=invoices`
+
+本次 Java API smoke 输出显示：
+
+- 采购方工作台聚合加载 2 个供应商和 50 条审计日志。
+- 采购方列表加载 `Loaded 57 purchase demands`。
+- 采购方履约数据加载 `Loaded 53 purchase orders, 52 invoices, 50 audit logs`。
+- 供应商侧加载 `Loaded supplier 晨光科技供应商, 55 RFQs, 54 quotes, 53 orders, 52 invoices`。
+- 主流程新建记录：`Created demand dem-09327b5e-a7fc-4176-a0d9-23afde314ed4`，并继续生成 RFQ、报价、定标、订单、发货、收货、三单匹配、付款申请、付款阻断处理、付款批次归档和发票 `invoice-2e9c5759-f22f-4730-89e2-1b76cc50ace5`。
+- 发票付款结果：`payment status 已付款`。
+
+本次视觉脚本输出 `docs/artifacts/stage-four-java-visual-check-result.json`，并生成桌面 `1280x720` 与移动 `390x844` 截图。DOM 检查确认 Java 数据源、`发票付款`、付款批次详情、处理记录台账、登记前置条件和登记后复核摘要均可见；页面失败信号为 `failed: []`。
+
+新增摘要复核项：
+
+| 页面 | 新增区域 | Java 视觉复核 |
+| --- | --- | --- |
+| 采购方发票付款 | `发票付款推进摘要` | 页面可进入 `role=buyer&module=invoices`，摘要位于业务接力提示之后、应付对账单台账之前 |
+| 采购方发票付款 | `待开票`、`待对账`、`差异待处理`、`待付款`、`已付款` | 统计项由 Java 工作台中的订单、发票和差异处理台账派生，本轮不新增后端接口 |
+| 采购方发票付款 | 付款批次详情和处理记录台账 | 视觉脚本确认 `Java visual smoke 阻断处理记录` 非空回显，付款阻断处理记录仍可在详情中展示 |
+
+失败信号复核：无加载失败、无 `Failed to fetch`、无 `argument type mismatch`、无 React runtime error；桌面和移动截图均已写出，移动端由截图和现有移动布局契约共同兜底整页横向溢出风险。
 
 ## 第二轮新增能力复核
 

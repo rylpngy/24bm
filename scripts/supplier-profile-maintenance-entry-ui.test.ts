@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const read = (path: string) => readFileSync(path, 'utf8');
 
 describe('supplier profile maintenance entry UI', () => {
-  it('adds editable supplier profile and qualification upload entries to the profile workspace', () => {
+  it('adds editable supplier profile and qualification maintenance entries to the profile workspace', () => {
     const app = read('App.tsx');
     const supplierWorkspace = app.slice(
       app.indexOf('const SupplierWorkspaceView'),
@@ -20,16 +20,21 @@ describe('supplier profile maintenance entry UI', () => {
     expect(maintenancePanel).toContain('企业档案草稿');
     expect(maintenancePanel).toContain('联系人维护');
     expect(maintenancePanel).toContain('授权品类');
-    expect(maintenancePanel).toContain('资质上传入口');
-    expect(maintenancePanel).toContain('附件元数据');
+    expect(maintenancePanel).toContain('资质台账');
+    expect(maintenancePanel).toContain('资质登记表单');
+    expect(maintenancePanel).toContain('已登记资质');
+    expect(maintenancePanel).toContain('提交资质');
     expect(maintenancePanel).toContain('营业执照');
-    expect(maintenancePanel).toContain('授权代理证书');
+    expect(maintenancePanel).toContain('POST /api/v1/supplier/qualifications');
     expect(maintenancePanel).toContain('Java 模式下可调用 POST /api/v1/supplier/profile');
     expect(maintenancePanel).toContain('Mock 模式先保留页面草稿和上传入口');
     expect(maintenancePanel).toContain('profileDraft');
+    expect(maintenancePanel).toContain('qualificationDraft');
     expect(maintenancePanel).toContain('setProfileDraft');
     expect(maintenancePanel).toContain('onUpdateSupplierProfile');
+    expect(maintenancePanel).toContain('onCreateSupplierQualification');
     expect(maintenancePanel).toContain('supplierProfileBusy');
+    expect(maintenancePanel).toContain('supplierQualificationBusy');
     expect(maintenancePanel).toContain('保存企业档案');
     expect(maintenancePanel).toContain('creditCode');
     expect(maintenancePanel).toContain('legalPerson');

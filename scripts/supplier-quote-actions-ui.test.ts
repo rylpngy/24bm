@@ -14,6 +14,8 @@ describe('supplier quote actions UI', () => {
     expect(app).toContain('onSubmitQuote');
     expect(app).toContain('提交报价');
     expect(app).toContain('报价已提交');
+    expect(app).toContain('同步采购方报价对比');
+    expect(app).toContain('refreshAfterSupplierAction');
     expect(app).toContain('hasMyQuote');
     expect(app).toContain('SupplierQuoteDraft');
     expect(app).toContain('amount: draft.amount');

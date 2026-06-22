@@ -1,13 +1,20 @@
 package com.procurement.attachment.application;
 
+import com.procurement.attachment.api.AttachmentDownloadLinkResponse;
 import com.procurement.attachment.api.AttachmentResponse;
+import com.procurement.attachment.api.AttachmentUploadTicketResponse;
 import com.procurement.attachment.api.CreateAttachmentRequest;
+import com.procurement.attachment.api.CreateAttachmentUploadTicketRequest;
 import com.procurement.attachment.domain.Attachment;
 import com.procurement.attachment.domain.AttachmentStatus;
 import com.procurement.attachment.domain.AttachmentVisibility;
 import com.procurement.attachment.infrastructure.AttachmentMapper;
 import com.procurement.audit.infrastructure.AuditLogMapper;
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.sourcing.infrastructure.QuoteMapper;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -17,10 +24,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class AttachmentApplicationService {
   private final AttachmentMapper attachmentMapper;
   private final AuditLogMapper auditLogMapper;
+  private final QuoteMapper quoteMapper;
 
-  public AttachmentApplicationService(AttachmentMapper attachmentMapper, AuditLogMapper auditLogMapper) {
+  public AttachmentApplicationService(
+      AttachmentMapper attachmentMapper,
+      AuditLogMapper auditLogMapper,
+      QuoteMapper quoteMapper) {
     this.attachmentMapper = attachmentMapper;
     this.auditLogMapper = auditLogMapper;
+    this.quoteMapper = quoteMapper;
   }
 
   public List<AttachmentResponse> listCurrentTenantAttachments(String ownerType, String ownerId) {
@@ -30,10 +42,56 @@ public class AttachmentApplicationService {
         .toList();
   }
 
+  public AttachmentUploadTicketResponse createCurrentTenantUploadTicket(CreateAttachmentUploadTicketRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
+    validateOwnerInTenantScope(tenantId, request.ownerType(), request.ownerId());
+    String visibility = AttachmentVisibility.normalize(request.visibility());
+    OffsetDateTime createdAt = OffsetDateTime.now();
+    String storageKey = "%s/%s/%s/%s-%s".formatted(
+        tenantId,
+        safePathSegment(request.ownerType()),
+        safePathSegment(request.ownerId()),
+        UUID.randomUUID(),
+        safePathSegment(request.fileName()));
+    String uploadUrl = "/api/v1/buyer/attachments/upload-sink?storageKey=%s&token=%s".formatted(
+        encode(storageKey),
+        UUID.randomUUID());
+    return new AttachmentUploadTicketResponse(
+        request.ownerType(),
+        request.ownerId(),
+        request.fileName(),
+        storageKey,
+        visibility,
+        uploadUrl,
+        createdAt,
+        createdAt.plusMinutes(15));
+  }
+
+  public AttachmentDownloadLinkResponse createCurrentTenantDownloadLink(String attachmentId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
+    Attachment attachment = attachmentMapper.findByTenantAndId(tenantId, attachmentId);
+    if (attachment == null || !AttachmentStatus.ACTIVE.equals(attachment.status())) {
+      throw new IllegalArgumentException("Attachment not found in tenant scope: " + attachmentId);
+    }
+    OffsetDateTime createdAt = OffsetDateTime.now();
+    String downloadUrl = "/api/v1/buyer/attachments/%s/download?token=%s&storageKey=%s".formatted(
+        attachment.id(),
+        UUID.randomUUID(),
+        encode(attachment.storageKey()));
+    return new AttachmentDownloadLinkResponse(
+        attachment.id(),
+        attachment.fileName(),
+        attachment.storageKey(),
+        downloadUrl,
+        createdAt,
+        createdAt.plusMinutes(15));
+  }
+
   @Transactional
   public AttachmentResponse createCurrentTenantAttachment(CreateAttachmentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
     String userId = TenantAccessGuard.requireUserId("buyer attachment APIs");
+    validateOwnerInTenantScope(tenantId, request.ownerType(), request.ownerId());
     String attachmentId = "att-" + UUID.randomUUID();
     String visibility = AttachmentVisibility.normalize(request.visibility());
     attachmentMapper.insert(
@@ -68,6 +126,25 @@ public class AttachmentApplicationService {
         attachment.visibility(),
         attachment.status(),
         attachment.createdAt());
+  }
+
+  private String safePathSegment(String value) {
+    return value == null || value.isBlank()
+        ? "attachment"
+        : value.trim().replaceAll("[\\\\/]+", "-");
+  }
+
+  private String encode(String value) {
+    return URLEncoder.encode(value, StandardCharsets.UTF_8);
+  }
+
+  private void validateOwnerInTenantScope(String tenantId, String ownerType, String ownerId) {
+    if (!"quote".equals(ownerType)) {
+      return;
+    }
+    if (quoteMapper.findByTenantAndId(tenantId, ownerId) == null) {
+      throw new IllegalArgumentException("Quote attachment owner not found in tenant scope: " + ownerId);
+    }
   }
 
 }

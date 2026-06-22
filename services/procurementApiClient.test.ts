@@ -125,6 +125,29 @@ describe('procurement API clients', () => {
       }
       if (input === 'http://java.test/api/v1/buyer/suppliers') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        if (init?.method === 'POST') {
+          expect(init.headers).toMatchObject({ 'content-type': 'application/json' });
+          expect(JSON.parse(String(init.body))).toEqual({
+            supplierId: 'ent-supplier-mountain',
+            status: '待准入',
+            level: 'B',
+            categories: ['办公设备', 'IT设备'],
+          });
+          return Response.json({
+            success: true,
+            data: {
+              id: 'rel-mountain',
+              tenantId: 'tenant-acme',
+              supplierId: 'ent-supplier-mountain',
+              supplierName: '山岳科技',
+              status: '待准入',
+              level: 'B',
+              categories: ['办公设备', 'IT设备'],
+              performanceScore: 80,
+            },
+            message: '',
+          }, { status: 201 });
+        }
         return Response.json({
           success: true,
           data: [{
@@ -140,8 +163,118 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/suppliers/rel-sunrise/profile') {
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(init?.method).toBe('POST');
+        expect(JSON.parse(String(init.body))).toEqual({
+          level: 'A',
+          categories: ['办公设备', 'IT设备'],
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'rel-sunrise',
+            tenantId: 'tenant-acme',
+            supplierId: 'ent-supplier-sunrise',
+            supplierName: '晨光供应商',
+            status: '已准入',
+            level: 'A',
+            categories: ['办公设备', 'IT设备'],
+            performanceScore: 92.5,
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/suppliers/rel-sunrise/status') {
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(init?.method).toBe('POST');
+        expect(JSON.parse(String(init.body))).toEqual({ status: '黑名单' });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'rel-sunrise',
+            tenantId: 'tenant-acme',
+            supplierId: 'ent-supplier-sunrise',
+            supplierName: '晨光供应商',
+            status: '黑名单',
+            level: 'A',
+            categories: ['办公设备', 'IT设备'],
+            performanceScore: 92.5,
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/suppliers/rel-sunrise/performance') {
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(init?.method).toBe('POST');
+        expect(JSON.parse(String(init.body))).toEqual({ performanceScore: 88 });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'rel-sunrise',
+            tenantId: 'tenant-acme',
+            supplierId: 'ent-supplier-sunrise',
+            supplierName: '晨光供应商',
+            status: '已准入',
+            level: 'A',
+            categories: ['办公设备', 'IT设备'],
+            performanceScore: 88,
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/suppliers/rel-sunrise/qualifications') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'qual-buyer-001',
+            supplierId: 'ent-supplier-sunrise',
+            qualificationType: '营业执照',
+            certificateNo: 'Q-2026-001',
+            expiresAt: '2027-12-31',
+            fileName: '营业执照.pdf',
+            storageKey: 'supplier/qualifications/business-license.pdf',
+            status: 'active',
+            createdAt: '2026-06-22T10:00:00+08:00',
+          }],
+          message: '',
+        });
+      }
       if (input === 'http://java.test/api/v1/buyer/materials') {
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        if (init?.method === 'POST') {
+          expect(init.headers).toMatchObject({ 'content-type': 'application/json' });
+          expect(JSON.parse(String(init.body))).toEqual({
+            code: 'IT-MONITOR',
+            name: '显示器',
+            category: '办公设备',
+            unit: '台',
+            referencePrice: 1800,
+          });
+          return Response.json({
+            success: true,
+            data: {
+              id: 'mat-monitor',
+              tenantId: 'tenant-acme',
+              code: 'IT-MONITOR',
+              name: '显示器',
+              category: '办公设备',
+              unit: '台',
+              referencePrice: 1800,
+            },
+            message: '',
+          }, { status: 201 });
+        }
         return Response.json({
           success: true,
           data: [{
@@ -153,6 +286,33 @@ describe('procurement API clients', () => {
             unit: '台',
             referencePrice: 6000,
           }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/materials/mat-monitor') {
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(init?.method).toBe('POST');
+        expect(JSON.parse(String(init.body))).toEqual({
+          code: 'IT-MONITOR-27',
+          name: '27寸显示器',
+          category: '办公设备',
+          unit: '台',
+          referencePrice: 2100,
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'mat-monitor',
+            tenantId: 'tenant-acme',
+            code: 'IT-MONITOR-27',
+            name: '27寸显示器',
+            category: '办公设备',
+            unit: '台',
+            referencePrice: 2100,
+          },
           message: '',
         });
       }
@@ -347,7 +507,34 @@ describe('procurement API clients', () => {
     });
 
     const suppliers = await client.listBuyerSuppliers();
+    const createdSupplierRelation = await client.createBuyerSupplierRelation({
+      supplierId: 'ent-supplier-mountain',
+      status: '待准入',
+      level: 'B',
+      categories: ['办公设备', 'IT设备'],
+    });
+    const updatedSupplierProfile = await client.updateBuyerSupplierProfile('rel-sunrise', {
+      level: 'A',
+      categories: ['办公设备', 'IT设备'],
+    });
+    const updatedSupplierStatus = await client.updateBuyerSupplierStatus('rel-sunrise', '黑名单');
+    const updatedSupplierPerformance = await client.updateBuyerSupplierPerformance('rel-sunrise', 88);
+    const supplierQualifications = await client.listBuyerSupplierQualifications('rel-sunrise');
     const materials = await client.listBuyerMaterials();
+    const createdMaterial = await client.createBuyerMaterial({
+      code: 'IT-MONITOR',
+      name: '显示器',
+      category: '办公设备',
+      unit: '台',
+      referencePrice: 1800,
+    });
+    const updatedMaterial = await client.updateBuyerMaterial('mat-monitor', {
+      code: 'IT-MONITOR-27',
+      name: '27寸显示器',
+      category: '办公设备',
+      unit: '台',
+      referencePrice: 2100,
+    });
     const departments = await client.listBuyerDepartments();
     const createdDepartment = await client.createBuyerDepartment({
       name: '研发采购部',
@@ -363,7 +550,14 @@ describe('procurement API clients', () => {
     const auditLogs = await client.listBuyerAuditLogs();
 
     expect(suppliers[0].supplierName).toBe('晨光供应商');
+    expect(createdSupplierRelation.id).toBe('rel-mountain');
+    expect(updatedSupplierProfile.categories).toEqual(['办公设备', 'IT设备']);
+    expect(updatedSupplierStatus.status).toBe('黑名单');
+    expect(updatedSupplierPerformance.performanceScore).toBe(88);
+    expect(supplierQualifications[0].qualificationType).toBe('营业执照');
     expect(materials[0].code).toBe('IT-LAPTOP');
+    expect(createdMaterial.id).toBe('mat-monitor');
+    expect(updatedMaterial.name).toBe('27寸显示器');
     expect(departments[0].name).toBe('信息化部');
     expect(createdDepartment.id).toBe('dept-rd');
     expect(disabledDepartment.status).toBe('inactive');
@@ -451,6 +645,354 @@ describe('procurement API clients', () => {
       updatedAt: '2026-06-15T13:20:00+08:00',
     }]);
     expect(calls.map((call) => call.input)).toContain('http://java.test/api/v1/buyer/invoice-reconciliations?stage=%E5%BE%85%E4%BB%98%E6%AC%BE&supplierId=ent-supplier-sunrise');
+  });
+
+  it('uses the Java API client to maintain supplier qualifications with supplier scoped auth', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: { accessToken: 'supplier-token', tokenType: 'Bearer' },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/supplier/qualifications') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
+        if (init?.method === 'POST') {
+          expect(init.headers).toMatchObject({ 'content-type': 'application/json' });
+          expect(JSON.parse(String(init.body))).toEqual({
+            qualificationType: '营业执照',
+            certificateNo: 'Q-2026-001',
+            expiresAt: '2027-12-31',
+            fileName: '营业执照.pdf',
+            storageKey: 'supplier/qualifications/business-license.pdf',
+          });
+          return Response.json({
+            success: true,
+            data: {
+              id: 'qual-java-created',
+              supplierId: 'ent-supplier-sunrise',
+              qualificationType: '营业执照',
+              certificateNo: 'Q-2026-001',
+              expiresAt: '2027-12-31',
+              fileName: '营业执照.pdf',
+              storageKey: 'supplier/qualifications/business-license.pdf',
+              status: 'active',
+              createdAt: '2026-06-22T10:00:00+08:00',
+            },
+            message: '',
+          }, { status: 201 });
+        }
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'qual-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            qualificationType: '授权代理证书',
+            certificateNo: 'AUTH-2026-001',
+            expiresAt: '2026-12-31',
+            fileName: '授权代理证书.pdf',
+            storageKey: 'supplier/qualifications/auth.pdf',
+            status: 'active',
+            createdAt: '2026-06-15T10:00:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      supplierLogin: {
+        account: 'supplier',
+        password: 'demo123456',
+        scope: 'SUPPLIER',
+        supplierId: 'ent-supplier-sunrise',
+      },
+    });
+
+    const qualifications = await client.listSupplierQualifications();
+    const created = await client.createSupplierQualification({
+      qualificationType: '营业执照',
+      certificateNo: 'Q-2026-001',
+      expiresAt: '2027-12-31',
+      fileName: '营业执照.pdf',
+      storageKey: 'supplier/qualifications/business-license.pdf',
+    });
+
+    expect(qualifications[0].qualificationType).toBe('授权代理证书');
+    expect(created.id).toBe('qual-java-created');
+    expect(created.status).toBe('active');
+    expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);
+  });
+
+  it('uses the Java API client to load buyer three-way match snapshots from the ledger endpoint', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: { accessToken: 'buyer-token', tokenType: 'Bearer' },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/three-way-matches?matchStatus=%E4%B8%89%E5%8D%95%E5%8C%B9%E9%85%8D%E9%80%9A%E8%BF%87&invoiceId=invoice-java-001') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'match-java-001',
+            tenantId: 'tenant-acme',
+            invoiceId: 'invoice-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            orderId: 'po-java-001',
+            orderAmount: '118000.00',
+            receiptStatus: '已收货',
+            invoiceAmount: '118000.00',
+            varianceAmount: '0.00',
+            matchStatus: '三单匹配通过',
+            blockingReason: '订单、收货、发票一致',
+            paymentReadiness: '可申请付款',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      buyerLogin: {
+        account: 'buyer',
+        password: 'demo123456',
+        scope: 'BUYER',
+        tenantId: 'tenant-acme',
+      },
+    });
+
+    const matches = await client.listBuyerThreeWayMatches({
+      matchStatus: '三单匹配通过',
+      invoiceId: 'invoice-java-001',
+    });
+
+    expect(matches[0]).toMatchObject({
+      id: 'match-java-001',
+      orderAmount: 118000,
+      invoiceAmount: 118000,
+      varianceAmount: 0,
+      matchStatus: '三单匹配通过',
+      paymentReadiness: '可申请付款',
+    });
+    expect(calls.map((call) => call.input)).toContain('http://java.test/api/v1/buyer/three-way-matches?matchStatus=%E4%B8%89%E5%8D%95%E5%8C%B9%E9%85%8D%E9%80%9A%E8%BF%87&invoiceId=invoice-java-001');
+  });
+
+  it('uses the Java API client to rebuild buyer three-way match snapshots', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: { accessToken: 'buyer-token', tokenType: 'Bearer' },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/three-way-matches/rebuild') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: {
+            tenantId: 'tenant-acme',
+            rebuiltCount: '36',
+          },
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      buyerLogin: {
+        account: 'buyer',
+        password: 'demo123456',
+        scope: 'BUYER',
+        tenantId: 'tenant-acme',
+      },
+    });
+
+    const result = await client.rebuildBuyerThreeWayMatches();
+
+    expect(result).toEqual({
+      tenantId: 'tenant-acme',
+      rebuiltCount: 36,
+    });
+  });
+
+  it('uses the Java API client to create variance handling from an abnormal three-way match', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: { accessToken: 'buyer-token', tokenType: 'Bearer' },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/three-way-matches/match-java-variance/variance-handling') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'variance-java-001',
+            tenantId: 'tenant-acme',
+            invoiceId: 'invoice-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            orderId: 'po-java-001',
+            varianceAmount: '1200.00',
+            reason: '发票金额与订单金额不一致',
+            ownerId: 'user-buyer-owner',
+            result: '待财务复核',
+            status: '待处理',
+            createdBy: 'user-buyer-owner',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          },
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      buyerLogin: {
+        account: 'buyer',
+        password: 'demo123456',
+        scope: 'BUYER',
+        tenantId: 'tenant-acme',
+      },
+    });
+
+    const varianceHandling = await client.createBuyerVarianceHandlingFromThreeWayMatch('match-java-variance');
+
+    expect(varianceHandling.varianceAmount).toBe(1200);
+    expect(varianceHandling.status).toBe('待处理');
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/buyer/three-way-matches/match-java-variance/variance-handling',
+    ]);
+  });
+
+  it('uses the Java API client to update buyer finance action statuses', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        return Response.json({
+          success: true,
+          data: { accessToken: 'buyer-token', tokenType: 'Bearer' },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/payment-requests/payreq-java-001/status') {
+        expect(init?.method).toBe('PUT');
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init?.body))).toEqual({ requestStatus: '付款申请审批中' });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'payreq-java-001',
+            tenantId: 'tenant-acme',
+            invoiceId: 'invoice-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            orderId: 'po-java-001',
+            amount: 118000,
+            requestStatus: '付款申请审批中',
+            paymentBatchNo: 'PAY-202606',
+            remark: '提交审批',
+            createdBy: 'user-buyer-owner',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/variance-handlings/variance-java-001/status') {
+        expect(init?.method).toBe('PUT');
+        expect(init?.headers).toMatchObject({
+          Authorization: 'Bearer buyer-token',
+          'content-type': 'application/json',
+        });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          status: '已处理',
+          result: '差异已核对并关闭，允许进入付款申请。',
+        });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'variance-java-001',
+            tenantId: 'tenant-acme',
+            invoiceId: 'invoice-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            orderId: 'po-java-001',
+            varianceAmount: 0,
+            reason: '发票金额与订单金额存在差异',
+            ownerId: 'user-buyer-owner',
+            result: '差异已核对并关闭，允许进入付款申请。',
+            status: '已处理',
+            createdBy: 'user-buyer-owner',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          },
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      buyerLogin: {
+        account: 'buyer',
+        password: 'demo123456',
+        scope: 'BUYER',
+        tenantId: 'tenant-acme',
+      },
+    });
+
+    const paymentRequest = await client.updateBuyerPaymentRequestStatus('payreq-java-001', {
+      requestStatus: '付款申请审批中',
+    });
+    const varianceHandling = await client.updateBuyerVarianceHandlingStatus('variance-java-001', {
+      status: '已处理',
+      result: '差异已核对并关闭，允许进入付款申请。',
+    });
+
+    expect(paymentRequest.requestStatus).toBe('付款申请审批中');
+    expect(varianceHandling.status).toBe('已处理');
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/buyer/payment-requests/payreq-java-001/status',
+      'http://java.test/api/v1/buyer/variance-handlings/variance-java-001/status',
+    ]);
   });
 
   it('uses the Java API client to load supplier invoice reconciliations from the independent receivable ledger endpoint', async () => {
@@ -687,6 +1229,142 @@ describe('procurement API clients', () => {
           message: '',
         });
       }
+      if (input === 'http://java.test/api/v1/buyer/payment-batches') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'paybatch-java-001',
+            tenantId: 'tenant-acme',
+            paymentBatchNo: 'PAY-202606',
+            supplierId: 'ent-supplier-sunrise',
+            requestCount: 1,
+            totalAmount: 118000,
+            approvedAmount: 0,
+            registeredAmount: 0,
+            pendingRegistrationAmount: 118000,
+            blockedRegistrationAmount: 0,
+            registeredCount: 0,
+            pendingRegistrationCount: 1,
+            blockedRegistrationCount: 0,
+            executionDecision: '可继续登记付款',
+            executionBlockSummary: '差异未处理',
+            batchStatus: '待提交审批',
+            plannedPaymentDate: '2026-07-15',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/payment-execution-records') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'payexec-java-001',
+            tenantId: 'tenant-acme',
+            paymentBatchNo: 'PAY-202606',
+            paymentRequestId: 'payreq-java-001',
+            invoiceId: 'invoice-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            registeredAmount: 118000,
+            plannedPaymentDate: '2026-07-15',
+            executionStatus: '待登记付款',
+            executionTrace: '付款申请已通过，可进入线下付款登记',
+            executionBlockReason: '付款申请已通过',
+            createdBy: 'user-buyer-owner',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/payment-block-resolutions') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'payblock-java-001',
+            tenantId: 'tenant-acme',
+            paymentBatchNo: 'PAY-202606',
+            paymentRequestId: 'payreq-java-001',
+            invoiceId: 'invoice-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            blockReason: '差异未处理',
+            resolutionStatus: '待处理',
+            resolutionAction: '进入差异处理台账',
+            nextStep: '处理差异后刷新付款批次',
+            handledBy: 'user-buyer-owner',
+            createdBy: 'user-buyer-owner',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/payment-archive-exception-requests') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'payarchive-exception-java-001',
+            tenantId: 'tenant-acme',
+            paymentBatchNo: 'PAY-202606',
+            exceptionType: '撤销申请',
+            exceptionReason: '归档后发现付款登记金额异常，提交撤销申请进入审批。',
+            approvalStatus: '待提交审批',
+            requestedBy: 'user-buyer-owner',
+            reviewedBy: null,
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/three-way-matches') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'match-java-001',
+            tenantId: 'tenant-acme',
+            invoiceId: 'invoice-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            orderId: 'po-java-001',
+            orderAmount: 118000,
+            receiptStatus: '已收货',
+            invoiceAmount: 118000,
+            varianceAmount: 0,
+            matchStatus: '三单匹配通过',
+            blockingReason: '订单、收货、发票一致',
+            paymentReadiness: '可申请付款',
+            createdAt: '2026-06-15T13:10:00+08:00',
+            updatedAt: '2026-06-15T13:20:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/contracts') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'contract-java-001',
+            tenantId: 'tenant-acme',
+            contractNo: 'CTR-JAVA-001',
+            contractName: '晨光科技供应商采购合同',
+            relatedOrderId: 'po-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            amount: 118000,
+            status: '履约中',
+            archiveStatus: '未归档',
+            fulfillmentProgress: '履约中',
+            effectiveDate: '2026-06-15',
+          }],
+          message: '',
+        });
+      }
       throw new Error(`Unexpected request: ${input}`);
     };
 
@@ -716,6 +1394,12 @@ describe('procurement API clients', () => {
     expect(masterData.notifications[0].title).toBe('需求审批已通过');
     expect(masterData.approvalTemplates[0].templateCode).toBe('TPL_PURCHASE_DEMAND');
     expect(masterData.invoiceReconciliations?.[0].reconciliationNo).toBe('REC-invoice-java-001');
+    expect(masterData.paymentBatches?.[0].paymentBatchNo).toBe('PAY-202606');
+    expect(masterData.paymentExecutionRecords?.[0].executionStatus).toBe('待登记付款');
+    expect(masterData.paymentBlockResolutions?.[0].resolutionStatus).toBe('待处理');
+    expect(masterData.paymentArchiveExceptionRequests?.[0].exceptionType).toBe('撤销申请');
+    expect(masterData.threeWayMatches?.[0].matchStatus).toBe('三单匹配通过');
+    expect(masterData.contracts?.[0].contractNo).toBe('CTR-JAVA-001');
     expect(calls.map((call) => call.input)).toEqual([
       'http://java.test/api/v1/auth/login',
       'http://java.test/api/v1/buyer/workspace',
@@ -723,6 +1407,14 @@ describe('procurement API clients', () => {
       'http://java.test/api/v1/buyer/roles',
       'http://java.test/api/v1/buyer/approvals/templates',
       'http://java.test/api/v1/buyer/invoice-reconciliations',
+      'http://java.test/api/v1/buyer/payment-batches',
+      'http://java.test/api/v1/buyer/payment-execution-records',
+      'http://java.test/api/v1/buyer/payment-block-resolutions',
+      'http://java.test/api/v1/buyer/payment-archive-exception-requests',
+      'http://java.test/api/v1/buyer/three-way-matches',
+      'http://java.test/api/v1/buyer/payment-requests',
+      'http://java.test/api/v1/buyer/variance-handlings',
+      'http://java.test/api/v1/buyer/contracts',
     ]);
   });
 
@@ -1242,6 +1934,16 @@ describe('procurement API clients', () => {
               receiptStatus: '已收货',
               reconciliationStatus: '三单一致',
             }],
+            notifications: [{
+              id: 'notice-supplier-paid',
+              tenantId: 'tenant-acme',
+              recipientId: 'user-supplier-sales',
+              title: '发票已付款',
+              content: '采购方已登记发票 INV-2026-0001 的付款状态：已付款。',
+              read: false,
+              readAt: null,
+              createdAt: '2026-06-21T10:00:00+08:00',
+            }],
           },
           message: '',
         });
@@ -1266,6 +1968,24 @@ describe('procurement API clients', () => {
             paymentStatus: '待付款',
             createdAt: '2026-06-15T13:10:00+08:00',
             updatedAt: '2026-06-15T13:20:00+08:00',
+          }],
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/supplier/qualifications') {
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
+        return Response.json({
+          success: true,
+          data: [{
+            id: 'qual-java-001',
+            supplierId: 'ent-supplier-sunrise',
+            qualificationType: '营业执照',
+            certificateNo: 'Q-2026-001',
+            expiresAt: '2027-12-31',
+            fileName: '营业执照.pdf',
+            storageKey: 'supplier/qualifications/business-license.pdf',
+            status: 'active',
+            createdAt: '2026-06-22T10:00:00+08:00',
           }],
           message: '',
         });
@@ -1299,10 +2019,104 @@ describe('procurement API clients', () => {
     expect(supplierData.deliveries[0].trackingNo).toBe('SF-SUPPLIER-001');
     expect(supplierData.invoices[0].paymentStatus).toBe('待付款');
     expect(supplierData.invoiceReconciliations?.[0].nextAction).toBe('跟进回款');
+    expect(supplierData.qualifications?.[0].qualificationType).toBe('营业执照');
+    expect(supplierData.notifications?.[0].title).toBe('发票已付款');
     expect(calls.map((call) => call.input)).toEqual([
       'http://java.test/api/v1/auth/login',
       'http://java.test/api/v1/supplier/workspace',
       'http://java.test/api/v1/supplier/invoice-reconciliations',
+      'http://java.test/api/v1/supplier/qualifications',
+    ]);
+  });
+
+  it('uses the Java API client to mark buyer and supplier notifications as read', async () => {
+    const calls: Array<{ input: string; init?: RequestInit }> = [];
+    const fetcher = async (input: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ input, init });
+      if (input === 'http://java.test/api/v1/auth/login') {
+        const body = JSON.parse(String(init?.body));
+        return Response.json({
+          success: true,
+          data: {
+            accessToken: body.scope === 'SUPPLIER' ? 'supplier-token' : 'buyer-token',
+            tokenType: 'Bearer',
+            expiresIn: 7200,
+            userId: body.scope === 'SUPPLIER' ? 'user-supplier-sales' : 'user-buyer-owner',
+            displayName: body.scope === 'SUPPLIER' ? '供应商销售' : '采购负责人',
+            scope: body.scope,
+            tenantId: body.scope === 'BUYER' ? 'tenant-acme' : null,
+            supplierId: body.scope === 'SUPPLIER' ? 'ent-supplier-sunrise' : null,
+            roles: [],
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/buyer/notifications/notice-buyer-001/read') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'notice-buyer-001',
+            tenantId: 'tenant-acme',
+            recipientId: 'user-buyer-owner',
+            title: '供应商已登记发票',
+            content: '采购订单 po-1 已登记发票。',
+            read: true,
+            readAt: '2026-06-21T10:10:00+08:00',
+            createdAt: '2026-06-21T10:00:00+08:00',
+          },
+          message: '',
+        });
+      }
+      if (input === 'http://java.test/api/v1/supplier/notifications/notice-supplier-001/read') {
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer supplier-token' });
+        return Response.json({
+          success: true,
+          data: {
+            id: 'notice-supplier-001',
+            tenantId: 'tenant-acme',
+            recipientId: 'user-supplier-sales',
+            title: '发票已付款',
+            content: '采购方已登记发票 INV-001 的付款状态：已付款。',
+            read: true,
+            readAt: '2026-06-21T10:12:00+08:00',
+            createdAt: '2026-06-21T10:00:00+08:00',
+          },
+          message: '',
+        });
+      }
+      throw new Error(`Unexpected request: ${input}`);
+    };
+
+    const client = createJavaProcurementApiClient({
+      baseUrl: 'http://java.test',
+      fetcher,
+      buyerLogin: {
+        account: 'buyer',
+        password: 'demo123456',
+        scope: 'BUYER',
+        tenantId: 'tenant-acme',
+      },
+      supplierLogin: {
+        account: 'supplier',
+        password: 'demo123456',
+        scope: 'SUPPLIER',
+        supplierId: 'ent-supplier-sunrise',
+      },
+    });
+
+    const buyerNotice = await client.markBuyerNotificationRead('notice-buyer-001');
+    const supplierNotice = await client.markSupplierNotificationRead('notice-supplier-001');
+
+    expect(buyerNotice.read).toBe(true);
+    expect(supplierNotice.read).toBe(true);
+    expect(calls.map((call) => call.input)).toEqual([
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/buyer/notifications/notice-buyer-001/read',
+      'http://java.test/api/v1/auth/login',
+      'http://java.test/api/v1/supplier/notifications/notice-supplier-001/read',
     ]);
   });
 
@@ -2437,7 +3251,10 @@ describe('procurement API clients', () => {
       if (input === 'http://java.test/api/v1/buyer/demands/dem-001/approval') {
         expect(init?.method).toBe('POST');
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
-        expect(JSON.parse(String(init?.body))).toEqual({ approved: true });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          approved: true,
+          comment: '预算和物料明细已核对，同意进入询价。',
+        });
         return Response.json({
           success: true,
           data: {
@@ -2447,6 +3264,7 @@ describe('procurement API clients', () => {
             bizId: 'dem-001',
             assigneeId: 'user-buyer-owner',
             status: '已通过',
+            reviewComment: '预算和物料明细已核对，同意进入询价。',
             createdAt: '2026-06-15T10:00:00+08:00',
           },
           message: '',
@@ -2455,7 +3273,10 @@ describe('procurement API clients', () => {
       if (input === 'http://java.test/api/v1/buyer/suppliers/rel-001/approval') {
         expect(init?.method).toBe('POST');
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
-        expect(JSON.parse(String(init?.body))).toEqual({ approved: false });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          approved: false,
+          comment: '资质材料不完整，暂不准入。',
+        });
         return Response.json({
           success: true,
           data: {
@@ -2465,6 +3286,7 @@ describe('procurement API clients', () => {
             bizId: 'rel-001',
             assigneeId: 'user-buyer-owner',
             status: '已驳回',
+            reviewComment: '资质材料不完整，暂不准入。',
             createdAt: '2026-06-15T10:05:00+08:00',
           },
           message: '',
@@ -2491,7 +3313,11 @@ describe('procurement API clients', () => {
       if (input === 'http://java.test/api/v1/buyer/rfqs/rfq-001/award/approval') {
         expect(init?.method).toBe('POST');
         expect(init?.headers).toMatchObject({ Authorization: 'Bearer buyer-token' });
-        expect(JSON.parse(String(init?.body))).toEqual({ awardId: 'award-001', approved: true });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          awardId: 'award-001',
+          approved: true,
+          comment: '报价、交期和服务响应均满足要求，同意定标。',
+        });
         return Response.json({
           success: true,
           data: {
@@ -2522,14 +3348,25 @@ describe('procurement API clients', () => {
       },
     });
 
-    const demandApproval = await client.reviewBuyerDemandApproval('dem-001', true);
+    const demandApproval = await client.reviewBuyerDemandApproval(
+      'dem-001',
+      true,
+      '预算和物料明细已核对，同意进入询价。',
+    );
     const supplierAdmission = await client.submitBuyerSupplierAdmission('rel-001');
-    const supplierApproval = await client.reviewBuyerSupplierAdmission('rel-001', false);
-    const awardApproval = await client.reviewBuyerAwardApproval('rfq-001', 'award-001', true);
+    const supplierApproval = await client.reviewBuyerSupplierAdmission('rel-001', false, '资质材料不完整，暂不准入。');
+    const awardApproval = await client.reviewBuyerAwardApproval(
+      'rfq-001',
+      'award-001',
+      true,
+      '报价、交期和服务响应均满足要求，同意定标。',
+    );
 
     expect(demandApproval.status).toBe('已通过');
+    expect(demandApproval.reviewComment).toBe('预算和物料明细已核对，同意进入询价。');
     expect(supplierAdmission.status).toBe('审批中');
     expect(supplierApproval.status).toBe('已驳回');
+    expect(supplierApproval.reviewComment).toBe('资质材料不完整，暂不准入。');
     expect(awardApproval.approvedStatus).toBe('已通过');
     expect(calls.filter((call) => call.input.endsWith('/api/v1/auth/login'))).toHaveLength(1);
   });
@@ -2639,6 +3476,19 @@ describe('procurement API clients', () => {
         updatedAt: '2026-06-15T13:20:00+08:00',
       }],
       pendingApprovals: [],
+      buyerSupplierQualifications: {
+        'rel-sunrise': [{
+          id: 'qual-buyer-001',
+          supplierId: 'ent-supplier-sunrise',
+          qualificationType: '营业执照',
+          certificateNo: 'Q-2026-001',
+          expiresAt: '2027-12-31',
+          fileName: '营业执照.pdf',
+          storageKey: 'supplier/qualifications/business-license.pdf',
+          status: 'active',
+          createdAt: '2026-06-22T10:00:00+08:00',
+        }],
+      },
       auditLogs: [{
         id: 'audit-java-001',
         tenantId: 'tenant-acme',
@@ -2660,6 +3510,17 @@ describe('procurement API clients', () => {
       level: 'A',
       categories: ['办公设备'],
       performanceScore: 92.5,
+      qualifications: [{
+        id: 'qual-buyer-001',
+        supplierId: 'ent-supplier-sunrise',
+        qualificationType: '营业执照',
+        certificateNo: 'Q-2026-001',
+        expiresAt: '2027-12-31',
+        fileName: '营业执照.pdf',
+        storageKey: 'supplier/qualifications/business-license.pdf',
+        status: 'active',
+        createdAt: '2026-06-22T10:00:00+08:00',
+      }],
     }]);
     expect(nextWorkspace.suppliers[0]).toMatchObject({
       id: 'ent-supplier-sunrise',
@@ -2900,6 +3761,15 @@ describe('procurement API clients', () => {
         createdAt: '2026-06-15T13:10:00+08:00',
         updatedAt: '2026-06-15T13:20:00+08:00',
       }],
+      notifications: [{
+        id: 'notice-paid-001',
+        tenantId: 'tenant-acme',
+        recipientId: 'supplier-user-1',
+        title: '发票已付款',
+        content: '采购方已登记发票 INV-001 的付款状态：已付款。',
+        read: false,
+        createdAt: '2026-06-21T10:00:00+08:00',
+      }],
     });
 
     expect(nextWorkspace).not.toBe(supplier);
@@ -2934,6 +3804,7 @@ describe('procurement API clients', () => {
       receiptStatus: '已收货',
       reconciliationStatus: '待付款',
     });
+    expect(nextWorkspace.notifications?.[0].title).toBe('发票已付款');
   });
 
   it('runs the Java MVP workflow through the Java API client from demand to payment', async () => {

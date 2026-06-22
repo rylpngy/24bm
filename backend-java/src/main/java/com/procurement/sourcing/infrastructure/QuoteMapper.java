@@ -74,6 +74,60 @@ public interface QuoteMapper {
       @Param("deliveryDays") Integer deliveryDays,
       @Param("status") String status);
 
+  @Update("""
+      update quotes
+      set status = #{lockedStatus,jdbcType=VARCHAR}
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = #{submittedStatus,jdbcType=VARCHAR}
+      """)
+  int lockSubmittedQuoteForAward(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("submittedStatus") String submittedStatus,
+      @Param("lockedStatus") String lockedStatus);
+
+  @Update("""
+      update quotes
+      set status = #{submittedStatus,jdbcType=VARCHAR}
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = #{lockedStatus,jdbcType=VARCHAR}
+      """)
+  int unlockAwardQuote(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("lockedStatus") String lockedStatus,
+      @Param("submittedStatus") String submittedStatus);
+
+  @Update("""
+      update quotes
+      set status = #{awardedStatus,jdbcType=VARCHAR}
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = #{lockedStatus,jdbcType=VARCHAR}
+      """)
+  int markAwardedQuote(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("lockedStatus") String lockedStatus,
+      @Param("awardedStatus") String awardedStatus);
+
+  @Update("""
+      update quotes
+      set status = #{notSelectedStatus,jdbcType=VARCHAR}
+      where tenant_id = #{tenantId}
+        and rfq_id = #{rfqId,jdbcType=VARCHAR}
+        and id <> #{selectedQuoteId}
+        and status = #{submittedStatus,jdbcType=VARCHAR}
+      """)
+  int closeUnawardedQuotes(
+      @Param("tenantId") String tenantId,
+      @Param("rfqId") String rfqId,
+      @Param("selectedQuoteId") String selectedQuoteId,
+      @Param("submittedStatus") String submittedStatus,
+      @Param("notSelectedStatus") String notSelectedStatus);
+
   @Select("""
       select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
       from quotes

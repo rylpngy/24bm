@@ -96,6 +96,42 @@ describe('buyer admin UI helpers', () => {
     ]);
   });
 
+  it('shows persisted approval review comments in approval cards and details', () => {
+    const recentApproval = {
+      id: 'approval-reviewed-demand',
+      bizType: 'purchase_demand',
+      bizId: 'dem-acme-2',
+      summaryTitle: '集团办公耗材季度补充',
+      businessStatus: '已通过',
+      priority: 8,
+      submittedByName: '李后勤',
+      amount: 48000,
+      status: '已通过',
+      reviewComment: '预算和物料明细已核对，同意进入询价。',
+      createdAt: '2026-06-18T09:00:00+08:00',
+      actedAt: '2026-06-18T10:30:00+08:00',
+    };
+
+    expect(buildApprovalCardFacts(recentApproval, '2026-06-18T14:30:00+08:00')).toContainEqual({
+      label: '审批意见',
+      value: '预算和物料明细已核对，同意进入询价。',
+    });
+
+    expect(buildApprovalDetailPanel(
+      workspace,
+      [],
+      [recentApproval],
+      'approval-reviewed-demand',
+      '2026-06-18T14:30:00+08:00',
+    )).toMatchObject({
+      canReview: false,
+      reviewComment: '预算和物料明细已核对，同意进入询价。',
+      reviewCheckRows: expect.arrayContaining([
+        { label: '审批意见', value: '预算和物料明细已核对，同意进入询价。' },
+      ]),
+    });
+  });
+
   it('summarizes approval queue rows with type, facts, and available decisions', () => {
     expect(buildApprovalQueueRows(buildWorkspaceApprovalQueue(workspace), '2026-06-18T08:00:00.000Z')
       .slice(0, 2)
@@ -532,7 +568,7 @@ describe('buyer admin UI helpers', () => {
           amountLabel: '¥216,000',
           deliveryLabel: '14 天',
           taxLabel: '13%',
-          status: '已提交',
+          status: '已中选',
           rankLabel: '第 1 名',
           recommended: true,
           awarded: true,
@@ -543,7 +579,7 @@ describe('buyer admin UI helpers', () => {
           amountLabel: '¥228,000',
           deliveryLabel: '10 天',
           taxLabel: '13%',
-          status: '已提交',
+          status: '未中选',
           rankLabel: '第 2 名',
           recommended: false,
           awarded: false,
@@ -554,7 +590,7 @@ describe('buyer admin UI helpers', () => {
           amountLabel: '¥238,000',
           deliveryLabel: '18 天',
           taxLabel: '13%',
-          status: '已提交',
+          status: '未中选',
           rankLabel: '第 3 名',
           recommended: false,
           awarded: false,
@@ -578,6 +614,42 @@ describe('buyer admin UI helpers', () => {
     });
 
     expect(buildRfqDetailPanel(workspace, 'rfq-acme-2')?.recommendedSupplierLabel).toBe('暂无可推荐报价');
+  });
+
+  it('surfaces award approval review comments in RFQ and quote comparison details', () => {
+    const workspaceWithAwardApproval = {
+      ...workspace,
+      approvals: [{
+        id: 'approval-award-rfq-acme-1',
+        bizType: 'rfq_award',
+        bizId: 'award-acme-1',
+        parentBizId: 'rfq-acme-1',
+        summaryTitle: '会议室升级设备询价定标',
+        businessStatus: '已定标',
+        status: '已通过',
+        reviewComment: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+        createdAt: '2026-06-18T09:00:00+08:00',
+        actedAt: '2026-06-18T11:30:00+08:00',
+      }],
+    };
+
+    expect(buildRfqDetailPanel(workspaceWithAwardApproval, 'rfq-acme-1')).toMatchObject({
+      awardApprovalComment: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+      fulfillmentTimelineRows: expect.arrayContaining([
+        { label: '定标审批', value: '已通过' },
+        { label: '审批意见', value: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。' },
+      ]),
+    });
+
+    expect(buildQuoteComparisonDetailPanel(workspaceWithAwardApproval, 'rfq-acme-1')).toMatchObject({
+      awardApprovalComment: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+      recommendationFacts: expect.arrayContaining([
+        { label: '审批意见', value: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。' },
+      ]),
+      awardTimelineRows: expect.arrayContaining([
+        { label: '审批意见', value: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。' },
+      ]),
+    });
   });
 
   it('builds quote comparison detail panels with recommendation, approval, and order context', () => {
@@ -612,7 +684,7 @@ describe('buyer admin UI helpers', () => {
           amountLabel: '¥216,000',
           deliveryLabel: '14 天',
           taxLabel: '13%',
-          status: '已提交',
+          status: '已中选',
           rankLabel: '第 1 名',
           recommended: true,
           awarded: true,
@@ -623,7 +695,7 @@ describe('buyer admin UI helpers', () => {
           amountLabel: '¥228,000',
           deliveryLabel: '10 天',
           taxLabel: '13%',
-          status: '已提交',
+          status: '未中选',
           rankLabel: '第 2 名',
           recommended: false,
           awarded: false,
@@ -634,7 +706,7 @@ describe('buyer admin UI helpers', () => {
           amountLabel: '¥238,000',
           deliveryLabel: '18 天',
           taxLabel: '13%',
-          status: '已提交',
+          status: '未中选',
           rankLabel: '第 3 名',
           recommended: false,
           awarded: false,
@@ -776,6 +848,32 @@ describe('buyer admin UI helpers', () => {
     ]);
   });
 
+  it('allows receipt registration only when the order has a shipped delivery record', () => {
+    const receiptWorkspace = cloneWorkspace();
+    receiptWorkspace.orders = [{
+      ...receiptWorkspace.orders[0],
+      id: 'po-shipped-without-delivery',
+      status: '已发货',
+    }];
+    receiptWorkspace.deliveries = [];
+
+    expect(buildOrderFulfillmentRows(receiptWorkspace)[0].canRegisterReceipt).toBe(false);
+    expect(buildReceiptInspectionDetailPanel(receiptWorkspace, 'po-shipped-without-delivery')?.canRegisterReceipt).toBe(false);
+
+    receiptWorkspace.deliveries = [{
+      id: 'del-shipped',
+      tenantId: receiptWorkspace.orders[0].tenantId,
+      supplierId: receiptWorkspace.orders[0].supplierId,
+      orderId: 'po-shipped-without-delivery',
+      carrier: '顺丰速运',
+      trackingNo: 'SF123',
+      status: '已发货',
+    }];
+
+    expect(buildOrderFulfillmentRows(receiptWorkspace)[0].canRegisterReceipt).toBe(true);
+    expect(buildReceiptInspectionDetailPanel(receiptWorkspace, 'po-shipped-without-delivery')?.canRegisterReceipt).toBe(true);
+  });
+
   it('builds order detail panels with RFQ, delivery, invoice, and payment context', () => {
     expect(buildOrderDetailPanel(workspace, 'po-acme-1')).toEqual({
       id: 'po-acme-1',
@@ -800,6 +898,7 @@ describe('buyer admin UI helpers', () => {
         paymentStatus: '待付款',
       },
       fulfillmentTimelineRows: [
+        { label: '来源询价', value: '会议室升级设备询价' },
         { label: '订单创建', value: 'po-acme-1' },
         { label: '供应商确认', value: '待收货' },
         { label: '物流状态', value: '运输中' },
@@ -807,6 +906,7 @@ describe('buyer admin UI helpers', () => {
         { label: '发票付款', value: '待付款' },
       ],
       fulfillmentCheckRows: [
+        { label: '来源询价', value: '会议室升级设备询价' },
         { label: '物流信息', value: '运输中' },
         { label: '收货验收', value: '待登记' },
         { label: '发票付款', value: '待付款' },
@@ -818,10 +918,47 @@ describe('buyer admin UI helpers', () => {
         { id: 'inv-acme-1', title: '发票付款', detail: '¥216,000 · 待付款' },
       ],
       rfqLabel: '会议室升级设备询价',
+      sourceRfqLabel: '会议室升级设备询价',
       nextActionTitle: '待收货验收',
     });
 
     expect(buildOrderDetailPanel(workspace, 'po-acme-2')?.nextActionTitle).toBe('履约已完成');
+  });
+
+  it('carries RFQ award approval source into order details', () => {
+    const workspaceWithAwardApproval = {
+      ...workspace,
+      approvals: [{
+        id: 'approval-award-rfq-acme-1',
+        bizType: 'rfq_award',
+        bizId: 'award-acme-1',
+        parentBizId: 'rfq-acme-1',
+        summaryTitle: '会议室升级设备询价定标',
+        businessStatus: '已定标',
+        status: '已通过',
+        reviewComment: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+        createdAt: '2026-06-18T09:00:00+08:00',
+        actedAt: '2026-06-18T11:30:00+08:00',
+      }],
+    };
+
+    expect(buildOrderDetailPanel(workspaceWithAwardApproval, 'po-acme-1')).toMatchObject({
+      sourceRfqLabel: '会议室升级设备询价',
+      awardApprovalStatus: '已通过',
+      awardApprovalComment: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+      fulfillmentCheckRows: expect.arrayContaining([
+        { label: '来源询价', value: '会议室升级设备询价' },
+        { label: '定标审批', value: '已通过' },
+      ]),
+      fulfillmentTimelineRows: expect.arrayContaining([
+        { label: '来源询价', value: '会议室升级设备询价' },
+        { label: '定标审批', value: '已通过' },
+        { label: '审批意见', value: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。' },
+      ]),
+      relatedRows: expect.arrayContaining([
+        { id: 'approval-award-rfq-acme-1', title: '定标审批', detail: '已通过 · 报价、交期和服务响应均满足要求，同意定标奥博智能设备。' },
+      ]),
+    });
   });
 
   it('summarizes receipt inspection rows for orders waiting on buyer acceptance', () => {
@@ -845,7 +982,24 @@ describe('buyer admin UI helpers', () => {
   });
 
   it('builds receipt inspection detail panels with logistics, invoice, and acceptance checks', () => {
-    expect(buildReceiptInspectionDetailPanel(workspace, 'po-acme-1')).toEqual({
+    const workspaceWithAwardApproval = cloneWorkspace();
+    workspaceWithAwardApproval.approvals = [
+      ...(workspaceWithAwardApproval.approvals ?? []),
+      {
+        id: 'approval-award-rfq-acme-1',
+        bizType: 'rfq_award',
+        bizId: 'award-acme-1',
+        parentBizId: 'rfq-acme-1',
+        summaryTitle: '会议室升级设备询价定标',
+        businessStatus: '已定标',
+        status: '已通过',
+        reviewComment: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+        createdAt: '2026-06-18T09:00:00+08:00',
+        actedAt: '2026-06-18T11:30:00+08:00',
+      },
+    ];
+
+    expect(buildReceiptInspectionDetailPanel(workspaceWithAwardApproval, 'po-acme-1')).toEqual({
       id: 'po-acme-1',
       supplierName: '奥博智能设备',
       status: '待收货',
@@ -853,21 +1007,32 @@ describe('buyer admin UI helpers', () => {
       logisticsLabel: '顺丰速运 SF88420115',
       canRegisterReceipt: false,
       nextActionTitle: '待收货验收',
+      sourceOrderLabel: 'po-acme-1',
+      sourceRfqLabel: '会议室升级设备询价',
+      awardApprovalStatus: '已通过',
+      awardApprovalComment: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+      invoiceStatusLabel: '待付款',
       facts: [
         { label: '供应商', value: '奥博智能设备' },
         { label: '订单金额', value: '¥216,000' },
+        { label: '来源询价', value: '会议室升级设备询价' },
         { label: '预计到货', value: '2026-07-10' },
         { label: '发票状态', value: '待付款' },
       ],
       logisticsFacts: [
+        { label: '来源订单', value: 'po-acme-1' },
+        { label: '来源询价', value: '会议室升级设备询价' },
         { label: '承运商', value: '顺丰速运' },
         { label: '物流单号', value: 'SF88420115' },
         { label: '物流状态', value: '运输中' },
       ],
       acceptanceChecks: [
+        { label: '定标审批', value: '已通过' },
+        { label: '审批意见', value: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。' },
         { label: '物流信息', value: '运输中' },
         { label: '订单状态', value: '待收货' },
         { label: '验收结果', value: '待登记' },
+        { label: '发票状态', value: '待付款' },
       ],
       postReceiptRows: [
         { label: '验收登记', value: '待登记' },
@@ -876,6 +1041,11 @@ describe('buyer admin UI helpers', () => {
       ],
       relatedRows: [
         { id: 'rfq-acme-1', title: '询价项目', detail: '会议室升级设备询价 · 已定标' },
+        {
+          id: 'approval-award-rfq-acme-1',
+          title: '定标审批',
+          detail: '已通过 · 报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+        },
         { id: 'inv-acme-1', title: '发票付款', detail: '¥216,000 · 待付款' },
       ],
     });
@@ -915,13 +1085,67 @@ describe('buyer admin UI helpers', () => {
   });
 
   it('builds invoice payment detail panels with supplier, order, delivery, and payment context', () => {
-    expect(buildInvoicePaymentDetailPanel(workspace, 'inv-acme-1')).toEqual({
+    const workspaceWithAwardApproval = cloneWorkspace();
+    workspaceWithAwardApproval.approvals = [
+      ...(workspaceWithAwardApproval.approvals ?? []),
+      {
+        id: 'approval-award-rfq-acme-1',
+        bizType: 'rfq_award',
+        bizId: 'award-acme-1',
+        parentBizId: 'rfq-acme-1',
+        summaryTitle: '会议室升级设备询价定标',
+        businessStatus: '已定标',
+        status: '已通过',
+        reviewComment: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+        createdAt: '2026-06-18T09:00:00+08:00',
+        actedAt: '2026-06-18T11:30:00+08:00',
+      },
+    ];
+
+    expect(buildInvoicePaymentDetailPanel(workspaceWithAwardApproval, 'inv-acme-1', {
+      paymentRequests: [{
+        id: 'payreq-acme-1',
+        tenantId: 'tenant-acme',
+        invoiceId: 'inv-acme-1',
+        supplierId: 'sup-obotech',
+        orderId: 'po-acme-1',
+        amount: 216000,
+        requestStatus: '付款申请审批中',
+        paymentBatchNo: 'PB-202607-01',
+        remark: '收货后付款',
+        createdBy: 'user-buyer-admin',
+        createdAt: '2026-07-11T09:00:00+08:00',
+        updatedAt: '2026-07-11T10:00:00+08:00',
+      }],
+      varianceHandlings: [{
+        id: 'var-acme-1',
+        tenantId: 'tenant-acme',
+        invoiceId: 'inv-acme-1',
+        supplierId: 'sup-obotech',
+        orderId: 'po-acme-1',
+        varianceAmount: 0,
+        reason: '三单金额一致',
+        ownerId: 'finance-chen',
+        result: '无需差异处理',
+        status: '无需处理',
+        createdBy: 'user-buyer-admin',
+        createdAt: '2026-07-11T09:30:00+08:00',
+        updatedAt: '2026-07-11T09:30:00+08:00',
+      }],
+    })).toEqual({
       id: 'inv-acme-1',
       supplierName: '奥博智能设备',
       status: '待付款',
       amountLabel: '¥216,000',
       canRegisterPayment: true,
       nextActionTitle: '待登记付款',
+      sourceOrderLabel: 'po-acme-1',
+      sourceRfqLabel: '会议室升级设备询价',
+      receiptStatusLabel: '待登记',
+      awardApprovalStatus: '已通过',
+      awardApprovalComment: '报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+      paymentRequestStatus: '付款申请审批中',
+      varianceHandlingStatus: '无需处理',
       facts: [
         { label: '供应商', value: '奥博智能设备' },
         { label: '关联订单', value: 'po-acme-1' },
@@ -929,23 +1153,40 @@ describe('buyer admin UI helpers', () => {
         { label: '付款状态', value: '待付款' },
       ],
       orderFacts: [
+        { label: '来源询价', value: '会议室升级设备询价' },
+        { label: '定标审批', value: '已通过' },
         { label: '订单状态', value: '待收货' },
         { label: '订单金额', value: '¥216,000' },
         { label: '预计到货', value: '2026-07-10' },
-        { label: '关联询价', value: '会议室升级设备询价' },
+        { label: '收货验收', value: '待登记' },
       ],
       paymentCheckRows: [
+        { label: '定标审批', value: '已通过' },
         { label: '订单状态', value: '待收货' },
         { label: '物流状态', value: '运输中' },
+        { label: '收货验收', value: '待登记' },
         { label: '付款状态', value: '待付款' },
+        { label: '付款申请', value: '付款申请审批中' },
+        { label: '差异处理', value: '无需处理' },
         { label: '下一步', value: '待登记付款' },
       ],
       relatedRows: [
         { id: 'del-acme-1', title: '物流信息', detail: '顺丰速运 SF88420115 · 运输中' },
         { id: 'rfq-acme-1', title: '询价项目', detail: '会议室升级设备询价 · 已定标' },
+        {
+          id: 'approval-award-rfq-acme-1',
+          title: '定标审批',
+          detail: '已通过 · 报价、交期和服务响应均满足要求，同意定标奥博智能设备。',
+        },
+        { id: 'payreq-acme-1', title: '付款申请', detail: '付款申请审批中 · PB-202607-01' },
+        { id: 'var-acme-1', title: '差异处理', detail: '无需处理 · 无需差异处理' },
       ],
       paymentTimelineRows: [
+        { label: '来源询价', value: '会议室升级设备询价' },
+        { label: '定标审批', value: '已通过' },
+        { label: '收货验收', value: '待登记' },
         { label: '发票登记', value: 'inv-acme-1' },
+        { label: '付款申请', value: '付款申请审批中' },
         { label: '付款状态', value: '待付款' },
         { label: '下一步', value: '待登记付款' },
       ],

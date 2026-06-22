@@ -1,0 +1,1212 @@
+{
+  "checkedAt": "2026-06-21T05:58:40.398Z",
+  "appBaseUrl": "http://localhost:3000",
+  "javaApiBaseUrl": "http://localhost:8080",
+  "viewports": [
+    {
+      "id": "desktop-1280x720",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "id": "mobile-390x844",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "results": [
+    {
+      "page": "demands",
+      "label": "采购需求",
+      "viewport": "desktop-1280x720",
+      "url": "http://localhost:3000/?role=buyer&module=demands",
+      "durationMs": 923,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 1280,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [],
+        "requiredText": {
+          "Java 数据源": true,
+          "创建询价": true,
+          "提交审批": true,
+          "采购需求": true
+        },
+        "scrollWidth": 1280,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=demands",
+        "viewportHeight": 720,
+        "viewportWidth": 1280,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 采购需求\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "approvals",
+      "label": "审批中心",
+      "viewport": "desktop-1280x720",
+      "url": "http://localhost:3000/?role=buyer&module=approvals",
+      "durationMs": 849,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 1280,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": false,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [],
+        "requiredText": {
+          "Java 数据源": true,
+          "审批中心": true,
+          "待审批": true,
+          "通过": true
+        },
+        "scrollWidth": 1280,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=approvals",
+        "viewportHeight": 720,
+        "viewportWidth": 1280,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 审批中心\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "rfqs",
+      "label": "询价项目",
+      "viewport": "desktop-1280x720",
+      "url": "http://localhost:3000/?role=buyer&module=rfqs",
+      "durationMs": 868,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 1280,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [
+          {
+            "className": "rounded-lg border border-indigo-100 bg-indigo-50 p-4",
+            "label": "询价协同演示台把已审批需求转成供应商可响应的 RFQ演示路径：从已审批需求进入询价，补齐邀请供应商、报价要求和截止时间，再进入报价对比。进入报价对比定标待补邀请0 个报价不足1 个可进入比价0 个已完",
+            "left": 320,
+            "right": 1662,
+            "tag": "section",
+            "width": 1342
+          },
+          {
+            "className": "flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between",
+            "label": "询价协同演示台把已审批需求转成供应商可响应的 RFQ演示路径：从已审批需求进入询价，补齐邀请供应商、报价要求和截止时间，再进入报价对比。进入报价对比定标",
+            "left": 337,
+            "right": 1645,
+            "tag": "div",
+            "width": 1308
+          },
+          {
+            "className": " inline-flex min-w-0 items-center justify-center gap-2 rounded-lg text-center leading-4 font-black text-white transition",
+            "label": "进入报价对比定标",
+            "left": 1478,
+            "right": 1645,
+            "tag": "button",
+            "width": 166
+          },
+          {
+            "className": "lucide lucide-chart-column shrink-0",
+            "label": "",
+            "left": 1494,
+            "right": 1509,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 1496,
+            "right": 1508,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "max-w-full min-w-0 break-words",
+            "label": "进入报价对比定标",
+            "left": 1516,
+            "right": 1629,
+            "tag": "span",
+            "width": 112
+          },
+          {
+            "className": "mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4",
+            "label": "待补邀请0 个报价不足1 个可进入比价0 个已完成定标84 个",
+            "left": 337,
+            "right": 1645,
+            "tag": "div",
+            "width": 1308
+          },
+          {
+            "className": "min-w-0 rounded-lg border border-slate-100 bg-white/80 px-3 py-2",
+            "label": "可进入比价0 个",
+            "left": 996,
+            "right": 1315,
+            "tag": "div",
+            "width": 318
+          },
+          {
+            "className": "text-[11px] font-black text-slate-400",
+            "label": "可进入比价",
+            "left": 1009,
+            "right": 1302,
+            "tag": "p",
+            "width": 292
+          },
+          {
+            "className": "mt-1 break-words text-xs font-bold leading-5 text-slate-700",
+            "label": "0 个",
+            "left": 1009,
+            "right": 1302,
+            "tag": "p",
+            "width": 292
+          }
+        ],
+        "requiredText": {
+          "Java 数据源": true,
+          "报价": true,
+          "询价项目": true,
+          "邀请供应商": true
+        },
+        "scrollWidth": 1280,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=rfqs",
+        "viewportHeight": 720,
+        "viewportWidth": 1280,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 询价项目\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "quotes",
+      "label": "报价对比",
+      "viewport": "desktop-1280x720",
+      "url": "http://localhost:3000/?role=buyer&module=quotes",
+      "durationMs": 960,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 1280,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [],
+        "requiredText": {
+          "Java 数据源": true,
+          "定标": true,
+          "报价对比": true,
+          "报价比较矩阵": true
+        },
+        "scrollWidth": 1280,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=quotes",
+        "viewportHeight": 720,
+        "viewportWidth": 1280,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 报价对比\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "orders",
+      "label": "采购订单",
+      "viewport": "desktop-1280x720",
+      "url": "http://localhost:3000/?role=buyer&module=orders",
+      "durationMs": 852,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 1280,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [],
+        "requiredText": {
+          "Java 数据源": true,
+          "供应商": true,
+          "履约": true,
+          "采购订单": true
+        },
+        "scrollWidth": 1280,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=orders",
+        "viewportHeight": 720,
+        "viewportWidth": 1280,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 采购订单\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "receipts",
+      "label": "收货验收",
+      "viewport": "desktop-1280x720",
+      "url": "http://localhost:3000/?role=buyer&module=receipts",
+      "durationMs": 873,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 1280,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": false,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [],
+        "requiredText": {
+          "Java 数据源": true,
+          "收货验收": true,
+          "登记收货": true,
+          "验收": true
+        },
+        "scrollWidth": 1280,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=receipts",
+        "viewportHeight": 720,
+        "viewportWidth": 1280,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 收货验收\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "invoices",
+      "label": "发票付款",
+      "viewport": "desktop-1280x720",
+      "url": "http://localhost:3000/?role=buyer&module=invoices",
+      "durationMs": 964,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 1280,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [
+          {
+            "className": "rounded-lg border border-fuchsia-100 bg-fuchsia-50 p-4",
+            "label": "发票付款演示台把发票、对账和付款状态收束成闭环演示路径：供应商提交发票后完成对账，处理差异和付款计划，最后登记付款状态。主流程演示闭环待开票0 单待对账8 张差异待处理0 张待付款8 张已付款75 张",
+            "left": 320,
+            "right": 2057,
+            "tag": "section",
+            "width": 1737
+          },
+          {
+            "className": "flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between",
+            "label": "发票付款演示台把发票、对账和付款状态收束成闭环演示路径：供应商提交发票后完成对账，处理差异和付款计划，最后登记付款状态。主流程演示闭环",
+            "left": 337,
+            "right": 2040,
+            "tag": "div",
+            "width": 1703
+          },
+          {
+            "className": " inline-flex min-w-0 items-center justify-center gap-2 rounded-lg text-center leading-4 font-black text-white transition",
+            "label": "主流程演示闭环",
+            "left": 1887,
+            "right": 2040,
+            "tag": "button",
+            "width": 152
+          },
+          {
+            "className": "lucide lucide-layout-dashboard shrink-0",
+            "label": "",
+            "left": 1903,
+            "right": 1918,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 1905,
+            "right": 1910,
+            "tag": "rect",
+            "width": 5
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 1911,
+            "right": 1916,
+            "tag": "rect",
+            "width": 5
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 1911,
+            "right": 1916,
+            "tag": "rect",
+            "width": 5
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 1905,
+            "right": 1910,
+            "tag": "rect",
+            "width": 5
+          },
+          {
+            "className": "max-w-full min-w-0 break-words",
+            "label": "主流程演示闭环",
+            "left": 1925,
+            "right": 2024,
+            "tag": "span",
+            "width": 98
+          },
+          {
+            "className": "mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5",
+            "label": "待开票0 单待对账8 张差异待处理0 张待付款8 张已付款75 张",
+            "left": 337,
+            "right": 2040,
+            "tag": "div",
+            "width": 1703
+          }
+        ],
+        "requiredText": {
+          "Java 数据源": true,
+          "三单匹配": true,
+          "付款": true,
+          "发票付款": true
+        },
+        "scrollWidth": 1280,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=invoices",
+        "viewportHeight": 720,
+        "viewportWidth": 1280,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 发票付款\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "demands",
+      "label": "采购需求",
+      "viewport": "mobile-390x844",
+      "url": "http://localhost:3000/?role=buyer&module=demands",
+      "durationMs": 885,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 390,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "供应商库",
+            "left": 318,
+            "right": 412,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "物料目录",
+            "left": 420,
+            "right": 514,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-database text-slate-400",
+            "label": "",
+            "left": 432,
+            "right": 446,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "ellipse",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "询价项目",
+            "left": 522,
+            "right": 616,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-send text-slate-400",
+            "label": "",
+            "left": 534,
+            "right": 548,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 535,
+            "right": 547,
+            "tag": "path",
+            "width": 12
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 540,
+            "right": 547,
+            "tag": "path",
+            "width": 7
+          }
+        ],
+        "requiredText": {
+          "Java 数据源": true,
+          "创建询价": true,
+          "提交审批": true,
+          "采购需求": true
+        },
+        "scrollWidth": 390,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=demands",
+        "viewportHeight": 844,
+        "viewportWidth": 390,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\n平台\n采购方\n供应商\n首页看板\n采购需求\n审批中心\n供应商库\n物料目录\n询价项目\n报价对比\n采购订单\n合同管理\n收货验收\n发票付款\n审计日志\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 采购需求\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知与附件\nJava 数据源\n当前筛选：全部需求状态\n采购需求\n\n从需求申请、预算和物料明细开始，推动审批后转入询价。\n\n本页关键动作\n\n新建需求 / 提交审批\n\n需求总数\n\n87 条\n\n审批中\n\n2 条\n\n待转询价\n\n0 条\n\n权限差异提示\n\n当前为 Java 模式，Java 模式执行"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "approvals",
+      "label": "审批中心",
+      "viewport": "mobile-390x844",
+      "url": "http://localhost:3000/?role=buyer&module=approvals",
+      "durationMs": 855,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 390,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": false,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "供应商库",
+            "left": 318,
+            "right": 412,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "物料目录",
+            "left": 420,
+            "right": 514,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-database text-slate-400",
+            "label": "",
+            "left": 432,
+            "right": 446,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "ellipse",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "询价项目",
+            "left": 522,
+            "right": 616,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-send text-slate-400",
+            "label": "",
+            "left": 534,
+            "right": 548,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 535,
+            "right": 547,
+            "tag": "path",
+            "width": 12
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 540,
+            "right": 547,
+            "tag": "path",
+            "width": 7
+          }
+        ],
+        "requiredText": {
+          "Java 数据源": true,
+          "审批中心": true,
+          "待审批": true,
+          "通过": true
+        },
+        "scrollWidth": 390,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=approvals",
+        "viewportHeight": 844,
+        "viewportWidth": 390,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\n平台\n采购方\n供应商\n首页看板\n采购需求\n审批中心\n供应商库\n物料目录\n询价项目\n报价对比\n采购订单\n合同管理\n收货验收\n发票付款\n审计日志\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 审批中心\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知与附件\nJava 数据源\n当前筛选：待审批优先\n审批中心\n\n集中处理需求审批、供应商准入和定标审批。\n\n本页关键动作\n\n通过 / 驳回审批\n\n待审批\n\n5 条\n\n需求审批中\n\n2 条\n\n准入待处理\n\n0 家\n\n权限差异提示\n\n当前为 Java 模式，Java 模式执行真实 API 权"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "rfqs",
+      "label": "询价项目",
+      "viewport": "mobile-390x844",
+      "url": "http://localhost:3000/?role=buyer&module=rfqs",
+      "durationMs": 822,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 390,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "供应商库",
+            "left": 318,
+            "right": 412,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "物料目录",
+            "left": 420,
+            "right": 514,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-database text-slate-400",
+            "label": "",
+            "left": 432,
+            "right": 446,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "ellipse",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white text-slate-950",
+            "label": "询价项目",
+            "left": 522,
+            "right": 616,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-send text-blue-600",
+            "label": "",
+            "left": 534,
+            "right": 548,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 535,
+            "right": 547,
+            "tag": "path",
+            "width": 12
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 540,
+            "right": 547,
+            "tag": "path",
+            "width": 7
+          }
+        ],
+        "requiredText": {
+          "Java 数据源": true,
+          "报价": true,
+          "询价项目": true,
+          "邀请供应商": true
+        },
+        "scrollWidth": 390,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=rfqs",
+        "viewportHeight": 844,
+        "viewportWidth": 390,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\n平台\n采购方\n供应商\n首页看板\n采购需求\n审批中心\n供应商库\n物料目录\n询价项目\n报价对比\n采购订单\n合同管理\n收货验收\n发票付款\n审计日志\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 询价项目\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知与附件\nJava 数据源\n当前筛选：全部询价项目\n询价项目\n\n跟进 RFQ 邀请供应商、报价响应、截止时间和项目状态。\n\n本页关键动作\n\n邀请供应商 / 跟进报价\n\n询价项目\n\n86 个\n\n报价中\n\n1 个\n\n已邀请供应商\n\n87 家次\n\n权限差异提示\n\n当前为 Java 模式，Ja"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "quotes",
+      "label": "报价对比",
+      "viewport": "mobile-390x844",
+      "url": "http://localhost:3000/?role=buyer&module=quotes",
+      "durationMs": 855,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 390,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "供应商库",
+            "left": 318,
+            "right": 412,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "物料目录",
+            "left": 420,
+            "right": 514,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-database text-slate-400",
+            "label": "",
+            "left": 432,
+            "right": 446,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "ellipse",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "询价项目",
+            "left": 522,
+            "right": 616,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-send text-slate-400",
+            "label": "",
+            "left": 534,
+            "right": 548,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 535,
+            "right": 547,
+            "tag": "path",
+            "width": 12
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 540,
+            "right": 547,
+            "tag": "path",
+            "width": 7
+          }
+        ],
+        "requiredText": {
+          "Java 数据源": true,
+          "定标": true,
+          "报价对比": true,
+          "报价比较矩阵": true
+        },
+        "scrollWidth": 390,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=quotes",
+        "viewportHeight": 844,
+        "viewportWidth": 390,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\n平台\n采购方\n供应商\n首页看板\n采购需求\n审批中心\n供应商库\n物料目录\n询价项目\n报价对比\n采购订单\n合同管理\n收货验收\n发票付款\n审计日志\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 报价对比\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知与附件\nJava 数据源\n当前筛选：按询价项目聚合\n报价对比\n\n比较供应商报价、交付周期和税率，推荐定标并提交审批。\n\n本页关键动作\n\n推荐定标 / 提交审批\n\n报价数量\n\n85 条\n\n可定标报价\n\n85 条\n\n已定标项目\n\n84 个\n\n权限差异提示\n\n当前为 Java 模式，Jav"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "orders",
+      "label": "采购订单",
+      "viewport": "mobile-390x844",
+      "url": "http://localhost:3000/?role=buyer&module=orders",
+      "durationMs": 853,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 390,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "供应商库",
+            "left": 318,
+            "right": 412,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "物料目录",
+            "left": 420,
+            "right": 514,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-database text-slate-400",
+            "label": "",
+            "left": 432,
+            "right": 446,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "ellipse",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "询价项目",
+            "left": 522,
+            "right": 616,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-send text-slate-400",
+            "label": "",
+            "left": 534,
+            "right": 548,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 535,
+            "right": 547,
+            "tag": "path",
+            "width": 12
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 540,
+            "right": 547,
+            "tag": "path",
+            "width": 7
+          }
+        ],
+        "requiredText": {
+          "Java 数据源": true,
+          "供应商": true,
+          "履约": true,
+          "采购订单": true
+        },
+        "scrollWidth": 390,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=orders",
+        "viewportHeight": 844,
+        "viewportWidth": 390,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\n平台\n采购方\n供应商\n首页看板\n采购需求\n审批中心\n供应商库\n物料目录\n询价项目\n报价对比\n采购订单\n合同管理\n收货验收\n发票付款\n审计日志\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 采购订单\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知与附件\nJava 数据源\n当前筛选：全部采购订单\n采购订单\n\n跟进定标后的采购订单、供应商确认和履约状态。\n\n本页关键动作\n\n生成订单 / 跟进确认\n\n订单数量\n\n84 单\n\n履约中\n\n84 单\n\n订单金额\n\n¥9,852,800\n\n权限差异提示\n\n当前为 Java 模式，Java "
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "receipts",
+      "label": "收货验收",
+      "viewport": "mobile-390x844",
+      "url": "http://localhost:3000/?role=buyer&module=receipts",
+      "durationMs": 828,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 390,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": false,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "供应商库",
+            "left": 318,
+            "right": 412,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "物料目录",
+            "left": 420,
+            "right": 514,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-database text-slate-400",
+            "label": "",
+            "left": 432,
+            "right": 446,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "ellipse",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "询价项目",
+            "left": 522,
+            "right": 616,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-send text-slate-400",
+            "label": "",
+            "left": 534,
+            "right": 548,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 535,
+            "right": 547,
+            "tag": "path",
+            "width": 12
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 540,
+            "right": 547,
+            "tag": "path",
+            "width": 7
+          }
+        ],
+        "requiredText": {
+          "Java 数据源": true,
+          "收货验收": true,
+          "登记收货": true,
+          "验收": true
+        },
+        "scrollWidth": 390,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=receipts",
+        "viewportHeight": 844,
+        "viewportWidth": 390,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\n平台\n采购方\n供应商\n首页看板\n采购需求\n审批中心\n供应商库\n物料目录\n询价项目\n报价对比\n采购订单\n合同管理\n收货验收\n发票付款\n审计日志\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 收货验收\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知与附件\nJava 数据源\n当前筛选：待收货优先\n收货验收\n\n处理待收货订单，登记收货验收结果并推动发票协同。\n\n本页关键动作\n\n登记收货验收\n\n待收货\n\n1 单\n\n已有物流\n\n82 条\n\n本期到货金额\n\n¥60,000\n\n权限差异提示\n\n当前为 Java 模式，Java 模式执行真实"
+      },
+      "consoleErrors": [],
+      "failed": []
+    },
+    {
+      "page": "invoices",
+      "label": "发票付款",
+      "viewport": "mobile-390x844",
+      "url": "http://localhost:3000/?role=buyer&module=invoices",
+      "durationMs": 1040,
+      "screenshotPath": null,
+      "screenshotStatus": "skipped: in-app browser screenshot capture timed out in this session",
+      "metrics": {
+        "clientWidth": 390,
+        "hasArgumentTypeMismatch": false,
+        "hasDemoLimitNotice": true,
+        "hasDemoWalkthroughRail": true,
+        "hasLoadingFailure": false,
+        "hasReactRuntimeError": false,
+        "hasWholePageHorizontalOverflow": false,
+        "overflowingElements": [
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "供应商库",
+            "left": 318,
+            "right": 412,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "物料目录",
+            "left": 420,
+            "right": 514,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-database text-slate-400",
+            "label": "",
+            "left": 432,
+            "right": 446,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "ellipse",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 433,
+            "right": 445,
+            "tag": "path",
+            "width": 11
+          },
+          {
+            "className": "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-black transition bg-white/5 text-slate-300 hove",
+            "label": "询价项目",
+            "left": 522,
+            "right": 616,
+            "tag": "button",
+            "width": 94
+          },
+          {
+            "className": "lucide lucide-send text-slate-400",
+            "label": "",
+            "left": 534,
+            "right": 548,
+            "tag": "svg",
+            "width": 14
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 535,
+            "right": 547,
+            "tag": "path",
+            "width": 12
+          },
+          {
+            "className": "",
+            "label": "",
+            "left": 540,
+            "right": 547,
+            "tag": "path",
+            "width": 7
+          }
+        ],
+        "requiredText": {
+          "Java 数据源": true,
+          "三单匹配": true,
+          "付款": true,
+          "发票付款": true
+        },
+        "scrollWidth": 390,
+        "title": "智采云 - 专业采购管理系统",
+        "url": "http://localhost:3000/?role=buyer&module=invoices",
+        "viewportHeight": 844,
+        "viewportWidth": 390,
+        "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\n平台\n采购方\n供应商\n首页看板\n采购需求\n审批中心\n供应商库\n物料目录\n询价项目\n报价对比\n采购订单\n合同管理\n收货验收\n发票付款\n审计日志\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 发票付款\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知与附件\nJava 数据源\n当前筛选：待付款优先\n发票付款\n\n查看发票登记、付款状态和订单对账进度。\n\n本页关键动作\n\n登记付款状态\n\n发票数量\n\n83 张\n\n待付款\n\n8 张\n\n待付金额\n\n¥884,800\n\n权限差异提示\n\n当前为 Java 模式，Java 模式执行真实 API 权"
+      },
+      "consoleErrors": [],
+      "failed": []
+    }
+  ],
+  "failed": [],
+  "note": "Stage seven Java browser recheck uses in-app browser runtime, targeted DOM metrics, console error logs, and horizontal overflow checks. Screenshots were skipped after browser screenshot capture timed out."
+}

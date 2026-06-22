@@ -26,6 +26,8 @@ describe('buyer approval detail UI', () => {
     expect(approvalDetailView).toContain('业务上下文');
     expect(approvalDetailView).toContain('处理检查');
     expect(approvalDetailView).toContain('reviewCheckRows');
+    expect(approvalDetailView).toContain('审批意见记录');
+    expect(approvalDetailView).toContain('detail.reviewComment');
     expect(approvalDetailView).toContain('处理轨迹');
     expect(app).toContain('当前详情');
   });

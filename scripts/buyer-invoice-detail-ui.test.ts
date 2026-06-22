@@ -17,13 +17,22 @@ describe('buyer invoice detail UI', () => {
     expect(buyerAdminUi).toContain('paymentCheckRows');
     expect(buyerAdminUi).toContain('relatedRows');
     expect(buyerAdminUi).toContain('paymentTimelineRows');
+    expect(buyerAdminUi).toContain('paymentRequestStatus');
+    expect(buyerAdminUi).toContain('varianceHandlingStatus');
+    expect(buyerAdminUi).toContain('awardApprovalComment');
 
     expect(app).toContain('buildInvoicePaymentDetailPanel');
+    expect(app).toContain('buildInvoicePaymentDetailPanel(workspace, selectedInvoice, {');
+    expect(app).toContain('paymentRequests,');
+    expect(app).toContain('varianceHandlings,');
     expect(app).toContain('selectedInvoiceId');
     expect(app).toContain('setSelectedInvoiceId');
     expect(app).toContain('InvoicePaymentDetailPanelView');
     expect(invoiceDetailView).toContain('发票详情');
     expect(invoiceDetailView).toContain('订单上下文');
+    expect(invoiceDetailView).toContain('定标审批来源');
+    expect(invoiceDetailView).toContain('定标审批意见');
+    expect(invoiceDetailView).toContain('detail.awardApprovalComment');
     expect(invoiceDetailView).toContain('对账单摘要');
     expect(invoiceDetailView).toContain('付款检查');
     expect(invoiceDetailView).toContain('paymentCheckRows');
@@ -46,7 +55,9 @@ describe('buyer invoice detail UI', () => {
     expect(invoiceDetailView).toContain('paymentDraft?: BuyerPaymentDraft');
     expect(invoiceDetailView).toContain('onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void');
     expect(app).toContain('invoice={selectedInvoiceRecord}');
-    expect(app).toContain('busy={buyerFulfillmentBusyId === `payment:${selectedInvoice}`}');
+    expect(app).toContain('buyerFulfillmentBusyId === `payment:${selectedInvoice}`');
+    expect(app).toContain('buyerFulfillmentBusyId === `payment-request:${selectedInvoice}`');
+    expect(app).toContain('buyerFulfillmentBusyId === `variance:${selectedInvoice}`');
     expect(app).toContain('onRegisterPayment={onRegisterPayment}');
   });
 

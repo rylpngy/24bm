@@ -16,6 +16,7 @@ class AuditTargetTypeTests {
     assertThat(AuditTargetType.MATERIAL).isEqualTo("material");
     assertThat(AuditTargetType.PLATFORM_ANNOUNCEMENT).isEqualTo("platform_announcement");
     assertThat(AuditTargetType.PURCHASE_ORDER).isEqualTo("purchase_order");
+    assertThat(AuditTargetType.RFQ).isEqualTo("rfq");
     assertThat(AuditTargetType.SUPPLIER_PROFILE).isEqualTo("supplier_profile");
     assertThat(AuditTargetType.SUPPLIER_USER).isEqualTo("supplier_user");
     assertThat(AuditTargetType.TENANT).isEqualTo("tenant");

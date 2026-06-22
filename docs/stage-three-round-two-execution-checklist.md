@@ -110,6 +110,16 @@
 | 54 | 列表操作表面节奏收口 | 工作流卡片操作区已从普通浅底行升级为带边界的双列操作表面，补齐 `操作状态`、`状态与详情`、`快捷动作` 和快捷面板分割线，订单、收货、付款等行内动作更接近后台操作面板 | `scripts/stage-three-list-action-surface-ui.test.ts`、`WorkflowListCard`、`InlineWorkflowAction` |
 | 55 | 跨角色详情操作表面收口 | 平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片的详情入口已从孤立按钮收口为 `详情操作` 表面，和采购方工作流操作区形成一致的后台操作语言 | `scripts/cross-role-detail-action-surface-ui.test.ts`、`DetailSelectionSurface` |
 | 56 | 跨角色只读卡片密度收口 | 平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片已统一为 `只读详情卡片` 表面，补齐左边界、浅阴影、选中态、hover 和 focus 层级，降低跨角色只读列表的松散感 | `scripts/cross-role-readonly-card-density-ui.test.ts`、`ReadonlyDetailCardSurface` |
+| 57 | 采购方主流程第三轮细化 | 采购需求、询价、比价、订单、发票付款详情已补 `采购需求主流程判断`、`询价状态流转`、`报价比较矩阵`、`订单履约时间线` 和 `付款计划`，把审批状态、创建询价可用性、供应商邀请、推荐定标理由、不可操作边界、预计到货日期、差异处理、逾期提醒和付款状态反馈沉淀为只读业务判断层 | `scripts/buyer-main-flow-third-round-ui.test.ts`、`App.tsx` |
+| 58 | 采购方列表业务接力提示 | 采购需求、询价项目、报价对比、采购订单和发票付款模块已补 `业务接力提示`，把当前选中、下一处理、详情核对和处理边界放在列表与详情之间，降低采购人员从列表进入下一步业务动作时的判断成本 | `scripts/buyer-selected-business-handoff-ui.test.ts`、`SelectedBusinessHandoffPanel` |
+| 59 | 供应商端业务接力提示 | 询价邀请、报价记录、销售订单和发票应收模块已补 `业务接力提示`，把供应商侧下一处理、详情核对和处理边界接到列表筛选之后，明确报价、确认、发货、开票、应收对账分别能做什么和不能做什么 | `scripts/supplier-business-handoff-ui.test.ts`、`SelectedBusinessHandoffPanel` |
+| 60 | 平台端业务接力提示 | 租户列表、企业审核和平台公告模块已补 `业务接力提示`，把平台侧下一处理、详情核对和处理边界接到列表筛选之后，明确租户配置、企业准入、公告发布/撤回与采购业务决策之间的职责边界 | `scripts/platform-business-handoff-ui.test.ts`、`SelectedBusinessHandoffPanel` |
+| 61 | 采购需求转询价准备摘要 | 采购需求列表已补 `转询价准备摘要`，按可转询价、已关联询价、审批阻断和供应商准入阻断统计需求池状态，并修正创建询价可用性判断统一使用 `已通过` 状态 | `scripts/buyer-demand-rfq-readiness-summary-ui.test.ts`、`App.tsx` |
+| 62 | 询价项目推进摘要 | 询价项目列表已补 `询价推进摘要`，按待补邀请、报价不足、可进入比价定标和已完成定标统计 RFQ 状态，帮助采购人员先催报价再推进定标审批 | `scripts/buyer-rfq-progress-summary-ui.test.ts`、`App.tsx` |
+| 63 | 报价对比定标准备摘要 | 报价对比页已补 `定标准备摘要`，按可定标报价、推荐报价项目、待审批定标和已生成订单统计比价池状态，帮助采购人员先确认推荐报价、再提交定标审批、最后生成采购订单 | `scripts/buyer-quote-award-readiness-summary-ui.test.ts`、`App.tsx` |
+| 64 | 采购订单履约推进摘要 | 采购订单页已补 `订单履约推进摘要`，按待生成订单、待供应商确认、待发货、待收货和已完成统计订单履约状态，把定标后的订单生成、供应商确认、发货和收货验收串成连续处理线索 | `scripts/buyer-order-fulfillment-progress-summary-ui.test.ts`、`App.tsx` |
+| 65 | 收货验收推进摘要 | 收货验收页已补 `收货验收推进摘要`，按待发货、待收货、可登记验收、异常待处理和已验收统计收货状态，帮助采购人员先跟进供应商发货，再登记收货验收并处理异常 | `scripts/buyer-receipt-progress-summary-ui.test.ts`、`App.tsx` |
+| 66 | 发票付款推进摘要 | 发票付款页已补 `发票付款推进摘要`，按待开票、待对账、差异待处理、待付款和已付款统计发票付款状态，把收货后的开票、对账、差异处理和付款登记串成主流程入口 | `scripts/buyer-invoice-payment-progress-summary-ui.test.ts`、`App.tsx` |
 
 ## 第二批候选任务
 

@@ -137,6 +137,10 @@ public class DeliveryApplicationService {
         PurchaseOrderAuditAction.SHIPPED,
         AuditTargetType.PURCHASE_ORDER,
         order.id());
+    notificationApplicationService.notifyActiveTenantUsers(
+        order.tenantId(),
+        NotificationTitle.PURCHASE_ORDER_SHIPPED,
+        "采购订单 " + order.id() + " 物流信息已更新，物流：" + request.carrier() + " " + request.trackingNo() + "。");
 
     return toResponse(deliveryMapper.findByTenantAndId(order.tenantId(), delivery.id()));
   }

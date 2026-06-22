@@ -22,6 +22,8 @@ describe('buyer RFQ detail UI', () => {
     expect(app).toContain('询价详情');
     expect(app).toContain('邀请供应商');
     expect(app).toContain('报价排行');
+    expect(app).toContain('定标审批意见');
+    expect(app).toContain('detail.awardApprovalComment');
     expect(app).toContain('履约轨迹');
     expect(app).toContain('关联业务');
     expect(app).toContain('发票付款');

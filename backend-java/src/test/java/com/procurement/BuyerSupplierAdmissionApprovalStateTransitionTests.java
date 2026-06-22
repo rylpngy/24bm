@@ -21,13 +21,18 @@ import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierPerformanceRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
+import com.procurement.supplier.api.SupplierQualificationResponse;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.domain.BuyerSupplierAdmissionStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierManualStatusTransition;
+import com.procurement.supplier.domain.SupplierQualification;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
+import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +40,8 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
 
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
+  private final SupplierQualificationMapper supplierQualificationMapper =
+      org.mockito.Mockito.mock(SupplierQualificationMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);
   private final ApprovalTemplateMapper approvalTemplateMapper = org.mockito.Mockito.mock(ApprovalTemplateMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
@@ -46,6 +53,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
   private final BuyerSupplierApplicationService buyerSupplierApplicationService =
       new BuyerSupplierApplicationService(
           buyerSupplierRelationMapper,
+          supplierQualificationMapper,
           new ObjectMapper(),
           approvalTaskMapper,
           approvalTaskApplicationService,
@@ -64,6 +72,8 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
     TenantContext.set("tenant-1", null, "buyer-1");
     when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
         .thenReturn(relation("rel-1", "tenant-1", "待准入"));
+    when(supplierQualificationMapper.listActiveBySupplier("supplier-1"))
+        .thenReturn(List.of(qualification("qual-1", "supplier-1")));
     when(buyerSupplierRelationMapper.updateStatus("tenant-1", "rel-1", "待准入", "准入审批中"))
         .thenReturn(1);
     when(approvalTaskMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.any()))
@@ -91,6 +101,19 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         "rel-1");
   }
 
+  @Test
+  void submitAdmissionRejectsSupplierRelationWithoutActiveQualifications() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
+        .thenReturn(relation("rel-1", "tenant-1", "待准入"));
+    when(supplierQualificationMapper.listActiveBySupplier("supplier-1"))
+        .thenReturn(List.of());
+
+    assertThatThrownBy(() -> buyerSupplierApplicationService.submitAdmission("rel-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Supplier admission requires at least one active qualification");
+  }
+
   private ApprovalTemplate template(String code, String bizType) {
     return new ApprovalTemplate(code, "tenant-1", bizType, "审批模板", "role-buyer-owner", "active");
   }
@@ -102,7 +125,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         .thenReturn(relation("rel-1", "tenant-1", "准入审批中"));
     when(approvalTaskMapper.findPendingByBiz("tenant-1", "buyer_supplier_admission", "rel-1", "待审批"))
         .thenReturn(task("approval-1", "tenant-1", "rel-1", "待审批"));
-    when(approvalTaskMapper.updateStatus("tenant-1", "approval-1", "待审批", "已通过", "approver-1"))
+    when(approvalTaskMapper.updateStatus("tenant-1", "approval-1", "待审批", "已通过", "approver-1", null))
         .thenReturn(1);
     when(buyerSupplierRelationMapper.updateStatus("tenant-1", "rel-1", "准入审批中", "已准入"))
         .thenReturn(1);
@@ -260,6 +283,23 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         "晨光");
   }
 
+  @Test
+  void listRelationQualificationsUsesTenantRelationScopeBeforeReadingSupplierQualifications() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
+        .thenReturn(relation("rel-1", "tenant-1", "待准入"));
+    when(supplierQualificationMapper.listActiveBySupplier("supplier-1"))
+        .thenReturn(List.of(qualification("qual-1", "supplier-1")));
+
+    List<SupplierQualificationResponse> qualifications =
+        buyerSupplierApplicationService.listRelationQualifications("rel-1");
+
+    assertThat(qualifications).hasSize(1);
+    assertThat(qualifications.get(0).qualificationType()).isEqualTo("营业执照");
+    verify(buyerSupplierRelationMapper).findByTenantAndId("tenant-1", "rel-1");
+    verify(supplierQualificationMapper).listActiveBySupplier("supplier-1");
+  }
+
   private BuyerSupplierRelation relation(String id, String tenantId, String status) {
     return new BuyerSupplierRelation(
         id,
@@ -282,5 +322,18 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         status,
         OffsetDateTime.parse("2026-06-15T10:30:00+08:00"),
         null);
+  }
+
+  private SupplierQualification qualification(String id, String supplierId) {
+    return new SupplierQualification(
+        id,
+        supplierId,
+        "营业执照",
+        "Q-2026-001",
+        LocalDate.parse("2027-12-31"),
+        "营业执照.pdf",
+        "supplier/qualifications/business-license.pdf",
+        "active",
+        OffsetDateTime.parse("2026-06-22T10:00:00+08:00"));
   }
 }

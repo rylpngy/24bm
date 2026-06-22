@@ -33,7 +33,7 @@ describe('responsive table frame UI', () => {
     expect(tenantList).toContain('功能开关');
 
     expect(rfqList).toContain('<ResponsiveTableFrame');
-    expect(rfqList).toContain('mobileCards={filteredRfqListRows.map((rfq) => (');
+    expect(rfqList).toContain('mobileCards={displayedRfqListRows.map((rfq) => (');
     expect(rfqList).toContain('<ResponsiveSummaryCard');
     expect(rfqList).toContain('ariaLabel={`${rfq.title} 询价摘要`}');
     expect(rfqList).toContain('detailButton="table"');

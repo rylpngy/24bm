@@ -9,8 +9,16 @@ import com.procurement.approval.application.ApprovalInboxApplicationService;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.common.tenant.TenantContext;
+import com.procurement.contract.domain.ContractLedger;
+import com.procurement.contract.infrastructure.ContractMapper;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.finance.domain.PaymentBatch;
+import com.procurement.finance.domain.PaymentArchiveExceptionRequest;
+import com.procurement.finance.domain.PaymentRequest;
+import com.procurement.finance.infrastructure.PaymentArchiveExceptionRequestMapper;
+import com.procurement.finance.infrastructure.PaymentBatchMapper;
+import com.procurement.finance.infrastructure.PaymentRequestMapper;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.sourcing.domain.AwardDecision;
@@ -33,6 +41,11 @@ class ApprovalTaskInboxTests {
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
   private final RfqMapper rfqMapper = org.mockito.Mockito.mock(RfqMapper.class);
+  private final PaymentRequestMapper paymentRequestMapper = org.mockito.Mockito.mock(PaymentRequestMapper.class);
+  private final PaymentBatchMapper paymentBatchMapper = org.mockito.Mockito.mock(PaymentBatchMapper.class);
+  private final PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper =
+      org.mockito.Mockito.mock(PaymentArchiveExceptionRequestMapper.class);
+  private final ContractMapper contractMapper = org.mockito.Mockito.mock(ContractMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final ApprovalInboxApplicationService approvalInboxApplicationService =
       new ApprovalInboxApplicationService(
@@ -41,6 +54,10 @@ class ApprovalTaskInboxTests {
           buyerSupplierRelationMapper,
           awardDecisionMapper,
           rfqMapper,
+          paymentRequestMapper,
+          paymentBatchMapper,
+          paymentArchiveExceptionRequestMapper,
+          contractMapper,
           buyerUserMapper);
 
   @AfterEach
@@ -109,6 +126,112 @@ class ApprovalTaskInboxTests {
           assertThat(response.submittedByName()).isEqualTo("晨光供应商");
           assertThat(response.counterpartyName()).isEqualTo("晨光供应商");
           assertThat(response.amount()).isNull();
+        });
+  }
+
+  @Test
+  void enrichesPaymentRequestPendingTasksWithFinanceSummary() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(approvalTaskMapper.listByTenantAndStatus("tenant-1", "待审批"))
+        .thenReturn(List.of(
+            task("approval-1", "tenant-1", "payment_request", "payreq-1", "待审批", "2026-06-15T10:00:00+08:00")));
+    when(paymentRequestMapper.findByTenantAndId("tenant-1", "payreq-1"))
+        .thenReturn(paymentRequest("payreq-1", "tenant-1", "PAY-202606", BigDecimal.valueOf(118000)));
+    when(buyerUserMapper.findByTenantAndId("tenant-1", "requester-1"))
+        .thenReturn(user("requester-1", "付款申请人"));
+
+    List<PendingApprovalTaskResponse> responses = approvalInboxApplicationService.listPending();
+
+    assertThat(responses).singleElement()
+        .satisfies(response -> {
+          assertThat(response.summaryTitle()).isEqualTo("付款申请 PAY-202606");
+          assertThat(response.businessStatus()).isEqualTo("付款申请审批中");
+          assertThat(response.priority()).isEqualTo(85);
+          assertThat(response.parentBizId()).isEqualTo("invoice-1");
+          assertThat(response.submittedById()).isEqualTo("requester-1");
+          assertThat(response.submittedByName()).isEqualTo("付款申请人");
+          assertThat(response.amount()).isEqualByComparingTo(BigDecimal.valueOf(118000));
+          assertThat(response.counterpartyId()).isEqualTo("supplier-1");
+        });
+  }
+
+  @Test
+  void enrichesPaymentBatchPendingTasksWithBatchSummary() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(approvalTaskMapper.listByTenantAndStatus("tenant-1", "待审批"))
+        .thenReturn(List.of(
+            task("approval-1", "tenant-1", "payment_batch", "PAY-202606", "待审批", "2026-06-15T10:00:00+08:00")));
+    when(paymentBatchMapper.findByTenantAndPaymentBatchNo("tenant-1", "PAY-202606"))
+        .thenReturn(paymentBatch("paybatch-1", "tenant-1", "PAY-202606", BigDecimal.valueOf(236000)));
+
+    List<PendingApprovalTaskResponse> responses = approvalInboxApplicationService.listPending();
+
+    assertThat(responses).singleElement()
+        .satisfies(response -> {
+          assertThat(response.summaryTitle()).isEqualTo("付款批次 PAY-202606");
+          assertThat(response.businessStatus()).isEqualTo("审批中");
+          assertThat(response.priority()).isEqualTo(88);
+          assertThat(response.parentBizId()).isNull();
+          assertThat(response.submittedById()).isEqualTo("supplier-1");
+          assertThat(response.submittedByName()).isEqualTo("供应商 supplier-1");
+          assertThat(response.amount()).isEqualByComparingTo(BigDecimal.valueOf(236000));
+          assertThat(response.counterpartyId()).isEqualTo("supplier-1");
+        });
+  }
+
+  @Test
+  void enrichesPaymentArchiveExceptionPendingTasksWithExceptionSummary() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(approvalTaskMapper.listByTenantAndStatus("tenant-1", "待审批"))
+        .thenReturn(List.of(
+            task(
+                "approval-1",
+                "tenant-1",
+                "payment_archive_exception",
+                "payarchive-exception-1",
+                "待审批",
+                "2026-06-15T10:00:00+08:00")));
+    when(paymentArchiveExceptionRequestMapper.findByTenantAndId("tenant-1", "payarchive-exception-1"))
+        .thenReturn(paymentArchiveExceptionRequest());
+    when(buyerUserMapper.findByTenantAndId("tenant-1", "requester-1"))
+        .thenReturn(user("requester-1", "财务申请人"));
+
+    List<PendingApprovalTaskResponse> responses = approvalInboxApplicationService.listPending();
+
+    assertThat(responses).singleElement()
+        .satisfies(response -> {
+          assertThat(response.summaryTitle()).isEqualTo("付款归档异常 PAY-202606");
+          assertThat(response.businessStatus()).isEqualTo("撤销申请 / 待审批");
+          assertThat(response.priority()).isEqualTo(89);
+          assertThat(response.parentBizId()).isEqualTo("PAY-202606");
+          assertThat(response.submittedById()).isEqualTo("requester-1");
+          assertThat(response.submittedByName()).isEqualTo("财务申请人");
+          assertThat(response.amount()).isNull();
+          assertThat(response.counterpartyId()).isEqualTo("PAY-202606");
+        });
+  }
+
+  @Test
+  void enrichesContractApprovalPendingTasksWithContractSummary() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(approvalTaskMapper.listByTenantAndStatus("tenant-1", "待审批"))
+        .thenReturn(List.of(
+            task("approval-1", "tenant-1", "contract_approval", "contract-1", "待审批", "2026-06-15T10:00:00+08:00")));
+    when(contractMapper.findByTenantAndId("tenant-1", "contract-1"))
+        .thenReturn(contract("contract-1", "tenant-1"));
+
+    List<PendingApprovalTaskResponse> responses = approvalInboxApplicationService.listPending();
+
+    assertThat(responses).singleElement()
+        .satisfies(response -> {
+          assertThat(response.summaryTitle()).isEqualTo("测试采购合同");
+          assertThat(response.businessStatus()).isEqualTo("审批中");
+          assertThat(response.priority()).isEqualTo(86);
+          assertThat(response.parentBizId()).isEqualTo("po-1");
+          assertThat(response.submittedById()).isEqualTo("supplier-1");
+          assertThat(response.submittedByName()).isEqualTo("供应商 supplier-1");
+          assertThat(response.amount()).isEqualByComparingTo(BigDecimal.valueOf(60000));
+          assertThat(response.counterpartyId()).isEqualTo("supplier-1");
         });
   }
 
@@ -222,6 +345,82 @@ class ApprovalTaskInboxTests {
         "最低价",
         "待审批",
         OffsetDateTime.parse("2026-06-15T11:30:00+08:00"));
+  }
+
+  private PaymentRequest paymentRequest(String id, String tenantId, String batchNo, BigDecimal amount) {
+    return new PaymentRequest(
+        id,
+        tenantId,
+        "invoice-1",
+        "supplier-1",
+        "po-1",
+        amount,
+        "付款申请审批中",
+        batchNo,
+        "付款申请备注",
+        "requester-1",
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"));
+  }
+
+  private PaymentBatch paymentBatch(String id, String tenantId, String batchNo, BigDecimal amount) {
+    return new PaymentBatch(
+        id,
+        tenantId,
+        batchNo,
+        "supplier-1",
+        2,
+        amount,
+        amount,
+        amount,
+        amount,
+        BigDecimal.ZERO,
+        1,
+        1,
+        0,
+        "可继续登记付款",
+        "暂无阻断",
+        "审批中",
+        java.time.LocalDate.parse("2026-07-15"),
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"));
+  }
+
+  private PaymentArchiveExceptionRequest paymentArchiveExceptionRequest() {
+    return new PaymentArchiveExceptionRequest(
+        "payarchive-exception-1",
+        "tenant-1",
+        "PAY-202606",
+        "撤销申请",
+        "归档后发现付款登记金额异常",
+        "待审批",
+        "待处理",
+        null,
+        "待关闭",
+        null,
+        "requester-1",
+        null,
+        null,
+        null,
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"));
+  }
+
+  private ContractLedger contract(String id, String tenantId) {
+    return new ContractLedger(
+        id,
+        tenantId,
+        "CTR-1",
+        "测试采购合同",
+        "po-1",
+        "supplier-1",
+        BigDecimal.valueOf(60000),
+        "审批中",
+        "未归档",
+        "审批中",
+        java.time.LocalDate.parse("2026-06-21"),
+        OffsetDateTime.parse("2026-06-21T08:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-21T08:00:00+08:00"));
   }
 
   private Rfq rfq(String id, String tenantId, String title) {

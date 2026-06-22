@@ -1,0 +1,176 @@
+{
+  "appBaseUrl": "http://127.0.0.1:3000",
+  "javaApiBaseUrl": "http://localhost:8080",
+  "health": {
+    "service": "procurement-saas-backend",
+    "status": "ok",
+    "time": "2026-06-20T23:50:09.530488Z"
+  },
+  "viewports": [
+    {
+      "id": "desktop-1280x720",
+      "width": 1280,
+      "height": 720,
+      "label": "桌面 1280x720"
+    },
+    {
+      "id": "mobile-390x844",
+      "width": 390,
+      "height": 844,
+      "label": "移动 390x844"
+    }
+  ],
+  "results": [
+    {
+      "id": "contracts",
+      "label": "合同管理",
+      "url": "http://127.0.0.1:3000/?role=buyer&module=contracts",
+      "captures": [
+        {
+          "page": "contracts",
+          "viewport": "desktop-1280x720",
+          "width": 1280,
+          "height": 720,
+          "screenshotPath": "docs/artifacts/stage-five-java-contracts-desktop-1280x720.png",
+          "screenshotWritten": true,
+          "chromeTimedOutAfterScreenshot": true
+        },
+        {
+          "page": "contracts",
+          "viewport": "mobile-390x844",
+          "width": 390,
+          "height": 844,
+          "screenshotPath": "docs/artifacts/stage-five-java-contracts-mobile-390x844.png",
+          "screenshotWritten": true,
+          "chromeTimedOutAfterScreenshot": true
+        }
+      ],
+      "checks": {
+        "hasJavaDataSource": true,
+        "hasLoadFailure": false,
+        "hasArgumentTypeMismatch": false,
+        "hasReactRuntimeError": false,
+        "requiredText": {
+          "Java 数据源": true,
+          "合同台账": true,
+          "合同管理": true,
+          "Java 合同台账": true
+        }
+      },
+      "failed": []
+    },
+    {
+      "id": "rfqs",
+      "label": "询价项目",
+      "url": "http://127.0.0.1:3000/?role=buyer&module=rfqs",
+      "captures": [
+        {
+          "page": "rfqs",
+          "viewport": "desktop-1280x720",
+          "width": 1280,
+          "height": 720,
+          "screenshotPath": "docs/artifacts/stage-five-java-rfqs-desktop-1280x720.png",
+          "screenshotWritten": true,
+          "chromeTimedOutAfterScreenshot": true
+        },
+        {
+          "page": "rfqs",
+          "viewport": "mobile-390x844",
+          "width": 390,
+          "height": 844,
+          "screenshotPath": "docs/artifacts/stage-five-java-rfqs-mobile-390x844.png",
+          "screenshotWritten": true,
+          "chromeTimedOutAfterScreenshot": true
+        }
+      ],
+      "checks": {
+        "hasJavaDataSource": true,
+        "hasLoadFailure": false,
+        "hasArgumentTypeMismatch": false,
+        "hasReactRuntimeError": false,
+        "requiredText": {
+          "Java 数据源": true,
+          "询价项目": true,
+          "邀请供应商": true
+        }
+      },
+      "failed": []
+    },
+    {
+      "id": "orders",
+      "label": "采购订单",
+      "url": "http://127.0.0.1:3000/?role=buyer&module=orders",
+      "captures": [
+        {
+          "page": "orders",
+          "viewport": "desktop-1280x720",
+          "width": 1280,
+          "height": 720,
+          "screenshotPath": "docs/artifacts/stage-five-java-orders-desktop-1280x720.png",
+          "screenshotWritten": true,
+          "chromeTimedOutAfterScreenshot": true
+        },
+        {
+          "page": "orders",
+          "viewport": "mobile-390x844",
+          "width": 390,
+          "height": 844,
+          "screenshotPath": "docs/artifacts/stage-five-java-orders-mobile-390x844.png",
+          "screenshotWritten": true,
+          "chromeTimedOutAfterScreenshot": true
+        }
+      ],
+      "checks": {
+        "hasJavaDataSource": true,
+        "hasLoadFailure": false,
+        "hasArgumentTypeMismatch": false,
+        "hasReactRuntimeError": false,
+        "requiredText": {
+          "Java 数据源": true,
+          "采购订单": true,
+          "履约": true
+        }
+      },
+      "failed": []
+    },
+    {
+      "id": "invoices",
+      "label": "发票付款",
+      "url": "http://127.0.0.1:3000/?role=buyer&module=invoices",
+      "captures": [
+        {
+          "page": "invoices",
+          "viewport": "desktop-1280x720",
+          "width": 1280,
+          "height": 720,
+          "screenshotPath": "docs/artifacts/stage-five-java-invoices-desktop-1280x720.png",
+          "screenshotWritten": true,
+          "chromeTimedOutAfterScreenshot": true
+        },
+        {
+          "page": "invoices",
+          "viewport": "mobile-390x844",
+          "width": 390,
+          "height": 844,
+          "screenshotPath": "docs/artifacts/stage-five-java-invoices-mobile-390x844.png",
+          "screenshotWritten": true,
+          "chromeTimedOutAfterScreenshot": true
+        }
+      ],
+      "checks": {
+        "hasJavaDataSource": true,
+        "hasLoadFailure": false,
+        "hasArgumentTypeMismatch": false,
+        "hasReactRuntimeError": false,
+        "requiredText": {
+          "Java 数据源": true,
+          "发票付款": true,
+          "付款": true
+        }
+      },
+      "failed": []
+    }
+  ],
+  "failed": [],
+  "note": "Chrome CLI screenshots plus DOM text checks are used as Java visual walkthrough evidence."
+}

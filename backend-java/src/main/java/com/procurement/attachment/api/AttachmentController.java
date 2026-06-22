@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,5 +37,16 @@ public class AttachmentController {
   @ResponseStatus(HttpStatus.CREATED)
   public ApiResponse<AttachmentResponse> create(@Valid @RequestBody CreateAttachmentRequest request) {
     return ApiResponse.ok(attachmentApplicationService.createCurrentTenantAttachment(request));
+  }
+
+  @PostMapping("/upload-ticket")
+  public ApiResponse<AttachmentUploadTicketResponse> createUploadTicket(
+      @Valid @RequestBody CreateAttachmentUploadTicketRequest request) {
+    return ApiResponse.ok(attachmentApplicationService.createCurrentTenantUploadTicket(request));
+  }
+
+  @PostMapping("/{attachmentId}/download-link")
+  public ApiResponse<AttachmentDownloadLinkResponse> createDownloadLink(@PathVariable String attachmentId) {
+    return ApiResponse.ok(attachmentApplicationService.createCurrentTenantDownloadLink(attachmentId));
   }
 }

@@ -9,12 +9,14 @@ import static org.mockito.Mockito.when;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.api.UpdatePurchaseOrderRequest;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
+import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 class PurchaseOrderUpdateExpectedReceiptTests {
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
+  private final RfqMapper rfqMapper = org.mockito.Mockito.mock(RfqMapper.class);
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
@@ -34,6 +37,7 @@ class PurchaseOrderUpdateExpectedReceiptTests {
   private final PurchaseOrderApplicationService purchaseOrderApplicationService =
       new PurchaseOrderApplicationService(
           awardDecisionMapper,
+          rfqMapper,
           purchaseOrderMapper,
           auditLogApplicationService,
           notificationApplicationService,
@@ -59,6 +63,25 @@ class PurchaseOrderUpdateExpectedReceiptTests {
 
     assertThat(response.expectedReceiptDate()).isEqualTo(nextDate);
     verify(purchaseOrderMapper).updateExpectedReceiptDate("tenant-1", "po-1", nextDate);
+  }
+
+  @Test
+  void updatingExpectedReceiptDateNotifiesSupplierUsers() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    var nextDate = LocalDate.parse("2026-07-12");
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order("po-1", "待发货", LocalDate.parse("2026-07-10")))
+        .thenReturn(order("po-1", "待发货", nextDate));
+    when(purchaseOrderMapper.updateExpectedReceiptDate("tenant-1", "po-1", nextDate))
+        .thenReturn(1);
+
+    purchaseOrderApplicationService.update("po-1", new UpdatePurchaseOrderRequest(nextDate));
+
+    verify(notificationApplicationService).notifyActiveSupplierUsers(
+        "tenant-1",
+        "supplier-1",
+        NotificationTitle.PURCHASE_ORDER_EXPECTED_RECEIPT_UPDATED,
+        "采购订单 po-1 预计到货日期已更新为 2026-07-12，请按最新交期履约。");
   }
 
   @Test

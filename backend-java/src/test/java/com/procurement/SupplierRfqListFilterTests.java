@@ -3,7 +3,9 @@ package com.procurement;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
@@ -20,13 +22,19 @@ class SupplierRfqListFilterTests {
   private final RfqDemandMapper rfqDemandMapper = org.mockito.Mockito.mock(RfqDemandMapper.class);
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
+  private final AuditLogApplicationService auditLogApplicationService =
+      org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final QuoteApplicationService quoteApplicationService =
       new QuoteApplicationService(
           rfqMapper,
           rfqDemandMapper,
           rfqInviteMapper,
           quoteMapper,
-          new RfqSourcingStatusTransition());
+          new RfqSourcingStatusTransition(),
+          auditLogApplicationService,
+          notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {

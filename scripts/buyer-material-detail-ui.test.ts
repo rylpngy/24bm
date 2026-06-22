@@ -19,9 +19,18 @@ describe('buyer material detail UI', () => {
     expect(buyerAdminUi).toContain('procurementReadinessRows');
 
     expect(app).toContain('buildMaterialDetailPanel');
+    expect(app).toContain('createBuyerMaterial');
+    expect(app).toContain('updateBuyerMaterial');
+    expect(app).toContain('saveBuyerMaterial');
+    expect(app).toContain('materialSaveBusyId');
     expect(app).toContain('selectedMaterialId');
     expect(app).toContain('setSelectedMaterialId');
     expect(app).toContain('MaterialDetailPanelView');
+    expect(app).toContain('MaterialSaveForm');
+    expect(materialDetailView).toContain('物料目录维护');
+    expect(materialDetailView).toContain('保存物料');
+    expect(materialDetailView).toContain('新增物料');
+    expect(materialDetailView).toContain('onSaveMaterial');
     expect(materialDetailView).toContain('物料详情');
     expect(materialDetailView).toContain('使用概览');
     expect(materialDetailView).toContain('采购可用性');

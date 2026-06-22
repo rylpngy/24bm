@@ -24,5 +24,20 @@ public record PlatformDefaultApprovalTemplate(
           ApprovalTemplateCode.RFQ_AWARD,
           ApprovalBusinessType.RFQ_AWARD,
           "定标审批",
-          30));
+          30),
+      new PlatformDefaultApprovalTemplate(
+          ApprovalTemplateCode.CONTRACT_APPROVAL,
+          ApprovalBusinessType.CONTRACT_APPROVAL,
+          "合同审批",
+          40),
+      new PlatformDefaultApprovalTemplate(
+          ApprovalTemplateCode.PAYMENT_BATCH,
+          ApprovalBusinessType.PAYMENT_BATCH,
+          "付款批次审批",
+          60),
+      new PlatformDefaultApprovalTemplate(
+          ApprovalTemplateCode.PAYMENT_ARCHIVE_EXCEPTION,
+          ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
+          "付款归档异常审批",
+          70));
 }

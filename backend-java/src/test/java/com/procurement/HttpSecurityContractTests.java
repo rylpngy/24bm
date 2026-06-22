@@ -18,6 +18,11 @@ import com.procurement.catalog.api.CreateMaterialRequest;
 import com.procurement.catalog.api.MaterialController;
 import com.procurement.catalog.api.MaterialResponse;
 import com.procurement.catalog.application.MaterialApplicationService;
+import com.procurement.contract.api.BuyerContractController;
+import com.procurement.contract.api.ContractResponse;
+import com.procurement.contract.api.UpdateContractArchiveStatusRequest;
+import com.procurement.contract.api.UpdateContractStatusRequest;
+import com.procurement.contract.application.ContractApplicationService;
 import com.procurement.buyer.api.BuyerWorkspaceController;
 import com.procurement.buyer.api.BuyerWorkspaceResponse;
 import com.procurement.buyer.api.BuyerTodoSummaryResponse;
@@ -56,13 +61,24 @@ import com.procurement.identity.infrastructure.AuthenticationUserMapper;
 import com.procurement.identity.security.JwtAuthenticationFilter;
 import com.procurement.identity.security.JwtTokenService;
 import com.procurement.finance.api.SupplierReceivableController;
+import com.procurement.finance.api.BuyerFinanceActionController;
 import com.procurement.finance.api.BuyerInvoiceReconciliationController;
 import com.procurement.finance.api.BuyerPaymentController;
+import com.procurement.finance.api.CreatePaymentRequestRequest;
+import com.procurement.finance.api.CreateVarianceHandlingRequest;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.InvoiceReconciliationResponse;
+import com.procurement.finance.api.PaymentBatchResponse;
+import com.procurement.finance.api.PaymentExecutionRecordResponse;
+import com.procurement.finance.api.PaymentRequestResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.SupplierInvoiceController;
 import com.procurement.finance.api.SupplierInvoiceReconciliationController;
+import com.procurement.finance.api.UpdatePaymentBatchStatusRequest;
+import com.procurement.finance.api.UpdatePaymentRequestStatusRequest;
+import com.procurement.finance.api.VarianceHandlingResponse;
+import com.procurement.finance.api.UpdateVarianceHandlingStatusRequest;
+import com.procurement.finance.application.FinanceActionApplicationService;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.api.UpdateSupplierReceivableRequest;
@@ -190,11 +206,13 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierQuoteListController.class,
     RfqAwardController.class,
     PurchaseOrderController.class,
+    BuyerContractController.class,
     SupplierOrderController.class,
     BuyerReceiptController.class,
     SupplierDeliveryController.class,
     BuyerInvoiceReconciliationController.class,
     SupplierInvoiceReconciliationController.class,
+    BuyerFinanceActionController.class,
     BuyerPaymentController.class,
     SupplierInvoiceController.class,
     SupplierReceivableController.class,
@@ -248,6 +266,9 @@ class HttpSecurityContractTests {
   private PurchaseOrderApplicationService purchaseOrderApplicationService;
 
   @MockBean
+  private ContractApplicationService contractApplicationService;
+
+  @MockBean
   private ReceiptApplicationService receiptApplicationService;
 
   @MockBean
@@ -258,6 +279,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private PaymentApplicationService paymentApplicationService;
+
+  @MockBean
+  private FinanceActionApplicationService financeActionApplicationService;
 
   @MockBean
   private PlatformTenantApplicationService platformTenantApplicationService;
@@ -368,6 +392,30 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
         .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+        .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
+  }
+
+  @Test
+  void vitePort3001PreflightCanUseAuthorizationHeaderForJavaVisualChecks() throws Exception {
+    mockMvc.perform(options("/api/v1/buyer/workspace")
+            .header("Origin", "http://127.0.0.1:3001")
+            .header("Access-Control-Request-Method", "GET")
+            .header("Access-Control-Request-Headers", "authorization"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://127.0.0.1:3001"))
+        .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+        .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
+  }
+
+  @Test
+  void vitePreflightCanUsePutForJavaStatusActions() throws Exception {
+    mockMvc.perform(options("/api/v1/buyer/payment-block-resolutions/resolution-demo/status")
+            .header("Origin", "http://localhost:3000")
+            .header("Access-Control-Request-Method", "PUT")
+            .header("Access-Control-Request-Headers", "authorization,content-type"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+        .andExpect(header().string("Access-Control-Allow-Methods", org.hamcrest.Matchers.containsString("PUT")))
         .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
   }
 
@@ -667,6 +715,58 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data[0].tenantId").value("tenant-acme"))
         .andExpect(jsonPath("$.data[0].action").value("purchase_order.created"));
+  }
+
+  @Test
+  void buyerCanListContractTargetAuditLogsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/audit-logs/target")
+            .param("targetType", "contract")
+            .param("targetId", "contract-demo")
+            .param("actions", "contract_approval.submitted,contract_fulfillment_event.created")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(auditLogApplicationService.listCurrentTenantTargetActions(
+        "contract",
+        "contract-demo",
+        List.of("contract_approval.submitted", "contract_fulfillment_event.created"),
+        50)).thenReturn(List.of(
+            new AuditLogResponse(
+                "audit-contract-demo",
+                "tenant-acme",
+                "buyer-user",
+                "contract_fulfillment_event.created",
+                "contract",
+                "contract-demo",
+                OffsetDateTime.parse("2026-06-21T12:00:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/buyer/audit-logs/target")
+            .param("targetType", "contract")
+            .param("targetId", "contract-demo")
+            .param("actions", "contract_approval.submitted,contract_fulfillment_event.created")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data[0].targetType").value("contract"))
+        .andExpect(jsonPath("$.data[0].targetId").value("contract-demo"))
+        .andExpect(jsonPath("$.data[0].action").value("contract_fulfillment_event.created"));
   }
 
   @Test
@@ -2562,6 +2662,28 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.bizType").value("buyer_supplier_admission"))
         .andExpect(jsonPath("$.data.status").value("待审批"));
 
+    mockMvc.perform(get("/api/v1/buyer/suppliers/rel-created/qualifications")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(buyerSupplierApplicationService.listRelationQualifications("rel-created"))
+        .thenReturn(List.of(new SupplierQualificationResponse(
+            "qual-created",
+            "ent-supplier-ocean",
+            "营业执照",
+            "Q-2026-001",
+            LocalDate.parse("2027-12-31"),
+            "营业执照.pdf",
+            "supplier/qualifications/business-license.pdf",
+            "active",
+            OffsetDateTime.parse("2026-06-22T10:00:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/buyer/suppliers/rel-created/qualifications")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].qualificationType").value("营业执照"))
+        .andExpect(jsonPath("$.data[0].fileName").value("营业执照.pdf"));
+
     mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/approval")
             .header("Authorization", "Bearer " + supplierToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -3027,6 +3149,16 @@ class HttpSecurityContractTests {
             .contentType(MediaType.APPLICATION_JSON)
             .content(validCreateOrderPayload()))
         .andExpect(status().isForbidden());
+    mockMvc.perform(put("/api/v1/buyer/contracts/contract-demo/status")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validContractStatusPayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(put("/api/v1/buyer/contracts/contract-demo/archive-status")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validContractArchiveStatusPayload()))
+        .andExpect(status().isForbidden());
     mockMvc.perform(post("/api/v1/buyer/orders/po-demo/receipts")
             .header("Authorization", "Bearer " + supplierToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -3040,6 +3172,43 @@ class HttpSecurityContractTests {
         .andExpect(status().isForbidden());
     mockMvc.perform(get("/api/v1/buyer/invoice-reconciliations")
             .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/payment-requests")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/payment-batches")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/payment-execution-records")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/buyer/payment-requests")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validPaymentRequestPayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(put("/api/v1/buyer/payment-requests/payreq-demo/status")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validPaymentRequestStatusPayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(put("/api/v1/buyer/payment-batches/PAY-DEMO/status")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validPaymentBatchStatusPayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/variance-handlings")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/buyer/variance-handlings")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validVarianceHandlingPayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(put("/api/v1/buyer/variance-handlings/variance-demo/status")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validVarianceHandlingStatusPayload()))
         .andExpect(status().isForbidden());
     mockMvc.perform(post("/api/v1/buyer/invoices/invoice-demo/payments")
             .header("Authorization", "Bearer " + supplierToken)
@@ -3103,6 +3272,78 @@ class HttpSecurityContractTests {
         org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
         org.mockito.ArgumentMatchers.eq("po-demo")))
         .thenReturn(List.of(invoiceReconciliationResponse("recon-demo", "invoice-demo", "待付款")));
+    when(financeActionApplicationService.listCurrentTenantPaymentRequests(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(paymentRequestResponse("payreq-demo", "invoice-demo", "付款申请待提交")));
+    when(financeActionApplicationService.listCurrentTenantPaymentRequests(
+        org.mockito.ArgumentMatchers.eq("付款申请待提交"),
+        org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
+        org.mockito.ArgumentMatchers.eq("po-demo"),
+        org.mockito.ArgumentMatchers.eq("invoice-demo")))
+        .thenReturn(List.of(paymentRequestResponse("payreq-filtered", "invoice-demo", "付款申请待提交")));
+    when(financeActionApplicationService.listCurrentTenantPaymentBatches(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(paymentBatchResponse("paybatch-demo", "PAY-202606", "待提交审批")));
+    when(financeActionApplicationService.listCurrentTenantPaymentBatches(
+        org.mockito.ArgumentMatchers.eq("待提交审批"),
+        org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise")))
+        .thenReturn(List.of(paymentBatchResponse("paybatch-filtered", "PAY-202606", "待提交审批")));
+    when(financeActionApplicationService.listCurrentTenantPaymentExecutionRecords(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(paymentExecutionRecordResponse("payexec-demo", "PAY-202606", "待登记付款")));
+    when(financeActionApplicationService.listCurrentTenantPaymentExecutionRecords(
+        org.mockito.ArgumentMatchers.eq("PAY-202606"),
+        org.mockito.ArgumentMatchers.eq("待登记付款"),
+        org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
+        org.mockito.ArgumentMatchers.eq("invoice-demo")))
+        .thenReturn(List.of(paymentExecutionRecordResponse("payexec-filtered", "PAY-202606", "待登记付款")));
+    when(financeActionApplicationService.createCurrentTenantPaymentRequest(
+        org.mockito.ArgumentMatchers.any(CreatePaymentRequestRequest.class)))
+        .thenReturn(paymentRequestResponse("payreq-created", "invoice-demo", "付款申请待提交"));
+    when(financeActionApplicationService.updateCurrentTenantPaymentRequestStatus(
+        org.mockito.ArgumentMatchers.eq("payreq-demo"),
+        org.mockito.ArgumentMatchers.any(UpdatePaymentRequestStatusRequest.class)))
+        .thenReturn(paymentRequestResponse("payreq-demo", "invoice-demo", "付款申请审批中"));
+    when(financeActionApplicationService.updateCurrentTenantPaymentBatchStatus(
+        org.mockito.ArgumentMatchers.eq("PAY-DEMO"),
+        org.mockito.ArgumentMatchers.any(UpdatePaymentBatchStatusRequest.class)))
+        .thenReturn(paymentBatchResponse("paybatch-demo", "PAY-DEMO", "审批中"));
+    when(contractApplicationService.updateCurrentTenantContractStatus(
+        org.mockito.ArgumentMatchers.eq("contract-demo"),
+        org.mockito.ArgumentMatchers.any(UpdateContractStatusRequest.class)))
+        .thenReturn(contractResponse("contract-demo", "履约完成", "未归档"));
+    when(contractApplicationService.updateCurrentTenantContractArchiveStatus(
+        org.mockito.ArgumentMatchers.eq("contract-demo"),
+        org.mockito.ArgumentMatchers.any(UpdateContractArchiveStatusRequest.class)))
+        .thenReturn(contractResponse("contract-demo", "履约完成", "已归档"));
+    when(financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord("payexec-demo"))
+        .thenReturn(paymentExecutionRecordResponse("payexec-demo", "PAY-202606", "已登记付款"));
+    when(financeActionApplicationService.listCurrentTenantVarianceHandlings(
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(varianceHandlingResponse("variance-demo", "invoice-demo", "待处理")));
+    when(financeActionApplicationService.listCurrentTenantVarianceHandlings(
+        org.mockito.ArgumentMatchers.eq("待处理"),
+        org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
+        org.mockito.ArgumentMatchers.eq("po-demo"),
+        org.mockito.ArgumentMatchers.eq("invoice-demo")))
+        .thenReturn(List.of(varianceHandlingResponse("variance-filtered", "invoice-demo", "待处理")));
+    when(financeActionApplicationService.createCurrentTenantVarianceHandling(
+        org.mockito.ArgumentMatchers.any(CreateVarianceHandlingRequest.class)))
+        .thenReturn(varianceHandlingResponse("variance-created", "invoice-demo", "待处理"));
+    when(financeActionApplicationService.updateCurrentTenantVarianceHandlingStatus(
+        org.mockito.ArgumentMatchers.eq("variance-demo"),
+        org.mockito.ArgumentMatchers.any(UpdateVarianceHandlingStatusRequest.class)))
+        .thenReturn(varianceHandlingResponse("variance-demo", "invoice-demo", "已处理"));
     when(paymentApplicationService.register(
         org.mockito.ArgumentMatchers.eq("invoice-demo"),
         org.mockito.ArgumentMatchers.any(RegisterPaymentRequest.class)))
@@ -3170,6 +3411,103 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data[0].id").value("recon-demo"))
         .andExpect(jsonPath("$.data[0].invoiceId").value("invoice-demo"))
         .andExpect(jsonPath("$.data[0].stage").value("待付款"));
+    mockMvc.perform(get("/api/v1/buyer/payment-requests")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("payreq-demo"));
+    mockMvc.perform(get("/api/v1/buyer/payment-requests")
+            .queryParam("requestStatus", "付款申请待提交")
+            .queryParam("supplierId", "ent-supplier-sunrise")
+            .queryParam("orderId", "po-demo")
+            .queryParam("invoiceId", "invoice-demo")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("payreq-filtered"));
+    mockMvc.perform(get("/api/v1/buyer/payment-batches")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("paybatch-demo"));
+    mockMvc.perform(get("/api/v1/buyer/payment-batches")
+            .queryParam("batchStatus", "待提交审批")
+            .queryParam("supplierId", "ent-supplier-sunrise")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("paybatch-filtered"))
+        .andExpect(jsonPath("$.data[0].paymentBatchNo").value("PAY-202606"));
+    mockMvc.perform(get("/api/v1/buyer/payment-execution-records")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("payexec-demo"));
+    mockMvc.perform(get("/api/v1/buyer/payment-execution-records")
+            .queryParam("paymentBatchNo", "PAY-202606")
+            .queryParam("executionStatus", "待登记付款")
+            .queryParam("supplierId", "ent-supplier-sunrise")
+            .queryParam("invoiceId", "invoice-demo")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("payexec-filtered"))
+        .andExpect(jsonPath("$.data[0].paymentBatchNo").value("PAY-202606"));
+    mockMvc.perform(post("/api/v1/buyer/payment-requests")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validPaymentRequestPayload()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("payreq-created"));
+    mockMvc.perform(put("/api/v1/buyer/payment-requests/payreq-demo/status")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validPaymentRequestStatusPayload()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.requestStatus").value("付款申请审批中"));
+    mockMvc.perform(put("/api/v1/buyer/payment-batches/PAY-DEMO/status")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validPaymentBatchStatusPayload()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.batchStatus").value("审批中"));
+    mockMvc.perform(put("/api/v1/buyer/contracts/contract-demo/status")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validContractStatusPayload()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("contract-demo"))
+        .andExpect(jsonPath("$.data.status").value("履约完成"));
+    mockMvc.perform(put("/api/v1/buyer/contracts/contract-demo/archive-status")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validContractArchiveStatusPayload()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("contract-demo"))
+        .andExpect(jsonPath("$.data.archiveStatus").value("已归档"));
+    mockMvc.perform(post("/api/v1/buyer/payment-execution-records/payexec-demo/registration")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("payexec-demo"))
+        .andExpect(jsonPath("$.data.executionStatus").value("已登记付款"));
+    mockMvc.perform(get("/api/v1/buyer/variance-handlings")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("variance-demo"));
+    mockMvc.perform(get("/api/v1/buyer/variance-handlings")
+            .queryParam("status", "待处理")
+            .queryParam("supplierId", "ent-supplier-sunrise")
+            .queryParam("orderId", "po-demo")
+            .queryParam("invoiceId", "invoice-demo")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("variance-filtered"));
+    mockMvc.perform(post("/api/v1/buyer/variance-handlings")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validVarianceHandlingPayload()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("variance-created"));
+    mockMvc.perform(put("/api/v1/buyer/variance-handlings/variance-demo/status")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validVarianceHandlingStatusPayload()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("已处理"));
     mockMvc.perform(post("/api/v1/buyer/invoices/invoice-demo/payments")
             .header("Authorization", "Bearer " + buyerToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -3375,6 +3713,71 @@ class HttpSecurityContractTests {
         """;
   }
 
+  private String validPaymentRequestPayload() {
+    return """
+        {
+          "invoiceId": "invoice-demo",
+          "requestStatus": "付款申请待提交",
+          "paymentBatchNo": "PAY-202606",
+          "remark": "三单匹配通过后发起付款申请"
+        }
+        """;
+  }
+
+  private String validPaymentRequestStatusPayload() {
+    return """
+        {
+          "requestStatus": "付款申请审批中"
+        }
+        """;
+  }
+
+  private String validPaymentBatchStatusPayload() {
+    return """
+        {
+          "batchStatus": "审批中"
+        }
+        """;
+  }
+
+  private String validContractStatusPayload() {
+    return """
+        {
+          "status": "履约完成",
+          "fulfillmentProgress": "已收货验收"
+        }
+        """;
+  }
+
+  private String validContractArchiveStatusPayload() {
+    return """
+        {
+          "archiveStatus": "已归档"
+        }
+        """;
+  }
+
+  private String validVarianceHandlingPayload() {
+    return """
+        {
+          "invoiceId": "invoice-demo",
+          "reason": "发票金额与订单金额存在差异",
+          "ownerId": "user-buyer-owner",
+          "result": "待供应商确认差异原因",
+          "status": "待处理"
+        }
+        """;
+  }
+
+  private String validVarianceHandlingStatusPayload() {
+    return """
+        {
+          "status": "已处理",
+          "result": "差异已核对并关闭，允许进入付款申请。"
+        }
+        """;
+  }
+
   private PurchaseOrderResponse orderResponse(String id, String status) {
     return new PurchaseOrderResponse(
         id,
@@ -3412,6 +3815,23 @@ class HttpSecurityContractTests {
         OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
   }
 
+  private ContractResponse contractResponse(String id, String status, String archiveStatus) {
+    return new ContractResponse(
+        id,
+        "tenant-acme",
+        "CTR-DEMO",
+        "晨光科技供应商采购合同",
+        "po-demo",
+        "ent-supplier-sunrise",
+        BigDecimal.valueOf(98000),
+        status,
+        archiveStatus,
+        "已收货验收",
+        LocalDate.parse("2026-06-15"),
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+  }
+
   private InvoiceReconciliationResponse invoiceReconciliationResponse(String id, String invoiceId, String stage) {
     return new InvoiceReconciliationResponse(
         id,
@@ -3427,6 +3847,85 @@ class HttpSecurityContractTests {
         BigDecimal.ZERO,
         "已收货",
         "待付款",
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+  }
+
+  private PaymentRequestResponse paymentRequestResponse(String id, String invoiceId, String requestStatus) {
+    return new PaymentRequestResponse(
+        id,
+        "tenant-acme",
+        invoiceId,
+        "ent-supplier-sunrise",
+        "po-demo",
+        BigDecimal.valueOf(98000),
+        requestStatus,
+        "PAY-202606",
+        "三单匹配通过后发起付款申请",
+        "user-buyer-owner",
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+  }
+
+  private PaymentBatchResponse paymentBatchResponse(String id, String paymentBatchNo, String batchStatus) {
+    return new PaymentBatchResponse(
+        id,
+        "tenant-acme",
+        paymentBatchNo,
+        "ent-supplier-sunrise",
+        1,
+        BigDecimal.valueOf(98000),
+        BigDecimal.ZERO,
+        BigDecimal.valueOf(98000),
+        BigDecimal.valueOf(98000),
+        BigDecimal.ZERO,
+        1,
+        1,
+        0,
+        "可继续登记付款",
+        "暂无阻断",
+        batchStatus,
+        LocalDate.parse("2026-07-15"),
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+  }
+
+  private PaymentExecutionRecordResponse paymentExecutionRecordResponse(
+      String id,
+      String paymentBatchNo,
+      String executionStatus) {
+    return new PaymentExecutionRecordResponse(
+        id,
+        "tenant-acme",
+        paymentBatchNo,
+        "payreq-demo",
+        "invoice-demo",
+        "ent-supplier-sunrise",
+        BigDecimal.valueOf(98000),
+        LocalDate.parse("2026-07-15"),
+        executionStatus,
+        "付款申请已通过，可进入线下付款登记",
+        "付款申请已通过",
+        "可登记付款",
+        "登记付款状态，真实支付仍不接入",
+        "user-buyer-owner",
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+  }
+
+  private VarianceHandlingResponse varianceHandlingResponse(String id, String invoiceId, String status) {
+    return new VarianceHandlingResponse(
+        id,
+        "tenant-acme",
+        invoiceId,
+        "ent-supplier-sunrise",
+        "po-demo",
+        BigDecimal.ZERO,
+        "发票金额与订单金额存在差异",
+        "user-buyer-owner",
+        "待供应商确认差异原因",
+        status,
+        "user-buyer-owner",
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
   }

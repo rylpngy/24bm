@@ -6,8 +6,16 @@ import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.contract.domain.ContractLedger;
+import com.procurement.contract.infrastructure.ContractMapper;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.finance.domain.PaymentBatch;
+import com.procurement.finance.domain.PaymentArchiveExceptionRequest;
+import com.procurement.finance.domain.PaymentRequest;
+import com.procurement.finance.infrastructure.PaymentArchiveExceptionRequestMapper;
+import com.procurement.finance.infrastructure.PaymentBatchMapper;
+import com.procurement.finance.infrastructure.PaymentRequestMapper;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.sourcing.domain.AwardDecision;
@@ -29,6 +37,10 @@ public class ApprovalInboxApplicationService {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final AwardDecisionMapper awardDecisionMapper;
   private final RfqMapper rfqMapper;
+  private final PaymentRequestMapper paymentRequestMapper;
+  private final PaymentBatchMapper paymentBatchMapper;
+  private final PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper;
+  private final ContractMapper contractMapper;
   private final BuyerUserMapper buyerUserMapper;
 
   public ApprovalInboxApplicationService(
@@ -37,12 +49,20 @@ public class ApprovalInboxApplicationService {
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AwardDecisionMapper awardDecisionMapper,
       RfqMapper rfqMapper,
+      PaymentRequestMapper paymentRequestMapper,
+      PaymentBatchMapper paymentBatchMapper,
+      PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper,
+      ContractMapper contractMapper,
       BuyerUserMapper buyerUserMapper) {
     this.approvalTaskMapper = approvalTaskMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.awardDecisionMapper = awardDecisionMapper;
     this.rfqMapper = rfqMapper;
+    this.paymentRequestMapper = paymentRequestMapper;
+    this.paymentBatchMapper = paymentBatchMapper;
+    this.paymentArchiveExceptionRequestMapper = paymentArchiveExceptionRequestMapper;
+    this.contractMapper = contractMapper;
     this.buyerUserMapper = buyerUserMapper;
   }
 
@@ -78,6 +98,7 @@ public class ApprovalInboxApplicationService {
         summary.counterpartyName(),
         task.assigneeId(),
         task.status(),
+        task.reviewComment(),
         task.createdAt(),
         task.actedAt());
   }
@@ -87,6 +108,10 @@ public class ApprovalInboxApplicationService {
       case ApprovalBusinessType.PURCHASE_DEMAND -> purchaseDemandSummary(task);
       case ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION -> buyerSupplierAdmissionSummary(task);
       case ApprovalBusinessType.RFQ_AWARD -> rfqAwardSummary(task);
+      case ApprovalBusinessType.PAYMENT_REQUEST -> paymentRequestSummary(task);
+      case ApprovalBusinessType.PAYMENT_BATCH -> paymentBatchSummary(task);
+      case ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION -> paymentArchiveExceptionSummary(task);
+      case ApprovalBusinessType.CONTRACT_APPROVAL -> contractApprovalSummary(task);
       default -> ApprovalTaskSummary.empty();
     };
   }
@@ -94,6 +119,10 @@ public class ApprovalInboxApplicationService {
   private Integer priorityFor(String bizType) {
     return switch (bizType) {
       case ApprovalBusinessType.RFQ_AWARD -> 90;
+      case ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION -> 89;
+      case ApprovalBusinessType.PAYMENT_BATCH -> 88;
+      case ApprovalBusinessType.CONTRACT_APPROVAL -> 86;
+      case ApprovalBusinessType.PAYMENT_REQUEST -> 85;
       case ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION -> 80;
       case ApprovalBusinessType.PURCHASE_DEMAND -> 70;
       default -> 50;
@@ -149,6 +178,75 @@ public class ApprovalInboxApplicationService {
         awardDecision.amount(),
         awardDecision.supplierId(),
         null);
+  }
+
+  private ApprovalTaskSummary paymentRequestSummary(ApprovalTask task) {
+    PaymentRequest paymentRequest = paymentRequestMapper.findByTenantAndId(task.tenantId(), task.bizId());
+    if (paymentRequest == null) {
+      return ApprovalTaskSummary.empty();
+    }
+    BuyerUser requester = buyerUserMapper.findByTenantAndId(task.tenantId(), paymentRequest.createdBy());
+    return new ApprovalTaskSummary(
+        paymentRequest.invoiceId(),
+        "付款申请 " + paymentRequest.paymentBatchNo(),
+        paymentRequest.requestStatus(),
+        paymentRequest.createdBy(),
+        requester == null ? paymentRequest.createdBy() : requester.name(),
+        paymentRequest.amount(),
+        paymentRequest.supplierId(),
+        paymentRequest.supplierId());
+  }
+
+  private ApprovalTaskSummary paymentBatchSummary(ApprovalTask task) {
+    PaymentBatch paymentBatch = paymentBatchMapper.findByTenantAndPaymentBatchNo(task.tenantId(), task.bizId());
+    if (paymentBatch == null) {
+      return ApprovalTaskSummary.empty();
+    }
+    String supplierId = paymentBatch.supplierId();
+    return new ApprovalTaskSummary(
+        null,
+        "付款批次 " + paymentBatch.paymentBatchNo(),
+        paymentBatch.batchStatus(),
+        supplierId,
+        supplierId == null ? null : "供应商 " + supplierId,
+        paymentBatch.totalAmount(),
+        supplierId,
+        supplierId == null ? null : "供应商 " + supplierId);
+  }
+
+  private ApprovalTaskSummary paymentArchiveExceptionSummary(ApprovalTask task) {
+    PaymentArchiveExceptionRequest request = paymentArchiveExceptionRequestMapper.findByTenantAndId(
+        task.tenantId(),
+        task.bizId());
+    if (request == null) {
+      return ApprovalTaskSummary.empty();
+    }
+    BuyerUser requester = buyerUserMapper.findByTenantAndId(task.tenantId(), request.requestedBy());
+    return new ApprovalTaskSummary(
+        request.paymentBatchNo(),
+        "付款归档异常 " + request.paymentBatchNo(),
+        request.exceptionType() + " / " + task.status(),
+        request.requestedBy(),
+        requester == null ? request.requestedBy() : requester.name(),
+        null,
+        request.paymentBatchNo(),
+        request.paymentBatchNo());
+  }
+
+  private ApprovalTaskSummary contractApprovalSummary(ApprovalTask task) {
+    ContractLedger contract = contractMapper.findByTenantAndId(task.tenantId(), task.bizId());
+    if (contract == null) {
+      return ApprovalTaskSummary.empty();
+    }
+    return new ApprovalTaskSummary(
+        contract.relatedOrderId(),
+        contract.contractName(),
+        contract.status(),
+        contract.supplierId(),
+        "供应商 " + contract.supplierId(),
+        contract.amount(),
+        contract.supplierId(),
+        "供应商 " + contract.supplierId());
   }
 
   private record ApprovalTaskSummary(

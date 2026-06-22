@@ -16,13 +16,16 @@ public class InvoicePaymentStatusTransition {
     }
   }
 
-  public boolean isIdempotentRegistration(String currentStatus, String targetStatus) {
+  public boolean isDuplicateRegistration(String currentStatus, String targetStatus) {
     return currentStatus.equals(targetStatus)
         && (InvoicePaymentStatus.PAID.equals(currentStatus)
             || InvoicePaymentStatus.PARTIAL_PAID.equals(currentStatus));
   }
 
   public void requireTransition(String currentStatus, String targetStatus, String invoiceId) {
+    if (isDuplicateRegistration(currentStatus, targetStatus)) {
+      throw new IllegalStateException("Payment status already registered: " + invoiceId);
+    }
     if (InvoicePaymentStatus.PENDING_PAYMENT.equals(currentStatus)) {
       return;
     }

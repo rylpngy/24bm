@@ -167,6 +167,10 @@ public class PurchaseDemandApplicationService {
         ApprovalBusinessType.PURCHASE_DEMAND,
         demandId,
         null);
+    auditLogApplicationService.recordTenantAction(
+        PurchaseDemandAuditAction.SUBMITTED,
+        ApprovalBusinessType.PURCHASE_DEMAND,
+        demandId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         NotificationTitle.PURCHASE_DEMAND_PENDING_APPROVAL,
@@ -209,11 +213,15 @@ public class PurchaseDemandApplicationService {
         approvalTask.id(),
         ApprovalStatus.PENDING,
         approvalStatus,
-        userId);
+        userId,
+        request.comment());
     if (updated == 0) {
       throw new IllegalStateException("Approval task status changed before review could be recorded: " + approvalTask.id());
     }
-    purchaseDemandMapper.updateStatus(tenantId, demandId, demandStatus);
+    int demandUpdated = purchaseDemandMapper.updateStatus(tenantId, demandId, demandStatus);
+    if (demandUpdated == 0) {
+      throw new IllegalStateException("Purchase demand status changed before review could be saved: " + demandId);
+    }
     auditLogApplicationService.recordTenantAction(
         approved ? PurchaseDemandAuditAction.APPROVED : PurchaseDemandAuditAction.REJECTED,
         ApprovalBusinessType.PURCHASE_DEMAND,
@@ -233,6 +241,7 @@ public class PurchaseDemandApplicationService {
         reviewedTask.bizId(),
         reviewedTask.assigneeId(),
         reviewedTask.status(),
+        reviewedTask.reviewComment(),
         reviewedTask.createdAt());
   }
 

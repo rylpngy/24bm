@@ -26,6 +26,7 @@ describe('supplier invoice receivable card UI', () => {
     expect(supplierWorkspace).toContain('invoice.overdue');
     expect(supplierWorkspace).toContain('invoice.overdueDays');
     expect(supplierWorkspace).toContain('保存对账备注');
+    expect(app).toContain('应收对账备注已保存、已同步采购方对账并刷新');
     expect(supplierWorkspace).toContain('receivableUpdateDrafts');
     expect(supplierWorkspace).toContain('onUpdateReceivable(invoice.id');
     expect(supplierWorkspace).toContain('关联订单');

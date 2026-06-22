@@ -28,6 +28,9 @@ describe('buyer receipt detail UI', () => {
     expect(receiptDetailView).toContain('后续协同');
     expect(receiptDetailView).toContain('postReceiptRows');
     expect(receiptDetailView).toContain('关联业务');
+    expect(receiptDetailView).toContain('定标审批来源');
+    expect(receiptDetailView).toContain('定标审批意见');
+    expect(receiptDetailView).toContain('detail.awardApprovalComment');
   });
 
   it('surfaces receipt registration actions inside the detail panel', () => {
@@ -47,6 +50,7 @@ describe('buyer receipt detail UI', () => {
     expect(app).toContain('order={selectedReceiptOrderRecord}');
     expect(app).toContain('busy={buyerFulfillmentBusyId === `receipt:${selectedReceiptOrder}`}');
     expect(app).toContain('onCreateReceipt={onCreateReceipt}');
+    expect(app).toContain('已通知供应商提交发票');
   });
 
   it('places logistics, acceptance, and next action summary in the top receipt detail card', () => {

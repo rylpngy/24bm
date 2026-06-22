@@ -35,12 +35,26 @@ Do not delete legacy files while frontend tests still cover them. Retire them in
 Use Java 21 from Homebrew:
 
 ```bash
-cd backend-java
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 export PATH=/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:$PATH
 mvn test
 docker compose up -d
-mvn clean spring-boot:run -Dspring-boot.run.profiles=local
+npm run java:dev
+```
+
+`npm run java:dev` starts Spring Boot from `backend-java/` with the local Flyway locations pinned:
+
+```bash
+SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev'
+```
+
+Use this npm script for local demos and Java smoke checks. It keeps the regular migrations and the `db/dev` demo seed path together, which avoids the local Flyway validation mismatch that can happen when the database already has the V100 dev seed migration recorded but the backend is started with only `db/migration`.
+
+If you need to run the Maven command directly, keep the same Flyway location override:
+
+```bash
+cd backend-java
+SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev' mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 The default backend URL is:
@@ -85,10 +99,12 @@ Spring Security allows local Vite origins for Java API calls:
 - `http://127.0.0.1:5173`
 - `http://localhost:3000`
 - `http://127.0.0.1:3000`
+- `http://localhost:3001`
+- `http://127.0.0.1:3001`
 - `http://localhost:4173`
 - `http://127.0.0.1:4173`
 
-The backend accepts `GET`, `POST`, and `OPTIONS`, including the `Authorization` and `content-type` headers. This is required because browser calls with `Authorization: Bearer <accessToken>` trigger a CORS preflight request before hitting buyer APIs.
+The backend accepts `GET`, `POST`, `PUT`, and `OPTIONS`, including the `Authorization` and `content-type` headers. This is required because browser calls with `Authorization: Bearer <accessToken>` trigger a CORS preflight request before hitting buyer APIs and Java status actions use `PUT`.
 
 ## Smoke Check
 
@@ -108,7 +124,9 @@ Run the API smoke check after Spring Boot is up:
 npm run java:smoke
 ```
 
-It logs in as the seeded platform, buyer, and supplier accounts, verifies `GET /api/v1/platform/workspace`, `GET /api/v1/buyer/workspace`, `GET /api/v1/supplier/workspace`, and the key list endpoints return expected Java data, then checks supplier admission submission, approval, and refreshed buyer workspace relation status when a pending admission relation is available. It also creates one RFQ, submits one supplier quote, submits and approves one award decision, creates one purchase order, confirms the order as supplier, submits one delivery, registers one receipt, creates one invoice, and registers payment status.
+It logs in as the seeded platform, buyer, and supplier accounts, verifies `GET /api/v1/platform/workspace`, `GET /api/v1/buyer/workspace`, `GET /api/v1/supplier/workspace`, and the key list endpoints return expected Java data, then checks supplier admission submission, approval, and refreshed buyer workspace relation status when a pending admission relation is available. It also creates one RFQ, submits one supplier quote, submits and approves one award decision, creates one purchase order, confirms the order as supplier, submits one delivery, registers one receipt, creates one invoice, runs 三单差异阻断恢复 smoke by perturbing the local smoke invoice amount through PostgreSQL, rebuilding three-way matches, verifying payment request blocking, creating/resolving variance handling, and restoring payment request creation, then runs 付款申请和付款批次 smoke through `POST /api/v1/buyer/payment-requests`, `PUT /api/v1/buyer/payment-requests/{paymentRequestId}/status`, `GET /api/v1/buyer/payment-batches`, `GET /api/v1/buyer/payment-execution-records`, `PUT /api/v1/buyer/payment-batches/{paymentBatchNo}/status`, and `GET /api/v1/buyer/approvals/pending` to verify the `payment_batch` approval task appears and closes, the execution record moves from `待登记付款` to `已登记付款`, then registers payment status. After the payment batch reaches `已付款归档`, the smoke script calls `POST /api/v1/buyer/contracts` and `PUT /api/v1/buyer/contracts/{contractId}` to create and edit a contract ledger row for the dynamic order, then calls `PUT /api/v1/buyer/contracts/{contractId}/archive-status` to verify an already received and paid contract can be archived successfully.
+
+The variance smoke segment uses `psql` and the local database URL from `JAVA_SMOKE_DATABASE_URL`, `DB_URL`, or `postgresql://procurement:procurement@localhost:5432/procurement_saas`. If `psql` is not installed on the host machine, the script falls back to `docker exec -i procurement-saas-postgres psql -U procurement -d procurement_saas`. This keeps the public invoice creation API strict while still exercising the abnormal three-way-match recovery path in local integration.
 
 On a fresh local seed, the smoke script uses the pending supplier relation to verify `供应商准入提交、审批通过、买方工作台关系状态刷新`. If the local database has already admitted that relation from a previous run, the script skips only that supplier-admission mutation and continues with the RFQ-to-payment smoke path.
 

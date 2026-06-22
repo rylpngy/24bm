@@ -1,0 +1,111 @@
+{
+  "generatedAt": "2026-06-21T07:53:53.551Z",
+  "dataSource": "Java",
+  "results": [
+    {
+      "role": "platform",
+      "module": "overview",
+      "label": "平台看板",
+      "viewport": "desktop-1280x720",
+      "url": "http://127.0.0.1:3000/?role=platform&module=overview",
+      "screenshotPath": "docs/artifacts/stage-seven-platform-overview-desktop-1280x720.png",
+      "screenshotWritten": true,
+      "chromeTimedOutAfterScreenshot": true,
+      "metrics": {
+        "hasJavaDataSource": true,
+        "hasLoadFailure": false,
+        "hasArgumentTypeMismatch": false,
+        "hasReactRuntimeError": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "bodyTextLength": 141952,
+        "requiredText": {
+          "Java 数据源": true,
+          "平台运营演示路径": true,
+          "平台看板": true,
+          "采购租户": true
+        }
+      },
+      "failures": []
+    },
+    {
+      "role": "platform",
+      "module": "tenants",
+      "label": "租户列表",
+      "viewport": "desktop-1280x720",
+      "url": "http://127.0.0.1:3000/?role=platform&module=tenants",
+      "screenshotPath": "docs/artifacts/stage-seven-platform-tenants-desktop-1280x720.png",
+      "screenshotWritten": true,
+      "chromeTimedOutAfterScreenshot": true,
+      "metrics": {
+        "hasJavaDataSource": true,
+        "hasLoadFailure": false,
+        "hasArgumentTypeMismatch": false,
+        "hasReactRuntimeError": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "bodyTextLength": 153889,
+        "requiredText": {
+          "Java 数据源": true,
+          "平台运营演示路径": true,
+          "租户列表": true,
+          "租户操作": true
+        }
+      },
+      "failures": []
+    },
+    {
+      "role": "platform",
+      "module": "reviews",
+      "label": "企业审核",
+      "viewport": "desktop-1280x720",
+      "url": "http://127.0.0.1:3000/?role=platform&module=reviews",
+      "screenshotPath": "docs/artifacts/stage-seven-platform-reviews-desktop-1280x720.png",
+      "screenshotWritten": true,
+      "chromeTimedOutAfterScreenshot": true,
+      "metrics": {
+        "hasJavaDataSource": true,
+        "hasLoadFailure": false,
+        "hasArgumentTypeMismatch": false,
+        "hasReactRuntimeError": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "bodyTextLength": 152967,
+        "requiredText": {
+          "Java 数据源": true,
+          "平台运营演示路径": true,
+          "企业审核": true,
+          "审核处理": true
+        }
+      },
+      "failures": []
+    },
+    {
+      "role": "platform",
+      "module": "announcements",
+      "label": "平台公告",
+      "viewport": "desktop-1280x720",
+      "url": "http://127.0.0.1:3000/?role=platform&module=announcements",
+      "screenshotPath": "docs/artifacts/stage-seven-platform-announcements-desktop-1280x720.png",
+      "screenshotWritten": true,
+      "chromeTimedOutAfterScreenshot": true,
+      "metrics": {
+        "hasJavaDataSource": true,
+        "hasLoadFailure": false,
+        "hasArgumentTypeMismatch": false,
+        "hasReactRuntimeError": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "bodyTextLength": 149723,
+        "requiredText": {
+          "Java 数据源": true,
+          "平台运营演示路径": true,
+          "平台公告": true,
+          "发布平台公告": true
+        }
+      },
+      "failures": []
+    }
+  ],
+  "failed": []
+}

@@ -96,6 +96,11 @@ public class ReceiptApplicationService {
         tenantId,
         NotificationTitle.PURCHASE_ORDER_RECEIVED,
         "采购订单 " + order.id() + " 已完成收货验收，结果：" + request.result() + "。");
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId,
+        order.supplierId(),
+        NotificationTitle.PURCHASE_ORDER_RECEIVED,
+        "采购订单 " + order.id() + " 已完成收货验收，供应商可提交发票。");
 
     return toResponse(receiptMapper.findByTenantAndId(tenantId, receiptId));
   }

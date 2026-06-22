@@ -16,6 +16,7 @@ import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.domain.InvoiceReconciliation;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
+import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
@@ -33,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentApplicationService {
   private final InvoiceMapper invoiceMapper;
   private final InvoiceReconciliationMapper invoiceReconciliationMapper;
+  private final ThreeWayMatchMapper threeWayMatchMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -43,6 +45,7 @@ public class PaymentApplicationService {
   public PaymentApplicationService(
       InvoiceMapper invoiceMapper,
       InvoiceReconciliationMapper invoiceReconciliationMapper,
+      ThreeWayMatchMapper threeWayMatchMapper,
       PurchaseOrderMapper purchaseOrderMapper,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AuditLogApplicationService auditLogApplicationService,
@@ -51,6 +54,7 @@ public class PaymentApplicationService {
       InvoicePaymentStatusTransition invoicePaymentStatusTransition) {
     this.invoiceMapper = invoiceMapper;
     this.invoiceReconciliationMapper = invoiceReconciliationMapper;
+    this.threeWayMatchMapper = threeWayMatchMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -119,9 +123,6 @@ public class PaymentApplicationService {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
     }
     invoicePaymentStatusTransition.requireSupportedTarget(paymentStatus);
-    if (invoicePaymentStatusTransition.isIdempotentRegistration(invoice.paymentStatus(), paymentStatus)) {
-      return toResponse(invoice);
-    }
     invoicePaymentStatusTransition.requireTransition(invoice.paymentStatus(), paymentStatus, invoiceId);
     requireInvoiceAmountMatchesOrder(tenantId, invoice);
     requireSupplierPayable(tenantId, invoice);
@@ -153,6 +154,7 @@ public class PaymentApplicationService {
         invoiceId,
         response.reconciliationStage(),
         response.nextReconciliationAction());
+    threeWayMatchMapper.upsertFromInvoice("match-" + java.util.UUID.randomUUID(), tenantId, invoiceId);
     return response;
   }
 

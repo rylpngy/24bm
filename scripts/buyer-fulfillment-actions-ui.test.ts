@@ -16,6 +16,7 @@ describe('buyer fulfillment actions UI', () => {
     expect(app).toContain('buyerFulfillmentBusyId');
     expect(app).toContain('createBuyerReceiptFromOrder');
     expect(app).toContain('registerBuyerInvoicePayment');
+    expect(app).toContain('已同步供应商应收');
     expect(app).toContain('onCreateReceipt');
     expect(app).toContain('onRegisterPayment');
     expect(app).toContain('登记收货');

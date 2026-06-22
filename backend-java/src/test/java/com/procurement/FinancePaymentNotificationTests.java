@@ -12,6 +12,7 @@ import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
+import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.infrastructure.NotificationMapper;
@@ -33,6 +34,7 @@ class FinancePaymentNotificationTests {
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
   private final InvoiceReconciliationMapper invoiceReconciliationMapper =
       org.mockito.Mockito.mock(InvoiceReconciliationMapper.class);
+  private final ThreeWayMatchMapper threeWayMatchMapper = org.mockito.Mockito.mock(ThreeWayMatchMapper.class);
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
       org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
@@ -48,6 +50,7 @@ class FinancePaymentNotificationTests {
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
       invoiceReconciliationMapper,
+      threeWayMatchMapper,
       purchaseOrderMapper,
       buyerSupplierRelationMapper,
       auditLogApplicationService,

@@ -20,6 +20,7 @@ describe('admin navigation', () => {
       'rfqs',
       'quotes',
       'orders',
+      'contracts',
       'receipts',
       'invoices',
       'audit',

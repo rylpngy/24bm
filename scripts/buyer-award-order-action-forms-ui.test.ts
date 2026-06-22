@@ -21,6 +21,7 @@ describe('buyer award and order action forms UI', () => {
     expect(buyerWorkspace).toContain('orderDrafts');
     expect(app).toContain('定标理由');
     expect(app).toContain('预计到货日期');
+    expect(app).toContain('已通知供应商确认订单');
     expect(app).toContain('onSubmitAwardApproval(rfq.id, recommendedQuote.id, awardDraft)');
     expect(app).toContain('onCreateOrderFromAward(approvedAwardId, orderDraft)');
   });

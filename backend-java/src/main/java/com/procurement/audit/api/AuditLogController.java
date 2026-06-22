@@ -2,6 +2,7 @@ package com.procurement.audit.api;
 
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.api.ApiResponse;
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,5 +23,22 @@ public class AuditLogController {
   @GetMapping
   public ApiResponse<List<AuditLogResponse>> list(@RequestParam(defaultValue = "" + DEFAULT_LIMIT) int limit) {
     return ApiResponse.ok(auditLogApplicationService.listCurrentTenantAuditLogs(limit));
+  }
+
+  @GetMapping("/target")
+  public ApiResponse<List<AuditLogResponse>> listTargetActions(
+      @RequestParam String targetType,
+      @RequestParam String targetId,
+      @RequestParam(defaultValue = "") String actions,
+      @RequestParam(defaultValue = "" + DEFAULT_LIMIT) int limit) {
+    List<String> actionList = Arrays.stream(actions.split(","))
+        .map(String::trim)
+        .filter(action -> !action.isBlank())
+        .toList();
+    return ApiResponse.ok(auditLogApplicationService.listCurrentTenantTargetActions(
+        targetType,
+        targetId,
+        actionList,
+        limit));
   }
 }

@@ -19,6 +19,8 @@ describe('supplier invoice receivable summary UI', () => {
     expect(supplierWorkspace).toContain('发票数量');
     expect(supplierWorkspace).toContain('下一步');
     expect(supplierWorkspace).toContain("invoice.paymentStatus !== '已付款'");
+    expect(app).toContain('workspace.notifications');
+    expect(app).toContain('发票已付款');
     expect(supplierWorkspace).toContain("invoices.reduce");
   });
 });

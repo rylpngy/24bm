@@ -62,6 +62,38 @@ describe('buyer workflow helpers', () => {
     expect(recommended?.id).toBe('quote-c');
   });
 
+  it('keeps the awarded quote as the recommendation after quote closeout', () => {
+    const recommended = selectRecommendedQuote({
+      ...baseRfq,
+      status: '已定标',
+      awardedSupplierId: 'supplier-a',
+      quotes: [
+        {
+          id: 'quote-a',
+          rfqId: baseRfq.id,
+          tenantId: baseRfq.tenantId,
+          supplierId: 'supplier-a',
+          amount: 118000,
+          taxRate: 13,
+          deliveryDays: 5,
+          status: '已中选',
+        },
+        {
+          id: 'quote-b',
+          rfqId: baseRfq.id,
+          tenantId: baseRfq.tenantId,
+          supplierId: 'supplier-b',
+          amount: 98000,
+          taxRate: 13,
+          deliveryDays: 6,
+          status: '未中选',
+        },
+      ],
+    });
+
+    expect(recommended?.id).toBe('quote-a');
+  });
+
   it('allows award approval only before an RFQ has been awarded', () => {
     expect(canSubmitAwardApproval({ ...baseRfq, quotes: [] })).toBe(false);
     expect(canSubmitAwardApproval({ ...baseRfq, quotes: [{
@@ -96,10 +128,23 @@ describe('buyer workflow helpers', () => {
       ...baseRfq,
       status: '已定标',
       awardedSupplierId: 'supplier-a',
+      quotes: [{
+        id: 'quote-a',
+        rfqId: baseRfq.id,
+        tenantId: baseRfq.tenantId,
+        supplierId: 'supplier-a',
+        amount: 118000,
+        taxRate: 13,
+        deliveryDays: 5,
+        status: '已中选',
+      }],
     };
 
     expect(canCreateOrderFromAward(awardedRfq, 'award-001', [])).toBe(true);
     expect(canCreateOrderFromAward(awardedRfq, undefined, [])).toBe(false);
+    expect(canCreateOrderFromAward({ ...awardedRfq, quotes: [{ ...awardedRfq.quotes[0], status: '已锁定' }] }, 'award-001', [])).toBe(false);
+    expect(canCreateOrderFromAward({ ...awardedRfq, status: '定标审批中' }, 'award-001', [])).toBe(false);
+    expect(canCreateOrderFromAward({ ...awardedRfq, awardedSupplierId: 'supplier-b' }, 'award-001', [])).toBe(false);
     expect(canCreateOrderFromAward(awardedRfq, 'award-001', [{
       id: 'po-001',
       tenantId: baseRfq.tenantId,

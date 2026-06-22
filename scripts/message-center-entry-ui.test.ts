@@ -14,6 +14,8 @@ describe('message center entry UI', () => {
     expect(messageCenterPanel).toContain('消息中心入口');
     expect(messageCenterPanel).toContain('unreadCount');
     expect(messageCenterPanel).toContain('notifications.map');
+    expect(messageCenterPanel).toContain('onMarkRead');
+    expect(messageCenterPanel).toContain('标记已读');
     expect(messageCenterPanel).toContain('formatAuditTime(notification.createdAt)');
     expect(messageCenterPanel).toContain('<EmptyState title="暂无站内通知"');
   });
@@ -25,8 +27,10 @@ describe('message center entry UI', () => {
     expect(buyerWorkspace).toContain('const buyerMessageCenterNotifications');
     expect(buyerWorkspace).toContain('title="采购方消息中心"');
     expect(buyerWorkspace).toContain('scopeLabel="审批、询价、订单、发票"');
+    expect(buyerWorkspace).toContain('onMarkRead={markBuyerNotificationRead}');
     expect(buyerWorkspace).toContain('title="审批消息中心"');
     expect(buyerWorkspace).toContain('notifications={filteredBuyerNotifications}');
+    expect(buyerWorkspace).toContain('onMarkRead={markBuyerNotificationRead}');
   });
 
   it('adds a supplier message center derived from supplier collaboration records', () => {
@@ -38,5 +42,6 @@ describe('message center entry UI', () => {
     expect(supplierWorkspace).toContain('title="供应商消息中心"');
     expect(supplierWorkspace).toContain('scopeLabel="询价邀请、销售订单、发票应收"');
     expect(supplierWorkspace).toContain('notifications={supplierMessageCenterNotifications}');
+    expect(supplierWorkspace).toContain('onMarkRead={markSupplierNotificationRead}');
   });
 });

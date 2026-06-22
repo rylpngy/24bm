@@ -18,7 +18,7 @@ describe('supplier quote Java persistence UI', () => {
     expect(client).toContain('/api/v1/supplier/quotes/${quoteId}');
     expect(app).toContain('const updateSupplierQuote = async');
     expect(app).toContain('javaApiClient.updateSupplierQuote');
-    expect(app).toContain('报价记录已保存并刷新');
+    expect(app).toContain('报价记录已保存并已通知采购方重新比价');
     expect(supplierWorkspace).toContain('quoteUpdateDrafts');
     expect(supplierWorkspace).toContain('onUpdateQuote');
     expect(quoteDetailPanel).toContain('supplierActionBusyId === `quote-update:${quote.id}`');

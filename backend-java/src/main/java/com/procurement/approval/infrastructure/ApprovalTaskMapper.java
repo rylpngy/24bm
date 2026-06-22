@@ -24,14 +24,14 @@ public interface ApprovalTaskMapper {
       @Param("status") String status);
 
   @Select("""
-      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at, acted_at
+      select id, tenant_id, biz_type, biz_id, assignee_id, status, review_comment, created_at, acted_at
       from approval_tasks
       where tenant_id = #{tenantId} and id = #{id}
       """)
   ApprovalTask findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at, acted_at
+      select id, tenant_id, biz_type, biz_id, assignee_id, status, review_comment, created_at, acted_at
       from approval_tasks
       where tenant_id = #{tenantId}
         and biz_type = #{bizType}
@@ -47,7 +47,7 @@ public interface ApprovalTaskMapper {
       @Param("status") String status);
 
   @Select("""
-      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at, acted_at
+      select id, tenant_id, biz_type, biz_id, assignee_id, status, review_comment, created_at, acted_at
       from approval_tasks
       where tenant_id = #{tenantId}
         and status = #{status,jdbcType=VARCHAR}
@@ -58,7 +58,7 @@ public interface ApprovalTaskMapper {
       @Param("status") String status);
 
   @Select("""
-      select id, tenant_id, biz_type, biz_id, assignee_id, status, created_at, acted_at
+      select id, tenant_id, biz_type, biz_id, assignee_id, status, review_comment, created_at, acted_at
       from approval_tasks
       where tenant_id = #{tenantId}
         and status in ('已通过', '已驳回')
@@ -73,6 +73,7 @@ public interface ApprovalTaskMapper {
       update approval_tasks
       set status = #{status},
           assignee_id = #{assigneeId},
+          review_comment = nullif(trim(#{reviewComment,jdbcType=VARCHAR}), ''),
           acted_at = now()
       where tenant_id = #{tenantId}
         and id = #{id}
@@ -83,5 +84,6 @@ public interface ApprovalTaskMapper {
       @Param("id") String id,
       @Param("currentStatus") String currentStatus,
       @Param("status") String status,
-      @Param("assigneeId") String assigneeId);
+      @Param("assigneeId") String assigneeId,
+      @Param("reviewComment") String reviewComment);
 }

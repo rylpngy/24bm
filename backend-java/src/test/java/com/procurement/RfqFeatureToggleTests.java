@@ -6,7 +6,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
+import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
@@ -15,6 +17,7 @@ import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
+import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.infrastructure.TenantFeatureMapper;
@@ -31,9 +34,14 @@ class RfqFeatureToggleTests {
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper = org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
+  private final SupplierQualificationMapper supplierQualificationMapper = org.mockito.Mockito.mock(SupplierQualificationMapper.class);
   private final TenantFeatureMapper tenantFeatureMapper = org.mockito.Mockito.mock(TenantFeatureMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       new TenantFeatureApplicationService(tenantFeatureMapper, new ObjectMapper());
+  private final AuditLogApplicationService auditLogApplicationService =
+      org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final NotificationApplicationService notificationApplicationService =
+      org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final RfqApplicationService rfqApplicationService = new RfqApplicationService(
       rfqMapper,
       quoteMapper,
@@ -41,8 +49,11 @@ class RfqFeatureToggleTests {
       rfqInviteMapper,
       purchaseDemandMapper,
       buyerSupplierRelationMapper,
+      supplierQualificationMapper,
       tenantFeatureApplicationService,
-      new RfqSourcingStatusTransition());
+      new RfqSourcingStatusTransition(),
+      auditLogApplicationService,
+      notificationApplicationService);
 
   @AfterEach
   void clearTenantContext() {

@@ -32,16 +32,16 @@ class InvoicePaymentStatusTransitionTests {
   }
 
   @Test
-  void treatsRepeatedFinalOrPartialPaymentAsIdempotent() {
-    assertThat(transition.isIdempotentRegistration(
+  void detectsRepeatedFinalOrPartialPaymentAsDuplicateRegistration() {
+    assertThat(transition.isDuplicateRegistration(
         InvoicePaymentStatus.PARTIAL_PAID,
         InvoicePaymentStatus.PARTIAL_PAID))
         .isTrue();
-    assertThat(transition.isIdempotentRegistration(
+    assertThat(transition.isDuplicateRegistration(
         InvoicePaymentStatus.PAID,
         InvoicePaymentStatus.PAID))
         .isTrue();
-    assertThat(transition.isIdempotentRegistration(
+    assertThat(transition.isDuplicateRegistration(
         InvoicePaymentStatus.PENDING_PAYMENT,
         InvoicePaymentStatus.PENDING_PAYMENT))
         .isFalse();
@@ -85,5 +85,15 @@ class InvoicePaymentStatusTransitionTests {
         "invoice-1"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Paid invoices cannot be changed: invoice-1");
+  }
+
+  @Test
+  void rejectsDuplicatePaymentRegistration() {
+    assertThatThrownBy(() -> transition.requireTransition(
+        InvoicePaymentStatus.PAID,
+        InvoicePaymentStatus.PAID,
+        "invoice-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Payment status already registered: invoice-1");
   }
 }

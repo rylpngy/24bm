@@ -25,6 +25,9 @@ describe('buyer order detail UI', () => {
     expect(app).toContain('setSelectedOrderId');
     expect(app).toContain('OrderDetailPanelView');
     expect(orderDetailView).toContain('订单详情');
+    expect(orderDetailView).toContain('定标审批来源');
+    expect(orderDetailView).toContain('定标审批意见');
+    expect(orderDetailView).toContain('detail.awardApprovalComment');
     expect(orderDetailView).toContain('物流信息');
     expect(orderDetailView).toContain('发票付款');
     expect(orderDetailView).toContain('履约检查');

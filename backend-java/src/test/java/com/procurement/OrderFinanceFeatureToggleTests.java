@@ -15,6 +15,7 @@ import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
+import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.application.PurchaseOrderApplicationService;
@@ -24,6 +25,7 @@ import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
+import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.infrastructure.TenantFeatureMapper;
 import java.math.BigDecimal;
@@ -35,10 +37,12 @@ import org.junit.jupiter.api.Test;
 class OrderFinanceFeatureToggleTests {
 
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
+  private final RfqMapper rfqMapper = org.mockito.Mockito.mock(RfqMapper.class);
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
   private final InvoiceReconciliationMapper invoiceReconciliationMapper =
       org.mockito.Mockito.mock(InvoiceReconciliationMapper.class);
+  private final ThreeWayMatchMapper threeWayMatchMapper = org.mockito.Mockito.mock(ThreeWayMatchMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
@@ -51,6 +55,7 @@ class OrderFinanceFeatureToggleTests {
 
   private final PurchaseOrderApplicationService purchaseOrderApplicationService = new PurchaseOrderApplicationService(
       awardDecisionMapper,
+      rfqMapper,
       purchaseOrderMapper,
       auditLogApplicationService,
       notificationApplicationService,
@@ -60,12 +65,14 @@ class OrderFinanceFeatureToggleTests {
       purchaseOrderMapper,
       invoiceMapper,
       invoiceReconciliationMapper,
+      threeWayMatchMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService);
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
       invoiceReconciliationMapper,
+      threeWayMatchMapper,
       purchaseOrderMapper,
       buyerSupplierRelationMapper,
       auditLogApplicationService,

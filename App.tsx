@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Activity,
+  AlertCircle,
   ArrowRight,
   BadgeCheck,
   BarChart3,
@@ -35,6 +36,8 @@ import {
   buildApprovalDetailPanel,
   buildApprovalQueueRows,
   buildBuyerModuleFacts,
+  buildContractDetailPanel,
+  buildContractLedgerRows,
   buildDemandDetailPanel,
   buildDemandListRows,
   buildInvoicePaymentDetailPanel,
@@ -54,6 +57,8 @@ import {
   type ApprovalDetailPanel,
   type AuditLogDetailPanel,
   type BuyerModuleFact,
+  type ContractArchiveReviewActionSuggestion,
+  type ContractDetailPanel,
   type DemandDetailPanel,
   type InvoicePaymentDetailPanel,
   type MaterialDetailPanel,
@@ -81,7 +86,10 @@ import {
   type BuyerNextAction,
 } from './data/buyerWorkflow';
 import {
+  type AuditLogRecord,
   type BuyerWorkspace,
+  type ContractLedgerItem,
+  type MaterialItem,
   type ProcurementMvpModel,
   type Rfq,
   type SupplierWorkspace,
@@ -98,7 +106,14 @@ import {
   mockApiClient,
   resolveAppRuntimeDataSource,
    runJavaMvpWorkflow,
+   type CreateSupplierQualificationPayload,
+   type CreateContractPayload,
+   type CreateContractFulfillmentEventPayload,
+   type CreateBuyerSupplierRelationPayload,
    type CreateDemandPayload,
+   type SaveMaterialPayload,
+   type UpdateContractPayload,
+   type UpdateBuyerSupplierProfilePayload,
    type UpdateDemandPayload,
    type UpdateRfqPayload,
    type UpdateOrderPayload,
@@ -110,7 +125,71 @@ import {
   type JavaApprovalTemplateDto,
   type JavaNotificationDto,
   type BuyerRoleDto,
+  type AttachmentRecord,
+  type AttachmentDownloadLinkRecord,
+  type AttachmentUploadTicketRecord,
+  type ContractFulfillmentEventRecord,
+  type CreateAttachmentPayload,
+  type CreateAttachmentUploadTicketPayload,
+  type PaymentBatchRecord,
+    type PaymentBlockResolutionRecord,
+    type PaymentExecutionRecord,
+    type PaymentArchiveExceptionRequestRecord,
+    type PaymentRequestRecord,
+    type VarianceHandlingRecord,
 } from './services/procurementApiClient';
+import {
+  DemoActionFeedbackPanel,
+  DemoCommandCenterPanel,
+  DemoPermissionAuditPanel,
+  DemoReadinessPanel,
+  DemoReadonlyBoundaryPanel,
+  DemoWalkthroughRail,
+  type DemoActionFeedbackItem,
+  type DemoCommandCenterItem,
+  type DemoCurrentActionGuide,
+  type DemoGovernanceTraceItem,
+  type DemoReadinessItem,
+  type DemoReadonlyBoundaryItem,
+  type DemoSequenceNavigation,
+  type DemoWalkthroughStep,
+} from './components/stageEightDemoPanels';
+
+const buildDemoReadinessItems = (
+  javaEnabled: boolean,
+  roleActionCount: string,
+  evidenceFile: string,
+  sampleSummary: string,
+): DemoReadinessItem[] => [
+  {
+    label: '前端页面已加载',
+    status: '已加载',
+    evidence: 'http://localhost:3000/',
+    detail: '当前后台壳、三端菜单、演示总线和角色工作区已进入可展示状态。',
+    tone: 'ready',
+  },
+  {
+    label: 'Java 数据源',
+    status: javaEnabled ? '已连接' : '待连接',
+    evidence: 'http://localhost:8080/api/v1/health',
+    detail: javaEnabled ? '当前页面使用 Java 数据源，可作为现场主验收路径。' : '当前页面未连接 Java 数据源，演示前需要切回 Java 模式。',
+    tone: javaEnabled ? 'ready' : 'warning',
+  },
+  {
+    label: '17 个真实动作',
+    status: roleActionCount,
+    evidence: evidenceFile,
+    detail: `本角色证据文件：${evidenceFile}；三端合计保持 17 个已验收真实动作。`,
+    tone: 'ready',
+  },
+  {
+    label: '推荐样本',
+    status: '推荐样本已标记',
+    evidence: '阶段七稳定 seed 与阶段九卡片高亮',
+    detail: sampleSummary,
+    tone: 'ready',
+  },
+];
 
 const moduleIcon = (moduleId: string): React.ElementType => {
   const icons: Record<string, React.ElementType> = {
@@ -126,6 +205,7 @@ const moduleIcon = (moduleId: string): React.ElementType => {
     rfqs: Send,
     quotes: BarChart3,
     orders: ShoppingCart,
+    contracts: FileText,
     receipts: PackageCheck,
     invoices: Receipt,
     audit: Activity,
@@ -136,6 +216,800 @@ const moduleIcon = (moduleId: string): React.ElementType => {
 };
 
 const ALL_STATUS_FILTER = '全部状态';
+const DEMO_LIST_DISPLAY_LIMIT = 20;
+const limitDemoRows = <T,>(rows: T[]) => rows.slice(0, DEMO_LIST_DISPLAY_LIMIT);
+const BUYER_MAIN_FLOW_DEMO_LIST_LIMIT = 6;
+const limitBuyerDemoRows = <T,>(rows: T[], isRecommendedSample?: (row: T) => boolean) => {
+  if (rows.length <= BUYER_MAIN_FLOW_DEMO_LIST_LIMIT) return rows;
+  if (!isRecommendedSample) return rows.slice(0, BUYER_MAIN_FLOW_DEMO_LIST_LIMIT);
+
+  const recommendedRows = rows.filter(isRecommendedSample);
+  const recommendedSet = new Set(recommendedRows);
+  return [
+    ...recommendedRows,
+    ...rows.filter((row) => !recommendedSet.has(row)),
+  ].slice(0, BUYER_MAIN_FLOW_DEMO_LIST_LIMIT);
+};
+const SUPPLIER_COLLABORATION_DEMO_LIST_LIMIT = 6;
+const limitSupplierDemoRows = <T,>(rows: T[], isRecommendedSample?: (row: T) => boolean) => {
+  if (rows.length <= SUPPLIER_COLLABORATION_DEMO_LIST_LIMIT) return rows;
+  if (!isRecommendedSample) return rows.slice(0, SUPPLIER_COLLABORATION_DEMO_LIST_LIMIT);
+
+  const recommendedRows = rows.filter(isRecommendedSample);
+  const recommendedSet = new Set(recommendedRows);
+  return [
+    ...recommendedRows,
+    ...rows.filter((row) => !recommendedSet.has(row)),
+  ].slice(0, SUPPLIER_COLLABORATION_DEMO_LIST_LIMIT);
+};
+
+const isRfqEligibleSupplierRelation = (relation: BuyerWorkspace['privateSupplierRelations'][number]) =>
+  relation.status === '已准入'
+    && Boolean(relation.qualifications?.some((qualification) => qualification.status === 'active'));
+
+const scrollToStageNineDemoSample = (testIdPrefix: string) => {
+  window.setTimeout(() => {
+    document
+      .querySelector(`[data-testid^="${testIdPrefix}"]`)
+      ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, 0);
+};
+
+const buildDemoSequenceNavigation = <ModuleId extends string>(
+  steps: Array<DemoWalkthroughStep<ModuleId>>,
+  activeModule: ModuleId,
+  closedLabel: string,
+  onNavigate: (moduleId: ModuleId) => void,
+  onLocateSample?: () => void,
+): DemoSequenceNavigation<ModuleId> | undefined => {
+  const activeIndex = steps.findIndex((step) => step.moduleId === activeModule);
+  if (activeIndex < 0) return undefined;
+  const currentStep = steps[activeIndex];
+  const previousStep = activeIndex > 0 ? steps[activeIndex - 1] : undefined;
+  const nextStep = activeIndex < steps.length - 1 ? steps[activeIndex + 1] : undefined;
+
+  return {
+    currentLabel: currentStep.label,
+    previousLabel: previousStep?.label ?? '演示起点',
+    nextLabel: nextStep?.label ?? closedLabel,
+    previousModuleId: previousStep?.moduleId,
+    nextModuleId: nextStep?.moduleId,
+    onPrevious: onNavigate,
+    onNext: onNavigate,
+    onLocateSample,
+  };
+};
+
+const buyerDemoCommandCenterItems: DemoCommandCenterItem[] = [
+  {
+    storyline: '需求到付款闭环',
+    actionCount: '7 个真实动作',
+    evidence: 'stage-seven-java-real-action-click-result.json',
+    nextPage: '采购需求 -> 审批中心 -> 询价项目 -> 报价对比 -> 采购订单 -> 收货验收 -> 发票付款',
+  },
+];
+
+const contractDemoCommandCenterItems: DemoCommandCenterItem[] = [
+  {
+    storyline: '订单生成合同',
+    actionCount: '订单来源 / 合同台账',
+    evidence: 'stage-ten-contract-demo-path-result.json',
+    nextPage: '采购订单 -> 合同管理',
+  },
+  {
+    storyline: '合同审批',
+    actionCount: '提交合同审批 / 审批中心回看',
+    evidence: 'ContractApprovalFlowTests.java',
+    nextPage: '合同管理 -> 审批中心',
+  },
+  {
+    storyline: '合同履约事件',
+    actionCount: '收货事件 / 付款事件',
+    evidence: 'ContractFulfillmentEventTests.java',
+    nextPage: '合同管理 -> 收货验收',
+  },
+  {
+    storyline: '合同与订单/发票/付款关系',
+    actionCount: '关联订单 / 发票付款 / 归档门禁',
+    evidence: 'stage-ten-contract-demo-path-review.md',
+    nextPage: '合同管理 -> 发票付款',
+  },
+];
+
+const supplierDemoCommandCenterItems: DemoCommandCenterItem[] = [
+  {
+    storyline: '报价到应收协同',
+    actionCount: '5 个真实动作',
+    evidence: 'stage-seven-supplier-java-real-action-click-result.json',
+    nextPage: '询价邀请 -> 报价记录 -> 销售订单 -> 发票应收',
+  },
+];
+
+const platformDemoCommandCenterItems: DemoCommandCenterItem[] = [
+  {
+    storyline: 'SaaS 治理和运营动作',
+    actionCount: '5 个真实动作',
+    evidence: 'stage-seven-platform-java-real-action-click-result.json',
+    nextPage: '平台看板 -> 租户列表 -> 企业审核 -> 平台公告',
+  },
+];
+
+const buyerDemoCurrentActionGuides: Partial<Record<BuyerAdminModule, DemoCurrentActionGuide>> = {
+  demands: {
+    actionLabel: '提交审批 / 创建询价',
+    targetButton: '提交审批、创建询价',
+    prioritySample: 'dem-stage7-submit-ready / dem-stage7-rfq-ready',
+    sampleLocator: '采购需求列表中优先找阶段七演示需求卡片',
+    talkTrack: '需求页负责把业务申请推进到审批和询价准备，是采购方闭环的入口。',
+    nextHop: '审批中心或询价项目',
+  },
+  approvals: {
+    actionLabel: '通过需求审批',
+    targetButton: '通过',
+    prioritySample: 'approval-stage7-demand-pending',
+    sampleLocator: '审批中心待办里优先找阶段七需求审批',
+    talkTrack: '审批中心说明内控节点，审批通过后需求才能进入询价。',
+    nextHop: '采购需求',
+  },
+  quotes: {
+    actionLabel: '提交定标审批 / 生成采购订单',
+    targetButton: '按推荐报价提交定标审批、生成采购订单',
+    prioritySample: 'rfq-stage7-award-ready / award-stage7-order-ready',
+    sampleLocator: '报价对比页优先打开阶段七定标和生成订单样本',
+    talkTrack: '报价对比页把供应商报价、推荐理由、定标审批和订单生成连成一段。',
+    nextHop: '采购订单',
+  },
+  receipts: {
+    actionLabel: '登记收货',
+    targetButton: '登记收货',
+    prioritySample: 'po-stage7-receipt-ready',
+    sampleLocator: '收货验收页优先找阶段七待收货订单',
+    talkTrack: '收货验收把供应商发货转为采购方确认，是进入发票付款的前置条件。',
+    nextHop: '发票付款',
+  },
+  invoices: {
+    actionLabel: '登记付款',
+    targetButton: '登记付款',
+    prioritySample: 'inv-stage7-payment-ready',
+    sampleLocator: '发票付款页优先找阶段七待付款发票',
+    talkTrack: '付款页只登记付款状态和审计留痕，不触发真实资金流。',
+    nextHop: '审计日志',
+  },
+};
+
+type BuyerMainFlowOperationStripConfig = {
+  pageLabel: string;
+  focus: string;
+  recommendedAction: string;
+  boundary: string;
+  listPolish: string;
+  detailPolish: string;
+  emptyStatePolish: string;
+  buttonBoundaryPolish: string;
+  nextModuleLabel: string;
+  nextModuleId: BuyerAdminModule;
+};
+
+const buyerMainFlowOperationStrips: Partial<Record<BuyerAdminModule, BuyerMainFlowOperationStripConfig>> = {
+  demands: {
+    pageLabel: '采购需求',
+    focus: '先说明需求来源、预算、附件和物料明细，再推进审批或创建询价。',
+    recommendedAction: '提交审批或创建询价',
+    boundary: '草稿才能提交审批；已通过且未关联询价的需求才允许创建 RFQ。',
+    listPolish: '需求状态、预算、物料和下一步动作优先展示。',
+    detailPolish: '详情先看主流程判断，再看写入边界、物料明细和编辑区。',
+    emptyStatePolish: '暂无需求时说明先创建需求，再提交审批并转询价。',
+    buttonBoundaryPolish: '提交审批和创建询价分开解释，避免误以为审批中也能建 RFQ。',
+    nextModuleLabel: '审批中心',
+    nextModuleId: 'approvals',
+  },
+  approvals: {
+    pageLabel: '审批中心',
+    focus: '把内控节点讲清楚：谁审批、审批什么、通过后流向哪里。',
+    recommendedAction: '通过或驳回待办',
+    boundary: '无待办时只讲最近审批记录；已处理审批不能重复通过。',
+    listPolish: '审批类型、业务对象、处理意见和处理按钮保持同屏。',
+    detailPolish: '详情先讲业务上下文，再讲审批意见、通过和驳回结果。',
+    emptyStatePolish: '无待办时解释当前审批队列已处理，可看最近审批记录。',
+    buttonBoundaryPolish: '只有待审批任务显示处理按钮，最近审批记录保持只读。',
+    nextModuleLabel: '采购需求',
+    nextModuleId: 'demands',
+  },
+  rfqs: {
+    pageLabel: '询价项目',
+    focus: '强调 RFQ 从已审批需求生成，供应商邀请、报价要求和截止时间是核心。',
+    recommendedAction: '邀请供应商并进入报价对比',
+    boundary: '报价不足时不进入定标；已定标项目只做状态回看。',
+    listPolish: '询价状态、供应商邀请、报价数量和截止时间按同一顺序展示。',
+    detailPolish: '详情先看状态流转，再看报价排行、关联业务和编辑区。',
+    emptyStatePolish: '暂无询价时解释需要先从已审批需求创建 RFQ。',
+    buttonBoundaryPolish: '报价中可跟进邀请，已定标后不再重复编辑定标动作。',
+    nextModuleLabel: '报价对比',
+    nextModuleId: 'quotes',
+  },
+  quotes: {
+    pageLabel: '报价对比',
+    focus: '先讲比较矩阵和推荐理由，再讲定标审批和订单生成条件。',
+    recommendedAction: '提交定标审批或生成采购订单',
+    boundary: '没有报价不能定标；定标审批未通过不能生成采购订单。',
+    listPolish: '推荐理由、报价矩阵、定标审批和生成订单入口保持同屏。',
+    detailPolish: '详情先讲推荐结论，再进入报价比较矩阵和关联业务。',
+    emptyStatePolish: '暂无比价项目时解释等待供应商报价后再进入定标。',
+    buttonBoundaryPolish: '定标审批和生成订单分两个动作，审批通过前不显示订单生成。',
+    nextModuleLabel: '采购订单',
+    nextModuleId: 'orders',
+  },
+  orders: {
+    pageLabel: '采购订单',
+    focus: '把定标结果承接成订单履约，说明供应商确认、发货和预计到货。',
+    recommendedAction: '跟进供应商确认和发货',
+    boundary: '供应商未发货前不能登记收货；已收货订单只做履约回看。',
+    listPolish: '供应商、金额、物流、收货和发票状态固定为订单扫读顺序。',
+    detailPolish: '详情先看订单履约时间线，再看物流、履约轨迹和预计到货编辑。',
+    emptyStatePolish: '暂无订单时解释定标审批通过后才会生成采购订单。',
+    buttonBoundaryPolish: '未发货订单不开放收货；已收货订单只保留状态回看。',
+    nextModuleLabel: '收货验收',
+    nextModuleId: 'receipts',
+  },
+  receipts: {
+    pageLabel: '收货验收',
+    focus: '把物流到货转成验收结果，异常先记录原因再进入后续处理。',
+    recommendedAction: '登记收货或说明异常',
+    boundary: '未发货不能收货；已收货记录不重复登记。',
+    listPolish: '物流状态、验收结果、异常原因和登记入口保持同屏。',
+    detailPolish: '详情先核对物流和验收检查，再填写验收备注与异常原因。',
+    emptyStatePolish: '暂无待收货时解释供应商发货后才进入验收池。',
+    buttonBoundaryPolish: '异常待处理必须填写原因，已收货记录不重复登记。',
+    nextModuleLabel: '发票付款',
+    nextModuleId: 'invoices',
+  },
+  invoices: {
+    pageLabel: '发票付款',
+    focus: '把发票、对账、差异处理和付款状态作为主流程收束点。',
+    recommendedAction: '处理对账差异并登记付款',
+    boundary: '存在差异先处理对账；已付款发票不再修改付款状态。',
+    listPolish: '对账状态、差异处理、付款计划和付款登记保持同屏。',
+    detailPolish: '详情先看三单匹配，再看付款计划、对账单摘要和付款轨迹。',
+    emptyStatePolish: '暂无发票时解释供应商提交发票后才进入付款台账。',
+    buttonBoundaryPolish: '存在差异先处理对账，已付款发票只做审计回看。',
+    nextModuleLabel: '首页看板',
+    nextModuleId: 'dashboard',
+  },
+};
+
+const contractDemoCurrentActionGuide: DemoCurrentActionGuide = {
+  actionLabel: '推荐合同样本讲解',
+  targetButton: '定位推荐样本、提交合同审批、进入收货验收、进入发票付款',
+  prioritySample: 'stage10-demo-sample-contract',
+  sampleLocator: '合同台账里优先定位第一条 Java 合同或订单派生合同',
+  talkTrack: '合同页负责把采购订单承接为合同台账，再串联审批、履约事件、收货、发票付款和归档边界。',
+  nextHop: '审批中心 / 收货验收 / 发票付款',
+};
+
+type ContractDeepeningReadinessItem = {
+  label: string;
+  status: string;
+  evidence: string;
+  detail: string;
+};
+
+const buildContractDeepeningReadinessItems = (
+  javaEnabled: boolean,
+  contractCount: number,
+  selectedDetail?: ContractDetailPanel,
+  recommendedSample?: ContractLedgerItem,
+): ContractDeepeningReadinessItem[] => [
+  {
+    label: '合同总览',
+    status: `${contractCount} 份合同`,
+    evidence: '合同管理页首屏',
+    detail: '用合同数量、草案、生效/履约和已归档统计说明合同台账的当前业务状态。',
+  },
+  {
+    label: '合同审批',
+    status: selectedDetail?.approvalReadiness.status ?? '待选择合同',
+    evidence: '提交合同审批 / 审批中心',
+    detail: '复用现有合同审批按钮和审批中心承接，不新增合同工作流接口。',
+  },
+  {
+    label: '履约事件',
+    status: selectedDetail?.fulfillmentLinkageSummary.stage ?? '待选择合同',
+    evidence: '收货事件 / 付款事件',
+    detail: '从合同详情跳转收货验收和发票付款，形成履约事件回看与归档复核证据。',
+  },
+  {
+    label: '订单/收货/发票/付款关系',
+    status: selectedDetail?.relatedOrderId ? '已关联订单' : '待关联',
+    evidence: selectedDetail?.relatedOrderId ?? '暂无关联订单',
+    detail: '合同聚合订单、收货、发票和付款关系，但不替代这些业务模块的真实动作。',
+  },
+  {
+    label: '归档门禁',
+    status: selectedDetail?.archiveReadiness.status ?? '待选择合同',
+    evidence: selectedDetail?.archiveReadiness.reason ?? '暂无归档判断',
+    detail: '归档仍走 Java 服务端门禁；未满足条件时先说明阻断原因和解除路径。',
+  },
+  {
+    label: '演示操作条',
+    status: javaEnabled ? 'Java 数据源真实动作复验' : '等待 Java 数据源',
+    evidence: 'stage10-contract-demo-action-loop',
+    detail: '继续使用提交合同审批、推进履约、处理收货验收、处理发票付款和归档合同这组真按钮。',
+  },
+  {
+    label: '推荐合同样本',
+    status: recommendedSample ? '已准备' : '待生成',
+    evidence: recommendedSample?.contractNo ?? '暂无推荐合同样本',
+    detail: '演示时优先定位推荐合同样本，避免现场临时查找合同数据。',
+  },
+];
+
+const supplierDemoCurrentActionGuides: Partial<Record<SupplierAdminModule, DemoCurrentActionGuide>> = {
+  opportunities: {
+    actionLabel: '提交报价',
+    targetButton: '提交报价',
+    prioritySample: 'rfq-stage7-supplier-quote-ready',
+    sampleLocator: '询价邀请列表中优先找阶段七供应商报价样本',
+    talkTrack: '商机页说明供应商只处理本企业收到的询价邀请。',
+    nextHop: '报价记录',
+  },
+  orders: {
+    actionLabel: '确认订单 / 提交发货 / 提交发票',
+    targetButton: '确认订单、提交发货、提交发票',
+    prioritySample: 'po-stage7-supplier-confirm-ready / po-stage7-supplier-delivery-ready / po-stage7-supplier-invoice-ready',
+    sampleLocator: '销售订单页优先找阶段七确认、发货和开票样本',
+    talkTrack: '销售订单页把采购方订单确认、物流提交和发票提交串成供应商履约主线。',
+    nextHop: '发票应收',
+  },
+  invoices: {
+    actionLabel: '保存对账备注',
+    targetButton: '保存对账备注',
+    prioritySample: 'inv-stage7-supplier-receivable-ready',
+    sampleLocator: '发票应收页优先找阶段七待备注应收发票',
+    talkTrack: '发票应收页强调供应商只能跟进应收和备注，付款结果由采购方登记。',
+    nextHop: '企业档案或采购方发票付款页',
+  },
+};
+
+type SupplierRealActionFeedbackItem = {
+  action: string;
+  enabled: boolean;
+  targetTestId: string;
+  beforeCheck: string;
+  afterFeedback: string;
+  failureFallback: string;
+  nextFlow: string;
+  collaborationBoundary: string;
+};
+
+const buildSupplierRealActionFeedbackItems = ({
+  pendingQuoteCount,
+  pendingConfirmCount,
+  pendingDeliveryCount,
+  invoiceReadyCount,
+  pendingReceivableCount,
+}: {
+  pendingQuoteCount: number;
+  pendingConfirmCount: number;
+  pendingDeliveryCount: number;
+  invoiceReadyCount: number;
+  pendingReceivableCount: number;
+}): SupplierRealActionFeedbackItem[] => [
+  {
+    action: '报价提交',
+    enabled: pendingQuoteCount > 0,
+    targetTestId: 'stage7-supplier-submit-quote-rfq-stage7-supplier-quote-ready',
+    beforeCheck: '点前检查：RFQ 处于报价中、本企业尚未报价，报价金额和交付天数大于 0。',
+    afterFeedback: '点击后反馈：顶部显示“报价已提交”，报价记录页可回看金额、税率和交付周期。',
+    failureFallback: '失败兜底：提示报价已提交、询价已截止或当前供应商无权处理该邀请。',
+    nextFlow: '后续流向：进入报价记录，等待采购方比价、定标和生成采购订单。',
+    collaborationBoundary: '协同边界：供应商不能查看采购方预算和其他供应商报价。',
+  },
+  {
+    action: '订单确认',
+    enabled: pendingConfirmCount > 0,
+    targetTestId: 'stage7-supplier-confirm-order-po-stage7-supplier-confirm-ready',
+    beforeCheck: '点前检查：销售订单状态为待供应商确认，当前供应商是订单承接主体。',
+    afterFeedback: '点击后反馈：顶部显示“供应商订单已确认”，订单进入待发货状态。',
+    failureFallback: '失败兜底：提示订单已确认、订单不存在或供应商无权确认该订单。',
+    nextFlow: '后续流向：进入销售订单发货区，填写承运商和物流单号。',
+    collaborationBoundary: '协同边界：供应商确认订单，但不能替采购方登记收货验收。',
+  },
+  {
+    action: '发货提交',
+    enabled: pendingDeliveryCount > 0,
+    targetTestId: 'stage7-supplier-create-delivery-po-stage7-supplier-delivery-ready',
+    beforeCheck: '点前检查：订单已确认待发货，承运商和物流单号已填写。',
+    afterFeedback: '点击后反馈：顶部显示“发货信息已提交”，采购方收货验收可读取物流信息。',
+    failureFallback: '失败兜底：提示物流单号缺失、订单状态不允许发货或发货记录已存在。',
+    nextFlow: '后续流向：等待采购方收货，收货后供应商提交发票。',
+    collaborationBoundary: '协同边界：供应商维护物流信息，收货结论由采购方登记。',
+  },
+  {
+    action: '发票提交',
+    enabled: invoiceReadyCount > 0,
+    targetTestId: 'stage7-supplier-create-invoice-po-stage7-supplier-invoice-ready',
+    beforeCheck: '点前检查：采购方已收货、订单尚未开票，发票号和发票金额已填写。',
+    afterFeedback: '点击后反馈：顶部显示“发票信息已提交”，发票进入供应商应收和采购方付款台账。',
+    failureFallback: '失败兜底：提示订单未收货、重复开票或发票金额无效。',
+    nextFlow: '后续流向：进入发票应收，保存对账备注并跟进回款。',
+    collaborationBoundary: '协同边界：供应商提交发票，付款登记仍由采购方侧驱动。',
+  },
+  {
+    action: '应收备注',
+    enabled: pendingReceivableCount > 0,
+    targetTestId: 'stage7-supplier-update-receivable-inv-stage7-supplier-receivable-ready',
+    beforeCheck: '点前检查：发票未完成付款，应收备注已填写具体对账或回款跟进说明。',
+    afterFeedback: '点击后反馈：顶部显示“应收对账备注已保存并刷新”，详情区回显最新备注。',
+    failureFallback: '失败兜底：提示发票已付款、备注为空或当前供应商无权维护该应收。',
+    nextFlow: '后续流向：继续等待采购方付款登记，必要时回到销售订单核对来源。',
+    collaborationBoundary: '协同边界：供应商只能维护应收备注，不能修改采购方付款状态。',
+  },
+];
+
+const platformDemoCurrentActionGuides: Partial<Record<PlatformAdminModule, DemoCurrentActionGuide>> = {
+  tenants: {
+    actionLabel: '停用租户 / 升级专业版',
+    targetButton: '停用租户、升级专业版',
+    prioritySample: 'tenant-stage7-platform-action',
+    sampleLocator: '租户列表优先找阶段七平台演示租户',
+    talkTrack: '租户列表讲 SaaS 运营治理，不修改采购方业务单据。',
+    nextHop: '企业审核',
+  },
+  reviews: {
+    actionLabel: '通过企业审核',
+    targetButton: '通过企业审核',
+    prioritySample: 'ent-stage7-platform-review-ready',
+    sampleLocator: '企业审核页优先找阶段七待审核企业',
+    talkTrack: '企业审核页讲公共企业档案准入，平台只处理入驻合规。',
+    nextHop: '平台公告',
+  },
+  announcements: {
+    actionLabel: '发布平台公告 / 撤回平台公告',
+    targetButton: '发布平台公告、撤回平台公告',
+    prioritySample: 'announcement-stage7-platform-withdraw-ready',
+    sampleLocator: '平台公告页优先发布新公告，再选择可撤回公告',
+    talkTrack: '平台公告页讲运营通知生命周期，公告不改变采购流程状态。',
+    nextHop: '平台看板',
+  },
+};
+
+const buyerDemoActionFeedbackItems: DemoActionFeedbackItem[] = [
+  {
+    action: '提交审批',
+    prerequisite: '存在草稿采购需求，并已补齐预算、物料明细和附件说明。',
+    success: '页面显示需求已提交审批，需求进入审批中心待处理。',
+    fallback: '如果按钮不可用，先确认当前需求是否已经提交或不是草稿状态。',
+    nextStep: '进入审批中心，演示通过或驳回需求审批。',
+  },
+  {
+    action: '通过审批',
+    prerequisite: '审批中心存在待审批任务，且当前账号具备审批处理权限。',
+    success: '审批任务完成，需求状态变为已通过，可进入询价准备。',
+    fallback: '如果没有待办，说明演示样本已被处理，需要重新执行 stage7 seed 或三端验收脚本。',
+    nextStep: '回到采购需求，为已通过需求创建询价。',
+  },
+  {
+    action: '创建询价',
+    prerequisite: '需求已审批通过，且尚未关联 RFQ。',
+    success: '系统生成询价项目，并把需求明细带入询价协同流程。',
+    fallback: '如果创建入口不可用，检查需求是否仍在审批中或已经创建过询价。',
+    nextStep: '进入询价项目，讲解供应商邀请和报价要求。',
+  },
+  {
+    action: '提交定标审批',
+    prerequisite: '询价项目已有供应商报价，且尚未完成定标。',
+    success: '推荐报价被提交为定标审批，系统保留比价和推荐理由。',
+    fallback: '如果不能提交，先确认项目是否已经定标或报价数量不足。',
+    nextStep: '定标审批通过后，在报价对比页生成采购订单。',
+  },
+  {
+    action: '生成采购订单',
+    prerequisite: '定标审批已通过，且当前定标结果还未生成订单。',
+    success: '系统生成采购订单，订单进入供应商确认和履约阶段。',
+    fallback: '如果按钮不可见，说明订单已生成或定标仍未审批通过。',
+    nextStep: '进入采购订单，跟进供应商确认、发货和预计到货。',
+  },
+  {
+    action: '登记收货',
+    prerequisite: '供应商已提交发货信息，采购方可进行到货验收。',
+    success: '收货验收完成，订单可进入发票和付款协同。',
+    fallback: '如果不能登记，先确认供应商是否已发货或订单是否已经收货。',
+    nextStep: '进入发票付款，核对发票、三单匹配和付款状态。',
+  },
+  {
+    action: '登记付款',
+    prerequisite: '存在未付款发票，并已完成必要的收货和对账核对。',
+    success: '付款状态被登记，当前阶段不触发真实资金流。',
+    fallback: '如果不可登记，说明发票已付款、缺少发票或仍有对账差异。',
+    nextStep: '用审计日志回看付款登记和主流程闭环。',
+  },
+];
+
+const supplierDemoActionFeedbackItems: DemoActionFeedbackItem[] = [
+  {
+    action: '提交报价',
+    prerequisite: '供应商收到报价中 RFQ，且本企业还没有提交报价。',
+    success: '报价记录保存到供应商侧，并同步给采购方用于比价。',
+    fallback: '如果不能提交，检查是否已报价、询价已截止或不是当前供应商的邀请。',
+    nextStep: '切到采购方报价对比页，演示推荐定标和审批。',
+  },
+  {
+    action: '确认订单',
+    prerequisite: '采购方已生成采购订单，订单状态为待供应商确认。',
+    success: '销售订单进入待发货，供应商可以登记物流信息。',
+    fallback: '如果按钮不可见，说明订单已确认或采购方尚未生成订单。',
+    nextStep: '填写承运商和物流单号，提交发货。',
+  },
+  {
+    action: '提交发货',
+    prerequisite: '订单已确认，且承运商和物流单号已填写。',
+    success: '发货信息同步到采购方收货验收页面。',
+    fallback: '如果提交失败，先核对物流单号是否为空或订单是否已经发货。',
+    nextStep: '采购方登记收货后，供应商提交发票。',
+  },
+  {
+    action: '提交发票',
+    prerequisite: '采购方已收货，供应商填写发票号和发票金额。',
+    success: '发票进入供应商应收和采购方发票付款台账。',
+    fallback: '如果不能提交，检查订单是否已收货或发票是否已经存在。',
+    nextStep: '进入发票应收，维护对账备注并跟进付款状态。',
+  },
+  {
+    action: '保存对账备注',
+    prerequisite: '供应商存在应收发票，需要补充对账口径或回款跟进说明。',
+    success: '对账备注保存，便于采购方和供应商在同一发票上协同。',
+    fallback: '如果保存失败，检查是否选中发票或当前发票是否仍可维护备注。',
+    nextStep: '等待采购方登记付款，供应商侧只跟进应收状态。',
+  },
+];
+
+const platformDemoActionFeedbackItems: DemoActionFeedbackItem[] = [
+  {
+    action: '停用租户',
+    prerequisite: '平台端选中可维护的 SaaS 租户。',
+    success: '租户状态更新为停用，平台侧保留运营治理口径。',
+    fallback: '如果不可停用，检查租户是否已停用或当前样本状态是否已被验收脚本处理。',
+    nextStep: '继续演示套餐升级和功能开关。',
+  },
+  {
+    action: '升级专业版',
+    prerequisite: '租户存在可维护套餐和用户容量。',
+    success: '套餐升级为专业版，页面展示新的套餐和容量配置。',
+    fallback: '如果更新失败，检查平台账号权限和租户状态。',
+    nextStep: '进入企业审核，演示平台企业准入。',
+  },
+  {
+    action: '通过企业审核',
+    prerequisite: '企业审核池中存在待审核企业，并完成资料和风险确认。',
+    success: '企业审核通过，公共企业档案进入已认证状态。',
+    fallback: '如果按钮不可用，确认资料确认和风险确认是否都已勾选。',
+    nextStep: '进入平台公告，演示运营通知生命周期。',
+  },
+  {
+    action: '发布平台公告',
+    prerequisite: '公告标题、正文和发布范围已填写。',
+    success: '公告发布到平台公告池，并产生站内通知演示口径。',
+    fallback: '如果发布失败，检查标题或正文是否为空。',
+    nextStep: '选择公告后演示撤回生命周期。',
+  },
+  {
+    action: '撤回平台公告',
+    prerequisite: '存在 active 公告，且已在公告生命周期面板选中。',
+    success: '公告从 active 列表撤回，页面显示撤回反馈。',
+    fallback: '如果按钮找不到，先选择目标公告卡片或重置 stage7 平台演示样本。',
+    nextStep: '用平台边界说明强调公告不修改采购业务单据。',
+  },
+];
+
+type PlatformOperationsDemoLoopItem = {
+  storyline: string;
+  enabled: boolean;
+  primaryActions: string;
+  targetTestIds: string[];
+  governanceTarget: string;
+  beforeCheck: string;
+  afterFeedback: string;
+  nextFlow: string;
+  operationsBoundary: string;
+};
+
+const buildPlatformOperationsDemoLoopItems = ({
+  tenantActionCount,
+  enterpriseReviewCount,
+  announcementCount,
+  javaEnabled,
+}: {
+  tenantActionCount: number;
+  enterpriseReviewCount: number;
+  announcementCount: number;
+  javaEnabled: boolean;
+}): PlatformOperationsDemoLoopItem[] => [
+  {
+    storyline: '租户治理',
+    enabled: javaEnabled && tenantActionCount > 0,
+    primaryActions: '停用租户 / 升级专业版',
+    targetTestIds: [
+      'stage7-platform-disable-tenant-tenant-stage7-platform-action',
+      'stage7-platform-upgrade-plan-tenant-stage7-platform-action',
+    ],
+    governanceTarget: '采购方企业租户、套餐版本、用户容量和询价比价功能开关。',
+    beforeCheck: '点前检查：优先定位 tenant-stage7-platform-action，确认租户未停用且套餐可维护。',
+    afterFeedback: '点击后反馈：页面显示租户状态或套餐已更新，顶部反馈用于说明 Java 写入结果。',
+    nextFlow: '后续流向：进入企业审核，说明平台治理完租户后继续处理企业入驻合规。',
+    operationsBoundary: '运营边界：平台只维护租户配置，不参与采购方需求审批、定标、收货和付款。',
+  },
+  {
+    storyline: '企业审核',
+    enabled: javaEnabled && enterpriseReviewCount > 0,
+    primaryActions: '通过企业审核',
+    targetTestIds: [
+      'stage7-platform-approve-review-ent-stage7-platform-review-ready',
+    ],
+    governanceTarget: '采购方或供应商企业的公共入驻档案、资料确认和风险复核。',
+    beforeCheck: '点前检查：勾选企业入驻资料已核对、风险与重复企业已复核，再处理审核。',
+    afterFeedback: '点击后反馈：页面显示企业审核已通过，公共企业身份进入已认证状态。',
+    nextFlow: '后续流向：进入平台公告，向已入驻企业发布运营通知。',
+    operationsBoundary: '运营边界：平台审核公共企业身份，不替采购方建立私域供应商准入关系。',
+  },
+  {
+    storyline: '平台公告',
+    enabled: javaEnabled && announcementCount > 0,
+    primaryActions: '发布平台公告 / 撤回平台公告',
+    targetTestIds: [
+      'stage7-platform-publish-announcement',
+      'stage7-platform-withdraw-announcement-announcement-stage7-platform-withdraw-ready',
+    ],
+    governanceTarget: '平台公告标题、正文、发布范围、站内通知和撤回审计。',
+    beforeCheck: '点前检查：发布前填写标题和正文；撤回前选择 announcement-stage7-platform-withdraw-ready。',
+    afterFeedback: '点击后反馈：页面显示公告已发布或已撤回，公告池同步刷新。',
+    nextFlow: '后续流向：回到平台看板，说明公告是运营触达，不改变采购业务状态。',
+    operationsBoundary: '运营边界：公告只做运营通知，不变更供应商报价、采购订单、发票或付款状态。',
+  },
+];
+
+const buyerReadonlyBoundaryItems: DemoReadonlyBoundaryItem[] = [
+  {
+    state: '采购需求已提交或已审批',
+    businessMeaning: '需求进入审批链后不再允许随意改预算、附件和物料明细，避免审批依据被改动。',
+    userGuidance: '如需调整，先说明撤回或补充需求的业务原因，再重新走审批。',
+    fallback: '不可操作时提示已完成审批状态，并引导查看审批中心和审计日志。',
+  },
+  {
+    state: 'RFQ 已定标或已生成订单',
+    businessMeaning: '询价项目进入定标或订单阶段后，报价对比结果成为后续履约依据。',
+    userGuidance: '演示时说明报价只读、推荐理由留痕，新增供应商邀请需重新发起询价。',
+    fallback: '按钮不可操作时展示流程已完成，继续讲解订单、收货和发票付款。',
+  },
+  {
+    state: '订单已收货',
+    businessMeaning: '订单验收完成后，履约主责从物流跟进转为发票、对账和付款状态协同。',
+    userGuidance: '继续进入发票付款页，查看三单匹配、付款计划和付款登记。',
+    fallback: '重复登记收货时提示已完成，不再产生新的收货记录。',
+  },
+  {
+    state: '发票已付款或批次已归档',
+    businessMeaning: '付款登记或批次归档后进入财务留痕阶段，页面以查询和审计为主。',
+    userGuidance: '如需解释资金流，强调当前阶段只登记付款状态，不触发真实支付。',
+    fallback: '不可操作时提示已归档或已付款，并引导查看付款批次、对账差异和审计日志。',
+  },
+  {
+    state: '当前筛选无数据',
+    businessMeaning: '无数据代表当前筛选条件下暂无待办，不代表系统异常或页面故障。',
+    userGuidance: '演示者可切换状态筛选、刷新 Java 数据源，或回到主流程入口产生样本数据。',
+    fallback: '空状态显示无数据说明和下一步入口，避免出现空白页面。',
+  },
+];
+
+const supplierReadonlyBoundaryItems: DemoReadonlyBoundaryItem[] = [
+  {
+    state: '已提交报价',
+    businessMeaning: '报价提交后进入采购方比价视角，供应商不能查看其他供应商明细。',
+    userGuidance: '继续切到采购方报价对比页讲解推荐定标和审批。',
+    fallback: '再次提交时提示已报价或询价截止，并保留报价历史可查。',
+  },
+  {
+    state: '订单已发货或已收货',
+    businessMeaning: '发货后物流信息成为采购方收货依据，收货后进入发票应收协同。',
+    userGuidance: '已发货时等待采购方验收；已收货时提交发票并维护应收备注。',
+    fallback: '不可操作时提示订单已发货或已收货，避免重复确认和重复发货。',
+  },
+  {
+    state: '发票已提交',
+    businessMeaning: '发票提交后由采购方完成对账、付款计划和付款登记。',
+    userGuidance: '供应商侧继续查看发票应收和保存对账备注。',
+    fallback: '再次提交时提示发票已存在，避免同一订单重复开票。',
+  },
+  {
+    state: '采购方已登记付款',
+    businessMeaning: '采购方登记付款后，供应商侧应收进入已回款或待确认状态。',
+    userGuidance: '演示时强调供应商只能查看付款状态，不能替采购方改付款结论。',
+    fallback: '付款后操作转为只读跟踪，保留备注和审计记录。',
+  },
+  {
+    state: '当前筛选无数据',
+    businessMeaning: '没有邀请、订单或应收记录时，代表当前供应商暂无待处理商机。',
+    userGuidance: '可切回采购方创建询价或生成订单，触发供应商侧待办。',
+    fallback: '空状态显示无数据说明，不出现空白工作区。',
+  },
+];
+
+const platformReadonlyBoundaryItems: DemoReadonlyBoundaryItem[] = [
+  {
+    state: '租户已停用',
+    businessMeaning: '停用租户属于 SaaS 治理动作，保留租户运营状态而不删除业务数据。',
+    userGuidance: '演示时强调平台端只管租户状态和套餐能力，不改采购单据。',
+    fallback: '已停用租户再次操作时提示不可操作，避免误解为系统无响应。',
+  },
+  {
+    state: '企业已通过或已驳回',
+    businessMeaning: '企业审核处理完成后，审核结论成为公共企业档案的准入依据。',
+    userGuidance: '如需重新审核，后续应走资料变更或重新提交流程。',
+    fallback: '按钮不可用时提示已完成审核，并展示审核结论。',
+  },
+  {
+    state: '公告已撤回',
+    businessMeaning: '公告撤回后不再作为 active 通知展示，但仍保留运营留痕。',
+    userGuidance: '继续讲解公告生命周期和站内通知口径。',
+    fallback: '再次撤回时提示已撤回，不删除历史公告记录。',
+  },
+  {
+    state: '平台公告为空',
+    businessMeaning: '公告为空表示当前没有可展示运营通知，不影响采购业务主流程。',
+    userGuidance: '演示者可发布一条平台公告，再讲解撤回生命周期。',
+    fallback: '空状态显示无数据说明和发布入口，不用解释为接口错误。',
+  },
+  {
+    state: '平台只读治理边界',
+    businessMeaning: '平台运营方能看租户、企业准入和公共运营信息，不能干预采购方定标付款。',
+    userGuidance: '演示三端隔离时用它解释为什么平台看不到采购方私域财务细节。',
+    fallback: '不可操作时提示权限边界，而不是给出技术错误。',
+  },
+];
+
+const buyerGovernanceTraceItems: DemoGovernanceTraceItem[] = [
+  {
+    actor: '采购负责人 / 审批人',
+    action: '提交审批、定标、生成订单、登记收货和付款状态',
+    auditTarget: '需求、审批任务、RFQ、订单、收货、发票和付款批次',
+    traceEntry: '采购方审计日志、详情面板和付款归档审计摘要',
+  },
+  {
+    actor: '采购财务 / 履约协同人',
+    action: '核对三单匹配、处理差异、登记付款和归档批次',
+    auditTarget: '发票、对账单、付款申请、付款批次和阻断处理',
+    traceEntry: '发票付款页、付款批次详情和归档后只读审计面板',
+  },
+];
+
+const supplierGovernanceTraceItems: DemoGovernanceTraceItem[] = [
+  {
+    actor: '供应商销售 / 发货协同人',
+    action: '提交报价、确认订单、提交发货、提交发票和保存对账备注',
+    auditTarget: '询价邀请、报价、销售订单、物流、发票和应收备注',
+    traceEntry: '供应商报价记录、订单履约记录和发票应收记录',
+  },
+  {
+    actor: '供应商企业管理员',
+    action: '维护企业档案、资质附件、联系人和子账号协作信息',
+    auditTarget: '供应商企业档案、资质、联系人和账号协同状态',
+    traceEntry: '供应商企业档案页和平台公共企业档案联动口径',
+  },
+];
+
+const platformGovernanceTraceItems: DemoGovernanceTraceItem[] = [
+  {
+    actor: '平台运营管理员',
+    action: '停用租户、升级套餐、审核企业、发布和撤回公告',
+    auditTarget: '租户、企业档案、平台公告和站内通知',
+    traceEntry: '平台运营详情、企业审核记录和公告生命周期审计',
+  },
+  {
+    actor: '平台合规 / 客服运营',
+    action: '解释多租户隔离、功能开关、公告触达和公共供应商档案边界',
+    auditTarget: 'SaaS 租户、功能开关、公共企业档案和平台通知',
+    traceEntry: '平台看板、租户详情、企业审核详情和操作日志口径',
+  },
+];
 
 const currency = (value: number) =>
   new Intl.NumberFormat('zh-CN', {
@@ -178,6 +1052,51 @@ const javaApiClient = appDataSource.mode === 'java'
     })
   : null;
 
+const formatWorkflowError = (error: unknown, fallback: string) => {
+  const message = error instanceof Error ? error.message : fallback;
+  if (message.includes('Payment batch is archived and can only be audited')) {
+    return '付款批次已归档，当前操作已按只读冻结规则拒绝；请查看归档审计摘要和审计追踪。';
+  }
+  return message || fallback;
+};
+
+const resolveInitialAdminShellState = () => {
+  const fallbackModules = { ...defaultAdminModulesByRole };
+  if (typeof window === 'undefined') {
+    return {
+      role: defaultAdminRole,
+      modules: fallbackModules,
+    };
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const roleParam = searchParams.get('role');
+  const moduleParam = searchParams.get('module');
+  const roleNavigation = adminRoleNavigation.find((role) => role.id === roleParam);
+  if (!roleNavigation) {
+    return {
+      role: defaultAdminRole,
+      modules: fallbackModules,
+    };
+  }
+
+  const moduleNavigation = roleNavigation.modules.find((module) => module.id === moduleParam);
+  if (!moduleNavigation) {
+    return {
+      role: roleNavigation.id,
+      modules: fallbackModules,
+    };
+  }
+
+  return {
+    role: roleNavigation.id,
+    modules: {
+      ...fallbackModules,
+      [roleNavigation.id]: moduleNavigation.id,
+    },
+  };
+};
+
 type SupplierQuoteDraft = {
   amount: number;
   taxRate: number;
@@ -199,6 +1118,7 @@ type SupplierReceivableDraft = {
 };
 
 type SupplierProfileDraft = UpdateSupplierProfilePayload;
+type SupplierQualificationDraft = CreateSupplierQualificationPayload;
 
 type BuyerReceiptDraft = {
   result: string;
@@ -214,12 +1134,61 @@ type BuyerPaymentDraft = {
   reconciliationNote: string;
 };
 
+type BuyerPaymentBlockResolutionDraft = {
+  paymentBatchNo: string;
+  paymentRequestId: string;
+  invoiceId: string;
+  supplierId?: string | null;
+  blockReason: string;
+  resolutionStatus: string;
+  resolutionAction: string;
+  nextStep: string;
+  existingResolutionId?: string | null;
+};
+
 type BuyerAwardDraft = {
   reason: string;
 };
 
 type BuyerOrderDraft = {
   expectedReceiptDate: string;
+};
+
+type BuyerContractDraft = {
+  relatedOrderId: string;
+  contractNo: string;
+  contractName: string;
+  amount: number;
+  status: string;
+  fulfillmentProgress: string;
+  effectiveDate: string;
+};
+
+type BuyerContractAttachmentDraft = {
+  fileName: string;
+  visibility: 'tenant' | 'buyer_internal' | 'supplier_shared';
+};
+
+type BuyerContractTargetFocus = {
+  moduleId: BuyerAdminModule;
+  contractNo: string;
+  orderId: string;
+  invoiceId?: string;
+  sourceLabel: string;
+  archiveReviewGapItem?: string;
+  archiveReviewSuggestedAction?: string;
+  archiveReviewHandlingPath?: string;
+};
+
+type BuyerContractLinkedActionResult = {
+  contractNo: string;
+  actionType: 'receipt' | 'payment';
+  targetId: string;
+  sourceLabel: string;
+  summary: string;
+  archiveReviewResultGapItem?: string;
+  archiveReviewResultEvidenceStatus?: string;
+  archiveReviewResultNextStep?: string;
 };
 
 type BuyerSupplierAdmissionDraft = {
@@ -237,8 +1206,9 @@ type BuyerApprovalReviewDraft = {
 };
 
 const App: React.FC = () => {
-  const [activeRole, setActiveRole] = useState<AdminRole>(defaultAdminRole);
-  const [activeModules, setActiveModules] = useState<Record<AdminRole, string>>(defaultAdminModulesByRole);
+  const [initialAdminShellState] = useState(resolveInitialAdminShellState);
+  const [activeRole, setActiveRole] = useState<AdminRole>(initialAdminShellState.role);
+  const [activeModules, setActiveModules] = useState<Record<AdminRole, string>>(initialAdminShellState.modules);
   const [tenantId, setTenantId] = useState('tenant-acme');
   const [supplierId, setSupplierId] = useState('supplier-orbit');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -253,16 +1223,29 @@ const App: React.FC = () => {
     buyerNotifications: JavaNotificationDto[];
     approvalTemplates: JavaApprovalTemplateDto[];
     roles: BuyerRoleDto[];
+    paymentBatches: PaymentBatchRecord[];
+    paymentExecutionRecords: PaymentExecutionRecord[];
+    paymentBlockResolutions: PaymentBlockResolutionRecord[];
+    paymentArchiveExceptionRequests: PaymentArchiveExceptionRequestRecord[];
+    paymentRequests: PaymentRequestRecord[];
+    varianceHandlings: VarianceHandlingRecord[];
   } | null>(null);
   const [supplierData, setSupplierData] = useState<SupplierWorkspace | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [workflowBusy, setWorkflowBusy] = useState(false);
   const [workflowStatus, setWorkflowStatus] = useState<string | null>(null);
+  const [contractAttachmentsById, setContractAttachmentsById] = useState<Record<string, AttachmentRecord[]>>({});
+  const [contractAttachmentUploadTicketsById, setContractAttachmentUploadTicketsById] = useState<Record<string, AttachmentUploadTicketRecord>>({});
+  const [contractAttachmentDownloadLinksById, setContractAttachmentDownloadLinksById] = useState<Record<string, AttachmentDownloadLinkRecord>>({});
+  const [contractFulfillmentEventsById, setContractFulfillmentEventsById] = useState<Record<string, ContractFulfillmentEventRecord[]>>({});
+  const [contractTargetAuditLogsById, setContractTargetAuditLogsById] = useState<Record<string, AuditLogRecord[]>>({});
   const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
   const [demandCreateBusy, setDemandCreateBusy] = useState(false);
+  const [materialSaveBusyId, setMaterialSaveBusyId] = useState<string | null>(null);
   const [demandSubmitBusyId, setDemandSubmitBusyId] = useState<string | null>(null);
   const [demandUpdateBusyId, setDemandUpdateBusyId] = useState<string | null>(null);
   const [supplierAdmissionBusyId, setSupplierAdmissionBusyId] = useState<string | null>(null);
+  const [supplierRelationBusyId, setSupplierRelationBusyId] = useState<string | null>(null);
   const [supplierActionBusyId, setSupplierActionBusyId] = useState<string | null>(null);
   const [rfqCreateBusy, setRfqCreateBusy] = useState<string | null>(null);
   const [rfqUpdateBusyId, setRfqUpdateBusyId] = useState<string | null>(null);
@@ -276,6 +1259,8 @@ const App: React.FC = () => {
   const [announcementPublishBusy, setAnnouncementPublishBusy] = useState(false);
   const [announcementLifecycleBusyId, setAnnouncementLifecycleBusyId] = useState<string | null>(null);
   const [supplierProfileBusy, setSupplierProfileBusy] = useState(false);
+  const [supplierQualificationBusy, setSupplierQualificationBusy] = useState(false);
+  const [notificationReadBusyId, setNotificationReadBusyId] = useState<string | null>(null);
 
   const configurationError = appDataSource.mode === 'misconfigured' ? appDataSource.message : null;
 
@@ -290,6 +1275,12 @@ const App: React.FC = () => {
       buyerNotifications: javaBuyerMasterData.notifications,
       approvalTemplates: javaBuyerMasterData.approvalTemplates,
       roles: javaBuyerMasterData.roles,
+      paymentBatches: javaBuyerMasterData.paymentBatches ?? [],
+      paymentExecutionRecords: javaBuyerMasterData.paymentExecutionRecords ?? [],
+      paymentBlockResolutions: javaBuyerMasterData.paymentBlockResolutions ?? [],
+      paymentArchiveExceptionRequests: javaBuyerMasterData.paymentArchiveExceptionRequests ?? [],
+      paymentRequests: javaBuyerMasterData.paymentRequests ?? [],
+      varianceHandlings: javaBuyerMasterData.varianceHandlings ?? [],
       kpis: {
         ...currentBuyerData.kpis,
         pendingApprovals: javaBuyerMasterData.pendingApprovals.length,
@@ -335,6 +1326,12 @@ const App: React.FC = () => {
         const buyerNotifications = javaBuyerMasterData?.notifications ?? [];
         const approvalTemplates = javaBuyerMasterData?.approvalTemplates ?? [];
         const roles = javaBuyerMasterData?.roles ?? [];
+        const paymentBatches = javaBuyerMasterData?.paymentBatches ?? [];
+        const paymentExecutionRecords = javaBuyerMasterData?.paymentExecutionRecords ?? [];
+        const paymentBlockResolutions = javaBuyerMasterData?.paymentBlockResolutions ?? [];
+        const paymentArchiveExceptionRequests = javaBuyerMasterData?.paymentArchiveExceptionRequests ?? [];
+        const paymentRequests = javaBuyerMasterData?.paymentRequests ?? [];
+        const varianceHandlings = javaBuyerMasterData?.varianceHandlings ?? [];
         setBuyerData({
           ...nextBuyer,
           workspace: buyerWorkspace,
@@ -343,6 +1340,12 @@ const App: React.FC = () => {
           buyerNotifications,
           approvalTemplates,
           roles,
+          paymentBatches,
+          paymentExecutionRecords,
+          paymentBlockResolutions,
+          paymentArchiveExceptionRequests,
+          paymentRequests,
+          varianceHandlings,
           kpis: {
             ...nextBuyer.kpis,
             pendingApprovals: javaBuyerMasterData ? pendingApprovals.length : nextBuyer.kpis.pendingApprovals,
@@ -390,6 +1393,36 @@ const App: React.FC = () => {
       setWorkflowStatus(error instanceof Error ? error.message : 'Java 主流程执行失败');
     } finally {
       setWorkflowBusy(false);
+    }
+  };
+
+  const markBuyerNotificationRead = async (notificationId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setNotificationReadBusyId(`buyer-notice:${notificationId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.markBuyerNotificationRead(notificationId);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`采购方通知已标记已读：${notificationId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '采购方通知标记已读失败');
+    } finally {
+      setNotificationReadBusyId(null);
+    }
+  };
+
+  const markSupplierNotificationRead = async (notificationId: string) => {
+    if (!javaApiClient || !supplierData) return;
+    setNotificationReadBusyId(`supplier-notice:${notificationId}`);
+    setWorkflowStatus(null);
+    try {
+      await javaApiClient.markSupplierNotificationRead(notificationId);
+      setSupplierData(await refreshJavaSupplierData(supplierData));
+      setWorkflowStatus(`供应商通知已标记已读：${notificationId}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '供应商通知标记已读失败');
+    } finally {
+      setNotificationReadBusyId(null);
     }
   };
 
@@ -557,14 +1590,18 @@ const App: React.FC = () => {
     setWorkflowStatus(null);
     try {
       if (approval.bizType === 'purchase_demand') {
-        await javaApiClient.reviewBuyerDemandApproval(approval.bizId, approved);
+        await javaApiClient.reviewBuyerDemandApproval(approval.bizId, approved, draft.comment.trim());
       } else if (approval.bizType === 'buyer_supplier_admission') {
-        await javaApiClient.reviewBuyerSupplierAdmission(approval.bizId, approved);
+        await javaApiClient.reviewBuyerSupplierAdmission(approval.bizId, approved, draft.comment.trim());
       } else if (approval.bizType === 'rfq_award') {
         if (!approval.parentBizId) {
           throw new Error('定标审批缺少询价项目 ID');
         }
-        await javaApiClient.reviewBuyerAwardApproval(approval.parentBizId, approval.bizId, approved);
+        await javaApiClient.reviewBuyerAwardApproval(approval.parentBizId, approval.bizId, approved, draft.comment.trim());
+      } else if (approval.bizType === 'contract_approval') {
+        await javaApiClient.reviewBuyerContractApproval(approval.bizId, approved, draft.comment.trim());
+      } else if (approval.bizType === 'payment_archive_exception') {
+        await javaApiClient.reviewBuyerPaymentArchiveExceptionRequest(approval.bizId, approved, draft.comment.trim());
       } else {
         throw new Error(`暂不支持审批类型：${approval.bizType}`);
       }
@@ -589,6 +1626,69 @@ const App: React.FC = () => {
       setWorkflowStatus(error instanceof Error ? error.message : '供应商准入提交失败');
     } finally {
       setSupplierAdmissionBusyId(null);
+    }
+  };
+
+  const createBuyerSupplierRelation = async (payload: CreateBuyerSupplierRelationPayload) => {
+    if (!javaApiClient || !buyerData) return;
+    setSupplierRelationBusyId('new');
+    setWorkflowStatus(null);
+    try {
+      const relation = await javaApiClient.createBuyerSupplierRelation(payload);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`私域供应商关系已创建：${relation.supplierName}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '私域供应商关系创建失败');
+    } finally {
+      setSupplierRelationBusyId(null);
+    }
+  };
+
+  const saveBuyerSupplierRelationProfile = async (
+    relationId: string,
+    payload: UpdateBuyerSupplierProfilePayload,
+  ) => {
+    if (!javaApiClient || !buyerData) return;
+    setSupplierRelationBusyId(`profile:${relationId}`);
+    setWorkflowStatus(null);
+    try {
+      const relation = await javaApiClient.updateBuyerSupplierProfile(relationId, payload);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`供应商等级和品类已保存：${relation.supplierName}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '供应商等级和品类保存失败');
+    } finally {
+      setSupplierRelationBusyId(null);
+    }
+  };
+
+  const saveBuyerSupplierRelationStatus = async (relationId: string, status: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setSupplierRelationBusyId(`status:${relationId}`);
+    setWorkflowStatus(null);
+    try {
+      const relation = await javaApiClient.updateBuyerSupplierStatus(relationId, status);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`供应商合作状态已保存：${relation.supplierName} · ${relation.status}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '供应商合作状态保存失败');
+    } finally {
+      setSupplierRelationBusyId(null);
+    }
+  };
+
+  const saveBuyerSupplierRelationPerformance = async (relationId: string, performanceScore: number) => {
+    if (!javaApiClient || !buyerData) return;
+    setSupplierRelationBusyId(`performance:${relationId}`);
+    setWorkflowStatus(null);
+    try {
+      const relation = await javaApiClient.updateBuyerSupplierPerformance(relationId, performanceScore);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`供应商绩效评分已保存：${relation.supplierName} · ${relation.performanceScore} 分`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '供应商绩效评分保存失败');
+    } finally {
+      setSupplierRelationBusyId(null);
     }
   };
 
@@ -666,6 +1766,25 @@ const App: React.FC = () => {
     }
   };
 
+  const saveBuyerMaterial = async (materialId: string | null, payload: SaveMaterialPayload) => {
+    if (!javaApiClient || !buyerData) return;
+    setMaterialSaveBusyId(materialId ?? 'new');
+    setWorkflowStatus(null);
+    try {
+      const material = materialId
+        ? await javaApiClient.updateBuyerMaterial(materialId, payload)
+        : await javaApiClient.createBuyerMaterial(payload);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(materialId
+        ? `物料目录已保存并刷新，可用于采购需求：${material.name}`
+        : `物料目录已新增并刷新，可用于采购需求：${material.name}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '物料目录保存失败');
+    } finally {
+      setMaterialSaveBusyId(null);
+    }
+  };
+
   const refreshAfterSupplierAction = async () => {
     if (!supplierData) return;
     const [nextSupplierData, nextBuyerData] = await Promise.all([
@@ -681,12 +1800,17 @@ const App: React.FC = () => {
   const createBuyerRfqFromDemand = async (demandId: string, supplierIds?: string[], deadline?: string) => {
     if (!javaApiClient || !buyerData) return;
     const demand = buyerData.workspace.demands.find((item) => item.id === demandId);
-    const relation = buyerData.workspace.privateSupplierRelations.find((item) => item.status === '已准入');
+    const relation = buyerData.workspace.privateSupplierRelations.find(isRfqEligibleSupplierRelation);
+    const eligibleSupplierIds = new Set(
+      buyerData.workspace.privateSupplierRelations
+        .filter(isRfqEligibleSupplierRelation)
+        .map((item) => item.supplierId),
+    );
     const invitedSupplierIds = supplierIds && supplierIds.length > 0
-      ? supplierIds
+      ? supplierIds.filter((supplierId) => eligibleSupplierIds.has(supplierId))
       : relation ? [relation.supplierId] : [];
     if (!demand || invitedSupplierIds.length === 0) {
-      setWorkflowStatus('创建询价需要已通过需求和已准入供应商');
+      setWorkflowStatus('创建询价需要已通过需求和具备有效资质的已准入供应商');
       return;
     }
 
@@ -702,7 +1826,7 @@ const App: React.FC = () => {
         deadline: deadline ?? deadlineDate.toISOString(),
       });
       setBuyerData(await refreshJavaBuyerData(buyerData));
-      setWorkflowStatus(`询价已创建：${rfq.title}`);
+      setWorkflowStatus(`询价已创建并已通知受邀供应商：${rfq.title}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '询价创建失败');
     } finally {
@@ -717,7 +1841,7 @@ const App: React.FC = () => {
     try {
       const rfq = await javaApiClient.updateBuyerRfq(rfqId, payload);
       setBuyerData(await refreshJavaBuyerData(buyerData));
-      setWorkflowStatus(`询价项目已保存并刷新后回显：${rfq.title}`);
+      setWorkflowStatus(`询价项目已保存、已通知供应商并刷新后回显：${rfq.title}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '询价项目保存失败');
     } finally {
@@ -735,7 +1859,7 @@ const App: React.FC = () => {
         expectedReceiptDate: draft.expectedReceiptDate,
       });
       setBuyerData(await refreshJavaBuyerData(buyerData));
-      setWorkflowStatus(`订单已生成：${order.id}`);
+      setWorkflowStatus(`订单已生成并已通知供应商确认订单：${order.id}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '采购订单生成失败');
     } finally {
@@ -750,7 +1874,7 @@ const App: React.FC = () => {
     try {
       const order = await javaApiClient.updateBuyerOrder(orderId, payload);
       setBuyerData(await refreshJavaBuyerData(buyerData));
-      setWorkflowStatus(`采购订单已保存并刷新后回显：${order.id}`);
+      setWorkflowStatus(`采购订单已保存、已通知供应商交期变更并刷新后回显：${order.id}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '采购订单保存失败');
     } finally {
@@ -781,9 +1905,9 @@ const App: React.FC = () => {
     setBuyerFulfillmentBusyId(`receipt:${orderId}`);
     setWorkflowStatus(null);
     try {
-      await javaApiClient.createBuyerReceipt(orderId, { result: draft.result });
+      const receipt = await javaApiClient.createBuyerReceipt(orderId, { result: draft.result });
       setBuyerData(await refreshJavaBuyerData(buyerData));
-      setWorkflowStatus(`收货验收已登记：${orderId}`);
+      setWorkflowStatus(`收货验收已登记并已通知供应商提交发票：${receipt.id}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '收货验收登记失败');
     } finally {
@@ -798,9 +1922,474 @@ const App: React.FC = () => {
     try {
       const invoice = await javaApiClient.registerBuyerPayment(invoiceId, { paymentStatus: draft.paymentStatus });
       setBuyerData(await refreshJavaBuyerData(buyerData));
-      setWorkflowStatus(`登记付款完成：${invoice.id}`);
+      setWorkflowStatus(`付款状态已登记，${invoice.paymentStatus}，已同步供应商应收：${invoice.id}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '付款登记失败');
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const updateBuyerContractStatus = async (
+    contractId: string,
+    status: string,
+    fulfillmentProgress: string,
+  ) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`contract-status:${contractId}`);
+    setWorkflowStatus(null);
+    try {
+      const contract = await javaApiClient.updateBuyerContractStatus(contractId, {
+        status,
+        fulfillmentProgress,
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`合同状态已更新：${contract.contractNo} / ${contract.status}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同状态更新失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const archiveBuyerContract = async (contractId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`contract-archive:${contractId}`);
+    setWorkflowStatus(null);
+    try {
+      const contract = await javaApiClient.updateBuyerContractArchiveStatus(contractId, {
+        archiveStatus: '已归档',
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`合同已归档：${contract.contractNo}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同归档失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const createBuyerContractLedger = async (payload: CreateContractPayload) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId('contract-save:create');
+    setWorkflowStatus(null);
+    try {
+      const contract = await javaApiClient.createBuyerContract(payload);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`合同已创建：${contract.contractNo}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同创建失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const updateBuyerContractLedger = async (contractId: string, payload: UpdateContractPayload) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId('contract-save:update');
+    setWorkflowStatus(null);
+    try {
+      const contract = await javaApiClient.updateBuyerContract(contractId, payload);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`合同已保存：${contract.contractNo}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同保存失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const saveBuyerContractLedger = (
+    mode: 'create' | 'update',
+    contractId: string | null,
+    draft: BuyerContractDraft,
+  ) => {
+    if (mode === 'create') {
+      createBuyerContractLedger({
+        contractNo: draft.contractNo,
+        contractName: draft.contractName,
+        relatedOrderId: draft.relatedOrderId,
+        amount: draft.amount,
+        status: draft.status,
+        fulfillmentProgress: draft.fulfillmentProgress,
+        effectiveDate: draft.effectiveDate,
+      });
+      return;
+    }
+
+    if (!contractId) return;
+    updateBuyerContractLedger(contractId, {
+      contractNo: draft.contractNo,
+      contractName: draft.contractName,
+      amount: draft.amount,
+      status: draft.status,
+      fulfillmentProgress: draft.fulfillmentProgress,
+      effectiveDate: draft.effectiveDate,
+    });
+  };
+
+  const loadBuyerContractAttachments = async (contractId: string) => {
+    if (!javaApiClient) return;
+    setBuyerFulfillmentBusyId(`contract-attachment:${contractId}:load`);
+    setWorkflowStatus(null);
+    try {
+      const attachments = await javaApiClient.listBuyerAttachments('contract', contractId);
+      setContractAttachmentsById((current) => ({
+        ...current,
+        [contractId]: attachments,
+      }));
+      setWorkflowStatus(`合同附件已加载：${attachments.length} 个`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同附件加载失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const createBuyerContractAttachment = async (
+    contractId: string,
+    payload: Omit<CreateAttachmentPayload, 'ownerType' | 'ownerId'>,
+  ) => {
+    if (!javaApiClient) return;
+    setBuyerFulfillmentBusyId(`contract-attachment:${contractId}:create`);
+    setWorkflowStatus(null);
+    try {
+      const attachment = await javaApiClient.createBuyerAttachment({
+        ownerType: 'contract',
+        ownerId: contractId,
+        ...payload,
+      });
+      const attachments = await javaApiClient.listBuyerAttachments('contract', contractId);
+      setContractAttachmentsById((current) => ({
+        ...current,
+        [contractId]: attachments,
+      }));
+      setWorkflowStatus(`登记合同附件：${attachment.fileName}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '登记合同附件失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const createBuyerContractAttachmentUploadTicket = async (
+    contractId: string,
+    payload: Omit<CreateAttachmentUploadTicketPayload, 'ownerType' | 'ownerId'>,
+  ) => {
+    if (!javaApiClient) return;
+    setBuyerFulfillmentBusyId(`contract-attachment:${contractId}:upload-ticket`);
+    setWorkflowStatus(null);
+    try {
+      const ticket = await javaApiClient.createBuyerAttachmentUploadTicket({
+        ownerType: 'contract',
+        ownerId: contractId,
+        ...payload,
+      });
+      setContractAttachmentUploadTicketsById((current) => ({
+        ...current,
+        [contractId]: ticket,
+      }));
+      setWorkflowStatus(`合同附件上传凭证已生成：${ticket.fileName}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同附件上传凭证生成失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const createBuyerContractAttachmentDownloadLink = async (attachmentId: string) => {
+    if (!javaApiClient) return;
+    setBuyerFulfillmentBusyId(`contract-attachment-download:${attachmentId}`);
+    setWorkflowStatus(null);
+    try {
+      const link = await javaApiClient.createBuyerAttachmentDownloadLink(attachmentId);
+      setContractAttachmentDownloadLinksById((current) => ({
+        ...current,
+        [attachmentId]: link,
+      }));
+      setWorkflowStatus(`合同附件下载签名已生成：${link.fileName}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同附件下载签名生成失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const loadBuyerContractFulfillmentEvents = async (contractId: string) => {
+    if (!javaApiClient) return;
+    try {
+      const events = await javaApiClient.listBuyerContractFulfillmentEvents(contractId);
+      setContractFulfillmentEventsById((current) => ({
+        ...current,
+        [contractId]: events,
+      }));
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同履约事件加载失败'));
+    }
+  };
+
+  const loadBuyerContractTargetAuditLogs = async (contractId: string) => {
+    if (!javaApiClient) return;
+    try {
+      const auditLogs = await javaApiClient.listBuyerTargetAuditLogs(
+        'contract',
+        contractId,
+        [
+          'contract_approval.submitted',
+          'contract_approval.approved',
+          'contract_approval.rejected',
+          'contract_fulfillment_event.created',
+        ],
+      );
+      setContractTargetAuditLogsById((current) => ({
+        ...current,
+        [contractId]: auditLogs,
+      }));
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同目标审计日志加载失败'));
+    }
+  };
+
+  const createBuyerContractFulfillmentEvent = async (
+    contractId: string,
+    payload: CreateContractFulfillmentEventPayload,
+  ) => {
+    if (!javaApiClient) return;
+    try {
+      const event = await javaApiClient.createBuyerContractFulfillmentEvent(contractId, payload);
+      setContractFulfillmentEventsById((current) => ({
+        ...current,
+        [contractId]: [event, ...(current[contractId] ?? []).filter((item) => item.id !== event.id)],
+      }));
+      setWorkflowStatus(`合同履约事件已持久化：${event.summary}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同履约事件写入失败'));
+    }
+  };
+
+  const submitBuyerContractApproval = async (contractId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`contract-approval:${contractId}`);
+    setWorkflowStatus(null);
+    try {
+      const contract = await javaApiClient.submitBuyerContractApproval(contractId);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`合同审批已提交：${contract.contractNo}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '合同审批提交失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const registerBuyerPaymentExecutionRecord = async (executionRecordId: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`payment-execution:${executionRecordId}`);
+    setWorkflowStatus(null);
+    try {
+      const record = await javaApiClient.registerBuyerPaymentExecutionRecord(executionRecordId);
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`付款执行记录已登记：${record.invoiceId}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '付款执行记录登记失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const createBuyerPaymentRequestRecord = async (invoiceId: string, draft: BuyerPaymentDraft) => {
+    if (!javaApiClient || !buyerData) return;
+    const batchDate = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    setBuyerFulfillmentBusyId(`payment-request:${invoiceId}`);
+    setWorkflowStatus(null);
+    try {
+      const paymentRequest = await javaApiClient.createBuyerPaymentRequest({
+        invoiceId,
+        requestStatus: draft.paymentRequestStatus,
+        paymentBatchNo: `PAY-${batchDate}-${invoiceId.slice(-6)}`,
+        remark: draft.paymentRemark,
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`付款申请已创建/更新：${paymentRequest.id}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '付款申请创建失败');
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const createBuyerVarianceHandlingRecord = async (invoiceId: string, draft: BuyerPaymentDraft) => {
+    if (!javaApiClient || !buyerData) return;
+    const ownerId = buyerData.workspace.users[0]?.id ?? 'user-buyer-owner';
+    setBuyerFulfillmentBusyId(`variance:${invoiceId}`);
+    setWorkflowStatus(null);
+    try {
+      const varianceHandling = await javaApiClient.createBuyerVarianceHandling({
+        invoiceId,
+        reason: draft.reconciliationNote || '三单匹配差异待核对',
+        ownerId,
+        result: draft.reconciliationNote || '待财务复核',
+        status: '待处理',
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`差异处理已创建/更新：${varianceHandling.id}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '差异处理创建失败');
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const updateBuyerPaymentRequestStatus = async (paymentRequestId: string, status: string) => {
+    if (!javaApiClient || !buyerData) return;
+    const paymentRequest = buyerData.paymentRequests.find((item) => item.id === paymentRequestId);
+    setBuyerFulfillmentBusyId(paymentRequest ? `payment-request:${paymentRequest.invoiceId}` : `payment-request-status:${paymentRequestId}`);
+    setWorkflowStatus(null);
+    try {
+      const updated = await javaApiClient.updateBuyerPaymentRequestStatus(paymentRequestId, {
+        requestStatus: status,
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`付款申请状态已更新：${updated.id} / ${updated.requestStatus}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '付款申请状态更新失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const updatePaymentBatchStatus = async (paymentBatchNo: string, status: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`payment-batch:${paymentBatchNo}`);
+    setWorkflowStatus(null);
+    try {
+      const updated = await javaApiClient.updateBuyerPaymentBatchStatus(paymentBatchNo, {
+        batchStatus: status,
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`付款批次状态已更新：${updated.paymentBatchNo} / ${updated.batchStatus}`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '付款批次状态更新失败');
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const createBuyerPaymentArchiveExceptionRequest = async (paymentBatchNo: string, exceptionType: string, exceptionReason: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`payment-archive-exception:${paymentBatchNo}:${exceptionType}`);
+    setWorkflowStatus(null);
+    try {
+      const request = await javaApiClient.createBuyerPaymentArchiveExceptionRequest({
+        paymentBatchNo,
+        exceptionType,
+        exceptionReason,
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`归档异常申请已提交：${request.paymentBatchNo} / ${request.exceptionType} / ${request.approvalStatus}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '归档异常申请提交失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const completeBuyerPaymentArchiveExceptionAction = async (requestId: string, actionResult: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`payment-archive-exception-action:${requestId}`);
+    setWorkflowStatus(null);
+    try {
+      const request = await javaApiClient.completeBuyerPaymentArchiveExceptionAction(requestId, {
+        actionResult,
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`归档异常受控处理已登记：${request.paymentBatchNo} / ${request.exceptionType} / ${request.actionStatus}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '归档异常受控处理登记失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const closeBuyerPaymentArchiveExceptionRequest = async (requestId: string, closureResult: string) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`payment-archive-exception-closure:${requestId}`);
+    setWorkflowStatus(null);
+    try {
+      const request = await javaApiClient.closeBuyerPaymentArchiveExceptionRequest(requestId, {
+        closureResult,
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`归档异常关闭复核已完成：${request.paymentBatchNo} / ${request.exceptionType} / ${request.closureStatus}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '归档异常关闭复核失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const updateBuyerVarianceHandlingStatus = async (varianceHandlingId: string, status: string) => {
+    if (!javaApiClient || !buyerData) return;
+    const varianceHandling = buyerData.varianceHandlings.find((item) => item.id === varianceHandlingId);
+    setBuyerFulfillmentBusyId(varianceHandling ? `variance:${varianceHandling.invoiceId}` : `variance-status:${varianceHandlingId}`);
+    setWorkflowStatus(null);
+    try {
+      const updated = await javaApiClient.updateBuyerVarianceHandlingStatus(varianceHandlingId, {
+        status,
+        result: status === '已处理' ? '差异已核对并关闭，允许进入付款申请。' : varianceHandling?.result,
+      });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`差异处理状态已更新：${updated.id} / ${updated.status}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '差异处理状态更新失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const saveBuyerPaymentBlockResolutionStatus = async (payload: BuyerPaymentBlockResolutionDraft) => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId(`payment-block-resolution:${payload.paymentRequestId}:${payload.blockReason}`);
+    setWorkflowStatus(null);
+    try {
+      const handledBy = buyerData.workspace.users[0]?.id ?? 'user-buyer-owner';
+      const saved = payload.existingResolutionId
+        ? await javaApiClient.updateBuyerPaymentBlockResolutionStatus(payload.existingResolutionId, {
+          resolutionStatus: payload.resolutionStatus,
+          resolutionAction: payload.resolutionAction,
+          nextStep: payload.nextStep,
+          handledBy,
+        })
+        : await javaApiClient.createBuyerPaymentBlockResolution({
+          paymentBatchNo: payload.paymentBatchNo,
+          paymentRequestId: payload.paymentRequestId,
+          invoiceId: payload.invoiceId,
+          supplierId: payload.supplierId ?? undefined,
+          blockReason: payload.blockReason,
+          resolutionStatus: payload.resolutionStatus,
+          resolutionAction: payload.resolutionAction,
+          nextStep: payload.nextStep,
+          handledBy,
+        });
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`付款阻断处理状态已保存：${saved.id} / ${saved.resolutionStatus}`);
+    } catch (error) {
+      setWorkflowStatus(formatWorkflowError(error, '付款阻断处理状态保存失败'));
+    } finally {
+      setBuyerFulfillmentBusyId(null);
+    }
+  };
+
+  const rebuildBuyerThreeWayMatchSnapshots = async () => {
+    if (!javaApiClient || !buyerData) return;
+    setBuyerFulfillmentBusyId('three-way-rebuild');
+    setWorkflowStatus(null);
+    try {
+      const result = await javaApiClient.rebuildBuyerThreeWayMatches();
+      setBuyerData(await refreshJavaBuyerData(buyerData));
+      setWorkflowStatus(`三单匹配快照已刷新：${result.rebuiltCount} 条`);
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '三单匹配刷新失败');
     } finally {
       setBuyerFulfillmentBusyId(null);
     }
@@ -813,7 +2402,7 @@ const App: React.FC = () => {
     try {
       const invoice = await javaApiClient.updateBuyerInvoice(invoiceId, payload);
       setBuyerData(await refreshJavaBuyerData(buyerData));
-      setWorkflowStatus(`发票付款已保存并刷新后回显：${invoice.id}`);
+      setWorkflowStatus(`发票付款已保存、已同步供应商应收并刷新后回显：${invoice.id}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '发票付款保存失败');
     } finally {
@@ -826,13 +2415,13 @@ const App: React.FC = () => {
     setSupplierActionBusyId(`quote:${rfqId}`);
     setWorkflowStatus(null);
     try {
-      await javaApiClient.submitSupplierQuote(rfqId, {
+      const quote = await javaApiClient.submitSupplierQuote(rfqId, {
         amount: draft.amount,
         taxRate: draft.taxRate,
         deliveryDays: draft.deliveryDays,
       });
       await refreshAfterSupplierAction();
-      setWorkflowStatus(`报价已提交：${rfqId}`);
+      setWorkflowStatus(`报价已提交并同步采购方报价对比：${quote.id}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '报价提交失败');
     } finally {
@@ -851,7 +2440,7 @@ const App: React.FC = () => {
         deliveryDays: draft.deliveryDays,
       });
       await refreshAfterSupplierAction();
-      setWorkflowStatus(`报价记录已保存并刷新：${quoteId}`);
+      setWorkflowStatus(`报价记录已保存并已通知采购方重新比价：${quoteId}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '报价记录保存失败');
     } finally {
@@ -864,9 +2453,9 @@ const App: React.FC = () => {
     setSupplierActionBusyId(`confirm:${orderId}`);
     setWorkflowStatus(null);
     try {
-      await javaApiClient.confirmSupplierOrder(orderId);
+      const order = await javaApiClient.confirmSupplierOrder(orderId);
       await refreshAfterSupplierAction();
-      setWorkflowStatus(`供应商订单已确认：${orderId}`);
+      setWorkflowStatus(`供应商订单已确认，${order.status}，已同步采购方订单状态：${order.id}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '供应商订单确认失败');
     } finally {
@@ -879,12 +2468,12 @@ const App: React.FC = () => {
     setSupplierActionBusyId(`delivery:${orderId}`);
     setWorkflowStatus(null);
     try {
-      await javaApiClient.createSupplierDelivery(orderId, {
+      const delivery = await javaApiClient.createSupplierDelivery(orderId, {
         carrier: draft.carrier,
         trackingNo: draft.trackingNo,
       });
       await refreshAfterSupplierAction();
-      setWorkflowStatus(`发货信息已提交：${orderId}`);
+      setWorkflowStatus(`发货信息已提交，${delivery.status}，已同步采购方收货验收：${orderId}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '发货信息提交失败');
     } finally {
@@ -912,15 +2501,25 @@ const App: React.FC = () => {
 
   const createSupplierInvoice = async (orderId: string, draft: SupplierInvoiceDraft) => {
     if (!javaApiClient || !supplierData) return;
+    const order = supplierData.workspace.orders.find((item) => item.id === orderId);
+    const existingInvoice = supplierData.workspace.invoices.find((item) => item.orderId === orderId);
+    if (!order || order.status !== '已收货') {
+      setWorkflowStatus('订单未完成收货验收，不能提交发票');
+      return;
+    }
+    if (existingInvoice) {
+      setWorkflowStatus('该订单已提交发票，不能重复开票');
+      return;
+    }
     setSupplierActionBusyId(`invoice:${orderId}`);
     setWorkflowStatus(null);
     try {
-      await javaApiClient.createSupplierInvoice(orderId, {
+      const invoice = await javaApiClient.createSupplierInvoice(orderId, {
         amount: draft.amount,
         invoiceNo: draft.invoiceNo,
       });
       await refreshAfterSupplierAction();
-      setWorkflowStatus(`发票信息已提交：${orderId}`);
+      setWorkflowStatus(`发票信息已提交，${invoice.paymentStatus}，已同步采购方待付款台账：${invoice.id}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '发票信息提交失败');
     } finally {
@@ -937,7 +2536,7 @@ const App: React.FC = () => {
         reconciliationNote: draft.reconciliationNote,
       });
       await refreshAfterSupplierAction();
-      setWorkflowStatus(`应收对账备注已保存并刷新：${invoiceId}`);
+      setWorkflowStatus(`应收对账备注已保存、已同步采购方对账并刷新：${invoiceId}`);
     } catch (error) {
       setWorkflowStatus(error instanceof Error ? error.message : '应收对账备注保存失败');
     } finally {
@@ -968,6 +2567,38 @@ const App: React.FC = () => {
       setWorkflowStatus(error instanceof Error ? error.message : '供应商企业档案保存失败');
     } finally {
       setSupplierProfileBusy(false);
+    }
+  };
+
+  const createSupplierQualification = async (payload: SupplierQualificationDraft) => {
+    if (!supplierData) return;
+    setSupplierQualificationBusy(true);
+    setWorkflowStatus(null);
+    try {
+      if (javaApiClient) {
+        const qualification = await javaApiClient.createSupplierQualification(payload);
+        setSupplierData(await refreshJavaSupplierData(supplierData));
+        setWorkflowStatus(`供应商资质已提交并刷新：${qualification.qualificationType}`);
+      } else {
+        setSupplierData({
+          ...supplierData,
+          qualifications: [
+            ...(supplierData.qualifications ?? []),
+            {
+              id: `mock-qualification-${Date.now()}`,
+              supplierId: supplierData.supplier.id,
+              ...payload,
+              status: 'active',
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        });
+        setWorkflowStatus(`供应商资质草稿已保存：${payload.qualificationType}`);
+      }
+    } catch (error) {
+      setWorkflowStatus(error instanceof Error ? error.message : '供应商资质提交失败');
+    } finally {
+      setSupplierQualificationBusy(false);
     }
   };
 
@@ -1002,6 +2633,15 @@ const App: React.FC = () => {
       ...current,
       [role]: moduleId,
     }));
+  };
+  const focusBuyerKeyAction = (actionLabel: string) => {
+    setWorkflowStatus(`已定位关键操作：${actionLabel}。请在当前页下方业务卡片的快捷动作区执行真实操作；若按钮仍禁用，按边界提示先补齐前置状态。`);
+    window.requestAnimationFrame(() => {
+      document.querySelector('[data-buyer-action-anchor="primary-business-action"]')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
   };
 
   return (
@@ -1054,6 +2694,7 @@ const App: React.FC = () => {
                 onPublishAnnouncement={publishPlatformAnnouncement}
                 onUpdateAnnouncement={updatePlatformAnnouncement}
                 onWithdrawAnnouncement={withdrawPlatformAnnouncement}
+                onNavigatePlatformModule={(moduleId) => setActiveRoleModule('platform', moduleId)}
               />
             )}
             {activeRole === 'buyer' && (
@@ -1066,12 +2707,21 @@ const App: React.FC = () => {
                 buyerNotifications={buyerData.buyerNotifications}
                 approvalTemplates={buyerData.approvalTemplates}
                 roles={buyerData.roles}
+                paymentBatches={buyerData.paymentBatches}
+                paymentExecutionRecords={buyerData.paymentExecutionRecords}
+                paymentBlockResolutions={buyerData.paymentBlockResolutions}
+                paymentArchiveExceptionRequests={buyerData.paymentArchiveExceptionRequests}
+                paymentRequests={buyerData.paymentRequests}
+                varianceHandlings={buyerData.varianceHandlings}
+                auditLogs={buyerData.workspace.auditLogs}
                 searchQuery={searchQuery}
                 approvalBusyId={approvalBusyId}
                 demandCreateBusy={demandCreateBusy}
+                materialSaveBusyId={materialSaveBusyId}
                 demandSubmitBusyId={demandSubmitBusyId}
                 demandUpdateBusyId={demandUpdateBusyId}
                 supplierAdmissionBusyId={supplierAdmissionBusyId}
+                supplierRelationBusyId={supplierRelationBusyId}
                 rfqCreateBusy={rfqCreateBusy}
                 rfqUpdateBusyId={rfqUpdateBusyId}
                 awardSubmitBusyId={awardSubmitBusyId}
@@ -1079,13 +2729,26 @@ const App: React.FC = () => {
                 orderUpdateBusyId={orderUpdateBusyId}
                 invoiceUpdateBusyId={invoiceUpdateBusyId}
                 buyerFulfillmentBusyId={buyerFulfillmentBusyId}
+                notificationReadBusyId={notificationReadBusyId}
+                contractAttachmentsById={contractAttachmentsById}
+                contractAttachmentUploadTicketsById={contractAttachmentUploadTicketsById}
+                contractAttachmentDownloadLinksById={contractAttachmentDownloadLinksById}
+                contractFulfillmentEventsById={contractFulfillmentEventsById}
+                contractTargetAuditLogsById={contractTargetAuditLogsById}
                 javaEnabled={Boolean(javaApiClient)}
                 workflowStatus={workflowStatus}
+                onFocusBuyerKeyAction={focusBuyerKeyAction}
+                onNavigateBuyerModule={(moduleId) => setActiveRoleModule('buyer', moduleId)}
                 onCreateDemand={createBuyerDemand}
+                onSaveMaterial={saveBuyerMaterial}
                 onSubmitDemand={submitBuyerDemandApproval}
                 onUpdateDemand={updateBuyerDemandDetail}
                 onReviewApproval={reviewApprovalTask}
                 onSubmitSupplierAdmission={submitSupplierAdmission}
+                onCreateSupplierRelation={createBuyerSupplierRelation}
+                onSaveSupplierRelationProfile={saveBuyerSupplierRelationProfile}
+                onSaveSupplierRelationStatus={saveBuyerSupplierRelationStatus}
+                onSaveSupplierRelationPerformance={saveBuyerSupplierRelationPerformance}
                 onCreateRfqFromDemand={createBuyerRfqFromDemand}
                 onUpdateRfq={updateBuyerRfqDetail}
                 onSubmitAwardApproval={submitBuyerAwardApproval}
@@ -1093,8 +2756,31 @@ const App: React.FC = () => {
                 onUpdateOrder={updateBuyerOrderDetail}
                 onCreateReceipt={createBuyerReceiptFromOrder}
                 onRegisterPayment={registerBuyerInvoicePayment}
+                onRegisterPaymentExecutionRecord={registerBuyerPaymentExecutionRecord}
+                onCreatePaymentRequest={createBuyerPaymentRequestRecord}
+                onCreateVarianceHandling={createBuyerVarianceHandlingRecord}
+                onUpdatePaymentRequestStatus={updateBuyerPaymentRequestStatus}
+                onUpdatePaymentBatchStatus={updatePaymentBatchStatus}
+                onCreatePaymentArchiveExceptionRequest={createBuyerPaymentArchiveExceptionRequest}
+                onCompletePaymentArchiveExceptionAction={completeBuyerPaymentArchiveExceptionAction}
+                onClosePaymentArchiveExceptionRequest={closeBuyerPaymentArchiveExceptionRequest}
+                onSavePaymentBlockResolutionStatus={saveBuyerPaymentBlockResolutionStatus}
+                onUpdateVarianceHandlingStatus={updateBuyerVarianceHandlingStatus}
+                onRebuildThreeWayMatches={rebuildBuyerThreeWayMatchSnapshots}
                 onUpdateInvoice={updateBuyerInvoiceDetail}
+                onSaveContract={saveBuyerContractLedger}
+                onSubmitContractApproval={submitBuyerContractApproval}
+                onLoadContractAttachments={loadBuyerContractAttachments}
+                onCreateContractAttachment={createBuyerContractAttachment}
+                onCreateContractAttachmentUploadTicket={createBuyerContractAttachmentUploadTicket}
+                onCreateContractAttachmentDownloadLink={createBuyerContractAttachmentDownloadLink}
+                onLoadContractFulfillmentEvents={loadBuyerContractFulfillmentEvents}
+                onLoadContractTargetAuditLogs={loadBuyerContractTargetAuditLogs}
+                onCreateContractFulfillmentEvent={createBuyerContractFulfillmentEvent}
+                onUpdateContractStatus={updateBuyerContractStatus}
+                onArchiveContract={archiveBuyerContract}
                 onUpdateApprovalTemplate={updateApprovalTemplate}
+                onMarkBuyerNotificationRead={markBuyerNotificationRead}
               />
             )}
             {activeRole === 'supplier' && (
@@ -1105,6 +2791,8 @@ const App: React.FC = () => {
                 workflowStatus={workflowStatus}
                 supplierActionBusyId={supplierActionBusyId}
                 supplierProfileBusy={supplierProfileBusy}
+                supplierQualificationBusy={supplierQualificationBusy}
+                notificationReadBusyId={notificationReadBusyId}
                 onSubmitQuote={submitSupplierQuote}
                 onUpdateQuote={updateSupplierQuote}
                 onConfirmOrder={confirmSupplierOrder}
@@ -1113,6 +2801,9 @@ const App: React.FC = () => {
                 onCreateInvoice={createSupplierInvoice}
                 onUpdateReceivable={updateSupplierReceivable}
                 onUpdateSupplierProfile={updateSupplierProfile}
+                onCreateSupplierQualification={createSupplierQualification}
+                onMarkSupplierNotificationRead={markSupplierNotificationRead}
+                onNavigateSupplierModule={(moduleId) => setActiveRoleModule('supplier', moduleId)}
               />
             )}
           </div>
@@ -1487,6 +3178,12 @@ const buyerModuleHeaders: Record<BuyerAdminModule, BuyerModuleHeaderConfig> = {
     primaryAction: '生成订单 / 跟进确认',
     currentFilter: '全部采购订单',
   },
+  contracts: {
+    title: '合同管理',
+    desc: '以采购订单为来源沉淀合同台账，跟进合同审批、履约和归档状态。',
+    primaryAction: '查看合同台账',
+    currentFilter: '全部合同状态',
+  },
   receipts: {
     title: '收货验收',
     desc: '处理待收货订单，登记收货验收结果并推动发票协同。',
@@ -1504,6 +3201,146 @@ const buyerModuleHeaders: Record<BuyerAdminModule, BuyerModuleHeaderConfig> = {
     desc: '查看近期操作记录、对象编号和流程留痕结果。',
     primaryAction: '查看操作留痕',
     currentFilter: '最近操作',
+  },
+};
+
+const buyerDemoWalkthroughModules: BuyerAdminModule[] = [
+  'demands',
+  'approvals',
+  'rfqs',
+  'quotes',
+  'orders',
+  'receipts',
+  'invoices',
+];
+
+const buyerDemoWalkthroughSteps: Array<DemoWalkthroughStep<BuyerAdminModule>> = [
+  { moduleId: 'demands', label: '需求申请', summary: '预算、物料明细、附件和审批入口' },
+  { moduleId: 'approvals', label: '审批处理', summary: '需求审批、准入审批和定标审批' },
+  { moduleId: 'rfqs', label: '询价协同', summary: '邀请供应商、报价要求和截止时间' },
+  { moduleId: 'quotes', label: '比价定标', summary: '报价矩阵、推荐理由和定标审批' },
+  { moduleId: 'orders', label: '订单履约', summary: '生成订单、确认、发货和预计到货' },
+  { moduleId: 'receipts', label: '收货验收', summary: '登记收货、异常原因和验收结果' },
+  { moduleId: 'invoices', label: '发票付款', summary: '开票对账、差异处理和付款状态' },
+];
+
+const contractDemoWalkthroughSteps: Array<DemoWalkthroughStep<BuyerAdminModule>> = [
+  { moduleId: 'orders', label: '采购订单', summary: '订单生成合同的来源单据' },
+  { moduleId: 'contracts', label: '合同管理', summary: '合同台账、审批、履约事件和归档边界' },
+  { moduleId: 'approvals', label: '审批中心', summary: '合同审批任务回看' },
+  { moduleId: 'receipts', label: '收货验收', summary: '合同履约事件的收货证据' },
+  { moduleId: 'invoices', label: '发票付款', summary: '合同与发票付款关系回看' },
+];
+
+const platformDemoWalkthroughModules: PlatformAdminModule[] = [
+  'overview',
+  'tenants',
+  'reviews',
+  'announcements',
+];
+
+const platformDemoWalkthroughSteps: Array<DemoWalkthroughStep<PlatformAdminModule>> = [
+  { moduleId: 'overview', label: '平台看板', summary: '租户、供应商、审核和公告总览' },
+  { moduleId: 'tenants', label: '租户列表', summary: '套餐、状态、容量和功能开关' },
+  { moduleId: 'reviews', label: '企业审核', summary: '入驻资料、风险确认和审核处理' },
+  { moduleId: 'announcements', label: '平台公告', summary: '发布、编辑、撤回和运营触达' },
+];
+
+const supplierDemoWalkthroughModules: SupplierAdminModule[] = [
+  'opportunities',
+  'quotes',
+  'orders',
+  'invoices',
+  'profile',
+];
+
+const supplierDemoWalkthroughSteps: Array<DemoWalkthroughStep<SupplierAdminModule>> = [
+  { moduleId: 'opportunities', label: '询价邀请', summary: '收到邀请、查看要求和提交报价' },
+  { moduleId: 'quotes', label: '报价记录', summary: '回看报价金额、交付周期和定标结果' },
+  { moduleId: 'orders', label: '销售订单', summary: '确认订单、提交发货和提交发票' },
+  { moduleId: 'invoices', label: '发票应收', summary: '保存对账备注并跟进回款状态' },
+  { moduleId: 'profile', label: '企业档案', summary: '维护企业资料、资质和协作身份' },
+];
+
+type SupplierCollaborationOperationStripConfig = {
+  pageLabel: string;
+  operationTitle: string;
+  focus: string;
+  recommendedAction: string;
+  boundary: string;
+  listPolish: string;
+  detailPolish: string;
+  emptyStatePolish: string;
+  buttonBoundaryPolish: string;
+  nextModuleLabel: string;
+  nextModuleId: SupplierAdminModule;
+};
+
+const supplierCollaborationOperationStrips: Partial<Record<SupplierAdminModule, SupplierCollaborationOperationStripConfig>> = {
+  opportunities: {
+    pageLabel: '询价邀请',
+    operationTitle: '询价邀请 · 演示操作收束',
+    focus: '先说明采购方邀请来源、报价截止、采购要求和本企业响应状态。',
+    recommendedAction: '提交报价或查看采购要求',
+    boundary: '供应商只能处理自己的邀请，不能查看采购方预算和其他供应商报价。',
+    listPolish: '商机卡片优先展示 RFQ、截止时间、报价状态和响应入口。',
+    detailPolish: '详情先看采购要求，再看报价草稿、拒绝邀请和报价历史。',
+    emptyStatePolish: '暂无邀请时说明需由采购方创建 RFQ 并邀请当前供应商。',
+    buttonBoundaryPolish: '已报价或已拒绝后不重复提交报价。',
+    nextModuleLabel: '报价记录',
+    nextModuleId: 'quotes',
+  },
+  quotes: {
+    pageLabel: '报价记录',
+    operationTitle: '报价记录 · 演示操作收束',
+    focus: '回看本企业已提交报价、交付周期、税率、关联 RFQ 和定标结果。',
+    recommendedAction: '跟进定标结果',
+    boundary: '只有报价中的 RFQ 才能维护本企业报价，定标和审批由采购方处理。',
+    listPolish: '报价金额、交付天数、状态和关联询价保持同屏。',
+    detailPolish: '详情先看报价结论，再看修改边界和采购方定标状态。',
+    emptyStatePolish: '暂无报价时引导回询价邀请页提交报价。',
+    buttonBoundaryPolish: '已定标报价只读，避免误以为供应商可改定标结果。',
+    nextModuleLabel: '销售订单',
+    nextModuleId: 'orders',
+  },
+  orders: {
+    pageLabel: '销售订单',
+    operationTitle: '销售订单 · 演示操作收束',
+    focus: '把采购方订单承接为供应商履约动作，说明确认、发货和开票条件。',
+    recommendedAction: '确认订单、提交发货或提交发票',
+    boundary: '供应商不能登记采购方收货或付款结果。',
+    listPolish: '订单状态、发货状态、开票状态和下一动作固定展示。',
+    detailPolish: '详情先看订单金额、履约轨迹，再看物流和发票入口。',
+    emptyStatePolish: '暂无订单时说明采购方定标并生成订单后才进入供应商侧。',
+    buttonBoundaryPolish: '待确认、待发货、已收货三个状态分别开放不同动作。',
+    nextModuleLabel: '发票应收',
+    nextModuleId: 'invoices',
+  },
+  invoices: {
+    pageLabel: '发票应收',
+    operationTitle: '发票应收 · 演示操作收束',
+    focus: '把供应商发票、对账备注、逾期提醒和采购方付款状态放在同一视线内。',
+    recommendedAction: '保存对账备注并跟进回款',
+    boundary: '供应商只能维护应收备注，付款登记由采购方驱动。',
+    listPolish: '发票金额、付款状态、逾期天数和关联订单优先展示。',
+    detailPolish: '详情先看应收风险，再看对账备注和订单来源。',
+    emptyStatePolish: '暂无应收时说明需先完成收货并提交发票。',
+    buttonBoundaryPolish: '已付款发票只做回看，不再重复跟进应收备注。',
+    nextModuleLabel: '企业档案',
+    nextModuleId: 'profile',
+  },
+  profile: {
+    pageLabel: '企业档案',
+    operationTitle: '企业档案 · 演示操作收束',
+    focus: '维护企业认证、资质附件、联系人和服务能力，支撑采购方准入。',
+    recommendedAction: '维护企业档案',
+    boundary: '供应商只能维护本企业档案，不能替采购方建立私域准入关系。',
+    listPolish: '档案页不做大列表，优先展示认证、资质、联系人和合作采购方。',
+    detailPolish: '详情先看企业身份，再看资质附件和授权品类。',
+    emptyStatePolish: '资料缺失时说明先补齐认证和资质，再等待采购方准入。',
+    buttonBoundaryPolish: 'Java 模式才保存档案，资料不完整时禁用保存。',
+    nextModuleLabel: '询价邀请',
+    nextModuleId: 'opportunities',
   },
 };
 
@@ -1612,6 +3449,11 @@ const buildSupplierModuleFacts = (
 
 const buildSupplierMessageCenterNotifications = (workspace: SupplierWorkspace): JavaNotificationDto[] => {
   const createdAt = new Date().toISOString();
+  const supplierPaymentNotificationTitles = ['发票已付款', '发票部分付款'];
+  const backendNotifications = [...(workspace.notifications ?? [])].sort((left, right) =>
+    Number(supplierPaymentNotificationTitles.includes(right.title))
+    - Number(supplierPaymentNotificationTitles.includes(left.title))
+  );
   const pendingQuoteMessages = workspace.opportunities
     .filter((rfq) => rfq.status === '报价中' && !rfq.quotes.some((quote) => quote.supplierId === workspace.supplier.id))
     .map((rfq) => ({
@@ -1646,7 +3488,12 @@ const buildSupplierMessageCenterNotifications = (workspace: SupplierWorkspace): 
       createdAt,
     }));
 
-  return [...pendingQuoteMessages, ...orderMessages, ...invoiceMessages].slice(0, 6);
+  return [
+    ...backendNotifications,
+    ...pendingQuoteMessages,
+    ...orderMessages,
+    ...invoiceMessages,
+  ].slice(0, 6);
 };
 
 type PlatformModuleHeaderConfig = {
@@ -1787,6 +3634,25 @@ const buildPlatformTenantRows = (tenants: PlatformWorkspaceData['tenants']): Pla
     features: tenant.enabledFeatures.map(formatPlatformTenantFeature),
   }));
 
+const describePlatformTenantNextAction = (tenant: PlatformTenantRow | undefined) => {
+  if (!tenant) return '选择租户后查看套餐、状态和功能开关。';
+  if (tenant.status === '停用') return '核对停用原因，必要时重新启用租户。';
+  if (!tenant.features.includes('询价比价')) return '核对套餐能力，可为租户开启询价比价功能。';
+  return '持续维护套餐、容量和功能开关。';
+};
+
+const describePlatformReviewNextAction = (review: PlatformEnterpriseReview | undefined) => {
+  if (!review) return '选择企业后查看入驻资料、风险检查和审核建议。';
+  if (review.status === '待审核') return '核对资料和风险确认后通过或驳回企业审核。';
+  if (review.status === '已驳回') return '等待企业补充资料后重新提交。';
+  return '企业已认证，后续维护公共企业档案。';
+};
+
+const describePlatformAnnouncementNextAction = (announcement: PlatformAnnouncement | undefined) => {
+  if (!announcement) return '先发布平台公告，再维护站内通知范围。';
+  return '可编辑公告内容、调整发布范围或撤回公告。';
+};
+
 const PlatformWorkspace: React.FC<{
   data: PlatformWorkspaceData;
   activeModule: PlatformAdminModule;
@@ -1810,6 +3676,7 @@ const PlatformWorkspace: React.FC<{
     payload: { title: string; content: string; targetScope: string },
   ) => Promise<JavaPlatformAnnouncementDto[] | null> | void;
   onWithdrawAnnouncement: (announcementId: string) => Promise<JavaPlatformAnnouncementDto[] | null> | void;
+  onNavigatePlatformModule: (moduleId: PlatformAdminModule) => void;
 }> = ({
   data,
   activeModule,
@@ -1826,6 +3693,7 @@ const PlatformWorkspace: React.FC<{
   onPublishAnnouncement,
   onUpdateAnnouncement,
   onWithdrawAnnouncement,
+  onNavigatePlatformModule,
 }) => {
   const { model, platformOverview } = data;
   const supplierCount = platformOverview?.publicSupplierCount
@@ -2029,6 +3897,39 @@ const PlatformWorkspace: React.FC<{
     });
   };
   const operationSummary = platformOverview?.operationSummary;
+  const locatePlatformDemoSample = () => {
+    if (activeModule === 'tenants') {
+      setSelectedPlatformTenantId('tenant-stage7-platform-action');
+      scrollToStageNineDemoSample('stage9-demo-sample-platform-tenant');
+    }
+    if (activeModule === 'reviews') {
+      setSelectedPlatformReviewId('ent-stage7-platform-review-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-platform-review');
+    }
+    if (activeModule === 'announcements') {
+      setSelectedPlatformAnnouncementId('announcement-stage7-platform-withdraw-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-platform-announcement');
+    }
+  };
+  const platformDemoSequenceNavigation = buildDemoSequenceNavigation(
+    platformDemoWalkthroughSteps,
+    activeModule,
+    '平台运营演示收束',
+    onNavigatePlatformModule,
+    locatePlatformDemoSample,
+  );
+  const platformDemoReadinessItems = buildDemoReadinessItems(
+    javaEnabled,
+    '平台端 5 个真实动作',
+    'stage-seven-platform-java-real-action-click-result.json',
+    '租户、企业审核、公告推荐样本已标记，适合先讲 SaaS 治理边界。',
+  );
+  const platformOperationsDemoLoopItems = buildPlatformOperationsDemoLoopItems({
+    tenantActionCount: platformTenants.length,
+    enterpriseReviewCount: enterpriseReviews.filter((review) => review.status === '待审核').length,
+    announcementCount: announcements.length,
+    javaEnabled,
+  });
 
   return (
     <>
@@ -2051,6 +3952,63 @@ const PlatformWorkspace: React.FC<{
         ]}
         dataBoundary="平台公共企业档案与租户运营数据"
       />
+
+      <DemoCommandCenterPanel
+        title="平台端现场演示总线"
+        subtitle="先讲平台如何治理 SaaS 租户、企业准入和公告运营，再落到 5 个已验证真实动作。"
+        items={platformDemoCommandCenterItems}
+        currentGuide={platformDemoCurrentActionGuides[activeModule]}
+        sequenceNavigation={platformDemoSequenceNavigation}
+        testId="stage9-platform-demo-command-center"
+      />
+
+      <DemoReadinessPanel
+        title="平台端演示准备检查"
+        subtitle="开场前确认平台端 Java 数据源、前端加载、推荐样本和真实动作证据都可讲。"
+        status={javaEnabled ? 'Java 数据源已连接' : '等待 Java 数据源'}
+        items={platformDemoReadinessItems}
+        testId="stage9-platform-demo-readiness"
+      />
+
+      <DemoActionFeedbackPanel
+        title="平台端 5 个真实点击动作"
+        subtitle="平台只做 SaaS 治理，不直接修改采购业务单据；平台动作服务租户、企业准入和公告运营。"
+        items={platformDemoActionFeedbackItems}
+        testId="stage8-platform-action-feedback"
+      />
+
+      <PlatformOperationsDemoLoopPanel
+        items={platformOperationsDemoLoopItems}
+        workflowStatus={workflowStatus}
+      />
+
+      <DemoReadonlyBoundaryPanel
+        title="平台端只读边界与空状态"
+        subtitle="把已完成审核、已撤回公告和平台只读治理边界提前说清，避免现场把不可操作误解成页面异常。"
+        items={platformReadonlyBoundaryItems}
+        testId="stage8-platform-readonly-boundary"
+      />
+
+      <DemoPermissionAuditPanel
+        title="平台端权限与审计留痕"
+        subtitle="把平台动作讲成治理闭环：谁能维护租户和公告、动作落在哪个对象、后续在哪里追溯。"
+        items={platformGovernanceTraceItems}
+        testId="stage8-platform-permission-audit"
+      />
+
+      {platformDemoWalkthroughModules.includes(activeModule) && (
+        <DemoWalkthroughRail
+          ariaLabel="平台运营演示路径"
+          eyebrow="平台运营演示路径"
+          title="按 4 页顺序完成平台运营轻量演示"
+          description="从平台看板进入，依次讲清租户运营、企业准入和平台公告，强调平台只提供运营底座和合规边界。"
+          steps={platformDemoWalkthroughSteps}
+          activeModule={activeModule}
+          closedLabel="平台运营演示收束"
+          gridClassName="grid-cols-2 sm:grid-cols-4"
+          onNavigate={(moduleId) => onNavigatePlatformModule(moduleId)}
+        />
+      )}
 
       {activeModule === 'overview' && (
         <>
@@ -2122,24 +4080,42 @@ const PlatformWorkspace: React.FC<{
               selectedLabel={selectedPlatformTenantId}
               onClear={() => setSelectedPlatformTenantId(platformTenants[0]?.id ?? '')}
             />
+            <SelectedBusinessHandoffPanel
+              moduleLabel="租户列表"
+              selectedTitle={selectedPlatformTenant?.name}
+              selectedMeta={selectedPlatformTenant?.plan}
+              selectedStatus={selectedPlatformTenant?.status}
+              nextActionTitle={describePlatformTenantNextAction(selectedPlatformTenant)}
+              detailHint="右侧详情会核对套餐容量、功能开关、多租户隔离和审计动作。"
+              boundaryHint="平台只能维护租户配置和功能开关，不直接处理采购方业务定标、收货和付款。"
+            />
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
               <ResponsiveTableFrame
-                mobileCards={platformTenants.map((tenant) => (
-                  <ResponsiveSummaryCard
-                    key={tenant.id}
-                    ariaLabel={`${tenant.name} 租户摘要`}
-                    title={tenant.name}
-                    meta={tenant.plan}
-                    status={tenant.status}
-                    selected={selectedPlatformTenantId === tenant.id}
-                    facts={[
-                      { label: '功能开关', value: tenant.features.join('、') || '未启用' },
-                      { label: '用户上限', value: `${tenant.userLimit}` },
-                    ]}
-                    detailButton="detail"
-                    onSelectDetail={() => setSelectedPlatformTenantId(tenant.id)}
-                  />
-                ))}
+                mobileCards={platformTenants.map((tenant) => {
+                  const platformTenantDemoHighlight = tenant.id === 'tenant-stage7-platform-action'
+                    ? {
+                        label: '阶段七平台租户操作样本',
+                        testId: `stage9-demo-sample-platform-tenant-${tenant.id}`,
+                      }
+                    : undefined;
+                  return (
+                    <ResponsiveSummaryCard
+                      key={tenant.id}
+                      ariaLabel={`${tenant.name} 租户摘要`}
+                      title={tenant.name}
+                      meta={tenant.plan}
+                      status={tenant.status}
+                      selected={selectedPlatformTenantId === tenant.id}
+                      demoHighlight={platformTenantDemoHighlight}
+                      facts={[
+                        { label: '功能开关', value: tenant.features.join('、') || '未启用' },
+                        { label: '用户上限', value: `${tenant.userLimit}` },
+                      ]}
+                      detailButton="detail"
+                      onSelectDetail={() => setSelectedPlatformTenantId(tenant.id)}
+                    />
+                  );
+                })}
               >
                 <table className="min-w-[860px] w-full text-left text-sm">
                   <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
@@ -2152,26 +4128,40 @@ const PlatformWorkspace: React.FC<{
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
-                    {platformTenants.map((tenant) => (
-                      <tr key={tenant.id}>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <DetailToggleButton
-                              selected={selectedPlatformTenantId === tenant.id}
-                              onClick={() => setSelectedPlatformTenantId(tenant.id)}
-                              compact
-                            />
-                            <span className="font-bold text-slate-900">{tenant.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-slate-600">{tenant.plan}</td>
-                        <td className="px-4 py-4">
-                          <StatusPill label={tenant.status} />
-                        </td>
-                        <td className="px-4 py-4 text-slate-600">{tenant.features.join('、') || '未启用'}</td>
-                        <td className="px-4 py-4 text-right font-mono font-bold">{tenant.userLimit}</td>
-                      </tr>
-                    ))}
+                    {platformTenants.map((tenant) => {
+                      const platformTenantDemoHighlight = tenant.id === 'tenant-stage7-platform-action'
+                        ? {
+                            label: '阶段七平台租户操作样本',
+                            testId: `stage9-demo-sample-platform-tenant-desktop-${tenant.id}`,
+                          }
+                        : undefined;
+                      return (
+                        <tr
+                          key={tenant.id}
+                          className={platformTenantDemoHighlight ? 'bg-sky-50' : undefined}
+                        >
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <DetailToggleButton
+                                selected={selectedPlatformTenantId === tenant.id}
+                                onClick={() => setSelectedPlatformTenantId(tenant.id)}
+                                compact
+                              />
+                              <div className="min-w-0">
+                                <DemoSampleHighlightBadge demoHighlight={platformTenantDemoHighlight} />
+                                <span className="font-bold text-slate-900">{tenant.name}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-slate-600">{tenant.plan}</td>
+                          <td className="px-4 py-4">
+                            <StatusPill label={tenant.status} />
+                          </td>
+                          <td className="px-4 py-4 text-slate-600">{tenant.features.join('、') || '未启用'}</td>
+                          <td className="px-4 py-4 text-right font-mono font-bold">{tenant.userLimit}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </ResponsiveTableFrame>
@@ -2214,6 +4204,15 @@ const PlatformWorkspace: React.FC<{
               totalCount={enterpriseReviews.length}
               selectedLabel={selectedPlatformReviewId}
               onClear={() => setSelectedPlatformReviewId(enterpriseReviews[0]?.id ?? '')}
+            />
+            <SelectedBusinessHandoffPanel
+              moduleLabel="企业审核"
+              selectedTitle={selectedPlatformReview?.name}
+              selectedMeta={selectedPlatformReview ? formatEnterpriseType(selectedPlatformReview.type) : undefined}
+              selectedStatus={selectedPlatformReview?.status}
+              nextActionTitle={describePlatformReviewNextAction(selectedPlatformReview)}
+              detailHint="右侧详情会核对入驻资料、资料确认、风险确认、审核轨迹和处理建议。"
+              boundaryHint="平台只做企业身份准入审核，不参与采购方私域供应商评价和后续定标。"
             />
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
               <div className="space-y-3">
@@ -2271,6 +4270,15 @@ const PlatformWorkspace: React.FC<{
               totalCount={announcements.length}
               selectedLabel={selectedPlatformAnnouncementId}
               onClear={() => setSelectedPlatformAnnouncementId(announcements[0]?.id ?? '')}
+            />
+            <SelectedBusinessHandoffPanel
+              moduleLabel="平台公告"
+              selectedTitle={selectedPlatformAnnouncement?.title}
+              selectedMeta={selectedPlatformAnnouncement ? formatAuditTime(selectedPlatformAnnouncement.publishedAt) : undefined}
+              selectedStatus={selectedPlatformAnnouncement ? '已发布' : undefined}
+              nextActionTitle={describePlatformAnnouncementNextAction(selectedPlatformAnnouncement)}
+              detailHint="公告生命周期面板会核对标题、正文、发布范围、站内通知和撤回审计。"
+              boundaryHint="公告只影响平台通知和运营触达，不变更采购方业务单据、供应商报价或财务状态。"
             />
             <div className="space-y-3">
               {platformAnnouncements.map((announcement) => (
@@ -2347,6 +4355,7 @@ const PlatformAnnouncementLifecyclePanel: React.FC<{
                 <label className="block">
                   <span className="text-xs font-black text-slate-500">公告标题</span>
                   <input
+                    data-testid={`stage7-platform-edit-announcement-title-${announcement.id}`}
                     value={editableAnnouncementTitle}
                     onChange={(event) => setEditableAnnouncementTitle(event.target.value)}
                     className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-violet-400"
@@ -2355,6 +4364,7 @@ const PlatformAnnouncementLifecyclePanel: React.FC<{
                 <label className="block">
                   <span className="text-xs font-black text-slate-500">公告正文</span>
                   <textarea
+                    data-testid={`stage7-platform-edit-announcement-content-${announcement.id}`}
                     value={editableAnnouncementContent}
                     onChange={(event) => setEditableAnnouncementContent(event.target.value)}
                     rows={3}
@@ -2364,6 +4374,7 @@ const PlatformAnnouncementLifecyclePanel: React.FC<{
                 <label className="block">
                   <span className="text-xs font-black text-slate-500">发布范围</span>
                   <select
+                    data-testid={`stage7-platform-edit-announcement-scope-${announcement.id}`}
                     value={editableAnnouncementScope}
                     onChange={(event) => setEditableAnnouncementScope(event.target.value)}
                     className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-violet-400"
@@ -2383,6 +4394,7 @@ const PlatformAnnouncementLifecyclePanel: React.FC<{
                   busy={updateBusy}
                   pendingLabel="保存中"
                   fullWidth
+                  testId={`stage7-platform-update-announcement-${announcement.id}`}
                 >
                   保存公告修改
                 </PrimaryActionButton>
@@ -2404,6 +4416,7 @@ const PlatformAnnouncementLifecyclePanel: React.FC<{
                 pendingLabel="撤回中"
                 tone="red"
                 fullWidth
+                testId={`stage7-platform-withdraw-announcement-${announcement.id}`}
               >
                 撤回公告
               </PrimaryActionButton>
@@ -2470,6 +4483,7 @@ const PlatformAnnouncementPublishPanel: React.FC<{
         <label className="block">
           <span className="text-xs font-black text-slate-500">公告标题</span>
           <input
+            data-testid="stage7-platform-announcement-title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-green-400"
@@ -2479,6 +4493,7 @@ const PlatformAnnouncementPublishPanel: React.FC<{
         <label className="block">
           <span className="text-xs font-black text-slate-500">公告正文</span>
           <textarea
+            data-testid="stage7-platform-announcement-content"
             value={content}
             onChange={(event) => setContent(event.target.value)}
             className="mt-2 min-h-10 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-green-400"
@@ -2489,6 +4504,7 @@ const PlatformAnnouncementPublishPanel: React.FC<{
         <label className="block">
           <span className="text-xs font-black text-slate-500">发布范围</span>
           <select
+            data-testid="stage7-platform-announcement-scope"
             value={targetScope}
             onChange={(event) => setTargetScope(event.target.value)}
             className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-green-400"
@@ -2525,6 +4541,7 @@ const PlatformAnnouncementPublishPanel: React.FC<{
           tone="emerald"
           size="md"
           flushTop
+          testId="stage7-platform-publish-announcement"
         >
           发布公告
         </PrimaryActionButton>
@@ -2551,7 +4568,16 @@ const PlatformAnnouncementCard: React.FC<{
   selected: boolean;
   onSelectDetail: () => void;
 }> = ({ announcement, selected, onSelectDetail }) => (
-  <ReadonlyDetailCardSurface title={announcement.title} selected={selected}>
+  <ReadonlyDetailCardSurface
+    title={announcement.title}
+    selected={selected}
+    demoHighlight={announcement.id === 'announcement-stage7-platform-withdraw-ready'
+      ? {
+          label: '阶段七可撤回公告样本',
+          testId: `stage9-demo-sample-platform-announcement-${announcement.id}`,
+        }
+      : undefined}
+  >
     <DetailHeroCard
       eyebrow="平台公告"
       title={`公告明细卡片 ${announcement.title}`}
@@ -2568,6 +4594,7 @@ const PlatformAnnouncementCard: React.FC<{
       title={announcement.title}
       selected={selected}
       onSelectDetail={onSelectDetail}
+      testId={`stage7-platform-select-announcement-${announcement.id}`}
     />
     <DetailSection title="公告正文">
       <p className="break-words text-sm font-bold leading-6 text-slate-700">{announcement.content}</p>
@@ -2669,6 +4696,7 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
                       pendingLabel="审核中"
                       tone="emerald"
                       flushTop
+                      testId={`stage7-platform-approve-review-${review.id}`}
                     >
                       通过审核
                     </PrimaryActionButton>
@@ -2679,6 +4707,7 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
                       pendingLabel="审核中"
                       tone="red"
                       flushTop
+                      testId={`stage7-platform-reject-review-${review.id}`}
                     >
                       驳回
                     </PrimaryActionButton>
@@ -2700,6 +4729,7 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
                   >
                     <input
                       id={`platform-review-profile-${review.id}`}
+                      data-testid={`stage7-platform-review-profile-${review.id}`}
                       type="checkbox"
                       checked={draft.profileConfirmed}
                       onChange={(event) => updateReviewDraft(review.id, { profileConfirmed: event.target.checked })}
@@ -2713,6 +4743,7 @@ const PlatformEnterpriseReviewActionPanel: React.FC<{
                   >
                     <input
                       id={`platform-review-risk-${review.id}`}
+                      data-testid={`stage7-platform-review-risk-${review.id}`}
                       type="checkbox"
                       checked={draft.riskConfirmed}
                       onChange={(event) => updateReviewDraft(review.id, { riskConfirmed: event.target.checked })}
@@ -2868,7 +4899,16 @@ const PlatformEnterpriseReviewCard: React.FC<{
       : '维护认证档案';
 
   return (
-    <ReadonlyDetailCardSurface title={review.name} selected={selected}>
+    <ReadonlyDetailCardSurface
+      title={review.name}
+      selected={selected}
+      demoHighlight={review.id === 'ent-stage7-platform-review-ready'
+        ? {
+            label: '阶段七企业审核样本',
+            testId: `stage9-demo-sample-platform-review-${review.id}`,
+          }
+        : undefined}
+    >
       <DetailHeroCard
         eyebrow="企业审核"
         title={`企业审核卡片 ${review.name}`}
@@ -2961,6 +5001,7 @@ const PlatformTenantActionPanel: React.FC<{
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
+                data-testid={`stage7-platform-enable-tenant-${tenant.id}`}
                 onClick={() => onUpdateTenantStatus(tenant.id, '已启用')}
                 className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 disabled={enableDisabled}
@@ -2969,6 +5010,7 @@ const PlatformTenantActionPanel: React.FC<{
               </button>
               <button
                 type="button"
+                data-testid={`stage7-platform-disable-tenant-${tenant.id}`}
                 onClick={() => onUpdateTenantStatus(tenant.id, '停用')}
                 className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300"
                 disabled={disableDisabled}
@@ -2977,6 +5019,7 @@ const PlatformTenantActionPanel: React.FC<{
               </button>
               <button
                 type="button"
+                data-testid={`stage7-platform-upgrade-plan-${tenant.id}`}
                 onClick={() => onUpdateTenantPlan(tenant.id, '专业版')}
                 className="inline-flex h-9 items-center justify-center rounded-lg border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 transition hover:bg-indigo-50"
                 disabled={planBusy || featureBusy}
@@ -2985,6 +5028,7 @@ const PlatformTenantActionPanel: React.FC<{
               </button>
               <button
                 type="button"
+                data-testid={`stage7-platform-toggle-rfq-${tenant.id}`}
                 onClick={() => onToggleTenantFeature(tenant.id, 'rfq')}
                 disabled={planBusy || featureBusy}
                 className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-black transition ${
@@ -3146,12 +5190,21 @@ const BuyerWorkspaceView: React.FC<{
   buyerNotifications: JavaNotificationDto[];
   approvalTemplates: JavaApprovalTemplateDto[];
   roles: BuyerRoleDto[];
+  paymentBatches: PaymentBatchRecord[];
+  paymentExecutionRecords: PaymentExecutionRecord[];
+  paymentBlockResolutions: PaymentBlockResolutionRecord[];
+  paymentArchiveExceptionRequests: PaymentArchiveExceptionRequestRecord[];
+  paymentRequests: PaymentRequestRecord[];
+  varianceHandlings: VarianceHandlingRecord[];
+  auditLogs: AuditLogRecord[];
   searchQuery: string;
   approvalBusyId: string | null;
   demandCreateBusy: boolean;
+  materialSaveBusyId: string | null;
   demandSubmitBusyId: string | null;
   demandUpdateBusyId: string | null;
   supplierAdmissionBusyId: string | null;
+  supplierRelationBusyId: string | null;
   rfqCreateBusy: string | null;
   rfqUpdateBusyId: string | null;
   awardSubmitBusyId: string | null;
@@ -3159,13 +5212,26 @@ const BuyerWorkspaceView: React.FC<{
   orderUpdateBusyId: string | null;
   invoiceUpdateBusyId: string | null;
   buyerFulfillmentBusyId: string | null;
+  notificationReadBusyId: string | null;
+  contractAttachmentsById: Record<string, AttachmentRecord[]>;
+  contractAttachmentUploadTicketsById: Record<string, AttachmentUploadTicketRecord>;
+  contractAttachmentDownloadLinksById: Record<string, AttachmentDownloadLinkRecord>;
+  contractFulfillmentEventsById: Record<string, ContractFulfillmentEventRecord[]>;
+  contractTargetAuditLogsById: Record<string, AuditLogRecord[]>;
   javaEnabled: boolean;
   workflowStatus: string | null;
+  onFocusBuyerKeyAction: (actionLabel: string) => void;
+  onNavigateBuyerModule: (moduleId: BuyerAdminModule) => void;
   onCreateDemand: (payload: CreateDemandPayload, submitForApproval: boolean) => void;
+  onSaveMaterial: (materialId: string | null, payload: SaveMaterialPayload) => void;
   onSubmitDemand: (demandId: string) => void;
   onUpdateDemand: (demandId: string, payload: UpdateDemandPayload) => void;
   onReviewApproval: (approval: JavaApprovalTaskDto, approved: boolean, draft: BuyerApprovalReviewDraft) => void;
   onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
+  onCreateSupplierRelation: (payload: CreateBuyerSupplierRelationPayload) => void;
+  onSaveSupplierRelationProfile: (relationId: string, payload: UpdateBuyerSupplierProfilePayload) => void;
+  onSaveSupplierRelationStatus: (relationId: string, status: string) => void;
+  onSaveSupplierRelationPerformance: (relationId: string, performanceScore: number) => void;
   onCreateRfqFromDemand: (demandId: string, supplierIds?: string[], deadline?: string) => void;
   onUpdateRfq: (rfqId: string, payload: UpdateRfqPayload) => void;
   onSubmitAwardApproval: (rfqId: string, quoteId: string, draft: BuyerAwardDraft) => void;
@@ -3173,12 +5239,44 @@ const BuyerWorkspaceView: React.FC<{
   onUpdateOrder: (orderId: string, payload: UpdateOrderPayload) => void;
   onCreateReceipt: (orderId: string, draft: BuyerReceiptDraft) => void;
   onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onRegisterPaymentExecutionRecord: (executionRecordId: string) => void;
+  onCreatePaymentRequest: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onCreateVarianceHandling: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onUpdatePaymentRequestStatus: (paymentRequestId: string, status: string) => void;
+  onUpdatePaymentBatchStatus: (paymentBatchNo: string, status: string) => void;
+  onCreatePaymentArchiveExceptionRequest: (paymentBatchNo: string, exceptionType: string, exceptionReason: string) => void;
+  onCompletePaymentArchiveExceptionAction: (requestId: string, actionResult: string) => void;
+  onClosePaymentArchiveExceptionRequest: (requestId: string, closureResult: string) => void;
+  onSavePaymentBlockResolutionStatus: (payload: BuyerPaymentBlockResolutionDraft) => void;
+  onUpdateVarianceHandlingStatus: (varianceHandlingId: string, status: string) => void;
+  onRebuildThreeWayMatches: () => void;
   onUpdateInvoice: (invoiceId: string, payload: UpdateInvoicePayload) => void;
+  onSaveContract: (mode: 'create' | 'update', contractId: string | null, draft: BuyerContractDraft) => void;
+  onSubmitContractApproval: (contractId: string) => void;
+  onLoadContractAttachments: (contractId: string) => void;
+  onCreateContractAttachment: (
+    contractId: string,
+    payload: Omit<CreateAttachmentPayload, 'ownerType' | 'ownerId'>,
+  ) => void;
+  onCreateContractAttachmentUploadTicket: (
+    contractId: string,
+    payload: Omit<CreateAttachmentUploadTicketPayload, 'ownerType' | 'ownerId'>,
+  ) => void;
+  onCreateContractAttachmentDownloadLink: (attachmentId: string) => void;
+  onLoadContractFulfillmentEvents: (contractId: string) => void;
+  onLoadContractTargetAuditLogs: (contractId: string) => void;
+  onCreateContractFulfillmentEvent: (
+    contractId: string,
+    payload: CreateContractFulfillmentEventPayload,
+  ) => void;
+  onUpdateContractStatus: (contractId: string, status: string, fulfillmentProgress: string) => void;
+  onArchiveContract: (contractId: string) => void;
   onUpdateApprovalTemplate: (
     templateCode: string,
     defaultApproverRoleId: string,
     status: 'active' | 'inactive',
   ) => void;
+  onMarkBuyerNotificationRead: (notificationId: string) => void;
 }> = ({
   activeModule,
   workspace,
@@ -3188,12 +5286,21 @@ const BuyerWorkspaceView: React.FC<{
   buyerNotifications,
   approvalTemplates,
   roles,
+  paymentBatches,
+  paymentExecutionRecords,
+  paymentBlockResolutions,
+  paymentArchiveExceptionRequests,
+  paymentRequests,
+  varianceHandlings,
+  auditLogs,
   searchQuery,
   approvalBusyId,
   demandCreateBusy,
+  materialSaveBusyId,
   demandSubmitBusyId,
   demandUpdateBusyId,
   supplierAdmissionBusyId,
+  supplierRelationBusyId,
   rfqCreateBusy,
   rfqUpdateBusyId,
   awardSubmitBusyId,
@@ -3201,13 +5308,26 @@ const BuyerWorkspaceView: React.FC<{
   orderUpdateBusyId,
   invoiceUpdateBusyId,
   buyerFulfillmentBusyId,
+  notificationReadBusyId,
+  contractAttachmentsById,
+  contractAttachmentUploadTicketsById,
+  contractAttachmentDownloadLinksById,
+  contractFulfillmentEventsById,
+  contractTargetAuditLogsById,
   javaEnabled,
   workflowStatus,
+  onFocusBuyerKeyAction,
+  onNavigateBuyerModule,
   onCreateDemand,
+  onSaveMaterial,
   onSubmitDemand,
   onUpdateDemand,
   onReviewApproval,
   onSubmitSupplierAdmission,
+  onCreateSupplierRelation,
+  onSaveSupplierRelationProfile,
+  onSaveSupplierRelationStatus,
+  onSaveSupplierRelationPerformance,
   onCreateRfqFromDemand,
   onUpdateRfq,
   onSubmitAwardApproval,
@@ -3215,17 +5335,43 @@ const BuyerWorkspaceView: React.FC<{
   onUpdateOrder,
   onCreateReceipt,
   onRegisterPayment,
+  onRegisterPaymentExecutionRecord,
+  onCreatePaymentRequest,
+  onCreateVarianceHandling,
+  onUpdatePaymentRequestStatus,
+  onUpdatePaymentBatchStatus,
+  onCreatePaymentArchiveExceptionRequest,
+  onCompletePaymentArchiveExceptionAction,
+  onClosePaymentArchiveExceptionRequest,
+  onSavePaymentBlockResolutionStatus,
+  onUpdateVarianceHandlingStatus,
+  onRebuildThreeWayMatches,
   onUpdateInvoice,
+  onSaveContract,
+  onSubmitContractApproval,
+  onLoadContractAttachments,
+  onCreateContractAttachment,
+  onCreateContractAttachmentUploadTicket,
+  onCreateContractAttachmentDownloadLink,
+  onLoadContractFulfillmentEvents,
+  onLoadContractTargetAuditLogs,
+  onCreateContractFulfillmentEvent,
+  onUpdateContractStatus,
+  onArchiveContract,
   onUpdateApprovalTemplate,
+  onMarkBuyerNotificationRead: markBuyerNotificationRead,
 }) => {
   const [selectedDemandId, setSelectedDemandId] = useState(workspace.demands[0]?.id ?? '');
   const [selectedRfqId, setSelectedRfqId] = useState(workspace.rfqs[0]?.id ?? '');
   const [selectedOrderId, setSelectedOrderId] = useState(workspace.orders[0]?.id ?? '');
+  const [selectedContractId, setSelectedContractId] = useState(workspace.orders[0] ? `contract-${workspace.orders[0].id}` : '');
   const [selectedSupplierRelationId, setSelectedSupplierRelationId] = useState(workspace.privateSupplierRelations[0]?.id ?? '');
   const [selectedMaterialId, setSelectedMaterialId] = useState(workspace.materials[0]?.id ?? '');
   const [selectedApprovalId, setSelectedApprovalId] = useState('');
   const [selectedReceiptOrderId, setSelectedReceiptOrderId] = useState(workspace.orders.find((order) => order.status === '已发货' || order.status === '待收货')?.id ?? '');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(workspace.invoices[0]?.id ?? '');
+  const [contractTargetFocus, setContractTargetFocus] = useState<BuyerContractTargetFocus | null>(null);
+  const [contractLinkedActionResult, setContractLinkedActionResult] = useState<BuyerContractLinkedActionResult | null>(null);
   const [approvalReviewDrafts, setApprovalReviewDrafts] = useState<Record<string, BuyerApprovalReviewDraft>>({});
   const [supplierAdmissionDrafts, setSupplierAdmissionDrafts] = useState<Record<string, BuyerSupplierAdmissionDraft>>({});
   const [awardDrafts, setAwardDrafts] = useState<Record<string, BuyerAwardDraft>>({});
@@ -3235,6 +5381,7 @@ const BuyerWorkspaceView: React.FC<{
   const [demandStatusFilter, setDemandStatusFilter] = useState('全部状态');
   const [rfqStatusFilter, setRfqStatusFilter] = useState('全部状态');
   const [orderStatusFilter, setOrderStatusFilter] = useState('全部状态');
+  const [contractStatusFilter, setContractStatusFilter] = useState('全部状态');
   const [receiptStatusFilter, setReceiptStatusFilter] = useState('全部状态');
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('全部状态');
   const [reconciliationLedgerStatusFilter, setReconciliationLedgerStatusFilter] = useState('全部状态');
@@ -3303,6 +5450,21 @@ const BuyerWorkspaceView: React.FC<{
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, 6);
   const linkedDemandIds = new Set(workspace.rfqs.flatMap((rfq) => rfq.demandIds));
+  const admittedSupplierCountForRfq = workspace.privateSupplierRelations
+    .filter((relation) => relation.status === '已准入')
+    .length;
+  const demandToRfqReadyCount = workspace.demands.filter((demand) => (
+    demand.status === '已通过'
+    && !linkedDemandIds.has(demand.id)
+    && admittedSupplierCountForRfq > 0
+  )).length;
+  const demandToRfqLinkedCount = workspace.demands.filter((demand) => linkedDemandIds.has(demand.id)).length;
+  const demandToRfqApprovalBlockedCount = workspace.demands.filter((demand) => demand.status !== '已通过').length;
+  const demandToRfqSupplierBlockedCount = workspace.demands.filter((demand) => (
+    demand.status === '已通过'
+    && !linkedDemandIds.has(demand.id)
+    && admittedSupplierCountForRfq === 0
+  )).length;
   const displayPendingApprovals = javaEnabled ? sortedPendingApprovals : buildWorkspaceApprovalQueue(workspace);
   const moduleFacts = buildBuyerModuleFacts(activeModule, workspace, displayPendingApprovals);
   const approvalQueueRows = buildApprovalQueueRows(displayPendingApprovals);
@@ -3318,8 +5480,10 @@ const BuyerWorkspaceView: React.FC<{
   const supplierRelationRows = buildSupplierRelationRows(workspace);
   const rfqListRows = buildRfqListRows(workspace);
   const orderFulfillmentRows = buildOrderFulfillmentRows(workspace);
+  const contractLedgerRows = buildContractLedgerRows(workspace);
   const receiptInspectionRows = buildReceiptInspectionRows(workspace);
   const invoicePaymentRows = buildInvoicePaymentRows(workspace);
+  const updatePaymentBatchStatus = onUpdatePaymentBatchStatus;
   const demandListRows = buildDemandListRows(workspace);
   const materialRows = buildMaterialCatalogRows(workspace);
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
@@ -3350,6 +5514,10 @@ const BuyerWorkspaceView: React.FC<{
     row.status,
     ...row.facts.map((fact) => fact.value),
   ]));
+  const displayedApprovalQueueRows = limitBuyerDemoRows(
+    filteredApprovalQueueRows,
+    (row) => row.id === 'approval-stage7-demand-pending',
+  );
   const filteredRecentApprovals = sortedRecentApprovals.filter((approval) =>
     (approvalStatusFilter === '全部状态' || approval.status === approvalStatusFilter)
     && matchesSearchQuery([
@@ -3375,6 +5543,10 @@ const BuyerWorkspaceView: React.FC<{
     demandRow.materialSummary,
     ...demandRow.facts.map((fact) => fact.value),
   ]));
+  const displayedDemandListRows = limitBuyerDemoRows(
+    filteredDemandListRows,
+    (row) => row.id === 'dem-stage7-submit-ready' || row.id === 'dem-stage7-rfq-ready',
+  );
   const filteredRfqListRows = rfqListRows.filter((rfq) =>
     (rfqStatusFilter === '全部状态' || rfq.status === rfqStatusFilter)
     && matchesSearchQuery([
@@ -3383,19 +5555,59 @@ const BuyerWorkspaceView: React.FC<{
     rfq.status,
     rfq.demandLabel,
     rfq.supplierLabel,
-    rfq.quoteLabel,
-    rfq.deadlineLabel,
-  ]));
+     rfq.quoteLabel,
+     rfq.deadlineLabel,
+   ]));
+  const displayedRfqListRows = limitBuyerDemoRows(
+    filteredRfqListRows,
+    (row) => row.id === 'rfq-stage7-supplier-quote-ready' || row.id === 'rfq-stage7-award-ready',
+  );
+  const rfqPendingInvitationCount = workspace.rfqs.filter((rfq) => rfq.invitedSupplierIds.length === 0).length;
+  const rfqInsufficientQuoteCount = workspace.rfqs.filter((rfq) => (
+    rfq.status === '报价中'
+    && rfq.invitedSupplierIds.length > 0
+    && rfq.quotes.length < rfq.invitedSupplierIds.length
+  )).length;
+  const rfqReadyForComparisonCount = workspace.rfqs.filter((rfq) => (
+    rfq.status === '报价中'
+    && rfq.quotes.length > 0
+    && !rfq.awardedSupplierId
+  )).length;
+  const rfqAwardedCount = workspace.rfqs.filter((rfq) => (
+    rfq.status === '已定标' || Boolean(rfq.awardedSupplierId)
+  )).length;
   const filteredQuoteRfqs = workspace.rfqs.filter((rfq) => matchesSearchQuery([
-    rfq.id,
-    rfq.title,
-    rfq.status,
+      rfq.id,
+      rfq.title,
+     rfq.status,
     rfq.owner,
     rfq.awardedSupplierId,
     ...rfq.demandIds,
-    ...rfq.invitedSupplierIds,
-    ...rfq.quotes.flatMap((quote) => [quote.id, quote.supplierId, quote.amount, quote.status]),
-  ]));
+     ...rfq.invitedSupplierIds,
+     ...rfq.quotes.flatMap((quote) => [quote.id, quote.supplierId, quote.amount, quote.status]),
+   ]));
+  const displayedQuoteRfqs = limitBuyerDemoRows(
+    filteredQuoteRfqs,
+    (rfq) => rfq.id === 'rfq-stage7-award-ready' || rfq.id === 'rfq-stage7-order-ready',
+  );
+  const quoteAwardableQuoteCount = filteredQuoteRfqs
+    .filter((rfq) => canSubmitAwardApproval(rfq))
+    .reduce((sum, rfq) => sum + rfq.quotes.filter((quote) => quote.status === '已提交').length, 0);
+  const quoteRecommendedRfqCount = filteredQuoteRfqs
+    .filter((rfq) => Boolean(selectRecommendedQuote(rfq)))
+    .length;
+  const quoteAwardApprovalPendingCount = filteredQuoteRfqs.filter((rfq) => (
+    rfq.status === '定标审批中'
+    || allApprovalSources.some((approval) => (
+      approval.bizType === 'rfq_award'
+      && approval.parentBizId === rfq.id
+      && approval.status === '待审批'
+    ))
+  )).length;
+  const quoteGeneratedOrderCount = filteredQuoteRfqs
+    .filter((rfq) => workspace.orders.some((order) => order.rfqId === rfq.id))
+    .length;
+  const quoteAwardSubmittableRfqCount = filteredQuoteRfqs.filter((rfq) => canSubmitAwardApproval(rfq)).length;
   const filteredSupplierRelationRows = supplierRelationRows.filter((relationRow) =>
     (supplierStatusFilter === '全部状态' || relationRow.status === supplierStatusFilter)
     && matchesSearchQuery([
@@ -3418,24 +5630,89 @@ const BuyerWorkspaceView: React.FC<{
     ...material.facts.map((fact) => fact.value),
   ]));
   const filteredOrderFulfillmentRows = orderFulfillmentRows.filter((orderRow) =>
-    (orderStatusFilter === '全部状态' || orderRow.status === orderStatusFilter)
-    && matchesSearchQuery([
-    orderRow.id,
+     (orderStatusFilter === '全部状态' || orderRow.status === orderStatusFilter)
+     && matchesSearchQuery([
+     orderRow.id,
     orderRow.supplierName,
     orderRow.amountLabel,
     orderRow.status,
-    orderRow.nextAction.title,
-    ...orderRow.facts.map((fact) => fact.value),
-  ]));
+     orderRow.nextAction.title,
+     ...orderRow.facts.map((fact) => fact.value),
+   ]));
+  const displayedOrderFulfillmentRows = limitBuyerDemoRows(
+    filteredOrderFulfillmentRows,
+    (row) => row.id === 'po-stage7-receipt-ready',
+  );
+  const filteredContractLedgerRows = contractLedgerRows.filter((contractRow) =>
+    (contractStatusFilter === '全部状态' || contractRow.status === contractStatusFilter || contractRow.archiveStatus === contractStatusFilter)
+    && matchesSearchQuery([
+      contractRow.id,
+      contractRow.contractNo,
+      contractRow.contractName,
+      contractRow.relatedOrderId,
+      contractRow.supplierName,
+      contractRow.amountLabel,
+      contractRow.status,
+      contractRow.archiveStatus,
+      contractRow.nextAction.title,
+      ...contractRow.facts.map((fact) => fact.value),
+    ]));
+  const contractDraftCount = contractLedgerRows.filter((contract) => contract.status === '草案').length;
+  const contractActiveCount = contractLedgerRows.filter((contract) => contract.status === '履约中' || contract.status === '已生效').length;
+  const contractArchivedCount = contractLedgerRows.filter((contract) => contract.archiveStatus === '已归档').length;
+  const hasJavaContractLedger = Boolean(workspace.contracts && workspace.contracts.length > 0);
+  const contractDataSourceLabel = hasJavaContractLedger ? 'Java 合同台账' : '采购订单派生';
+  const contractBoundaryHint = hasJavaContractLedger
+    ? '本轮合同数据已优先读取 Java 合同台账；合同新建、编辑、附件元数据和归档写入已接入，审批待后续迭代。'
+    : '本轮合同数据从采购订单派生；需先保存为 Java 合同后再登记附件和归档。';
+  const orderPendingGenerationCount = workspace.rfqs.filter((rfq) => {
+    const approvedAward = allApprovalSources.find((approval) => (
+      approval.bizType === 'rfq_award'
+      && approval.parentBizId === rfq.id
+      && approval.status === '已通过'
+    ));
+    return canCreateOrderFromAward(rfq, approvedAward?.bizId, workspace.orders);
+  }).length;
+  const orderPendingSupplierConfirmCount = workspace.orders
+    .filter((order) => order.status === '待供应商确认')
+    .length;
+  const orderPendingShipmentCount = workspace.orders
+    .filter((order) => order.status === '待发货')
+    .length;
+  const orderPendingReceiptCount = workspace.orders
+    .filter((order) => order.status === '已发货' || order.status === '待收货')
+    .length;
+  const orderFulfillmentCompletedCount = workspace.orders
+    .filter((order) => order.status === '已收货' || order.status === '已完成')
+    .length;
   const filteredReceiptInspectionRows = receiptInspectionRows.filter((orderRow) =>
     (receiptStatusFilter === '全部状态' || orderRow.status === receiptStatusFilter)
     && matchesSearchQuery([
     orderRow.id,
     orderRow.supplierName,
     orderRow.logisticsLabel,
-    orderRow.status,
-    orderRow.nextAction.title,
-  ]));
+     orderRow.status,
+     orderRow.nextAction.title,
+   ]));
+  const displayedReceiptInspectionRows = limitBuyerDemoRows(
+    filteredReceiptInspectionRows,
+    (row) => row.id === 'po-stage7-receipt-ready',
+  );
+  const receiptPendingShipmentCount = workspace.orders
+    .filter((order) => order.status === '待发货')
+    .length;
+  const receiptPendingArrivalCount = workspace.orders
+    .filter((order) => order.status === '待收货')
+    .length;
+  const receiptReadyForInspectionCount = workspace.orders
+    .filter((order) => order.status === '已发货')
+    .length;
+  const receiptExceptionPendingCount = Object.values(receiptDrafts)
+    .filter((draft) => draft.result === '异常待处理')
+    .length;
+  const receiptCompletedCount = workspace.orders
+    .filter((order) => order.status === '已收货' || order.status === '已完成')
+    .length;
   const filteredInvoicePaymentRows = invoicePaymentRows.filter((invoiceRow) =>
     (invoiceStatusFilter === '全部状态' || invoiceRow.status === invoiceStatusFilter)
     && matchesSearchQuery([
@@ -3446,9 +5723,41 @@ const BuyerWorkspaceView: React.FC<{
     invoiceRow.status,
     invoiceRow.nextAction.title,
   ]));
+  const displayedInvoicePaymentRows = limitBuyerDemoRows(
+    filteredInvoicePaymentRows,
+    (row) => row.id === 'inv-stage7-payment-ready',
+  );
+  const invoicePendingIssueCount = workspace.orders
+    .filter((order) => (
+      (order.status === '已收货' || order.status === '已完成')
+      && !workspace.invoices.some((invoice) => invoice.orderId === order.id)
+    ))
+    .length;
+  const invoicePendingReconciliationCount = workspace.invoices
+    .filter((invoice) => {
+      const status = invoice.reconciliationStatus ?? invoice.reconciliationStage ?? '待对账';
+      return status.includes('待') || status === '待同步' || status === '待核对';
+    })
+    .length;
+  const invoiceVariancePendingCount = workspace.invoices
+    .filter((invoice) => Math.abs(invoice.varianceAmount ?? 0) > 0)
+    .filter((invoice) => !varianceHandlings.some((handling) => (
+      handling.invoiceId === invoice.id && handling.status === '已处理'
+    )))
+    .length;
+  const invoicePendingPaymentCount = workspace.invoices
+    .filter((invoice) => invoice.paymentStatus !== '已付款')
+    .length;
+  const invoicePaidCount = workspace.invoices
+    .filter((invoice) => invoice.paymentStatus === '已付款')
+    .length;
   const demandStatusOptions = Array.from(new Set(demandListRows.map((demandRow) => demandRow.status)));
   const rfqStatusOptions = Array.from(new Set(rfqListRows.map((rfq) => rfq.status)));
   const orderStatusOptions = Array.from(new Set(orderFulfillmentRows.map((orderRow) => orderRow.status)));
+  const contractStatusOptions = Array.from(new Set([
+    ...contractLedgerRows.map((contractRow) => contractRow.status),
+    ...contractLedgerRows.map((contractRow) => contractRow.archiveStatus),
+  ]));
   const receiptStatusOptions = Array.from(new Set(receiptInspectionRows.map((orderRow) => orderRow.status)));
   const invoiceStatusOptions = Array.from(new Set(invoicePaymentRows.map((invoiceRow) => invoiceRow.status)));
   const approvalStatusOptions = Array.from(new Set([
@@ -3494,6 +5803,83 @@ const BuyerWorkspaceView: React.FC<{
   const selectedOrderRecord = selectedOrderDetail
     ? workspace.orders.find((order) => order.id === selectedOrderDetail.id)
     : undefined;
+  const selectedContract = contractLedgerRows.some((contract) => contract.id === selectedContractId)
+    ? selectedContractId
+    : contractLedgerRows[0]?.id ?? '';
+  const selectedContractDetail = selectedContract
+    ? buildContractDetailPanel(workspace, selectedContract, {
+        paymentRequests,
+        paymentBatches,
+        fulfillmentEvents: contractFulfillmentEventsById[selectedContract] ?? [],
+        attachmentCount: contractAttachmentsById[selectedContract]?.length ?? 0,
+        auditLogCount: contractTargetAuditLogsById[selectedContract]?.length ?? 0,
+      })
+    : undefined;
+  const selectedContractRecord = selectedContract
+    ? workspace.contracts?.find((contract) => contract.id === selectedContract)
+    : undefined;
+  const recommendedContractSample = contractLedgerRows.find((contract) => workspace.contracts?.some((item) => item.id === contract.id))
+    ?? contractLedgerRows[0];
+  const locateContractDemoSample = () => {
+    setContractStatusFilter('全部状态');
+    if (recommendedContractSample) {
+      setSelectedContractId(recommendedContractSample.id);
+    }
+    scrollToStageNineDemoSample('stage10-demo-sample-contract');
+  };
+  const contractDemoSequenceNavigation = buildDemoSequenceNavigation(
+    contractDemoWalkthroughSteps,
+    'contracts' as BuyerAdminModule,
+    '合同演示闭环',
+    onNavigateBuyerModule,
+    locateContractDemoSample,
+  );
+  const contractDemoReadinessItems: DemoReadinessItem[] = [
+    {
+      label: 'Java 合同台账',
+      status: hasJavaContractLedger ? '已接入 Java 合同台账' : '订单派生合同可演示',
+      evidence: hasJavaContractLedger ? 'GET /api/v1/buyer/contracts' : '采购订单派生合同台账',
+      detail: hasJavaContractLedger
+        ? '合同页优先展示 Java 合同数据，可继续提交审批、登记附件、写入履约事件和归档。'
+        : '当前仍可用订单派生合同讲解承接关系，真实保存需先创建 Java 合同。',
+      tone: hasJavaContractLedger ? 'ready' : 'warning',
+    },
+    {
+      label: '推荐合同样本',
+      status: recommendedContractSample ? '已定位' : '待生成合同',
+      evidence: recommendedContractSample?.contractNo ?? '暂无合同样本',
+      detail: recommendedContractSample
+        ? `优先讲解 ${recommendedContractSample.contractNo}，从来源订单、审批状态、履约事件和发票付款关系展开。`
+        : '需要先从订单生成合同或保存合同台账，再进行合同演示。',
+      tone: recommendedContractSample ? 'ready' : 'warning',
+    },
+    {
+      label: '合同路径复核',
+      status: '已复核',
+      evidence: 'stage-ten-contract-demo-path-result.json',
+      detail: '采购订单、合同管理、审批中心、收货验收和发票付款已完成桌面与移动视觉复核。',
+      tone: 'ready',
+    },
+    {
+      label: '演示边界',
+      status: '边界明确',
+      evidence: 'stage-ten-contract-demo-path-review.md',
+      detail: '本轮不做电子签章、外部合同系统、法务红线和真实支付，只讲合同承接订单的演示闭环。',
+      tone: 'ready',
+    },
+  ];
+  const contractDeepeningReadinessItems = buildContractDeepeningReadinessItems(
+    javaEnabled,
+    contractLedgerRows.length,
+    selectedContractDetail,
+    recommendedContractSample,
+  );
+  useEffect(() => {
+    if (activeModule === 'contracts' && javaEnabled && selectedContract) {
+      onLoadContractFulfillmentEvents(selectedContract);
+      onLoadContractTargetAuditLogs(selectedContract);
+    }
+  }, [activeModule, javaEnabled, selectedContract]);
   const selectedReceiptOrder = workspace.orders.some((order) => order.id === selectedReceiptOrderId)
     ? selectedReceiptOrderId
     : receiptInspectionRows[0]?.id ?? '';
@@ -3518,15 +5904,350 @@ const BuyerWorkspaceView: React.FC<{
   const selectedMaterialDetail = selectedMaterial
     ? buildMaterialDetailPanel(workspace, selectedMaterial)
     : undefined;
+  const selectedMaterialRecord = selectedMaterial
+    ? workspace.materials.find((material) => material.id === selectedMaterial)
+    : undefined;
   const selectedInvoice = workspace.invoices.some((invoice) => invoice.id === selectedInvoiceId)
     ? selectedInvoiceId
     : workspace.invoices[0]?.id ?? '';
   const selectedInvoiceDetail = selectedInvoice
-    ? buildInvoicePaymentDetailPanel(workspace, selectedInvoice)
+    ? buildInvoicePaymentDetailPanel(workspace, selectedInvoice, {
+        paymentRequests,
+        varianceHandlings,
+      })
     : undefined;
   const selectedInvoiceRecord = selectedInvoiceDetail
     ? workspace.invoices.find((invoice) => invoice.id === selectedInvoiceDetail.id)
     : undefined;
+  const selectedPaymentRequestRecord = selectedInvoiceRecord
+    ? paymentRequests.find((paymentRequest) => paymentRequest.invoiceId === selectedInvoiceRecord.id)
+    : undefined;
+  const selectedVarianceHandlingRecord = selectedInvoiceRecord
+    ? varianceHandlings.find((varianceHandling) => varianceHandling.invoiceId === selectedInvoiceRecord.id)
+    : undefined;
+  const navigateBuyerModuleFromContract = (moduleId: BuyerAdminModule, detail: ContractDetailPanel) => {
+    const focus: BuyerContractTargetFocus = {
+      moduleId,
+      contractNo: detail.contractNo,
+      orderId: detail.relatedOrderId,
+      invoiceId: workspace.invoices.find((invoice) => invoice.orderId === detail.relatedOrderId)?.id,
+      sourceLabel: `${detail.contractNo} · ${detail.contractName}`,
+    };
+    setContractTargetFocus(focus);
+    if (moduleId === 'receipts') {
+      setReceiptStatusFilter('全部状态');
+      setSelectedReceiptOrderId(focus.orderId);
+    }
+    if (moduleId === 'invoices' && focus.invoiceId) {
+      setInvoiceStatusFilter('全部状态');
+      setSelectedInvoiceId(focus.invoiceId);
+    }
+    onNavigateBuyerModule(moduleId);
+  };
+  const navigateBuyerModuleFromArchiveReviewSuggestion = (
+    suggestion: ContractArchiveReviewActionSuggestion,
+    detail: ContractDetailPanel,
+  ) => {
+    const focus: BuyerContractTargetFocus = {
+      moduleId: suggestion.targetModuleId,
+      contractNo: detail.contractNo,
+      orderId: detail.relatedOrderId,
+      invoiceId: workspace.invoices.find((invoice) => invoice.orderId === detail.relatedOrderId)?.id,
+      sourceLabel: `${detail.contractNo} · ${detail.contractName}`,
+      archiveReviewGapItem: suggestion.item,
+      archiveReviewSuggestedAction: suggestion.suggestedAction,
+      archiveReviewHandlingPath: suggestion.handlingPath,
+    };
+    setContractTargetFocus(focus);
+    if (suggestion.targetModuleId === 'receipts') {
+      setReceiptStatusFilter('全部状态');
+      setSelectedReceiptOrderId(focus.orderId);
+    }
+    if (suggestion.targetModuleId === 'invoices' && focus.invoiceId) {
+      setInvoiceStatusFilter('全部状态');
+      setSelectedInvoiceId(focus.invoiceId);
+    }
+    onNavigateBuyerModule(suggestion.targetModuleId);
+  };
+  const receiptContractTargetFocus = contractTargetFocus?.moduleId === 'receipts' ? contractTargetFocus : null;
+  const invoiceContractTargetFocus = contractTargetFocus?.moduleId === 'invoices' ? contractTargetFocus : null;
+  const focusContractId = (contractNo: string) =>
+    contractLedgerRows.find((contract) => contract.contractNo === contractNo)?.id ?? selectedContract;
+  const createReceiptFromContractFocus = (orderId: string) => {
+    if (receiptContractTargetFocus?.orderId === orderId) {
+      const contractId = focusContractId(receiptContractTargetFocus.contractNo);
+      const summary = `收货验收已由合同联动入口推进：${orderId}`;
+      setContractLinkedActionResult({
+        contractNo: receiptContractTargetFocus.contractNo,
+        actionType: 'receipt',
+        targetId: orderId,
+        sourceLabel: receiptContractTargetFocus.sourceLabel,
+        summary,
+        archiveReviewResultGapItem: receiptContractTargetFocus.archiveReviewGapItem,
+        archiveReviewResultEvidenceStatus: receiptContractTargetFocus.archiveReviewGapItem
+          ? '收货验收已形成新的归档复核证据'
+          : undefined,
+        archiveReviewResultNextStep: receiptContractTargetFocus.archiveReviewGapItem
+          ? '返回合同归档复核清单，确认该缺口是否已覆盖。'
+          : undefined,
+      });
+      setSelectedContractId(contractId);
+      onCreateContractFulfillmentEvent(contractId, {
+        actionType: 'receipt',
+        targetId: orderId,
+        summary,
+        sourceLabel: receiptContractTargetFocus.sourceLabel,
+      });
+    }
+  };
+  const registerPaymentFromContractFocus = (invoiceId: string) => {
+    if (invoiceContractTargetFocus?.invoiceId === invoiceId) {
+      const contractId = focusContractId(invoiceContractTargetFocus.contractNo);
+      const summary = `发票付款已由合同联动入口推进：${invoiceId}`;
+      setContractLinkedActionResult({
+        contractNo: invoiceContractTargetFocus.contractNo,
+        actionType: 'payment',
+        targetId: invoiceId,
+        sourceLabel: invoiceContractTargetFocus.sourceLabel,
+        summary,
+        archiveReviewResultGapItem: invoiceContractTargetFocus.archiveReviewGapItem,
+        archiveReviewResultEvidenceStatus: invoiceContractTargetFocus.archiveReviewGapItem
+          ? '发票付款已形成新的归档复核证据'
+          : undefined,
+        archiveReviewResultNextStep: invoiceContractTargetFocus.archiveReviewGapItem
+          ? '返回合同归档复核清单，确认该缺口是否已覆盖。'
+          : undefined,
+      });
+      setSelectedContractId(contractId);
+      onCreateContractFulfillmentEvent(contractId, {
+        actionType: 'payment',
+        targetId: invoiceId,
+        summary,
+        sourceLabel: invoiceContractTargetFocus.sourceLabel,
+      });
+    }
+  };
+  const locateBuyerDemoSample = () => {
+    if (activeModule === 'demands') {
+      setDemandStatusFilter('全部状态');
+      setSelectedDemandId('dem-stage7-submit-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-demand');
+    }
+    if (activeModule === 'approvals') {
+      setApprovalStatusFilter('全部状态');
+      setSelectedApprovalId('approval-stage7-demand-pending');
+      scrollToStageNineDemoSample('stage9-demo-sample-approval');
+    }
+    if (activeModule === 'rfqs' || activeModule === 'quotes') {
+      setRfqStatusFilter('全部状态');
+      setSelectedRfqId('rfq-stage7-award-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-rfq');
+    }
+    if (activeModule === 'orders') {
+      setOrderStatusFilter('全部状态');
+      setSelectedOrderId('po-stage7-receipt-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-receipt');
+    }
+    if (activeModule === 'receipts') {
+      setReceiptStatusFilter('全部状态');
+      setSelectedReceiptOrderId('po-stage7-receipt-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-receipt');
+    }
+    if (activeModule === 'invoices') {
+      setInvoiceStatusFilter('全部状态');
+      setSelectedInvoiceId('inv-stage7-payment-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-invoice');
+    }
+  };
+  const buyerDemoSequenceNavigation = buildDemoSequenceNavigation(
+    buyerDemoWalkthroughSteps,
+    activeModule as BuyerAdminModule,
+    '主流程演示闭环',
+    onNavigateBuyerModule,
+    locateBuyerDemoSample,
+  );
+  const buyerDemoReadinessItems = buildDemoReadinessItems(
+    javaEnabled,
+    '采购方 7 个真实动作',
+    'stage-seven-java-real-action-click-result.json',
+    '需求、审批、报价、收货、发票推荐样本已标记，适合从询价比价闭环开始演示。',
+  );
+  const demoPresenterCue = {
+    demands: {
+      moduleLabel: '采购需求',
+      selectedTitle: selectedDemandDetail?.title,
+      selectedMeta: selectedDemandDetail?.id,
+      statusLabel: selectedDemandDetail?.status,
+      displayedCount: displayedDemandListRows.length,
+      totalCount: filteredDemandListRows.length,
+      primaryActionLabel: '提交审批 / 创建询价',
+      densityHint: '需求摘要、预算、审批状态和询价入口同屏可见',
+      listHeightHint: '需求卡片只保留状态、预算、物料和下一步动作，避免列表首屏过高。',
+      primaryButtonHint: '提交审批和创建询价按钮紧贴需求卡片动作区',
+      disabledReasonHint: '审批中、已通过或已关联 RFQ 的需求用状态说明禁用原因。',
+      detailEntryHint: '查看详情入口保留在需求卡片操作状态区，进入后核对物料、预算和附件。',
+      postClickHint: '提交审批后进入审批中心，创建询价后进入询价项目。',
+      nextModuleLabel: '审批中心',
+    },
+    approvals: {
+      moduleLabel: '审批中心',
+      selectedTitle: selectedApprovalDetail?.title,
+      selectedMeta: selectedApprovalDetail?.id,
+      statusLabel: selectedApprovalDetail?.status,
+      displayedCount: displayedApprovalQueueRows.length,
+      totalCount: approvalQueueRows.length,
+      primaryActionLabel: '通过 / 驳回',
+      densityHint: '审批对象、处理意见、处理按钮和流转结果同屏可见',
+      listHeightHint: '审批卡片优先展示对象、状态和动作，最近记录保持紧凑只读。',
+      primaryButtonHint: '审批通过和驳回按钮固定在待办卡片右侧',
+      disabledReasonHint: '已处理审批只显示最近记录，不再展示可点击处理按钮。',
+      detailEntryHint: '详情入口用于核对业务对象、审批类型、处理意见和流转记录。',
+      postClickHint: '通过需求审批后回到采购需求或继续创建询价。',
+      nextModuleLabel: '询价项目',
+    },
+    rfqs: {
+      moduleLabel: '询价项目',
+      selectedTitle: selectedRfqDetail?.title,
+      selectedMeta: selectedRfqDetail?.id,
+      statusLabel: selectedRfqDetail?.status,
+      displayedCount: displayedRfqListRows.length,
+      totalCount: filteredRfqListRows.length,
+      primaryActionLabel: '邀请供应商 / 进入比价',
+      densityHint: 'RFQ 摘要、邀请供应商、截止时间和报价数量同屏可见',
+      listHeightHint: 'RFQ 卡片按状态、供应商、报价数量和截止时间扫读，详情下沉。',
+      primaryButtonHint: '邀请供应商按钮跟随 RFQ 状态区展示',
+      disabledReasonHint: '已定标或报价截止后的 RFQ 只保留只读说明和报价回看。',
+      detailEntryHint: '详情入口用于核对需求来源、邀请供应商、报价要求和状态流转。',
+      postClickHint: '邀请供应商后继续在报价对比页查看报价数量和推荐结果。',
+      nextModuleLabel: '报价对比',
+    },
+    quotes: {
+      moduleLabel: '报价对比',
+      selectedTitle: selectedQuoteComparisonDetail?.title,
+      selectedMeta: selectedQuoteComparisonDetail?.id,
+      statusLabel: selectedQuoteComparisonDetail?.status,
+      displayedCount: displayedQuoteRfqs.length,
+      totalCount: filteredQuoteRfqs.length,
+      primaryActionLabel: '提交定标审批 / 生成订单',
+      densityHint: '报价矩阵、推荐理由、定标审批和生成订单入口同屏可见',
+      listHeightHint: '报价卡片优先露出推荐结论和报价数量，比较明细放进详情区。',
+      primaryButtonHint: '定标审批和生成订单按钮固定在报价推荐区',
+      disabledReasonHint: '无报价、定标审批未通过或订单已生成时展示不可重复操作原因。',
+      detailEntryHint: '详情入口用于核对报价矩阵、推荐理由、审批状态和订单来源。',
+      postClickHint: '提交定标后进入审批中心，审批通过后生成采购订单。',
+      nextModuleLabel: '采购订单',
+    },
+    orders: {
+      moduleLabel: '采购订单',
+      selectedTitle: selectedOrderDetail?.id,
+      selectedMeta: selectedOrderDetail?.supplierName,
+      statusLabel: selectedOrderDetail?.status,
+      displayedCount: displayedOrderFulfillmentRows.length,
+      totalCount: filteredOrderFulfillmentRows.length,
+      primaryActionLabel: '跟进供应商确认 / 登记收货',
+      densityHint: '订单摘要、履约时间线、供应商确认和收货入口同屏可见',
+      listHeightHint: '订单卡片固定展示供应商、金额、履约状态和下一动作，物流细节下沉。',
+      primaryButtonHint: '登记收货入口从订单履约状态直接衔接',
+      disabledReasonHint: '供应商未发货或订单已收货时，登记收货按钮保持禁用并解释原因。',
+      detailEntryHint: '详情入口用于核对供应商确认、发货、预计到货和履约时间线。',
+      postClickHint: '订单发货后进入收货验收，收货完成后衔接发票付款。',
+      nextModuleLabel: '收货验收',
+    },
+    receipts: {
+      moduleLabel: '收货验收',
+      selectedTitle: selectedReceiptDetail?.id,
+      selectedMeta: selectedReceiptDetail?.supplierName,
+      statusLabel: selectedReceiptDetail?.status,
+      displayedCount: displayedReceiptInspectionRows.length,
+      totalCount: filteredReceiptInspectionRows.length,
+      primaryActionLabel: '登记收货 / 异常处理',
+      densityHint: '物流状态、验收结果、异常原因和发票衔接同屏可见',
+      listHeightHint: '收货卡片先展示物流和验收状态，异常原因进入详情核对。',
+      primaryButtonHint: '登记收货按钮跟随待验收订单展示',
+      disabledReasonHint: '未发货、已收货或异常原因不完整时，用边界提示解释不可操作。',
+      detailEntryHint: '详情入口用于核对物流状态、验收检查项、异常原因和后续发票入口。',
+      postClickHint: '登记收货后订单进入发票协同，下一步查看发票付款。',
+      nextModuleLabel: '发票付款',
+    },
+    invoices: {
+      moduleLabel: '发票付款',
+      selectedTitle: selectedInvoiceDetail?.id,
+      selectedMeta: selectedInvoiceDetail?.supplierName,
+      statusLabel: selectedInvoiceDetail?.status,
+      displayedCount: displayedInvoicePaymentRows.length,
+      totalCount: filteredInvoicePaymentRows.length,
+      primaryActionLabel: '对账 / 登记付款',
+      densityHint: '对账差异、付款计划、逾期提醒和付款登记同屏可见',
+      listHeightHint: '发票卡片只保留对账、付款状态和下一步，三单匹配细节放详情。',
+      primaryButtonHint: '登记付款入口与对账差异和付款计划同屏',
+      disabledReasonHint: '存在对账差异、付款已完成或批次已归档时说明禁用原因。',
+      detailEntryHint: '详情入口用于核对三单匹配、付款计划、付款轨迹和审计留痕。',
+      postClickHint: '登记付款后回到首页看板或审计日志查看闭环结果。',
+      nextModuleLabel: '首页看板',
+    },
+  }[activeModule as BuyerAdminModule];
+  const demoKeyActionReadiness = {
+    demands: [
+      {
+        label: '提交审批',
+        enabled: workspace.demands.some((demand) => demand.status === '草稿'),
+        reason: '草稿需求可直接提交审批；没有草稿时，用边界提示说明当前数据不可重复提交。',
+      },
+      {
+        label: '创建询价',
+        enabled: demandToRfqReadyCount > 0,
+        reason: '已审批通过且未关联 RFQ 的需求可创建询价；否则先处理审批或供应商准入。',
+      },
+    ],
+    approvals: [
+      {
+        label: '通过',
+        enabled: filteredApprovalQueueRows.length > 0,
+        reason: '存在待审批事项时可演示通过；无待办时说明审批队列已处理。',
+      },
+    ],
+    rfqs: [
+      {
+        label: '邀请供应商',
+        enabled: filteredRfqListRows.some((rfq) => rfq.status === '草稿' || rfq.status === '报价中'),
+        reason: '草稿或报价中项目可继续邀请供应商；已定标项目保持只读。',
+      },
+    ],
+    quotes: [
+      {
+        label: '按推荐报价提交定标审批',
+        enabled: quoteAwardSubmittableRfqCount > 0,
+        reason: '有已提交报价且未定标项目时开放定标审批；已定标项目用于讲解比较结果。',
+      },
+      {
+        label: '生成采购订单',
+        enabled: orderPendingGenerationCount > 0,
+        reason: '定标审批通过后才生成订单；已生成订单时保持只读并衔接到采购订单页。',
+      },
+    ],
+    orders: [
+      {
+        label: '登记收货',
+        enabled: receiptReadyForInspectionCount > 0,
+        reason: '供应商已发货后可登记收货；未发货时先跟进供应商确认和发货。',
+      },
+    ],
+    receipts: [
+      {
+        label: '登记收货',
+        enabled: receiptReadyForInspectionCount > 0,
+        reason: '已发货订单可登记验收；待发货或已收货订单显示当前边界。',
+      },
+    ],
+    invoices: [
+      {
+        label: '登记付款',
+        enabled: invoicePendingPaymentCount > 0,
+        reason: '未付款发票可登记付款；已付款记录只做状态回看和对账讲解。',
+      },
+    ],
+  }[activeModule as BuyerAdminModule] ?? [];
+  const buyerMainFlowOperationStrip = buyerMainFlowOperationStrips[activeModule as BuyerAdminModule];
 
   return (
     <>
@@ -3556,6 +6277,102 @@ const BuyerWorkspaceView: React.FC<{
       dataBoundary="当前采购租户内的需求、供应商关系、订单和财务记录"
     />
 
+    <DemoCommandCenterPanel
+      title="采购方现场演示总线"
+      subtitle="把采购方作为主叙事入口，从需求申请一路讲到发票付款，所有真实动作都有 Java 验收证据。"
+      items={buyerDemoCommandCenterItems}
+      currentGuide={buyerDemoCurrentActionGuides[activeModule as BuyerAdminModule]}
+      sequenceNavigation={buyerDemoSequenceNavigation}
+      testId="stage9-buyer-demo-command-center"
+    />
+
+    <DemoReadinessPanel
+      title="采购方演示准备检查"
+      subtitle="开场前确认采购方主流程的 Java 数据源、前端加载、推荐样本和验收证据。"
+      status={javaEnabled ? 'Java 数据源已连接' : '等待 Java 数据源'}
+      items={buyerDemoReadinessItems}
+      testId="stage9-buyer-demo-readiness"
+    />
+
+    <DemoActionFeedbackPanel
+      title="采购方 7 个真实点击动作"
+      subtitle="逐个说明操作前置条件、成功反馈、失败兜底和下一步说明，减少现场演示解释成本。"
+      items={buyerDemoActionFeedbackItems}
+      testId="stage8-buyer-action-feedback"
+    />
+
+    <DemoReadonlyBoundaryPanel
+      title="采购方只读边界与空状态"
+      subtitle="把已完成、已归档、无数据和不可操作边界放到演示起点，帮助业务人员理解流程为什么被锁定。"
+      items={buyerReadonlyBoundaryItems}
+      testId="stage8-buyer-readonly-boundary"
+    />
+
+    <DemoPermissionAuditPanel
+      title="采购方权限与审计留痕"
+      subtitle="把采购方主流程动作映射到角色权限、业务对象和审计追溯入口，方便现场解释内控闭环。"
+      items={buyerGovernanceTraceItems}
+      testId="stage8-buyer-permission-audit"
+    />
+
+    {buyerDemoWalkthroughModules.includes(activeModule as BuyerAdminModule) && (
+      <>
+      <DemoWalkthroughRail
+        ariaLabel="采购方主流程演示路径"
+        eyebrow="采购方主流程演示路径"
+        title="按 7 页顺序完成询价比价闭环走查"
+        description="当前演示页从需求进入，最终在发票付款收束；每一步保留独立列表、详情和操作边界。"
+        steps={buyerDemoWalkthroughSteps}
+        activeModule={activeModule as BuyerAdminModule}
+        closedLabel="主流程演示闭环"
+        gridClassName="grid-cols-2 sm:grid-cols-4 xl:grid-cols-7"
+        onNavigate={(moduleId) => onNavigateBuyerModule(moduleId)}
+      />
+      {buyerMainFlowOperationStrip && (
+        <BuyerMainFlowOperationStrip
+          config={buyerMainFlowOperationStrip}
+          onNext={onNavigateBuyerModule}
+        />
+      )}
+      {demoPresenterCue && (
+        <BuyerDemoPresenterCue
+          moduleLabel={demoPresenterCue.moduleLabel}
+          selectedTitle={demoPresenterCue.selectedTitle}
+          selectedMeta={demoPresenterCue.selectedMeta}
+          statusLabel={demoPresenterCue.statusLabel}
+          displayedCount={demoPresenterCue.displayedCount}
+          totalCount={demoPresenterCue.totalCount}
+          primaryActionLabel={demoPresenterCue.primaryActionLabel}
+          densityHint={demoPresenterCue.densityHint}
+          listHeightHint={demoPresenterCue.listHeightHint}
+          nextModuleLabel={demoPresenterCue.nextModuleLabel}
+        />
+      )}
+      {demoPresenterCue && (
+        <BuyerDemoDataSlimmingCue
+          moduleLabel={demoPresenterCue.moduleLabel}
+          displayedCount={demoPresenterCue.displayedCount}
+          totalCount={demoPresenterCue.totalCount}
+        />
+      )}
+      {demoKeyActionReadiness.length > 0 && (
+        <BuyerKeyActionReadinessPanel
+          actions={demoKeyActionReadiness}
+          visibilityHint={{
+            moduleLabel: demoPresenterCue.moduleLabel,
+            primaryButtonHint: demoPresenterCue.primaryButtonHint,
+            disabledReasonHint: demoPresenterCue.disabledReasonHint,
+            detailEntryHint: demoPresenterCue.detailEntryHint,
+            postClickHint: demoPresenterCue.postClickHint,
+          }}
+          onActionFocus={onFocusBuyerKeyAction}
+        />
+      )}
+      </>
+    )}
+
+    <div data-buyer-action-anchor="primary-business-action" />
+
     {javaEnabled && activeModule === 'dashboard' && (
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
         <div>
@@ -3580,6 +6397,8 @@ const BuyerWorkspaceView: React.FC<{
         title="采购方消息中心"
         scopeLabel="审批、询价、订单、发票"
         notifications={buyerMessageCenterNotifications}
+        onMarkRead={markBuyerNotificationRead}
+        markReadBusyId={notificationReadBusyId}
       />
     )}
 
@@ -3589,12 +6408,79 @@ const BuyerWorkspaceView: React.FC<{
       </Panel>
     )}
 
+    {activeModule === 'demands' && (
+      <section className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-black text-blue-700">需求到审批演示台</p>
+            <h3 className="mt-1 text-lg font-black text-slate-950">采购需求先跑通，后续询价才有入口</h3>
+            <p className="mt-2 text-sm font-bold leading-6 text-blue-800">
+              演示路径：先创建或选择采购需求，再提交审批，审批通过后回到需求页创建询价。
+            </p>
+          </div>
+          <PrimaryActionButton
+            onClick={() => onNavigateBuyerModule('approvals')}
+            icon={ShieldCheck}
+            size="md"
+            flushTop
+          >
+            打开审批中心处理待办
+          </PrimaryActionButton>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MiniFact label="待提交审批" value={`${workspace.demands.filter((demand) => demand.status === '草稿').length} 条`} />
+          <MiniFact label="审批中需求" value={`${workspace.demands.filter((demand) => demand.status === '审批中').length} 条`} />
+          <MiniFact label="可创建询价" value={`${demandToRfqReadyCount} 条`} />
+          <MiniFact label="已进入询价" value={`${demandToRfqLinkedCount} 条`} />
+        </div>
+      </section>
+    )}
+
+    {activeModule === 'approvals' && (
+      <section className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-black text-amber-700">审批处理演示台</p>
+            <h3 className="mt-1 text-lg font-black text-slate-950">审批决定直接影响需求能否进入询价</h3>
+            <p className="mt-2 text-sm font-bold leading-6 text-amber-800">
+              演示路径：选择待审批事项，填写审批意见并确认影响，再通过或驳回。
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row xl:justify-end">
+            <PrimaryActionButton
+              onClick={() => onNavigateBuyerModule('demands')}
+              icon={FileText}
+              tone="amber"
+              size="md"
+              flushTop
+            >
+              返回采购需求查看结果
+            </PrimaryActionButton>
+            <PrimaryActionButton
+              onClick={() => onNavigateBuyerModule('rfqs')}
+              icon={Send}
+              size="md"
+              flushTop
+            >
+              进入询价项目跟进
+            </PrimaryActionButton>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MiniFact label="待处理审批" value={`${displayedApprovalQueueRows.length} 条`} />
+          <MiniFact label="最近处理" value={`${filteredRecentApprovals.length} 条`} />
+          <MiniFact label="当前筛选" value={approvalStatusFilter} />
+          <MiniFact label="下一步" value="审批通过后回到采购需求继续创建询价" />
+        </div>
+      </section>
+    )}
+
     {activeModule === 'approvals' && (
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
         <Panel title="审批待办" icon={ClipboardCheck}>
           <ListToolbar
             title="审批待办池"
-            recordCount={filteredApprovalQueueRows.length}
+            recordCount={displayedApprovalQueueRows.length}
             filterLabel={searchFilterLabel ?? '待审批优先'}
             actionLabel="批量审批"
           />
@@ -3604,9 +6490,14 @@ const BuyerWorkspaceView: React.FC<{
             statusOptions={approvalStatusOptions}
             onChange={setApprovalStatusFilter}
           />
-          {filteredApprovalQueueRows.length > 0 ? (
+          <DemoListLimitNotice
+            moduleLabel="审批中心"
+            totalCount={filteredApprovalQueueRows.length}
+            displayedCount={displayedApprovalQueueRows.length}
+          />
+          {displayedApprovalQueueRows.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
-              {filteredApprovalQueueRows.map((approvalRow) => {
+              {displayedApprovalQueueRows.map((approvalRow) => {
                 const approval = displayPendingApprovals.find((item) => item.id === approvalRow.id);
                 const approvalDraft = approval ? getApprovalReviewDraft(approval as JavaApprovalTaskDto) : undefined;
                 return (
@@ -3619,6 +6510,12 @@ const BuyerWorkspaceView: React.FC<{
                     detailSelected={selectedApproval === approvalRow.id}
                     onSelectDetail={() => setSelectedApprovalId(approvalRow.id)}
                     tone="warning"
+                    demoHighlight={approvalRow.id === 'approval-stage7-demand-pending'
+                      ? {
+                          label: '阶段七需求审批样本',
+                          testId: `stage9-demo-sample-approval-${approvalRow.id}`,
+                        }
+                      : undefined}
                   >
                     {javaEnabled && approval && approvalDraft && approvalRow.canReview ? (
                       <ApprovalReviewForm
@@ -3711,6 +6608,8 @@ const BuyerWorkspaceView: React.FC<{
           title="审批消息中心"
           scopeLabel="审批结果通知、驳回原因、流程提醒"
           notifications={filteredBuyerNotifications}
+          onMarkRead={markBuyerNotificationRead}
+          markReadBusyId={notificationReadBusyId}
         />
       </div>
     )}
@@ -3758,11 +6657,44 @@ const BuyerWorkspaceView: React.FC<{
           selectedLabel={selectedDemandDetail?.title}
           onClear={() => setDemandStatusFilter('全部状态')}
         />
+        <SelectedBusinessHandoffPanel
+          moduleLabel="采购需求"
+          selectedTitle={selectedDemandDetail?.title}
+          selectedMeta={selectedDemandDetail?.id}
+          selectedStatus={selectedDemandDetail?.status}
+          nextActionTitle={selectedDemandDetail?.nextActionTitle}
+          detailHint="右侧详情会核对审批、预算、附件、物料明细和创建询价可用性。"
+          boundaryHint="未审批通过、已关联询价或无已准入供应商时，不开放创建询价。"
+        />
+        <DemoListLimitNotice
+          moduleLabel="采购需求"
+          totalCount={filteredDemandListRows.length}
+          displayedCount={displayedDemandListRows.length}
+        />
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-blue-900">转询价准备摘要</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
+                优先处理审批阻断和供应商准入阻断，已通过且未关联需求可直接创建 RFQ。
+              </p>
+            </div>
+            <span className="rounded-lg bg-white px-2 py-1 text-[11px] font-black text-blue-700">
+              优先处理审批阻断和供应商准入阻断
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <MiniFact label="可转询价" value={`${demandToRfqReadyCount} 条`} />
+            <MiniFact label="已关联询价" value={`${demandToRfqLinkedCount} 条`} />
+            <MiniFact label="审批阻断" value={`${demandToRfqApprovalBlockedCount} 条`} />
+            <MiniFact label="供应商准入阻断" value={`${demandToRfqSupplierBlockedCount} 条`} />
+          </div>
+        </div>
         {filteredDemandListRows.length === 0 ? (
           <EmptyState title="暂无采购需求" desc="创建需求后可提交审批，审批通过后再转为询价项目。" />
         ) : (
         <div className="space-y-3">
-          {filteredDemandListRows.map((demandRow) => {
+          {displayedDemandListRows.map((demandRow) => {
             const demand = workspace.demands.find((item) => item.id === demandRow.id);
             if (!demand) return null;
             return (
@@ -3775,6 +6707,12 @@ const BuyerWorkspaceView: React.FC<{
               nextAction={demandRow.nextAction}
               detailSelected={selectedDemand === demandRow.id}
               onSelectDetail={() => setSelectedDemandId(demandRow.id)}
+              demoHighlight={demand.id === 'dem-stage7-submit-ready' || demand.id === 'dem-stage7-rfq-ready'
+                ? {
+                    label: '阶段七采购需求样本',
+                    testId: `stage9-demo-sample-demand-${demand.id}`,
+                  }
+                : undefined}
               action={javaEnabled && demand.status === '草稿' ? (
                 <PrimaryActionButton
                   onClick={() => onSubmitDemand(demand.id)}
@@ -3783,6 +6721,7 @@ const BuyerWorkspaceView: React.FC<{
                   icon={ClipboardCheck}
                   pendingLabel="提交中"
                   fullWidth
+                  testId={`stage7-submit-demand-${demand.id}`}
                 >
                   提交审批
                 </PrimaryActionButton>
@@ -3825,6 +6764,31 @@ const BuyerWorkspaceView: React.FC<{
 
       {activeModule === 'rfqs' && (
       <>
+        <section className="rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-black text-indigo-700">询价协同演示台</p>
+              <h3 className="mt-1 text-lg font-black text-slate-950">把已审批需求转成供应商可响应的 RFQ</h3>
+              <p className="mt-2 text-sm font-bold leading-6 text-indigo-800">
+                演示路径：从已审批需求进入询价，补齐邀请供应商、报价要求和截止时间，再进入报价对比。
+              </p>
+            </div>
+            <PrimaryActionButton
+              onClick={() => onNavigateBuyerModule('quotes')}
+              icon={BarChart3}
+              size="md"
+              flushTop
+            >
+              进入报价对比定标
+            </PrimaryActionButton>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <MiniFact label="待补邀请" value={`${rfqPendingInvitationCount} 个`} />
+            <MiniFact label="报价不足" value={`${rfqInsufficientQuoteCount} 个`} />
+            <MiniFact label="可进入比价" value={`${rfqReadyForComparisonCount} 个`} />
+            <MiniFact label="已完成定标" value={`${rfqAwardedCount} 个`} />
+          </div>
+        </section>
         <Panel title="询价项目" icon={Send}>
           <ListToolbar
             title="询价项目池"
@@ -3846,11 +6810,44 @@ const BuyerWorkspaceView: React.FC<{
             selectedLabel={selectedRfqDetail?.title}
             onClear={() => setRfqStatusFilter('全部状态')}
           />
+          <SelectedBusinessHandoffPanel
+            moduleLabel="询价项目"
+            selectedTitle={selectedRfqDetail?.title}
+            selectedMeta={selectedRfqDetail?.id}
+            selectedStatus={selectedRfqDetail?.status}
+            nextActionTitle={selectedRfqDetail?.nextActionTitle}
+            detailHint="右侧详情会核对关联需求、邀请供应商、报价数量、截止时间和履约轨迹。"
+            boundaryHint="未收到报价时只能跟进供应商响应；定标后避免重复提交审批。"
+          />
+          <DemoListLimitNotice
+            moduleLabel="询价项目"
+            totalCount={filteredRfqListRows.length}
+            displayedCount={displayedRfqListRows.length}
+          />
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black text-indigo-900">询价推进摘要</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-indigo-700">
+                  优先跟进报价不足项目，再推进可比价项目定标审批。
+                </p>
+              </div>
+              <span className="rounded-lg bg-white px-2 py-1 text-[11px] font-black text-indigo-700">
+                优先跟进报价不足项目，再推进可比价项目定标审批。
+              </span>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <MiniFact label="待补邀请" value={`${rfqPendingInvitationCount} 个`} />
+              <MiniFact label="报价不足" value={`${rfqInsufficientQuoteCount} 个`} />
+              <MiniFact label="可进入比价定标" value={`${rfqReadyForComparisonCount} 个`} />
+              <MiniFact label="已完成定标" value={`${rfqAwardedCount} 个`} />
+            </div>
+          </div>
           {filteredRfqListRows.length === 0 ? (
             <EmptyState title="暂无询价项目" desc="需求审批通过后，可从采购需求页选择已准入供应商并创建询价。" />
           ) : (
           <ResponsiveTableFrame
-            mobileCards={filteredRfqListRows.map((rfq) => (
+            mobileCards={displayedRfqListRows.map((rfq) => (
               <ResponsiveSummaryCard
                 key={rfq.id}
                 ariaLabel={`${rfq.title} 询价摘要`}
@@ -3882,7 +6879,7 @@ const BuyerWorkspaceView: React.FC<{
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {filteredRfqListRows.map((rfq) => (
+                {displayedRfqListRows.map((rfq) => (
                   <tr
                     key={rfq.id}
                     className={`align-top ${selectedRfq === rfq.id ? 'bg-blue-50/50' : ''}`}
@@ -3935,6 +6932,32 @@ const BuyerWorkspaceView: React.FC<{
 
       {activeModule === 'quotes' && (
       <>
+      <section className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-black text-emerald-700">比价定标演示台</p>
+            <h3 className="mt-1 text-lg font-black text-slate-950">从报价矩阵走到定标审批和订单生成</h3>
+            <p className="mt-2 text-sm font-bold leading-6 text-emerald-800">
+              演示路径：先核对报价比较矩阵和推荐理由，再提交定标审批，审批通过后生成采购订单。
+            </p>
+          </div>
+          <PrimaryActionButton
+            onClick={() => onNavigateBuyerModule('orders')}
+            icon={ShoppingCart}
+            tone="emerald"
+            size="md"
+            flushTop
+          >
+            查看采购订单履约
+          </PrimaryActionButton>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MiniFact label="可提交定标" value={`${quoteAwardSubmittableRfqCount} 个项目 / ${quoteAwardableQuoteCount} 条报价`} />
+          <MiniFact label="推荐定标项目" value={`${quoteRecommendedRfqCount} 个`} />
+          <MiniFact label="定标审批中" value={`${quoteAwardApprovalPendingCount} 个`} />
+          <MiniFact label="生成订单后只读" value={`${quoteGeneratedOrderCount} 个`} />
+        </div>
+      </section>
       <Panel title="询价比价与定标" icon={BarChart3}>
         <ListToolbar
           title="比价定标池"
@@ -3942,11 +6965,44 @@ const BuyerWorkspaceView: React.FC<{
           filterLabel={searchFilterLabel ?? '按询价项目聚合'}
           actionLabel="提交定标审批"
         />
+        <SelectedBusinessHandoffPanel
+          moduleLabel="报价对比"
+          selectedTitle={selectedQuoteComparisonDetail?.title}
+          selectedMeta={selectedQuoteComparisonDetail?.id}
+          selectedStatus={selectedQuoteComparisonDetail?.status}
+          nextActionTitle={selectedQuoteComparisonDetail?.nextActionTitle}
+          detailHint="右侧详情会核对报价比较矩阵、推荐定标理由、定标审批状态和生成订单条件。"
+          boundaryHint="暂无报价不能定标；定标未审批通过前不生成采购订单。"
+        />
+        <DemoListLimitNotice
+          moduleLabel="报价对比"
+          totalCount={filteredQuoteRfqs.length}
+          displayedCount={displayedQuoteRfqs.length}
+        />
+        <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-emerald-900">定标准备摘要</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-emerald-700">
+                先确认推荐报价，再提交定标审批，审批通过后生成采购订单。
+              </p>
+            </div>
+            <span className="rounded-lg bg-white px-2 py-1 text-[11px] font-black text-emerald-700">
+              先确认推荐报价，再提交定标审批，审批通过后生成采购订单。
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <MiniFact label="可定标报价" value={`${quoteAwardableQuoteCount} 条`} />
+            <MiniFact label="推荐报价项目" value={`${quoteRecommendedRfqCount} 个`} />
+            <MiniFact label="待审批定标" value={`${quoteAwardApprovalPendingCount} 个`} />
+            <MiniFact label="已生成订单" value={`${quoteGeneratedOrderCount} 个`} />
+          </div>
+        </div>
         {filteredQuoteRfqs.length === 0 ? (
           <EmptyState title="暂无可比价项目" desc="创建询价并收到供应商报价后，可在这里推荐定标并提交审批。" />
         ) : (
         <div className="space-y-4">
-          {filteredQuoteRfqs.map((rfq) => {
+          {displayedQuoteRfqs.map((rfq) => {
             const approvedAward = recentApprovals.find((approval) =>
               approval.bizType === 'rfq_award'
               && approval.parentBizId === rfq.id
@@ -3968,6 +7024,12 @@ const BuyerWorkspaceView: React.FC<{
                 onCreateOrderFromAward={onCreateOrderFromAward}
                 selected={selectedRfq === rfq.id}
                 onSelectDetail={() => setSelectedRfqId(rfq.id)}
+                demoHighlight={rfq.id === 'rfq-stage7-award-ready' || rfq.id === 'rfq-stage7-order-ready'
+                  ? {
+                      label: '阶段七比价定标样本',
+                      testId: `stage9-demo-sample-rfq-${rfq.id}`,
+                    }
+                  : undefined}
               />
             );
           })}
@@ -4003,6 +7065,12 @@ const BuyerWorkspaceView: React.FC<{
             filterLabel={searchFilterLabel ?? '全部物料品类'}
             actionLabel="新增物料"
           />
+          <MaterialSaveForm
+            title="新增物料"
+            javaEnabled={javaEnabled}
+            busy={materialSaveBusyId === 'new'}
+            onSave={(payload) => onSaveMaterial(null, payload)}
+          />
           <StatusFilterControl
             label="物料状态"
             value={materialStatusFilter}
@@ -4027,11 +7095,17 @@ const BuyerWorkspaceView: React.FC<{
             </div>
           )}
         </Panel>
-        <MaterialDetailPanelView detail={selectedMaterialDetail} />
+        <MaterialDetailPanelView
+          detail={selectedMaterialDetail}
+          material={selectedMaterialRecord}
+          javaEnabled={javaEnabled}
+          materialSaveBusyId={materialSaveBusyId}
+          onSaveMaterial={onSaveMaterial}
+        />
       </div>
     )}
 
-    {(activeModule === 'suppliers' || activeModule === 'orders' || activeModule === 'invoices' || activeModule === 'receipts') && (
+    {(activeModule === 'suppliers' || activeModule === 'orders' || activeModule === 'contracts' || activeModule === 'invoices' || activeModule === 'receipts') && (
     <div className={`grid gap-6 ${activeModule === 'suppliers' ? '2xl:grid-cols-[minmax(0,1fr)_420px]' : '2xl:grid-cols-[minmax(0,1fr)_420px]'}`}>
       {activeModule === 'suppliers' && (
       <>
@@ -4041,6 +7115,13 @@ const BuyerWorkspaceView: React.FC<{
           recordCount={filteredSupplierRelationRows.length}
           filterLabel={searchFilterLabel ?? '全部合作状态'}
           actionLabel="供应商准入"
+        />
+        <SupplierRelationCreateForm
+          suppliers={workspace.suppliers}
+          existingRelations={workspace.privateSupplierRelations}
+          javaEnabled={javaEnabled}
+          busy={supplierRelationBusyId === 'new'}
+          onCreateSupplierRelation={onCreateSupplierRelation}
         />
         <StatusFilterControl
           label="合作状态"
@@ -4093,15 +7174,45 @@ const BuyerWorkspaceView: React.FC<{
         relation={selectedSupplierRelationRecord}
         javaEnabled={javaEnabled}
         supplierAdmissionBusyId={supplierAdmissionBusyId}
+        supplierRelationBusyId={supplierRelationBusyId}
         admissionDraft={selectedSupplierRelationRecord ? getSupplierAdmissionDraft(selectedSupplierRelationRecord) : undefined}
         onChangeAdmissionDraft={(relationId, draft) => setSupplierAdmissionDrafts((drafts) => ({ ...drafts, [relationId]: draft }))}
         onSubmitSupplierAdmission={onSubmitSupplierAdmission}
+        onSaveSupplierRelationProfile={onSaveSupplierRelationProfile}
+        onSaveSupplierRelationStatus={onSaveSupplierRelationStatus}
+        onSaveSupplierRelationPerformance={onSaveSupplierRelationPerformance}
       />
       </>
       )}
 
       {activeModule === 'orders' && (
       <>
+      <section className="rounded-lg border border-cyan-100 bg-cyan-50 p-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-black text-cyan-700">订单履约演示台</p>
+            <h3 className="mt-1 text-lg font-black text-slate-950">定标结果进入订单履约跟踪</h3>
+            <p className="mt-2 text-sm font-bold leading-6 text-cyan-800">
+              演示路径：从定标审批通过生成订单，跟进供应商确认、发货和预计到货，再进入收货验收。
+            </p>
+          </div>
+          <PrimaryActionButton
+            onClick={() => onNavigateBuyerModule('receipts')}
+            icon={PackageCheck}
+            size="md"
+            flushTop
+          >
+            进入收货验收
+          </PrimaryActionButton>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <MiniFact label="待生成订单" value={`${orderPendingGenerationCount} 个`} />
+          <MiniFact label="待供应商确认" value={`${orderPendingSupplierConfirmCount} 单`} />
+          <MiniFact label="待发货" value={`${orderPendingShipmentCount} 单`} />
+          <MiniFact label="待收货" value={`${orderPendingReceiptCount} 单`} />
+          <MiniFact label="已完成" value={`${orderFulfillmentCompletedCount} 单`} />
+        </div>
+      </section>
       <Panel title="订单履约" icon={PackageCheck}>
         <ListToolbar
           title="订单履约池"
@@ -4123,11 +7234,45 @@ const BuyerWorkspaceView: React.FC<{
           selectedLabel={selectedOrderDetail?.id}
           onClear={() => setOrderStatusFilter('全部状态')}
         />
+        <SelectedBusinessHandoffPanel
+          moduleLabel="采购订单"
+          selectedTitle={selectedOrderDetail?.id}
+          selectedMeta={selectedOrderDetail?.supplierName}
+          selectedStatus={selectedOrderDetail?.status}
+          nextActionTitle={selectedOrderDetail?.nextActionTitle}
+          detailHint="右侧详情会核对供应商确认、发货、收货、预计到货日期和发票付款状态。"
+          boundaryHint="供应商未发货前不能登记收货；已收货订单不再修改预计到货日期。"
+        />
+        <DemoListLimitNotice
+          moduleLabel="采购订单"
+          totalCount={filteredOrderFulfillmentRows.length}
+          displayedCount={displayedOrderFulfillmentRows.length}
+        />
+        <div className="rounded-lg border border-cyan-100 bg-cyan-50 p-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-cyan-900">订单履约推进摘要</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-cyan-700">
+                先生成采购订单，再跟进供应商确认、发货和收货验收。
+              </p>
+            </div>
+            <span className="rounded-lg bg-white px-2 py-1 text-[11px] font-black text-cyan-700">
+              先生成采购订单，再跟进供应商确认、发货和收货验收。
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            <MiniFact label="待生成订单" value={`${orderPendingGenerationCount} 个`} />
+            <MiniFact label="待供应商确认" value={`${orderPendingSupplierConfirmCount} 单`} />
+            <MiniFact label="待发货" value={`${orderPendingShipmentCount} 单`} />
+            <MiniFact label="待收货" value={`${orderPendingReceiptCount} 单`} />
+            <MiniFact label="已完成" value={`${orderFulfillmentCompletedCount} 单`} />
+          </div>
+        </div>
         {filteredOrderFulfillmentRows.length === 0 ? (
           <EmptyState title="暂无采购订单" desc="定标审批通过后，可在报价对比页生成采购订单。" />
         ) : (
         <div className="space-y-3">
-          {filteredOrderFulfillmentRows.map((orderRow) => {
+          {displayedOrderFulfillmentRows.map((orderRow) => {
             const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
             const receiptDraft = getReceiptDraft(orderRow.id);
             const receiptDraftInvalid = receiptDraft.result.trim().length === 0
@@ -4193,8 +7338,169 @@ const BuyerWorkspaceView: React.FC<{
       </>
       )}
 
+      {activeModule === 'contracts' && (
+      <>
+      <DemoCommandCenterPanel
+        eyebrow="阶段十合同演示总线"
+        title="合同管理承接订单演示路径"
+        subtitle="把采购订单、合同审批、履约事件、收货验收和发票付款收束成一条可点击讲解路径。"
+        items={contractDemoCommandCenterItems}
+        currentGuide={contractDemoCurrentActionGuide}
+        sequenceNavigation={contractDemoSequenceNavigation}
+        testId="stage10-contract-demo-command-center"
+      />
+      <DemoReadinessPanel
+        title="合同演示准备检查"
+        subtitle="开场前确认 Java 合同台账、推荐合同样本、路径复核证据和阶段边界。"
+        status={recommendedContractSample ? '推荐合同样本已准备' : '等待合同样本'}
+        items={contractDemoReadinessItems}
+        testId="stage10-contract-demo-readiness"
+      />
+      <ContractDeepeningDemoReadinessPanel
+        items={contractDeepeningReadinessItems}
+        javaEnabled={javaEnabled}
+      />
+      <ContractSavePanel
+        workspace={workspace}
+        selectedContract={selectedContractRecord}
+        javaEnabled={javaEnabled}
+        busyId={buyerFulfillmentBusyId}
+        onSaveContract={onSaveContract}
+      />
+      <Panel title="合同台账" icon={FileText}>
+        <ListToolbar
+          title="合同台账"
+          recordCount={filteredContractLedgerRows.length}
+          filterLabel={searchFilterLabel ?? '全部合同状态'}
+          actionLabel="合同详情"
+        />
+        <StatusFilterControl
+          label="合同状态"
+          value={contractStatusFilter}
+          statusOptions={contractStatusOptions}
+          onChange={setContractStatusFilter}
+        />
+        <FilterResultSummary
+          label="合同台账筛选结果"
+          filterLabel={contractStatusFilter}
+          resultCount={filteredContractLedgerRows.length}
+          totalCount={contractLedgerRows.length}
+          selectedLabel={selectedContractDetail?.contractNo}
+          onClear={() => setContractStatusFilter('全部状态')}
+        />
+        <SelectedBusinessHandoffPanel
+          moduleLabel="合同管理"
+          selectedTitle={selectedContractDetail?.contractNo}
+          selectedMeta={selectedContractDetail?.supplierName}
+          selectedStatus={selectedContractDetail?.status}
+          nextActionTitle={selectedContractDetail?.nextActionTitle}
+          detailHint="右侧合同详情会串联采购订单、收货验收、发票付款和合同归档。"
+          boundaryHint={contractBoundaryHint}
+        />
+        <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-indigo-900">合同管理推进摘要</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-indigo-700">
+                先基于采购订单形成合同台账，再跟进合同审批、履约状态和归档边界。
+              </p>
+            </div>
+            <span className="rounded-lg bg-white px-2 py-1 text-[11px] font-black text-indigo-700">
+              {contractDataSourceLabel}
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <MiniFact label="合同数量" value={`${contractLedgerRows.length} 份`} />
+            <MiniFact label="草案" value={`${contractDraftCount} 份`} />
+            <MiniFact label="生效/履约" value={`${contractActiveCount} 份`} />
+            <MiniFact label="已归档" value={`${contractArchivedCount} 份`} />
+          </div>
+        </div>
+        {filteredContractLedgerRows.length === 0 ? (
+          <EmptyState title="暂无合同记录" desc="定标并生成采购订单后，会先以订单数据派生合同台账雏形。" />
+        ) : (
+        <div className="space-y-3">
+          {filteredContractLedgerRows.map((contractRow) => (
+            <WorkflowListCard
+              key={contractRow.id}
+              title={contractRow.contractNo}
+              meta={`${contractRow.contractName} · 关联订单 ${contractRow.relatedOrderId}`}
+              amountLabel={contractRow.amountLabel}
+              facts={contractRow.facts}
+              status={contractRow.status}
+              nextAction={contractRow.nextAction}
+              detailSelected={selectedContract === contractRow.id}
+              onSelectDetail={() => setSelectedContractId(contractRow.id)}
+              demoHighlight={recommendedContractSample?.id === contractRow.id ? {
+                label: '推荐合同样本',
+                testId: `stage10-demo-sample-contract-${contractRow.id}`,
+              } : undefined}
+            >
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-lg bg-slate-50 px-2 py-1 text-xs font-black text-slate-700">
+                  {contractRow.archiveStatus}
+                </span>
+                <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
+                  {contractDataSourceLabel}
+                </span>
+              </div>
+            </WorkflowListCard>
+          ))}
+        </div>
+        )}
+      </Panel>
+      <ContractDetailPanelView
+        detail={selectedContractDetail}
+        attachments={selectedContract ? contractAttachmentsById[selectedContract] ?? [] : []}
+        uploadTicket={selectedContract ? contractAttachmentUploadTicketsById[selectedContract] : undefined}
+        downloadLinksById={contractAttachmentDownloadLinksById}
+        fulfillmentEvents={selectedContract ? contractFulfillmentEventsById[selectedContract] ?? [] : []}
+        targetAuditLogs={selectedContract ? contractTargetAuditLogsById[selectedContract] ?? [] : []}
+        javaEnabled={javaEnabled}
+        buyerFulfillmentBusyId={buyerFulfillmentBusyId}
+        onLoadAttachments={onLoadContractAttachments}
+        onCreateAttachment={onCreateContractAttachment}
+        onCreateUploadTicket={onCreateContractAttachmentUploadTicket}
+        onCreateDownloadLink={onCreateContractAttachmentDownloadLink}
+        onSubmitContractApproval={onSubmitContractApproval}
+        onUpdateContractStatus={onUpdateContractStatus}
+        onArchiveContract={onArchiveContract}
+        onNavigateBuyerModule={(moduleId) => navigateBuyerModuleFromContract(moduleId, selectedContractDetail)}
+        onNavigateArchiveReviewSuggestion={(suggestion) => navigateBuyerModuleFromArchiveReviewSuggestion(suggestion, selectedContractDetail)}
+        linkedActionResult={contractLinkedActionResult?.contractNo === selectedContractDetail?.contractNo ? contractLinkedActionResult : undefined}
+      />
+      </>
+      )}
+
       {activeModule === 'receipts' && (
       <>
+        <section className="rounded-lg border border-lime-100 bg-lime-50 p-4">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-black text-lime-700">收货验收演示台</p>
+              <h3 className="mt-1 text-lg font-black text-slate-950">把物流到货转成可开票的验收结果</h3>
+              <p className="mt-2 text-sm font-bold leading-6 text-lime-800">
+                演示路径：供应商发货后登记收货验收，异常先记录原因，验收完成后进入发票付款。
+              </p>
+            </div>
+            <PrimaryActionButton
+              onClick={() => onNavigateBuyerModule('invoices')}
+              icon={Receipt}
+              tone="emerald"
+              size="md"
+              flushTop
+            >
+              进入发票付款
+            </PrimaryActionButton>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <MiniFact label="待发货" value={`${receiptPendingShipmentCount} 单`} />
+            <MiniFact label="待收货" value={`${receiptPendingArrivalCount} 单`} />
+            <MiniFact label="可登记验收" value={`${receiptReadyForInspectionCount} 单`} />
+            <MiniFact label="异常待处理" value={`${receiptExceptionPendingCount} 单`} />
+            <MiniFact label="已验收" value={`${receiptCompletedCount} 单`} />
+          </div>
+        </section>
         <Panel title="收货验收" icon={PackageCheck}>
           <ListToolbar
             title="收货验收池"
@@ -4216,17 +7522,67 @@ const BuyerWorkspaceView: React.FC<{
             selectedLabel={selectedReceiptDetail?.id}
             onClear={() => setReceiptStatusFilter('全部状态')}
           />
+          <DemoListLimitNotice
+            moduleLabel="收货验收"
+            totalCount={filteredReceiptInspectionRows.length}
+            displayedCount={displayedReceiptInspectionRows.length}
+          />
+          {receiptContractTargetFocus && (
+            <div id="contract-target-focus" className="rounded-lg border border-cyan-100 bg-cyan-50 p-3">
+              <p className="text-xs font-black text-cyan-900">
+                {receiptContractTargetFocus.archiveReviewGapItem ? '来自归档复核建议' : '来自合同联动'}
+              </p>
+              <p className="mt-1 text-xs font-bold leading-5 text-cyan-700">
+                已从 {receiptContractTargetFocus.sourceLabel} 跳转并聚焦订单 {receiptContractTargetFocus.orderId}，可在当前页登记或复核收货验收。
+              </p>
+              {receiptContractTargetFocus.archiveReviewGapItem && (
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <MiniFact label="归档复核缺口" value={receiptContractTargetFocus.archiveReviewGapItem} />
+                  <MiniFact label="建议处理动作" value={receiptContractTargetFocus.archiveReviewSuggestedAction ?? '待处理'} />
+                  <MiniFact label="建议处理路径" value={receiptContractTargetFocus.archiveReviewHandlingPath ?? '按当前模块处理'} />
+                </div>
+              )}
+            </div>
+          )}
+          <div className="rounded-lg border border-lime-100 bg-lime-50 p-3">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black text-lime-900">收货验收推进摘要</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-lime-700">
+                  先跟进供应商发货，再登记收货验收并处理异常。
+                </p>
+              </div>
+              <span className="rounded-lg bg-white px-2 py-1 text-[11px] font-black text-lime-700">
+                先跟进供应商发货，再登记收货验收并处理异常。
+              </span>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <MiniFact label="待发货" value={`${receiptPendingShipmentCount} 单`} />
+              <MiniFact label="待收货" value={`${receiptPendingArrivalCount} 单`} />
+              <MiniFact label="可登记验收" value={`${receiptReadyForInspectionCount} 单`} />
+              <MiniFact label="异常待处理" value={`${receiptExceptionPendingCount} 单`} />
+              <MiniFact label="已验收" value={`${receiptCompletedCount} 单`} />
+            </div>
+          </div>
           {filteredReceiptInspectionRows.length === 0 ? (
             <EmptyState title="暂无待收货订单" desc="供应商发货后，待收货订单会出现在这里。" />
           ) : (
           <div className="space-y-3">
-            {filteredReceiptInspectionRows
+            {displayedReceiptInspectionRows
               .map((orderRow) => {
                 const receiptBusy = buyerFulfillmentBusyId === `receipt:${orderRow.id}`;
+                const highlightedByContract = receiptContractTargetFocus?.orderId === orderRow.id;
                 const receiptDraft = getReceiptDraft(orderRow.id);
                 const receiptDraftInvalid = receiptDraft.result.trim().length === 0
                   || receiptDraft.receiptRemark.trim().length === 0
                   || (receiptDraft.result === '异常待处理' && receiptDraft.exceptionReason.trim().length === 0);
+                const contractActionGuard = highlightedByContract
+                  ? {
+                      contractNo: receiptContractTargetFocus.contractNo,
+                      title: '合同来源确认',
+                      desc: `目标单据已锁定：仅处理当前合同关联订单 ${receiptContractTargetFocus.orderId}。`,
+                    }
+                  : null;
                 return (
                   <WorkflowListCard
                     key={orderRow.id}
@@ -4237,12 +7593,23 @@ const BuyerWorkspaceView: React.FC<{
                     nextAction={orderRow.nextAction}
                     detailSelected={selectedReceiptOrder === orderRow.id}
                     onSelectDetail={() => setSelectedReceiptOrderId(orderRow.id)}
+                    demoHighlight={orderRow.id === 'po-stage7-receipt-ready'
+                      ? {
+                          label: '阶段七待收货订单样本',
+                          testId: `stage9-demo-sample-receipt-${orderRow.id}`,
+                        }
+                      : undefined}
                     action={javaEnabled && orderRow.canRegisterReceipt ? (
                       <InlineWorkflowAction
                         title="快捷登记收货"
                         desc="右侧详情可补充验收备注、异常原因和附件清单。"
                         tone="emerald"
                       >
+                        {contractActionGuard && (
+                          <p className="rounded-lg border border-cyan-100 bg-white p-2 text-xs font-black leading-5 text-cyan-800">
+                            {contractActionGuard.title}：{contractActionGuard.contractNo}。{contractActionGuard.desc}
+                          </p>
+                        )}
                         <label className="block">
                           <span className="text-xs font-black text-emerald-700">验收结果</span>
                           <select
@@ -4255,7 +7622,10 @@ const BuyerWorkspaceView: React.FC<{
                           </select>
                         </label>
                         <PrimaryActionButton
-                          onClick={() => onCreateReceipt(orderRow.id, receiptDraft)}
+                          onClick={() => {
+                            createReceiptFromContractFocus(orderRow.id);
+                            onCreateReceipt(orderRow.id, receiptDraft);
+                          }}
                           disabled={receiptBusy || receiptDraftInvalid}
                           busy={receiptBusy}
                           tone="emerald"
@@ -4266,7 +7636,13 @@ const BuyerWorkspaceView: React.FC<{
                         </PrimaryActionButton>
                       </InlineWorkflowAction>
                     ) : undefined}
-                  />
+                  >
+                    {highlightedByContract && (
+                      <div className="mt-3 rounded-lg border border-cyan-100 bg-cyan-50 p-3 text-xs font-black text-cyan-800">
+                        合同联动高亮：来自 {receiptContractTargetFocus.contractNo} 的目标收货记录。
+                      </div>
+                    )}
+                  </WorkflowListCard>
                 );
               })}
           </div>
@@ -4286,6 +7662,33 @@ const BuyerWorkspaceView: React.FC<{
 
       {activeModule === 'invoices' && (
       <>
+      <section className="rounded-lg border border-fuchsia-100 bg-fuchsia-50 p-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-black text-fuchsia-700">发票付款演示台</p>
+            <h3 className="mt-1 text-lg font-black text-slate-950">把发票、对账和付款状态收束成闭环</h3>
+            <p className="mt-2 text-sm font-bold leading-6 text-fuchsia-800">
+              演示路径：供应商提交发票后完成对账，处理差异和付款计划，最后登记付款状态。
+            </p>
+          </div>
+          <PrimaryActionButton
+            onClick={() => onNavigateBuyerModule('dashboard')}
+            icon={LayoutDashboard}
+            tone="red"
+            size="md"
+            flushTop
+          >
+            主流程演示闭环
+          </PrimaryActionButton>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <MiniFact label="待开票" value={`${invoicePendingIssueCount} 单`} />
+          <MiniFact label="待对账" value={`${invoicePendingReconciliationCount} 张`} />
+          <MiniFact label="差异待处理" value={`${invoiceVariancePendingCount} 张`} />
+          <MiniFact label="待付款" value={`${invoicePendingPaymentCount} 张`} />
+          <MiniFact label="已付款" value={`${invoicePaidCount} 张`} />
+        </div>
+      </section>
       <Panel title="发票付款" icon={Receipt}>
         <ListToolbar
           title="发票付款池"
@@ -4307,24 +7710,106 @@ const BuyerWorkspaceView: React.FC<{
           selectedLabel={selectedInvoiceDetail?.id}
           onClear={() => setInvoiceStatusFilter('全部状态')}
         />
+        <SelectedBusinessHandoffPanel
+          moduleLabel="发票付款"
+          selectedTitle={selectedInvoiceDetail?.id}
+          selectedMeta={selectedInvoiceDetail?.supplierName}
+          selectedStatus={selectedInvoiceDetail?.status}
+          nextActionTitle={selectedInvoiceDetail?.nextActionTitle}
+          detailHint="右侧详情会核对订单上下文、对账单摘要、付款计划、差异处理和付款轨迹。"
+          boundaryHint="存在对账差异时先处理差异；已付款发票不再修改付款状态。"
+        />
+        <DemoListLimitNotice
+          moduleLabel="发票付款"
+          totalCount={filteredInvoicePaymentRows.length}
+          displayedCount={displayedInvoicePaymentRows.length}
+        />
+        {invoiceContractTargetFocus && (
+          <div id="contract-target-focus" className="rounded-lg border border-cyan-100 bg-cyan-50 p-3">
+            <p className="text-xs font-black text-cyan-900">
+              {invoiceContractTargetFocus.archiveReviewGapItem ? '来自归档复核建议' : '来自合同联动'}
+            </p>
+            <p className="mt-1 text-xs font-bold leading-5 text-cyan-700">
+              已从 {invoiceContractTargetFocus.sourceLabel} 跳转并聚焦发票 {invoiceContractTargetFocus.invoiceId ?? '待开票'}，可在当前页处理付款或差异。
+            </p>
+            {invoiceContractTargetFocus.archiveReviewGapItem && (
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                <MiniFact label="归档复核缺口" value={invoiceContractTargetFocus.archiveReviewGapItem} />
+                <MiniFact label="建议处理动作" value={invoiceContractTargetFocus.archiveReviewSuggestedAction ?? '待处理'} />
+                <MiniFact label="建议处理路径" value={invoiceContractTargetFocus.archiveReviewHandlingPath ?? '按当前模块处理'} />
+              </div>
+            )}
+          </div>
+        )}
+        <div className="rounded-lg border border-fuchsia-100 bg-fuchsia-50 p-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-fuchsia-900">发票付款推进摘要</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-fuchsia-700">
+                先完成开票和对账，再处理差异并登记付款。
+              </p>
+            </div>
+            <span className="rounded-lg bg-white px-2 py-1 text-[11px] font-black text-fuchsia-700">
+              先完成开票和对账，再处理差异并登记付款。
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            <MiniFact label="待开票" value={`${invoicePendingIssueCount} 单`} />
+            <MiniFact label="待对账" value={`${invoicePendingReconciliationCount} 张`} />
+            <MiniFact label="差异待处理" value={`${invoiceVariancePendingCount} 张`} />
+            <MiniFact label="待付款" value={`${invoicePendingPaymentCount} 张`} />
+            <MiniFact label="已付款" value={`${invoicePaidCount} 张`} />
+          </div>
+        </div>
         <ReconciliationLedgerPanel
           title="应付对账单台账"
           invoices={workspace.invoices}
+          paymentBatches={paymentBatches}
+          paymentExecutionRecords={paymentExecutionRecords}
+          paymentBlockResolutions={paymentBlockResolutions}
+          paymentArchiveExceptionRequests={paymentArchiveExceptionRequests}
+          paymentRequests={paymentRequests}
+          varianceHandlings={varianceHandlings}
+          auditLogs={workspace.auditLogs}
           statusFilter={reconciliationLedgerStatusFilter}
           onChangeStatusFilter={setReconciliationLedgerStatusFilter}
+          javaEnabled={javaEnabled}
+          buyerFulfillmentBusyId={buyerFulfillmentBusyId}
+          onUpdatePaymentBatchStatus={updatePaymentBatchStatus}
+          onCreatePaymentArchiveExceptionRequest={onCreatePaymentArchiveExceptionRequest}
+          onCompletePaymentArchiveExceptionAction={onCompletePaymentArchiveExceptionAction}
+          onClosePaymentArchiveExceptionRequest={onClosePaymentArchiveExceptionRequest}
+          onUpdatePaymentRequestStatus={onUpdatePaymentRequestStatus}
+          onSavePaymentBlockResolutionStatus={onSavePaymentBlockResolutionStatus}
+          onUpdateVarianceHandlingStatus={onUpdateVarianceHandlingStatus}
+          onRebuildThreeWayMatches={onRebuildThreeWayMatches}
+          onRegisterPayment={onRegisterPayment}
+          onRegisterPaymentExecutionRecord={onRegisterPaymentExecutionRecord}
+          onSelectInvoiceForReview={(invoiceId) => {
+            setInvoiceStatusFilter('全部状态');
+            setSelectedInvoiceId(invoiceId);
+          }}
           scope="buyer"
         />
         {filteredInvoicePaymentRows.length === 0 ? (
           <EmptyState title="暂无发票" desc="供应商在订单收货后提交发票，采购方在这里登记付款状态。" />
         ) : (
         <div className="space-y-3">
-          {filteredInvoicePaymentRows.map((invoiceRow) => {
+          {displayedInvoicePaymentRows.map((invoiceRow) => {
             const paymentBusy = buyerFulfillmentBusyId === `payment:${invoiceRow.id}`;
+            const highlightedByContract = invoiceContractTargetFocus?.invoiceId === invoiceRow.id;
             const paymentDraft = getPaymentDraft(invoiceRow.id);
             const paymentDraftInvalid = paymentDraft.paymentStatus.trim().length === 0
               || paymentDraft.paymentRemark.trim().length === 0
               || paymentDraft.paymentRequestStatus.trim().length === 0
               || paymentDraft.reconciliationNote.trim().length === 0;
+            const contractActionGuard = highlightedByContract
+              ? {
+                  contractNo: invoiceContractTargetFocus.contractNo,
+                  title: '合同来源确认',
+                  desc: `目标单据已锁定：仅处理当前合同关联发票 ${invoiceContractTargetFocus.invoiceId ?? invoiceRow.id}。`,
+                }
+              : null;
             return (
               <WorkflowListCard
                 key={invoiceRow.id}
@@ -4335,11 +7820,22 @@ const BuyerWorkspaceView: React.FC<{
                 nextAction={invoiceRow.nextAction}
                 detailSelected={selectedInvoice === invoiceRow.id}
                 onSelectDetail={() => setSelectedInvoiceId(invoiceRow.id)}
+                demoHighlight={invoiceRow.id === 'inv-stage7-payment-ready'
+                  ? {
+                      label: '阶段七待付款发票样本',
+                      testId: `stage9-demo-sample-invoice-${invoiceRow.id}`,
+                    }
+                  : undefined}
                 action={javaEnabled && invoiceRow.canRegisterPayment ? (
                   <InlineWorkflowAction
                     title="快捷登记付款"
                     desc="右侧详情可补充付款备注、付款申请状态和对账说明。"
                   >
+                    {contractActionGuard && (
+                      <p className="rounded-lg border border-cyan-100 bg-white p-2 text-xs font-black leading-5 text-cyan-800">
+                        {contractActionGuard.title}：{contractActionGuard.contractNo}。{contractActionGuard.desc}
+                      </p>
+                    )}
                     <label className="block">
                       <span className="text-xs font-black text-blue-700">付款状态</span>
                       <select
@@ -4352,17 +7848,27 @@ const BuyerWorkspaceView: React.FC<{
                       </select>
                     </label>
                     <PrimaryActionButton
-                      onClick={() => onRegisterPayment(invoiceRow.id, paymentDraft)}
+                      onClick={() => {
+                        registerPaymentFromContractFocus(invoiceRow.id);
+                        onRegisterPayment(invoiceRow.id, paymentDraft);
+                      }}
                       disabled={paymentBusy || paymentDraftInvalid}
                       busy={paymentBusy}
                       pendingLabel="登记中"
                       flushTop
+                      testId={`stage7-register-payment-${invoiceRow.id}`}
                     >
                       登记付款
                     </PrimaryActionButton>
                   </InlineWorkflowAction>
                   ) : undefined}
-              />
+              >
+                {highlightedByContract && (
+                  <div className="mt-3 rounded-lg border border-cyan-100 bg-cyan-50 p-3 text-xs font-black text-cyan-800">
+                    合同联动高亮：来自 {invoiceContractTargetFocus.contractNo} 的目标发票记录。
+                  </div>
+                )}
+              </WorkflowListCard>
             );
           })}
         </div>
@@ -4371,12 +7877,20 @@ const BuyerWorkspaceView: React.FC<{
       <InvoicePaymentDetailPanelView
         detail={selectedInvoiceDetail}
         invoice={selectedInvoiceRecord}
-        busy={buyerFulfillmentBusyId === `payment:${selectedInvoice}`}
+        paymentRequest={selectedPaymentRequestRecord}
+        varianceHandling={selectedVarianceHandlingRecord}
+        busy={buyerFulfillmentBusyId === `payment:${selectedInvoice}`
+          || buyerFulfillmentBusyId === `payment-request:${selectedInvoice}`
+          || buyerFulfillmentBusyId === `variance:${selectedInvoice}`}
         invoiceUpdateBusyId={invoiceUpdateBusyId}
         javaEnabled={javaEnabled}
         paymentDraft={selectedInvoiceRecord ? getPaymentDraft(selectedInvoiceRecord.id) : undefined}
         onChangePaymentDraft={(invoiceId, draft) => setPaymentDrafts((drafts) => ({ ...drafts, [invoiceId]: draft }))}
         onRegisterPayment={onRegisterPayment}
+        onCreatePaymentRequest={onCreatePaymentRequest}
+        onCreateVarianceHandling={onCreateVarianceHandling}
+        onUpdatePaymentRequestStatus={onUpdatePaymentRequestStatus}
+        onUpdateVarianceHandlingStatus={onUpdateVarianceHandlingStatus}
         onUpdateInvoice={onUpdateInvoice}
       />
       </>
@@ -4390,6 +7904,1569 @@ const BuyerWorkspaceView: React.FC<{
       </Panel>
     )}
     </>
+  );
+};
+
+const contractDraftFromOrder = (workspace: BuyerWorkspace, orderId: string): BuyerContractDraft => {
+  const order = workspace.orders.find((item) => item.id === orderId) ?? workspace.orders[0];
+  const supplier = order ? workspace.suppliers.find((item) => item.id === order.supplierId) : undefined;
+  const effectiveDate = new Date().toISOString().slice(0, 10);
+  return {
+    relatedOrderId: order?.id ?? '',
+    contractNo: order ? `CTR-${order.id.toUpperCase()}` : '',
+    contractName: order ? `${supplier?.name ?? order.supplierId}采购合同` : '',
+    amount: order?.amount ?? 0,
+    status: '已生效',
+    fulfillmentProgress: '履约中',
+    effectiveDate,
+  };
+};
+
+const contractDraftFromContract = (contract: ContractLedgerItem): BuyerContractDraft => ({
+  relatedOrderId: contract.relatedOrderId,
+  contractNo: contract.contractNo,
+  contractName: contract.contractName,
+  amount: contract.amount,
+  status: contract.status,
+  fulfillmentProgress: contract.fulfillmentProgress,
+  effectiveDate: contract.effectiveDate ?? new Date().toISOString().slice(0, 10),
+});
+
+const ContractSavePanel: React.FC<{
+  workspace: BuyerWorkspace;
+  selectedContract?: ContractLedgerItem;
+  javaEnabled: boolean;
+  busyId: string | null;
+  onSaveContract: (mode: 'create' | 'update', contractId: string | null, draft: BuyerContractDraft) => void;
+}> = ({ workspace, selectedContract, javaEnabled, busyId, onSaveContract }) => {
+  const contractOrderIds = new Set((workspace.contracts ?? []).map((contract) => contract.relatedOrderId));
+  const createOrder = workspace.orders.find((order) => !contractOrderIds.has(order.id)) ?? workspace.orders[0];
+  const [mode, setMode] = useState<'create' | 'update'>('create');
+  const [draft, setDraft] = useState<BuyerContractDraft>(() => contractDraftFromOrder(workspace, createOrder?.id ?? ''));
+  const updateDraft = (patch: Partial<BuyerContractDraft>) => setDraft((current) => ({ ...current, ...patch }));
+
+  useEffect(() => {
+    if (mode === 'update' && selectedContract) {
+      setDraft(contractDraftFromContract(selectedContract));
+      return;
+    }
+    setDraft(contractDraftFromOrder(workspace, createOrder?.id ?? ''));
+  }, [mode, selectedContract?.id, createOrder?.id, workspace]);
+
+  const selectedOrder = workspace.orders.find((order) => order.id === draft.relatedOrderId);
+  const selectedSupplier = selectedOrder ? workspace.suppliers.find((supplier) => supplier.id === selectedOrder.supplierId) : undefined;
+  const busy = busyId === `contract-save:${mode}`;
+  const editingArchived = mode === 'update' && selectedContract?.archiveStatus === '已归档';
+  const missingEditableContract = mode === 'update' && !selectedContract;
+  const invalid = !draft.contractNo.trim()
+    || !draft.contractName.trim()
+    || !draft.relatedOrderId
+    || draft.amount <= 0
+    || !draft.status.trim()
+    || !draft.fulfillmentProgress.trim()
+    || !draft.effectiveDate;
+  const disabled = !javaEnabled || busy || invalid || missingEditableContract || editingArchived;
+
+  return (
+    <Panel title="合同保存" icon={FileText}>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-black text-slate-700">合同保存入口</p>
+            <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+              基于采购订单创建合同台账；编辑仅开放给未归档的 Java 合同记录。
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+            <button
+              type="button"
+              onClick={() => setMode('create')}
+              className={`h-9 rounded-md px-3 text-xs font-black ${mode === 'create' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600'}`}
+            >
+              新建合同
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('update')}
+              className={`h-9 rounded-md px-3 text-xs font-black ${mode === 'update' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600'}`}
+            >
+              编辑选中合同
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <label className="block text-xs font-black text-slate-600" htmlFor="contract-save-order">
+            关联采购订单
+            <select
+              id="contract-save-order"
+              value={draft.relatedOrderId}
+              disabled={mode === 'update'}
+              onChange={(event) => setDraft(contractDraftFromOrder(workspace, event.target.value))}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+            >
+              {workspace.orders.map((order) => (
+                <option key={order.id} value={order.id}>
+                  {order.id} · {order.status}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs font-black text-slate-600" htmlFor="contract-save-no">
+            合同编号
+            <input
+              id="contract-save-no"
+              value={draft.contractNo}
+              onChange={(event) => updateDraft({ contractNo: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+          <label className="block text-xs font-black text-slate-600 lg:col-span-2" htmlFor="contract-save-name">
+            合同名称
+            <input
+              id="contract-save-name"
+              value={draft.contractName}
+              onChange={(event) => updateDraft({ contractName: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+          <label className="block text-xs font-black text-slate-600" htmlFor="contract-save-amount">
+            合同金额
+            <input
+              id="contract-save-amount"
+              type="number"
+              min="0"
+              value={draft.amount}
+              onChange={(event) => updateDraft({ amount: Number(event.target.value) })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+          <label className="block text-xs font-black text-slate-600" htmlFor="contract-save-effective-date">
+            生效日期
+            <input
+              id="contract-save-effective-date"
+              type="date"
+              value={draft.effectiveDate}
+              onChange={(event) => updateDraft({ effectiveDate: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+          <label className="block text-xs font-black text-slate-600" htmlFor="contract-save-status">
+            合同状态
+            <select
+              id="contract-save-status"
+              value={draft.status}
+              onChange={(event) => updateDraft({ status: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            >
+              {['草案', '已生效', '履约中', '履约完成'].map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs font-black text-slate-600" htmlFor="contract-save-progress">
+            履约进度
+            <select
+              id="contract-save-progress"
+              value={draft.fulfillmentProgress}
+              onChange={(event) => updateDraft({ fulfillmentProgress: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            >
+              {['待审批', '已生效', '履约中', '已收货验收'].map((progress) => (
+                <option key={progress} value={progress}>{progress}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+          <p className="text-xs font-black text-blue-800">保存边界</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
+            当前订单供应商：{selectedSupplier?.name ?? selectedOrder?.supplierId ?? '未选择'}；已归档合同不可编辑，附件和审批流留待下一轮。
+          </p>
+          {missingEditableContract && (
+            <p className="mt-2 rounded-lg border border-amber-100 bg-white p-3 text-xs font-bold text-amber-800">
+              当前选中记录不是 Java 合同台账，需先新建合同后再编辑。
+            </p>
+          )}
+          {editingArchived && (
+            <p className="mt-2 rounded-lg border border-amber-100 bg-white p-3 text-xs font-bold text-amber-800">
+              当前合同已归档，仅允许审计追溯，不允许继续编辑。
+            </p>
+          )}
+        </div>
+
+        <PrimaryActionButton
+          icon={FileText}
+          onClick={() => onSaveContract(mode, mode === 'update' ? selectedContract?.id ?? null : null, draft)}
+          disabled={disabled}
+          busy={busy}
+          pendingLabel="保存中"
+          fullWidth
+          flushTop
+        >
+          保存合同
+        </PrimaryActionButton>
+      </div>
+    </Panel>
+  );
+};
+
+const ContractAttachmentPanel: React.FC<{
+  contractId: string;
+  attachments: AttachmentRecord[];
+  uploadTicket?: AttachmentUploadTicketRecord;
+  downloadLinksById: Record<string, AttachmentDownloadLinkRecord>;
+  fulfillmentEvents: ContractFulfillmentEventRecord[];
+  linkedActionResult?: BuyerContractLinkedActionResult | null;
+  javaEnabled: boolean;
+  busyId: string | null;
+  onLoadAttachments?: (contractId: string) => void;
+  onCreateAttachment?: (
+    contractId: string,
+    payload: Omit<CreateAttachmentPayload, 'ownerType' | 'ownerId'>,
+  ) => void;
+  onCreateUploadTicket?: (
+    contractId: string,
+    payload: Omit<CreateAttachmentUploadTicketPayload, 'ownerType' | 'ownerId'>,
+  ) => void;
+  onCreateDownloadLink?: (attachmentId: string) => void;
+}> = ({
+  contractId,
+  attachments,
+  uploadTicket,
+  downloadLinksById,
+  fulfillmentEvents,
+  linkedActionResult,
+  javaEnabled,
+  busyId,
+  onLoadAttachments,
+  onCreateAttachment,
+  onCreateUploadTicket,
+  onCreateDownloadLink,
+}) => {
+  const [draft, setDraft] = useState<BuyerContractAttachmentDraft>({
+    fileName: '合同正文.pdf',
+    visibility: 'buyer_internal',
+  });
+  const loadBusy = busyId === `contract-attachment:${contractId}:load`;
+  const createBusy = busyId === `contract-attachment:${contractId}:create`;
+  const uploadTicketBusy = busyId === `contract-attachment:${contractId}:upload-ticket`;
+  const fileNameInvalid = !draft.fileName.trim();
+  const storageKey = uploadTicket?.fileName === draft.fileName.trim()
+    ? uploadTicket.storageKey
+    : `contract/${contractId}/${draft.fileName.trim()}`;
+
+  return (
+    <section className="rounded-lg border border-sky-100 bg-sky-50 p-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-black text-sky-800">合同附件</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-sky-700">
+            复用附件中心登记合同正文、补充协议和盖章扫描件元数据，暂不上传原文件。
+          </p>
+        </div>
+        <PrimaryActionButton
+          icon={Database}
+          onClick={() => onLoadAttachments?.(contractId)}
+          disabled={!javaEnabled || !onLoadAttachments || loadBusy}
+          busy={loadBusy}
+          pendingLabel="加载中"
+          flushTop
+        >
+          刷新附件
+        </PrimaryActionButton>
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <MiniFact label="业务对象" value="contract" />
+        <MiniFact label="合同编号" value={contractId} />
+        <MiniFact label="附件数量" value={`${attachments.length} 个`} />
+      </div>
+
+      <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+        <p className="text-xs font-black text-slate-700">附件清单</p>
+        {attachments.length > 0 ? (
+          <div className="mt-2 space-y-2">
+            {attachments.map((attachment) => (
+              <div key={attachment.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-black text-slate-900">{attachment.fileName}</p>
+                    <p className="mt-1 break-words text-xs font-bold text-slate-500">{attachment.storageKey}</p>
+                  </div>
+                  <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                    <StatusPill label={attachment.visibility} />
+                    <PrimaryActionButton
+                      icon={Database}
+                      onClick={() => onCreateDownloadLink?.(attachment.id)}
+                      disabled={!javaEnabled || !onCreateDownloadLink || busyId === `contract-attachment-download:${attachment.id}`}
+                      busy={busyId === `contract-attachment-download:${attachment.id}`}
+                      pendingLabel="生成中"
+                      flushTop
+                    >
+                      生成下载签名
+                    </PrimaryActionButton>
+                  </div>
+                </div>
+                {downloadLinksById[attachment.id] && (
+                  <p className="mt-2 break-words rounded-lg border border-emerald-100 bg-emerald-50 p-2 text-xs font-bold leading-5 text-emerald-700">
+                    downloadUrl: {downloadLinksById[attachment.id].downloadUrl}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
+            暂无合同附件元数据，可先登记合同正文或补充协议名称。
+          </p>
+        )}
+      </div>
+
+      <div className="mt-3 rounded-lg border border-sky-100 bg-white p-3">
+        <p className="text-xs font-black text-sky-800">登记合同附件</p>
+        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px]">
+          <label className="block text-xs font-black text-slate-600" htmlFor={`contract-attachment-file-${contractId}`}>
+            附件名称
+            <input
+              id={`contract-attachment-file-${contractId}`}
+              value={draft.fileName}
+              onChange={(event) => setDraft((current) => ({ ...current, fileName: event.target.value }))}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            />
+          </label>
+          <label className="block text-xs font-black text-slate-600" htmlFor={`contract-attachment-visibility-${contractId}`}>
+            可见范围
+            <select
+              id={`contract-attachment-visibility-${contractId}`}
+              value={draft.visibility}
+              onChange={(event) => setDraft((current) => ({
+                ...current,
+                visibility: event.target.value as BuyerContractAttachmentDraft['visibility'],
+              }))}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            >
+              <option value="buyer_internal">采购方内部</option>
+              <option value="tenant">租户内可见</option>
+              <option value="supplier_shared">供应商共享</option>
+            </select>
+          </label>
+        </div>
+        <p className="mt-2 break-words text-xs font-bold text-slate-500">storageKey: {storageKey}</p>
+        {uploadTicket && (
+          <div className="mt-2 rounded-lg border border-emerald-100 bg-emerald-50 p-2 text-xs font-bold leading-5 text-emerald-700">
+            <p className="break-words">uploadUrl: {uploadTicket.uploadUrl}</p>
+            <p className="mt-1 break-words">storageKey: {uploadTicket.storageKey}</p>
+          </div>
+        )}
+        <PrimaryActionButton
+          icon={Database}
+          onClick={() => onCreateUploadTicket?.(contractId, {
+            fileName: draft.fileName.trim(),
+            visibility: draft.visibility,
+          })}
+          disabled={!javaEnabled || !onCreateUploadTicket || uploadTicketBusy || fileNameInvalid}
+          busy={uploadTicketBusy}
+          pendingLabel="生成中"
+          fullWidth
+        >
+          生成上传凭证
+        </PrimaryActionButton>
+        <PrimaryActionButton
+          icon={FileText}
+          onClick={() => onCreateAttachment?.(contractId, {
+            fileName: draft.fileName.trim(),
+            storageKey,
+            visibility: draft.visibility,
+          })}
+          disabled={!javaEnabled || !onCreateAttachment || createBusy || fileNameInvalid}
+          busy={createBusy}
+          pendingLabel="登记中"
+          fullWidth
+        >
+          登记合同附件
+        </PrimaryActionButton>
+      </div>
+
+      <AttachmentCenterEntryPanel
+        title="合同附件中心"
+        ownerType="contract"
+        ownerId={contractId}
+        visibility={draft.visibility}
+        desc="登记合同正文、补充协议和盖章扫描件的附件元数据，后续与合同审批和归档审计关联。"
+        attachmentNames={attachments.map((attachment) => attachment.fileName)}
+      />
+    </section>
+  );
+};
+
+const ContractApprovalEntryPanel: React.FC<{
+  detail: ContractDetailPanel;
+  javaEnabled: boolean;
+  onSubmitContractApproval?: (contractId: string) => void;
+}> = ({ detail, javaEnabled, onSubmitContractApproval }) => {
+  const approvalDisabled = !javaEnabled
+    || !onSubmitContractApproval
+    || detail.approvalReadiness.status !== '待提交审批';
+
+  return (
+    <section className="rounded-lg border border-violet-100 bg-violet-50 p-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-black text-violet-900">合同审批</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-violet-700">
+            合同审批入口当前只记录入口边界，后续接入 Java 审批流后再写入审批任务。
+          </p>
+        </div>
+        <PrimaryActionButton
+          icon={Send}
+          onClick={() => onSubmitContractApproval?.(detail.id)}
+          disabled={approvalDisabled}
+          flushTop
+        >
+          提交合同审批
+        </PrimaryActionButton>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <MiniFact label="审批就绪" value={detail.approvalReadiness.status} />
+        <MiniFact label="审批阻断原因" value={detail.approvalReadiness.reason} />
+        <MiniFact label="下一步" value={detail.approvalReadiness.nextAction} />
+      </div>
+      {approvalDisabled && (
+        <p className="mt-3 rounded-lg border border-white/80 bg-white p-3 text-xs font-bold leading-5 text-violet-800">
+          当前不可提交合同审批：{javaEnabled ? detail.approvalReadiness.reason : '请先切换到 Java 数据源'}。
+        </p>
+      )}
+    </section>
+  );
+};
+
+const ContractDeepeningDemoReadinessPanel: React.FC<{
+  items: ContractDeepeningReadinessItem[];
+  javaEnabled: boolean;
+}> = ({ items, javaEnabled }) => (
+  <section data-testid="stage13-contract-demo-readiness" className="rounded-lg border border-cyan-100 bg-cyan-50 p-4">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-cyan-900">阶段十三合同深化</p>
+        <h3 className="mt-1 text-lg font-black text-slate-950">合同管理第一屏演示验收</h3>
+        <p className="mt-2 text-sm font-bold leading-6 text-cyan-800">
+          真实动作复验围绕合同总览、合同审批、履约事件、订单/收货/发票/付款关系、归档门禁、演示操作条和推荐合同样本展开。
+        </p>
+      </div>
+      <StatusPill label={javaEnabled ? 'Java 数据源' : '等待 Java 数据源'} />
+    </div>
+    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      {items.map((item) => (
+        <div key={item.label} className="rounded-lg border border-white/80 bg-white p-3 shadow-sm shadow-cyan-100/50">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <p className="break-words text-xs font-black text-slate-900">{item.label}</p>
+            <StatusPill label={item.status} />
+          </div>
+          <div className="mt-3 grid gap-2">
+            <MiniFact label="验收证据" value={item.evidence} />
+            <MiniFact label="演示口径" value={item.detail} />
+          </div>
+        </div>
+      ))}
+    </div>
+    <p className="mt-3 rounded-lg border border-white/80 bg-white p-3 text-xs font-bold leading-5 text-cyan-800">
+      本轮不新增合同工作流接口，优先把已有 Java 合同动作整理成客户可看、可讲、可复验的合同深化切片。
+    </p>
+  </section>
+);
+
+const ContractDetailPanelView: React.FC<{
+  detail?: ContractDetailPanel;
+  attachments: AttachmentRecord[];
+  uploadTicket?: AttachmentUploadTicketRecord;
+  downloadLinksById: Record<string, AttachmentDownloadLinkRecord>;
+  fulfillmentEvents: ContractFulfillmentEventRecord[];
+  targetAuditLogs: AuditLogRecord[];
+  javaEnabled: boolean;
+  buyerFulfillmentBusyId: string | null;
+  linkedActionResult?: BuyerContractLinkedActionResult;
+  onLoadAttachments?: (contractId: string) => void;
+  onCreateAttachment?: (
+    contractId: string,
+    payload: Omit<CreateAttachmentPayload, 'ownerType' | 'ownerId'>,
+  ) => void;
+  onCreateUploadTicket?: (
+    contractId: string,
+    payload: Omit<CreateAttachmentUploadTicketPayload, 'ownerType' | 'ownerId'>,
+  ) => void;
+  onCreateDownloadLink?: (attachmentId: string) => void;
+  onSubmitContractApproval?: (contractId: string) => void;
+  onUpdateContractStatus?: (contractId: string, status: string, fulfillmentProgress: string) => void;
+  onArchiveContract?: (contractId: string) => void;
+  onNavigateBuyerModule?: (moduleId: BuyerAdminModule) => void;
+  onNavigateArchiveReviewSuggestion?: (suggestion: ContractArchiveReviewActionSuggestion) => void;
+}> = ({
+  detail,
+  attachments,
+  uploadTicket,
+  downloadLinksById,
+  fulfillmentEvents,
+  targetAuditLogs,
+  javaEnabled,
+  buyerFulfillmentBusyId,
+  linkedActionResult,
+  onLoadAttachments,
+  onCreateAttachment,
+  onCreateUploadTicket,
+  onCreateDownloadLink,
+  onSubmitContractApproval,
+  onUpdateContractStatus,
+  onArchiveContract,
+  onNavigateBuyerModule,
+  onNavigateArchiveReviewSuggestion,
+}) => {
+  const [focusedArchiveReviewTarget, setFocusedArchiveReviewTarget] = useState<string | null>(null);
+  const [archiveReviewFilter, setArchiveReviewFilter] = useState<'all' | 'gaps' | 'covered'>('all');
+  const [archiveReviewConfirmedEvidenceItem, setArchiveReviewConfirmedEvidenceItem] = useState<string | null>(null);
+
+  if (!detail) {
+    return (
+      <Panel title="合同详情" icon={FileText}>
+        <EmptyState title="暂无合同详情" desc="选择一条合同台账后，可查看订单、收货、发票付款和归档状态。" />
+      </Panel>
+    );
+  }
+
+  const isArchived = detail.archiveStatus === '已归档';
+  const statusBusyId = `contract-status:${detail.id}`;
+  const archiveBusyId = `contract-archive:${detail.id}`;
+  const contractArchiveDisabled = !javaEnabled || isArchived || !onArchiveContract || detail.archiveReadiness.status !== '可归档';
+  const receiptEventCount = fulfillmentEvents.filter((event) => event.actionType === 'receipt').length;
+  const paymentEventCount = fulfillmentEvents.filter((event) => event.actionType === 'payment').length;
+  const latestFulfillmentEvent = fulfillmentEvents[0];
+  const contractEventEvidenceSummary = receiptEventCount > 0 && paymentEventCount > 0
+    ? '收货与付款事件证据已覆盖'
+    : receiptEventCount > 0
+      ? '已有收货事件，仍需关注付款事件'
+      : paymentEventCount > 0
+        ? '已有付款事件，仍需关注收货事件'
+        : '暂无事件证据，需先从合同联动入口推进目标单据';
+  const contractEventWriteBoundary = isArchived
+    ? '已归档合同仅保留审计查看，不再写入新的履约事件'
+    : '未归档合同可从合同联动入口继续沉淀收货和付款事件证据';
+  const contractArchiveAuditConclusion = isArchived
+    ? '归档后合同进入只读审计态，可复核审批、附件、履约事件和边界控制。'
+    : '合同尚未归档，审计视图用于预检归档证据是否齐备。';
+  const contractArchiveAuditEvidenceRows = [
+    {
+      label: '审批追溯',
+      value: detail.approvalReadiness.status,
+      hint: detail.approvalReadiness.reason,
+    },
+    {
+      label: '附件凭证',
+      value: `${attachments.length} 份`,
+      hint: attachments.length > 0 ? '合同附件元数据已登记，可作为归档凭证索引。' : '暂无合同附件凭证，后续可补充正文或补充协议。',
+    },
+    {
+      label: '履约事件证据',
+      value: `${fulfillmentEvents.length} 条`,
+      hint: contractEventEvidenceSummary,
+    },
+    {
+      label: '只读边界',
+      value: isArchived ? '已冻结写入' : '待归档冻结',
+      hint: contractEventWriteBoundary,
+    },
+  ];
+  const latestContractTargetAuditLog = targetAuditLogs[0];
+  const contractTargetAuditSummary = targetAuditLogs.length > 0
+    ? `${targetAuditLogs.length} 条目标对象审计记录`
+    : '暂无目标对象审计记录';
+  const focusedArchiveReviewRow = detail.archiveReviewChecklistRows.find(
+    (row) => row.archiveReviewTargetSection === focusedArchiveReviewTarget,
+  );
+  const archiveReviewSectionHighlightClass = (targetSection: string) => (
+    focusedArchiveReviewTarget === targetSection
+      ? 'ring-2 ring-rose-400 ring-offset-2 ring-offset-white'
+      : ''
+  );
+  const filteredArchiveReviewChecklistRows = detail.archiveReviewChecklistRows.filter((row) => {
+    if (archiveReviewFilter === 'gaps') return row.status !== '已覆盖';
+    if (archiveReviewFilter === 'covered') return row.status === '已覆盖';
+    return true;
+  });
+  const archiveReviewNewEvidenceItem = linkedActionResult?.archiveReviewResultGapItem;
+  const archiveReviewNewEvidenceStatus = linkedActionResult?.archiveReviewResultEvidenceStatus;
+  const archiveReviewNewEvidenceNextStep = linkedActionResult?.archiveReviewResultNextStep;
+  const archiveReviewOperationTraceTargetSection = archiveReviewNewEvidenceItem
+    ? detail.archiveReviewChecklistRows.find((row) => row.item === archiveReviewNewEvidenceItem)?.archiveReviewTargetSection ?? null
+    : null;
+  const confirmArchiveReviewNewEvidence = (item: string) => {
+    setArchiveReviewConfirmedEvidenceItem(item);
+  };
+  const archiveReviewProgressConfirmedCount = archiveReviewConfirmedEvidenceItem ? 1 : 0;
+  const archiveReviewProgressPendingNewEvidenceCount = archiveReviewNewEvidenceItem && !archiveReviewConfirmedEvidenceItem ? 1 : 0;
+  const archiveReviewProgressOpenGapCount = Math.max(
+    detail.archiveReviewGroupSummary.gapCount - archiveReviewProgressConfirmedCount,
+    0,
+  );
+  const archiveReviewOperationTraceRows = archiveReviewNewEvidenceItem && linkedActionResult
+    ? [
+        {
+          id: `${linkedActionResult.contractNo}-${linkedActionResult.targetId}-${archiveReviewNewEvidenceItem}`,
+          sourceEntry: linkedActionResult.actionType === 'receipt' ? '收货验收目标页' : '发票付款目标页',
+          gapItem: archiveReviewNewEvidenceItem,
+          targetId: linkedActionResult.targetId,
+          targetSection: archiveReviewOperationTraceTargetSection,
+          confirmationStatus: archiveReviewConfirmedEvidenceItem === archiveReviewNewEvidenceItem ? '已确认覆盖' : '待复核新证据',
+        },
+      ]
+    : [];
+  const archiveReviewHistoryRows = archiveReviewNewEvidenceItem && linkedActionResult
+    ? [
+        {
+          id: `${linkedActionResult.targetId}-processed`,
+          stage: '目标页处理',
+          conclusion: archiveReviewNewEvidenceStatus ?? '已形成页面内处理证据',
+          nextStep: archiveReviewNewEvidenceNextStep ?? '返回归档复核清单继续复核。',
+        },
+        {
+          id: `${linkedActionResult.targetId}-located`,
+          stage: '轨迹定位',
+          conclusion: archiveReviewOperationTraceTargetSection ? '已关联证据区块' : '暂无可定位证据区块',
+          nextStep: archiveReviewOperationTraceTargetSection ? '可通过定位轨迹证据回到对应缺口。' : '需补充复核项定位配置。',
+        },
+        {
+          id: `${linkedActionResult.targetId}-confirmed`,
+          stage: '复核确认结果',
+          conclusion: archiveReviewConfirmedEvidenceItem === archiveReviewNewEvidenceItem ? '已确认覆盖' : '待复核确认',
+          nextStep: archiveReviewConfirmedEvidenceItem === archiveReviewNewEvidenceItem
+            ? '页面内闭环已完成，最终归档仍以服务端门禁为准。'
+            : '在复核清单中标记为已复核后完成页面内闭环。',
+        },
+      ]
+    : [];
+  const archiveReviewHistoryRiskSummary = archiveReviewNewEvidenceItem
+    ? archiveReviewConfirmedEvidenceItem === archiveReviewNewEvidenceItem
+      ? {
+          level: '低风险',
+          reason: '新证据已确认覆盖，页面内复核闭环已完成。',
+          nextStep: '复核归档门禁并准备归档。',
+        }
+      : {
+          level: '中风险',
+          reason: '新证据仍待复核确认，仍会阻断最终归档。',
+          nextStep: '返回复核清单标记新证据已复核。',
+        }
+    : archiveReviewProgressOpenGapCount > 0
+      ? {
+          level: '高风险',
+          reason: '仍存在待处理缺口，仍会阻断最终归档。',
+          nextStep: '先处理缺口建议并形成目标页证据。',
+        }
+      : {
+          level: '低风险',
+          reason: '暂无页面内历史阻断信号。',
+          nextStep: '继续复核服务端归档门禁。',
+        };
+  const archiveReviewRiskResolutionSuggestion = archiveReviewNewEvidenceItem
+    ? detail.archiveReviewActionSuggestions.find((suggestion) => suggestion.item === archiveReviewNewEvidenceItem)
+      ?? detail.archiveReviewActionSuggestions[0]
+    : detail.archiveReviewActionSuggestions[0];
+  const archiveReviewCloseoutCheck = {
+    pageConfirmationStatus: archiveReviewNewEvidenceItem
+      ? archiveReviewConfirmedEvidenceItem === archiveReviewNewEvidenceItem ? '页面新证据已确认' : '页面新证据待确认'
+      : archiveReviewProgressOpenGapCount > 0 ? '仍有缺口待处理' : '暂无页面内待确认项',
+    riskResolutionEntry: archiveReviewRiskResolutionSuggestion && archiveReviewHistoryRiskSummary.level !== '低风险'
+      ? '已提供风险解除入口'
+      : '暂无需解除的页面风险',
+    serverArchiveGate: detail.archiveReadiness.status,
+    closeoutDecision: archiveReviewHistoryRiskSummary.level === '低风险' && detail.archiveReadiness.status === '可归档'
+      ? '可进入最终归档确认'
+      : '继续处理页面复核和服务端归档门禁',
+  };
+  const archiveReviewPreArchiveActionHint = {
+    archiveButtonDecision: !contractArchiveDisabled && archiveReviewCloseoutCheck.closeoutDecision === '可进入最终归档确认'
+      ? '可点击归档合同按钮'
+      : '暂不可点击归档合同按钮',
+    blockingPath: archiveReviewCloseoutCheck.closeoutDecision === '可进入最终归档确认'
+      ? '复核归档按钮状态并执行最终归档。'
+      : archiveReviewRiskResolutionSuggestion
+        ? `先处理${archiveReviewRiskResolutionSuggestion.ownerModule}：${archiveReviewRiskResolutionSuggestion.handlingPath}`
+        : detail.archiveReadiness.nextAction,
+    actionHint: archiveReviewCloseoutCheck.closeoutDecision === '可进入最终归档确认'
+      ? '归档动作提示：可点击归档合同按钮，提交 Java 服务端归档门禁校验。'
+      : '归档动作提示：先完成页面复核确认、解除阻断并满足服务端归档门禁。',
+  };
+  const archiveReviewFilterOptions = [
+    {
+      id: 'all' as const,
+      label: '全部复核项',
+      count: detail.archiveReviewGroupSummary.totalCount,
+    },
+    {
+      id: 'gaps' as const,
+      label: '优先处理缺口',
+      count: detail.archiveReviewGroupSummary.gapCount,
+    },
+    {
+      id: 'covered' as const,
+      label: '已覆盖证据',
+      count: detail.archiveReviewGroupSummary.coveredCount,
+    },
+  ];
+  const handleArchiveReviewSuggestionModuleLink = (suggestion: typeof detail.archiveReviewActionSuggestions[number]) => {
+    setArchiveReviewFilter('gaps');
+    setFocusedArchiveReviewTarget(suggestion.archiveReviewTargetSection);
+    if (onNavigateArchiveReviewSuggestion) {
+      onNavigateArchiveReviewSuggestion(suggestion);
+      return;
+    }
+    onNavigateBuyerModule?.(suggestion.targetModuleId);
+  };
+  const contractDemoActionLoopRows = [
+    {
+      label: '提交合同审批',
+      status: detail.approvalReadiness.status,
+      feedback: detail.approvalReadiness.status === '待提交审批'
+        ? '点击后生成合同审批任务，审批中心可回看并处理。'
+        : detail.approvalReadiness.reason,
+      nextStep: '下一步承接到审批中心，讲合同审批任务回写合同状态。',
+      disabled: !javaEnabled || !onSubmitContractApproval || detail.approvalReadiness.status !== '待提交审批',
+      tone: 'blue' as const,
+      onClick: () => onSubmitContractApproval?.(detail.id),
+    },
+    {
+      label: '推进履约',
+      status: isArchived ? '已归档只读' : detail.fulfillmentLinkageSummary.stage,
+      feedback: '点击后把合同状态推进到履约完成，页面继续保留归档门禁和事件证据边界。',
+      nextStep: '下一步承接到收货验收或发票付款，补齐合同履约事件证据。',
+      disabled: !javaEnabled || isArchived || !onUpdateContractStatus,
+      tone: 'emerald' as const,
+      onClick: () => onUpdateContractStatus?.(detail.id, '履约完成', '已收货验收'),
+    },
+    {
+      label: '处理收货验收',
+      status: receiptEventCount > 0 ? '已有收货事件' : '待形成收货证据',
+      feedback: '点击后进入收货验收页，并保留当前合同上下文提示。',
+      nextStep: '下一步承接回合同详情，形成合同履约事件回看。',
+      disabled: !onNavigateBuyerModule || isArchived,
+      tone: 'emerald' as const,
+      onClick: () => onNavigateBuyerModule?.('receipts'),
+    },
+    {
+      label: '处理发票付款',
+      status: paymentEventCount > 0 ? '已有付款事件' : '待形成付款证据',
+      feedback: '点击后进入发票付款页，并保留当前合同上下文提示。',
+      nextStep: '下一步承接回合同详情，复核发票、付款和归档关系。',
+      disabled: !onNavigateBuyerModule || isArchived,
+      tone: 'blue' as const,
+      onClick: () => onNavigateBuyerModule?.('invoices'),
+    },
+    {
+      label: '归档合同',
+      status: archiveReviewPreArchiveActionHint.archiveButtonDecision,
+      feedback: contractArchiveDisabled
+        ? `归档条件未满足：${detail.archiveReadiness.reason}`
+        : '点击后提交 Java 服务端归档门禁校验，成功后合同进入只读审计态。',
+      nextStep: '下一步承接到归档审计视图，复核审批、附件、事件和付款证据。',
+      disabled: contractArchiveDisabled,
+      tone: 'amber' as const,
+      onClick: () => onArchiveContract?.(detail.id),
+    },
+  ];
+
+  return (
+    <Panel title="合同详情" icon={FileText}>
+      <div className="space-y-4">
+        <DetailHeroCard
+          eyebrow="合同管理"
+          title={detail.contractNo}
+          meta={`${detail.contractName} · ${detail.supplierName}`}
+          status={detail.status}
+          facts={[
+            { label: '关联订单', value: detail.relatedOrderId },
+            { label: '合同金额', value: detail.amountLabel },
+            { label: '归档状态', value: detail.archiveStatus },
+            { label: '下一步', value: detail.nextActionTitle },
+          ]}
+        />
+        <section data-testid="stage10-contract-demo-action-loop" className="rounded-lg border border-sky-100 bg-sky-50 p-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-black text-sky-900">合同演示动作闭环</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-sky-700">
+                把合同详情里的真实动作按钮集中成推荐链：提交合同审批、推进履约、处理收货验收、处理发票付款和归档合同。
+              </p>
+            </div>
+            <StatusPill label="真实动作按钮 / 动作反馈 / 下一步承接" />
+          </div>
+          <div className="mt-3 grid gap-2 xl:grid-cols-5">
+            {contractDemoActionLoopRows.map((row) => (
+              <div key={row.label} className="rounded-lg border border-white/80 bg-white p-3 shadow-sm shadow-sky-100/40">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="break-words text-xs font-black text-slate-900">{row.label}</p>
+                    <p className="mt-1 text-[11px] font-black text-sky-700">真实动作按钮</p>
+                  </div>
+                  <StatusPill label={row.status} />
+                </div>
+                <div className="mt-3 grid gap-2">
+                  <MiniFact label="动作反馈" value={row.feedback} />
+                  <MiniFact label="下一步承接" value={row.nextStep} />
+                </div>
+                <PrimaryActionButton
+                  onClick={row.onClick}
+                  disabled={row.disabled}
+                  tone={row.tone}
+                  fullWidth
+                >
+                  {row.label}
+                </PrimaryActionButton>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 rounded-lg border border-white/80 bg-white p-3 text-xs font-bold leading-5 text-sky-800">
+            本轮不新增合同工作流接口，只把已有合同审批、履约推进、跨模块处理和归档动作整理成可演示的动作闭环。
+          </p>
+        </section>
+        <div data-review-section="contract-approval-entry" className={archiveReviewSectionHighlightClass('contract-approval-entry')}>
+          <ContractApprovalEntryPanel
+            detail={detail}
+            javaEnabled={javaEnabled}
+            onSubmitContractApproval={onSubmitContractApproval}
+          />
+        </div>
+        <div data-review-section="contract-attachment-evidence" className={archiveReviewSectionHighlightClass('contract-attachment-evidence')}>
+          <ContractAttachmentPanel
+            contractId={detail.id}
+            attachments={attachments}
+            uploadTicket={uploadTicket}
+            downloadLinksById={downloadLinksById}
+            javaEnabled={javaEnabled}
+            busyId={buyerFulfillmentBusyId}
+            onLoadAttachments={onLoadAttachments}
+            onCreateAttachment={onCreateAttachment}
+            onCreateUploadTicket={onCreateUploadTicket}
+            onCreateDownloadLink={onCreateDownloadLink}
+          />
+        </div>
+        {linkedActionResult && (
+          <section className="rounded-lg border border-teal-100 bg-teal-50 p-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-black text-teal-900">
+                  {linkedActionResult.archiveReviewResultGapItem ? '归档复核处理回看' : '合同联动结果回看'}
+                </p>
+                <p className="mt-1 text-xs font-bold leading-5 text-teal-700">
+                  最近一次从合同上下文进入目标页后的操作结果已回写到当前合同详情，便于采购方复核跨模块处理是否闭合。
+                </p>
+              </div>
+              <StatusPill label={linkedActionResult.actionType === 'receipt' ? '收货验收' : '发票付款'} />
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <MiniFact label="最近联动动作" value={linkedActionResult.actionType === 'receipt' ? '收货验收' : '发票付款'} />
+              <MiniFact label="目标单据" value={linkedActionResult.targetId} />
+              <MiniFact label="来源合同" value={linkedActionResult.contractNo} />
+            </div>
+            <p className="mt-3 rounded-lg border border-white/80 bg-white p-3 text-xs font-black leading-5 text-teal-800">
+              {linkedActionResult.summary}
+            </p>
+            {linkedActionResult.archiveReviewResultGapItem && (
+              <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+                <p className="text-xs font-black text-teal-900">缺口处理结果</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <MiniFact label="归档复核缺口" value={linkedActionResult.archiveReviewResultGapItem} />
+                  <MiniFact label="新增证据状态" value={linkedActionResult.archiveReviewResultEvidenceStatus ?? '已形成页面内处理证据'} />
+                  <MiniFact label="后续复核动作" value={linkedActionResult.archiveReviewResultNextStep ?? '返回归档复核清单继续复核。'} />
+                </div>
+              </div>
+            )}
+            <p className="mt-2 text-[11px] font-bold leading-5 text-teal-700">
+              来源：{linkedActionResult.sourceLabel}。本轮先做页面内结果回看，不新增后端持久化接口。
+            </p>
+          </section>
+        )}
+        <section data-review-section="contract-fulfillment-event-ledger" className={`rounded-lg border border-sky-100 bg-sky-50 p-3 ${archiveReviewSectionHighlightClass('contract-fulfillment-event-ledger')}`}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-sky-900">后端履约事件台账</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-sky-700">
+                Java 持久化事件会记录从合同联动入口推进的收货、付款等关键动作，刷新页面后仍可用于合同履约复核。
+              </p>
+            </div>
+            <StatusPill label={`Java 持久化事件 ${fulfillmentEvents.length} 条`} />
+          </div>
+          {fulfillmentEvents.length === 0 ? (
+            <p className="mt-3 rounded-lg border border-white/80 bg-white p-3 text-xs font-bold leading-5 text-sky-700">
+              暂无 Java 持久化事件；从合同详情进入收货验收或发票付款并完成快捷登记后会写入这里。
+            </p>
+          ) : (
+            <div className="mt-3 grid gap-2 lg:grid-cols-2">
+              {fulfillmentEvents.slice(0, 4).map((event) => (
+                <div key={event.id} className="rounded-lg border border-white/80 bg-white p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-mono text-xs font-black text-sky-900">{event.targetId}</p>
+                    <StatusPill label={event.actionType === 'receipt' ? '收货验收' : event.actionType === 'payment' ? '发票付款' : event.actionType} />
+                  </div>
+                  <p className="mt-2 break-words text-xs font-black leading-5 text-slate-800">{event.summary}</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <MiniFact label="来源上下文" value={event.sourceLabel} />
+                    <MiniFact label="记录时间" value={formatAuditTime(event.createdAt)} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+        <section className="rounded-lg border border-lime-100 bg-lime-50 p-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-lime-900">合同履约事件状态机</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-lime-700">
+                基于当前合同履约事件只读状态派生，按待收货、待付款、待归档、已完成展示事件覆盖和下一步动作。
+              </p>
+            </div>
+            <StatusPill label="只读状态派生" />
+          </div>
+          <div className="mt-3 grid gap-2 lg:grid-cols-4">
+            {detail.contractFulfillmentEventStateRows.map((row) => (
+              <div key={row.eventStage} className="rounded-lg border border-white/80 bg-white p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-slate-500">当前事件阶段</p>
+                    <p className="mt-1 break-words text-sm font-black text-slate-950">{row.eventStage}</p>
+                  </div>
+                  <StatusPill label={row.status} />
+                </div>
+                <div className="mt-3 grid gap-2">
+                  <MiniFact label="事件证据" value={row.eventEvidenceLabel} />
+                  <MiniFact label="下一步动作" value={row.eventNextAction} />
+                </div>
+                <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-600">{row.hint}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 rounded-lg border border-white/80 bg-white p-3 text-xs font-bold leading-5 text-lime-800">
+            只读状态派生：本轮不新增复杂履约事件状态机接口，不自动改写合同状态；归档门禁仍以订单收货和发票付款为准。
+          </p>
+        </section>
+        <section className="rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-emerald-900">合同履约联动摘要</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-emerald-700">
+                汇总订单、收货、发票付款和归档节点，给出当前履约阶段、风险等级与下一步责任人。
+              </p>
+            </div>
+            <StatusPill label={detail.fulfillmentLinkageSummary.stage} />
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <MiniFact label="履约进度百分比" value={`${detail.fulfillmentLinkageSummary.progressPercent}%`} />
+            <MiniFact label="风险等级" value={detail.fulfillmentLinkageSummary.riskLevel} />
+            <MiniFact label="下一步责任人" value={detail.fulfillmentLinkageSummary.owner} />
+            <MiniFact label="下一步动作" value={detail.fulfillmentLinkageSummary.nextStep} />
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+            <div
+              className="h-full rounded-full bg-emerald-500"
+              style={{ width: `${detail.fulfillmentLinkageSummary.progressPercent}%` }}
+            />
+          </div>
+        </section>
+        <section className="rounded-lg border border-violet-100 bg-violet-50 p-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-violet-900">合同履约财务汇总</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-violet-700">
+                从合同视角汇总合同金额、收货状态、发票金额、付款状态、归档阻断和付款准备，便于归档前核对履约与财务闭环。
+              </p>
+            </div>
+            <StatusPill label={detail.contractFinancialSummary.paymentReadinessLabel} />
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            <MiniFact label="合同金额" value={detail.contractFinancialSummary.contractAmountLabel} />
+            <MiniFact label="发票金额" value={detail.contractFinancialSummary.invoiceAmountLabel} />
+            <MiniFact label="发票差异" value={detail.contractFinancialSummary.invoiceVarianceLabel} />
+            <MiniFact label="付款准备" value={detail.contractFinancialSummary.paymentReadinessLabel} />
+            <MiniFact label="归档阻断" value={detail.contractFinancialSummary.archiveBlockingLabel} />
+          </div>
+          <div className="mt-3 grid gap-2 lg:grid-cols-2">
+            {detail.fulfillmentFinanceRows.map((row) => (
+              <div key={row.label} className="rounded-lg border border-white/80 bg-white p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="break-words text-xs font-black text-slate-900">{row.label}</p>
+                    <p className="mt-1 break-words text-sm font-black text-slate-950">{row.value}</p>
+                  </div>
+                  <StatusPill label={row.status} />
+                </div>
+                <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-600">{row.hint}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section data-review-section="contract-payment-plan-readonly" className={`rounded-lg border border-fuchsia-100 bg-fuchsia-50 p-3 ${archiveReviewSectionHighlightClass('contract-payment-plan-readonly')}`}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-fuchsia-900">合同付款计划只读视图</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-fuchsia-700">
+                聚合当前合同关联发票、付款申请、付款批次和计划付款日；不新增合同付款计划接口，付款处理仍回到发票付款模块完成。
+              </p>
+            </div>
+            <StatusPill label={detail.contractFinancialSummary.paymentPlanSummary} />
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            {detail.contractPaymentPlanRows.map((row) => (
+              <div key={row.label} className="rounded-lg border border-white/80 bg-white p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="break-words text-xs font-black text-slate-900">{row.label}</p>
+                    <p className="mt-1 break-words text-sm font-black text-slate-950">{row.value}</p>
+                  </div>
+                  <StatusPill label={row.status} />
+                </div>
+                <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-600">{row.hint}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 rounded-lg border border-white/80 bg-white p-3 text-xs font-bold leading-5 text-fuchsia-800">
+            只读边界：合同详情只展示付款计划成熟度、付款批次和计划付款日，不直接创建付款申请、不登记付款、不接真实支付。
+          </p>
+        </section>
+        <section className="rounded-lg border border-cyan-100 bg-cyan-50 p-3">
+          <p className="text-xs font-black text-cyan-900">合同上下文操作入口</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-cyan-700">
+            从合同详情直接跳转到下一步处理模块，保留当前合同的业务上下文提示。
+          </p>
+          {isArchived && (
+            <p aria-live="polite" className="mt-3 rounded-lg border border-amber-100 bg-white/80 p-3 text-xs font-bold leading-5 text-amber-800">
+              {contractEventWriteBoundary}
+            </p>
+          )}
+          <div className="mt-3 grid gap-2 lg:grid-cols-3">
+            {detail.contextActionRows.map((row) => {
+              const actionLabel = row.moduleId === 'receipts'
+                ? '去收货验收'
+                : row.moduleId === 'invoices' ? '去发票付款' : row.label;
+              return (
+                <div key={`${row.moduleId}-${row.label}`} className="rounded-lg border border-white/80 bg-white p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="break-words text-xs font-black text-slate-800">{row.label}</p>
+                      <p className="mt-1 text-[11px] font-bold text-slate-500">{row.moduleLabel}</p>
+                    </div>
+                    <StatusPill label={row.status} />
+                  </div>
+                  <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-600">{row.hint}</p>
+                  <PrimaryActionButton
+                    icon={ArrowRight}
+                    onClick={() => onNavigateBuyerModule?.(row.moduleId)}
+                    disabled={!onNavigateBuyerModule || isArchived}
+                    fullWidth
+                  >
+                    {actionLabel}
+                  </PrimaryActionButton>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+        <section className="rounded-lg border border-rose-100 bg-rose-50 p-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-rose-900">合同归档复核清单</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                只读复核清单汇总审批追溯、附件凭证、履约事件、付款计划和审计日志，用于归档前最终检查。
+              </p>
+            </div>
+            <StatusPill label={`复核结论 ${detail.archiveReviewConclusion}`} />
+          </div>
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-black text-rose-900">复核分组</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                  下一优先项：{detail.archiveReviewGroupSummary.nextReviewFocus}
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <MiniFact label="全部复核项" value={`${detail.archiveReviewGroupSummary.totalCount} 项`} />
+                <MiniFact label="优先处理缺口" value={`${detail.archiveReviewGroupSummary.gapCount} 项`} />
+                <MiniFact label="已覆盖证据" value={`${detail.archiveReviewGroupSummary.coveredCount} 项`} />
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {archiveReviewFilterOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setArchiveReviewFilter(option.id)}
+                  className={`rounded-lg border px-3 py-2 text-xs font-black transition ${
+                    archiveReviewFilter === option.id
+                      ? 'border-rose-300 bg-rose-100 text-rose-900'
+                      : 'border-rose-100 bg-rose-50 text-rose-700 hover:border-rose-200 hover:bg-rose-100'
+                  }`}
+                >
+                  {option.label} · {option.count}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-black text-rose-900">归档复核进度摘要</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                  汇总当前页面内复核确认、新证据待复核和剩余待处理缺口；最终归档仍以服务端门禁为准。
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <MiniFact label="本次复核确认" value={`${archiveReviewProgressConfirmedCount} 项`} />
+                <MiniFact label="待复核新证据" value={`${archiveReviewProgressPendingNewEvidenceCount} 项`} />
+                <MiniFact label="待处理缺口" value={`${archiveReviewProgressOpenGapCount} 项`} />
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-black text-rose-900">归档复核操作轨迹</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                  页面内轨迹用于回看本次新证据处理和确认过程，不替代后端审计日志。
+                </p>
+              </div>
+              <StatusPill label={`页面内轨迹 ${archiveReviewOperationTraceRows.length} 条`} />
+            </div>
+            {archiveReviewOperationTraceRows.length === 0 ? (
+              <p className="mt-3 rounded-lg border border-rose-100 bg-rose-50 p-3 text-xs font-bold leading-5 text-rose-700">
+                暂无页面内归档复核操作轨迹；从处理建议进入目标页并产生新证据后会展示在这里。
+              </p>
+            ) : (
+              <div className="mt-3 grid gap-2 lg:grid-cols-2">
+                {archiveReviewOperationTraceRows.map((trace) => (
+                  <div key={trace.id} className="rounded-lg border border-rose-100 bg-rose-50 p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="break-words text-xs font-black text-rose-900">复核缺口：{trace.gapItem}</p>
+                        <p className="mt-1 break-words text-xs font-bold leading-5 text-rose-700">
+                          轨迹来源入口：{trace.sourceEntry} · 目标单据 {trace.targetId}
+                        </p>
+                      </div>
+                      <StatusPill label={trace.confirmationStatus} />
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                      <MiniFact label="轨迹来源入口" value={trace.sourceEntry} />
+                      <MiniFact label="复核缺口" value={trace.gapItem} />
+                      <MiniFact label="轨迹定位目标" value={trace.targetSection ?? '暂无定位目标'} />
+                      <MiniFact label="确认状态" value={trace.confirmationStatus} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!trace.targetSection) return;
+                        setFocusedArchiveReviewTarget(trace.targetSection);
+                        setArchiveReviewFilter('gaps');
+                      }}
+                      disabled={!trace.targetSection}
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-black text-rose-800 transition hover:border-rose-300 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-300 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+                    >
+                      定位轨迹证据
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-black text-rose-900">归档复核处理历史视图</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                  页面内历史用于串联目标页处理、轨迹定位和复核确认结果，不替代后端审计日志。
+                </p>
+              </div>
+              <StatusPill label={`页面内历史 ${archiveReviewHistoryRows.length} 条`} />
+            </div>
+            {archiveReviewHistoryRows.length === 0 ? (
+              <p className="mt-3 rounded-lg border border-rose-100 bg-rose-50 p-3 text-xs font-bold leading-5 text-rose-700">
+                暂无页面内归档复核处理历史；完成目标页处理后会生成处理、定位和确认阶段。
+              </p>
+            ) : (
+              <div className="mt-3 grid gap-2 lg:grid-cols-3">
+                {archiveReviewHistoryRows.map((row) => (
+                  <div key={row.id} className="rounded-lg border border-rose-100 bg-rose-50 p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <p className="break-words text-xs font-black text-rose-900">{row.stage}</p>
+                      <StatusPill label={row.conclusion} />
+                    </div>
+                    <div className="mt-3 grid gap-2">
+                      <MiniFact label="历史阶段" value={row.stage} />
+                      <MiniFact label="历史结论" value={row.conclusion} />
+                      <MiniFact label="下一步" value={row.nextStep} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-black text-rose-900">归档复核历史风险摘要</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                  基于页面内历史、待复核新证据和剩余缺口判断当前阻断风险；最终归档仍以服务端门禁为准。
+                </p>
+              </div>
+              <StatusPill label={archiveReviewHistoryRiskSummary.level} />
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <MiniFact label="阻断等级" value={archiveReviewHistoryRiskSummary.level} />
+              <MiniFact label="阻断原因" value={archiveReviewHistoryRiskSummary.reason} />
+              <MiniFact label="风险下一步" value={archiveReviewHistoryRiskSummary.nextStep} />
+            </div>
+            {archiveReviewRiskResolutionSuggestion && archiveReviewHistoryRiskSummary.level !== '低风险' && (
+              <div className="mt-3 rounded-lg border border-rose-100 bg-rose-50 p-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-black text-rose-900">解除阻断动作入口</p>
+                    <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                      解除阻断建议：{archiveReviewRiskResolutionSuggestion.suggestedAction}
+                    </p>
+                  </div>
+                  <StatusPill label={archiveReviewRiskResolutionSuggestion.ownerModule} />
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <MiniFact label="阻断缺口" value={archiveReviewRiskResolutionSuggestion.item} />
+                  <MiniFact label="处理路径" value={archiveReviewRiskResolutionSuggestion.handlingPath} />
+                  <MiniFact label="负责模块" value={archiveReviewRiskResolutionSuggestion.ownerModule} />
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setArchiveReviewFilter('gaps');
+                      setFocusedArchiveReviewTarget(archiveReviewRiskResolutionSuggestion.archiveReviewTargetSection);
+                    }}
+                    className="inline-flex w-full items-center justify-center rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-black text-rose-800 transition hover:border-rose-300 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                  >
+                    定位阻断缺口
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleArchiveReviewSuggestionModuleLink(archiveReviewRiskResolutionSuggestion)}
+                    disabled={!onNavigateBuyerModule || isArchived}
+                    className="inline-flex w-full items-center justify-center rounded-lg border border-rose-200 bg-rose-600 px-3 py-2 text-xs font-black text-white transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300 disabled:cursor-not-allowed disabled:border-rose-100 disabled:bg-rose-100 disabled:text-rose-300"
+                  >
+                    去解除阻断
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-black text-rose-900">归档复核关闭前检查条</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                  汇总页面确认、风险解除入口和服务端归档门禁；最终归档仍以服务端门禁为准。
+                </p>
+              </div>
+              <StatusPill label={archiveReviewCloseoutCheck.closeoutDecision} />
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <MiniFact label="页面确认状态" value={archiveReviewCloseoutCheck.pageConfirmationStatus} />
+              <MiniFact label="风险解除入口" value={archiveReviewCloseoutCheck.riskResolutionEntry} />
+              <MiniFact label="服务端归档门禁" value={archiveReviewCloseoutCheck.serverArchiveGate} />
+              <MiniFact label="关闭前判断" value={archiveReviewCloseoutCheck.closeoutDecision} />
+            </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-black text-rose-900">归档前确认动作提示</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                  将关闭前检查结果映射到归档按钮或阻断处理路径；最终提交仍由 Java 服务端门禁校验。
+                </p>
+              </div>
+              <StatusPill label={archiveReviewPreArchiveActionHint.archiveButtonDecision} />
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <MiniFact label="归档按钮判断" value={archiveReviewPreArchiveActionHint.archiveButtonDecision} />
+              <MiniFact label="阻断处理路径" value={archiveReviewPreArchiveActionHint.blockingPath} />
+              <MiniFact label="归档动作提示" value={archiveReviewPreArchiveActionHint.actionHint} />
+            </div>
+          </div>
+          <div className="mt-3 grid gap-2 lg:grid-cols-5">
+            {filteredArchiveReviewChecklistRows.map((row) => {
+              const newEvidenceConfirmed = archiveReviewConfirmedEvidenceItem === row.item;
+              const newEvidencePendingReview = archiveReviewNewEvidenceItem === row.item && !newEvidenceConfirmed;
+              const newEvidenceMatched = archiveReviewNewEvidenceItem === row.item;
+              return (
+              <div key={row.item} className={`rounded-lg border bg-white p-3 ${
+                newEvidenceMatched ? 'border-emerald-200 ring-2 ring-emerald-100' : 'border-white/80'
+              }`}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="break-words text-xs font-black text-slate-900">{row.item}</p>
+                    <p className="mt-1 break-words text-sm font-black text-slate-950">{row.evidence}</p>
+                  </div>
+                  <StatusPill label={newEvidenceConfirmed ? '已确认覆盖' : newEvidencePendingReview ? '待复核新证据' : row.status} />
+                </div>
+                {newEvidencePendingReview && (
+                  <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-2">
+                    <p className="text-xs font-black text-emerald-900">新证据待复核</p>
+                    <p className="mt-1 text-xs font-bold leading-5 text-emerald-700">
+                      处理回看摘要：{archiveReviewNewEvidenceStatus ?? '已形成页面内处理证据'}。
+                      {archiveReviewNewEvidenceNextStep ?? '请复核该缺口是否已覆盖。'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => confirmArchiveReviewNewEvidence(row.item)}
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-black text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    >
+                      标记为已复核
+                    </button>
+                  </div>
+                )}
+                {newEvidenceConfirmed && (
+                  <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-2">
+                    <p className="text-xs font-black text-emerald-900">复核确认结果</p>
+                    <p className="mt-1 text-xs font-bold leading-5 text-emerald-700">
+                      页面内确认：该新增证据已由当前操作员复核为覆盖当前缺口；最终归档仍以服务端门禁为准。
+                    </p>
+                  </div>
+                )}
+                <MiniFact label="下一步动作" value={row.nextAction} />
+                <MiniFact label="定位目标" value={row.archiveReviewLocationHint} />
+                <button
+                  type="button"
+                  onClick={() => setFocusedArchiveReviewTarget(row.archiveReviewTargetSection)}
+                  className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-800 transition hover:border-rose-300 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                >
+                  定位证据区块
+                </button>
+              </div>
+              );
+            })}
+          </div>
+          {filteredArchiveReviewChecklistRows.length === 0 && (
+            <p className="mt-3 rounded-lg border border-white/80 bg-white p-3 text-xs font-bold leading-5 text-rose-700">
+              暂无该分组复核项。
+            </p>
+          )}
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-black text-rose-900">合同归档复核处理建议</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-rose-700">
+                  仅根据当前缺口派生建议动作、负责模块和处理路径，不新增后端复核流。
+                </p>
+              </div>
+              <StatusPill label={`建议 ${detail.archiveReviewActionSuggestions.length} 条`} />
+            </div>
+            {detail.archiveReviewActionSuggestions.length === 0 ? (
+              <p className="mt-3 rounded-lg border border-rose-100 bg-rose-50 p-3 text-xs font-bold leading-5 text-rose-700">
+                暂无缺口处理建议。
+              </p>
+            ) : (
+              <div className="mt-3 grid gap-2 lg:grid-cols-2">
+                {detail.archiveReviewActionSuggestions.map((suggestion) => (
+                  <div key={suggestion.item} className="rounded-lg border border-rose-100 bg-rose-50 p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="break-words text-xs font-black text-rose-900">{suggestion.item}</p>
+                        <p className="mt-1 break-words text-xs font-bold leading-5 text-rose-700">{suggestion.suggestedAction}</p>
+                      </div>
+                      <StatusPill label={suggestion.ownerModule} />
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <MiniFact label="建议动作" value={suggestion.suggestedAction} />
+                      <MiniFact label="负责模块" value={suggestion.ownerModule} />
+                      <MiniFact label="处理路径" value={suggestion.handlingPath} />
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setFocusedArchiveReviewTarget(suggestion.archiveReviewTargetSection)}
+                        className="inline-flex w-full items-center justify-center rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-black text-rose-800 transition hover:border-rose-300 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                      >
+                        定位建议证据区块
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleArchiveReviewSuggestionModuleLink(suggestion)}
+                        disabled={!onNavigateBuyerModule || isArchived}
+                        className="inline-flex w-full items-center justify-center rounded-lg border border-rose-200 bg-rose-600 px-3 py-2 text-xs font-black text-white transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300 disabled:cursor-not-allowed disabled:border-rose-100 disabled:bg-rose-100 disabled:text-rose-300"
+                      >
+                        去处理模块
+                      </button>
+                    </div>
+                    <p className="mt-2 text-[11px] font-bold leading-5 text-rose-700">
+                      处理建议联动：进入 {suggestion.ownerModule}，并保留当前合同上下文。
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {focusedArchiveReviewRow && (
+            <p aria-live="polite" className="mt-3 rounded-lg border border-rose-200 bg-white p-3 text-xs font-black leading-5 text-rose-800">
+              缺口定位：{focusedArchiveReviewRow.archiveReviewLocationHint} · {focusedArchiveReviewRow.nextAction}
+            </p>
+          )}
+          <p className="mt-3 rounded-lg border border-white/80 bg-white p-3 text-xs font-bold leading-5 text-rose-800">
+            复核结论：{detail.archiveReviewConclusion}。该清单只做只读聚合，不新增归档复核接口，不替代服务端归档门禁。
+          </p>
+        </section>
+        <section className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+          <p className="text-xs font-black text-indigo-900">归档后只读</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-indigo-700">{detail.archiveBoundary}</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <MiniFact label="归档就绪" value={detail.archiveReadiness.status} />
+            <MiniFact label="归档阻断原因" value={detail.archiveReadiness.reason} />
+            <MiniFact label="下一步联动" value={detail.archiveReadiness.nextAction} />
+          </div>
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <p className="text-xs font-black text-indigo-900">归档复核事件证据</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <MiniFact label="事件证据覆盖" value={contractEventEvidenceSummary} />
+              <MiniFact label="收货事件" value={`${receiptEventCount} 条`} />
+              <MiniFact label="付款事件" value={`${paymentEventCount} 条`} />
+              <MiniFact label="最近事件证据" value={latestFulfillmentEvent?.summary ?? '暂无事件证据'} />
+            </div>
+            <p className="mt-2 text-[11px] font-bold leading-5 text-indigo-700">
+              合同事件审计提示：事件写入后会形成后端审计动作，可作为归档复核的辅助证据；最终归档门禁仍以订单收货和发票付款状态为准。
+            </p>
+          </div>
+          <div className="mt-3 rounded-lg border border-white/80 bg-white p-3">
+            <p className="text-xs font-black text-indigo-900">归档只读写入边界</p>
+            <p className="mt-2 text-xs font-bold leading-5 text-indigo-700">{contractEventWriteBoundary}</p>
+          </div>
+          <p className="mt-2 text-[11px] font-black text-indigo-700">
+            Java 已支持状态推进、归档写入和附件元数据登记；合同审批流待后续迭代。
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <PrimaryActionButton
+              icon={CheckCircle2}
+              onClick={() => onUpdateContractStatus?.(detail.id, '履约完成', '已收货验收')}
+              disabled={!javaEnabled || isArchived || !onUpdateContractStatus}
+              busy={buyerFulfillmentBusyId === statusBusyId}
+              pendingLabel="推进中"
+              fullWidth
+              flushTop
+            >
+              推进履约
+            </PrimaryActionButton>
+            <PrimaryActionButton
+              icon={LockKeyhole}
+              tone="amber"
+              onClick={() => onArchiveContract?.(detail.id)}
+              disabled={contractArchiveDisabled}
+              busy={buyerFulfillmentBusyId === archiveBusyId}
+              pendingLabel="归档中"
+              fullWidth
+              flushTop
+            >
+              归档合同
+            </PrimaryActionButton>
+          </div>
+          {contractArchiveDisabled && !isArchived && (
+            <p aria-live="polite" className="mt-2 rounded-lg border border-amber-100 bg-white/80 p-3 text-xs font-bold leading-5 text-amber-800">
+              归档条件未满足：请先处理阻断原因，当前为 {detail.archiveReadiness.reason}。
+            </p>
+          )}
+        </section>
+        <section className="rounded-lg border border-slate-200 bg-white p-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-slate-900">合同归档审计视图</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-slate-600">
+                归档审计结论：{contractArchiveAuditConclusion}
+              </p>
+            </div>
+            <StatusPill label={isArchived ? '归档审计态' : '归档预检态'} />
+          </div>
+          <div className="mt-3 grid gap-2 lg:grid-cols-4">
+            {contractArchiveAuditEvidenceRows.map((row) => (
+              <div key={row.label} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <MiniFact label={row.label} value={row.value} />
+                <p className="mt-2 text-[11px] font-bold leading-5 text-slate-600">{row.hint}</p>
+              </div>
+            ))}
+          </div>
+          <div data-review-section="contract-audit-log-detail" className={`mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3 ${archiveReviewSectionHighlightClass('contract-audit-log-detail')}`}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-black text-slate-900">合同审计日志明细</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-slate-600">
+                  目标对象审计：{contractTargetAuditSummary}
+                </p>
+              </div>
+              <StatusPill label={`最近审计动作 ${latestContractTargetAuditLog?.action ?? '暂无'}`} />
+            </div>
+            {targetAuditLogs.length === 0 ? (
+              <p className="mt-3 rounded-lg border border-white bg-white p-3 text-xs font-bold leading-5 text-slate-600">
+                暂无合同目标审计日志；提交审批、审批回写或履约事件写入后会在这里展示。
+              </p>
+            ) : (
+              <div className="mt-3 grid gap-2 lg:grid-cols-2">
+                {targetAuditLogs.slice(0, 4).map((log) => (
+                  <div key={log.id} className="rounded-lg border border-white bg-white p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-mono text-xs font-black text-slate-900">{log.action}</p>
+                      <StatusPill label="目标对象审计" />
+                    </div>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <MiniFact label="审计对象" value={`${log.targetType} · ${log.targetId}`} />
+                      <MiniFact label="操作时间" value={formatAuditTime(log.createdAt)} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+        <section className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+          <p className="text-xs font-black text-blue-900">订单-合同-收货-发票付款联动</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
+            合同归档前先校验采购订单、收货验收和发票付款，未完成节点会形成归档阻断原因。
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {detail.linkageCheckRows.map((row) => (
+              <div key={row.label} className="rounded-lg border border-white/80 bg-white p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs font-black text-slate-800">{row.label}</p>
+                  <StatusPill label={row.status} />
+                </div>
+                <p className="mt-2 break-words text-xs font-bold text-slate-600">{row.value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="rounded-lg border border-slate-200 bg-white p-3">
+          <p className="text-xs font-black text-slate-700">合同履约链路</p>
+          <div className="mt-3 space-y-2">
+            {detail.fulfillmentRows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2">
+                <span className="text-xs font-black text-slate-600">{row.label}</span>
+                <span className="min-w-0 break-words text-right text-xs font-bold text-slate-900">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="rounded-lg border border-slate-200 bg-white p-3">
+          <p className="text-xs font-black text-slate-700">关联业务</p>
+          <div className="mt-3 space-y-2">
+            {detail.relatedRows.map((row) => (
+              <div key={row.id} className="rounded-md bg-slate-50 px-3 py-2">
+                <p className="text-xs font-black text-slate-800">{row.title}</p>
+                <p className="mt-1 break-words text-xs font-bold text-slate-500">{row.detail}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+        <InlineFactGrid facts={detail.facts} />
+      </div>
+    </Panel>
   );
 };
 
@@ -4704,6 +9781,42 @@ const DemandDetailPanelView: React.FC<{
     || !editableDemandDepartment
     || editableDemandBudget <= 0
     || validEditableLineItems.length === 0;
+  const admittedSupplierCount = workspace.privateSupplierRelations.filter((relation) => relation.status === '已准入').length;
+  const demandCreateRfqAvailability = !javaEnabled
+    ? '当前为 mock 数据源，切换 Java 模式后可创建真实询价。'
+    : !demand
+      ? '未找到需求原始记录，请刷新后重试。'
+        : linkedDemandIds.has(demand.id)
+          ? '该需求已关联询价，避免重复创建 RFQ。'
+        : demand.status !== '已通过'
+          ? '需求审批通过后才能创建询价。'
+          : admittedSupplierCount === 0
+            ? '暂无已准入供应商，需先完成供应商准入。'
+            : `可邀请 ${admittedSupplierCount} 家已准入供应商创建询价。`;
+  const demandWriteBoundaryRows = [
+    {
+      label: '审批中禁改提示',
+      value: demand?.status === '审批中'
+        ? '审批中需求已锁定编辑，待审批通过或驳回后再继续处理。'
+        : '只有草稿需求允许编辑，提交后由审批结果驱动下一步。',
+    },
+    {
+      label: '重复提交保护',
+      value: demandSubmitBusyId === demand?.id
+        ? '提交审批请求处理中，请等待 Java 返回后再继续操作。'
+        : '非草稿、审批中或已通过需求不会重复开放提交审批按钮。',
+    },
+    {
+      label: '已通过创建 RFQ 准备提示',
+      value: demand?.status === '已通过'
+        ? '请先确认已准入供应商、报价截止时间和重复创建风险。'
+        : '需求审批通过前不开放创建 RFQ 表单。',
+    },
+    {
+      label: 'Java 错误反馈文案',
+      value: '若 Java 写入失败，顶部流程提示会展示服务端返回的错误信息。',
+    },
+  ];
 
   return (
     <Panel title="需求详情" icon={FileText}>
@@ -4722,6 +9835,23 @@ const DemandDetailPanelView: React.FC<{
               { label: '下一步', value: detail.nextActionTitle },
             ]}
           />
+
+        <DetailSection title="采购需求主流程判断">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            <MiniFact label="审批状态" value={detail.approvalLabel} />
+            <MiniFact label="预算与附件" value={`${detail.facts.find((fact) => fact.label.includes('预算'))?.value ?? '预算待同步'} · 附件入口随需求对象保留`} />
+            <MiniFact label="物料明细" value={`${detail.lineItems.length} 行物料/服务明细`} />
+            <MiniFact label="创建询价可用性" value={demandCreateRfqAvailability} />
+          </div>
+        </DetailSection>
+
+        <DetailSection title="采购需求写入边界">
+          <div className="space-y-2">
+            {demandWriteBoundaryRows.map((row) => (
+              <DetailKeyValueRow key={row.label} label={row.label} value={row.value} />
+            ))}
+          </div>
+        </DetailSection>
 
         <DetailSection title="物料明细" countLabel={`${detail.lineItems.length} 行`}>
           <div className="space-y-2">
@@ -4988,6 +10118,7 @@ const DemandDetailOperationPanel: React.FC<{
   }
 
   const linked = linkedDemandIds.has(demand.id);
+  const submittingCurrentDemand = demandSubmitBusyId === demand.id;
 
   return (
     <DetailActionPanel
@@ -4996,26 +10127,43 @@ const DemandDetailOperationPanel: React.FC<{
       status={detail.status}
     >
       {demand.status === '草稿' && (
-        <PrimaryActionButton
-          onClick={() => onSubmitDemand(demand.id)}
-          disabled={demandSubmitBusyId === demand.id}
-          busy={demandSubmitBusyId === demand.id}
-          icon={ClipboardCheck}
-          pendingLabel="提交中"
-          fullWidth
-        >
-          提交审批
-        </PrimaryActionButton>
+        <>
+          {submittingCurrentDemand && (
+            <ProcessStateNotice
+              variant="waiting"
+              title="重复提交保护"
+              desc="提交审批请求处理中，请等待 Java 返回后再继续操作。"
+            />
+          )}
+          <PrimaryActionButton
+            onClick={() => onSubmitDemand(demand.id)}
+            disabled={submittingCurrentDemand}
+            busy={submittingCurrentDemand}
+            icon={ClipboardCheck}
+            pendingLabel="提交中"
+            fullWidth
+            testId={`stage7-submit-demand-detail-${demand.id}`}
+          >
+            提交审批
+          </PrimaryActionButton>
+        </>
       )}
 
       {demand.status === '已通过' && !linked && hasAdmittedSuppliers && (
-        <RfqCreateForm
-          demand={demand}
-          suppliers={workspace.suppliers}
-          relations={workspace.privateSupplierRelations}
-          busy={rfqCreateBusy === demand.id}
-          onSubmit={onCreateRfqFromDemand}
-        />
+        <>
+          <ProcessStateNotice
+            variant="handled"
+            title="已通过创建 RFQ 准备提示"
+            desc="请先确认已准入供应商、报价截止时间和重复创建风险。"
+          />
+          <RfqCreateForm
+            demand={demand}
+            suppliers={workspace.suppliers}
+            relations={workspace.privateSupplierRelations}
+            busy={rfqCreateBusy === demand.id}
+            onSubmit={onCreateRfqFromDemand}
+          />
+        </>
       )}
 
       {demand.status === '已通过' && !linked && !hasAdmittedSuppliers && (
@@ -5037,8 +10185,8 @@ const DemandDetailOperationPanel: React.FC<{
       {demand.status === '审批中' && (
         <ProcessStateNotice
           variant="waiting"
-          title="等待审批"
-          desc="需求审批通过后，将开放创建询价入口。"
+          title="审批中禁改提示"
+          desc="审批中需求已锁定编辑，待审批通过或驳回后再继续处理。"
         />
       )}
 
@@ -5122,6 +10270,7 @@ const ApprovalReviewForm: React.FC<{
           icon={CheckCircle2}
           pendingLabel="处理中"
           fullWidth
+          testId={`stage7-approve-${approvalId}`}
         >
           通过
         </PrimaryActionButton>
@@ -5180,6 +10329,15 @@ const ApprovalDetailPanelView: React.FC<{
             ))}
           </div>
         </section>
+
+        {detail.reviewComment && (
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">审批意见记录</p>
+            <p className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-800">
+              {detail.reviewComment}
+            </p>
+          </section>
+        )}
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -5501,10 +10659,14 @@ const RfqDetailPanelView: React.FC<{
     setEditableRfqSupplierIds(rfq?.invitedSupplierIds ?? []);
   }, [rfq?.id, rfq?.title, rfq?.deadline, rfq?.invitedSupplierIds]);
 
-  const admittedRelations = workspace.privateSupplierRelations.filter((relation) => relation.status === '已准入');
+  const rfqEligibleRelations = workspace.privateSupplierRelations.filter((relation) =>
+    relation.status === '已准入'
+      && Boolean(relation.qualifications?.some((qualification) => qualification.status === 'active')));
+  const rfqEligibleSupplierIds = new Set(rfqEligibleRelations.map((relation) => relation.supplierId));
+  const editableEligibleSupplierIds = editableRfqSupplierIds.filter((supplierId) => rfqEligibleSupplierIds.has(supplierId));
   const editableRfqInvalid = !editableRfqTitle.trim()
     || !editableRfqDeadline
-    || editableRfqSupplierIds.length === 0;
+    || editableEligibleSupplierIds.length === 0;
   const updateEditableRfqSupplier = (supplierId: string, checked: boolean) => {
     setEditableRfqSupplierIds((current) =>
       checked
@@ -5513,6 +10675,11 @@ const RfqDetailPanelView: React.FC<{
     );
   };
   const canEditRfq = javaEnabled && rfq?.status === '报价中';
+  const rfqDeadlineLabel = detail?.facts.find((fact) => fact.label.includes('截止'))?.value
+    ?? (rfq?.deadline ? rfq.deadline.replace('T', ' ').slice(0, 16) : '未维护');
+  const rfqRequirementLabel = rfq
+    ? `按 RFQ 要求在线报价，已邀请 ${rfq.invitedSupplierIds.length} 家供应商。`
+    : '选择询价项目后展示报价要求。';
 
   return (
     <Panel title="询价详情" icon={Send}>
@@ -5532,6 +10699,15 @@ const RfqDetailPanelView: React.FC<{
             { label: '下一步', value: detail.nextActionTitle },
           ]}
         />
+
+        <DetailSection title="询价状态流转">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            <MiniFact label="供应商邀请" value={`${detail.supplierRows.length} 家供应商已进入邀请池`} />
+            <MiniFact label="报价要求" value={rfqRequirementLabel} />
+            <MiniFact label="截止时间" value={rfqDeadlineLabel} />
+            <MiniFact label="报价数量" value={`${detail.quoteRows.length} 条报价，状态为 ${detail.status}`} />
+          </div>
+        </DetailSection>
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -5626,6 +10802,14 @@ const RfqDetailPanelView: React.FC<{
           )}
         </DetailSection>
 
+        {detail.awardApprovalComment && (
+          <DetailSection title="定标审批意见">
+            <p className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-800">
+              {detail.awardApprovalComment}
+            </p>
+          </DetailSection>
+        )}
+
         <section>
           <p className="mb-2 text-xs font-black text-slate-500">履约轨迹</p>
           <div className="space-y-2">
@@ -5651,7 +10835,7 @@ const RfqDetailPanelView: React.FC<{
 
         <DetailSection title="询价编辑">
           <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-700">
-            只能编辑报价中的 RFQ。保存后会重新刷新 Java 工作台数据，验证刷新后回显。
+            只能编辑报价中的 RFQ。保存后会通知供应商按最新要求报价，并刷新 Java 工作台数据。
           </div>
           <div className="grid gap-3 lg:grid-cols-2">
             <Field label="询价标题">
@@ -5674,27 +10858,28 @@ const RfqDetailPanelView: React.FC<{
           </div>
           <div className="space-y-2">
             <p className="text-xs font-black text-slate-500">邀请供应商</p>
-            {admittedRelations.length === 0 ? (
+            {rfqEligibleRelations.length === 0 ? (
               <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
-                暂无已准入供应商，无法编辑邀请列表。
+                暂无具备有效资质的已准入供应商，无法编辑邀请列表。
               </p>
             ) : (
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-                {admittedRelations.map((relation) => {
+                {workspace.privateSupplierRelations.map((relation) => {
                   const supplier = workspace.suppliers.find((item) => item.id === relation.supplierId);
                   const checked = editableRfqSupplierIds.includes(relation.supplierId);
+                  const eligible = rfqEligibleSupplierIds.has(relation.supplierId);
                   return (
                     <label
                       key={relation.id}
                       className={`rounded-lg border bg-white p-3 transition ${
-                        checked ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200'
+                        checked ? 'border-blue-300 ring-2 ring-blue-100' : eligible ? 'border-slate-200' : 'border-amber-100 bg-amber-50'
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         <input
                           type="checkbox"
                           checked={checked}
-                          disabled={!canEditRfq}
+                          disabled={!canEditRfq || !eligible}
                           onChange={(event) => updateEditableRfqSupplier(relation.supplierId, event.target.checked)}
                           className="mt-1 h-4 w-4 rounded border-slate-300"
                         />
@@ -5703,6 +10888,11 @@ const RfqDetailPanelView: React.FC<{
                           <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-500">
                             {relation.level} 级 · 绩效 {relation.performanceScore} 分
                           </p>
+                          {!eligible && (
+                            <p className="mt-1 break-words text-xs font-black leading-5 text-amber-700">
+                              {relation.status !== '已准入' ? '未完成准入，不可邀请' : '无有效资质，不可邀请'}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </label>
@@ -5713,13 +10903,13 @@ const RfqDetailPanelView: React.FC<{
           </div>
           {(!canEditRfq || editableRfqInvalid) && (
             <p aria-live="polite" className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
-              {!canEditRfq ? '只能编辑报价中的 RFQ。' : '请填写询价标题、报价截止时间并至少选择一家供应商。'}
+              {!canEditRfq ? '只能编辑报价中的 RFQ。' : '请填写询价标题、报价截止时间并至少选择一家具备有效资质的已准入供应商。'}
             </p>
           )}
           <PrimaryActionButton
             onClick={() => rfq && onUpdateRfq(rfq.id, {
               title: editableRfqTitle.trim(),
-              invitedSupplierIds: editableRfqSupplierIds,
+              invitedSupplierIds: editableEligibleSupplierIds,
               deadline: `${editableRfqDeadline}:00+08:00`,
             })}
             disabled={!rfq || !canEditRfq || editableRfqInvalid || rfqUpdateBusyId === rfq?.id}
@@ -5853,6 +11043,7 @@ const RfqDetailOperationPanel: React.FC<{
             icon={BadgeCheck}
             pendingLabel="提交中"
             fullWidth
+            testId={`stage7-submit-award-${rfq.id}`}
           >
             按推荐报价提交定标审批
           </PrimaryActionButton>
@@ -5900,6 +11091,7 @@ const RfqDetailOperationPanel: React.FC<{
             icon={ShoppingCart}
             pendingLabel="生成中"
             fullWidth
+            testId={`stage7-create-order-${approvedAwardId}`}
           >
             生成采购订单
           </PrimaryActionButton>
@@ -5909,8 +11101,10 @@ const RfqDetailOperationPanel: React.FC<{
       {rfq.status === '已定标' && !canCreateOrder && (
         <ProcessStateNotice
           variant="handled"
-          title="定标已处理"
-          desc="该询价项目已完成定标，可在关联业务中查看后续订单和履约记录。"
+          title={nextAction.title === '订单已生成' ? '订单已生成，RFQ 和报价进入只读跟踪' : '定标已处理'}
+          desc={nextAction.title === '订单已生成'
+            ? '该询价项目已生成采购订单，定标结果和报价状态不可再变更，可在采购订单、收货验收和发票付款中继续履约。'
+            : '该询价项目已完成定标，可在关联业务中查看后续订单和履约记录。'}
         />
       )}
     </DetailActionPanel>
@@ -5972,6 +11166,28 @@ const QuoteComparisonDetailPanelView: React.FC<{
           </div>
         </section>
 
+        <DetailSection title="报价比较矩阵" countLabel={`${detail.quoteRows.length} 家`}>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            <MiniFact label="推荐定标理由" value={detail.recommendationLabel} />
+            <MiniFact
+              label="定标审批状态"
+              value={detail.awardTimelineRows.length > 0
+                ? detail.awardTimelineRows.map((row) => `${row.label}：${row.value}`).join(' / ')
+                : '暂无定标审批记录'}
+            />
+            <MiniFact
+              label="不可操作边界"
+              value={!javaEnabled
+                ? '当前为 mock 数据源，仅展示比价结果。'
+                : detail.quoteRows.length === 0
+                  ? '暂无报价，不能提交定标审批。'
+                  : approvedAwardId
+                    ? '定标已审批，避免重复提交。'
+                    : '仅推荐报价可进入定标审批。'}
+            />
+          </div>
+        </DetailSection>
+
         <section>
           <p className="mb-2 text-xs font-black text-slate-500">定标审批</p>
           <div className="space-y-2">
@@ -5980,6 +11196,15 @@ const QuoteComparisonDetailPanelView: React.FC<{
             ))}
           </div>
         </section>
+
+        {detail.awardApprovalComment && (
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">定标审批意见</p>
+            <p className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-800">
+              {detail.awardApprovalComment}
+            </p>
+          </section>
+        )}
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -6179,6 +11404,7 @@ const QuoteComparisonOperationPanel: React.FC<{
             icon={BadgeCheck}
             pendingLabel="提交中"
             fullWidth
+            testId={`stage7-submit-award-${rfq.id}`}
           >
             按推荐报价提交定标审批
           </PrimaryActionButton>
@@ -6218,6 +11444,7 @@ const QuoteComparisonOperationPanel: React.FC<{
             icon={ShoppingCart}
             pendingLabel="生成中"
             fullWidth
+            testId={`stage7-create-order-${approvedAwardId}`}
           >
             生成采购订单
           </PrimaryActionButton>
@@ -6227,8 +11454,10 @@ const QuoteComparisonOperationPanel: React.FC<{
       {rfq.status === '已定标' && !canCreateOrder && (
         <ProcessStateNotice
           variant="handled"
-          title="比价已处理"
-          desc="定标和后续订单已进入关联业务，可继续跟踪履约、收货和付款。"
+          title={nextAction.title === '订单已生成' ? '订单已生成，RFQ 和报价进入只读跟踪' : '比价已处理'}
+          desc={nextAction.title === '订单已生成'
+            ? '该询价项目已生成采购订单，定标结果和报价状态不可再变更，可在采购订单、收货验收和发票付款中继续履约。'
+            : '定标和后续订单已进入关联业务，可继续跟踪履约、收货和付款。'}
         />
       )}
     </section>
@@ -6328,6 +11557,7 @@ const ReceiptRegistrationForm: React.FC<{
         icon={PackageCheck}
         pendingLabel="登记中"
         fullWidth
+        testId={`stage7-create-receipt-${orderId}`}
       >
         登记收货
       </PrimaryActionButton>
@@ -6440,6 +11670,7 @@ const PaymentRegistrationForm: React.FC<{
         icon={CreditCard}
         pendingLabel="登记中"
         fullWidth
+        testId={`stage7-register-payment-${invoiceId}`}
       >
         登记付款
       </PrimaryActionButton>
@@ -6470,6 +11701,18 @@ const OrderDetailPanelView: React.FC<{
 }) => {
   const logisticsStatus = detail?.facts.find((fact) => fact.label === '物流状态')?.value ?? '待发货';
   const invoicePaymentStatus = detail?.facts.find((fact) => fact.label === '发票状态')?.value ?? '待开票';
+  const orderExpectedReceiptDate = detail?.facts.find((fact) => fact.label === '预计到货')?.value
+    ?? order?.expectedReceiptDate
+    ?? '未维护';
+  const orderSupplierConfirmLabel = order?.status === '待确认'
+    ? '等待供应商确认订单'
+    : '供应商确认节点已进入后续履约';
+  const orderDeliveryLabel = detail?.delivery
+    ? `${detail.delivery.status} · ${detail.delivery.carrier}`
+    : '等待供应商发货';
+  const orderReceiptLabel = order?.status === '已收货'
+    ? '采购方已完成收货验收'
+    : '收货验收待登记或待物流完成';
   const [editableOrderExpectedReceiptDate, setEditableOrderExpectedReceiptDate] = useState(order?.expectedReceiptDate ?? '');
 
   useEffect(() => {
@@ -6499,12 +11742,38 @@ const OrderDetailPanelView: React.FC<{
             ]}
           />
 
+          <DetailSection title="订单履约时间线">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              <MiniFact label="供应商确认" value={orderSupplierConfirmLabel} />
+              <MiniFact label="发货" value={orderDeliveryLabel} />
+              <MiniFact label="收货" value={orderReceiptLabel} />
+              <MiniFact label="预计到货日期" value={orderExpectedReceiptDate} />
+            </div>
+          </DetailSection>
+
           <section>
             <p className="mb-2 text-xs font-black text-slate-500">询价来源</p>
             <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
               <p className="truncate text-sm font-black text-slate-900">{detail.rfqLabel}</p>
             </div>
           </section>
+
+          {(detail.sourceRfqLabel || detail.awardApprovalStatus) && (
+            <DetailSection title="定标审批来源">
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                <MiniFact label="来源询价" value={detail.sourceRfqLabel ?? detail.rfqLabel} />
+                <MiniFact label="定标审批" value={detail.awardApprovalStatus ?? '暂无审批记录'} />
+              </div>
+            </DetailSection>
+          )}
+
+          {detail.awardApprovalComment && (
+            <DetailSection title="定标审批意见">
+              <p className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-800">
+                {detail.awardApprovalComment}
+              </p>
+            </DetailSection>
+          )}
 
           <DetailSection title="物流信息">
             {detail.delivery ? (
@@ -6562,7 +11831,7 @@ const OrderDetailPanelView: React.FC<{
 
           <DetailSection title="订单编辑">
             <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-700">
-              维护预计到货日期。保存后会重新刷新 Java 工作台数据，验证刷新后回显。
+              维护预计到货日期。保存后会通知供应商按最新预计到货日期履约，并刷新 Java 工作台数据。
             </div>
             <Field label="预计到货日期">
               <input
@@ -6689,6 +11958,7 @@ const OrderDetailOperationPanel: React.FC<{
   }
 
   const receiptBusy = buyerFulfillmentBusyId === `receipt:${order.id}`;
+  const canRegisterReceipt = order.status === '已发货' && detail.delivery?.status === '已发货';
 
   return (
     <DetailActionPanel
@@ -6714,13 +11984,21 @@ const OrderDetailOperationPanel: React.FC<{
         />
       )}
 
-      {(order.status === '已发货' || order.status === '待收货') && receiptDraft && (
+      {canRegisterReceipt && receiptDraft && (
         <ReceiptRegistrationForm
           orderId={order.id}
           draft={receiptDraft}
           busy={receiptBusy}
           onChange={(draft) => onChangeReceiptDraft(order.id, draft)}
           onSubmit={() => onCreateReceipt(order.id, receiptDraft)}
+        />
+      )}
+
+      {!canRegisterReceipt && order.status === '已发货' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待供应商提交有效发货记录"
+          desc="订单已进入发货状态，但缺少已发货物流记录，暂不能登记收货验收。"
         />
       )}
 
@@ -6789,6 +12067,24 @@ const ReceiptInspectionDetailPanelView: React.FC<{
               </div>
             </div>
           </section>
+
+          <section>
+            <p className="mb-2 text-xs font-black text-slate-500">定标审批来源</p>
+            <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
+              <MiniFact label="来源订单" value={detail.sourceOrderLabel ?? detail.id} />
+              <MiniFact label="来源询价" value={detail.sourceRfqLabel ?? '未关联询价'} />
+              <MiniFact label="定标审批" value={detail.awardApprovalStatus ?? '暂无审批记录'} />
+            </div>
+          </section>
+
+          {detail.awardApprovalComment && (
+            <section>
+              <p className="mb-2 text-xs font-black text-slate-500">定标审批意见</p>
+              <p className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-xs font-bold leading-5 text-emerald-900">
+                {detail.awardApprovalComment}
+              </p>
+            </section>
+          )}
 
           <section>
             <p className="mb-2 text-xs font-black text-slate-500">验收检查</p>
@@ -6936,6 +12232,14 @@ const ReceiptInspectionOperationPanel: React.FC<{
         />
       )}
 
+      {!detail.canRegisterReceipt && order.status === '已发货' && (
+        <ProcessStateNotice
+          variant="waiting"
+          title="等待供应商提交有效发货记录"
+          desc="订单已进入发货状态，但缺少已发货物流记录，暂不能登记收货验收。"
+        />
+      )}
+
       {!detail.canRegisterReceipt && (order.status === '已收货' || order.status === '已完成') && (
         <ProcessStateNotice
           variant="handled"
@@ -6950,22 +12254,34 @@ const ReceiptInspectionOperationPanel: React.FC<{
 const InvoicePaymentDetailPanelView: React.FC<{
   detail?: InvoicePaymentDetailPanel;
   invoice?: BuyerWorkspace['invoices'][number];
+  paymentRequest?: PaymentRequestRecord;
+  varianceHandling?: VarianceHandlingRecord;
   busy: boolean;
   invoiceUpdateBusyId: string | null;
   javaEnabled: boolean;
   paymentDraft?: BuyerPaymentDraft;
   onChangePaymentDraft: (invoiceId: string, draft: BuyerPaymentDraft) => void;
   onRegisterPayment: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onCreatePaymentRequest: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onCreateVarianceHandling: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onUpdatePaymentRequestStatus: (paymentRequestId: string, status: string) => void;
+  onUpdateVarianceHandlingStatus: (varianceHandlingId: string, status: string) => void;
   onUpdateInvoice: (invoiceId: string, payload: UpdateInvoicePayload) => void;
 }> = ({
   detail,
   invoice,
+  paymentRequest,
+  varianceHandling,
   busy,
   invoiceUpdateBusyId,
   javaEnabled,
   paymentDraft,
   onChangePaymentDraft,
   onRegisterPayment,
+  onCreatePaymentRequest,
+  onCreateVarianceHandling,
+  onUpdatePaymentRequestStatus,
+  onUpdateVarianceHandlingStatus,
   onUpdateInvoice,
 }) => {
   const normalizeEditableInvoicePaymentStatus = (status?: string) =>
@@ -6980,8 +12296,79 @@ const InvoicePaymentDetailPanelView: React.FC<{
   const statementOrderAmount = invoice?.orderAmount == null ? orderAmount : currency(invoice.orderAmount);
   const statementVarianceAmount = invoice?.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount);
   const statementReceiptStatus = invoice?.receiptStatus ?? '待同步';
+  const threeWayMatchStatus = !invoice
+    ? '待三单同步'
+    : statementReceiptStatus.includes('待') || statementReceiptStatus === '未收货'
+      ? '待收货核对'
+      : invoice.varianceAmount == null || invoice.orderAmount == null
+        ? '待三单同步'
+        : Math.abs(invoice.varianceAmount) > 0
+          ? '金额差异待处理'
+          : '三单匹配通过';
+  const threeWayMatchBlockingLabel = threeWayMatchStatus === '三单匹配通过'
+    ? '三单匹配已通过，可继续按付款计划登记付款。'
+    : '付款前请先完成三单匹配核对，确认订单、收货和发票一致后再付款。';
   const invoiceUpdateBusy = Boolean(invoice && invoiceUpdateBusyId === invoice.id);
   const invoicePaymentEditable = Boolean(javaEnabled && invoice && invoice.paymentStatus !== '已付款');
+  const varianceHandlingLabel = invoice?.varianceAmount == null
+    ? '等待对账单同步差异金额。'
+    : invoice.varianceAmount === 0
+      ? '订单、收货、发票金额一致，可按计划付款。'
+      : `存在 ${currency(invoice.varianceAmount)} 差异，需先处理差异再付款。`;
+  const overdueReminderLabel = paymentStatus === '已付款'
+    ? '已完成付款登记，无逾期提醒。'
+    : '付款未完成，需关注账期和内部付款申请节点。';
+  const paymentPlanLabel = paymentStatus === '已付款'
+    ? '付款计划已关闭。'
+    : '按对账结果发起付款登记，真实支付和银企直连暂不接入。';
+  const paymentFeedbackLabel = invoicePaymentEditable
+    ? '可登记部分付款或已付款状态，并刷新 Java 数据回显。'
+    : '当前状态不可继续修改付款结果。';
+  const paymentBatchDueLabel = !paymentRequest
+    ? '待创建付款申请后排期'
+    : invoice?.dueDate
+      ? `计划付款日 ${invoice.dueDate}`
+      : '待财务排期';
+  const paymentBatchOwnershipLabel = paymentRequest?.paymentBatchNo
+    ? `批次 ${paymentRequest.paymentBatchNo}`
+    : '暂未归属付款批次';
+  const paymentPlanMaturityLabel = !paymentRequest
+    ? '未形成申请'
+    : paymentRequest.requestStatus === '付款申请已通过'
+      ? '可进入付款排期'
+      : paymentRequest.requestStatus === '付款申请审批中'
+        ? '审批中'
+        : '待提交审批';
+  const paymentRequestBlockedByVariance = Boolean(
+    invoice?.varianceAmount
+    && Math.abs(invoice.varianceAmount) > 0
+    && varianceHandling?.status !== '已处理',
+  );
+  const paymentRequestBoundaryLabel = paymentRequestBlockedByVariance
+    ? '差异未处理，暂不能创建付款申请。'
+    : invoice?.varianceAmount && Math.abs(invoice.varianceAmount) > 0
+      ? '差异已处理，付款申请已恢复。'
+      : '金额一致，可进入付款申请。';
+  const varianceHandlingRows = [
+    { label: '差异金额', value: statementVarianceAmount },
+    { label: '责任人', value: varianceHandling?.ownerId ?? (invoice?.varianceAmount && Math.abs(invoice.varianceAmount) > 0 ? '采购负责人 / 供应商对账联系人' : '采购财务') },
+    { label: '处理结果', value: varianceHandling?.result ?? (threeWayMatchStatus === '金额差异待处理' ? '待差异处理' : '无需差异处理') },
+    { label: '处理状态', value: varianceHandling?.status ?? (threeWayMatchStatus === '金额差异待处理' ? '待处理' : '无需处理') },
+    { label: '记录来源', value: varianceHandling ? '真实 Java 记录' : '尚未创建 Java 差异处理' },
+    { label: '处理边界', value: invoice?.varianceAmount && Math.abs(invoice.varianceAmount) > 0 ? '先确认差异原因，再登记付款结果。' : '金额一致时可进入付款申请。' },
+  ];
+  const paymentRequestRows = [
+    { label: '申请状态', value: paymentRequest?.requestStatus ?? paymentDraft?.paymentRequestStatus ?? (paymentStatus === '已付款' ? '付款申请已通过' : '付款申请待提交') },
+    { label: '付款批次', value: paymentRequest?.paymentBatchNo ?? (invoice?.dueDate ? `计划付款 ${invoice.dueDate}` : '暂未形成付款批次') },
+    { label: '申请金额', value: paymentRequest ? currency(paymentRequest.amount) : invoiceAmount },
+    { label: '记录来源', value: paymentRequest ? '真实 Java 记录' : '尚未创建 Java 付款申请' },
+    { label: '付款阻断', value: paymentRequestBoundaryLabel },
+    { label: '台账边界', value: paymentRequest ? '已落库为独立付款申请记录。' : '暂未落库为独立付款申请，待创建 Java 付款申请后形成独立台账。' },
+  ];
+  const financeActionDisabled = !javaEnabled || !invoice || !paymentDraft || busy;
+  const paymentRequestCreateDisabled = financeActionDisabled || paymentRequestBlockedByVariance;
+  const paymentRequestStatusDisabled = !javaEnabled || !paymentRequest || busy;
+  const varianceHandlingStatusDisabled = !javaEnabled || !varianceHandling || busy;
   const invoicePaymentEditDisabled = !invoicePaymentEditable || invoiceUpdateBusy || editableInvoicePaymentStatus.trim().length === 0;
 
   useEffect(() => {
@@ -7007,6 +12394,51 @@ const InvoicePaymentDetailPanelView: React.FC<{
               { label: '下一步', value: detail.nextActionTitle },
             ]}
           />
+
+          <DetailSection title="三单匹配">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              <MiniFact label="订单金额" value={statementOrderAmount} />
+              <MiniFact label="收货状态" value={statementReceiptStatus} />
+              <MiniFact label="发票金额" value={invoiceAmount} />
+              <MiniFact label="差异金额" value={statementVarianceAmount} />
+              <MiniFact label="匹配结论" value={threeWayMatchStatus} />
+              <MiniFact label="付款边界" value={threeWayMatchBlockingLabel} />
+            </div>
+          </DetailSection>
+
+          <DetailSection title="定标审批来源">
+            <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
+              <MiniFact label="来源订单" value={detail.sourceOrderLabel ?? invoice?.orderId ?? '未找到'} />
+              <MiniFact label="来源询价" value={detail.sourceRfqLabel ?? '未关联询价'} />
+              <MiniFact label="定标审批" value={detail.awardApprovalStatus ?? '暂无审批记录'} />
+            </div>
+          </DetailSection>
+
+          {detail.awardApprovalComment && (
+            <DetailSection title="定标审批意见">
+              <p className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-xs font-bold leading-5 text-emerald-900">
+                {detail.awardApprovalComment}
+              </p>
+            </DetailSection>
+          )}
+
+          <DetailSection title="付款计划">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              <MiniFact label="差异处理" value={varianceHandlingLabel} />
+              <MiniFact label="逾期提醒" value={overdueReminderLabel} />
+              <MiniFact label="付款状态反馈" value={paymentFeedbackLabel} />
+              <MiniFact label="计划边界" value={paymentPlanLabel} />
+            </div>
+          </DetailSection>
+
+          <DetailSection title="付款批次计划">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              <MiniFact label="付款计划成熟度" value={paymentPlanMaturityLabel} />
+              <MiniFact label="批次归属" value={paymentBatchOwnershipLabel} />
+              <MiniFact label="计划付款日" value={paymentBatchDueLabel} />
+              <MiniFact label="计划边界" value="当前按付款申请派生批次视图，真实支付和批量付款审批暂不接入。" />
+            </div>
+          </DetailSection>
 
           <section>
             <p className="mb-2 text-xs font-black text-slate-500">订单上下文</p>
@@ -7035,6 +12467,84 @@ const InvoicePaymentDetailPanelView: React.FC<{
               ))}
             </div>
           </section>
+
+          <DetailSection title="差异处理台账">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              {varianceHandlingRows.map((row) => (
+                <MiniFact key={row.label} label={row.label} value={row.value} />
+              ))}
+            </div>
+            <PrimaryActionButton
+              onClick={() => invoice && paymentDraft && onCreateVarianceHandling(invoice.id, paymentDraft)}
+              disabled={financeActionDisabled}
+              busy={busy}
+              pendingLabel="创建中"
+              tone="amber"
+              fullWidth
+            >
+              创建/更新差异处理
+            </PrimaryActionButton>
+            <div aria-label="差异处理状态流转" className="mt-3 grid gap-2 sm:grid-cols-2">
+              <PrimaryActionButton
+                onClick={() => varianceHandling && onUpdateVarianceHandlingStatus(varianceHandling.id, '已处理')}
+                disabled={varianceHandlingStatusDisabled || varianceHandling?.status === '已处理'}
+                busy={busy}
+                pendingLabel="处理中"
+                tone="emerald"
+                fullWidth
+              >
+                标记差异已处理
+              </PrimaryActionButton>
+              <PrimaryActionButton
+                onClick={() => varianceHandling && onUpdateVarianceHandlingStatus(varianceHandling.id, '待复核')}
+                disabled={varianceHandlingStatusDisabled}
+                busy={busy}
+                pendingLabel="处理中"
+                tone="amber"
+                fullWidth
+              >
+                退回差异复核
+              </PrimaryActionButton>
+            </div>
+          </DetailSection>
+
+          <DetailSection title="付款申请台账">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              {paymentRequestRows.map((row) => (
+                <MiniFact key={row.label} label={row.label} value={row.value} />
+              ))}
+            </div>
+            <PrimaryActionButton
+              onClick={() => invoice && paymentDraft && onCreatePaymentRequest(invoice.id, paymentDraft)}
+              disabled={paymentRequestCreateDisabled}
+              busy={busy}
+              pendingLabel="创建中"
+              fullWidth
+            >
+              创建/更新付款申请
+            </PrimaryActionButton>
+            <div aria-label="付款申请状态流转" className="mt-3 grid gap-2 sm:grid-cols-2">
+              <PrimaryActionButton
+                onClick={() => paymentRequest && onUpdatePaymentRequestStatus(paymentRequest.id, '付款申请审批中')}
+                disabled={paymentRequestStatusDisabled || paymentRequest?.requestStatus === '付款申请审批中'}
+                busy={busy}
+                pendingLabel="提交中"
+                fullWidth
+              >
+                提交付款审批
+              </PrimaryActionButton>
+              <PrimaryActionButton
+                onClick={() => paymentRequest && onUpdatePaymentRequestStatus(paymentRequest.id, '付款申请已通过')}
+                disabled={paymentRequestStatusDisabled || paymentRequest?.requestStatus === '付款申请已通过'}
+                busy={busy}
+                pendingLabel="审批中"
+                tone="emerald"
+                fullWidth
+              >
+                通过付款申请
+              </PrimaryActionButton>
+            </div>
+          </DetailSection>
 
           <DetailSection title="关联业务" countLabel={`${detail.relatedRows.length} 条`}>
             {detail.relatedRows.length > 0 ? (
@@ -7083,7 +12593,7 @@ const InvoicePaymentDetailPanelView: React.FC<{
                 </PrimaryActionButton>
               </div>
               <p className="text-xs font-bold text-slate-500">
-                保存后会重新加载 Java 数据并刷新后回显；已付款发票不可再修改付款状态。
+                保存后会同步供应商应收并重新加载 Java 数据回显；已付款发票不可再修改付款状态。
               </p>
             </div>
           </DetailSection>
@@ -7178,17 +12688,19 @@ const InvoicePaymentOperationPanel: React.FC<{
 const SupplierAdmissionForm: React.FC<{
   relationId: string;
   categoryLabel: string;
+  hasActiveQualification: boolean;
   draft: BuyerSupplierAdmissionDraft;
   busy: boolean;
   onChange: (draft: BuyerSupplierAdmissionDraft) => void;
   onSubmit: () => void;
-}> = ({ relationId, categoryLabel, draft, busy, onChange, onSubmit }) => {
+}> = ({ relationId, categoryLabel, hasActiveQualification, draft, busy, onChange, onSubmit }) => {
   const admissionReasonInvalid = draft.reason.trim().length === 0;
   const admissionQualificationInvalid = draft.qualificationSummary.trim().length === 0;
   const admissionContactInvalid = draft.contactName.trim().length === 0;
   const admissionPhoneInvalid = draft.contactPhone.trim().length === 0;
   const admissionCategoryInvalid = !draft.categoryConfirmed;
   const admissionRiskInvalid = !draft.riskConfirmed;
+  const supplierQualificationInvalid = !hasActiveQualification;
   const supplierAdmissionInvalid = admissionReasonInvalid
     || admissionQualificationInvalid
     || admissionContactInvalid
@@ -7291,11 +12803,16 @@ const SupplierAdmissionForm: React.FC<{
               请先复核黑名单与风险状态。
             </p>
           )}
+          {supplierQualificationInvalid && (
+            <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+              请先要求供应商补充至少一条有效资质，再提交准入审批。
+            </p>
+          )}
         </div>
       )}
       <PrimaryActionButton
         onClick={onSubmit}
-        disabled={busy || supplierAdmissionInvalid}
+        disabled={busy || supplierAdmissionInvalid || supplierQualificationInvalid}
         busy={busy}
         icon={Send}
         pendingLabel="提交中"
@@ -7307,22 +12824,258 @@ const SupplierAdmissionForm: React.FC<{
   );
 };
 
+const splitCategoryInput = (value: string) =>
+  value
+    .split(/[，,\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const SupplierRelationCreateForm: React.FC<{
+  suppliers: BuyerWorkspace['suppliers'];
+  existingRelations: BuyerWorkspace['privateSupplierRelations'];
+  javaEnabled: boolean;
+  busy: boolean;
+  onCreateSupplierRelation: (payload: CreateBuyerSupplierRelationPayload) => void;
+}> = ({ suppliers, existingRelations, javaEnabled, busy, onCreateSupplierRelation }) => {
+  const availableSuppliers = suppliers.filter((supplier) =>
+    !existingRelations.some((relation) => relation.supplierId === supplier.id));
+  const [supplierId, setSupplierId] = useState(availableSuppliers[0]?.id ?? suppliers[0]?.id ?? '');
+  const [status, setStatus] = useState('待准入');
+  const [level, setLevel] = useState('B');
+  const [categories, setCategories] = useState('办公设备');
+  const categoryList = splitCategoryInput(categories);
+  const invalid = !javaEnabled || !supplierId || !status.trim() || !level.trim() || categoryList.length === 0;
+
+  useEffect(() => {
+    setSupplierId(availableSuppliers[0]?.id ?? suppliers[0]?.id ?? '');
+  }, [availableSuppliers[0]?.id, suppliers[0]?.id]);
+
+  return (
+    <form
+      className="mb-3 space-y-3 rounded-lg border border-blue-100 bg-blue-50 p-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (invalid || busy) return;
+        onCreateSupplierRelation({ supplierId, status, level, categories: categoryList });
+      }}
+    >
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-black text-blue-800">新增供应商关系</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
+            将公共供应商加入采购方私域供应商库，再提交准入审批。
+          </p>
+        </div>
+        <StatusPill label={javaEnabled ? 'Java 写入' : '当前不可写'} />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <Field label="公共供应商">
+          <select
+            value={supplierId}
+            onChange={(event) => setSupplierId(event.target.value)}
+            disabled={!javaEnabled || busy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          >
+            {availableSuppliers.length > 0 ? availableSuppliers.map((supplier) => (
+              <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+            )) : suppliers.map((supplier) => (
+              <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="初始状态">
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            disabled={!javaEnabled || busy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          >
+            {['待准入', '已准入', '黑名单'].map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="供应商等级">
+          <input
+            value={level}
+            onChange={(event) => setLevel(event.target.value)}
+            disabled={!javaEnabled || busy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+        <Field label="授权品类">
+          <input
+            value={categories}
+            onChange={(event) => setCategories(event.target.value)}
+            disabled={!javaEnabled || busy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+      </div>
+      {invalid && (
+        <p aria-live="polite" className="rounded-lg border border-amber-100 bg-white p-3 text-xs font-bold leading-5 text-amber-800">
+          {!javaEnabled ? '切换到 Java 数据源后可新增供应商关系。' : '请选择供应商，并填写状态、等级和至少一个授权品类。'}
+        </p>
+      )}
+      <PrimaryActionButton
+        onClick={() => onCreateSupplierRelation({ supplierId, status, level, categories: categoryList })}
+        disabled={invalid || busy}
+        busy={busy}
+        pendingLabel="创建中"
+        icon={Users}
+        fullWidth
+      >
+        新增供应商关系
+      </PrimaryActionButton>
+    </form>
+  );
+};
+
+const SupplierRelationProfileForm: React.FC<{
+  relation: BuyerWorkspace['privateSupplierRelations'][number];
+  javaEnabled: boolean;
+  profileBusy: boolean;
+  statusBusy: boolean;
+  performanceBusy: boolean;
+  onSaveSupplierRelationProfile: (relationId: string, payload: UpdateBuyerSupplierProfilePayload) => void;
+  onSaveSupplierRelationStatus: (relationId: string, status: string) => void;
+  onSaveSupplierRelationPerformance: (relationId: string, performanceScore: number) => void;
+}> = ({
+  relation,
+  javaEnabled,
+  profileBusy,
+  statusBusy,
+  performanceBusy,
+  onSaveSupplierRelationProfile,
+  onSaveSupplierRelationStatus,
+  onSaveSupplierRelationPerformance,
+}) => {
+  const [level, setLevel] = useState(relation.level);
+  const [categories, setCategories] = useState(relation.categories.join('、'));
+  const [status, setStatus] = useState(relation.status);
+  const [performanceScore, setPerformanceScore] = useState(relation.performanceScore);
+  const categoryList = splitCategoryInput(categories);
+  const profileInvalid = !javaEnabled || !level.trim() || categoryList.length === 0;
+  const statusInvalid = !javaEnabled || !status.trim();
+  const performanceInvalid = !javaEnabled || performanceScore < 0 || performanceScore > 100;
+
+  useEffect(() => {
+    setLevel(relation.level);
+    setCategories(relation.categories.join('、'));
+    setStatus(relation.status);
+    setPerformanceScore(relation.performanceScore);
+  }, [relation.id, relation.level, relation.categories.join('、'), relation.status, relation.performanceScore]);
+
+  return (
+    <section className="mt-3 space-y-3 rounded-lg border border-white/80 bg-white p-3">
+      <p className="text-xs font-black text-slate-500">供应商关系维护</p>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <Field label="供应商等级">
+          <input
+            value={level}
+            onChange={(event) => setLevel(event.target.value)}
+            disabled={!javaEnabled || profileBusy}
+            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+        <Field label="授权品类">
+          <input
+            value={categories}
+            onChange={(event) => setCategories(event.target.value)}
+            disabled={!javaEnabled || profileBusy}
+            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+      </div>
+      <PrimaryActionButton
+        onClick={() => onSaveSupplierRelationProfile(relation.id, { level: level.trim(), categories: categoryList })}
+        disabled={profileInvalid || profileBusy}
+        busy={profileBusy}
+        pendingLabel="保存中"
+        fullWidth
+      >
+        保存等级和品类
+      </PrimaryActionButton>
+
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <Field label="合作状态">
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            disabled={!javaEnabled || statusBusy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          >
+            {['待准入', '准入审批中', '已准入', '已驳回', '黑名单'].map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </select>
+        </Field>
+        <PrimaryActionButton
+          onClick={() => onSaveSupplierRelationStatus(relation.id, status)}
+          disabled={statusInvalid || statusBusy}
+          busy={statusBusy}
+          pendingLabel="保存中"
+          flushTop
+        >
+          保存合作状态
+        </PrimaryActionButton>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <Field label="绩效评分">
+          <input
+            type="number"
+            min="0"
+            max="100"
+            value={performanceScore}
+            onChange={(event) => setPerformanceScore(Number(event.target.value))}
+            disabled={!javaEnabled || performanceBusy}
+            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+        <PrimaryActionButton
+          onClick={() => onSaveSupplierRelationPerformance(relation.id, performanceScore)}
+          disabled={performanceInvalid || performanceBusy}
+          busy={performanceBusy}
+          pendingLabel="保存中"
+          flushTop
+        >
+          保存绩效评分
+        </PrimaryActionButton>
+      </div>
+      {(profileInvalid || statusInvalid || performanceInvalid) && (
+        <p aria-live="polite" className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+          {!javaEnabled ? '切换到 Java 数据源后可维护供应商关系。' : '请补齐等级、品类和状态；绩效评分需在 0 到 100 之间。'}
+        </p>
+      )}
+    </section>
+  );
+};
+
 const SupplierDetailPanelView: React.FC<{
   detail?: SupplierDetailPanel;
   relation?: BuyerWorkspace['privateSupplierRelations'][number];
   javaEnabled: boolean;
   supplierAdmissionBusyId: string | null;
+  supplierRelationBusyId: string | null;
   admissionDraft?: BuyerSupplierAdmissionDraft;
   onChangeAdmissionDraft: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
   onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
+  onSaveSupplierRelationProfile: (relationId: string, payload: UpdateBuyerSupplierProfilePayload) => void;
+  onSaveSupplierRelationStatus: (relationId: string, status: string) => void;
+  onSaveSupplierRelationPerformance: (relationId: string, performanceScore: number) => void;
 }> = ({
   detail,
   relation,
   javaEnabled,
   supplierAdmissionBusyId,
+  supplierRelationBusyId,
   admissionDraft,
   onChangeAdmissionDraft,
   onSubmitSupplierAdmission,
+  onSaveSupplierRelationProfile,
+  onSaveSupplierRelationStatus,
+  onSaveSupplierRelationPerformance,
 }) => (
   <Panel title="供应商详情" icon={Users}>
     {!detail ? (
@@ -7362,6 +13115,42 @@ const SupplierDetailPanelView: React.FC<{
               <MiniFact key={row.label} label={row.label} value={row.value} />
             ))}
           </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-slate-500">准入依据 · 资质台账</p>
+            <span className="rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-black text-amber-700">
+              {(relation?.qualifications ?? []).length} 条
+            </span>
+          </div>
+          {(relation?.qualifications ?? []).length > 0 ? (
+            <div className="space-y-2">
+              {(relation?.qualifications ?? []).map((qualification) => (
+                <div key={qualification.id} className="rounded-lg border border-amber-100 bg-amber-50 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-black text-amber-950">
+                        {qualification.qualificationType}
+                      </p>
+                      <p className="mt-1 break-words text-xs font-bold text-amber-700">
+                        {qualification.fileName}
+                      </p>
+                    </div>
+                    <StatusPill label={qualification.status} />
+                  </div>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                    <MiniFact label="证书编号" value={qualification.certificateNo || '未填写'} />
+                    <MiniFact label="到期日" value={qualification.expiresAt || '长期'} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-700">
+              暂无供应商自维护资质记录，准入前请要求供应商补充营业执照或授权代理证书。
+            </p>
+          )}
         </section>
 
         <section>
@@ -7434,9 +13223,13 @@ const SupplierDetailPanelView: React.FC<{
           relation={relation}
           javaEnabled={javaEnabled}
           supplierAdmissionBusyId={supplierAdmissionBusyId}
+          supplierRelationBusyId={supplierRelationBusyId}
           admissionDraft={admissionDraft}
           onChangeAdmissionDraft={onChangeAdmissionDraft}
           onSubmitSupplierAdmission={onSubmitSupplierAdmission}
+          onSaveSupplierRelationProfile={onSaveSupplierRelationProfile}
+          onSaveSupplierRelationStatus={onSaveSupplierRelationStatus}
+          onSaveSupplierRelationPerformance={onSaveSupplierRelationPerformance}
         />
       </DetailPanelBody>
     )}
@@ -7448,17 +13241,25 @@ const SupplierDetailOperationPanel: React.FC<{
   relation?: BuyerWorkspace['privateSupplierRelations'][number];
   javaEnabled: boolean;
   supplierAdmissionBusyId: string | null;
+  supplierRelationBusyId: string | null;
   admissionDraft?: BuyerSupplierAdmissionDraft;
   onChangeAdmissionDraft: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
   onSubmitSupplierAdmission: (relationId: string, draft: BuyerSupplierAdmissionDraft) => void;
+  onSaveSupplierRelationProfile: (relationId: string, payload: UpdateBuyerSupplierProfilePayload) => void;
+  onSaveSupplierRelationStatus: (relationId: string, status: string) => void;
+  onSaveSupplierRelationPerformance: (relationId: string, performanceScore: number) => void;
 }> = ({
   detail,
   relation,
   javaEnabled,
   supplierAdmissionBusyId,
+  supplierRelationBusyId,
   admissionDraft,
   onChangeAdmissionDraft,
   onSubmitSupplierAdmission,
+  onSaveSupplierRelationProfile,
+  onSaveSupplierRelationStatus,
+  onSaveSupplierRelationPerformance,
 }) => {
   const authorizedCategories = detail.facts.find((fact) => fact.label === '授权品类')?.value ?? '未维护';
   const performanceScore = detail.facts.find((fact) => fact.label === '绩效评分')?.value ?? detail.riskLabel;
@@ -7518,10 +13319,22 @@ const SupplierDetailOperationPanel: React.FC<{
 
       {renderSupplierRelationSummary()}
 
+      <SupplierRelationProfileForm
+        relation={relation}
+        javaEnabled={javaEnabled}
+        profileBusy={supplierRelationBusyId === `profile:${relation.id}`}
+        statusBusy={supplierRelationBusyId === `status:${relation.id}`}
+        performanceBusy={supplierRelationBusyId === `performance:${relation.id}`}
+        onSaveSupplierRelationProfile={onSaveSupplierRelationProfile}
+        onSaveSupplierRelationStatus={onSaveSupplierRelationStatus}
+        onSaveSupplierRelationPerformance={onSaveSupplierRelationPerformance}
+      />
+
       {relation.status === '待准入' && admissionDraft && (
         <SupplierAdmissionForm
           relationId={relation.id}
           categoryLabel={relation.categories.join(' / ')}
+          hasActiveQualification={Boolean(relation.qualifications?.some((qualification) => qualification.status === 'active'))}
           draft={admissionDraft}
           busy={supplierAdmissionBusyId === relation.id}
           onChange={(draft) => onChangeAdmissionDraft(relation.id, draft)}
@@ -7566,7 +13379,11 @@ const SupplierDetailOperationPanel: React.FC<{
 
 const MaterialDetailPanelView: React.FC<{
   detail?: MaterialDetailPanel;
-}> = ({ detail }) => (
+  material?: MaterialItem;
+  javaEnabled: boolean;
+  materialSaveBusyId: string | null;
+  onSaveMaterial: (materialId: string | null, payload: SaveMaterialPayload) => void;
+}> = ({ detail, material, javaEnabled, materialSaveBusyId, onSaveMaterial }) => (
   <Panel title="物料详情" icon={Database}>
     {!detail ? (
       <EmptyState title="暂无物料详情" desc="选择一个物料或服务后，可查看引用需求、询价项目和供应商覆盖情况。" />
@@ -7585,6 +13402,16 @@ const MaterialDetailPanelView: React.FC<{
 
         <MaterialDetailSummaryPanel detail={detail} />
         <MaterialDetailOperationPanel detail={detail} />
+        <section>
+          <p className="mb-2 text-xs font-black text-slate-500">物料目录维护</p>
+          <MaterialSaveForm
+            title="编辑当前物料"
+            material={material}
+            javaEnabled={javaEnabled}
+            busy={materialSaveBusyId === detail.id}
+            onSave={(payload) => onSaveMaterial(detail.id, payload)}
+          />
+        </section>
 
         <section>
           <p className="mb-2 text-xs font-black text-slate-500">使用概览</p>
@@ -7750,6 +13577,127 @@ const MaterialDetailOperationPanel: React.FC<{
         </p>
       </div>
     </section>
+  );
+};
+
+const MaterialSaveForm: React.FC<{
+  title: string;
+  material?: MaterialItem;
+  javaEnabled: boolean;
+  busy: boolean;
+  onSave: (payload: SaveMaterialPayload) => void;
+}> = ({ title, material, javaEnabled, busy, onSave }) => {
+  const [code, setCode] = useState(material?.code ?? 'MAT-NEW');
+  const [name, setName] = useState(material?.name ?? '新增物料');
+  const [category, setCategory] = useState(material?.category ?? '办公设备');
+  const [unit, setUnit] = useState(material?.unit ?? '件');
+  const [referencePrice, setReferencePrice] = useState(material?.referencePrice ?? 1000);
+
+  useEffect(() => {
+    setCode(material?.code ?? 'MAT-NEW');
+    setName(material?.name ?? '新增物料');
+    setCategory(material?.category ?? '办公设备');
+    setUnit(material?.unit ?? '件');
+    setReferencePrice(material?.referencePrice ?? 1000);
+  }, [material?.id, material?.code, material?.name, material?.category, material?.unit, material?.referencePrice]);
+
+  const invalid = !javaEnabled
+    || !code.trim()
+    || !name.trim()
+    || !category.trim()
+    || !unit.trim()
+    || referencePrice < 0;
+
+  return (
+    <form
+      className="space-y-3 rounded-lg border border-blue-100 bg-blue-50 p-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (invalid || busy) return;
+        onSave({
+          code: code.trim(),
+          name: name.trim(),
+          category: category.trim(),
+          unit: unit.trim(),
+          referencePrice,
+        });
+      }}
+    >
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-black text-blue-800">{title}</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
+            保存后刷新 Java 物料目录，并可直接用于采购需求明细。
+          </p>
+        </div>
+        <StatusPill label={javaEnabled ? 'Java 写入' : '当前不可写'} />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <Field label="物料编码">
+          <input
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            disabled={!javaEnabled || busy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+        <Field label="物料名称">
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            disabled={!javaEnabled || busy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+        <Field label="品类">
+          <input
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            disabled={!javaEnabled || busy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+        <Field label="单位">
+          <input
+            value={unit}
+            onChange={(event) => setUnit(event.target.value)}
+            disabled={!javaEnabled || busy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+        <Field label="参考价">
+          <input
+            type="number"
+            min="0"
+            value={referencePrice}
+            onChange={(event) => setReferencePrice(Number(event.target.value))}
+            disabled={!javaEnabled || busy}
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+        </Field>
+      </div>
+      {invalid && (
+        <p aria-live="polite" className="rounded-lg border border-amber-100 bg-white p-3 text-xs font-bold leading-5 text-amber-800">
+          {!javaEnabled ? '切换到 Java 数据源后可维护物料目录。' : '请填写编码、名称、品类、单位，参考价不能小于 0。'}
+        </p>
+      )}
+      <PrimaryActionButton
+        onClick={() => onSave({
+          code: code.trim(),
+          name: name.trim(),
+          category: category.trim(),
+          unit: unit.trim(),
+          referencePrice,
+        })}
+        disabled={invalid || busy}
+        busy={busy}
+        pendingLabel="保存中"
+        icon={Database}
+        fullWidth
+      >
+        保存物料
+      </PrimaryActionButton>
+    </form>
   );
 };
 
@@ -8018,9 +13966,11 @@ const RfqCreateForm: React.FC<{
   busy: boolean;
   onSubmit: (demandId: string, supplierIds: string[], deadline: string) => void;
 }> = ({ demand, suppliers, relations, busy, onSubmit }) => {
-  const admittedRelations = relations.filter((relation) => relation.status === '已准入');
-  const admittedSupplierIds = admittedRelations.map((relation) => relation.supplierId);
-  const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>(admittedSupplierIds.slice(0, 2));
+  const rfqEligibleRelations = relations.filter(isRfqEligibleSupplierRelation);
+  const rfqEligibleSupplierIds = new Set(rfqEligibleRelations.map((relation) => relation.supplierId));
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>(
+    rfqEligibleRelations.map((relation) => relation.supplierId).slice(0, 2),
+  );
   const defaultDeadline = new Date();
   defaultDeadline.setDate(defaultDeadline.getDate() + 14);
   const [deadline, setDeadline] = useState(defaultDeadline.toISOString().slice(0, 10));
@@ -8028,7 +13978,8 @@ const RfqCreateForm: React.FC<{
   const [deliveryRequirement, setDeliveryRequirement] = useState('中标后 7 个自然日内送达指定收货地点，支持分批交付需提前说明。');
   const [invitationNote, setInvitationNote] = useState('本次询价优先考虑准时交付、售后响应和历史合作绩效。');
   const todayDate = new Date().toISOString().slice(0, 10);
-  const supplierSelectionInvalid = selectedSupplierIds.length === 0;
+  const selectedEligibleSupplierIds = selectedSupplierIds.filter((supplierId) => rfqEligibleSupplierIds.has(supplierId));
+  const supplierSelectionInvalid = selectedEligibleSupplierIds.length === 0;
   const deadlineInvalid = !deadline || deadline <= todayDate;
   const canSubmit = !supplierSelectionInvalid && !deadlineInvalid;
   const toggleSupplierSelection = (supplierId: string, checked: boolean) => {
@@ -8045,11 +13996,11 @@ const RfqCreateForm: React.FC<{
         <div>
           <p className="text-xs font-black text-blue-800">创建询价</p>
           <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
-            从已准入供应商中选择邀请对象，生成后进入报价和比价流程。
+            从具备有效资质的已准入供应商中选择邀请对象，生成后进入报价和比价流程。
           </p>
         </div>
         <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-blue-700">
-          已选择供应商 {selectedSupplierIds.length} 家
+          已选择供应商 {selectedEligibleSupplierIds.length} 家
         </span>
       </div>
 
@@ -8094,25 +14045,27 @@ const RfqCreateForm: React.FC<{
       </div>
 
       <div className="mt-3 space-y-2">
-        {admittedRelations.length === 0 && (
+        {rfqEligibleRelations.length === 0 && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
-            暂无已准入供应商，请先完成供应商准入后再创建询价。
+            暂无具备有效资质的已准入供应商，请先完成供应商准入并维护有效资质后再创建询价。
           </div>
         )}
-        {admittedRelations.map((relation) => {
+        {relations.map((relation) => {
           const supplier = suppliers.find((item) => item.id === relation.supplierId);
           const checked = selectedSupplierIds.includes(relation.supplierId);
+          const eligible = rfqEligibleSupplierIds.has(relation.supplierId);
           return (
             <label
               key={relation.id}
               className={`block rounded-lg border bg-white p-3 transition ${
-                checked ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200 hover:border-blue-200'
+                checked ? 'border-blue-300 ring-2 ring-blue-100' : eligible ? 'border-slate-200 hover:border-blue-200' : 'border-amber-100 bg-amber-50'
               }`}
             >
               <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   checked={checked}
+                  disabled={!eligible}
                   onChange={(event) => toggleSupplierSelection(relation.supplierId, event.target.checked)}
                   className="mt-1 h-4 w-4 rounded border-slate-300"
                 />
@@ -8129,6 +14082,11 @@ const RfqCreateForm: React.FC<{
                   <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-500">
                     授权品类：{relation.categories.join(' / ')}
                   </p>
+                  {!eligible && (
+                    <p className="mt-1 break-words text-xs font-black leading-5 text-amber-700">
+                      {relation.status !== '已准入' ? '未完成准入，不可邀请' : '无有效资质，不可邀请'}
+                    </p>
+                  )}
                 </div>
               </div>
             </label>
@@ -8137,14 +14095,14 @@ const RfqCreateForm: React.FC<{
       </div>
 
       <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3 text-xs font-bold leading-5 text-blue-700">
-        RFQ 创建后将向 {selectedSupplierIds.length} 家供应商发送询价邀请；报价要求、交付要求和邀请说明会作为页面上下文展示，待后端字段开放后再持久化。
+        RFQ 创建后将向 {selectedEligibleSupplierIds.length} 家具备有效资质的已准入供应商发送询价邀请；报价要求、交付要求和邀请说明会作为页面上下文展示，待后端字段开放后再持久化。
       </div>
 
       {(supplierSelectionInvalid || deadlineInvalid) && (
         <div aria-live="polite" className="mt-3 space-y-2">
           {supplierSelectionInvalid && (
             <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
-              请至少选择一家已准入供应商。
+              请至少选择一家具备有效资质的已准入供应商。
             </p>
           )}
           {deadlineInvalid && (
@@ -8157,8 +14115,9 @@ const RfqCreateForm: React.FC<{
 
       <button
         type="button"
-        onClick={() => onSubmit(demand.id, selectedSupplierIds, `${deadline}T18:00:00+08:00`)}
+        onClick={() => onSubmit(demand.id, selectedEligibleSupplierIds, `${deadline}T18:00:00+08:00`)}
         disabled={!canSubmit || busy}
+        data-testid={`stage7-create-rfq-${demand.id}`}
         className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
       >
         <Send size={14} />
@@ -8342,10 +14301,11 @@ const DetailActionPanel: React.FC<{
 const MiniFact: React.FC<{
   label: string;
   value: string;
-}> = ({ label, value }) => (
-  <div className="min-w-0 rounded-lg border border-slate-100 bg-white/80 px-3 py-2">
-    <p className="text-[11px] font-black text-slate-400">{label}</p>
-    <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">{value}</p>
+  compact?: boolean;
+}> = ({ label, value, compact = false }) => (
+  <div className={`min-w-0 rounded-lg border border-slate-100 bg-white/80 ${compact ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
+    <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} font-black text-slate-400`}>{label}</p>
+    <p className={`${compact ? 'mt-0.5 line-clamp-3 text-[11px] leading-4' : 'mt-1 text-xs leading-5'} break-words font-bold text-slate-700`}>{value}</p>
   </div>
 );
 
@@ -8553,7 +14513,9 @@ const MessageCenterPanel: React.FC<{
   title: string;
   scopeLabel: string;
   notifications: JavaNotificationDto[];
-}> = ({ title, scopeLabel, notifications }) => {
+  onMarkRead?: (notificationId: string) => void;
+  markReadBusyId?: string | null;
+}> = ({ title, scopeLabel, notifications, onMarkRead, markReadBusyId }) => {
   const unreadCount = notifications.filter((notification) => !notification.read).length;
 
   return (
@@ -8574,29 +14536,45 @@ const MessageCenterPanel: React.FC<{
       </div>
       {notifications.length > 0 ? (
         <div className="space-y-3">
-          {notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`rounded-lg border p-4 ${
-                notification.read ? 'border-slate-200 bg-white' : 'border-blue-100 bg-blue-50'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-slate-950">{notification.title}</p>
-                  <p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-slate-500">
-                    {notification.content}
-                  </p>
+          {notifications.map((notification) => {
+            const markReadBusy = markReadBusyId?.endsWith(`:${notification.id}`) ?? false;
+            const canMarkRead = Boolean(onMarkRead && !notification.read && !notification.id.startsWith('supplier-message-'));
+            return (
+              <div
+                key={notification.id}
+                className={`rounded-lg border p-4 ${
+                  notification.read ? 'border-slate-200 bg-white' : 'border-blue-100 bg-blue-50'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-slate-950">{notification.title}</p>
+                    <p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-slate-500">
+                      {notification.content}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    {!notification.read && (
+                      <span className="rounded-lg bg-white px-2 py-1 text-xs font-black text-blue-700">
+                        未读
+                      </span>
+                    )}
+                    {canMarkRead && (
+                      <button
+                        type="button"
+                        onClick={() => onMarkRead?.(notification.id)}
+                        disabled={markReadBusy}
+                        className="rounded-lg border border-blue-100 bg-white px-2 py-1 text-xs font-black text-blue-700 transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {markReadBusy ? '处理中' : '标记已读'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {!notification.read && (
-                  <span className="shrink-0 rounded-lg bg-white px-2 py-1 text-xs font-black text-blue-700">
-                    未读
-                  </span>
-                )}
+                <p className="mt-3 text-xs font-bold text-slate-400">{formatAuditTime(notification.createdAt)}</p>
               </div>
-              <p className="mt-3 text-xs font-bold text-slate-400">{formatAuditTime(notification.createdAt)}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <EmptyState title="暂无站内通知" desc="审批、询价、订单、发票和付款状态变化会在这里汇总。" />
@@ -8612,7 +14590,7 @@ const feedbackNoticeToneClasses: Record<'success' | 'error' | 'info', string> = 
 };
 
 const resolveFeedbackTone = (message: string): 'success' | 'error' | 'info' => {
-  if (message.includes('失败')) {
+  if (message.includes('失败') || message.includes('拒绝') || message.includes('冻结') || message.includes('不允许')) {
     return 'error';
   }
   if (message.includes('已完成') || message.includes('已')) {
@@ -8637,14 +14615,15 @@ const FeedbackNotice: React.FC<{
 const processStateToneClasses = {
   handled: 'border-emerald-100 bg-emerald-50 text-emerald-700',
   waiting: 'border-slate-200 bg-slate-50 text-slate-600',
+  blocked: 'border-amber-100 bg-amber-50 text-amber-800',
 };
 
 const ProcessStateNotice: React.FC<{
-  variant: 'handled' | 'waiting';
+  variant: 'handled' | 'waiting' | 'blocked';
   title: string;
   desc: string;
 }> = ({ variant, title, desc }) => {
-  const Icon = variant === 'handled' ? CheckCircle2 : Activity;
+  const Icon = variant === 'handled' ? CheckCircle2 : variant === 'blocked' ? AlertCircle : Activity;
 
   return (
     <div
@@ -8664,6 +14643,48 @@ const ProcessStateNotice: React.FC<{
   );
 };
 
+const describeSupplierOpportunityNextAction = (
+  rfq: SupplierWorkspace['opportunities'][number] | undefined,
+  supplierId: string,
+) => {
+  if (!rfq) return '选择询价邀请后展示报价或拒绝入口。';
+  if (rfq.quotes.some((quote) => quote.supplierId === supplierId)) return '已提交报价，继续跟进报价记录和定标结果。';
+  if (rfq.status === '报价中') return '核对采购要求后提交报价，或明确拒绝邀请。';
+  return '询价已不在报价期，等待采购方定标或后续通知。';
+};
+
+const describeSupplierQuoteNextAction = (
+  quote: SupplierWorkspace['quotes'][number] | undefined,
+  rfq: SupplierWorkspace['opportunities'][number] | undefined,
+) => {
+  if (!quote) return '选择报价记录后查看关联询价和定标结果。';
+  if (quote.status === '已定标') return '报价已定标，等待采购方生成采购订单。';
+  if (rfq?.status === '报价中') return '报价仍在窗口期，可维护本企业报价信息。';
+  return '报价已提交，等待采购方比价、定标和审批。';
+};
+
+const describeSupplierOrderNextAction = (
+  order: SupplierWorkspace['orders'][number] | undefined,
+  delivery: SupplierWorkspace['deliveries'][number] | undefined,
+  invoice: SupplierWorkspace['invoices'][number] | undefined,
+) => {
+  if (!order) return '选择销售订单后查看确认、发货和开票入口。';
+  if (order.status === '待供应商确认') return '确认订单后进入待发货。';
+  if (order.status === '待发货') return '维护承运商和物流单号并提交发货。';
+  if (!delivery) return '补充发货信息，便于采购方收货验收。';
+  if (order.status === '已收货' && !invoice) return '采购方已收货，可提交发票形成应收。';
+  if (invoice) return '发票已提交，继续跟进应收和付款状态。';
+  return '等待采购方收货验收后再进入开票应收。';
+};
+
+const describeSupplierInvoiceNextAction = (invoice: SupplierWorkspace['invoices'][number] | undefined) => {
+  if (!invoice) return '选择应收发票后查看对账、逾期和付款状态。';
+  if (invoice.paymentStatus === '已付款') return '采购方已登记付款，应收流程可归档。';
+  if (invoice.varianceAmount && invoice.varianceAmount !== 0) return '存在对账差异，先维护对账备注并跟进采购方处理。';
+  if (invoice.overdueDays && invoice.overdueDays > 0) return `已逾期 ${invoice.overdueDays} 天，需要跟进回款。`;
+  return '持续跟进采购方付款计划和应收状态。';
+};
+
 const SupplierWorkspaceView: React.FC<{
   activeModule: SupplierAdminModule;
   workspace: SupplierWorkspace;
@@ -8671,6 +14692,8 @@ const SupplierWorkspaceView: React.FC<{
   workflowStatus: string | null;
   supplierActionBusyId: string | null;
   supplierProfileBusy: boolean;
+  supplierQualificationBusy: boolean;
+  notificationReadBusyId: string | null;
   onSubmitQuote: (rfqId: string, draft: SupplierQuoteDraft) => void;
   onUpdateQuote: (quoteId: string, draft: SupplierQuoteDraft) => void;
   onConfirmOrder: (orderId: string) => void;
@@ -8679,6 +14702,9 @@ const SupplierWorkspaceView: React.FC<{
   onCreateInvoice: (orderId: string, draft: SupplierInvoiceDraft) => void;
   onUpdateReceivable: (invoiceId: string, draft: SupplierReceivableDraft) => void;
   onUpdateSupplierProfile: (draft: SupplierProfileDraft) => void;
+  onCreateSupplierQualification: (draft: SupplierQualificationDraft) => void;
+  onMarkSupplierNotificationRead: (notificationId: string) => void;
+  onNavigateSupplierModule: (moduleId: SupplierAdminModule) => void;
 }> = ({
   activeModule,
   workspace,
@@ -8686,6 +14712,8 @@ const SupplierWorkspaceView: React.FC<{
   workflowStatus,
   supplierActionBusyId,
   supplierProfileBusy,
+  supplierQualificationBusy,
+  notificationReadBusyId,
   onSubmitQuote,
   onUpdateQuote,
   onConfirmOrder,
@@ -8694,6 +14722,9 @@ const SupplierWorkspaceView: React.FC<{
   onCreateInvoice,
   onUpdateReceivable,
   onUpdateSupplierProfile,
+  onCreateSupplierQualification,
+  onMarkSupplierNotificationRead: markSupplierNotificationRead,
+  onNavigateSupplierModule,
 }) => {
   const [declinedOpportunityIds, setDeclinedOpportunityIds] = useState<string[]>([]);
   const [selectedRequirementRfqId, setSelectedRequirementRfqId] = useState<string | null>(null);
@@ -8736,8 +14767,10 @@ const SupplierWorkspaceView: React.FC<{
     };
   const supplierModuleFacts = buildSupplierModuleFacts(workspace, activeModule);
   const supplierModuleHeader = supplierModuleHeaders[activeModule];
+  const isSupplierRfqQuoteOpen = (rfq: SupplierWorkspace['opportunities'][number]) =>
+    rfq.status === '报价中' && new Date(rfq.deadline).getTime() > Date.now();
   const pendingQuoteCount = workspace.opportunities.filter((rfq) =>
-    rfq.status === '报价中'
+    isSupplierRfqQuoteOpen(rfq)
     && !rfq.quotes.some((quote) => quote.supplierId === workspace.supplier.id),
   ).length;
   const pendingConfirmCount = workspace.orders.filter((order) => order.status === '待供应商确认').length;
@@ -8764,6 +14797,27 @@ const SupplierWorkspaceView: React.FC<{
     supplierOrderStatusFilter === '全部状态' || order.status === supplierOrderStatusFilter);
   const filteredSupplierInvoices = workspace.invoices.filter((invoice) =>
     supplierInvoiceStatusFilter === '全部状态' || invoice.paymentStatus === supplierInvoiceStatusFilter);
+  const displayedSupplierOpportunities = limitSupplierDemoRows(
+    filteredSupplierOpportunities,
+    (rfq) => rfq.id === 'rfq-stage7-supplier-quote-ready',
+  );
+  const displayedSupplierQuotes = limitSupplierDemoRows(
+    filteredSupplierQuotes,
+    (quote) => quote.rfqId === 'rfq-stage7-supplier-quote-ready',
+  );
+  const displayedSupplierOrders = limitSupplierDemoRows(
+    filteredSupplierOrders,
+    (order) => order.id === 'po-stage7-supplier-confirm-ready'
+      || order.id === 'po-stage7-supplier-delivery-ready'
+      || order.id === 'po-stage7-supplier-invoice-ready',
+  );
+  const displayedSupplierInvoices = limitSupplierDemoRows(
+    filteredSupplierInvoices,
+    (invoice) => invoice.id === 'inv-stage7-supplier-receivable-ready',
+  );
+  const selectedSupplierOpportunity = selectedRequirementRfqId
+    ? filteredSupplierOpportunities.find((rfq) => rfq.id === selectedRequirementRfqId) ?? filteredSupplierOpportunities[0]
+    : filteredSupplierOpportunities[0];
   const selectedSupplierQuoteDetail = filteredSupplierQuotes.find((quote) => quote.id === selectedSupplierQuoteId)
     ?? filteredSupplierQuotes[0];
   const selectedSupplierQuoteRfq = selectedSupplierQuoteDetail
@@ -8783,6 +14837,198 @@ const SupplierWorkspaceView: React.FC<{
     ? workspace.orders.find((order) => order.id === selectedSupplierInvoiceDetail.orderId)
     : undefined;
   const supplierMessageCenterNotifications = buildSupplierMessageCenterNotifications(workspace);
+  const locateSupplierDemoSample = () => {
+    if (activeModule === 'opportunities') {
+      setOpportunityStatusFilter('全部状态');
+      setSelectedRequirementRfqId('rfq-stage7-supplier-quote-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-supplier-opportunity');
+    }
+    if (activeModule === 'quotes') {
+      const stageSevenQuote = workspace.quotes.find((quote) => quote.rfqId === 'rfq-stage7-supplier-quote-ready');
+      setQuoteStatusFilter('全部状态');
+      setSelectedSupplierQuoteId(stageSevenQuote?.id ?? workspace.quotes[0]?.id ?? '');
+      scrollToStageNineDemoSample('stage9-demo-sample-supplier-opportunity');
+    }
+    if (activeModule === 'orders') {
+      setSupplierOrderStatusFilter('全部状态');
+      setSelectedSupplierOrderId('po-stage7-supplier-confirm-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-supplier-order');
+    }
+    if (activeModule === 'invoices') {
+      setSupplierInvoiceStatusFilter('全部状态');
+      setSelectedSupplierInvoiceId('inv-stage7-supplier-receivable-ready');
+      scrollToStageNineDemoSample('stage9-demo-sample-supplier-receivable');
+    }
+  };
+  const supplierDemoSequenceNavigation = buildDemoSequenceNavigation(
+    supplierDemoWalkthroughSteps,
+    activeModule,
+    '供应商协同演示收束',
+    (moduleId) => {
+      onNavigateSupplierModule(moduleId);
+      if (moduleId === 'opportunities') {
+        setOpportunityStatusFilter('全部状态');
+      }
+      if (moduleId === 'orders') {
+        setSupplierOrderStatusFilter('全部状态');
+      }
+      if (moduleId === 'invoices') {
+        setSupplierInvoiceStatusFilter('全部状态');
+      }
+    },
+    locateSupplierDemoSample,
+  );
+  const supplierDemoReadinessItems = buildDemoReadinessItems(
+    javaEnabled,
+    '供应商 5 个真实动作',
+    'stage-seven-supplier-java-real-action-click-result.json',
+    '商机、订单、应收推荐样本已标记，适合讲采购方流程的供应商协同镜像。',
+  );
+  const supplierCollaborationOperationStrip = supplierCollaborationOperationStrips[activeModule];
+  const supplierDemoPresenterCue = {
+    opportunities: {
+      moduleLabel: '询价邀请',
+      selectedTitle: selectedSupplierOpportunity?.title,
+      selectedMeta: selectedSupplierOpportunity?.id,
+      statusLabel: selectedSupplierOpportunity ? opportunityStatus(selectedSupplierOpportunity) : undefined,
+      displayedCount: displayedSupplierOpportunities.length,
+      totalCount: filteredSupplierOpportunities.length,
+      primaryActionLabel: '提交报价 / 查看要求',
+      densityHint: 'RFQ 摘要、报价截止、采购要求和本企业响应状态同屏可见',
+      listHeightHint: '商机卡片只保留截止时间、报价状态、采购要求和响应入口。',
+      nextModuleLabel: '报价记录',
+      primaryButtonHint: '提交报价按钮紧贴询价邀请卡片的报价草稿区',
+      disabledReasonHint: '已报价、已拒绝或非报价中 RFQ 会解释不可重复报价原因。',
+      detailEntryHint: '查看要求入口用于核对采购要求、需求编号和邀请范围。',
+      postClickHint: '提交报价后进入报价记录，采购方侧可继续比价定标。',
+    },
+    quotes: {
+      moduleLabel: '报价记录',
+      selectedTitle: selectedSupplierQuoteRfq?.title ?? selectedSupplierQuoteDetail?.rfqId,
+      selectedMeta: selectedSupplierQuoteDetail?.id,
+      statusLabel: selectedSupplierQuoteDetail?.status,
+      displayedCount: displayedSupplierQuotes.length,
+      totalCount: filteredSupplierQuotes.length,
+      primaryActionLabel: '跟进定标结果',
+      densityHint: '报价金额、交付周期、税率、关联 RFQ 和定标结果同屏可见',
+      listHeightHint: '报价卡片优先展示金额、交期、状态和关联询价。',
+      nextModuleLabel: '销售订单',
+      primaryButtonHint: '报价修改入口跟随报价详情展示',
+      disabledReasonHint: '已定标或非报价中 RFQ 只读，定标结果由采购方侧产生。',
+      detailEntryHint: '详情入口用于核对报价历史、采购要求和修改边界。',
+      postClickHint: '报价被定标并生成采购订单后，进入销售订单履约。',
+    },
+    orders: {
+      moduleLabel: '销售订单',
+      selectedTitle: selectedSupplierOrderDetail?.id,
+      selectedMeta: selectedSupplierOrderDetail?.tenantId,
+      statusLabel: selectedSupplierOrderDetail?.status,
+      displayedCount: displayedSupplierOrders.length,
+      totalCount: filteredSupplierOrders.length,
+      primaryActionLabel: '确认订单 / 提交发货 / 提交发票',
+      densityHint: '订单金额、确认状态、发货状态、开票状态和下一动作同屏可见',
+      listHeightHint: '订单卡片固定展示订单状态、物流、发票和下一步。',
+      nextModuleLabel: '发票应收',
+      primaryButtonHint: '确认订单、提交发货和提交发票按钮跟随订单状态展示',
+      disabledReasonHint: '不同订单状态只开放对应动作，已发货或已开票记录保持只读。',
+      detailEntryHint: '详情入口用于核对订单金额、物流、发票和履约轨迹。',
+      postClickHint: '提交发票后进入发票应收，等待采购方付款登记。',
+    },
+    invoices: {
+      moduleLabel: '发票应收',
+      selectedTitle: selectedSupplierInvoiceDetail?.invoiceNo ?? selectedSupplierInvoiceDetail?.id,
+      selectedMeta: selectedSupplierInvoiceDetail?.orderId,
+      statusLabel: selectedSupplierInvoiceDetail?.paymentStatus,
+      displayedCount: displayedSupplierInvoices.length,
+      totalCount: filteredSupplierInvoices.length,
+      primaryActionLabel: '保存对账备注 / 跟进回款',
+      densityHint: '发票金额、对账备注、逾期提醒、付款状态和关联订单同屏可见',
+      listHeightHint: '应收卡片优先展示金额、付款状态、逾期和订单来源。',
+      nextModuleLabel: '企业档案',
+      primaryButtonHint: '保存对账备注入口固定在应收详情区',
+      disabledReasonHint: '已付款发票只做回看，付款结果由采购方登记。',
+      detailEntryHint: '详情入口用于核对应收风险、对账备注和订单来源。',
+      postClickHint: '备注保存后继续等待采购方付款，或回到企业档案维护资质。',
+    },
+    profile: {
+      moduleLabel: '企业档案',
+      selectedTitle: workspace.supplier.name,
+      selectedMeta: workspace.supplier.industry,
+      statusLabel: workspace.supplier.verified ? '已认证' : '待认证',
+      displayedCount: 1,
+      totalCount: 1,
+      primaryActionLabel: '维护企业档案',
+      densityHint: '企业认证、资质附件、联系人、授权品类和合作采购方同屏可见',
+      listHeightHint: '档案页不做大列表，集中展示身份、资质和协同能力。',
+      nextModuleLabel: '询价邀请',
+      primaryButtonHint: '保存企业档案按钮固定在档案维护入口底部',
+      disabledReasonHint: 'Mock 模式或资料不完整时禁用保存并保留说明。',
+      detailEntryHint: '档案能力卡片用于核对资质、联系人和多采购方协同信息。',
+      postClickHint: '档案保存后回到询价邀请，支撑采购方准入和后续邀请。',
+    },
+  }[activeModule];
+  const supplierKeyActionReadiness = {
+    opportunities: [
+      {
+        label: '提交报价',
+        enabled: displayedSupplierOpportunities.some((rfq) => (
+          rfq.status === '报价中'
+          && new Date(rfq.deadline).getTime() > Date.now()
+          && !rfq.quotes.some((quote) => quote.supplierId === workspace.supplier.id)
+          && !declinedOpportunityIds.includes(rfq.id)
+        )),
+        reason: '存在报价中且本企业未报价的邀请时可提交报价；已报价或已拒绝保持只读解释。',
+      },
+    ],
+    quotes: [
+      {
+        label: '跟进定标结果',
+        enabled: displayedSupplierQuotes.length > 0,
+        reason: '报价记录用于回看采购方比价、定标和订单生成状态。',
+      },
+    ],
+    orders: [
+      {
+        label: '确认订单',
+        enabled: displayedSupplierOrders.some((order) => order.status === '待供应商确认'),
+        reason: '采购方生成订单后，供应商确认才能进入发货履约。',
+      },
+      {
+        label: '提交发货',
+        enabled: displayedSupplierOrders.some((order) => order.status === '待发货'),
+        reason: '订单确认后可填写承运商和物流单号并同步给采购方收货验收。',
+      },
+      {
+        label: '提交发票',
+        enabled: displayedSupplierOrders.some((order) => (
+          order.status === '已收货'
+          && !workspace.invoices.some((invoice) => invoice.orderId === order.id)
+        )),
+        reason: '采购方收货后供应商可提交发票，形成应收台账。',
+      },
+    ],
+    invoices: [
+      {
+        label: '保存对账备注',
+        enabled: displayedSupplierInvoices.some((invoice) => invoice.paymentStatus !== '已付款'),
+        reason: '未付款应收可维护对账备注；付款结论仍由采购方登记。',
+      },
+    ],
+    profile: [
+      {
+        label: '保存企业档案',
+        enabled: javaEnabled,
+        reason: 'Java 模式下可保存企业档案；Mock 模式只展示草稿和边界。',
+      },
+    ],
+  }[activeModule] ?? [];
+  const supplierRealActionFeedbackItems = buildSupplierRealActionFeedbackItems({
+    pendingQuoteCount,
+    pendingConfirmCount,
+    pendingDeliveryCount,
+    invoiceReadyCount,
+    pendingReceivableCount,
+  });
   useEffect(() => {
     setSelectedSupplierQuoteId((current) => (
       workspace.quotes.some((quote) => quote.id === current) ? current : workspace.quotes[0]?.id ?? ''
@@ -8835,11 +15081,122 @@ const SupplierWorkspaceView: React.FC<{
       pendingReceivableCount={pendingReceivableCount}
     />
 
+    <DemoCommandCenterPanel
+      title="供应商现场演示总线"
+      subtitle="把供应商侧讲成采购方流程的协同镜像：从收到询价到报价、履约、开票和应收跟进。"
+      items={supplierDemoCommandCenterItems}
+      currentGuide={supplierDemoCurrentActionGuides[activeModule]}
+      sequenceNavigation={supplierDemoSequenceNavigation}
+      testId="stage9-supplier-demo-command-center"
+    />
+
+    <DemoReadinessPanel
+      title="供应商演示准备检查"
+      subtitle="开场前确认供应商侧商机、报价、订单、发票应收的演示证据和样本定位。"
+      status={javaEnabled ? 'Java 数据源已连接' : '等待 Java 数据源'}
+      items={supplierDemoReadinessItems}
+      testId="stage9-supplier-demo-readiness"
+    />
+
+    <DemoActionFeedbackPanel
+      title="供应商 5 个真实点击动作"
+      subtitle="供应商只能处理自己的邀请、订单和应收记录；采购方审批、收货和付款结果由采购方驱动。"
+      items={supplierDemoActionFeedbackItems}
+      testId="stage8-supplier-action-feedback"
+    />
+
+    <DemoReadonlyBoundaryPanel
+      title="供应商只读边界与空状态"
+      subtitle="说明已报价、已发货、已收货、已付款后的只读逻辑，让供应商侧演示更像真实协同后台。"
+      items={supplierReadonlyBoundaryItems}
+      testId="stage8-supplier-readonly-boundary"
+    />
+
+    <DemoPermissionAuditPanel
+      title="供应商权限与审计留痕"
+      subtitle="把供应商侧动作限制在本企业协同数据内，强调报价、履约、发票和应收备注均可追溯。"
+      items={supplierGovernanceTraceItems}
+      testId="stage8-supplier-permission-audit"
+    />
+
     <MessageCenterPanel
       title="供应商消息中心"
       scopeLabel="询价邀请、销售订单、发票应收"
       notifications={supplierMessageCenterNotifications}
+      onMarkRead={markSupplierNotificationRead}
+      markReadBusyId={notificationReadBusyId}
     />
+
+    {supplierDemoWalkthroughModules.includes(activeModule) && (
+      <>
+      <DemoWalkthroughRail
+        ariaLabel="供应商协同演示路径"
+        eyebrow="供应商协同演示路径"
+        title="按 5 页顺序完成报价到应收走查"
+        description="从询价邀请进入，回看报价记录，完成订单履约、发票应收和企业档案维护。"
+        steps={supplierDemoWalkthroughSteps}
+        activeModule={activeModule}
+        closedLabel="供应商协同演示收束"
+        gridClassName="grid-cols-2 sm:grid-cols-5"
+        onNavigate={(moduleId) => {
+          onNavigateSupplierModule(moduleId);
+          if (moduleId === 'opportunities') {
+            setOpportunityStatusFilter('全部状态');
+          }
+          if (moduleId === 'orders') {
+            setSupplierOrderStatusFilter('全部状态');
+          }
+          if (moduleId === 'invoices') {
+            setSupplierInvoiceStatusFilter('全部状态');
+          }
+        }}
+      />
+      {supplierCollaborationOperationStrip && (
+        <SupplierCollaborationOperationStrip
+          config={supplierCollaborationOperationStrip}
+          onNext={onNavigateSupplierModule}
+        />
+      )}
+      {supplierDemoPresenterCue && (
+        <SupplierDemoPresenterCue
+          moduleLabel={supplierDemoPresenterCue.moduleLabel}
+          selectedTitle={supplierDemoPresenterCue.selectedTitle}
+          selectedMeta={supplierDemoPresenterCue.selectedMeta}
+          statusLabel={supplierDemoPresenterCue.statusLabel}
+          displayedCount={supplierDemoPresenterCue.displayedCount}
+          totalCount={supplierDemoPresenterCue.totalCount}
+          primaryActionLabel={supplierDemoPresenterCue.primaryActionLabel}
+          densityHint={supplierDemoPresenterCue.densityHint}
+          listHeightHint={supplierDemoPresenterCue.listHeightHint}
+          nextModuleLabel={supplierDemoPresenterCue.nextModuleLabel}
+        />
+      )}
+      {supplierDemoPresenterCue && (
+        <SupplierDemoDataSlimmingCue
+          moduleLabel={supplierDemoPresenterCue.moduleLabel}
+          displayedCount={supplierDemoPresenterCue.displayedCount}
+          totalCount={supplierDemoPresenterCue.totalCount}
+        />
+      )}
+      {supplierDemoPresenterCue && supplierKeyActionReadiness.length > 0 && (
+        <SupplierKeyActionReadinessPanel
+          actions={supplierKeyActionReadiness}
+          visibilityHint={{
+            moduleLabel: supplierDemoPresenterCue.moduleLabel,
+            primaryButtonHint: supplierDemoPresenterCue.primaryButtonHint,
+            disabledReasonHint: supplierDemoPresenterCue.disabledReasonHint,
+            detailEntryHint: supplierDemoPresenterCue.detailEntryHint,
+            postClickHint: supplierDemoPresenterCue.postClickHint,
+          }}
+          onActionFocus={locateSupplierDemoSample}
+        />
+      )}
+      <SupplierRealActionFeedbackPanel
+        items={supplierRealActionFeedbackItems}
+        workflowStatus={workflowStatus}
+      />
+      </>
+    )}
 
     {activeModule === 'overview' && (
       <div className="grid gap-4 md:grid-cols-4">
@@ -8875,21 +15232,43 @@ const SupplierWorkspaceView: React.FC<{
             selectedLabel={selectedRequirementRfqId ?? undefined}
             onClear={() => setOpportunityStatusFilter('全部状态')}
           />
+          <SelectedBusinessHandoffPanel
+            moduleLabel="询价邀请"
+            selectedTitle={selectedSupplierOpportunity?.title}
+            selectedMeta={selectedSupplierOpportunity?.id}
+            selectedStatus={selectedSupplierOpportunity ? opportunityStatus(selectedSupplierOpportunity) : undefined}
+            nextActionTitle={describeSupplierOpportunityNextAction(selectedSupplierOpportunity, workspace.supplier.id)}
+            detailHint="展开采购要求后核对报价截止、需求编号、邀请范围和本企业报价状态。"
+            boundaryHint="供应商只能提交或拒绝自己的报价响应，不能查看采购方预算和其他供应商报价。"
+          />
           <SupplierOpportunityResponseSummaryPanel
             opportunities={filteredSupplierOpportunities}
             supplierId={workspace.supplier.id}
           />
           {filteredSupplierOpportunities.length === 0 ? (
             <EmptyState title="暂无询价邀请" desc="当前筛选条件下没有可响应的询价邀请，可切换商机状态或等待采购方邀请。" />
-          ) : filteredSupplierOpportunities.map((rfq) => {
+          ) : displayedSupplierOpportunities.map((rfq) => {
             const myQuotes = rfq.quotes.filter((quote) => quote.supplierId === workspace.supplier.id);
             const hasMyQuote = myQuotes.length > 0;
             const quoteBusy = supplierActionBusyId === `quote:${rfq.id}`;
             const declined = declinedOpportunityIds.includes(rfq.id);
             const requirementVisible = selectedRequirementRfqId === rfq.id;
             const quoteDraft = quoteDrafts[rfq.id] ?? { amount: 118000, taxRate: 13, deliveryDays: 7 };
+            const quoteOpen = isSupplierRfqQuoteOpen(rfq);
+            const supplierOpportunityDemoHighlight = rfq.id === 'rfq-stage7-supplier-quote-ready'
+              ? {
+                  label: '阶段七供应商报价样本',
+                  testId: `stage9-demo-sample-supplier-opportunity-${rfq.id}`,
+                }
+              : undefined;
             return (
-              <div key={rfq.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                key={rfq.id}
+                className={`rounded-lg border p-4 ${
+                  supplierOpportunityDemoHighlight ? 'border-sky-300 bg-sky-50' : 'border-slate-200 bg-white'
+                }`}
+              >
+                <DemoSampleHighlightBadge demoHighlight={supplierOpportunityDemoHighlight} />
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-black text-slate-900">{rfq.title}</p>
@@ -8917,7 +15296,7 @@ const SupplierWorkspaceView: React.FC<{
                       <p className="text-xs text-slate-500">{quote.deliveryDays} 天交付</p>
                     </div>
                   ))}
-                  {javaEnabled && rfq.status === '报价中' && !hasMyQuote && (
+                  {javaEnabled && quoteOpen && !hasMyQuote && (
                     <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 sm:col-span-3">
                       <div className="grid gap-3 md:grid-cols-[1fr_120px_120px_auto] md:items-end">
                         <label className="block">
@@ -8970,16 +15349,22 @@ const SupplierWorkspaceView: React.FC<{
                         </label>
                         <PrimaryActionButton
                           onClick={() => onSubmitQuote(rfq.id, quoteDraft)}
-                          disabled={declinedOpportunityIds.includes(rfq.id) || quoteBusy || quoteDraft.amount <= 0 || quoteDraft.deliveryDays <= 0}
+                          disabled={declinedOpportunityIds.includes(rfq.id) || quoteBusy || !quoteOpen || quoteDraft.amount <= 0 || quoteDraft.deliveryDays <= 0}
                           busy={quoteBusy}
                           pendingLabel="提交中"
                           size="md"
                           flushTop
+                          testId={`stage7-supplier-submit-quote-${rfq.id}`}
                         >
                           提交报价
                         </PrimaryActionButton>
                       </div>
                     </div>
+                  )}
+                  {javaEnabled && rfq.status === '报价中' && !quoteOpen && !hasMyQuote && (
+                    <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800 sm:col-span-3">
+                      询价已截止，不能再提交报价。
+                    </p>
                   )}
                   <button
                     type="button"
@@ -9028,6 +15413,15 @@ const SupplierWorkspaceView: React.FC<{
             selectedLabel={selectedSupplierQuoteId}
             onClear={() => setQuoteStatusFilter('全部状态')}
           />
+          <SelectedBusinessHandoffPanel
+            moduleLabel="报价记录"
+            selectedTitle={selectedSupplierQuoteRfq?.title ?? selectedSupplierQuoteDetail?.rfqId}
+            selectedMeta={selectedSupplierQuoteDetail?.id}
+            selectedStatus={selectedSupplierQuoteDetail?.status}
+            nextActionTitle={describeSupplierQuoteNextAction(selectedSupplierQuoteDetail, selectedSupplierQuoteRfq)}
+            detailHint="右侧详情会核对关联询价、报价金额、交付天数、定标结果和修改边界。"
+            boundaryHint="仅报价中 RFQ 可修改本企业报价；定标和审批结果由采购方处理。"
+          />
           {filteredSupplierQuotes.length === 0 ? (
             <EmptyState title="暂无报价记录" desc="收到询价邀请并提交报价后，报价历史和关联询价状态会显示在这里。" />
           ) : (
@@ -9037,7 +15431,7 @@ const SupplierWorkspaceView: React.FC<{
                   quotes={filteredSupplierQuotes}
                   opportunities={workspace.opportunities}
                 />
-                {filteredSupplierQuotes.map((quote) => {
+                {displayedSupplierQuotes.map((quote) => {
                   const rfq = workspace.opportunities.find((rfq) => rfq.id === quote.rfqId);
                   return (
                     <SupplierQuoteHistoryCard
@@ -9083,7 +15477,9 @@ const SupplierWorkspaceView: React.FC<{
             workspace={workspace}
             javaEnabled={javaEnabled}
             supplierProfileBusy={supplierProfileBusy}
+            supplierQualificationBusy={supplierQualificationBusy}
             onUpdateSupplierProfile={onUpdateSupplierProfile}
+            onCreateSupplierQualification={onCreateSupplierQualification}
           />
           <div className="grid gap-3 lg:grid-cols-2">
             <SupplierProfileCapabilityCard
@@ -9149,6 +15545,15 @@ const SupplierWorkspaceView: React.FC<{
           selectedLabel={selectedSupplierOrderId}
           onClear={() => setSupplierOrderStatusFilter('全部状态')}
         />
+        <SelectedBusinessHandoffPanel
+          moduleLabel="销售订单"
+          selectedTitle={selectedSupplierOrderDetail?.id}
+          selectedMeta={selectedSupplierOrderDetail?.tenantId}
+          selectedStatus={selectedSupplierOrderDetail?.status}
+          nextActionTitle={describeSupplierOrderNextAction(selectedSupplierOrderDetail, selectedSupplierOrderDelivery, selectedSupplierOrderInvoice)}
+          detailHint="右侧详情会核对订单金额、确认状态、发货信息、发票应收和履约轨迹。"
+          boundaryHint="供应商可确认订单、维护发货和提交发票，但不能登记采购方收货或付款结果。"
+        />
         {filteredSupplierOrders.length === 0 ? (
           <EmptyState title="暂无销售订单" desc="采购方定标并生成订单后，供应商会在这里确认订单、提交发货和开票。" />
         ) : (
@@ -9158,7 +15563,7 @@ const SupplierWorkspaceView: React.FC<{
               orders={filteredSupplierOrders}
               invoices={workspace.invoices}
             />
-            {filteredSupplierOrders.map((order) => {
+            {displayedSupplierOrders.map((order) => {
               const confirmBusy = supplierActionBusyId === `confirm:${order.id}`;
               const deliveryBusy = supplierActionBusyId === `delivery:${order.id}`;
               const invoiceBusy = supplierActionBusyId === `invoice:${order.id}`;
@@ -9166,13 +15571,24 @@ const SupplierWorkspaceView: React.FC<{
               const invoice = workspace.invoices.find((item) => item.orderId === order.id);
               const deliveryDraft = deliveryDrafts[order.id] ?? { carrier: '顺丰速运', trackingNo: '' };
               const invoiceDraft = invoiceDrafts[order.id] ?? { amount: order.amount, invoiceNo: '' };
+              const supplierOrderDemoHighlight = order.id === 'po-stage7-supplier-confirm-ready'
+                || order.id === 'po-stage7-supplier-delivery-ready'
+                || order.id === 'po-stage7-supplier-invoice-ready'
+                ? {
+                    label: '阶段七供应商订单履约样本',
+                    testId: `stage9-demo-sample-supplier-order-${order.id}`,
+                  }
+                : undefined;
               return (
                 <div
                   key={order.id}
-                  className={`rounded-lg border bg-white p-4 transition ${
-                    selectedSupplierOrderId === order.id ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+                  className={`rounded-lg border p-4 transition ${
+                    supplierOrderDemoHighlight ? 'border-sky-300 bg-sky-50' : 'bg-white'
+                  } ${
+                    selectedSupplierOrderId === order.id ? 'border-blue-200 ring-2 ring-blue-100' : supplierOrderDemoHighlight ? 'border-sky-300' : 'border-slate-200'
                   }`}
                 >
+                  <DemoSampleHighlightBadge demoHighlight={supplierOrderDemoHighlight} />
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-black text-slate-900">{order.id}</p>
@@ -9202,6 +15618,7 @@ const SupplierWorkspaceView: React.FC<{
                             busy={confirmBusy}
                             pendingLabel="确认中"
                             flushTop
+                            testId={`stage7-supplier-confirm-order-${order.id}`}
                           >
                             确认订单
                           </PrimaryActionButton>
@@ -9244,6 +15661,7 @@ const SupplierWorkspaceView: React.FC<{
                                 trackingNo: event.target.value,
                               },
                             }))}
+                            data-testid={`stage7-supplier-delivery-tracking-${order.id}`}
                             className="mt-2 h-10 w-full rounded-lg border border-emerald-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400"
                             placeholder="请输入物流单号"
                           />
@@ -9256,6 +15674,7 @@ const SupplierWorkspaceView: React.FC<{
                           tone="emerald"
                           size="md"
                           flushTop
+                          testId={`stage7-supplier-create-delivery-${order.id}`}
                         >
                           提交发货
                         </PrimaryActionButton>
@@ -9276,6 +15695,7 @@ const SupplierWorkspaceView: React.FC<{
                                 invoiceNo: event.target.value,
                               },
                             }))}
+                            data-testid={`stage7-supplier-invoice-no-${order.id}`}
                             className="mt-2 h-10 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-400"
                             placeholder="请输入发票号"
                           />
@@ -9304,6 +15724,7 @@ const SupplierWorkspaceView: React.FC<{
                           tone="amber"
                           size="md"
                           flushTop
+                          testId={`stage7-supplier-create-invoice-${order.id}`}
                         >
                           提交发票
                         </PrimaryActionButton>
@@ -9352,6 +15773,15 @@ const SupplierWorkspaceView: React.FC<{
           selectedLabel={selectedSupplierInvoiceId}
           onClear={() => setSupplierInvoiceStatusFilter('全部状态')}
         />
+        <SelectedBusinessHandoffPanel
+          moduleLabel="发票应收"
+          selectedTitle={selectedSupplierInvoiceDetail?.invoiceNo ?? selectedSupplierInvoiceDetail?.id}
+          selectedMeta={selectedSupplierInvoiceDetail?.orderId}
+          selectedStatus={selectedSupplierInvoiceDetail?.paymentStatus}
+          nextActionTitle={describeSupplierInvoiceNextAction(selectedSupplierInvoiceDetail)}
+          detailHint="右侧详情会核对应收金额、对账备注、逾期提醒、付款状态和关联销售订单。"
+          boundaryHint="供应商可维护应收对账备注，付款登记和付款状态仍由采购方侧驱动。"
+        />
         {filteredSupplierInvoices.length === 0 ? (
           <EmptyState title="暂无应收发票" desc="订单收货后提交发票，应收和付款状态会显示在这里。" />
         ) : (
@@ -9366,7 +15796,7 @@ const SupplierWorkspaceView: React.FC<{
               />
               <SupplierInvoiceReceivableSummaryPanel invoices={filteredSupplierInvoices} />
               <div className="space-y-3">
-                {filteredSupplierInvoices.map((invoice) => {
+                {displayedSupplierInvoices.map((invoice) => {
                   const order = workspace.orders.find((order) => order.id === invoice.orderId);
                   return (
                     <SupplierInvoiceReceivableCard
@@ -9374,6 +15804,12 @@ const SupplierWorkspaceView: React.FC<{
                       invoice={invoice}
                       order={order}
                       selected={selectedSupplierInvoiceId === invoice.id}
+                      demoHighlight={invoice.id === 'inv-stage7-supplier-receivable-ready'
+                        ? {
+                            label: '阶段七供应商应收备注样本',
+                            testId: `stage9-demo-sample-supplier-receivable-${invoice.id}`,
+                          }
+                        : undefined}
                       onSelectDetail={() => setSelectedSupplierInvoiceId(invoice.id)}
                     />
                   );
@@ -9448,21 +15884,41 @@ const SupplierProfileMaintenancePanel: React.FC<{
   workspace: SupplierWorkspace;
   javaEnabled: boolean;
   supplierProfileBusy: boolean;
+  supplierQualificationBusy: boolean;
   onUpdateSupplierProfile: (draft: SupplierProfileDraft) => void;
-}> = ({ workspace, javaEnabled, supplierProfileBusy, onUpdateSupplierProfile }) => {
+  onCreateSupplierQualification: (draft: SupplierQualificationDraft) => void;
+}> = ({
+  workspace,
+  javaEnabled,
+  supplierProfileBusy,
+  supplierQualificationBusy,
+  onUpdateSupplierProfile,
+  onCreateSupplierQualification,
+}) => {
   const [profileDraft, setProfileDraft] = useState<SupplierProfileDraft>({
     name: workspace.supplier.name,
     industry: workspace.supplier.industry,
     creditCode: workspace.supplier.creditCode ?? '91310000MA1K000001',
     legalPerson: workspace.supplier.legalPerson ?? workspace.orders[0]?.supplierName ?? workspace.supplier.name,
   });
+  const [qualificationDraft, setQualificationDraft] = useState<SupplierQualificationDraft>({
+    qualificationType: '营业执照',
+    certificateNo: '',
+    expiresAt: '2027-12-31',
+    fileName: '营业执照.pdf',
+    storageKey: 'supplier/qualifications/business-license.pdf',
+  });
   const authorizedCategories = Array.from(new Set(
     workspace.opportunities.flatMap((rfq) => rfq.demandIds.length > 0 ? rfq.demandIds : ['通用采购']),
   )).slice(0, 3);
+  const qualifications = workspace.qualifications ?? [];
   const profileInvalid = !profileDraft.name.trim()
     || !profileDraft.industry.trim()
     || !profileDraft.creditCode.trim()
     || !profileDraft.legalPerson.trim();
+  const qualificationInvalid = !qualificationDraft.qualificationType.trim()
+    || !qualificationDraft.fileName.trim()
+    || !qualificationDraft.storageKey.trim();
 
   useEffect(() => {
     setProfileDraft({
@@ -9481,6 +15937,9 @@ const SupplierProfileMaintenancePanel: React.FC<{
 
   const updateDraft = (patch: Partial<SupplierProfileDraft>) => {
     setProfileDraft((current) => ({ ...current, ...patch }));
+  };
+  const updateQualificationDraft = (patch: Partial<SupplierQualificationDraft>) => {
+    setQualificationDraft((current) => ({ ...current, ...patch }));
   };
 
   return (
@@ -9546,13 +16005,109 @@ const SupplierProfileMaintenancePanel: React.FC<{
         </div>
 
         <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
-          <p className="text-xs font-black text-amber-700">资质上传入口</p>
+          <p className="text-xs font-black text-amber-700">资质台账</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <MiniFact label="附件元数据" value="待登记" />
-            <MiniFact label="营业执照" value={workspace.supplier.verified ? '已上传' : '待上传'} />
-            <MiniFact label="授权代理证书" value={workspace.supplier.verified ? '已上传' : '待补充'} />
+            <MiniFact label="已登记资质" value={`${qualifications.length} 条`} />
+            <MiniFact label="有效资质" value={`${qualifications.filter((item) => item.status === 'active').length} 条`} />
+            <MiniFact label="最近文件" value={qualifications[0]?.fileName ?? '待登记'} />
             <MiniFact label="可见范围" value="供应商共享" />
           </div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-black text-amber-700">资质登记表单</p>
+            <p className="mt-1 text-xs font-bold leading-5 text-amber-700">
+              Java 模式提交到 POST /api/v1/supplier/qualifications，提交后刷新本企业资质台账。
+            </p>
+          </div>
+          <StatusPill label={qualificationInvalid ? '待补齐' : '可提交'} />
+        </div>
+        <div className="mt-3 grid gap-3 lg:grid-cols-5">
+          <label className="block rounded-lg border border-amber-100 bg-white p-3">
+            <span className="text-xs font-black text-slate-600">资质类型</span>
+            <input
+              value={qualificationDraft.qualificationType}
+              onChange={(event) => updateQualificationDraft({ qualificationType: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
+            />
+          </label>
+          <label className="block rounded-lg border border-amber-100 bg-white p-3">
+            <span className="text-xs font-black text-slate-600">证书编号</span>
+            <input
+              value={qualificationDraft.certificateNo ?? ''}
+              onChange={(event) => updateQualificationDraft({ certificateNo: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
+            />
+          </label>
+          <label className="block rounded-lg border border-amber-100 bg-white p-3">
+            <span className="text-xs font-black text-slate-600">到期日期</span>
+            <input
+              type="date"
+              value={qualificationDraft.expiresAt ?? ''}
+              onChange={(event) => updateQualificationDraft({ expiresAt: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
+            />
+          </label>
+          <label className="block rounded-lg border border-amber-100 bg-white p-3">
+            <span className="text-xs font-black text-slate-600">文件名</span>
+            <input
+              value={qualificationDraft.fileName}
+              onChange={(event) => updateQualificationDraft({ fileName: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
+            />
+          </label>
+          <label className="block rounded-lg border border-amber-100 bg-white p-3">
+            <span className="text-xs font-black text-slate-600">存储键</span>
+            <input
+              value={qualificationDraft.storageKey}
+              onChange={(event) => updateQualificationDraft({ storageKey: event.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
+            />
+          </label>
+        </div>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs font-bold leading-5 text-amber-700">
+            资质记录会作为供应商企业档案的一部分，供采购方准入、询价邀请和后续绩效评价读取。
+          </p>
+          <PrimaryActionButton
+            onClick={() => onCreateSupplierQualification({
+              qualificationType: qualificationDraft.qualificationType.trim(),
+              certificateNo: qualificationDraft.certificateNo?.trim(),
+              expiresAt: qualificationDraft.expiresAt,
+              fileName: qualificationDraft.fileName.trim(),
+              storageKey: qualificationDraft.storageKey.trim(),
+            })}
+            disabled={!javaEnabled || supplierQualificationBusy || qualificationInvalid}
+            busy={supplierQualificationBusy}
+            pendingLabel="提交中"
+            tone="amber"
+            size="md"
+            flushTop
+          >
+            提交资质
+          </PrimaryActionButton>
+        </div>
+        <div className="mt-3 grid gap-2 lg:grid-cols-3">
+          {qualifications.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-amber-200 bg-white p-3 text-xs font-bold text-amber-700">
+              暂无资质记录，请先登记营业执照或授权代理证书。
+            </p>
+          ) : qualifications.slice(0, 6).map((qualification) => (
+            <div key={qualification.id} className="rounded-lg border border-amber-100 bg-white p-3">
+              <div className="flex items-start justify-between gap-2">
+                <p className="break-words text-sm font-black text-slate-900">{qualification.qualificationType}</p>
+                <StatusPill label={qualification.status} />
+              </div>
+              <p className="mt-1 break-words text-xs font-bold text-slate-500">{qualification.fileName}</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <MiniFact label="证书编号" value={qualification.certificateNo || '未填写'} />
+                <MiniFact label="到期日" value={qualification.expiresAt || '长期'} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -9800,7 +16355,13 @@ const SupplierQuoteDetailPanel: React.FC<{
     : awardLabel === '等待定标'
       ? '等待采购方定标'
       : '跟进询价状态';
-  const canUpdateQuote = javaEnabled && quote.status === '已提交' && rfq?.status === '报价中';
+  const quoteDeadlineOpen = Boolean(rfq?.deadline && new Date(rfq.deadline).getTime() > Date.now());
+  const quoteReadonlyReason = quote.status !== '已提交' || rfq?.status !== '报价中'
+    ? '报价已进入定标或归档状态，不能再修改。'
+    : !quoteDeadlineOpen
+      ? '询价已截止，报价不能再修改。'
+      : '当前报价不在可修改状态，仅保留历史报价详情。';
+  const canUpdateQuote = javaEnabled && quote.status === '已提交' && rfq?.status === '报价中' && quoteDeadlineOpen;
   const quoteUpdateBusy = supplierActionBusyId === `quote-update:${quote.id}`;
   const updateDraft = quoteUpdateDraft ?? {
     amount: quote.amount,
@@ -9846,7 +16407,7 @@ const SupplierQuoteDetailPanel: React.FC<{
 
         <DetailActionPanel
           title="修改报价"
-          desc={canUpdateQuote ? '报价仍在 RFQ 报价期内时可修改，保存后采购方比价页将读取最新报价。' : '当前报价不在可修改状态，仅保留历史报价详情。'}
+          desc={canUpdateQuote ? '报价仍在 RFQ 报价期内时可修改，保存后采购方比价页将读取最新报价。' : quoteReadonlyReason}
           status={canUpdateQuote ? '可修改' : '只读'}
           tone={canUpdateQuote ? 'blue' : 'slate'}
         >
@@ -10078,18 +16639,103 @@ const SupplierInvoiceReceivableSummaryPanel: React.FC<{
 const ReconciliationLedgerPanel: React.FC<{
   title: string;
   invoices: BuyerWorkspace['invoices'];
+  paymentBatches?: PaymentBatchRecord[];
+  paymentExecutionRecords?: PaymentExecutionRecord[];
+  paymentBlockResolutions?: PaymentBlockResolutionRecord[];
+  paymentArchiveExceptionRequests?: PaymentArchiveExceptionRequestRecord[];
+  paymentRequests?: PaymentRequestRecord[];
+  varianceHandlings?: VarianceHandlingRecord[];
+  auditLogs?: AuditLogRecord[];
   statusFilter: string;
   onChangeStatusFilter: (status: string) => void;
+  javaEnabled?: boolean;
+  buyerFulfillmentBusyId?: string | null;
+  onUpdatePaymentBatchStatus?: (paymentBatchNo: string, status: string) => void;
+  onCreatePaymentArchiveExceptionRequest?: (paymentBatchNo: string, exceptionType: string, exceptionReason: string) => void;
+  onCompletePaymentArchiveExceptionAction?: (requestId: string, actionResult: string) => void;
+  onClosePaymentArchiveExceptionRequest?: (requestId: string, closureResult: string) => void;
+  onUpdatePaymentRequestStatus?: (paymentRequestId: string, status: string) => void;
+  onSavePaymentBlockResolutionStatus?: (payload: BuyerPaymentBlockResolutionDraft) => void;
+  onUpdateVarianceHandlingStatus?: (varianceHandlingId: string, status: string) => void;
+  onRebuildThreeWayMatches?: () => void;
+  onRegisterPayment?: (invoiceId: string, draft: BuyerPaymentDraft) => void;
+  onRegisterPaymentExecutionRecord?: (executionRecordId: string) => void;
+  onSelectInvoiceForReview?: (invoiceId: string) => void;
   scope: 'buyer' | 'supplier';
-}> = ({ title, invoices, statusFilter, onChangeStatusFilter, scope }) => {
+}> = ({
+  title,
+  invoices,
+  paymentBatches = [],
+  paymentExecutionRecords = [],
+  paymentBlockResolutions = [],
+  paymentArchiveExceptionRequests = [],
+  paymentRequests = [],
+  varianceHandlings = [],
+  auditLogs = [],
+  statusFilter,
+  onChangeStatusFilter,
+  javaEnabled = false,
+  buyerFulfillmentBusyId = null,
+  onUpdatePaymentBatchStatus,
+  onCreatePaymentArchiveExceptionRequest,
+  onCompletePaymentArchiveExceptionAction,
+  onClosePaymentArchiveExceptionRequest,
+  onUpdatePaymentRequestStatus,
+  onSavePaymentBlockResolutionStatus,
+  onUpdateVarianceHandlingStatus,
+  onRebuildThreeWayMatches,
+  onRegisterPayment,
+  onRegisterPaymentExecutionRecord,
+  onSelectInvoiceForReview,
+  scope,
+}) => {
+  const [paymentBatchRiskFilter, setPaymentBatchRiskFilter] = useState('全部批次');
+  const [paymentBatchBlockReasonFilter, setPaymentBatchBlockReasonFilter] = useState('全部阻断原因');
+  const [paymentBatchResolutionStageFilter, setPaymentBatchResolutionStageFilter] = useState('全部处理状态');
+  const [selectedPaymentBatchNo, setSelectedPaymentBatchNo] = useState<string | null>(null);
+  const [focusedPaymentRequestId, setFocusedPaymentRequestId] = useState<string | null>(null);
   const statusOptions = Array.from(new Set(invoices.map((invoice) => invoice.reconciliationStatus ?? '待同步')));
   const filteredInvoices = invoices.filter((invoice) => (
     statusFilter === '全部状态' || (invoice.reconciliationStatus ?? '待同步') === statusFilter
   ));
+  const varianceHandlingByInvoice = new Map(varianceHandlings.map((handling) => [handling.invoiceId, handling]));
+  const buildThreeWayMatchLabel = (invoice: BuyerWorkspace['invoices'][number]) => {
+    const receiptStatus = invoice.receiptStatus ?? '待同步';
+    if (receiptStatus.includes('待') || receiptStatus === '未收货') return '待收货核对';
+    if (invoice.varianceAmount == null || invoice.orderAmount == null) return '待三单同步';
+    if (Math.abs(invoice.varianceAmount) > 0) return '金额差异待处理';
+    return '三单匹配通过';
+  };
+  const buildPaymentRequestReadinessLabel = (invoice: BuyerWorkspace['invoices'][number]) => {
+    if (scope !== 'buyer') return '供应商跟进回款';
+    if (invoice.paymentStatus === '已付款') return '付款已归档';
+    if (Math.abs(invoice.varianceAmount ?? 0) > 0) {
+      const handling = varianceHandlingByInvoice.get(invoice.id);
+      return handling?.status === '已处理'
+        ? '差异已处理，付款申请已恢复'
+        : '差异未处理，付款申请被阻断';
+    }
+    return buildThreeWayMatchLabel(invoice) === '三单匹配通过'
+      ? '可发起付款申请'
+      : '等待三单匹配通过';
+  };
   const invoiceTotal = filteredInvoices.reduce((sum, invoice) => sum + invoice.amount, 0);
   const varianceTotal = filteredInvoices.reduce((sum, invoice) => sum + Math.abs(invoice.varianceAmount ?? 0), 0);
-  const pendingCount = filteredInvoices.filter((invoice) => (invoice.reconciliationStatus ?? '待同步') !== '三单一致').length;
+  const threeWayMatchPassCount = filteredInvoices.filter((invoice) => buildThreeWayMatchLabel(invoice) === '三单匹配通过').length;
+  const pendingCount = filteredInvoices.length - threeWayMatchPassCount;
   const varianceHandlingCount = filteredInvoices.filter((invoice) => Math.abs(invoice.varianceAmount ?? 0) > 0).length;
+  const varianceQueueCount = filteredInvoices.filter((invoice) => buildThreeWayMatchLabel(invoice) === '金额差异待处理').length;
+  const paymentRequestBlockedCount = filteredInvoices.filter((invoice) => (
+    buildPaymentRequestReadinessLabel(invoice) === '差异未处理，付款申请被阻断'
+  )).length;
+  const paymentRequestRestoredCount = filteredInvoices.filter((invoice) => (
+    buildPaymentRequestReadinessLabel(invoice) === '差异已处理，付款申请已恢复'
+  )).length;
+  const paymentRequestReadyCount = filteredInvoices.filter((invoice) => (
+    (buildThreeWayMatchLabel(invoice) === '三单匹配通过'
+      || buildPaymentRequestReadinessLabel(invoice) === '差异已处理，付款申请已恢复')
+    && invoice.paymentStatus !== '已付款'
+  )).length;
   const overdueCount = filteredInvoices.filter((invoice) => invoice.overdue).length;
   const nextActionSummary = pendingCount > 0
     ? (scope === 'buyer' ? '优先处理付款和差异' : '优先跟进回款和差异')
@@ -10099,11 +16745,723 @@ const ReconciliationLedgerPanel: React.FC<{
     : (pendingCount > 0 ? '按采购方付款计划跟进回款' : '回款状态已归档');
   const roleLabel = scope === 'buyer' ? '应付' : '应收';
   const buildLedgerRiskLabel = (invoice: BuyerWorkspace['invoices'][number]) => {
+    const paymentRequestReadinessLabel = buildPaymentRequestReadinessLabel(invoice);
+    if (paymentRequestReadinessLabel === '差异未处理，付款申请被阻断'
+        || paymentRequestReadinessLabel === '差异已处理，付款申请已恢复') {
+      return paymentRequestReadinessLabel;
+    }
+    const threeWayMatchLabel = buildThreeWayMatchLabel(invoice);
+    if (threeWayMatchLabel !== '三单匹配通过') return threeWayMatchLabel;
     if (Math.abs(invoice.varianceAmount ?? 0) > 0) return '需核对差异';
     if (invoice.overdue) return '已逾期';
     if ((invoice.reconciliationStatus ?? '待同步') !== '三单一致') return '按计划跟进';
     return '可归档';
   };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysUntilPaymentDate = (dueDate: string) => {
+    if (dueDate === '待排期') return null;
+    const parsed = new Date(`${dueDate}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return Math.ceil((parsed.getTime() - today.getTime()) / 86400000);
+  };
+  const buildPaymentBatchScheduleRiskLabel = (dueDate: string, status: string) => {
+    if (status === '已付款归档') return '已归档';
+    const daysUntilDue = daysUntilPaymentDate(dueDate);
+    if (daysUntilDue == null) return '待排期';
+    if (daysUntilDue < 0) return `逾期 ${Math.abs(daysUntilDue)} 天`;
+    if (daysUntilDue <= 7) return `7天内到期`;
+    return '计划内';
+  };
+  const buildPaymentBatchRows = () => {
+    const grouped = new Map<string, PaymentRequestRecord[]>();
+    paymentRequests.forEach((request) => {
+      const paymentBatchNo = request.paymentBatchNo || '未分配批次';
+      grouped.set(paymentBatchNo, [...(grouped.get(paymentBatchNo) ?? []), request]);
+    });
+    return Array.from(grouped.entries()).map(([paymentBatchNo, requests]) => {
+      const invoicesInBatch = requests
+        .map((request) => invoices.find((invoice) => invoice.id === request.invoiceId))
+        .filter((invoice): invoice is BuyerWorkspace['invoices'][number] => Boolean(invoice));
+      const amount = requests.reduce((sum, request) => sum + request.amount, 0);
+      const dueDate = invoicesInBatch
+        .map((invoice) => invoice.dueDate)
+        .filter((date): date is string => Boolean(date))
+        .sort()[0] ?? '待排期';
+      const allApproved = requests.every((request) => request.requestStatus === '付款申请已通过');
+      const anyPending = requests.some((request) => request.requestStatus === '付款申请审批中');
+      const status = allApproved ? '可安排付款' : anyPending ? '审批中' : '待提交审批';
+      return {
+        paymentBatchNo,
+        amount,
+        approvedAmount: allApproved ? amount : 0,
+        registeredAmount: 0,
+        pendingRegistrationAmount: 0,
+        blockedRegistrationAmount: 0,
+        registeredCount: 0,
+        pendingRegistrationCount: 0,
+        blockedRegistrationCount: 0,
+        executionDecision: null,
+        executionBlockSummary: '暂无后端阻断概览',
+        invoiceCount: requests.length,
+        dueDate,
+        status,
+        scheduleRiskLabel: buildPaymentBatchScheduleRiskLabel(dueDate, status),
+      };
+    });
+  };
+  const paymentBatchRows = scope === 'buyer'
+    ? (paymentBatches.length > 0
+      ? paymentBatches.map((batch) => {
+        const dueDate = batch.plannedPaymentDate ?? '待排期';
+        return {
+          paymentBatchNo: batch.paymentBatchNo,
+          amount: batch.totalAmount,
+          approvedAmount: batch.approvedAmount,
+          registeredAmount: batch.registeredAmount,
+          pendingRegistrationAmount: batch.pendingRegistrationAmount,
+          blockedRegistrationAmount: batch.blockedRegistrationAmount,
+          registeredCount: batch.registeredCount,
+          pendingRegistrationCount: batch.pendingRegistrationCount,
+          blockedRegistrationCount: batch.blockedRegistrationCount,
+          executionDecision: batch.executionDecision,
+          executionBlockSummary: batch.executionBlockSummary,
+          invoiceCount: batch.requestCount,
+          dueDate,
+          status: batch.batchStatus,
+          scheduleRiskLabel: buildPaymentBatchScheduleRiskLabel(dueDate, batch.batchStatus),
+        };
+      })
+      : buildPaymentBatchRows())
+    : [];
+  const paymentBatchTotalAmount = paymentBatchRows.reduce((sum, row) => sum + row.amount, 0);
+  const paymentBatchExecutableAmount = paymentBatchRows
+    .filter((row) => row.status === '可安排付款')
+    .reduce((sum, row) => sum + row.approvedAmount, 0);
+  const paymentBatchApprovalQueueCount = paymentBatchRows.filter((row) => row.status === '审批中').length;
+  const paymentBatchPendingSubmissionCount = paymentBatchRows.filter((row) => row.status === '待提交审批').length;
+  const paymentBatchArchivedCount = paymentBatchRows.filter((row) => row.status === '已付款归档').length;
+  const paymentBatchOverdueCount = paymentBatchRows.filter((row) => row.scheduleRiskLabel.startsWith('逾期')).length;
+  const paymentBatchDueSoonCount = paymentBatchRows.filter((row) => row.scheduleRiskLabel === '7天内到期').length;
+  const paymentBatchEarliestDueDate = paymentBatchRows
+    .map((row) => row.dueDate)
+    .filter((date) => daysUntilPaymentDate(date) != null)
+    .sort()[0] ?? '待排期';
+  const paymentBatchScheduleRiskLabel = paymentBatchOverdueCount > 0
+    ? `${paymentBatchOverdueCount} 个逾期`
+    : paymentBatchDueSoonCount > 0
+      ? `${paymentBatchDueSoonCount} 个7天内到期`
+      : '暂无计划风险';
+  const paymentBatchRiskFilterOptions = ['全部批次', '逾期优先', '7天内到期', '可执行批次', '审批中批次'];
+  const paymentBatchBlockedExecutionRecords = paymentExecutionRecords.filter((record) => (
+    record.executionStatus === '暂不可登记' || record.executionStatus === '付款审批中'
+  ));
+  const paymentBatchBlockReasonOptions = [
+    '全部阻断原因',
+    ...Array.from(new Set(paymentBatchBlockedExecutionRecords
+      .map((record) => record.executionBlockReason)
+      .filter((reason): reason is string => Boolean(reason && !['付款申请已通过', '已登记付款'].includes(reason)))))
+      .sort(),
+  ];
+  const describePaymentBatchBlockAction = (reason: string) => {
+    if (reason === '差异未处理') {
+      return {
+        blockActionHint: '处理差异后恢复付款申请',
+        blockActionTarget: '定位批次内发票，使用差异处理按钮标记已处理。',
+      };
+    }
+    if (reason === '三单未同步') {
+      return {
+        blockActionHint: '先重建或同步三单匹配',
+        blockActionTarget: '回到三单匹配台账重建快照，再刷新付款执行记录。',
+      };
+    }
+    if (reason === '三单未通过') {
+      return {
+        blockActionHint: '先处理收货、订单或发票差异',
+        blockActionTarget: '定位批次内发票，核对收货、订单金额和发票金额。',
+      };
+    }
+    if (reason === '付款申请审批中') {
+      return {
+        blockActionHint: '在批次内付款申请中推进审批',
+        blockActionTarget: '定位批次详情，使用通过付款申请或批次审批动作。',
+      };
+    }
+    if (reason === '付款申请未通过') {
+      return {
+        blockActionHint: '重新提交或调整付款申请',
+        blockActionTarget: '定位批次内付款申请，补齐资料后重新提交审批。',
+      };
+    }
+    return {
+      blockActionHint: '定位后核对付款执行条件',
+      blockActionTarget: '查看批次内付款申请、三单匹配和差异处理状态。',
+    };
+  };
+  const paymentBatchAllBlockQueueRows = paymentBatchBlockedExecutionRecords
+    .map((record) => {
+      const request = paymentRequests.find((item) => item.id === record.paymentRequestId);
+      const invoice = invoices.find((item) => item.id === record.invoiceId);
+      const blockAction = describePaymentBatchBlockAction(record.executionBlockReason ?? '暂不可登记');
+      return {
+        paymentBatchNo: record.paymentBatchNo,
+        invoiceId: record.invoiceId,
+        requestId: record.paymentRequestId,
+        amount: invoice?.amount ?? request?.amount ?? record.registeredAmount,
+        paymentRegistrationStatus: record.executionStatus,
+        executionBlockReason: record.executionBlockReason ?? '暂不可登记',
+        executionTrace: record.executionTrace,
+        blockActionHint: blockAction.blockActionHint,
+        blockActionTarget: blockAction.blockActionTarget,
+      };
+    });
+  const distributionByReason = new Map<string, {
+    reasonCount: number;
+    reasonAmount: number;
+    reasonBatches: Set<string>;
+  }>();
+  paymentBatchAllBlockQueueRows.forEach((row) => {
+    const current = distributionByReason.get(row.executionBlockReason) ?? {
+      reasonCount: 0,
+      reasonAmount: 0,
+      reasonBatches: new Set<string>(),
+    };
+    current.reasonCount += 1;
+    current.reasonAmount += row.amount;
+    current.reasonBatches.add(row.paymentBatchNo);
+    distributionByReason.set(row.executionBlockReason, current);
+  });
+  const paymentBatchBlockReasonDistributionRows = Array.from(distributionByReason.entries())
+    .map(([reason, summary]) => ({
+      reason,
+      reasonCount: summary.reasonCount,
+      reasonAmount: summary.reasonAmount,
+      reasonBatches: summary.reasonBatches.size,
+    }))
+    .sort((left, right) => (
+      right.reasonAmount - left.reasonAmount
+      || right.reasonCount - left.reasonCount
+      || left.reason.localeCompare(right.reason)
+    ));
+  const paymentBatchBlockQueueRows = paymentBatchAllBlockQueueRows
+    .filter((row) => (
+      paymentBatchBlockReasonFilter === '全部阻断原因'
+      || row.executionBlockReason === paymentBatchBlockReasonFilter
+    ));
+  const paymentBatchBlockedQueueAmount = paymentBatchBlockQueueRows.reduce((sum, row) => sum + row.amount, 0);
+  const paymentBatchCurrentBlockReasonLabel = paymentBatchBlockReasonFilter === '全部阻断原因'
+    ? '全部阻断原因'
+    : paymentBatchBlockReasonFilter;
+  const paymentBatchRiskRank = (row: (typeof paymentBatchRows)[number]) => {
+    if (row.scheduleRiskLabel.startsWith('逾期')) return 0;
+    if (row.scheduleRiskLabel === '7天内到期') return 1;
+    if (row.status === '可安排付款') return 2;
+    if (row.status === '审批中') return 3;
+    if (row.status === '待提交审批') return 4;
+    return 5;
+  };
+  const isPaymentBatchArchiveReady = (row: (typeof paymentBatchRows)[number]) => (
+    row.executionDecision === '批次付款已登记'
+    && row.registeredCount > 0
+    && row.pendingRegistrationCount === 0
+    && row.blockedRegistrationCount === 0
+  );
+  const canApprovePaymentBatch = (row: (typeof paymentBatchRows)[number]) => (
+    row.invoiceCount > 0
+    && row.amount > 0
+    && row.approvedAmount >= row.amount
+  );
+  const describePaymentBatchArchiveGate = (row: (typeof paymentBatchRows)[number]) => (
+    isPaymentBatchArchiveReady(row)
+      ? '归档门禁：全部执行记录已登记后才可归档。'
+      : '归档门禁：全部执行记录已登记后才可归档，当前仍需处理待登记或阻断记录。'
+  );
+  const filteredPaymentBatchRows = [...paymentBatchRows]
+    .filter((row) => {
+      if (paymentBatchRiskFilter === '逾期优先') return row.scheduleRiskLabel.startsWith('逾期');
+      if (paymentBatchRiskFilter === '7天内到期') return row.scheduleRiskLabel === '7天内到期';
+      if (paymentBatchRiskFilter === '可执行批次') return row.status === '可安排付款';
+      if (paymentBatchRiskFilter === '审批中批次') return row.status === '审批中';
+      return true;
+    })
+    .filter((row) => {
+      if (paymentBatchBlockReasonFilter !== '全部阻断原因') {
+        return row.executionBlockSummary?.includes(paymentBatchBlockReasonFilter);
+      }
+      return true;
+    })
+    .sort((left, right) => (
+      paymentBatchRiskRank(left) - paymentBatchRiskRank(right)
+      || left.dueDate.localeCompare(right.dueDate)
+      || left.paymentBatchNo.localeCompare(right.paymentBatchNo)
+    ));
+  const selectedPaymentBatchRow = filteredPaymentBatchRows.find((row) => row.paymentBatchNo === selectedPaymentBatchNo)
+    ?? filteredPaymentBatchRows[0]
+    ?? paymentBatchRows.find((row) => row.paymentBatchNo === selectedPaymentBatchNo)
+    ?? paymentBatchRows[0];
+  const selectedPaymentBatchArchived = selectedPaymentBatchRow?.status === '已付款归档';
+  const selectedPaymentBatchFreezeHint = selectedPaymentBatchArchived
+    ? '批次已归档，后续仅允许查看审计追踪；付款申请、差异处理、执行登记和阻断处理写入均已冻结。'
+    : '批次未归档，可按审批、差异处理和执行登记状态继续推进。';
+  const selectedPaymentBatchArchiveAudit = selectedPaymentBatchRow
+    ? auditLogs.find((log) => (
+      log.targetType === 'payment_batch'
+      && log.targetId === selectedPaymentBatchRow.paymentBatchNo
+      && log.action.startsWith('payment_batch.archived')
+    ))
+    : null;
+  const selectedPaymentBatchArchiveAuditSummary = selectedPaymentBatchArchiveAudit?.action
+    .split('|')
+    .slice(1)
+    .join(' · ') || '待归档后生成归档前执行摘要';
+  const selectedPaymentBatchArchiveExceptionRows = selectedPaymentBatchRow && selectedPaymentBatchArchived
+    ? [
+      {
+        exceptionType: '撤销申请',
+        approvalStatus: selectedPaymentBatchArchiveAudit ? '待提交审批' : '待归档后开放',
+        exceptionReason: '归档后发现付款登记、发票或审计摘要异常时，先提交撤销申请进入审批台账。',
+      },
+      {
+        exceptionType: '异常解冻',
+        approvalStatus: '需平台/财务负责人审批',
+        exceptionReason: '异常解冻只进入审批台账，不直接解冻或改写已归档批次。',
+      },
+    ]
+    : [];
+  const selectedPaymentBatchArchiveExceptionLedgerRows = selectedPaymentBatchRow
+    ? paymentArchiveExceptionRequests
+      .filter((request) => request.paymentBatchNo === selectedPaymentBatchRow.paymentBatchNo)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    : [];
+  const selectedPaymentBatchRequests = selectedPaymentBatchRow
+    ? paymentRequests.filter((request) => request.paymentBatchNo === selectedPaymentBatchRow.paymentBatchNo)
+    : [];
+  const selectedPaymentBatchInvoiceRows = selectedPaymentBatchRequests.map((request) => {
+    const invoice = invoices.find((item) => item.id === request.invoiceId);
+    const varianceHandling = varianceHandlings.find((item) => item.invoiceId === request.invoiceId);
+    return {
+      request,
+      invoice,
+      varianceHandling,
+      threeWayMatchStatus: invoice ? buildThreeWayMatchLabel(invoice) : '发票未同步',
+      varianceHandlingStatus: varianceHandling?.status ?? (invoice && Math.abs(invoice.varianceAmount ?? 0) > 0 ? '待生成差异处理' : '无差异处理'),
+    };
+  });
+  const selectedPaymentBatchJavaExecutionRows = selectedPaymentBatchRow
+    ? paymentExecutionRecords
+      .filter((record) => record.paymentBatchNo === selectedPaymentBatchRow.paymentBatchNo)
+      .map((record) => {
+        const request = paymentRequests.find((item) => item.id === record.paymentRequestId);
+        const invoice = invoices.find((item) => item.id === record.invoiceId);
+        return {
+          executionRecordId: record.id,
+          invoiceId: record.invoiceId,
+          requestId: record.paymentRequestId,
+          supplierId: record.supplierId,
+          amount: record.registeredAmount > 0 ? record.registeredAmount : invoice?.amount ?? request?.amount ?? 0,
+          paymentRegistrationStatus: record.executionStatus,
+          executionTrace: record.executionTrace,
+          executionBlockReason: record.executionBlockReason,
+          executionStage: record.executionStage,
+          executionNextAction: record.executionNextAction,
+          executionTraceSource: 'Java执行台账',
+        };
+      })
+    : [];
+  const selectedPaymentBatchDerivedExecutionRows = selectedPaymentBatchInvoiceRows.map(({ request, invoice, threeWayMatchStatus, varianceHandlingStatus }) => {
+    const paymentRegistered = invoice?.paymentStatus === '已付款';
+    const executable = request.requestStatus === '付款申请已通过'
+      && threeWayMatchStatus === '三单匹配通过'
+      && (varianceHandlingStatus === '无差异处理' || varianceHandlingStatus === '已处理');
+    return {
+      executionRecordId: request.id,
+      invoiceId: request.invoiceId,
+      requestId: request.id,
+      supplierId: request.supplierId,
+      amount: invoice?.amount ?? request.amount,
+      paymentRegistrationStatus: paymentRegistered ? '已登记付款' : executable ? '待登记付款' : '暂不可登记',
+      executionTrace: paymentRegistered
+        ? '模拟执行轨迹：付款状态已归档。'
+        : executable
+          ? '模拟执行轨迹：可安排付款，等待付款登记。'
+          : '模拟执行轨迹：等待审批、三单匹配或差异处理。',
+      executionBlockReason: executable
+        ? '付款申请已通过'
+        : paymentRegistered
+          ? '已登记付款'
+          : request.requestStatus !== '付款申请已通过'
+            ? '付款申请未通过'
+            : threeWayMatchStatus !== '三单匹配通过'
+              ? threeWayMatchStatus
+              : varianceHandlingStatus !== '无差异处理' && varianceHandlingStatus !== '已处理'
+                ? varianceHandlingStatus
+                : '暂不可登记',
+      executionStage: paymentRegistered ? '已登记待归档' : executable ? '可登记付款' : '阻断待处理',
+      executionNextAction: paymentRegistered
+        ? '刷新执行记录后归档审计'
+        : executable
+          ? '登记付款状态，真实支付仍不接入'
+          : '按阻断原因处理后刷新执行复核',
+      executionTraceSource: '前端派生轨迹',
+    };
+  });
+  const selectedPaymentBatchExecutionRows = selectedPaymentBatchJavaExecutionRows.length > 0
+    ? selectedPaymentBatchJavaExecutionRows
+    : selectedPaymentBatchDerivedExecutionRows;
+  const describePaymentExecutionRegistrationGate = (row: (typeof selectedPaymentBatchExecutionRows)[number]) => {
+    if (row.paymentRegistrationStatus === '已登记付款') {
+      return {
+        registrationGateStatus: row.executionStage ?? '已完成付款登记',
+        registrationReleaseDecision: '无需重复登记',
+        registrationNextAction: row.executionNextAction ?? '归档审计轨迹',
+        registrationPostActionHint: '已登记记录进入归档审计，回看付款执行记录和审计轨迹。',
+      };
+    }
+    if (row.paymentRegistrationStatus === '待登记付款') {
+      return {
+        registrationGateStatus: row.executionStage ?? '付款申请、三单匹配和差异处理均已放行',
+        registrationReleaseDecision: '可进入付款登记',
+        registrationNextAction: row.executionNextAction ?? '登记付款状态，真实支付仍不接入',
+        registrationPostActionHint: '登记后刷新执行记录，回看已登记金额和待登记金额。',
+      };
+    }
+    return {
+      registrationGateStatus: row.executionStage ?? row.executionBlockReason ?? '前置条件未满足',
+      registrationReleaseDecision: '仍阻断付款登记',
+      registrationNextAction: row.executionNextAction ?? '按阻断原因处理后刷新执行复核',
+      registrationPostActionHint: '先处理阻断原因，登记后复核提示会在放行后出现。',
+    };
+  };
+  const selectedPaymentBatchExecutionGateRows = selectedPaymentBatchExecutionRows.map((row) => ({
+    ...row,
+    ...describePaymentExecutionRegistrationGate(row),
+  }));
+  const buildPaymentExecutionRegistrationDraft = (row: (typeof selectedPaymentBatchExecutionGateRows)[number]): BuyerPaymentDraft => ({
+    paymentStatus: '已付款',
+    paymentRemark: `付款批次执行记录登记：${row.requestId}`,
+    paymentRequestStatus: '付款申请已通过',
+    reconciliationNote: '付款批次执行记录已放行，仅登记付款状态，不接真实支付。',
+  });
+  const canRegisterPaymentExecution = (registrationReleaseDecision: string) => (
+    registrationReleaseDecision === '可进入付款登记'
+  );
+  const selectedPaymentBatchReasonExecutionRows = paymentBatchBlockReasonFilter !== '全部阻断原因'
+    ? selectedPaymentBatchExecutionGateRows.filter((row) => row.executionBlockReason === paymentBatchBlockReasonFilter)
+    : [];
+  const selectedPaymentBatchReasonAmount = selectedPaymentBatchReasonExecutionRows
+    .reduce((sum, row) => sum + row.amount, 0);
+  const selectedPaymentBatchReasonCount = selectedPaymentBatchReasonExecutionRows.length;
+  const selectedPaymentBatchReasonAction = describePaymentBatchBlockAction(paymentBatchBlockReasonFilter);
+  const selectedPaymentBatchReasonResolutionStatus = selectedPaymentBatchReasonExecutionRows.length > 0
+    ? '原因明细已定位，按处理路径推进后刷新执行记录。'
+    : '当前批次暂无该原因记录，切换原因或查看完整执行记录。';
+  const paymentBlockResolutionKey = (paymentBatchNo: string, paymentRequestId: string, blockReason: string) =>
+    `${paymentBatchNo}::${paymentRequestId}::${blockReason}`;
+  const paymentBlockResolutionByKey = new Map(paymentBlockResolutions.map((resolution) => [
+    paymentBlockResolutionKey(
+      resolution.paymentBatchNo,
+      resolution.paymentRequestId ?? '',
+      resolution.blockReason,
+    ),
+    resolution,
+  ]));
+  const findPaymentBlockResolutionForRow = (row: (typeof selectedPaymentBatchExecutionRows)[number]) =>
+    paymentBlockResolutionByKey.get(paymentBlockResolutionKey(
+      selectedPaymentBatchRow?.paymentBatchNo ?? row.requestId,
+      row.requestId,
+      row.executionBlockReason ?? '暂不可登记',
+    ));
+  const describePaymentBatchResolutionQueueStatus = (row: (typeof selectedPaymentBatchExecutionRows)[number]) => {
+    const javaResolution = findPaymentBlockResolutionForRow(row);
+    if (javaResolution) {
+      return {
+        blockResolutionId: javaResolution.id,
+        blockResolutionStage: javaResolution?.resolutionStatus ?? '待处理',
+        blockResolutionRefreshHint: javaResolution?.nextStep ?? '按 Java 处理台账记录推进后刷新执行记录。',
+        blockResolutionAction: javaResolution?.resolutionAction ?? selectedPaymentBatchReasonAction.blockActionHint,
+        blockResolutionNextStep: javaResolution?.nextStep ?? '刷新付款批次执行台账。',
+        blockResolutionSource: 'Java处理台账',
+        blockResolutionHandledBy: javaResolution?.handledBy ?? javaResolution?.createdBy ?? '待写入',
+        blockResolutionUpdatedAt: javaResolution?.updatedAt ?? null,
+      };
+    }
+    if (row.paymentRegistrationStatus === '付款审批中' || row.executionBlockReason === '付款申请审批中') {
+      return {
+        blockResolutionId: null,
+        blockResolutionStage: '处理中',
+        blockResolutionRefreshHint: '审批动作完成后刷新付款执行记录。',
+        blockResolutionAction: '跟进审批进度',
+        blockResolutionNextStep: '审批完成后刷新 Java 执行台账。',
+        blockResolutionSource: '前端派生状态',
+        blockResolutionHandledBy: '待写入',
+        blockResolutionUpdatedAt: null,
+      };
+    }
+    if (row.executionTrace.includes('已处理') || row.executionTrace.includes('已通过')) {
+      return {
+        blockResolutionId: null,
+        blockResolutionStage: '已处理待刷新',
+        blockResolutionRefreshHint: '处理动作已出现，刷新 Java 执行台账确认是否解除阻断。',
+        blockResolutionAction: '刷新执行记录',
+        blockResolutionNextStep: '确认阻断是否解除。',
+        blockResolutionSource: '前端派生状态',
+        blockResolutionHandledBy: '待写入',
+        blockResolutionUpdatedAt: null,
+      };
+    }
+    if (row.paymentRegistrationStatus === '暂不可登记') {
+      return {
+        blockResolutionId: null,
+        blockResolutionStage: '待处理',
+        blockResolutionRefreshHint: '按处理入口完成前置动作后再刷新执行记录。',
+        blockResolutionAction: selectedPaymentBatchReasonAction.blockActionHint,
+        blockResolutionNextStep: '完成前置处理后刷新执行记录。',
+        blockResolutionSource: '前端派生状态',
+        blockResolutionHandledBy: '待写入',
+        blockResolutionUpdatedAt: null,
+      };
+    }
+    return {
+      blockResolutionId: null,
+      blockResolutionStage: '仍阻断',
+      blockResolutionRefreshHint: '当前记录仍未进入可登记付款状态，继续核对阻断原因。',
+      blockResolutionAction: '继续核对阻断原因',
+      blockResolutionNextStep: '核对三单匹配、差异处理和付款申请状态。',
+      blockResolutionSource: '前端派生状态',
+      blockResolutionHandledBy: '待写入',
+      blockResolutionUpdatedAt: null,
+    };
+  };
+  const selectedPaymentBatchReasonResolutionRows = selectedPaymentBatchReasonExecutionRows.map((row) => ({
+    ...row,
+    ...describePaymentBatchResolutionQueueStatus(row),
+  }));
+  const describePaymentBatchResolutionAction = (row: (typeof selectedPaymentBatchReasonResolutionRows)[number]) => {
+    if (row.blockResolutionStage === '待处理') {
+      return {
+        resolutionActionLabel: '处理该阻断',
+        resolutionActionTarget: selectedPaymentBatchReasonAction.blockActionTarget,
+        resolutionActionBoundary: '只定位到前置处理动作，不自动修改付款登记或三单状态。',
+      };
+    }
+    if (row.blockResolutionStage === '处理中') {
+      return {
+        resolutionActionLabel: '跟进审批进度',
+        resolutionActionTarget: '定位批次内付款申请，等待审批动作完成后刷新。',
+        resolutionActionBoundary: '仅提示审批跟进，不绕过审批流。',
+      };
+    }
+    if (row.blockResolutionStage === '已处理待刷新') {
+      return {
+        resolutionActionLabel: '刷新执行记录',
+        resolutionActionTarget: '刷新 Java 执行台账，确认阻断是否解除。',
+        resolutionActionBoundary: '只刷新只读执行台账，不发起真实付款。',
+      };
+    }
+    return {
+      resolutionActionLabel: '保持观察',
+      resolutionActionTarget: '继续核对阻断原因、三单匹配和差异处理状态。',
+      resolutionActionBoundary: '仍阻断时不开放付款登记动作。',
+    };
+  };
+  const selectedPaymentBatchReasonActionRows = selectedPaymentBatchReasonResolutionRows.map((row) => ({
+    ...row,
+    ...describePaymentBatchResolutionAction(row),
+  }));
+  const describePaymentBatchResolutionContext = (row: (typeof selectedPaymentBatchReasonActionRows)[number]) => {
+    if (row.blockResolutionStage === '处理中') {
+      return {
+        resolutionContextPanel: '批次内付款申请',
+        resolutionContextTargetNo: row.requestId,
+        resolutionContextInvoiceNo: row.invoiceId,
+        resolutionContextHint: '已定位到批次详情，优先查看付款申请审批状态和批次审批动作。',
+      };
+    }
+    if (row.blockResolutionStage === '已处理待刷新') {
+      return {
+        resolutionContextPanel: '付款批次执行记录',
+        resolutionContextTargetNo: row.requestId,
+        resolutionContextInvoiceNo: row.invoiceId,
+        resolutionContextHint: '已定位到批次详情，刷新执行记录后确认阻断是否解除。',
+      };
+    }
+    if (row.blockResolutionStage === '仍阻断') {
+      return {
+        resolutionContextPanel: '付款执行边界',
+        resolutionContextTargetNo: row.requestId,
+        resolutionContextInvoiceNo: row.invoiceId,
+        resolutionContextHint: '已定位到批次详情，继续核对三单匹配、差异处理和付款申请状态。',
+      };
+    }
+    return {
+      resolutionContextPanel: '批次内发票',
+      resolutionContextTargetNo: row.requestId,
+      resolutionContextInvoiceNo: row.invoiceId,
+      resolutionContextHint: '已定位到批次详情，按发票查看差异处理、三单匹配和付款申请资料。',
+    };
+  };
+  const selectedPaymentBatchReasonContextRows = selectedPaymentBatchReasonActionRows.map((row) => ({
+    ...row,
+    ...describePaymentBatchResolutionContext(row),
+  }));
+  const selectedPaymentBatchReasonResolutionStageSummary = ['待处理', '处理中', '已处理待刷新', '仍阻断']
+    .map((stage) => `${stage} ${selectedPaymentBatchReasonResolutionRows.filter((row) => row.blockResolutionStage === stage).length}`)
+    .join(' / ');
+  const paymentBatchResolutionStageFilterOptions = ['全部处理状态', '待处理', '处理中', '已处理待刷新', '仍阻断'];
+  const filteredPaymentBatchReasonResolutionRows = selectedPaymentBatchReasonContextRows.filter((row) => (
+    paymentBatchResolutionStageFilter === '全部处理状态'
+    || row.blockResolutionStage === paymentBatchResolutionStageFilter
+  ));
+  const selectedPaymentBatchResolutionLedgerRows = selectedPaymentBatchRow
+    ? paymentBlockResolutions.filter((resolution) => resolution.paymentBatchNo === selectedPaymentBatchRow.paymentBatchNo)
+      .sort((nextResolution, resolution) => resolution.updatedAt.localeCompare(nextResolution.updatedAt))
+    : [];
+  const selectedPaymentBatchResolvedBlockCount = selectedPaymentBatchResolutionLedgerRows
+    .filter((resolution) => resolution.resolutionStatus === '已处理待刷新')
+    .length;
+  const selectedPaymentBatchProcessingBlockCount = selectedPaymentBatchResolutionLedgerRows
+    .filter((resolution) => resolution.resolutionStatus === '处理中')
+    .length;
+  const selectedPaymentBatchDerivedRegisteredPaymentCount = selectedPaymentBatchExecutionRows
+    .filter((row) => row.paymentRegistrationStatus === '已登记付款')
+    .length;
+  const selectedPaymentBatchDerivedPendingRegistrationCount = selectedPaymentBatchExecutionRows
+    .filter((row) => row.paymentRegistrationStatus === '待登记付款')
+    .length;
+  const selectedPaymentBatchDerivedBlockedCount = selectedPaymentBatchExecutionRows
+    .filter((row) => row.paymentRegistrationStatus === '暂不可登记')
+    .length;
+  const selectedPaymentBatchDerivedRegisteredAmount = selectedPaymentBatchExecutionRows
+    .filter((row) => row.paymentRegistrationStatus === '已登记付款')
+    .reduce((sum, row) => sum + row.amount, 0);
+  const selectedPaymentBatchDerivedPendingRegistrationAmount = selectedPaymentBatchExecutionRows
+    .filter((row) => row.paymentRegistrationStatus === '待登记付款')
+    .reduce((sum, row) => sum + row.amount, 0);
+  const selectedPaymentBatchDerivedBlockedAmount = selectedPaymentBatchExecutionRows
+    .filter((row) => row.paymentRegistrationStatus === '暂不可登记')
+    .reduce((sum, row) => sum + row.amount, 0);
+  const selectedPaymentBatchHasBackendExecutionSummary = Boolean(selectedPaymentBatchRow?.executionDecision);
+  const selectedPaymentBatchRegisteredPaymentCount = selectedPaymentBatchHasBackendExecutionSummary
+    ? selectedPaymentBatchRow.registeredCount
+    : selectedPaymentBatchDerivedRegisteredPaymentCount;
+  const selectedPaymentBatchPendingRegistrationCount = selectedPaymentBatchHasBackendExecutionSummary
+    ? selectedPaymentBatchRow.pendingRegistrationCount
+    : selectedPaymentBatchDerivedPendingRegistrationCount;
+  const selectedPaymentBatchBlockedCount = selectedPaymentBatchHasBackendExecutionSummary
+    ? selectedPaymentBatchRow.blockedRegistrationCount
+    : selectedPaymentBatchDerivedBlockedCount;
+  const selectedPaymentBatchRegisteredAmount = selectedPaymentBatchHasBackendExecutionSummary
+    ? selectedPaymentBatchRow.registeredAmount
+    : selectedPaymentBatchDerivedRegisteredAmount;
+  const selectedPaymentBatchPendingRegistrationAmount = selectedPaymentBatchHasBackendExecutionSummary
+    ? selectedPaymentBatchRow.pendingRegistrationAmount
+    : selectedPaymentBatchDerivedPendingRegistrationAmount;
+  const selectedPaymentBatchBlockedAmount = selectedPaymentBatchHasBackendExecutionSummary
+    ? selectedPaymentBatchRow.blockedRegistrationAmount
+    : selectedPaymentBatchDerivedBlockedAmount;
+  const selectedPaymentBatchExecutionDecisionLabel = selectedPaymentBatchHasBackendExecutionSummary
+    ? selectedPaymentBatchRow.executionDecision
+    : selectedPaymentBatchExecutionRows.length === 0
+    ? '暂无执行记录'
+    : selectedPaymentBatchBlockedCount > 0
+      ? '存在暂不可登记'
+      : selectedPaymentBatchPendingRegistrationCount > 0
+        ? '可继续登记付款'
+        : '批次付款已登记';
+  const selectedPaymentBatchBlockSummary = selectedPaymentBatchRow?.executionBlockSummary
+    ?? '暂无后端阻断概览';
+  const selectedPaymentBatchExecutionReviewLabel = selectedPaymentBatchResolvedBlockCount > 0
+    ? `${selectedPaymentBatchResolvedBlockCount} 条阻断已处理待刷新，复核三单/差异/付款申请后再登记付款`
+    : selectedPaymentBatchProcessingBlockCount > 0
+      ? `${selectedPaymentBatchProcessingBlockCount} 条阻断处理中，等待处理完成后复核执行条件`
+      : selectedPaymentBatchResolutionLedgerRows.length > 0
+        ? '已有处理记录，按最新状态复核执行条件'
+      : '暂无处理记录，按阻断原因先完成前置处理';
+  const selectedPaymentBatchExecutionReviewBoundary = '处理记录只影响复核提示，不自动改写付款、三单或差异状态。';
+  const selectedPaymentBatchRegistrationReviewSummary = selectedPaymentBatchExecutionRows.length === 0
+    ? '暂无付款执行记录'
+    : selectedPaymentBatchBlockedCount > 0
+      ? `${selectedPaymentBatchBlockedCount} 笔暂不可登记，先处理暂不可登记阻断`
+      : selectedPaymentBatchPendingRegistrationCount > 0
+        ? `${selectedPaymentBatchPendingRegistrationCount} 笔待登记，继续登记待登记付款`
+        : `${selectedPaymentBatchRegisteredPaymentCount} 笔已登记，刷新执行记录后归档审计`;
+  const selectedPaymentBatchRegistrationReviewNextStep = selectedPaymentBatchBlockedCount > 0
+    ? '先处理暂不可登记阻断'
+    : selectedPaymentBatchPendingRegistrationCount > 0
+      ? '继续登记待登记付款'
+      : selectedPaymentBatchRegisteredPaymentCount > 0
+        ? '刷新执行记录后归档审计'
+        : '等待付款申请形成执行记录';
+  const selectedPaymentBatchPendingVarianceRows = selectedPaymentBatchInvoiceRows.filter((row) => (
+    row.varianceHandlingStatus !== '无差异处理' && row.varianceHandlingStatus !== '已处理'
+  ));
+  const selectedPaymentBatchPendingVarianceCount = selectedPaymentBatchPendingVarianceRows.length;
+  const selectedPaymentBatchPendingPaymentRequestRows = selectedPaymentBatchRequests.filter((request) => (
+    request.requestStatus !== '付款申请已通过'
+  ));
+  const selectedPaymentBatchPendingPaymentRequestCount = selectedPaymentBatchPendingPaymentRequestRows.length;
+  const selectedPaymentBatchAllPaymentRequestsApproved = selectedPaymentBatchRequests.length > 0
+    && selectedPaymentBatchPendingPaymentRequestCount === 0;
+  const selectedPaymentBatchExecutionRefreshHint = selectedPaymentBatchAllPaymentRequestsApproved
+    ? '付款申请均已通过，请刷新三单匹配和执行记录后再进入付款登记。'
+    : '仍有付款申请待复核，先完成付款申请复核再刷新执行记录。';
+  const selectedPaymentBatchExecutionRefreshActionDisabled = selectedPaymentBatchArchived
+    || !selectedPaymentBatchAllPaymentRequestsApproved
+    || buyerFulfillmentBusyId === 'three-way-rebuild';
+  const selectedPaymentBatchExecutionRefreshActionLabel = '刷新执行复核';
+  const selectedPaymentBatchExecutionRefreshActionStatus = selectedPaymentBatchAllPaymentRequestsApproved
+    ? '可刷新执行复核'
+    : '先完成付款申请复核';
+  const advanceFocusedPaymentRequestAfterStatusChange = (paymentRequestId: string, status: string) => {
+    if (!onUpdatePaymentRequestStatus) return;
+    onUpdatePaymentRequestStatus(paymentRequestId, status);
+    if (status === '付款申请已通过' && focusedPaymentRequestId === paymentRequestId) {
+      const nextPendingRequest = selectedPaymentBatchPendingPaymentRequestRows.find((item) => item.id !== paymentRequestId);
+      setFocusedPaymentRequestId(nextPendingRequest?.id ?? null);
+      if (nextPendingRequest?.invoiceId && onSelectInvoiceForReview) {
+        onSelectInvoiceForReview(nextPendingRequest.invoiceId);
+      }
+    }
+  };
+  const selectedPaymentBatchReviewActionRows = [
+    {
+      reviewAction: '三单匹配刷新',
+      reviewStatus: selectedPaymentBatchInvoiceRows.some((row) => row.threeWayMatchStatus !== '三单匹配通过')
+        ? '需刷新或复核'
+        : '已通过',
+      reviewEntry: '处理完成后刷新三单匹配快照，再回看付款执行记录。',
+      reviewBoundary: '当前页先提示复核动作，不自动重建三单快照。',
+      reviewTargetInvoiceId: null,
+      reviewTargetPaymentRequestId: null,
+      reviewTargetPaymentRequestInvoiceId: null,
+    },
+    {
+      reviewAction: '差异处理复核',
+      reviewStatus: selectedPaymentBatchPendingVarianceCount > 0
+        ? `存在 ${selectedPaymentBatchPendingVarianceCount} 条待处理差异`
+        : '暂无未处理差异',
+      reviewEntry: '定位批次内发票，完成差异处理后刷新付款申请。',
+      reviewBoundary: '差异处理按钮在批次内发票卡片中执行，本清单只做复核导航。',
+      reviewTargetInvoiceId: selectedPaymentBatchPendingVarianceRows[0]?.request.invoiceId ?? null,
+      reviewTargetPaymentRequestId: null,
+      reviewTargetPaymentRequestInvoiceId: null,
+    },
+    {
+      reviewAction: '付款申请复核',
+      reviewStatus: selectedPaymentBatchPendingPaymentRequestCount > 0
+        ? `存在 ${selectedPaymentBatchPendingPaymentRequestCount} 条待复核付款申请`
+        : '申请均已通过',
+      reviewEntry: '确认付款申请已通过后再登记付款。',
+      reviewBoundary: '付款申请状态按钮在批次内付款申请卡片中执行，不直接登记真实支付。',
+      reviewTargetInvoiceId: null,
+      reviewTargetPaymentRequestId: selectedPaymentBatchPendingPaymentRequestRows[0]?.id ?? null,
+      reviewTargetPaymentRequestInvoiceId: selectedPaymentBatchPendingPaymentRequestRows[0]?.invoiceId ?? null,
+    },
+  ];
+  const selectedPaymentBatchExecutionSummary = selectedPaymentBatchExecutionRows.length === 0
+    ? '暂无执行记录'
+    : `${selectedPaymentBatchRegisteredPaymentCount} / ${selectedPaymentBatchExecutionRows.length} 已登记付款`;
   const ledgerMobileCards = (
     <div className="grid gap-3">
       {filteredInvoices.map((invoice) => (
@@ -10118,9 +17476,11 @@ const ReconciliationLedgerPanel: React.FC<{
             { label: '发票金额', value: currency(invoice.amount) },
             { label: '差异金额', value: invoice.varianceAmount == null ? '待同步' : currency(invoice.varianceAmount) },
             { label: '收货状态', value: invoice.receiptStatus ?? '待同步' },
+            { label: '三单匹配', value: buildThreeWayMatchLabel(invoice) },
             { label: '付款状态', value: invoice.paymentStatus },
             { label: '状态流转', value: invoice.reconciliationStage ?? '待同步' },
             { label: '下一步动作', value: invoice.nextReconciliationAction ?? '同步订单' },
+            { label: '付款申请', value: buildPaymentRequestReadinessLabel(invoice) },
             { label: '逾期提醒', value: invoice.overdue ? `逾期 ${invoice.overdueDays ?? 0} 天` : (invoice.dueDate ?? '未逾期') },
             { label: '处理提示', value: buildLedgerRiskLabel(invoice) },
           ]}
@@ -10138,10 +17498,11 @@ const ReconciliationLedgerPanel: React.FC<{
             {roleLabel}对账单台账 · {filteredInvoices.length} 张发票 · 待处理 {pendingCount} 张
           </p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 xl:w-[640px]">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5 xl:w-[760px]">
           <MiniFact label={`${roleLabel}金额`} value={currency(invoiceTotal)} />
           <MiniFact label="差异金额" value={currency(varianceTotal)} />
           <MiniFact label="逾期提醒" value={overdueCount > 0 ? `${overdueCount} 张逾期` : '无逾期'} />
+          <MiniFact label="三单匹配" value={`${threeWayMatchPassCount} 张通过`} />
           <MiniFact label="对账状态" value={pendingCount > 0 ? '待处理' : '三单一致'} />
         </div>
       </div>
@@ -10152,6 +17513,851 @@ const ReconciliationLedgerPanel: React.FC<{
           <MiniFact label="当前筛选" value={statusFilter} />
         </div>
       </div>
+      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+          <MiniFact label="差异处理队列" value={varianceQueueCount > 0 ? `${varianceQueueCount} 张待差异处理` : '暂无待差异处理'} />
+          <MiniFact label="付款阻断" value={paymentRequestBlockedCount > 0 ? `${paymentRequestBlockedCount} 张被阻断` : '暂无阻断'} />
+          <MiniFact label="已恢复申请" value={paymentRequestRestoredCount > 0 ? `${paymentRequestRestoredCount} 张已恢复` : '暂无恢复'} />
+          <MiniFact label="付款申请队列" value={paymentRequestReadyCount > 0 ? `${paymentRequestReadyCount} 张可发起` : '暂无可发起'} />
+          <MiniFact label="可付款批次" value={paymentRequestReadyCount > 0 ? '按到期日形成付款批次' : '等待三单匹配通过'} />
+          <MiniFact label="台账边界" value="付款申请暂按发票维度派生，尚未落库为独立申请单。" />
+        </div>
+      </div>
+      {scope === 'buyer' && (
+        <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <MiniFact label="付款批次台账" value={`${paymentBatchRows.length} 个批次`} />
+            <MiniFact label="批次金额" value={currency(paymentBatchTotalAmount)} />
+            <MiniFact label="批次状态" value={paymentBatchRows.some((row) => row.status === '审批中') ? '存在审批中批次' : '按申请状态推进'} />
+            <MiniFact label="计划付款日" value={paymentBatchRows[0]?.dueDate ?? '待付款申请形成'} />
+          </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <MiniFact label="批次审批队列" value={paymentBatchApprovalQueueCount > 0 ? `${paymentBatchApprovalQueueCount} 个审批中` : '暂无审批中'} />
+            <MiniFact label="可执行金额" value={currency(paymentBatchExecutableAmount)} />
+            <MiniFact label="待提交批次" value={paymentBatchPendingSubmissionCount > 0 ? `${paymentBatchPendingSubmissionCount} 个待提交` : '暂无待提交'} />
+            <MiniFact label="已归档批次" value={paymentBatchArchivedCount > 0 ? `${paymentBatchArchivedCount} 个已归档` : '暂无归档'} />
+          </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <MiniFact label="逾期批次" value={paymentBatchOverdueCount > 0 ? `${paymentBatchOverdueCount} 个逾期` : '暂无逾期'} />
+            <MiniFact label="7天内到期" value={paymentBatchDueSoonCount > 0 ? `${paymentBatchDueSoonCount} 个到期` : '暂无临期'} />
+            <MiniFact label="最早处理日" value={paymentBatchEarliestDueDate} />
+            <MiniFact label="计划风险" value={paymentBatchScheduleRiskLabel} />
+          </div>
+          <div className="mt-3 rounded-lg border border-emerald-100 bg-white p-2">
+            <p className="text-xs font-black text-emerald-800">批次风险筛选</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {paymentBatchRiskFilterOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setPaymentBatchRiskFilter(option)}
+                  className={`rounded-md border px-3 py-2 text-xs font-black transition ${
+                    paymentBatchRiskFilter === option
+                      ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                      : 'border-emerald-100 bg-emerald-50 text-emerald-800 hover:border-emerald-300'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-amber-100 bg-white p-2">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-black text-amber-800">阻断原因筛选</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">按付款执行记录定位卡住的批次和发票。</p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3 lg:w-[480px]">
+                <MiniFact label="阻断队列" value={`${paymentBatchBlockQueueRows.length} 条`} />
+                <MiniFact label="阻断金额" value={currency(paymentBatchBlockedQueueAmount)} />
+                <MiniFact label="当前阻断原因" value={paymentBatchCurrentBlockReasonLabel} />
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {paymentBatchBlockReasonOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setPaymentBatchBlockReasonFilter(option)}
+                  className={`rounded-md border px-3 py-2 text-xs font-black transition ${
+                    paymentBatchBlockReasonFilter === option
+                      ? 'border-amber-500 bg-amber-500 text-white shadow-sm'
+                      : 'border-amber-100 bg-amber-50 text-amber-800 hover:border-amber-300'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-2">
+              <p className="text-xs font-black text-amber-800">阻断原因分布</p>
+              {paymentBatchBlockReasonDistributionRows.length === 0 ? (
+                <p className="mt-2 text-xs font-bold leading-5 text-amber-700">
+                  暂无阻断原因分布；形成暂不可登记或付款审批中记录后会自动汇总。
+                </p>
+              ) : (
+                <div className="mt-2 grid gap-2 lg:grid-cols-3">
+                  {paymentBatchBlockReasonDistributionRows.map((row) => (
+                    <button
+                      key={row.reason}
+                      type="button"
+                      onClick={() => setPaymentBatchBlockReasonFilter(row.reason)}
+                      className={`rounded-lg border p-2 text-left transition ${
+                        paymentBatchBlockReasonFilter === row.reason
+                          ? 'border-amber-500 bg-white shadow-sm'
+                          : 'border-amber-100 bg-white hover:border-amber-300'
+                      }`}
+                    >
+                      <p className="text-xs font-black text-amber-800">{row.reason}</p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                        <MiniFact label="阻断笔数" value={`${row.reasonCount} 笔`} />
+                        <MiniFact label="阻断金额" value={currency(row.reasonAmount)} />
+                        <MiniFact label="涉及批次" value={`${row.reasonBatches} 个`} />
+                      </div>
+                      <p className="mt-2 text-xs font-black text-amber-700">查看该原因</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-2">
+              <p className="text-xs font-black text-amber-800">付款阻断队列</p>
+              {paymentBatchBlockQueueRows.length === 0 ? (
+                <p className="mt-2 text-xs font-bold leading-5 text-amber-700">
+                  当前阻断原因下暂无付款执行记录；可切换为全部阻断原因查看完整队列。
+                </p>
+              ) : (
+                <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                  {paymentBatchBlockQueueRows.map((row) => (
+                    <div key={`${row.paymentBatchNo}-${row.requestId}-${row.invoiceId}`} className="rounded-lg border border-amber-100 bg-white p-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="font-mono text-xs font-black text-slate-900">{row.paymentBatchNo}</p>
+                          <p className="mt-1 font-mono text-xs font-bold text-slate-500">{row.invoiceId}</p>
+                        </div>
+                        <StatusPill label={row.paymentRegistrationStatus} />
+                      </div>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        <MiniFact label="阻断原因" value={row.executionBlockReason} />
+                        <MiniFact label="执行金额" value={currency(row.amount)} />
+                        <MiniFact label="付款申请" value={row.requestId} />
+                        <MiniFact label="执行轨迹" value={row.executionTrace} />
+                        <MiniFact label="处理建议" value={row.blockActionHint} />
+                        <MiniFact label="处理入口" value={row.blockActionTarget} />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPaymentBatchNo(row.paymentBatchNo)}
+                        className="mt-2 rounded-md border border-amber-200 bg-amber-100 px-3 py-2 text-xs font-black text-amber-900 transition hover:border-amber-400"
+                      >
+                        定位后处理
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          {paymentBatchRows.length === 0 ? (
+            <p className="mt-2 text-xs font-bold leading-5 text-emerald-700">
+              暂无付款批次台账；创建付款申请后会按付款批次号汇总展示。
+            </p>
+          ) : filteredPaymentBatchRows.length === 0 ? (
+            <p className="mt-2 text-xs font-bold leading-5 text-emerald-700">
+              当前筛选下暂无付款批次；切换为全部批次可查看完整付款计划。
+            </p>
+          ) : (
+            <div className="mt-3 grid gap-2 lg:grid-cols-2">
+              {filteredPaymentBatchRows.map((row) => (
+                <div key={row.paymentBatchNo} className="rounded-lg border border-emerald-100 bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black text-emerald-700">付款批次</p>
+                      <p className="mt-1 text-sm font-black text-slate-950">{row.paymentBatchNo}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <StatusPill status={row.status} />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPaymentBatchNo(row.paymentBatchNo)}
+                        className="rounded-md border border-emerald-100 bg-emerald-50 px-2.5 py-1.5 text-xs font-black text-emerald-800 transition hover:border-emerald-300"
+                      >
+                        选择批次
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <MiniFact label="批次金额" value={currency(row.amount)} />
+                    <MiniFact label="发票数量" value={`${row.invoiceCount} 张`} />
+                    <MiniFact label="计划付款日" value={row.dueDate} />
+                  </div>
+                  <div className="mt-2">
+                    <MiniFact label="计划风险" value={row.scheduleRiskLabel} />
+                  </div>
+                  <div className="mt-2">
+                    <MiniFact label="归档门禁" value={describePaymentBatchArchiveGate(row)} />
+                  </div>
+                  {javaEnabled && onUpdatePaymentBatchStatus && (
+                    <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-2">
+                      <p className="text-xs font-black text-emerald-800">批次级审批</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <PrimaryActionButton
+                          onClick={() => onUpdatePaymentBatchStatus(row.paymentBatchNo, '审批中')}
+                          disabled={buyerFulfillmentBusyId === `payment-batch:${row.paymentBatchNo}` || row.status === '审批中'}
+                          busy={buyerFulfillmentBusyId === `payment-batch:${row.paymentBatchNo}`}
+                          pendingLabel="提交中"
+                        >
+                          提交批次审批
+                        </PrimaryActionButton>
+                        <PrimaryActionButton
+                          onClick={() => onUpdatePaymentBatchStatus(row.paymentBatchNo, '可安排付款')}
+                          disabled={buyerFulfillmentBusyId === `payment-batch:${row.paymentBatchNo}` || row.status === '可安排付款' || !canApprovePaymentBatch(row)}
+                          busy={buyerFulfillmentBusyId === `payment-batch:${row.paymentBatchNo}`}
+                          pendingLabel="审批中"
+                        >
+                          通过批次审批
+                        </PrimaryActionButton>
+                        <PrimaryActionButton
+                          onClick={() => onUpdatePaymentBatchStatus(row.paymentBatchNo, '已付款归档')}
+                          disabled={buyerFulfillmentBusyId === `payment-batch:${row.paymentBatchNo}` || row.status === '已付款归档' || !isPaymentBatchArchiveReady(row)}
+                          busy={buyerFulfillmentBusyId === `payment-batch:${row.paymentBatchNo}`}
+                          pendingLabel="归档中"
+                        >
+                          标记付款归档
+                        </PrimaryActionButton>
+                      </div>
+                    </div>
+                  )}
+                  <p className="mt-2 text-xs font-bold leading-5 text-emerald-700">
+                    执行准备：
+                    {row.status === '可安排付款'
+                      ? `已审批 ${currency(row.approvedAmount)}，可进入付款登记。`
+                      : !canApprovePaymentBatch(row)
+                        ? `付款申请未全部通过，已审批 ${currency(row.approvedAmount)} / 批次总额 ${currency(row.amount)}。`
+                      : row.status === '审批中'
+                        ? '等待付款申请审批通过后再安排付款。'
+                        : row.status === '已付款归档'
+                          ? '批次已归档，后续只做审计追踪。'
+                          : '先提交付款申请审批，再进入执行队列。'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+          {selectedPaymentBatchRow && (
+            <div className="mt-3 rounded-lg border border-emerald-100 bg-white p-3">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-xs font-black text-emerald-700">付款批次详情</p>
+                  <p className="mt-1 text-sm font-black text-slate-950">{selectedPaymentBatchRow.paymentBatchNo}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">
+                    批次内付款申请 {selectedPaymentBatchRequests.length} 条 · 批次内发票 {selectedPaymentBatchInvoiceRows.length} 张
+                  </p>
+                </div>
+                <StatusPill status={selectedPaymentBatchRow.status} />
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                <MiniFact label="批次金额" value={currency(selectedPaymentBatchRow.amount)} />
+                <MiniFact label="已审批金额" value={currency(selectedPaymentBatchRow.approvedAmount)} />
+                <MiniFact label="计划付款日" value={selectedPaymentBatchRow.dueDate} />
+                <MiniFact label="计划风险" value={selectedPaymentBatchRow.scheduleRiskLabel} />
+              </div>
+              <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+                <p className="text-xs font-black text-emerald-800">归档审计摘要</p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <MiniFact label="归档人" value={selectedPaymentBatchArchiveAudit?.actorId ?? '待归档'} />
+                  <MiniFact label="归档时间" value={selectedPaymentBatchArchiveAudit ? formatAuditTime(selectedPaymentBatchArchiveAudit.createdAt) : '待归档'} />
+                  <MiniFact label="归档前执行摘要" value={selectedPaymentBatchArchiveAuditSummary} />
+                  <MiniFact label="归档冻结边界" value={selectedPaymentBatchFreezeHint} />
+                </div>
+              </div>
+              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-xs font-black text-slate-700">归档审计面板</p>
+                    <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+                      已归档批次集中查看归档动作、冻结反馈、付款登记摘要和处理记录入口。
+                    </p>
+                  </div>
+                  <StatusPill label={selectedPaymentBatchArchived ? '只读审计' : '归档前复核'} />
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <MiniFact label="归档动作" value={selectedPaymentBatchArchiveAudit ? '已写入归档审计日志' : '待归档后生成审计日志'} />
+                  <MiniFact label="冻结反馈" value={selectedPaymentBatchFreezeHint} />
+                  <MiniFact label="付款登记摘要" value={selectedPaymentBatchRegistrationReviewSummary} />
+                  <MiniFact label="处理记录入口" value={`${selectedPaymentBatchResolutionLedgerRows.length} 条处理记录可回看`} />
+                  <MiniFact label="审计追踪入口" value={selectedPaymentBatchArchiveAudit ? selectedPaymentBatchArchiveAuditSummary : '归档后回看操作人、时间和执行摘要'} />
+                  <MiniFact label="付款登记金额" value={currency(selectedPaymentBatchRegisteredAmount)} />
+                  <MiniFact label="冻结操作范围" value="付款申请、差异处理、执行登记和阻断处理写入" />
+                  <MiniFact label="真实支付边界" value="不接真实支付、银企直连或批量付款执行" />
+                </div>
+                <div className="mt-3 rounded-lg border border-amber-100 bg-white p-3">
+                  <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-xs font-black text-amber-800">归档异常申请入口</p>
+                      <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+                        归档异常只进入审批台账，不直接解冻或改写已归档批次。
+                      </p>
+                    </div>
+                    <StatusPill label={selectedPaymentBatchArchived ? '可提交异常申请' : '归档后开放'} />
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    <MiniFact label="归档异常申请" value={`${selectedPaymentBatchArchiveExceptionRows.length} 类入口`} />
+                    <MiniFact label="撤销申请" value={selectedPaymentBatchArchived ? '进入审批台账' : '归档后开放'} />
+                    <MiniFact label="异常解冻" value="需审批后才允许后续处理" />
+                    <MiniFact label="异常入口边界" value="仅登记申请，不改写已归档批次" />
+                  </div>
+                  {selectedPaymentBatchArchiveExceptionRows.length > 0 && (
+                    <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                      {selectedPaymentBatchArchiveExceptionRows.map((row) => (
+                        <div key={row.exceptionType} className="rounded-lg border border-amber-100 bg-amber-50 p-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs font-black text-amber-900">{row.exceptionType}</p>
+                            <StatusPill label={row.approvalStatus} />
+                          </div>
+                          <p className="mt-2 text-xs font-bold leading-5 text-amber-800">{row.exceptionReason}</p>
+                          <PrimaryActionButton
+                            onClick={() => selectedPaymentBatchRow && onCreatePaymentArchiveExceptionRequest?.(
+                              selectedPaymentBatchRow.paymentBatchNo,
+                              row.exceptionType,
+                              row.exceptionReason,
+                            )}
+                            disabled={!javaEnabled || !selectedPaymentBatchArchived || !onCreatePaymentArchiveExceptionRequest || buyerFulfillmentBusyId === `payment-archive-exception:${selectedPaymentBatchRow?.paymentBatchNo}:${row.exceptionType}`}
+                            busy={buyerFulfillmentBusyId === `payment-archive-exception:${selectedPaymentBatchRow?.paymentBatchNo}:${row.exceptionType}`}
+                            pendingLabel="提交中"
+                            tone="amber"
+                            fullWidth
+                          >
+                            {row.exceptionType === '撤销申请' ? '提交撤销申请' : '提交异常解冻'}
+                          </PrimaryActionButton>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs font-black text-amber-900">归档异常申请台账</p>
+                      <StatusPill label={`${selectedPaymentBatchArchiveExceptionLedgerRows.length} 条申请`} />
+                    </div>
+                    {selectedPaymentBatchArchiveExceptionLedgerRows.length === 0 ? (
+                      <p className="mt-2 text-xs font-bold leading-5 text-amber-800">
+                        当前批次暂无归档异常申请；提交后进入审批台账，不直接解冻或改写已归档批次。
+                      </p>
+                    ) : (
+                      <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                        {selectedPaymentBatchArchiveExceptionLedgerRows.map((request) => (
+                          <div key={request.id} className="rounded-lg border border-white bg-white p-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-xs font-black text-slate-900">{request.exceptionType}</p>
+                              <StatusPill label={request.approvalStatus} />
+                            </div>
+                            <p className="mt-2 text-xs font-bold leading-5 text-slate-600">{request.exceptionReason}</p>
+                            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                              <MiniFact label="申请人" value={request.requestedBy} />
+                              <MiniFact label="申请时间" value={formatAuditTime(request.createdAt)} />
+                              <MiniFact label="受控处理状态" value={request.actionStatus} />
+                              <MiniFact label="处理人" value={request.handledBy ?? '待登记'} />
+                              <MiniFact label="处理结果" value={request.actionResult ?? '审批通过后登记受控处理动作'} />
+                              <MiniFact label="关闭状态" value={request.closureStatus} />
+                              <MiniFact label="关闭人" value={request.closedBy ?? '待复核关闭'} />
+                              <MiniFact label="关闭结果" value={request.closureResult ?? '受控处理登记后复核关闭'} />
+                            </div>
+                            {request.approvalStatus === '已通过' && request.actionStatus !== '已登记受控处理' && (
+                              <PrimaryActionButton
+                                onClick={() => onCompletePaymentArchiveExceptionAction?.(
+                                  request.id,
+                                  `${request.exceptionType}已审批通过，登记受控处理动作；后续仍需专用流程执行，不直接解冻或改写已归档批次。`,
+                                )}
+                                disabled={!javaEnabled || !onCompletePaymentArchiveExceptionAction || buyerFulfillmentBusyId === `payment-archive-exception-action:${request.id}`}
+                                busy={buyerFulfillmentBusyId === `payment-archive-exception-action:${request.id}`}
+                                pendingLabel="登记中"
+                                tone="amber"
+                                fullWidth
+                              >
+                                登记受控处理
+                              </PrimaryActionButton>
+                            )}
+                            {request.approvalStatus === '已通过' && request.actionStatus === '已登记受控处理' && request.closureStatus !== '已关闭' && (
+                              <PrimaryActionButton
+                                onClick={() => onClosePaymentArchiveExceptionRequest?.(
+                                  request.id,
+                                  `${request.exceptionType}受控处理已登记，关闭复核完成；后续如需解冻或撤销仍走专用流程，不直接改写已归档批次。`,
+                                )}
+                                disabled={!javaEnabled || !onClosePaymentArchiveExceptionRequest || buyerFulfillmentBusyId === `payment-archive-exception-closure:${request.id}`}
+                                busy={buyerFulfillmentBusyId === `payment-archive-exception-closure:${request.id}`}
+                                pendingLabel="关闭中"
+                                tone="emerald"
+                                fullWidth
+                              >
+                                关闭复核
+                              </PrimaryActionButton>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+                  <MiniFact label="已登记金额" value={currency(selectedPaymentBatchRegisteredAmount)} />
+                  <MiniFact label="待登记金额" value={currency(selectedPaymentBatchPendingRegistrationAmount)} />
+                  <MiniFact label="暂不可登记金额" value={currency(selectedPaymentBatchBlockedAmount)} />
+                  <MiniFact label="待登记笔数" value={`${selectedPaymentBatchPendingRegistrationCount} 笔`} />
+                <MiniFact label="暂不可登记笔数" value={`${selectedPaymentBatchBlockedCount} 笔`} />
+                <MiniFact label="执行判断" value={selectedPaymentBatchExecutionDecisionLabel} />
+                <MiniFact label="阻断概览" value={selectedPaymentBatchBlockSummary} />
+                <MiniFact label="执行复核提示" value={selectedPaymentBatchExecutionReviewLabel} />
+                <MiniFact label="复核边界" value={selectedPaymentBatchExecutionReviewBoundary} />
+                <MiniFact label="登记后复核摘要" value={selectedPaymentBatchRegistrationReviewSummary} />
+                <MiniFact label="登记后下一步" value={selectedPaymentBatchRegistrationReviewNextStep} />
+                <MiniFact label="执行记录刷新提示" value={selectedPaymentBatchExecutionRefreshHint} />
+                <MiniFact label="执行刷新边界" value="真实支付仍不接入，刷新后仅复核付款登记条件。" />
+              </div>
+              {javaEnabled && onRebuildThreeWayMatches && (
+                <div className="mt-3 rounded-lg border border-blue-100 bg-white p-2">
+                  <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-xs font-black text-blue-900">执行复核刷新入口</p>
+                      <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+                        {selectedPaymentBatchExecutionRefreshActionStatus} · {selectedPaymentBatchExecutionRefreshHint}
+                      </p>
+                    </div>
+                    <PrimaryActionButton
+                      onClick={() => onRebuildThreeWayMatches()}
+                      disabled={selectedPaymentBatchExecutionRefreshActionDisabled}
+                      busy={buyerFulfillmentBusyId === 'three-way-rebuild'}
+                      pendingLabel="刷新中"
+                      flushTop
+                    >
+                      {selectedPaymentBatchExecutionRefreshActionLabel}
+                    </PrimaryActionButton>
+                  </div>
+                </div>
+              )}
+            </div>
+              <DetailSection title="复核动作清单" countLabel={`${selectedPaymentBatchReviewActionRows.length} 项`}>
+                <div className="grid gap-2 lg:grid-cols-3">
+                  {selectedPaymentBatchReviewActionRows.map((row) => (
+                    <div key={row.reviewAction} className="rounded-lg border border-blue-100 bg-blue-50 p-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-black text-blue-900">{row.reviewAction}</p>
+                        <StatusPill label={row.reviewStatus} />
+                      </div>
+                      <div className="mt-2 grid gap-2">
+                        <MiniFact label="复核入口" value={row.reviewEntry} />
+                        <MiniFact label="复核边界" value={row.reviewBoundary} />
+                        {row.reviewAction === '差异处理复核' && (
+                          <MiniFact label="待处理差异数量" value={`${selectedPaymentBatchPendingVarianceCount} 条`} />
+                        )}
+                        {row.reviewAction === '付款申请复核' && (
+                          <MiniFact label="待复核付款申请" value={`${selectedPaymentBatchPendingPaymentRequestCount} 条`} />
+                        )}
+                      </div>
+                      {row.reviewAction === '三单匹配刷新' && javaEnabled && onRebuildThreeWayMatches && (
+                          <PrimaryActionButton
+                          onClick={() => onRebuildThreeWayMatches()}
+                          disabled={selectedPaymentBatchArchived || buyerFulfillmentBusyId === 'three-way-rebuild'}
+                          busy={buyerFulfillmentBusyId === 'three-way-rebuild'}
+                          pendingLabel="刷新中"
+                          fullWidth
+                        >
+                          刷新三单匹配
+                        </PrimaryActionButton>
+                      )}
+                      {row.reviewAction === '差异处理复核' && row.reviewTargetInvoiceId && onSelectInvoiceForReview && (
+                        <PrimaryActionButton
+                          onClick={() => onSelectInvoiceForReview(row.reviewTargetInvoiceId)}
+                          tone="amber"
+                          fullWidth
+                        >
+                          定位待处理差异
+                        </PrimaryActionButton>
+                      )}
+                      {row.reviewAction === '付款申请复核' && row.reviewTargetPaymentRequestInvoiceId && onSelectInvoiceForReview && (
+                        <PrimaryActionButton
+                          onClick={() => {
+                            setFocusedPaymentRequestId(row.reviewTargetPaymentRequestId);
+                            onSelectInvoiceForReview(row.reviewTargetPaymentRequestInvoiceId);
+                          }}
+                          tone="amber"
+                          fullWidth
+                        >
+                          定位付款申请
+                        </PrimaryActionButton>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </DetailSection>
+              {paymentBatchBlockReasonFilter !== '全部阻断原因' && (
+                <DetailSection title="当前原因明细" countLabel={`${selectedPaymentBatchReasonCount} 条`}>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <MiniFact label="当前原因筛选" value={paymentBatchBlockReasonFilter} />
+                    <MiniFact label="当前原因笔数" value={`${selectedPaymentBatchReasonCount} 笔`} />
+                    <MiniFact label="当前原因金额" value={currency(selectedPaymentBatchReasonAmount)} />
+                  </div>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    <MiniFact label="当前处理状态" value={selectedPaymentBatchReasonResolutionStatus} />
+                    <MiniFact label="处理路径" value={selectedPaymentBatchReasonAction.blockActionHint} />
+                    <MiniFact label="处理入口" value={selectedPaymentBatchReasonAction.blockActionTarget} />
+                    <MiniFact label="处理闭环边界" value="当前只是处理指引，不自动改写付款、三单或差异状态。" />
+                  </div>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <MiniFact label="处理队列状态" value={selectedPaymentBatchReasonCount > 0 ? '按阻断明细派生处理进度' : '暂无处理队列'} />
+                    <MiniFact label="队列状态分布" value={selectedPaymentBatchReasonResolutionStageSummary} />
+                  </div>
+                  <div className="mt-2 rounded-lg border border-amber-100 bg-white p-2">
+                    <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <p className="text-xs font-black text-amber-800">处理状态筛选</p>
+                        <p className="mt-1 text-xs font-bold text-slate-500">按处理进度查看当前原因下的阻断明细。</p>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:w-[320px]">
+                        <MiniFact label="当前处理筛选" value={paymentBatchResolutionStageFilter} />
+                        <MiniFact label="筛选后记录" value={`${filteredPaymentBatchReasonResolutionRows.length} 条`} />
+                      </div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {paymentBatchResolutionStageFilterOptions.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => setPaymentBatchResolutionStageFilter(option)}
+                          className={`rounded-md border px-3 py-2 text-xs font-black transition ${
+                            paymentBatchResolutionStageFilter === option
+                              ? 'border-amber-500 bg-amber-500 text-white shadow-sm'
+                              : 'border-amber-100 bg-amber-50 text-amber-800 hover:border-amber-300'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {selectedPaymentBatchReasonExecutionRows.length === 0 ? (
+                    <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
+                      该批次当前原因下暂无执行记录；切换为全部阻断原因查看完整付款执行记录。
+                    </p>
+                  ) : filteredPaymentBatchReasonResolutionRows.length === 0 ? (
+                    <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
+                      当前处理状态下暂无阻断明细；切换为全部处理状态查看完整处理队列。
+                    </p>
+                  ) : (
+                    <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                      {filteredPaymentBatchReasonResolutionRows.map((row) => (
+                        <div key={`reason-${row.requestId}-${row.invoiceId}`} className="rounded-lg border border-amber-100 bg-amber-50 p-2">
+                          {(() => {
+                            const resolutionBusyId = `payment-block-resolution:${row.requestId}:${row.executionBlockReason ?? '暂不可登记'}`;
+                            const saveResolution = (resolutionDraft: {
+                              resolutionStatus: string;
+                              resolutionAction: string;
+                              nextStep: string;
+                            }) => {
+                              if (!onSavePaymentBlockResolutionStatus) return;
+                              onSavePaymentBlockResolutionStatus({
+                              paymentBatchNo: selectedPaymentBatchRow.paymentBatchNo,
+                              paymentRequestId: row.requestId,
+                              invoiceId: row.invoiceId,
+                              supplierId: row.supplierId,
+                              blockReason: row.executionBlockReason ?? '暂不可登记',
+                              resolutionStatus: resolutionDraft.resolutionStatus,
+                              resolutionAction: resolutionDraft.resolutionAction,
+                              nextStep: resolutionDraft.nextStep,
+                              existingResolutionId: row.blockResolutionId,
+                              });
+                            };
+                            const resolutionWriteDisabled = selectedPaymentBatchArchived || !javaEnabled
+                              || !onSavePaymentBlockResolutionStatus
+                              || buyerFulfillmentBusyId === resolutionBusyId;
+                            return (
+                              <>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <p className="font-mono text-xs font-black text-amber-900">{row.invoiceId}</p>
+                              <p className="mt-1 font-mono text-xs font-bold text-amber-700">{row.requestId}</p>
+                            </div>
+                            <StatusPill label={row.paymentRegistrationStatus} />
+                          </div>
+                          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                            <MiniFact label="阻断原因" value={row.executionBlockReason ?? '暂无阻断'} />
+                            <MiniFact label="执行金额" value={currency(row.amount)} />
+                            <MiniFact label="执行轨迹" value={row.executionTrace} />
+                            <MiniFact label="执行记录来源" value={row.executionTraceSource} />
+                            <MiniFact label="处理队列状态" value={row.blockResolutionStage} />
+                            <MiniFact label="刷新提示" value={row.blockResolutionRefreshHint} />
+                            <MiniFact label="处理来源" value={row.blockResolutionSource} />
+                            <MiniFact label="最近处理人" value={row.blockResolutionHandledBy} />
+                            <MiniFact label="处理时间" value={row.blockResolutionUpdatedAt ? formatAuditTime(row.blockResolutionUpdatedAt) : '待保存'} />
+                            <MiniFact label="处理动作" value={row.blockResolutionAction} />
+                            <MiniFact label="下一步" value={row.blockResolutionNextStep} />
+                            <MiniFact label="下一步动作" value={row.resolutionActionLabel} />
+                            <MiniFact label="定位入口" value={row.resolutionActionTarget} />
+                            <MiniFact label="操作边界" value={row.resolutionActionBoundary} />
+                          </div>
+                          <div className="mt-2 rounded-lg border border-amber-100 bg-white p-2">
+                            <p className="text-xs font-black text-amber-800">上下文定位</p>
+                            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                              <MiniFact label="目标分区" value={row.resolutionContextPanel} />
+                              <MiniFact label="目标单号" value={row.resolutionContextTargetNo} />
+                              <MiniFact label="关联发票" value={row.resolutionContextInvoiceNo} />
+                              <MiniFact label="联动说明" value={row.resolutionContextHint} />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPaymentBatchNo(selectedPaymentBatchRow.paymentBatchNo)}
+                            className="mt-2 rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-black text-amber-900 transition hover:border-amber-400"
+                          >
+                            {row.resolutionActionLabel}
+                          </button>
+                          {javaEnabled && onSavePaymentBlockResolutionStatus && (
+                            <div aria-label="付款阻断处理状态写入" className="mt-2 grid gap-2 sm:grid-cols-3">
+                              <button
+                                type="button"
+                                disabled={resolutionWriteDisabled}
+                                onClick={() => saveResolution({
+                                  resolutionStatus: row.blockResolutionStage,
+                                  resolutionAction: row.blockResolutionAction,
+                                  nextStep: row.blockResolutionNextStep,
+                                })}
+                                className="rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-black text-amber-900 transition hover:border-amber-400 disabled:bg-slate-100 disabled:text-slate-500"
+                              >
+                                保存处理状态
+                              </button>
+                              <button
+                                type="button"
+                                disabled={resolutionWriteDisabled}
+                                onClick={() => saveResolution({
+                                  resolutionStatus: '处理中',
+                                  resolutionAction: '跟进付款阻断处理进度',
+                                  nextStep: '处理动作完成后刷新付款执行记录。',
+                                })}
+                                className="rounded-md border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-800 transition hover:border-blue-400 disabled:bg-slate-100 disabled:text-slate-500"
+                              >
+                                标记处理中
+                              </button>
+                              <button
+                                type="button"
+                                disabled={resolutionWriteDisabled}
+                                onClick={() => saveResolution({
+                                  resolutionStatus: '已处理待刷新',
+                                  resolutionAction: '处理动作已完成，等待刷新执行记录',
+                                  nextStep: '刷新 Java 执行台账确认阻断是否解除。',
+                                })}
+                                className="rounded-md border border-emerald-200 bg-white px-3 py-2 text-xs font-black text-emerald-800 transition hover:border-emerald-400 disabled:bg-slate-100 disabled:text-slate-500"
+                              >
+                                标记已处理待刷新
+                              </button>
+                            </div>
+                          )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </DetailSection>
+              )}
+              <DetailSection title="处理记录台账" countLabel={`${selectedPaymentBatchResolutionLedgerRows.length} 条`}>
+                {selectedPaymentBatchResolutionLedgerRows.length === 0 ? (
+                  <p className="text-xs font-bold leading-5 text-slate-500">
+                    暂无付款阻断处理记录；在当前原因处理队列中保存处理状态后会回填到这里。
+                  </p>
+                ) : (
+                  <div className="grid gap-2 lg:grid-cols-2">
+                    {selectedPaymentBatchResolutionLedgerRows.map((resolution) => (
+                      <div key={resolution.id} className="rounded-lg border border-amber-100 bg-amber-50 p-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="font-mono text-xs font-black text-amber-900">{resolution.id}</p>
+                            <p className="mt-1 font-mono text-xs font-bold text-amber-700">{resolution.paymentRequestId ?? '批次级记录'}</p>
+                          </div>
+                          <StatusPill label={resolution.resolutionStatus} />
+                        </div>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                          <MiniFact label="阻断原因" value={resolution.blockReason} />
+                          <MiniFact label="处理状态" value={resolution.resolutionStatus} />
+                          <MiniFact label="处理人" value={resolution.handledBy ?? resolution.createdBy ?? '待写入'} />
+                          <MiniFact label="更新时间" value={formatAuditTime(resolution.updatedAt)} />
+                          <MiniFact label="处理动作" value={resolution.resolutionAction} />
+                          <MiniFact label="下一步" value={resolution.nextStep} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DetailSection>
+              <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <DetailSection title="批次内付款申请" countLabel={`${selectedPaymentBatchRequests.length} 条`}>
+                  {selectedPaymentBatchRequests.length === 0 ? (
+                    <p className="text-xs font-bold leading-5 text-slate-500">
+                      暂无付款申请明细；当前批次来自 Java 批次汇总时，需继续回查付款申请列表补齐明细。
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedPaymentBatchRequests.map((request) => (
+                        <div
+                          key={request.id}
+                          className={`rounded-lg border p-2 ${
+                            focusedPaymentRequestId === request.id
+                              ? 'border-amber-400 bg-amber-50'
+                              : 'border-slate-100 bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="font-mono text-xs font-black text-slate-800">{request.id}</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {focusedPaymentRequestId === request.id && <StatusPill label="当前定位" />}
+                              <StatusPill label={request.requestStatus} />
+                            </div>
+                          </div>
+                          {focusedPaymentRequestId === request.id && (
+                            <p className="mt-2 text-xs font-black text-amber-800">
+                              待复核付款申请定位：请在此卡片推进提交或通过付款申请；通过后定位已推进到下一条待复核申请。
+                            </p>
+                          )}
+                          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                            <MiniFact label="申请金额" value={currency(request.amount)} />
+                            <MiniFact label="关联发票" value={request.invoiceId} />
+                            <MiniFact label="供应商" value={request.supplierId} />
+                          </div>
+                          {javaEnabled && onUpdatePaymentRequestStatus && (
+                            <div aria-label="批次内付款申请状态流转" className="mt-2 grid gap-2 sm:grid-cols-2">
+                              <PrimaryActionButton
+                                onClick={() => onUpdatePaymentRequestStatus(request.id, '付款申请审批中')}
+                                disabled={selectedPaymentBatchArchived || buyerFulfillmentBusyId === `payment-request:${request.invoiceId}` || request.requestStatus === '付款申请审批中'}
+                                busy={buyerFulfillmentBusyId === `payment-request:${request.invoiceId}`}
+                                pendingLabel="提交中"
+                                fullWidth
+                              >
+                                提交付款审批
+                              </PrimaryActionButton>
+                              <PrimaryActionButton
+                                onClick={() => advanceFocusedPaymentRequestAfterStatusChange(request.id, '付款申请已通过')}
+                                disabled={selectedPaymentBatchArchived || buyerFulfillmentBusyId === `payment-request:${request.invoiceId}` || request.requestStatus === '付款申请已通过'}
+                                busy={buyerFulfillmentBusyId === `payment-request:${request.invoiceId}`}
+                                pendingLabel="审批中"
+                                tone="emerald"
+                                fullWidth
+                              >
+                                通过付款申请
+                              </PrimaryActionButton>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </DetailSection>
+                <DetailSection title="付款执行边界">
+                  <div className="space-y-2">
+                    <DetailKeyValueRow label="三单匹配状态" value={selectedPaymentBatchInvoiceRows.some((row) => row.threeWayMatchStatus !== '三单匹配通过') ? '存在未通过或未同步' : '批次内发票均通过'} />
+                    <DetailKeyValueRow label="差异处理状态" value={selectedPaymentBatchInvoiceRows.some((row) => row.varianceHandlingStatus !== '无差异处理' && row.varianceHandlingStatus !== '已处理') ? '存在待处理差异' : '暂无未处理差异'} />
+                    <DetailKeyValueRow label="执行记录" value={selectedPaymentBatchExecutionSummary} />
+                    <DetailKeyValueRow label="真实支付边界" value="仅记录计划执行和付款登记轨迹，不接真实支付、银企直连或批量付款执行。" />
+                  </div>
+                </DetailSection>
+              </div>
+              <DetailSection title="付款批次执行记录" countLabel={`${selectedPaymentBatchExecutionRows.length} 条`}>
+                {selectedPaymentBatchExecutionRows.length === 0 ? (
+                  <p className="text-xs font-bold leading-5 text-slate-500">
+                    暂无模拟执行轨迹；批次内形成付款申请后会按发票维度展示付款登记状态。
+                  </p>
+                ) : (
+                  <div className="grid gap-2 lg:grid-cols-2">
+                    {selectedPaymentBatchExecutionGateRows.map((row) => (
+                      <div key={`${row.requestId}-${row.invoiceId}`} className="rounded-lg border border-blue-100 bg-blue-50 p-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-mono text-xs font-black text-blue-900">{row.invoiceId}</p>
+                          <StatusPill label={row.paymentRegistrationStatus} />
+                        </div>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                          <MiniFact label="执行金额" value={currency(row.amount)} />
+                          <MiniFact label="付款登记状态" value={row.paymentRegistrationStatus} />
+                          <MiniFact label="模拟执行轨迹" value={row.executionTrace} />
+                          <MiniFact label="阻断原因" value={row.executionBlockReason ?? '暂无阻断'} />
+                          <MiniFact label="执行记录来源" value={row.executionTraceSource} />
+                          <MiniFact label="执行阶段" value={row.executionStage ?? row.registrationGateStatus} />
+                          <MiniFact label="登记前置条件" value={row.registrationGateStatus} />
+                          <MiniFact label="登记放行判断" value={row.registrationReleaseDecision} />
+                          <MiniFact label="下一处理动作" value={row.registrationNextAction} />
+                          <MiniFact label="登记后复核提示" value={row.registrationPostActionHint} />
+                          <MiniFact label="登记入口边界" value="仅登记付款状态，不接真实支付" />
+                          <MiniFact label="真实支付边界" value="不接真实支付" />
+                        </div>
+                        {javaEnabled && onRegisterPaymentExecutionRecord && (
+                          <PrimaryActionButton
+                            onClick={() => onRegisterPaymentExecutionRecord(row.executionRecordId)}
+                            disabled={selectedPaymentBatchArchived || !canRegisterPaymentExecution(row.registrationReleaseDecision) || buyerFulfillmentBusyId === `payment-execution:${row.executionRecordId}`}
+                            busy={buyerFulfillmentBusyId === `payment-execution:${row.executionRecordId}`}
+                            pendingLabel="登记中"
+                            tone="emerald"
+                            fullWidth
+                          >
+                            登记付款状态
+                          </PrimaryActionButton>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DetailSection>
+              <DetailSection title="批次内发票" countLabel={`${selectedPaymentBatchInvoiceRows.length} 张`}>
+                {selectedPaymentBatchInvoiceRows.length === 0 ? (
+                  <p className="text-xs font-bold leading-5 text-slate-500">
+                    暂无批次内发票；创建付款申请后会按发票维度回填三单匹配和差异处理状态。
+                  </p>
+                ) : (
+                  <div className="grid gap-2 lg:grid-cols-2">
+                    {selectedPaymentBatchInvoiceRows.map(({ request, invoice, varianceHandling, threeWayMatchStatus, varianceHandlingStatus }) => (
+                      <div key={`${request.id}-${request.invoiceId}`} className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-mono text-xs font-black text-slate-800">{request.invoiceId}</p>
+                          <StatusPill label={invoice?.paymentStatus ?? '发票未同步'} />
+                        </div>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                          <MiniFact label="发票金额" value={invoice ? currency(invoice.amount) : currency(request.amount)} />
+                          <MiniFact label="三单匹配状态" value={threeWayMatchStatus} />
+                          <MiniFact label="差异处理状态" value={varianceHandlingStatus} />
+                          <MiniFact label="处理结果" value={varianceHandling?.result ?? '暂无处理记录'} />
+                        </div>
+                        {javaEnabled && varianceHandling && onUpdateVarianceHandlingStatus && (
+                          <div aria-label="批次内差异处理状态流转" className="mt-2 grid gap-2 sm:grid-cols-2">
+                            <PrimaryActionButton
+                              onClick={() => onUpdateVarianceHandlingStatus(varianceHandling.id, '已处理')}
+                              disabled={selectedPaymentBatchArchived || buyerFulfillmentBusyId === `variance:${request.invoiceId}` || varianceHandling.status === '已处理'}
+                              busy={buyerFulfillmentBusyId === `variance:${request.invoiceId}`}
+                              pendingLabel="处理中"
+                              tone="emerald"
+                              fullWidth
+                            >
+                              标记差异已处理
+                            </PrimaryActionButton>
+                            <PrimaryActionButton
+                              onClick={() => onUpdateVarianceHandlingStatus(varianceHandling.id, '待复核')}
+                              disabled={selectedPaymentBatchArchived || buyerFulfillmentBusyId === `variance:${request.invoiceId}`}
+                              busy={buyerFulfillmentBusyId === `variance:${request.invoiceId}`}
+                              pendingLabel="处理中"
+                              tone="amber"
+                              fullWidth
+                            >
+                              退回差异复核
+                            </PrimaryActionButton>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DetailSection>
+            </div>
+          )}
+        </div>
+      )}
       <div className="mt-3 grid gap-3 lg:grid-cols-3">
         <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
           <p className="text-xs font-black text-amber-800">差异处理建议</p>
@@ -10159,7 +18365,11 @@ const ReconciliationLedgerPanel: React.FC<{
             {varianceHandlingCount > 0 ? `${varianceHandlingCount} 张需核对差异` : '暂无金额差异'}
           </p>
           <p className="mt-1 text-xs font-bold leading-5 text-amber-700">
-            {varianceHandlingCount > 0 ? '核对订单、收货和发票金额后再继续付款或回款确认。' : '订单金额和发票金额一致，可继续按计划推进。'}
+            {paymentRequestBlockedCount > 0
+              ? '先关闭差异处理，再恢复付款申请。'
+              : varianceHandlingCount > 0
+                ? '差异已处理后可继续付款或回款确认。'
+                : '订单金额和发票金额一致，可继续按计划推进。'}
           </p>
         </div>
         <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
@@ -10201,8 +18411,10 @@ const ReconciliationLedgerPanel: React.FC<{
                   <th className="px-3 py-2 text-right">发票金额</th>
                   <th className="px-3 py-2 text-right">差异</th>
                   <th className="px-3 py-2">收货 / 付款</th>
+                  <th className="px-3 py-2">匹配结论</th>
                   <th className="px-3 py-2">状态流转</th>
                   <th className="px-3 py-2">下一步</th>
+                  <th className="px-3 py-2">付款申请</th>
                   <th className="px-3 py-2">逾期提醒</th>
                   <th className="px-3 py-2">处理提示</th>
                 </tr>
@@ -10230,10 +18442,18 @@ const ReconciliationLedgerPanel: React.FC<{
                       <p className="mt-1 text-xs font-bold text-slate-500">{invoice.paymentStatus}</p>
                     </td>
                     <td className="px-3 py-3">
+                      <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
+                        {buildThreeWayMatchLabel(invoice)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
                       <StatusPill label={invoice.reconciliationStage ?? invoice.reconciliationStatus ?? '待同步'} />
                     </td>
                     <td className="px-3 py-3 text-xs font-bold leading-5 text-slate-600">
                       {invoice.nextReconciliationAction ?? '同步订单'}
+                    </td>
+                    <td className="px-3 py-3 text-xs font-bold leading-5 text-slate-600">
+                      {buildPaymentRequestReadinessLabel(invoice)}
                     </td>
                     <td className="px-3 py-3 text-xs font-bold leading-5 text-slate-600">
                       {invoice.overdue ? `逾期 ${invoice.overdueDays ?? 0} 天` : (invoice.dueDate ?? '未逾期')}
@@ -10258,8 +18478,9 @@ const SupplierInvoiceReceivableCard: React.FC<{
   invoice: SupplierWorkspace['invoices'][number];
   order?: SupplierWorkspace['orders'][number];
   selected: boolean;
+  demoHighlight?: DemoSampleHighlight;
   onSelectDetail: () => void;
-}> = ({ invoice, order, selected, onSelectDetail }) => {
+}> = ({ invoice, order, selected, demoHighlight, onSelectDetail }) => {
   const paymentProgress = invoice.paymentStatus === '已付款'
     ? '100%'
     : invoice.paymentStatus === '部分付款'
@@ -10272,7 +18493,7 @@ const SupplierInvoiceReceivableCard: React.FC<{
       : '跟进回款';
 
   return (
-    <ReadonlyDetailCardSurface title={invoice.invoiceNo ?? invoice.id} selected={selected}>
+    <ReadonlyDetailCardSurface title={invoice.invoiceNo ?? invoice.id} selected={selected} demoHighlight={demoHighlight}>
       <DetailHeroCard
         eyebrow="发票应收"
         title={`发票应收卡片 ${invoice.id}`}
@@ -10394,6 +18615,7 @@ const SupplierInvoiceReceivableDetailPanel: React.FC<{
                 onChange={(event) => onChangeReceivableUpdateDraft(invoice.id, {
                   reconciliationNote: event.target.value,
                 })}
+                data-testid={`stage7-supplier-receivable-note-${invoice.id}`}
                 rows={4}
                 className="mt-2 w-full rounded-lg border border-amber-100 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-amber-400 disabled:bg-slate-100 disabled:text-slate-500"
                 placeholder="记录对账口径、尾款时间或回款跟进说明"
@@ -10406,6 +18628,7 @@ const SupplierInvoiceReceivableDetailPanel: React.FC<{
               pendingLabel="保存中"
               tone="amber"
               flushTop
+              testId={`stage7-supplier-update-receivable-${invoice.id}`}
             >
               保存对账备注
             </PrimaryActionButton>
@@ -10645,6 +18868,581 @@ const ListToolbar: React.FC<{
   </div>
 );
 
+const SelectedBusinessHandoffPanel: React.FC<{
+  moduleLabel: string;
+  selectedTitle?: string;
+  selectedMeta?: string;
+  selectedStatus?: string;
+  nextActionTitle?: string;
+  detailHint: string;
+  boundaryHint: string;
+}> = ({
+  moduleLabel,
+  selectedTitle,
+  selectedMeta,
+  selectedStatus,
+  nextActionTitle,
+  detailHint,
+  boundaryHint,
+}) => (
+  <section
+    aria-label={`${moduleLabel} 业务接力提示`}
+    className="my-3 rounded-lg border border-blue-100 bg-blue-50/70 p-3 shadow-sm shadow-blue-100/50"
+  >
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-blue-800">业务接力提示</p>
+        <p className="mt-1 break-words text-sm font-black text-slate-950">
+          {selectedTitle ? `${moduleLabel}：${selectedTitle}` : `请选择一条${moduleLabel}记录`}
+        </p>
+        {selectedMeta && <p className="mt-1 break-words text-xs font-bold text-blue-700">{selectedMeta}</p>}
+      </div>
+      {selectedStatus && <StatusPill label={selectedStatus} />}
+    </div>
+    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <MiniFact label="当前选中" value={selectedTitle ?? '暂无选中记录'} />
+      <MiniFact label="下一处理" value={nextActionTitle ?? '选择记录后展示下一步处理建议'} />
+      <MiniFact label="详情核对" value={detailHint} />
+      <MiniFact label="处理边界" value={boundaryHint} />
+    </div>
+  </section>
+);
+
+const BuyerDemoPresenterCue: React.FC<{
+  moduleLabel: string;
+  selectedTitle?: string;
+  selectedMeta?: string;
+  statusLabel?: string;
+  displayedCount: number;
+  totalCount: number;
+  primaryActionLabel: string;
+  densityHint: string;
+  listHeightHint: string;
+  nextModuleLabel: string;
+}> = ({
+  moduleLabel,
+  selectedTitle,
+  selectedMeta,
+  statusLabel,
+  displayedCount,
+  totalCount,
+  primaryActionLabel,
+  densityHint,
+  listHeightHint,
+  nextModuleLabel,
+}) => (
+  <section
+    aria-label={`${moduleLabel}首屏业务焦点`}
+    data-testid="stage11-buyer-first-screen-focus"
+    className="rounded-lg border border-cyan-100 bg-cyan-50 p-2.5 shadow-sm shadow-cyan-100/60 sm:p-3"
+  >
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-cyan-800">首屏业务焦点</p>
+        <p className="mt-1 break-words text-sm font-black text-slate-950">
+          {moduleLabel} · 详情首屏与列表卡片高度
+        </p>
+        <p className="mt-1 hidden text-xs font-bold leading-5 text-cyan-700 sm:block">
+          先看当前选中记录和状态，再扫详情首屏、列表卡片高度和下一步动作。
+        </p>
+      </div>
+      <span className="inline-flex min-h-8 shrink-0 items-center rounded-md bg-white px-2.5 py-1 text-xs font-black text-cyan-700">
+        下一页衔接：{nextModuleLabel}
+      </span>
+    </div>
+    <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-2 sm:gap-2 xl:grid-cols-5">
+      <MiniFact compact label="当前选中" value={selectedTitle ? `${selectedTitle}${selectedMeta ? ` · ${selectedMeta}` : ''}` : '当前页暂无默认选中记录'} />
+      <MiniFact compact label="当前状态" value={statusLabel ?? '待选择记录'} />
+      <MiniFact compact label="详情首屏" value={densityHint} />
+      <MiniFact compact label="列表卡片高度" value={`${displayedCount} / ${totalCount} 条 · ${listHeightHint}`} />
+      <MiniFact compact label="下一步动作" value={primaryActionLabel} />
+    </div>
+  </section>
+);
+
+const BuyerDemoDataSlimmingCue: React.FC<{
+  moduleLabel: string;
+  displayedCount: number;
+  totalCount: number;
+}> = ({ moduleLabel, displayedCount, totalCount }) => (
+  <section
+    aria-label={`${moduleLabel}演示数据瘦身`}
+    data-testid="stage11-buyer-demo-data-slimming"
+    className="rounded-lg border border-teal-100 bg-teal-50 p-2.5 shadow-sm shadow-teal-100/60 sm:p-3"
+  >
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-teal-800">演示数据瘦身</p>
+        <p className="mt-1 break-words text-sm font-black text-slate-950">
+          {moduleLabel} · 保留推荐样本，减少首屏干扰
+        </p>
+      </div>
+      <span className="inline-flex min-h-8 shrink-0 items-center rounded-md bg-white px-2.5 py-1 text-xs font-black text-teal-700">
+        已展示 {displayedCount} / {totalCount}
+      </span>
+    </div>
+    <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+      <MiniFact compact label="压缩列表样本" value="主流程列表最多展示 6 条" />
+      <MiniFact compact label="保留推荐样本" value="保留当前页推荐演示样本" />
+      <MiniFact compact label="隐藏非主线说明" value="说明类内容下沉到详情、提示和清单" />
+      <MiniFact compact label="演示节奏" value="先讲推荐样本，再按状态筛选补充全量数据" />
+    </div>
+  </section>
+);
+
+const BuyerMainFlowOperationStrip: React.FC<{
+  config: BuyerMainFlowOperationStripConfig;
+  onNext: (moduleId: BuyerAdminModule) => void;
+}> = ({ config, onNext }) => (
+  <section
+    aria-label={`${config.pageLabel}采购方主流程操作条`}
+    data-testid="stage11-buyer-main-flow-operation-strip"
+    className="stage11-buyer-main-flow-operation-strip--compact rounded-lg border border-violet-100 bg-violet-50 p-2 shadow-sm shadow-violet-100/60 sm:p-3"
+  >
+    <div className="flex flex-col gap-2 sm:gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-[10px] font-black text-violet-700 sm:text-xs">采购方主流程操作条</p>
+        <h3 className="mt-1 text-sm font-black text-slate-950">{config.operationTitle}</h3>
+        <p className="mt-1 hidden text-xs font-bold leading-5 text-violet-700 sm:block">
+          把当前页讲解重点、推荐点击动作、不可操作边界和下一页承接放在同一视线内。
+        </p>
+      </div>
+      <PrimaryActionButton
+        onClick={() => onNext(config.nextModuleId)}
+        icon={ArrowRight}
+        tone="blue"
+        size="sm"
+        flushTop
+      >
+        去{config.nextModuleLabel}
+      </PrimaryActionButton>
+    </div>
+    <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-2 sm:gap-2 xl:grid-cols-4">
+      <MiniFact compact label="当前页讲解重点" value={config.focus} />
+      <MiniFact compact label="推荐点击动作" value={config.recommendedAction} />
+      <MiniFact compact label="不可操作边界" value={config.boundary} />
+      <MiniFact compact label="下一页承接" value={config.nextModuleLabel} />
+    </div>
+    <div className="mt-2 rounded-lg border border-white/80 bg-white/70 p-2 sm:p-3">
+      <p className="text-[10px] font-black text-violet-700 sm:text-xs">页面一致性检查</p>
+      <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:mt-2 sm:grid-cols-2 sm:gap-2 xl:grid-cols-4">
+        <MiniFact compact label="列表扫读" value={config.listPolish} />
+        <MiniFact compact label="详情层级" value={config.detailPolish} />
+        <MiniFact compact label="空状态解释" value={config.emptyStatePolish} />
+        <MiniFact compact label="按钮边界" value={config.buttonBoundaryPolish} />
+      </div>
+    </div>
+  </section>
+);
+
+const BuyerKeyActionReadinessPanel: React.FC<{
+  actions: Array<{ label: string; enabled: boolean; reason: string }>;
+  visibilityHint: {
+    moduleLabel: string;
+    primaryButtonHint: string;
+    disabledReasonHint: string;
+    detailEntryHint: string;
+    postClickHint: string;
+  };
+  onActionFocus: (label: string) => void;
+}> = ({ actions, visibilityHint, onActionFocus }) => (
+  <section
+    aria-label="关键操作可用性"
+    className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/60"
+  >
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-slate-500">关键操作可用性</p>
+        <p className="mt-1 text-sm font-black text-slate-950">把可演示按钮和不可操作边界放在同一视线内</p>
+      </div>
+      <span className="inline-flex h-8 shrink-0 items-center rounded-md bg-slate-100 px-2.5 text-xs font-black text-slate-600">
+        边界提示可解释
+      </span>
+    </div>
+    <div
+      data-testid="stage11-buyer-action-visibility"
+      className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 p-2.5"
+    >
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-indigo-800">动作区可见性</p>
+          <p className="mt-1 break-words text-sm font-black text-slate-950">
+            {visibilityHint.moduleLabel} · 能不能点、为什么不能点、点完去哪
+          </p>
+        </div>
+        <span className="inline-flex min-h-7 shrink-0 items-center rounded-md bg-white px-2.5 py-1 text-[11px] font-black text-indigo-700">
+          详情区入口可追溯
+        </span>
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+        <MiniFact compact label="主按钮位置" value={visibilityHint.primaryButtonHint} />
+        <MiniFact compact label="禁用原因" value={visibilityHint.disabledReasonHint} />
+        <MiniFact compact label="详情区入口" value={visibilityHint.detailEntryHint} />
+        <MiniFact compact label="点击后流向" value={visibilityHint.postClickHint} />
+      </div>
+    </div>
+    <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+      {actions.map((action) => (
+        <div
+          key={action.label}
+          className={`rounded-lg border p-3 ${
+            action.enabled ? 'border-emerald-100 bg-emerald-50' : 'border-amber-100 bg-amber-50'
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className={`break-words text-sm font-black ${action.enabled ? 'text-emerald-950' : 'text-amber-950'}`}>
+              {action.label}
+            </p>
+            <button
+              type="button"
+              disabled={!action.enabled}
+              aria-disabled={!action.enabled}
+              onClick={() => onActionFocus(action.label)}
+              className={`inline-flex min-h-8 min-w-0 items-center justify-center rounded-md px-2.5 py-1 text-xs font-black leading-4 transition ${
+                action.enabled
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'cursor-not-allowed bg-white/80 text-amber-700'
+              }`}
+            >
+              <span className="max-w-full min-w-0 break-words">
+                {action.label} · {action.enabled ? '定位真实操作区' : '当前数据下不可直接操作'}
+              </span>
+            </button>
+          </div>
+          <p className={`mt-2 text-[11px] font-black ${action.enabled ? 'text-emerald-700' : 'text-amber-700'}`}>
+            {action.enabled ? '可直接演示' : '边界提示可解释'}
+          </p>
+          <p className={`mt-2 text-xs font-bold leading-5 ${action.enabled ? 'text-emerald-700' : 'text-amber-700'}`}>
+            {action.reason}
+          </p>
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
+const SupplierCollaborationOperationStrip: React.FC<{
+  config: SupplierCollaborationOperationStripConfig;
+  onNext: (moduleId: SupplierAdminModule) => void;
+}> = ({ config, onNext }) => (
+  <section
+    aria-label={`${config.pageLabel}供应商协同操作条`}
+    data-testid="stage12-supplier-collaboration-operation-strip"
+    className="rounded-lg border border-orange-100 bg-orange-50 p-2.5 shadow-sm shadow-orange-100/60 sm:p-3"
+  >
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-orange-700">供应商协同操作条</p>
+        <h3 className="mt-1 text-sm font-black text-slate-950">{config.pageLabel} · 演示操作收束</h3>
+        <p className="mt-1 hidden text-xs font-bold leading-5 text-orange-700 sm:block">
+          把供应商当前页讲解重点、推荐动作、只读边界和下一页承接放在同一视线内。
+        </p>
+      </div>
+      <PrimaryActionButton
+        onClick={() => onNext(config.nextModuleId)}
+        icon={ArrowRight}
+        tone="amber"
+        size="sm"
+        flushTop
+      >
+        去{config.nextModuleLabel}
+      </PrimaryActionButton>
+    </div>
+    <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+      <MiniFact compact label="当前页讲解重点" value={config.focus} />
+      <MiniFact compact label="推荐点击动作" value={config.recommendedAction} />
+      <MiniFact compact label="只读边界" value={config.boundary} />
+      <MiniFact compact label="下一页承接" value={config.nextModuleLabel} />
+    </div>
+    <div className="mt-2 rounded-lg border border-white/80 bg-white/70 p-2 sm:p-3">
+      <p className="text-xs font-black text-orange-700">供应商页面一致性检查</p>
+      <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+        <MiniFact compact label="列表扫读" value={config.listPolish} />
+        <MiniFact compact label="详情层级" value={config.detailPolish} />
+        <MiniFact compact label="空状态解释" value={config.emptyStatePolish} />
+        <MiniFact compact label="按钮边界" value={config.buttonBoundaryPolish} />
+      </div>
+    </div>
+  </section>
+);
+
+const SupplierDemoPresenterCue: React.FC<{
+  moduleLabel: string;
+  selectedTitle?: string;
+  selectedMeta?: string;
+  statusLabel?: string;
+  displayedCount: number;
+  totalCount: number;
+  primaryActionLabel: string;
+  densityHint: string;
+  listHeightHint: string;
+  nextModuleLabel: string;
+}> = ({
+  moduleLabel,
+  selectedTitle,
+  selectedMeta,
+  statusLabel,
+  displayedCount,
+  totalCount,
+  primaryActionLabel,
+  densityHint,
+  listHeightHint,
+  nextModuleLabel,
+}) => (
+  <section
+    aria-label={`${moduleLabel}供应商首屏业务焦点`}
+    data-testid="stage12-supplier-first-screen-focus"
+    className="rounded-lg border border-amber-100 bg-amber-50 p-2.5 shadow-sm shadow-amber-100/60 sm:p-3"
+  >
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-amber-800">供应商首屏业务焦点</p>
+        <p className="mt-1 break-words text-sm font-black text-slate-950">
+          {moduleLabel} · 先讲协同对象和下一步动作
+        </p>
+      </div>
+      <span className="inline-flex min-h-8 shrink-0 items-center rounded-md bg-white px-2.5 py-1 text-xs font-black text-amber-700">
+        下一页衔接：{nextModuleLabel}
+      </span>
+    </div>
+    <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
+      <MiniFact compact label="当前选中" value={selectedTitle ? `${selectedTitle}${selectedMeta ? ` · ${selectedMeta}` : ''}` : '当前页暂无默认选中记录'} />
+      <MiniFact compact label="当前状态" value={statusLabel ?? '待选择记录'} />
+      <MiniFact compact label="详情首屏" value={densityHint} />
+      <MiniFact compact label="列表卡片高度" value={`${displayedCount} / ${totalCount} 条 · ${listHeightHint}`} />
+      <MiniFact compact label="下一步动作" value={primaryActionLabel} />
+    </div>
+  </section>
+);
+
+const SupplierDemoDataSlimmingCue: React.FC<{
+  moduleLabel: string;
+  displayedCount: number;
+  totalCount: number;
+}> = ({ moduleLabel, displayedCount, totalCount }) => (
+  <section
+    aria-label={`${moduleLabel}供应商演示数据瘦身`}
+    data-testid="stage12-supplier-demo-data-slimming"
+    className="rounded-lg border border-yellow-100 bg-yellow-50 p-2.5 shadow-sm shadow-yellow-100/60 sm:p-3"
+  >
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-yellow-800">供应商演示数据瘦身</p>
+        <p className="mt-1 break-words text-sm font-black text-slate-950">
+          {moduleLabel} · 保留推荐样本，减少非主线干扰
+        </p>
+      </div>
+      <span className="inline-flex min-h-8 shrink-0 items-center rounded-md bg-white px-2.5 py-1 text-xs font-black text-yellow-700">
+        已展示 {displayedCount} / {totalCount}
+      </span>
+    </div>
+    <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+      <MiniFact compact label="压缩列表样本" value="供应商主流程列表最多展示 6 条" />
+      <MiniFact compact label="保留推荐样本" value="保留当前页阶段七推荐演示样本" />
+      <MiniFact compact label="隐藏非主线说明" value="把说明下沉到详情、提示和讲解稿" />
+      <MiniFact compact label="演示节奏" value="先讲供应商待办，再回看协同结果" />
+    </div>
+  </section>
+);
+
+const SupplierKeyActionReadinessPanel: React.FC<{
+  actions: Array<{ label: string; enabled: boolean; reason: string }>;
+  visibilityHint: {
+    moduleLabel: string;
+    primaryButtonHint: string;
+    disabledReasonHint: string;
+    detailEntryHint: string;
+    postClickHint: string;
+  };
+  onActionFocus: (label: string) => void;
+}> = ({ actions, visibilityHint, onActionFocus }) => (
+  <section
+    aria-label="供应商关键操作可用性"
+    className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/60"
+  >
+    <div
+      data-testid="stage12-supplier-action-visibility"
+      className="rounded-lg border border-orange-100 bg-orange-50 p-2.5"
+    >
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-orange-800">供应商动作区可见性</p>
+          <p className="mt-1 break-words text-sm font-black text-slate-950">
+            {visibilityHint.moduleLabel} · 能不能处理、为什么不能处理、处理后去哪
+          </p>
+        </div>
+        <span className="inline-flex min-h-7 shrink-0 items-center rounded-md bg-white px-2.5 py-1 text-[11px] font-black text-orange-700">
+          协同边界可解释
+        </span>
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+        <MiniFact compact label="主按钮位置" value={visibilityHint.primaryButtonHint} />
+        <MiniFact compact label="禁用原因" value={visibilityHint.disabledReasonHint} />
+        <MiniFact compact label="详情区入口" value={visibilityHint.detailEntryHint} />
+        <MiniFact compact label="点击后流向" value={visibilityHint.postClickHint} />
+      </div>
+    </div>
+    <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+      {actions.map((action) => (
+        <div
+          key={action.label}
+          className={`rounded-lg border p-3 ${
+            action.enabled ? 'border-emerald-100 bg-emerald-50' : 'border-amber-100 bg-amber-50'
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className={`break-words text-sm font-black ${action.enabled ? 'text-emerald-950' : 'text-amber-950'}`}>
+              {action.label}
+            </p>
+            <button
+              type="button"
+              disabled={!action.enabled}
+              aria-disabled={!action.enabled}
+              onClick={() => onActionFocus(action.label)}
+              className={`inline-flex min-h-8 min-w-0 items-center justify-center rounded-md px-2.5 py-1 text-xs font-black leading-4 transition ${
+                action.enabled
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'cursor-not-allowed bg-white/80 text-amber-700'
+              }`}
+            >
+              {action.enabled ? '定位推荐样本' : '当前数据下不可直接操作'}
+            </button>
+          </div>
+          <p className={`mt-2 text-xs font-bold leading-5 ${action.enabled ? 'text-emerald-700' : 'text-amber-700'}`}>
+            {action.reason}
+          </p>
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
+const SupplierRealActionFeedbackPanel: React.FC<{
+  items: SupplierRealActionFeedbackItem[];
+  workflowStatus: string | null;
+}> = ({ items, workflowStatus }) => (
+  <section
+    aria-label="供应商真实协同动作反馈"
+    data-testid="stage12-supplier-real-action-feedback"
+    className="rounded-lg border border-emerald-100 bg-emerald-50 p-2.5 shadow-sm shadow-emerald-100/60 sm:p-3"
+  >
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-emerald-800">供应商真实协同动作补强</p>
+        <h3 className="mt-1 text-sm font-black text-slate-950">报价提交、订单确认、发货提交、发票提交和应收备注</h3>
+        <p className="mt-1 text-xs font-bold leading-5 text-emerald-700">
+          每个动作固定讲清点前检查、点击后反馈、失败兜底、后续流向和协同边界，避免现场只看到按钮却讲不出业务闭环。
+        </p>
+      </div>
+      <span className="inline-flex min-h-8 shrink-0 items-center rounded-md bg-white px-2.5 py-1 text-xs font-black text-emerald-700">
+        {items.filter((item) => item.enabled).length} / {items.length} 可演示
+      </span>
+    </div>
+
+    <div className="mt-2 rounded-lg border border-white/80 bg-white/80 p-2 sm:p-3">
+      <p className="text-xs font-black text-emerald-800">最近操作反馈</p>
+      <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-600">
+        {workflowStatus ?? '等待供应商动作触发；点击真实按钮后顶部和本面板都用于说明结果。'}
+      </p>
+    </div>
+
+    <div className="mt-2 grid gap-2 xl:grid-cols-5">
+      {items.map((item) => (
+        <div
+          key={item.action}
+          className={`rounded-lg border p-2.5 shadow-sm ${
+            item.enabled ? 'border-emerald-100 bg-white' : 'border-amber-100 bg-amber-50'
+          }`}
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between xl:flex-col">
+            <div className="min-w-0">
+              <p className="break-words text-sm font-black text-slate-950">{item.action}</p>
+              <p className="mt-1 break-all font-mono text-[10px] font-bold text-slate-400">{item.targetTestId}</p>
+            </div>
+            <StatusPill label={item.enabled ? '当前可演示' : '等待数据条件'} />
+          </div>
+          <div className="mt-2 grid gap-1.5">
+            <MiniFact compact label="点前检查" value={item.beforeCheck} />
+            <MiniFact compact label="点击后反馈" value={item.afterFeedback} />
+            <MiniFact compact label="失败兜底" value={item.failureFallback} />
+            <MiniFact compact label="后续流向" value={item.nextFlow} />
+            <MiniFact compact label="协同边界" value={item.collaborationBoundary} />
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
+const PlatformOperationsDemoLoopPanel: React.FC<{
+  items: PlatformOperationsDemoLoopItem[];
+  workflowStatus: string | null;
+}> = ({ items, workflowStatus }) => (
+  <section
+    aria-label="平台运营端演示闭环"
+    data-testid="stage12-platform-operations-demo-loop"
+    className="rounded-lg border border-blue-100 bg-blue-50 p-2.5 shadow-sm shadow-blue-100/60 sm:p-3"
+  >
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black text-blue-800">平台运营端演示深化第一轮</p>
+        <h3 className="mt-1 text-sm font-black text-slate-950">
+          租户治理、企业审核、平台公告
+        </h3>
+        <p className="mt-1 text-xs font-bold leading-5 text-blue-700">
+          把平台端讲成 SaaS 运营闭环：先治理租户，再审核企业，最后用公告完成运营触达，同时强调平台不直接参与采购业务决策。
+        </p>
+      </div>
+      <span className="inline-flex min-h-8 shrink-0 items-center rounded-md bg-white px-2.5 py-1 text-xs font-black text-blue-700">
+        {items.filter((item) => item.enabled).length} / {items.length} 可演示
+      </span>
+    </div>
+
+    <div className="mt-2 rounded-lg border border-white/80 bg-white/80 p-2 sm:p-3">
+      <p className="text-xs font-black text-blue-800">最近平台操作反馈</p>
+      <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-600">
+        {workflowStatus ?? '等待平台动作触发；点击租户、审核或公告按钮后，这里配合顶部反馈说明 Java 写入结果。'}
+      </p>
+    </div>
+
+    <div className="mt-2 grid gap-2 xl:grid-cols-3">
+      {items.map((item) => (
+        <div
+          key={item.storyline}
+          className={`rounded-lg border p-2.5 shadow-sm ${
+            item.enabled ? 'border-blue-100 bg-white' : 'border-amber-100 bg-amber-50'
+          }`}
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between xl:flex-col">
+            <div className="min-w-0">
+              <p className="break-words text-sm font-black text-slate-950">{item.storyline}</p>
+              <p className="mt-1 text-xs font-black text-blue-700">{item.primaryActions}</p>
+            </div>
+            <StatusPill label={item.enabled ? '当前可演示' : '等待数据条件'} />
+          </div>
+          <div className="mt-2 rounded-md border border-slate-100 bg-slate-50 p-2">
+            <p className="text-[11px] font-black text-slate-500">真实按钮映射</p>
+            <div className="mt-1 space-y-1">
+              {item.targetTestIds.map((targetTestId) => (
+                <p key={targetTestId} className="break-all font-mono text-[10px] font-bold text-slate-500">
+                  {targetTestId}
+                </p>
+              ))}
+            </div>
+          </div>
+          <div className="mt-2 grid gap-1.5">
+            <MiniFact compact label="治理对象" value={item.governanceTarget} />
+            <MiniFact compact label="点前检查" value={item.beforeCheck} />
+            <MiniFact compact label="点击后反馈" value={item.afterFeedback} />
+            <MiniFact compact label="后续流向" value={item.nextFlow} />
+            <MiniFact compact label="运营边界" value={item.operationsBoundary} />
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
 const StatusFilterControl: React.FC<{
   label: string;
   value: string;
@@ -10721,6 +19519,33 @@ const FilterResultSummary: React.FC<{
   );
 };
 
+const DemoListLimitNotice: React.FC<{
+  totalCount: number;
+  displayedCount: number;
+  moduleLabel: string;
+}> = ({ totalCount, displayedCount, moduleLabel }) => {
+  if (totalCount <= displayedCount) return null;
+
+  return (
+    <section
+      aria-label={`${moduleLabel}演示展示上限`}
+      className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 shadow-sm shadow-amber-100/60"
+    >
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black text-amber-800">演示展示上限</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-amber-700">
+            当前仅渲染主流程演示优先样本，主流程列表最多展示 6 条；统计、搜索和状态筛选仍按当前命中的 {totalCount} 条完整结果计算。
+          </p>
+        </div>
+        <span className="inline-flex h-8 shrink-0 items-center rounded-md bg-white px-2.5 text-xs font-black text-amber-700">
+          已展示 {displayedCount} / {totalCount}
+        </span>
+      </div>
+    </section>
+  );
+};
+
 const ResponsiveTableFrame: React.FC<{
   mobileCards: React.ReactNode;
   children: React.ReactNode;
@@ -10743,6 +19568,7 @@ const ResponsiveSummaryCard: React.FC<{
   meta: string;
   status?: string;
   selected?: boolean;
+  demoHighlight?: DemoSampleHighlight;
   facts?: Array<{ label: string; value: string }>;
   detailButton?: 'detail' | 'table';
   onSelectDetail?: () => void;
@@ -10752,16 +19578,20 @@ const ResponsiveSummaryCard: React.FC<{
   meta,
   status,
   selected = false,
+  demoHighlight,
   facts = [],
   detailButton = 'detail',
   onSelectDetail,
 }) => (
   <div
     aria-label={ariaLabel}
-    className={`rounded-lg border bg-white p-4 shadow-sm shadow-slate-200/50 transition hover:border-blue-200 hover:shadow-sm active:scale-[0.995] focus-within:ring-2 focus-within:ring-blue-100 ${
-      selected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+    className={`rounded-lg border p-4 shadow-sm shadow-slate-200/50 transition hover:border-blue-200 hover:shadow-sm active:scale-[0.995] focus-within:ring-2 focus-within:ring-blue-100 ${
+      demoHighlight ? 'border-sky-300 bg-sky-50' : 'bg-white'
+    } ${
+      selected ? 'border-blue-200 ring-2 ring-blue-100' : demoHighlight ? 'border-sky-300' : 'border-slate-200'
     }`}
   >
+    <DemoSampleHighlightBadge demoHighlight={demoHighlight} />
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 max-w-full">
         <p className="break-words font-black text-slate-950">{title}</p>
@@ -10845,6 +19675,7 @@ const RfqCard: React.FC<{
   onCreateOrderFromAward: (awardId: string, draft: BuyerOrderDraft) => void;
   selected: boolean;
   onSelectDetail: () => void;
+  demoHighlight?: DemoSampleHighlight;
 }> = ({
   rfq,
   workspace,
@@ -10860,6 +19691,7 @@ const RfqCard: React.FC<{
   onCreateOrderFromAward,
   selected,
   onSelectDetail,
+  demoHighlight,
 }) => {
   const recommendedQuote = selectRecommendedQuote(rfq);
   const canSubmitAward = javaEnabled && canSubmitAwardApproval(rfq) && Boolean(recommendedQuote);
@@ -10871,10 +19703,13 @@ const RfqCard: React.FC<{
   const orderReceiptDateInvalid = !orderDraft?.expectedReceiptDate || orderDraft.expectedReceiptDate <= todayDate;
 
   return (
-    <div className={`rounded-lg border bg-white p-4 transition ${
-      selected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+    <div className={`rounded-lg border p-4 transition ${
+      demoHighlight ? 'border-sky-300 bg-sky-50' : 'bg-white'
+    } ${
+      selected ? 'border-blue-200 ring-2 ring-blue-100' : demoHighlight ? 'border-sky-300' : 'border-slate-200'
     }`}
     >
+      <DemoSampleHighlightBadge demoHighlight={demoHighlight} />
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-black text-slate-900">{rfq.title}</p>
@@ -10925,9 +19760,14 @@ const RfqCard: React.FC<{
                   <p className="text-xs text-slate-500">
                     税率 {quote.taxRate}% · {quote.deliveryDays} 天交付
                   </p>
+                  <p className="mt-1 text-[11px] font-black text-slate-500">
+                    报价状态：{quote.status}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="font-mono font-black text-slate-900">{currency(quote.amount)}</p>
+                  {quote.status === '已中选' && <p className="text-xs font-bold text-emerald-700">已中选</p>}
+                  {quote.status === '未中选' && <p className="text-xs font-bold text-slate-500">未中选</p>}
                   {awarded && <p className="text-xs font-bold text-emerald-700">已定标</p>}
                 </div>
               </div>
@@ -10969,6 +19809,7 @@ const RfqCard: React.FC<{
             icon={BadgeCheck}
             pendingLabel="提交中"
             fullWidth
+            testId={`stage7-submit-award-${rfq.id}`}
           >
             按推荐报价提交定标审批
           </PrimaryActionButton>
@@ -11000,6 +19841,7 @@ const RfqCard: React.FC<{
             icon={ShoppingCart}
             pendingLabel="生成中"
             fullWidth
+            testId={`stage7-create-order-${approvedAwardId}`}
           >
             生成采购订单
           </PrimaryActionButton>
@@ -11018,6 +19860,7 @@ const AdminInfoCard: React.FC<{
   detailSelected: boolean;
   onSelectDetail: () => void;
   tone?: 'default' | 'warning';
+  demoHighlight?: DemoSampleHighlight;
   children?: React.ReactNode;
 }> = ({
   title,
@@ -11028,19 +19871,22 @@ const AdminInfoCard: React.FC<{
   detailSelected,
   onSelectDetail,
   tone = 'default',
+  demoHighlight,
   children,
 }) => {
   const baseTone = tone === 'warning'
     ? 'border-amber-100 border-l-amber-400 bg-amber-50'
     : 'border-slate-200 border-l-slate-300 bg-white';
   const activeTone = 'border-blue-200 ring-2 ring-blue-100';
+  const demoTone = 'border-sky-300 border-l-sky-400 bg-sky-50';
   const metaTone = tone === 'warning' ? 'text-amber-700' : 'text-slate-500';
 
   return (
     <div
       aria-label={`${title} 信息卡片`}
-      className={`rounded-lg border border-l-4 p-4 transition hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${detailSelected ? activeTone : baseTone}`}
+      className={`rounded-lg border border-l-4 p-4 transition hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${detailSelected ? activeTone : demoHighlight ? demoTone : baseTone}`}
     >
+      <DemoSampleHighlightBadge demoHighlight={demoHighlight} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 max-w-full">
           <p className="break-words text-sm font-black text-slate-950">{title}</p>
@@ -11099,6 +19945,23 @@ const InlineWorkflowAction: React.FC<{
   );
 };
 
+type DemoSampleHighlight = {
+  label: string;
+  testId: string;
+};
+
+const DemoSampleHighlightBadge: React.FC<{ demoHighlight?: DemoSampleHighlight }> = ({ demoHighlight }) => {
+  if (!demoHighlight) return null;
+  return (
+    <div
+      data-testid={demoHighlight?.testId}
+      className="mb-3 inline-flex max-w-full items-center rounded-md border border-sky-200 bg-white px-2 py-1 text-[11px] font-black text-sky-700"
+    >
+      推荐演示样本：{demoHighlight.label}
+    </div>
+  );
+};
+
 const WorkflowListCard: React.FC<{
   title: string;
   meta: string;
@@ -11109,6 +19972,7 @@ const WorkflowListCard: React.FC<{
   detailSelected: boolean;
   onSelectDetail: () => void;
   action?: React.ReactNode;
+  demoHighlight?: DemoSampleHighlight;
   children?: React.ReactNode;
 }> = ({
   title,
@@ -11120,14 +19984,18 @@ const WorkflowListCard: React.FC<{
   detailSelected,
   onSelectDetail,
   action,
+  demoHighlight,
   children,
 }) => (
   <div
     aria-label={`${title} 工作流卡片`}
-    className={`rounded-lg border border-l-4 bg-white p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
-      detailSelected ? 'border-blue-200 ring-2 ring-blue-100' : 'border-slate-200'
+    className={`rounded-lg border border-l-4 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
+      demoHighlight ? 'border-sky-300 bg-sky-50' : 'bg-white'
+    } ${
+      detailSelected ? 'border-blue-200 ring-2 ring-blue-100' : demoHighlight ? 'border-sky-300' : 'border-slate-200'
     }`}
   >
+    <DemoSampleHighlightBadge demoHighlight={demoHighlight} />
     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
       <div className="min-w-0 max-w-full">
         <p className="break-words font-black text-slate-900">{title}</p>
@@ -11203,14 +20071,18 @@ const SimpleList: React.FC<{
 const ReadonlyDetailCardSurface: React.FC<{
   title: string;
   selected: boolean;
+  demoHighlight?: DemoSampleHighlight;
   children: React.ReactNode;
-}> = ({ title, selected, children }) => (
+}> = ({ title, selected, demoHighlight, children }) => (
   <div
     aria-label={`${title} 只读详情卡片`}
-    className={`space-y-3 rounded-lg border border-l-4 bg-white p-4 shadow-sm shadow-slate-200/50 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
-      selected ? 'border-blue-200 border-l-blue-400 ring-2 ring-blue-100' : 'border-slate-200 border-l-slate-300'
+    className={`space-y-3 rounded-lg border border-l-4 p-4 shadow-sm shadow-slate-200/50 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-100 ${
+      demoHighlight ? 'border-sky-300 bg-sky-50' : 'bg-white'
+    } ${
+      selected ? 'border-blue-200 border-l-blue-400 ring-2 ring-blue-100' : demoHighlight ? 'border-sky-300 border-l-sky-400' : 'border-slate-200 border-l-slate-300'
     }`}
   >
+    <DemoSampleHighlightBadge demoHighlight={demoHighlight} />
     {children}
   </div>
 );
@@ -11219,7 +20091,8 @@ const DetailSelectionSurface: React.FC<{
   title: string;
   selected: boolean;
   onSelectDetail: () => void;
-}> = ({ title, selected, onSelectDetail }) => (
+  testId?: string;
+}> = ({ title, selected, onSelectDetail, testId }) => (
   <div
     aria-label={`${title} 详情操作`}
     className="mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3"
@@ -11230,6 +20103,7 @@ const DetailSelectionSurface: React.FC<{
         compact
         selected={selected}
         onClick={onSelectDetail}
+        testId={testId}
       />
     </div>
   </div>
@@ -11240,10 +20114,12 @@ const DetailToggleButton: React.FC<{
   onClick: () => void;
   fullWidth?: boolean;
   compact?: boolean;
-}> = ({ selected, onClick, fullWidth = false, compact = false }) => (
+  testId?: string;
+}> = ({ selected, onClick, fullWidth = false, compact = false, testId }) => (
   <button
     type="button"
     onClick={onClick}
+    data-testid={testId}
     aria-current={selected ? 'true' : undefined}
     aria-pressed={selected}
     className={`${compact ? '' : 'mt-3'} inline-flex h-8 min-w-[5.5rem] items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-black transition ${
@@ -11290,6 +20166,7 @@ const PrimaryActionButton: React.FC<{
   flushTop?: boolean;
   size?: 'sm' | 'md';
   tone?: 'blue' | 'emerald' | 'amber' | 'red';
+  testId?: string;
 }> = ({
   children,
   onClick,
@@ -11301,6 +20178,7 @@ const PrimaryActionButton: React.FC<{
   flushTop = false,
   size = 'sm',
   tone = 'blue',
+  testId,
 }) => {
   const toneClasses = {
     blue: 'bg-blue-600 hover:bg-blue-700',
@@ -11317,6 +20195,7 @@ const PrimaryActionButton: React.FC<{
       type="button"
       onClick={onClick}
       disabled={disabled}
+      data-testid={testId}
       aria-busy={busy || undefined}
       className={`${flushTop ? '' : 'mt-3'} inline-flex min-w-0 items-center justify-center gap-2 rounded-lg text-center leading-4 font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-white/80 ${
         fullWidth ? 'w-full' : ''

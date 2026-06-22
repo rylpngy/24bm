@@ -65,6 +65,7 @@ describe('buyer supplier admission UI', () => {
     expect(supplierAdmissionForm).toContain('admissionPhoneInvalid');
     expect(supplierAdmissionForm).toContain('admissionCategoryInvalid');
     expect(supplierAdmissionForm).toContain('admissionRiskInvalid');
+    expect(supplierAdmissionForm).toContain('supplierQualificationInvalid');
     expect(supplierAdmissionForm).toContain('supplierAdmissionInvalid');
     expect(supplierAdmissionForm).toContain('supplier-admission-qualification');
     expect(supplierAdmissionForm).toContain('min-h-20 w-full rounded-lg border border-blue-100 bg-white px-3 py-2');
@@ -73,7 +74,8 @@ describe('buyer supplier admission UI', () => {
     expect(supplierAdmissionForm).toContain('请填写联系人和联系电话后再提交。');
     expect(supplierAdmissionForm).toContain('请先确认授权品类。');
     expect(supplierAdmissionForm).toContain('请先复核黑名单与风险状态。');
+    expect(supplierAdmissionForm).toContain('请先要求供应商补充至少一条有效资质');
     expect(supplierAdmissionForm).toContain('aria-live="polite"');
-    expect(supplierAdmissionForm).toContain('disabled={busy || supplierAdmissionInvalid}');
+    expect(supplierAdmissionForm).toContain('disabled={busy || supplierAdmissionInvalid || supplierQualificationInvalid}');
   });
 });

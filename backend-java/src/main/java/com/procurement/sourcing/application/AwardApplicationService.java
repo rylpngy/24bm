@@ -78,6 +78,14 @@ public class AwardApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("RFQ status changed before award approval could be submitted: " + rfqId);
     }
+    int lockedQuote = quoteMapper.lockSubmittedQuoteForAward(
+        tenantId,
+        quote.id(),
+        QuoteStatus.SUBMITTED,
+        QuoteStatus.LOCKED);
+    if (lockedQuote == 0) {
+      throw new IllegalStateException("Selected quote changed before award approval could be submitted: " + quote.id());
+    }
 
     String awardId = newId("award");
     awardDecisionMapper.insert(
@@ -140,7 +148,8 @@ public class AwardApplicationService {
         approvalTask.id(),
         ApprovalStatus.PENDING,
         approvalStatus,
-        userId);
+        userId,
+        request.comment());
     if (approvalUpdated == 0) {
       throw new IllegalStateException("Approval task status changed before review could be recorded: " + approvalTask.id());
     }
@@ -166,6 +175,21 @@ public class AwardApplicationService {
       if (rfqUpdated == 0) {
         throw new IllegalStateException("RFQ status changed before award could be finalized: " + rfqId);
       }
+      int awardedQuote = quoteMapper.markAwardedQuote(
+          tenantId,
+          awardDecision.quoteId(),
+          QuoteStatus.LOCKED,
+          QuoteStatus.AWARDED);
+      if (awardedQuote == 0) {
+        throw new IllegalStateException("Selected quote changed before award could be finalized: " + awardDecision.quoteId());
+      }
+      quoteMapper.closeUnawardedQuotes(
+          tenantId,
+          rfqId,
+          awardDecision.quoteId(),
+          QuoteStatus.SUBMITTED,
+          QuoteStatus.NOT_SELECTED);
+      notifySupplierAwardResults(tenantId, rfq, awardDecision);
     } else {
       int rfqUpdated = rfqMapper.updateStatus(
           tenantId,
@@ -174,6 +198,14 @@ public class AwardApplicationService {
           targetRfqStatus);
       if (rfqUpdated == 0) {
         throw new IllegalStateException("RFQ status changed before award rejection could be applied: " + rfqId);
+      }
+      int unlockedQuote = quoteMapper.unlockAwardQuote(
+          tenantId,
+          awardDecision.quoteId(),
+          QuoteStatus.LOCKED,
+          QuoteStatus.SUBMITTED);
+      if (unlockedQuote == 0) {
+        throw new IllegalStateException("Selected quote changed before award rejection could be applied: " + awardDecision.quoteId());
       }
     }
     auditLogApplicationService.recordTenantAction(
@@ -201,6 +233,23 @@ public class AwardApplicationService {
         awardDecision.reason(),
         awardDecision.approvedStatus(),
         awardDecision.createdAt());
+  }
+
+  private void notifySupplierAwardResults(String tenantId, Rfq rfq, AwardDecision awardDecision) {
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId,
+        awardDecision.supplierId(),
+        NotificationTitle.QUOTE_AWARDED,
+        rfq.title() + "定标审批已通过，贵司报价已中选。");
+    quoteMapper.listByTenantAndRfq(tenantId, rfq.id()).stream()
+        .map(Quote::supplierId)
+        .filter(supplierId -> !awardDecision.supplierId().equals(supplierId))
+        .distinct()
+        .forEach(supplierId -> notificationApplicationService.notifyActiveSupplierUsers(
+            tenantId,
+            supplierId,
+            NotificationTitle.QUOTE_NOT_SELECTED,
+            rfq.title() + "定标审批已通过，贵司报价未中选。"));
   }
 
   private String newId(String prefix) {

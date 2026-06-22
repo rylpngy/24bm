@@ -6,14 +6,21 @@ export interface BuyerNextAction {
   tone: 'slate' | 'blue' | 'amber' | 'emerald';
 }
 
-export const selectRecommendedQuote = (rfq: Rfq): RfqQuote | undefined =>
-  [...rfq.quotes]
+export const selectRecommendedQuote = (rfq: Rfq): RfqQuote | undefined => {
+  const awardedQuote = rfq.awardedSupplierId
+    ? rfq.quotes.find((quote) => quote.supplierId === rfq.awardedSupplierId && quote.status === '已中选')
+    : undefined;
+
+  if (awardedQuote) return awardedQuote;
+
+  return [...rfq.quotes]
     .filter((quote) => quote.status === '已提交')
     .sort((left, right) => {
       const amountDelta = left.amount - right.amount;
       if (amountDelta !== 0) return amountDelta;
       return left.deliveryDays - right.deliveryDays;
     })[0];
+};
 
 export const canSubmitAwardApproval = (rfq: Rfq): boolean =>
   (rfq.status === '报价中' || rfq.status === '已截标')
@@ -25,10 +32,16 @@ export const canCreateOrderFromAward = (
   approvedAwardId: string | undefined,
   orders: PurchaseOrder[],
 ): boolean => {
+  const awardedQuote = rfq.awardedSupplierId
+    ? rfq.quotes.find((quote) => quote.supplierId === rfq.awardedSupplierId && quote.status === '已中选')
+    : undefined;
   const hasGeneratedOrder = orders.some((order) =>
     order.rfqId === rfq.id && (!rfq.awardedSupplierId || order.supplierId === rfq.awardedSupplierId));
 
-  return Boolean(approvedAwardId) && rfq.status === '已定标' && !hasGeneratedOrder;
+  return Boolean(approvedAwardId)
+    && rfq.status === '已定标'
+    && Boolean(awardedQuote)
+    && !hasGeneratedOrder;
 };
 
 export const describeRfqNextAction = (
@@ -36,6 +49,17 @@ export const describeRfqNextAction = (
   approvedAwardId: string | undefined,
   orders: PurchaseOrder[],
 ): BuyerNextAction => {
+  const hasGeneratedOrder = orders.some((order) =>
+    order.rfqId === rfq.id && (!rfq.awardedSupplierId || order.supplierId === rfq.awardedSupplierId));
+
+  if (hasGeneratedOrder) {
+    return {
+      title: '订单已生成',
+      detail: 'RFQ 和报价进入只读跟踪，可在采购订单、收货验收和发票付款中继续履约。',
+      tone: 'slate',
+    };
+  }
+
   if (canCreateOrderFromAward(rfq, approvedAwardId, orders)) {
     return {
       title: '可生成采购订单',

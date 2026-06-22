@@ -51,11 +51,13 @@ public class SecurityConfig {
     configuration.setAllowedOrigins(List.of(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:4173",
         "http://127.0.0.1:4173"));
-    configuration.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("authorization", "content-type"));
     configuration.setExposedHeaders(List.of("authorization"));
     configuration.setAllowCredentials(true);

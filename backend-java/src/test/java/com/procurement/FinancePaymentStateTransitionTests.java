@@ -17,6 +17,7 @@ import com.procurement.finance.domain.InvoiceReconciliation;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
+import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -34,6 +35,7 @@ class FinancePaymentStateTransitionTests {
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
   private final InvoiceReconciliationMapper invoiceReconciliationMapper =
       org.mockito.Mockito.mock(InvoiceReconciliationMapper.class);
+  private final ThreeWayMatchMapper threeWayMatchMapper = org.mockito.Mockito.mock(ThreeWayMatchMapper.class);
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper =
@@ -45,6 +47,7 @@ class FinancePaymentStateTransitionTests {
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
       invoiceReconciliationMapper,
+      threeWayMatchMapper,
       purchaseOrderMapper,
       buyerSupplierRelationMapper,
       auditLogApplicationService,
@@ -55,6 +58,7 @@ class FinancePaymentStateTransitionTests {
       purchaseOrderMapper,
       invoiceMapper,
       invoiceReconciliationMapper,
+      threeWayMatchMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService);
@@ -163,16 +167,17 @@ class FinancePaymentStateTransitionTests {
   }
 
   @Test
-  void paymentReturnsCurrentInvoiceWhenSameFinalStatusIsRegisteredAgainWithoutAudit() {
+  void paymentRejectsRegisteringSameFinalStatusAgainWithoutAudit() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
         .thenReturn(invoice("invoice-1", "tenant-1", "已付款"));
 
-    InvoiceResponse response = paymentApplicationService.register(
+    assertThatThrownBy(() -> paymentApplicationService.register(
         "invoice-1",
-        new RegisterPaymentRequest("已付款"));
+        new RegisterPaymentRequest("已付款")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Payment status already registered");
 
-    org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("已付款");
     verify(invoiceMapper, org.mockito.Mockito.never()).updatePaymentStatus(
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),

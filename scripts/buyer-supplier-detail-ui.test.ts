@@ -19,10 +19,21 @@ describe('buyer supplier detail UI', () => {
     expect(buyerAdminUi).toContain('orderRows');
 
     expect(app).toContain('buildSupplierDetailPanel');
+    expect(app).toContain('createBuyerSupplierRelation');
+    expect(app).toContain('updateBuyerSupplierProfile');
+    expect(app).toContain('updateBuyerSupplierStatus');
+    expect(app).toContain('updateBuyerSupplierPerformance');
+    expect(app).toContain('saveBuyerSupplierRelationProfile');
+    expect(app).toContain('supplierRelationBusyId');
     expect(app).toContain('selectedSupplierRelationId');
     expect(app).toContain('setSelectedSupplierRelationId');
     expect(app).toContain('SupplierDetailPanelView');
     expect(supplierDetailView).toContain('供应商详情');
+    expect(app).toContain('供应商关系维护');
+    expect(app).toContain('保存等级和品类');
+    expect(app).toContain('保存合作状态');
+    expect(app).toContain('保存绩效评分');
+    expect(supplierDetailView).toContain('SupplierRelationProfileForm');
     expect(supplierDetailView).toContain('合作关系');
     expect(supplierDetailView).toContain('准入检查');
     expect(supplierDetailView).toContain('admissionCheckRows');
