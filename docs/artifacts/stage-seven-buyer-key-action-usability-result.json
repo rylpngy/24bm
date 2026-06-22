@@ -1,0 +1,420 @@
+{
+  "generatedAt": "2026-06-21T06:26:13.887Z",
+  "target": "http://localhost:3000/",
+  "browserExecutable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "dataSource": "Java 数据源",
+  "viewports": [
+    {
+      "name": "desktop-1280x720",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "name": "mobile-390x844",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "checkedActions": [
+    {
+      "module": "demands",
+      "label": "采购需求",
+      "actions": [
+        "提交审批",
+        "创建询价"
+      ]
+    },
+    {
+      "module": "approvals",
+      "label": "审批中心",
+      "actions": [
+        "通过"
+      ]
+    },
+    {
+      "module": "quotes",
+      "label": "报价对比",
+      "actions": [
+        "按推荐报价提交定标审批",
+        "生成采购订单"
+      ]
+    },
+    {
+      "module": "receipts",
+      "label": "收货验收",
+      "actions": [
+        "登记收货"
+      ]
+    },
+    {
+      "module": "invoices",
+      "label": "发票付款",
+      "actions": [
+        "登记付款"
+      ]
+    }
+  ],
+  "failed": [],
+  "results": [
+    {
+      "viewport": "desktop-1280x720",
+      "module": "demands",
+      "moduleLabel": "采购需求",
+      "action": "提交审批",
+      "buttonCount": 1,
+      "enabledButtonCount": 0,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "提交审批 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "有明确边界提示，可解释演示"
+    },
+    {
+      "viewport": "desktop-1280x720",
+      "module": "demands",
+      "moduleLabel": "采购需求",
+      "action": "创建询价",
+      "buttonCount": 1,
+      "enabledButtonCount": 0,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "创建询价 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "有明确边界提示，可解释演示"
+    },
+    {
+      "viewport": "desktop-1280x720",
+      "module": "approvals",
+      "moduleLabel": "审批中心",
+      "action": "通过",
+      "buttonCount": 6,
+      "enabledButtonCount": 1,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "通过 · 定位真实操作区",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "text": "通过",
+          "disabled": true,
+          "visible": true
+        },
+        {
+          "text": "通过",
+          "disabled": true,
+          "visible": true
+        },
+        {
+          "text": "通过",
+          "disabled": true,
+          "visible": true
+        },
+        {
+          "text": "通过",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "可定位到真实操作区"
+    },
+    {
+      "viewport": "desktop-1280x720",
+      "module": "quotes",
+      "moduleLabel": "报价对比",
+      "action": "按推荐报价提交定标审批",
+      "buttonCount": 1,
+      "enabledButtonCount": 0,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "按推荐报价提交定标审批 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "有明确边界提示，可解释演示"
+    },
+    {
+      "viewport": "desktop-1280x720",
+      "module": "quotes",
+      "moduleLabel": "报价对比",
+      "action": "生成采购订单",
+      "buttonCount": 1,
+      "enabledButtonCount": 0,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "生成采购订单 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "有明确边界提示，可解释演示"
+    },
+    {
+      "viewport": "desktop-1280x720",
+      "module": "receipts",
+      "moduleLabel": "收货验收",
+      "action": "登记收货",
+      "buttonCount": 2,
+      "enabledButtonCount": 1,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "6当前收货验收登记收货、异常原因和验收结果",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "text": "登记收货 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "可定位到真实操作区"
+    },
+    {
+      "viewport": "desktop-1280x720",
+      "module": "invoices",
+      "moduleLabel": "发票付款",
+      "action": "登记付款",
+      "buttonCount": 4,
+      "enabledButtonCount": 3,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "登记付款 · 定位真实操作区",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "text": "登记付款状态",
+          "disabled": true,
+          "visible": true
+        },
+        {
+          "text": "登记付款",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "text": "登记付款",
+          "disabled": false,
+          "visible": true
+        }
+      ],
+      "conclusion": "可定位到真实操作区"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "module": "demands",
+      "moduleLabel": "采购需求",
+      "action": "提交审批",
+      "buttonCount": 1,
+      "enabledButtonCount": 0,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "提交审批 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "有明确边界提示，可解释演示"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "module": "demands",
+      "moduleLabel": "采购需求",
+      "action": "创建询价",
+      "buttonCount": 1,
+      "enabledButtonCount": 0,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "创建询价 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "有明确边界提示，可解释演示"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "module": "approvals",
+      "moduleLabel": "审批中心",
+      "action": "通过",
+      "buttonCount": 6,
+      "enabledButtonCount": 1,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "通过 · 定位真实操作区",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "text": "通过",
+          "disabled": true,
+          "visible": true
+        },
+        {
+          "text": "通过",
+          "disabled": true,
+          "visible": true
+        },
+        {
+          "text": "通过",
+          "disabled": true,
+          "visible": true
+        },
+        {
+          "text": "通过",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "可定位到真实操作区"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "module": "quotes",
+      "moduleLabel": "报价对比",
+      "action": "按推荐报价提交定标审批",
+      "buttonCount": 1,
+      "enabledButtonCount": 0,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "按推荐报价提交定标审批 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "有明确边界提示，可解释演示"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "module": "quotes",
+      "moduleLabel": "报价对比",
+      "action": "生成采购订单",
+      "buttonCount": 1,
+      "enabledButtonCount": 0,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "生成采购订单 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "有明确边界提示，可解释演示"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "module": "receipts",
+      "moduleLabel": "收货验收",
+      "action": "登记收货",
+      "buttonCount": 2,
+      "enabledButtonCount": 1,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "6当前收货验收登记收货、异常原因和验收结果",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "text": "登记收货 · 当前数据下不可直接操作",
+          "disabled": true,
+          "visible": true
+        }
+      ],
+      "conclusion": "可定位到真实操作区"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "module": "invoices",
+      "moduleLabel": "发票付款",
+      "action": "登记付款",
+      "buttonCount": 4,
+      "enabledButtonCount": 3,
+      "boundaryVisible": true,
+      "horizontalOverflow": false,
+      "consoleErrorCount": 0,
+      "consoleErrors": [],
+      "sampleButtons": [
+        {
+          "text": "登记付款 · 定位真实操作区",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "text": "登记付款状态",
+          "disabled": true,
+          "visible": true
+        },
+        {
+          "text": "登记付款",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "text": "登记付款",
+          "disabled": false,
+          "visible": true
+        }
+      ],
+      "conclusion": "可定位到真实操作区"
+    }
+  ]
+}

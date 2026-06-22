@@ -30,6 +30,21 @@ class PlatformDefaultApprovalTemplateTests {
                 "TPL_RFQ_AWARD",
                 ApprovalBusinessType.RFQ_AWARD,
                 "定标审批",
-                30));
+                30),
+            org.assertj.core.groups.Tuple.tuple(
+                "TPL_CONTRACT_APPROVAL",
+                ApprovalBusinessType.CONTRACT_APPROVAL,
+                "合同审批",
+                40),
+            org.assertj.core.groups.Tuple.tuple(
+                "TPL_PAYMENT_BATCH",
+                ApprovalBusinessType.PAYMENT_BATCH,
+                "付款批次审批",
+                60),
+            org.assertj.core.groups.Tuple.tuple(
+                "TPL_PAYMENT_ARCHIVE_EXCEPTION",
+                ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
+                "付款归档异常审批",
+                70));
   }
 }

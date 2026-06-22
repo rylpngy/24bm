@@ -1,0 +1,362 @@
+{
+  "checkedAt": "2026-06-21T06:01:30.684Z",
+  "appBaseUrl": "http://localhost:3000",
+  "javaApiBaseUrl": "http://localhost:8080",
+  "viewport": "desktop-1280x720",
+  "steps": [
+    {
+      "type": "initial",
+      "target": "demands",
+      "targetLabel": "采购需求",
+      "state": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 采购需求\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      }
+    },
+    {
+      "type": "click",
+      "from": "demands",
+      "fromLabel": "采购需求",
+      "button": "打开审批中心处理待办",
+      "to": "approvals",
+      "toLabel": "审批中心",
+      "buttonCount": 1,
+      "clickError": null,
+      "before": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 采购需求\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "after": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 审批中心\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "failed": []
+    },
+    {
+      "type": "click",
+      "from": "approvals",
+      "fromLabel": "审批中心",
+      "button": "进入询价项目跟进",
+      "to": "rfqs",
+      "toLabel": "询价项目",
+      "buttonCount": 1,
+      "clickError": null,
+      "before": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 审批中心\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "after": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 询价项目\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "failed": []
+    },
+    {
+      "type": "click",
+      "from": "rfqs",
+      "fromLabel": "询价项目",
+      "button": "进入报价对比定标",
+      "to": "quotes",
+      "toLabel": "报价对比",
+      "buttonCount": 1,
+      "clickError": null,
+      "before": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 询价项目\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "after": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 报价对比\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "failed": []
+    },
+    {
+      "type": "click",
+      "from": "quotes",
+      "fromLabel": "报价对比",
+      "button": "查看采购订单履约",
+      "to": "orders",
+      "toLabel": "采购订单",
+      "buttonCount": 1,
+      "clickError": null,
+      "before": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 报价对比\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "after": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 采购订单\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "failed": []
+    },
+    {
+      "type": "click",
+      "from": "orders",
+      "fromLabel": "采购订单",
+      "button": "进入收货验收",
+      "to": "receipts",
+      "toLabel": "收货验收",
+      "buttonCount": 1,
+      "clickError": null,
+      "before": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 采购订单\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "after": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 收货验收\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "failed": []
+    },
+    {
+      "type": "click",
+      "from": "receipts",
+      "fromLabel": "收货验收",
+      "button": "进入发票付款",
+      "to": "invoices",
+      "toLabel": "发票付款",
+      "buttonCount": 1,
+      "clickError": null,
+      "before": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 收货验收\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "after": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 发票付款\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "failed": []
+    },
+    {
+      "type": "click",
+      "from": "invoices",
+      "fromLabel": "发票付款",
+      "button": "主流程演示闭环",
+      "to": "dashboard",
+      "toLabel": "首页看板",
+      "buttonCount": 1,
+      "clickError": null,
+      "before": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": true,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 发票付款\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "after": {
+        "metrics": {
+          "clientWidth": 1280,
+          "hasArgumentTypeMismatch": false,
+          "hasExpectedLabel": true,
+          "hasJavaDataSource": true,
+          "hasLoadingFailure": false,
+          "hasReactRuntimeError": false,
+          "hasWalkthroughRail": false,
+          "hasWholePageHorizontalOverflow": false,
+          "hasWorkspaceCrumb": true,
+          "scrollWidth": 1280,
+          "title": "智采云 - 专业采购管理系统",
+          "url": "http://localhost:3000/?role=buyer&module=demands",
+          "visibleTextSample": "24\n\n24Bid\n\nPROCUREMENT SAAS\n\nMVP 主线\n\n需求申请 - 询价比价 - 订单履约 - 发票付款\n\n平台运营端\n租户 / 审核 / 公告\n采购方企业端\n需求到付款闭环\n首页看板\n采购金额、待办、履约进度\n采购需求\n需求列表、审批提交、转询价\n审批中心\n待审批与最近审批记录\n供应商库\n私域关系、准入、分级\n物料目录\n物料与服务主数据\n询价项目\nRFQ 列表、邀请与状态\n报价对比\n报价比较、定标入口\n采购订单\n订单列表与生成订单\n合同管理\n合同台账、审批与履约\n收货验收\n待收货与验收登记\n发票付款\n发票列表与付款状态\n审计日志\n最近操作留痕\n供应商企业端\n报价 / 交付 / 应收\n多租户隔离\n\n采购数据、供应商私域关系、订单和财务记录按采购企业隔离。\n\n当前工作区\n\nAcme 采购公司\n\n采购方 / 首页看板\n\nAcme 采购公司\n刷新\n跑通主流程\n6\n\n采购方企业后台\n\n从需求申请到发票付款的询价比价闭环\n\n采购方维护组织、物料、私域供应商关系，并对需求、定标、订单和财务状态负责。\n\n流程边界\n多企业 SaaS\n平台公共库 + 私域关系\n询价比价闭环\n站内通知"
+        },
+        "consoleErrors": []
+      },
+      "failed": []
+    }
+  ],
+  "failed": [],
+  "note": "Stage seven Java sequence button path recheck uses actual button clicks from buyer demands through dashboard closeout."
+}

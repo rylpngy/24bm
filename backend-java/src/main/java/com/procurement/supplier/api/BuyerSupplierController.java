@@ -48,6 +48,12 @@ public class BuyerSupplierController {
     return ApiResponse.ok(buyerSupplierApplicationService.submitAdmission(relationId));
   }
 
+  @GetMapping("/{relationId}/qualifications")
+  public ApiResponse<List<SupplierQualificationResponse>> listRelationQualifications(
+      @PathVariable String relationId) {
+    return ApiResponse.ok(buyerSupplierApplicationService.listRelationQualifications(relationId));
+  }
+
   @PostMapping("/{relationId}/approval")
   public ApiResponse<ApprovalTaskResponse> reviewAdmission(
       @PathVariable String relationId,

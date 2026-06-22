@@ -513,10 +513,12 @@ Receipt creation uses the buyer tenant and receiver identity from `Authorization
 The supplier-side invoice endpoint is:
 
 - `GET /api/v1/supplier/invoices`
+- `GET /api/v1/supplier/invoice-reconciliations`
 - `GET /api/v1/supplier/invoices/{invoiceId}/payment-audit-logs`
 - `POST /api/v1/supplier/orders/{orderId}/invoices`
 
 The supplier invoice list accepts optional `paymentStatus` and `orderId` filters inside the current supplier enterprise.
+The supplier invoice reconciliation list accepts optional `stage` and `orderId` filters inside the current supplier enterprise, and reads the independent `invoice_reconciliations` ledger joined with invoice and order amounts.
 The supplier payment audit log list first verifies the invoice belongs to the current supplier enterprise, then returns `invoice.paid` and `invoice.partial_paid` audit entries from the invoice buyer tenant.
 
 Example invoice payload:
@@ -531,10 +533,12 @@ Example invoice payload:
 The buyer-side payment endpoint is:
 
 - `GET /api/v1/buyer/invoices`
+- `GET /api/v1/buyer/invoice-reconciliations`
 - `POST /api/v1/buyer/invoices/{invoiceId}/payments`
 - `GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs`
 
 The buyer invoice list accepts optional `paymentStatus`, `supplierId`, and `orderId` filters inside the current buyer tenant.
+The buyer invoice reconciliation list accepts optional `stage`, `supplierId`, and `orderId` filters inside the current buyer tenant, and reads the independent `invoice_reconciliations` ledger joined with invoice and order amounts.
 The buyer payment audit log list returns current-tenant `invoice.paid` and `invoice.partial_paid` audit entries for the selected invoice.
 
 Example payment payload:

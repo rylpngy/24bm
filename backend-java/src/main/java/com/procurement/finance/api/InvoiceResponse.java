@@ -1,6 +1,7 @@
 package com.procurement.finance.api;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record InvoiceResponse(
@@ -11,6 +12,17 @@ public record InvoiceResponse(
     BigDecimal amount,
     String invoiceNo,
     String paymentStatus,
+    String reconciliationNote,
+    LocalDate dueDate,
+    boolean overdue,
+    long overdueDays,
+    BigDecimal orderAmount,
+    BigDecimal varianceAmount,
+    String receiptStatus,
+    String reconciliationStatus,
+    String reconciliationNo,
+    String reconciliationStage,
+    String nextReconciliationAction,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {
 }

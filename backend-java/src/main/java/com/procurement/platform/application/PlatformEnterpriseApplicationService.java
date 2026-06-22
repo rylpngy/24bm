@@ -36,6 +36,11 @@ public class PlatformEnterpriseApplicationService {
       throw new IllegalArgumentException("Enterprise not found: " + enterpriseId);
     }
     platformEnterpriseMapper.updateSupplierReviewStatus(enterpriseId, request.reviewStatus());
+    platformEnterpriseMapper.updateSupplierReviewDetail(
+        enterpriseId,
+        request.reviewComment(),
+        Boolean.TRUE.equals(request.profileConfirmed()),
+        Boolean.TRUE.equals(request.riskConfirmed()));
     auditLogApplicationService.recordTenantAction(
         null,
         PlatformEnterpriseAuditAction.REVIEWED,
@@ -50,6 +55,9 @@ public class PlatformEnterpriseApplicationService {
         review.name(),
         review.type(),
         review.verified(),
-        review.reviewStatus());
+        review.reviewStatus(),
+        review.reviewComment(),
+        review.profileConfirmed(),
+        review.riskConfirmed());
   }
 }

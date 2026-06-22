@@ -6,7 +6,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -32,5 +34,17 @@ public class PlatformAnnouncementController {
   public ApiResponse<PlatformAnnouncementResponse> publish(
       @Valid @RequestBody CreatePlatformAnnouncementRequest request) {
     return ApiResponse.ok(platformAnnouncementApplicationService.publish(request));
+  }
+
+  @PutMapping("/{announcementId}")
+  public ApiResponse<PlatformAnnouncementResponse> update(
+      @PathVariable String announcementId,
+      @Valid @RequestBody UpdatePlatformAnnouncementRequest request) {
+    return ApiResponse.ok(platformAnnouncementApplicationService.update(announcementId, request));
+  }
+
+  @PostMapping("/{announcementId}/withdraw")
+  public ApiResponse<PlatformAnnouncementResponse> withdraw(@PathVariable String announcementId) {
+    return ApiResponse.ok(platformAnnouncementApplicationService.withdraw(announcementId));
   }
 }

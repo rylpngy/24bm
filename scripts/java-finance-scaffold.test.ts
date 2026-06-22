@@ -10,6 +10,8 @@ describe('Java finance invoice and payment scaffold', () => {
   it('exposes supplier invoice and buyer payment endpoints', () => {
     const invoiceController = read('backend-java/src/main/java/com/procurement/finance/api/SupplierInvoiceController.java');
     const paymentController = read('backend-java/src/main/java/com/procurement/finance/api/BuyerPaymentController.java');
+    const reconciliationController = read('backend-java/src/main/java/com/procurement/finance/api/BuyerInvoiceReconciliationController.java');
+    const supplierReconciliationController = read('backend-java/src/main/java/com/procurement/finance/api/SupplierInvoiceReconciliationController.java');
 
     expect(invoiceController).toContain('@RequestMapping("/api/v1/supplier/orders")');
     expect(invoiceController).toContain('@PostMapping("/{orderId}/invoices")');
@@ -17,6 +19,10 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentController).toContain('@GetMapping');
     expect(paymentController).toContain('@PostMapping("/{invoiceId}/payments")');
     expect(paymentController).toContain('@GetMapping("/{invoiceId}/payment-audit-logs")');
+    expect(reconciliationController).toContain('@RequestMapping("/api/v1/buyer/invoice-reconciliations")');
+    expect(reconciliationController).toContain('listCurrentTenantReconciliations');
+    expect(supplierReconciliationController).toContain('@RequestMapping("/api/v1/supplier/invoice-reconciliations")');
+    expect(supplierReconciliationController).toContain('listCurrentSupplierReconciliations');
   });
 
   it('defines request and response DTOs for invoices and payments', () => {
@@ -69,6 +75,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(invoiceService).toContain('countByTenantAndOrder');
     expect(invoiceService).toContain('findBySupplierAndId');
     expect(invoiceService).toContain('listCurrentSupplierPaymentAuditLogs');
+    expect(invoiceService).toContain('listCurrentSupplierReconciliations');
     expect(invoiceService).toContain('InvoiceAuditAction.CREATED');
     expect(invoiceService).toContain('InvoiceAuditAction.PAID');
     expect(invoiceService).toContain('InvoiceAuditAction.PARTIAL_PAID');
@@ -84,6 +91,7 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(paymentService).toContain('InvoiceAmountPolicy.requirePaymentAmountStillMatchesOrder');
     expect(paymentService).toContain('countByTenantSupplierAndStatus');
     expect(paymentService).toContain('listCurrentTenantInvoices');
+    expect(paymentService).toContain('listCurrentTenantReconciliations');
     expect(paymentService).toContain('listCurrentTenantPaymentAuditLogs');
     expect(paymentService).toContain('InvoiceAuditAction.PAID');
     expect(paymentService).toContain('InvoiceAuditAction.PARTIAL_PAID');
@@ -121,7 +129,11 @@ describe('Java finance invoice and payment scaffold', () => {
     const architecture = read('docs/java-backend-architecture.md');
 
     expect(readme).toContain('POST /api/v1/supplier/orders/{orderId}/invoices');
+    expect(readme).toContain('GET /api/v1/supplier/invoice-reconciliations');
+    expect(readme).toContain('The supplier invoice reconciliation list accepts optional `stage` and `orderId` filters');
     expect(readme).toContain('GET /api/v1/buyer/invoices');
+    expect(readme).toContain('GET /api/v1/buyer/invoice-reconciliations');
+    expect(readme).toContain('The buyer invoice reconciliation list accepts optional `stage`, `supplierId`, and `orderId` filters');
     expect(readme).toContain('The buyer invoice list accepts optional `paymentStatus`, `supplierId`, and `orderId` filters');
     expect(readme).toContain('POST /api/v1/buyer/invoices/{invoiceId}/payments');
     expect(readme).toContain('GET /api/v1/buyer/invoices/{invoiceId}/payment-audit-logs');
@@ -135,6 +147,8 @@ describe('Java finance invoice and payment scaffold', () => {
     expect(readme).toContain('A `部分付款` invoice can later be completed to `已付款`');
     expect(readme).toContain('`finance` feature enabled');
     expect(architecture).toContain('财务协同 Java API');
+    expect(architecture).toContain('`GET /api/v1/buyer/invoice-reconciliations`');
+    expect(architecture).toContain('`GET /api/v1/supplier/invoice-reconciliations`');
     expect(architecture).toContain('当前租户必须启用 `finance` 功能开关');
     expect(architecture).toContain('发票金额必须等于采购订单金额');
     expect(architecture).toContain('MVP 阶段同一采购订单只能登记一张发票');

@@ -14,5 +14,33 @@ public record RfqResponse(
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
     List<String> demandIds,
-    List<String> invitedSupplierIds) {
+    List<String> invitedSupplierIds,
+    List<QuoteResponse> quotes) {
+
+  public RfqResponse(
+      String id,
+      String tenantId,
+      String title,
+      String status,
+      OffsetDateTime deadlineAt,
+      String ownerId,
+      String awardedSupplierId,
+      OffsetDateTime createdAt,
+      OffsetDateTime updatedAt,
+      List<String> demandIds,
+      List<String> invitedSupplierIds) {
+    this(
+        id,
+        tenantId,
+        title,
+        status,
+        deadlineAt,
+        ownerId,
+        awardedSupplierId,
+        createdAt,
+        updatedAt,
+        demandIds,
+        invitedSupplierIds,
+        List.of());
+  }
 }

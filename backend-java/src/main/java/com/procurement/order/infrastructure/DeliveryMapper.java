@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface DeliveryMapper {
@@ -31,6 +32,14 @@ public interface DeliveryMapper {
   Delivery findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
+      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
+      from deliveries
+      where supplier_id = #{supplierId,jdbcType=VARCHAR}
+        and id = #{id}
+      """)
+  Delivery findBySupplierAndId(@Param("supplierId") String supplierId, @Param("id") String id);
+
+  @Select("""
       select count(1)
       from deliveries
       where tenant_id = #{tenantId}
@@ -51,6 +60,14 @@ public interface DeliveryMapper {
       @Param("status") String status);
 
   @Select("""
+      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
+      from deliveries
+      where tenant_id = #{tenantId}
+      order by created_at desc
+      """)
+  List<Delivery> listByTenant(@Param("tenantId") String tenantId);
+
+  @Select("""
       <script>
       select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
       from deliveries
@@ -68,4 +85,19 @@ public interface DeliveryMapper {
       @Param("supplierId") String supplierId,
       @Param("status") String status,
       @Param("orderId") String orderId);
+
+  @Update("""
+      update deliveries
+      set carrier = #{carrier},
+          tracking_no = #{trackingNo}
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and supplier_id = #{supplierId,jdbcType=VARCHAR}
+      """)
+  int updateSupplierDelivery(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("supplierId") String supplierId,
+      @Param("carrier") String carrier,
+      @Param("trackingNo") String trackingNo);
 }

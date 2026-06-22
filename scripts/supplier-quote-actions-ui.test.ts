@@ -14,9 +14,12 @@ describe('supplier quote actions UI', () => {
     expect(app).toContain('onSubmitQuote');
     expect(app).toContain('提交报价');
     expect(app).toContain('报价已提交');
+    expect(app).toContain('同步采购方报价对比');
+    expect(app).toContain('refreshAfterSupplierAction');
     expect(app).toContain('hasMyQuote');
-    expect(app).toContain('amount: 118000');
-    expect(app).toContain('taxRate: 13');
-    expect(app).toContain('deliveryDays: 7');
+    expect(app).toContain('SupplierQuoteDraft');
+    expect(app).toContain('amount: draft.amount');
+    expect(app).toContain('taxRate: draft.taxRate');
+    expect(app).toContain('deliveryDays: draft.deliveryDays');
   });
 });

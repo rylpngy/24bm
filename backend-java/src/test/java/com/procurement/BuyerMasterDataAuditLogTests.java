@@ -26,6 +26,7 @@ import com.procurement.supplier.domain.BuyerSupplierAdmissionStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierManualStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
+import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
 import com.procurement.tenant.application.TenantEntitlementApplicationService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -165,6 +166,7 @@ class BuyerMasterDataAuditLogTests {
     BuyerSupplierApplicationService buyerSupplierApplicationService =
         new BuyerSupplierApplicationService(
             buyerSupplierRelationMapper,
+            org.mockito.Mockito.mock(SupplierQualificationMapper.class),
             new ObjectMapper(),
             approvalTaskMapper,
             new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper),

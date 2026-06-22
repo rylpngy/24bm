@@ -70,6 +70,23 @@ public interface PurchaseDemandMapper {
       """)
   int updateStatus(@Param("tenantId") String tenantId, @Param("id") String id, @Param("status") String status);
 
+  @Update("""
+      update purchase_demands
+      set title = #{title},
+          department_id = #{departmentId},
+          budget = #{budget},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = '草稿'
+      """)
+  int updateDraft(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("title") String title,
+      @Param("departmentId") String departmentId,
+      @Param("budget") BigDecimal budget);
+
   @Select("""
       select count(*)
       from purchase_demands

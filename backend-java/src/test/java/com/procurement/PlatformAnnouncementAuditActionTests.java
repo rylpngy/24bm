@@ -10,5 +10,9 @@ class PlatformAnnouncementAuditActionTests {
   void definesPlatformAnnouncementAuditActions() {
     assertThat(PlatformAnnouncementAuditAction.PUBLISHED)
         .isEqualTo("platform_announcement.published");
+    assertThat(PlatformAnnouncementAuditAction.UPDATED)
+        .isEqualTo("platform_announcement.updated");
+    assertThat(PlatformAnnouncementAuditAction.WITHDRAWN)
+        .isEqualTo("platform_announcement.withdrawn");
   }
 }

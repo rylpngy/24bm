@@ -1,6 +1,7 @@
 package com.procurement.sourcing.infrastructure;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -39,4 +40,10 @@ public interface RfqInviteMapper {
       @Param("rfqId") String rfqId,
       @Param("supplierId") String supplierId,
       @Param("inviteStatus") String inviteStatus);
+
+  @Delete("""
+      delete from rfq_invites
+      where tenant_id = #{tenantId} and rfq_id = #{rfqId}
+      """)
+  void deleteByRfq(@Param("tenantId") String tenantId, @Param("rfqId") String rfqId);
 }

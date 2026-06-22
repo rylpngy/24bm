@@ -5,13 +5,18 @@ import com.procurement.audit.api.AuditLogResponse;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.InvoiceResponse;
+import com.procurement.finance.api.InvoiceReconciliationResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
+import com.procurement.finance.api.UpdateInvoicePaymentRequest;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoiceAmountPolicy;
 import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
+import com.procurement.finance.domain.InvoiceReconciliation;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
+import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
@@ -28,6 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PaymentApplicationService {
   private final InvoiceMapper invoiceMapper;
+  private final InvoiceReconciliationMapper invoiceReconciliationMapper;
+  private final ThreeWayMatchMapper threeWayMatchMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -37,6 +44,8 @@ public class PaymentApplicationService {
 
   public PaymentApplicationService(
       InvoiceMapper invoiceMapper,
+      InvoiceReconciliationMapper invoiceReconciliationMapper,
+      ThreeWayMatchMapper threeWayMatchMapper,
       PurchaseOrderMapper purchaseOrderMapper,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AuditLogApplicationService auditLogApplicationService,
@@ -44,6 +53,8 @@ public class PaymentApplicationService {
       NotificationApplicationService notificationApplicationService,
       InvoicePaymentStatusTransition invoicePaymentStatusTransition) {
     this.invoiceMapper = invoiceMapper;
+    this.invoiceReconciliationMapper = invoiceReconciliationMapper;
+    this.threeWayMatchMapper = threeWayMatchMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -79,19 +90,40 @@ public class PaymentApplicationService {
         50);
   }
 
+  public List<InvoiceReconciliationResponse> listCurrentTenantReconciliations(
+      String stage,
+      String supplierId,
+      String orderId) {
+    String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
+    return invoiceReconciliationMapper.listByTenantFiltered(
+            tenantId,
+            blankToNull(stage),
+            blankToNull(supplierId),
+            blankToNull(orderId))
+        .stream()
+        .map(this::toReconciliationResponse)
+        .toList();
+  }
+
   @Transactional
   public InvoiceResponse register(String invoiceId, RegisterPaymentRequest request) {
+    return applyPaymentStatus(invoiceId, request.paymentStatus());
+  }
+
+  @Transactional
+  public InvoiceResponse update(String invoiceId, UpdateInvoicePaymentRequest request) {
+    return applyPaymentStatus(invoiceId, request.paymentStatus());
+  }
+
+  private InvoiceResponse applyPaymentStatus(String invoiceId, String paymentStatus) {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
     }
-    invoicePaymentStatusTransition.requireSupportedTarget(request.paymentStatus());
-    if (invoicePaymentStatusTransition.isIdempotentRegistration(invoice.paymentStatus(), request.paymentStatus())) {
-      return toResponse(invoice);
-    }
-    invoicePaymentStatusTransition.requireTransition(invoice.paymentStatus(), request.paymentStatus(), invoiceId);
+    invoicePaymentStatusTransition.requireSupportedTarget(paymentStatus);
+    invoicePaymentStatusTransition.requireTransition(invoice.paymentStatus(), paymentStatus, invoiceId);
     requireInvoiceAmountMatchesOrder(tenantId, invoice);
     requireSupplierPayable(tenantId, invoice);
 
@@ -99,12 +131,12 @@ public class PaymentApplicationService {
         tenantId,
         invoiceId,
         invoice.paymentStatus(),
-        request.paymentStatus());
+        paymentStatus);
     if (updated == 0) {
       throw new IllegalStateException("Invoice status changed before payment could be recorded: " + invoiceId);
     }
     auditLogApplicationService.recordTenantAction(
-        InvoicePaymentStatus.PAID.equals(request.paymentStatus())
+        InvoicePaymentStatus.PAID.equals(paymentStatus)
             ? InvoiceAuditAction.PAID
             : InvoiceAuditAction.PARTIAL_PAID,
         AuditTargetType.INVOICE,
@@ -112,24 +144,43 @@ public class PaymentApplicationService {
     notificationApplicationService.notifyActiveSupplierUsers(
         tenantId,
         invoice.supplierId(),
-        InvoicePaymentStatus.PAID.equals(request.paymentStatus())
+        InvoicePaymentStatus.PAID.equals(paymentStatus)
             ? NotificationTitle.INVOICE_PAID
             : NotificationTitle.INVOICE_PARTIAL_PAID,
-        "采购方已登记发票 " + invoice.invoiceNo() + " 的付款状态：" + request.paymentStatus() + "。");
-    return toResponse(invoiceMapper.findByTenantAndId(tenantId, invoiceId));
+        "采购方已登记发票 " + invoice.invoiceNo() + " 的付款状态：" + paymentStatus + "。");
+    InvoiceResponse response = toResponse(invoiceMapper.findByTenantAndId(tenantId, invoiceId));
+    invoiceReconciliationMapper.updateStageByInvoice(
+        tenantId,
+        invoiceId,
+        response.reconciliationStage(),
+        response.nextReconciliationAction());
+    threeWayMatchMapper.upsertFromInvoice("match-" + java.util.UUID.randomUUID(), tenantId, invoiceId);
+    return response;
   }
 
   private InvoiceResponse toResponse(Invoice invoice) {
-    return new InvoiceResponse(
-        invoice.id(),
-        invoice.tenantId(),
-        invoice.supplierId(),
-        invoice.orderId(),
-        invoice.amount(),
-        invoice.invoiceNo(),
-        invoice.paymentStatus(),
-        invoice.createdAt(),
-        invoice.updatedAt());
+    return InvoiceResponseAssembler.from(
+        invoice,
+        purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()));
+  }
+
+  private InvoiceReconciliationResponse toReconciliationResponse(InvoiceReconciliation reconciliation) {
+    return new InvoiceReconciliationResponse(
+        reconciliation.id(),
+        reconciliation.tenantId(),
+        "REC-" + reconciliation.invoiceId(),
+        reconciliation.invoiceId(),
+        reconciliation.supplierId(),
+        reconciliation.orderId(),
+        reconciliation.stage(),
+        reconciliation.nextAction(),
+        reconciliation.orderAmount(),
+        reconciliation.invoiceAmount(),
+        reconciliation.varianceAmount(),
+        reconciliation.receiptStatus(),
+        reconciliation.paymentStatus(),
+        reconciliation.createdAt(),
+        reconciliation.updatedAt());
   }
 
   private void requireSupplierPayable(String tenantId, Invoice invoice) {

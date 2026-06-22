@@ -20,13 +20,16 @@ import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest;
 import com.procurement.supplier.api.CreateBuyerSupplierRequest;
 import com.procurement.supplier.api.ReviewBuyerSupplierAdmissionRequest;
+import com.procurement.supplier.api.SupplierQualificationResponse;
 import com.procurement.supplier.domain.BuyerSupplierAuditAction;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.domain.BuyerSupplierAdmissionStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierManualStatusTransition;
 import com.procurement.supplier.domain.BuyerSupplierPerformanceScore;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
+import com.procurement.supplier.domain.SupplierQualification;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
+import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BuyerSupplierApplicationService {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
+  private final SupplierQualificationMapper supplierQualificationMapper;
   private final ObjectMapper objectMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
@@ -46,6 +50,7 @@ public class BuyerSupplierApplicationService {
 
   public BuyerSupplierApplicationService(
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
+      SupplierQualificationMapper supplierQualificationMapper,
       ObjectMapper objectMapper,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
@@ -54,6 +59,7 @@ public class BuyerSupplierApplicationService {
       BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition,
       BuyerSupplierManualStatusTransition buyerSupplierManualStatusTransition) {
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
+    this.supplierQualificationMapper = supplierQualificationMapper;
     this.objectMapper = objectMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
@@ -84,6 +90,14 @@ public class BuyerSupplierApplicationService {
         .toList();
   }
 
+  public List<SupplierQualificationResponse> listRelationQualifications(String relationId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
+    BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
+    return supplierQualificationMapper.listActiveBySupplier(relation.supplierId()).stream()
+        .map(this::toQualificationResponse)
+        .toList();
+  }
+
   @Transactional
   public BuyerSupplierResponse createSupplierRelation(CreateBuyerSupplierRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
@@ -107,6 +121,7 @@ public class BuyerSupplierApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
     buyerSupplierAdmissionStatusTransition.requireAdmissionSubmission(relation.status(), relationId);
+    requireActiveQualification(relation);
 
     int updated = buyerSupplierRelationMapper.updateStatus(
         tenantId,
@@ -128,6 +143,13 @@ public class BuyerSupplierApplicationService {
         relationId);
 
     return toApprovalTaskResponse(approvalTask);
+  }
+
+  private void requireActiveQualification(BuyerSupplierRelation relation) {
+    if (supplierQualificationMapper.listActiveBySupplier(relation.supplierId()).isEmpty()) {
+      throw new IllegalStateException(
+          "Supplier admission requires at least one active qualification: " + relation.id());
+    }
   }
 
   @Transactional
@@ -154,7 +176,8 @@ public class BuyerSupplierApplicationService {
         approvalTask.id(),
         ApprovalStatus.PENDING,
         approvalStatus,
-        userId);
+        userId,
+        request.comment());
     if (approvalUpdated == 0) {
       throw new IllegalStateException("Approval task status changed before review could be recorded: " + approvalTask.id());
     }
@@ -252,6 +275,19 @@ public class BuyerSupplierApplicationService {
         relation.performanceScore());
   }
 
+  private SupplierQualificationResponse toQualificationResponse(SupplierQualification qualification) {
+    return new SupplierQualificationResponse(
+        qualification.id(),
+        qualification.supplierId(),
+        qualification.qualificationType(),
+        qualification.certificateNo(),
+        qualification.expiresAt(),
+        qualification.fileName(),
+        qualification.storageKey(),
+        qualification.status(),
+        qualification.createdAt());
+  }
+
   private BuyerSupplierRelation requireRelation(String tenantId, String relationId) {
     BuyerSupplierRelation relation = buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId);
     if (relation == null) {
@@ -268,6 +304,7 @@ public class BuyerSupplierApplicationService {
         approvalTask.bizId(),
         approvalTask.assigneeId(),
         approvalTask.status(),
+        approvalTask.reviewComment(),
         approvalTask.createdAt());
   }
 

@@ -27,7 +27,10 @@ create table supplier_enterprises (
   credit_code text,
   legal_person text,
   verified_status text not null default 'pending',
-  profile_status text not null default 'draft'
+  profile_status text not null default 'draft',
+  review_comment text,
+  profile_confirmed boolean not null default false,
+  risk_confirmed boolean not null default false
 );
 
 create table supplier_qualifications (

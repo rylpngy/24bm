@@ -122,4 +122,17 @@ public interface PurchaseOrderMapper {
       @Param("id") String id,
       @Param("currentStatus") String currentStatus,
       @Param("status") String status);
+
+  @Update("""
+      update purchase_orders
+      set expected_receipt_date = #{expectedReceiptDate},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status <> '已收货'
+      """)
+  int updateExpectedReceiptDate(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("expectedReceiptDate") LocalDate expectedReceiptDate);
 }

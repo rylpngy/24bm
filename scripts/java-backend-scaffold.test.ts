@@ -94,7 +94,8 @@ describe('Java backend scaffold', () => {
     expect(existsSync(join(root, docPath))).toBe(true);
 
     const doc = read(docPath);
-    expect(doc).toContain('mvn clean spring-boot:run');
+    expect(doc).toContain('npm run java:dev');
+    expect(doc).toContain("SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev'");
     expect(doc).toContain('npm run dev:java');
     expect(doc).toContain('POST /api/v1/auth/login');
     expect(doc).toContain('Authorization: Bearer');
@@ -452,6 +453,7 @@ describe('Java backend scaffold', () => {
     expect(readme).toContain('docker compose up -d');
     expect(readme).toContain('mvn clean spring-boot:run -Dspring-boot.run.profiles=local');
     expect(integrationDoc).toContain('docker compose up -d');
-    expect(integrationDoc).toContain('mvn clean spring-boot:run -Dspring-boot.run.profiles=local');
+    expect(integrationDoc).toContain('npm run java:dev');
+    expect(integrationDoc).toContain("SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev'");
   });
 });

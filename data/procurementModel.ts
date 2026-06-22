@@ -3,8 +3,8 @@ export type TenantPlan = '标准版' | '专业版' | '旗舰版';
 export type ApprovalStatus = '草稿' | '审批中' | '已通过' | '已驳回';
 export type SupplierRelationStatus = '待准入' | '准入审批中' | '已准入' | '已驳回' | '暂停合作' | '黑名单';
 export type SupplierLevel = 'A' | 'B' | 'C';
-export type RfqStatus = '草稿' | '报价中' | '已截标' | '已定标' | '已关闭';
-export type QuoteStatus = '待提交' | '已提交' | '已撤回' | '已失效';
+export type RfqStatus = '草稿' | '报价中' | '已截标' | '定标审批中' | '已定标' | '已关闭';
+export type QuoteStatus = '待提交' | '已提交' | '已锁定' | '已中选' | '未中选' | '已撤回' | '已失效';
 export type OrderStatus = '待供应商确认' | '待发货' | '已发货' | '待收货' | '已收货' | '已完成';
 export type PaymentStatus = '待付款' | '已付款' | '部分付款';
 
@@ -12,7 +12,7 @@ export interface Tenant {
   id: string;
   name: string;
   plan: TenantPlan;
-  status: '试用中' | '已启用' | '待审核';
+  status: '试用中' | '已启用' | '待审核' | '停用';
   userLimit: number;
   enabledFeatures: string[];
 }
@@ -23,6 +23,25 @@ export interface Enterprise {
   type: EnterpriseType;
   industry: string;
   verified: boolean;
+  creditCode?: string;
+  legalPerson?: string;
+  verifiedStatus?: string;
+  profileStatus?: string;
+  reviewComment?: string;
+  profileConfirmed?: boolean;
+  riskConfirmed?: boolean;
+}
+
+export interface SupplierQualificationRecord {
+  id: string;
+  supplierId: string;
+  qualificationType: string;
+  certificateNo?: string;
+  expiresAt?: string;
+  fileName: string;
+  storageKey: string;
+  status: string;
+  createdAt?: string;
 }
 
 export interface UserAccount {
@@ -34,6 +53,14 @@ export interface UserAccount {
   scope: 'platform' | 'buyer' | 'supplier';
 }
 
+export interface DepartmentItem {
+  id: string;
+  tenantId: string;
+  name: string;
+  parentId: string | null;
+  status: string;
+}
+
 export interface SupplierRelation {
   id: string;
   tenantId: string;
@@ -42,6 +69,7 @@ export interface SupplierRelation {
   level: SupplierLevel;
   categories: string[];
   performanceScore: number;
+  qualifications?: SupplierQualificationRecord[];
 }
 
 export interface MaterialItem {
@@ -102,6 +130,20 @@ export interface PurchaseOrder {
   expectedReceiptDate: string;
 }
 
+export interface ContractLedgerItem {
+  id: string;
+  tenantId: string;
+  contractNo: string;
+  contractName: string;
+  relatedOrderId: string;
+  supplierId: string;
+  amount: number;
+  status: string;
+  archiveStatus: string;
+  fulfillmentProgress: string;
+  effectiveDate?: string | null;
+}
+
 export interface Delivery {
   id: string;
   tenantId: string;
@@ -110,6 +152,7 @@ export interface Delivery {
   carrier: string;
   trackingNo: string;
   status: '待发货' | '运输中' | '已发货' | '已签收';
+  createdAt?: string;
 }
 
 export interface InvoiceRecord {
@@ -118,7 +161,30 @@ export interface InvoiceRecord {
   supplierId: string;
   orderId: string;
   amount: number;
+  invoiceNo?: string;
   paymentStatus: PaymentStatus;
+  reconciliationNote?: string;
+  dueDate?: string;
+  overdue?: boolean;
+  overdueDays?: number;
+  orderAmount?: number;
+  varianceAmount?: number;
+  receiptStatus?: string;
+  reconciliationStatus?: string;
+  reconciliationNo?: string;
+  reconciliationStage?: string;
+  nextReconciliationAction?: string;
+}
+
+export interface NotificationRecord {
+  id: string;
+  tenantId: string;
+  recipientId: string;
+  title: string;
+  content: string;
+  read: boolean;
+  readAt?: string | null;
+  createdAt: string;
 }
 
 export interface AuditLogRecord {
@@ -147,6 +213,7 @@ export interface ProcurementMvpModel {
   demands: PurchaseDemand[];
   rfqs: Rfq[];
   orders: PurchaseOrder[];
+  contracts?: ContractLedgerItem[];
   deliveries: Delivery[];
   invoices: InvoiceRecord[];
   auditLogs: AuditLogRecord[];
@@ -157,6 +224,7 @@ export interface BuyerWorkspace {
   tenant: Tenant;
   enterprise: Enterprise;
   users: UserAccount[];
+  departments: DepartmentItem[];
   privateSupplierRelations: SupplierRelation[];
   suppliers: Enterprise[];
   materials: MaterialItem[];
@@ -177,6 +245,8 @@ export interface SupplierWorkspace {
   orders: PurchaseOrder[];
   deliveries: Delivery[];
   invoices: InvoiceRecord[];
+  qualifications?: SupplierQualificationRecord[];
+  notifications?: NotificationRecord[];
 }
 
 export interface TenantKpis {
@@ -337,9 +407,9 @@ export const buildProcurementMvpModel = (): ProcurementMvpModel => {
   ];
 
   const acmeRfq1Quotes: RfqQuote[] = [
-    { id: 'quo-acme-1', tenantId: 'tenant-acme', rfqId: 'rfq-acme-1', supplierId: 'supplier-orbit', amount: 216000, taxRate: 13, deliveryDays: 14, status: '已提交' },
-    { id: 'quo-acme-2', tenantId: 'tenant-acme', rfqId: 'rfq-acme-1', supplierId: 'supplier-lumen', amount: 228000, taxRate: 13, deliveryDays: 10, status: '已提交' },
-    { id: 'quo-acme-3', tenantId: 'tenant-acme', rfqId: 'rfq-acme-1', supplierId: 'supplier-harbor', amount: 238000, taxRate: 13, deliveryDays: 18, status: '已提交' },
+    { id: 'quo-acme-1', tenantId: 'tenant-acme', rfqId: 'rfq-acme-1', supplierId: 'supplier-orbit', amount: 216000, taxRate: 13, deliveryDays: 14, status: '已中选' },
+    { id: 'quo-acme-2', tenantId: 'tenant-acme', rfqId: 'rfq-acme-1', supplierId: 'supplier-lumen', amount: 228000, taxRate: 13, deliveryDays: 10, status: '未中选' },
+    { id: 'quo-acme-3', tenantId: 'tenant-acme', rfqId: 'rfq-acme-1', supplierId: 'supplier-harbor', amount: 238000, taxRate: 13, deliveryDays: 18, status: '未中选' },
   ];
 
   const rfqs: Rfq[] = [
@@ -462,6 +532,14 @@ export const getBuyerWorkspace = (model: ProcurementMvpModel, tenantId: string):
     tenant,
     enterprise,
     users: model.users.filter((user) => user.tenantId === tenantId),
+    departments: Array.from(new Set(byTenant(model.demands, tenantId).map((demand) => demand.department)))
+      .map((department) => ({
+        id: department,
+        tenantId,
+        name: department,
+        parentId: null,
+        status: 'active',
+      })),
     privateSupplierRelations,
     suppliers: model.enterprises.filter((item) => privateSupplierIds.has(item.id)),
     materials: byTenant(model.materials, tenantId),

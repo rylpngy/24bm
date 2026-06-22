@@ -12,6 +12,7 @@ import com.procurement.demand.api.CreatePurchaseDemandRequest;
 import com.procurement.demand.api.PurchaseDemandLineItemResponse;
 import com.procurement.demand.api.PurchaseDemandResponse;
 import com.procurement.demand.api.ReviewPurchaseDemandRequest;
+import com.procurement.demand.api.UpdatePurchaseDemandRequest;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.domain.PurchaseDemandAuditAction;
 import com.procurement.demand.domain.PurchaseDemandApprovalStatusTransition;
@@ -112,6 +113,45 @@ public class PurchaseDemandApplicationService {
   }
 
   @Transactional
+  public PurchaseDemandResponse update(String demandId, UpdatePurchaseDemandRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
+    PurchaseDemand demand = purchaseDemandMapper.findByTenantAndId(tenantId, demandId);
+    if (demand == null) {
+      throw new IllegalArgumentException("Purchase demand not found: " + demandId);
+    }
+    if (!PurchaseDemandStatus.DRAFT.equals(demand.status())) {
+      throw new IllegalStateException("Only draft purchase demand can be updated: " + demandId);
+    }
+    requireActiveDepartment(tenantId, request.departmentId());
+
+    int updated = purchaseDemandMapper.updateDraft(
+        tenantId,
+        demandId,
+        request.title(),
+        request.departmentId(),
+        request.budget());
+    if (updated == 0) {
+      throw new IllegalStateException("Purchase demand status changed before update could be saved: " + demandId);
+    }
+
+    purchaseDemandItemMapper.deleteByDemand(tenantId, demandId);
+    for (var lineItem : request.lineItems()) {
+      purchaseDemandItemMapper.insert(
+          newId("dem-item"),
+          tenantId,
+          demandId,
+          lineItem.materialId(),
+          lineItem.quantity());
+    }
+    auditLogApplicationService.recordTenantAction(
+        PurchaseDemandAuditAction.UPDATED,
+        ApprovalBusinessType.PURCHASE_DEMAND,
+        demandId);
+
+    return toResponse(purchaseDemandMapper.findByTenantAndId(tenantId, demandId));
+  }
+
+  @Transactional
   public ApprovalTaskResponse submit(String demandId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     PurchaseDemand demand = purchaseDemandMapper.findByTenantAndId(tenantId, demandId);
@@ -127,6 +167,10 @@ public class PurchaseDemandApplicationService {
         ApprovalBusinessType.PURCHASE_DEMAND,
         demandId,
         null);
+    auditLogApplicationService.recordTenantAction(
+        PurchaseDemandAuditAction.SUBMITTED,
+        ApprovalBusinessType.PURCHASE_DEMAND,
+        demandId);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         NotificationTitle.PURCHASE_DEMAND_PENDING_APPROVAL,
@@ -169,11 +213,15 @@ public class PurchaseDemandApplicationService {
         approvalTask.id(),
         ApprovalStatus.PENDING,
         approvalStatus,
-        userId);
+        userId,
+        request.comment());
     if (updated == 0) {
       throw new IllegalStateException("Approval task status changed before review could be recorded: " + approvalTask.id());
     }
-    purchaseDemandMapper.updateStatus(tenantId, demandId, demandStatus);
+    int demandUpdated = purchaseDemandMapper.updateStatus(tenantId, demandId, demandStatus);
+    if (demandUpdated == 0) {
+      throw new IllegalStateException("Purchase demand status changed before review could be saved: " + demandId);
+    }
     auditLogApplicationService.recordTenantAction(
         approved ? PurchaseDemandAuditAction.APPROVED : PurchaseDemandAuditAction.REJECTED,
         ApprovalBusinessType.PURCHASE_DEMAND,
@@ -193,6 +241,7 @@ public class PurchaseDemandApplicationService {
         reviewedTask.bizId(),
         reviewedTask.assigneeId(),
         reviewedTask.status(),
+        reviewedTask.reviewComment(),
         reviewedTask.createdAt());
   }
 

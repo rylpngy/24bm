@@ -3,6 +3,7 @@ package com.procurement;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,7 +24,9 @@ import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
+import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
+import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,6 +34,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DuplicateKeyException;
 
 class OrderFulfillmentStateTransitionTests {
 
@@ -38,6 +42,7 @@ class OrderFulfillmentStateTransitionTests {
   private final DeliveryMapper deliveryMapper = org.mockito.Mockito.mock(DeliveryMapper.class);
   private final ReceiptMapper receiptMapper = org.mockito.Mockito.mock(ReceiptMapper.class);
   private final AwardDecisionMapper awardDecisionMapper = org.mockito.Mockito.mock(AwardDecisionMapper.class);
+  private final RfqMapper rfqMapper = org.mockito.Mockito.mock(RfqMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
@@ -61,6 +66,7 @@ class OrderFulfillmentStateTransitionTests {
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
         awardDecisionMapper,
+        rfqMapper,
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -82,6 +88,7 @@ class OrderFulfillmentStateTransitionTests {
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
         awardDecisionMapper,
+        rfqMapper,
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -169,6 +176,8 @@ class OrderFulfillmentStateTransitionTests {
             "价格最优",
             "已通过",
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
+        .thenReturn(rfq("rfq-1", "tenant-1", "已定标", "supplier-1"));
     when(purchaseOrderMapper.findByAwardSource("tenant-1", "rfq-1", "supplier-1"))
         .thenReturn(null);
     when(purchaseOrderMapper.findByTenantAndId(
@@ -178,6 +187,7 @@ class OrderFulfillmentStateTransitionTests {
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
         awardDecisionMapper,
+        rfqMapper,
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -193,6 +203,141 @@ class OrderFulfillmentStateTransitionTests {
   }
 
   @Test
+  void buyerOrderCreationReturnsExistingOrderWhenConcurrentInsertAlreadyCreatedIt() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(awardDecisionMapper.findApprovedForOrder("tenant-1", "award-1", "已通过"))
+        .thenReturn(new AwardDecision(
+            "award-1",
+            "tenant-1",
+            "rfq-1",
+            "quote-1",
+            "supplier-1",
+            BigDecimal.valueOf(100),
+            "价格最优",
+            "已通过",
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
+        .thenReturn(rfq("rfq-1", "tenant-1", "已定标", "supplier-1"));
+    when(purchaseOrderMapper.findByAwardSource("tenant-1", "rfq-1", "supplier-1"))
+        .thenReturn(null)
+        .thenReturn(order("po-existing", "tenant-1", "supplier-1", "待供应商确认"));
+    doThrow(new DuplicateKeyException("duplicate award order"))
+        .when(purchaseOrderMapper)
+        .insert(
+            anyString(),
+            org.mockito.ArgumentMatchers.eq("tenant-1"),
+            org.mockito.ArgumentMatchers.eq("rfq-1"),
+            org.mockito.ArgumentMatchers.eq("supplier-1"),
+            org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(100)),
+            org.mockito.ArgumentMatchers.eq("待供应商确认"),
+            org.mockito.ArgumentMatchers.eq(LocalDate.parse("2026-06-20")));
+
+    PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
+        awardDecisionMapper,
+        rfqMapper,
+        purchaseOrderMapper,
+        auditLogApplicationService,
+        notificationApplicationService,
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
+
+    var response = service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
+
+    org.assertj.core.api.Assertions.assertThat(response.id()).isEqualTo("po-existing");
+    verify(auditLogApplicationService, never()).recordTenantAction(
+        org.mockito.ArgumentMatchers.eq("purchase_order.created"),
+        org.mockito.ArgumentMatchers.eq("purchase_order"),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void buyerOrderCreationRequiresFinalizedRfqAwardBeforeCreatingOrder() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(awardDecisionMapper.findApprovedForOrder("tenant-1", "award-1", "已通过"))
+        .thenReturn(new AwardDecision(
+            "award-1",
+            "tenant-1",
+            "rfq-1",
+            "quote-1",
+            "supplier-1",
+            BigDecimal.valueOf(100),
+            "价格最优",
+            "已通过",
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
+        .thenReturn(rfq("rfq-1", "tenant-1", "定标审批中", null));
+    when(purchaseOrderMapper.findByAwardSource("tenant-1", "rfq-1", "supplier-1"))
+        .thenReturn(null);
+    when(purchaseOrderMapper.findByTenantAndId(
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> order(invocation.getArgument(1), "tenant-1", "supplier-1", "待供应商确认"));
+
+    PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
+        awardDecisionMapper,
+        rfqMapper,
+        purchaseOrderMapper,
+        auditLogApplicationService,
+        notificationApplicationService,
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
+
+    assertThatThrownBy(() -> service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20"))))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("RFQ award is not finalized for order creation: rfq-1");
+
+    verify(purchaseOrderMapper, never()).insert(
+        anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
+  void buyerOrderCreationRejectsAwardThatDoesNotMatchFinalizedRfqSupplier() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(awardDecisionMapper.findApprovedForOrder("tenant-1", "award-1", "已通过"))
+        .thenReturn(new AwardDecision(
+            "award-1",
+            "tenant-1",
+            "rfq-1",
+            "quote-1",
+            "supplier-1",
+            BigDecimal.valueOf(100),
+            "价格最优",
+            "已通过",
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
+        .thenReturn(rfq("rfq-1", "tenant-1", "已定标", "supplier-2"));
+
+    PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
+        awardDecisionMapper,
+        rfqMapper,
+        purchaseOrderMapper,
+        auditLogApplicationService,
+        notificationApplicationService,
+        tenantFeatureApplicationService,
+        new PurchaseOrderStatusTransition());
+
+    assertThatThrownBy(() -> service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20"))))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("RFQ award is not finalized for order creation: rfq-1");
+
+    verify(purchaseOrderMapper, never()).findByAwardSource("tenant-1", "rfq-1", "supplier-1");
+    verify(purchaseOrderMapper, never()).insert(
+        anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
   void listBuyerOrdersAppliesFiltersInsideCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(purchaseOrderMapper.listByTenantFiltered("tenant-1", "待供应商确认", "supplier-1", "rfq-1"))
@@ -200,6 +345,7 @@ class OrderFulfillmentStateTransitionTests {
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
         awardDecisionMapper,
+        rfqMapper,
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -219,6 +365,7 @@ class OrderFulfillmentStateTransitionTests {
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
         awardDecisionMapper,
+        rfqMapper,
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -440,5 +587,18 @@ class OrderFulfillmentStateTransitionTests {
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+  }
+
+  private Rfq rfq(String id, String tenantId, String status, String awardedSupplierId) {
+    return new Rfq(
+        id,
+        tenantId,
+        "办公设备询价",
+        status,
+        OffsetDateTime.parse("2026-06-20T18:00:00+08:00"),
+        "buyer-user",
+        awardedSupplierId,
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"));
   }
 }

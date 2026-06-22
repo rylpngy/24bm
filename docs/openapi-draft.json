@@ -432,6 +432,74 @@
         }
       }
     },
+    "/platform/announcements/{announcementId}": {
+      "put": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "编辑平台公告标题、正文和发布范围",
+        "parameters": [
+          {
+            "name": "announcementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PlatformAnnouncement"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/platform/announcements/{announcementId}/withdraw": {
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "撤回平台公告",
+        "parameters": [
+          {
+            "name": "announcementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PlatformAnnouncement"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/workspace": {
       "get": {
         "tags": [
@@ -1187,6 +1255,40 @@
         }
       }
     },
+    "/buyer/demands/{demandId}": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "更新草稿采购需求",
+        "parameters": [
+          {
+            "name": "demandId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PurchaseDemand"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/demands/{demandId}/submit": {
       "post": {
         "tags": [
@@ -1389,6 +1491,65 @@
         }
       }
     },
+    "/buyer/audit-logs/target": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方目标对象审计日志",
+        "parameters": [
+          {
+            "name": "targetType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actions",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AuditLogList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/attachments": {
       "get": {
         "tags": [
@@ -1427,6 +1588,65 @@
         "responses": {
           "200": {
             "description": "Attachment"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/attachments/upload-ticket": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "为业务附件生成租户隔离上传凭证",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AttachmentUploadTicket"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/attachments/{attachmentId}/download-link": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "为已登记附件生成下载签名链接",
+        "parameters": [
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AttachmentDownloadLink"
           },
           "400": {
             "description": "Validation error"
@@ -1602,6 +1822,40 @@
         ],
         "summary": "从已通过需求创建询价",
         "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RFQ"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/rfqs/{rfqId}": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "更新报价中 RFQ 的标题、截止时间和邀请供应商",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -2026,6 +2280,40 @@
         }
       }
     },
+    "/supplier/quotes/{quoteId}": {
+      "put": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "供应商修改已提交报价",
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quote"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/rfqs/{rfqId}/award": {
       "post": {
         "tags": [
@@ -2157,6 +2445,349 @@
         "responses": {
           "200": {
             "description": "PurchaseOrder"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/orders/{orderId}": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "维护未收货采购订单的预计到货日期",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PurchaseOrder"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/contracts": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方合同台账，支持按合同状态、归档状态和供应商筛选",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "archiveStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ContractLedgerList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "基于采购订单创建采购方合同台账，供应商从订单租户范围内派生",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ContractLedger"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/contracts/{contractId}": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "编辑未归档采购方合同的合同编号、名称、金额、状态、生效日期和履约进度",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ContractLedger"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/contracts/{contractId}/status": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "推进采购方合同状态和履约进度，已归档合同只读",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ContractLedger"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/contracts/{contractId}/archive-status": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "更新采购方合同归档状态，归档后合同只读",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ContractLedger"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/contracts/{contractId}/approval": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "提交采购方合同审批，创建合同审批任务并将合同置为审批中",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ContractLedger"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/contracts/{contractId}/approval-review": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "处理采购方合同审批结果，审批通过后合同生效，驳回后回到草案",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ContractLedger"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/contracts/{contractId}/fulfillment-events": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "读取采购方合同履约事件台账，按当前租户和合同隔离",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ContractFulfillmentEventList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "登记采购方合同履约事件，记录联动动作、目标单据和来源上下文",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ContractFulfillmentEvent"
           },
           "400": {
             "description": "Validation error"
@@ -2319,6 +2950,40 @@
         }
       }
     },
+    "/supplier/deliveries/{deliveryId}": {
+      "put": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "供应商在采购方收货前维护物流信息",
+        "parameters": [
+          {
+            "name": "deliveryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/buyer/receipts": {
       "get": {
         "tags": [
@@ -2400,7 +3065,7 @@
         "tags": [
           "buyer"
         ],
-        "summary": "加载采购方发票付款列表，支持按付款状态、供应商和订单筛选",
+        "summary": "加载采购方发票付款列表，支持按付款状态、供应商和订单筛选，并返回发票对账单摘要、对账单编号和状态流转",
         "parameters": [
           {
             "name": "paymentStatus",
@@ -2435,6 +3100,895 @@
         "responses": {
           "200": {
             "description": "BuyerInvoiceList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/invoice-reconciliations": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方独立对账单台账，支持按对账阶段、供应商和订单筛选",
+        "parameters": [
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerInvoiceReconciliationList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-requests": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方付款申请台账，支持按申请状态、供应商、订单和发票筛选",
+        "parameters": [
+          {
+            "name": "requestStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerPaymentRequestList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方按发票创建或更新付款申请记录",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentRequest"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-batches": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方付款批次台账，支持按批次状态和供应商筛选，并返回批次金额、已审批金额、申请数量和计划付款日",
+        "parameters": [
+          {
+            "name": "batchStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerPaymentBatchList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-execution-records": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方付款批次执行记录台账，支持按付款批次、执行状态、供应商和发票筛选，返回执行阶段、下一处理动作，仅记录计划执行和付款登记轨迹",
+        "parameters": [
+          {
+            "name": "paymentBatchNo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "executionStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerPaymentExecutionRecordList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-execution-records/{executionRecordId}/registration": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方从付款执行记录登记付款状态，仅允许待登记付款记录流转为已登记付款，真实支付仍不接入",
+        "parameters": [
+          {
+            "name": "executionRecordId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerPaymentExecutionRecord"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-block-resolutions": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方付款阻断处理状态台账，支持按付款批次、阻断原因、处理状态和发票筛选",
+        "parameters": [
+          {
+            "name": "paymentBatchNo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "blockReason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resolutionStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerPaymentBlockResolutionList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方保存付款阻断处理状态记录",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentBlockResolution"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-archive-exception-requests": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方付款归档异常申请台账，支持按付款批次、审批状态和异常类型筛选，仅记录撤销申请或异常解冻申请，不直接改写已归档批次",
+        "parameters": [
+          {
+            "name": "paymentBatchNo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "approvalStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exceptionType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerPaymentArchiveExceptionRequestList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方为已归档付款批次提交归档异常申请，进入审批台账，不直接解冻或改写已归档批次",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentArchiveExceptionRequest"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-archive-exception-requests/{requestId}/approval": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "审批付款归档异常申请，只回写申请审批状态，不直接解冻或改写已归档批次",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ApprovalTask"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-archive-exception-requests/{requestId}/controlled-action": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "登记付款归档异常受控处理动作，只更新申请处理状态和审计，不直接解冻或改写已归档批次",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentArchiveExceptionRequest"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-archive-exception-requests/{requestId}/closure": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "关闭付款归档异常申请，只回写关闭复核状态和审计，不直接解冻或改写已归档批次",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentArchiveExceptionRequest"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-block-resolutions/{resolutionId}/status": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方更新付款阻断处理状态、处理动作和下一步提示",
+        "parameters": [
+          {
+            "name": "resolutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentBlockResolution"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-batches/{paymentBatchNo}/status": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方推进付款批次审批和执行准备状态",
+        "parameters": [
+          {
+            "name": "paymentBatchNo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentBatch"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/three-way-matches": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方三单匹配快照台账，支持按匹配结论、供应商、订单和发票筛选",
+        "parameters": [
+          {
+            "name": "matchStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerThreeWayMatchList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/three-way-matches/rebuild": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方按当前租户重建历史发票三单匹配快照",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerThreeWayMatchRebuildResult"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/three-way-matches/{matchId}/variance-handling": {
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方从金额差异三单匹配记录生成或复用差异处理台账",
+        "parameters": [
+          {
+            "name": "matchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "VarianceHandling"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/payment-requests/{paymentRequestId}/status": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方推进付款申请状态流转，支持提交付款审批和通过付款申请",
+        "parameters": [
+          {
+            "name": "paymentRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PaymentRequest"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/variance-handlings": {
+      "get": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "加载采购方差异处理台账，支持按状态、供应商、订单和发票筛选",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BuyerVarianceHandlingList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方按发票创建或更新差异处理记录",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "VarianceHandling"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/variance-handlings/{varianceHandlingId}/status": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "采购方推进差异处理状态流转，支持关闭差异或退回复核",
+        "parameters": [
+          {
+            "name": "varianceHandlingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "VarianceHandling"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/buyer/invoices/{invoiceId}": {
+      "put": {
+        "tags": [
+          "buyer"
+        ],
+        "summary": "维护发票付款状态，并返回最新发票对账单摘要、对账单编号和状态流转",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice"
           },
           "400": {
             "description": "Validation error"
@@ -2492,7 +4046,7 @@
         "tags": [
           "supplier"
         ],
-        "summary": "加载供应商应收发票列表，支持按付款状态和订单筛选",
+        "summary": "加载供应商应收发票列表，支持按付款状态和订单筛选，并返回应收截止、逾期提醒、对账单摘要、对账单编号和状态流转",
         "parameters": [
           {
             "name": "paymentStatus",
@@ -2519,6 +4073,48 @@
         "responses": {
           "200": {
             "description": "SupplierInvoiceList"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
+    "/supplier/invoice-reconciliations": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "加载供应商独立应收对账单台账，支持按对账阶段和订单筛选",
+        "parameters": [
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SupplierInvoiceReconciliationList"
           },
           "400": {
             "description": "Validation error"
@@ -2563,12 +4159,46 @@
         }
       }
     },
+    "/supplier/invoices/{invoiceId}/reconciliation": {
+      "put": {
+        "tags": [
+          "supplier"
+        ],
+        "summary": "供应商维护应收发票对账备注，并返回最新对账单摘要、对账单编号和状态流转",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Permission or tenant isolation violation"
+          }
+        }
+      }
+    },
     "/supplier/orders/{orderId}/invoices": {
       "post": {
         "tags": [
           "supplier"
         ],
-        "summary": "供应商登记发票",
+        "summary": "供应商登记发票，并返回初始对账单摘要、对账单编号和状态流转",
         "parameters": [
           {
             "name": "orderId",
@@ -2707,6 +4337,22 @@
         "type": "object",
         "additionalProperties": true
       },
+      "CreatePlatformAnnouncementRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "UpdatePlatformAnnouncementRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "WithdrawPlatformAnnouncementRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "PlatformAnnouncement": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "BuyerWorkspaceRequest": {
         "type": "object",
         "additionalProperties": true
@@ -2787,6 +4433,10 @@
         "type": "object",
         "additionalProperties": true
       },
+      "UpdatePurchaseDemandRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "PurchaseDemand": {
         "type": "object",
         "additionalProperties": true
@@ -2859,6 +4509,10 @@
         "type": "object",
         "additionalProperties": true
       },
+      "UpdateRfqRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "RFQ": {
         "type": "object",
         "additionalProperties": true
@@ -2899,6 +4553,10 @@
         "type": "object",
         "additionalProperties": true
       },
+      "UpdateQuoteRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "Quote": {
         "type": "object",
         "additionalProperties": true
@@ -2927,7 +4585,51 @@
         "type": "object",
         "additionalProperties": true
       },
+      "UpdatePurchaseOrderRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "PurchaseOrder": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "BuyerContractLedgerListRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateContractRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "UpdateContractRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "UpdateContractStatusRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "UpdateContractArchiveStatusRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ContractLedgerList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ContractLedger": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "CreateContractFulfillmentEventRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ContractFulfillmentEventList": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ContractFulfillmentEvent": {
         "type": "object",
         "additionalProperties": true
       },
@@ -2944,6 +4646,10 @@
         "additionalProperties": true
       },
       "CreateDeliveryRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "UpdateDeliveryRequest": {
         "type": "object",
         "additionalProperties": true
       },
@@ -2983,6 +4689,10 @@
         "type": "object",
         "additionalProperties": true
       },
+      "UpdateSupplierReceivableRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
       "CreateInvoiceRequest": {
         "type": "object",
         "additionalProperties": true
@@ -2992,6 +4702,10 @@
         "additionalProperties": true
       },
       "RegisterPaymentRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "UpdateInvoicePaymentRequest": {
         "type": "object",
         "additionalProperties": true
       },
@@ -3017,6 +4731,8 @@
     "POST /platform/enterprise-reviews/{enterpriseId}",
     "GET /platform/announcements",
     "POST /platform/announcements",
+    "PUT /platform/announcements/{announcementId}",
+    "POST /platform/announcements/{announcementId}/withdraw",
     "GET /buyer/workspace",
     "GET /buyer/announcements",
     "GET /buyer/suppliers",
@@ -3040,6 +4756,7 @@
     "POST /buyer/users/{userId}/status",
     "GET /buyer/demands",
     "POST /buyer/demands",
+    "PUT /buyer/demands/{demandId}",
     "POST /buyer/demands/{demandId}/submit",
     "POST /buyer/demands/{demandId}/approval",
     "GET /buyer/approvals/pending",
@@ -3047,14 +4764,18 @@
     "GET /buyer/approvals/templates",
     "POST /buyer/approvals/templates/{templateCode}/config",
     "GET /buyer/audit-logs",
+    "GET /buyer/audit-logs/target",
     "GET /buyer/attachments",
     "POST /buyer/attachments",
+    "POST /buyer/attachments/upload-ticket",
+    "POST /buyer/attachments/{attachmentId}/download-link",
     "GET /buyer/notifications",
     "POST /buyer/notifications/{notificationId}/read",
     "GET /supplier/notifications",
     "POST /supplier/notifications/{notificationId}/read",
     "GET /buyer/rfqs",
     "POST /buyer/rfqs",
+    "PUT /buyer/rfqs/{rfqId}",
     "GET /supplier/workspace",
     "GET /supplier/announcements",
     "GET /supplier/profile",
@@ -3068,20 +4789,57 @@
     "POST /supplier/users/{userId}/status",
     "GET /supplier/rfqs",
     "POST /supplier/rfqs/{rfqId}/quotes",
+    "PUT /supplier/quotes/{quoteId}",
     "POST /buyer/rfqs/{rfqId}/award",
     "POST /buyer/rfqs/{rfqId}/award/approval",
     "GET /buyer/orders",
     "POST /buyer/orders",
+    "PUT /buyer/orders/{orderId}",
+    "GET /buyer/contracts",
+    "POST /buyer/contracts",
+    "PUT /buyer/contracts/{contractId}",
+    "PUT /buyer/contracts/{contractId}/status",
+    "PUT /buyer/contracts/{contractId}/archive-status",
+    "POST /buyer/contracts/{contractId}/approval",
+    "PUT /buyer/contracts/{contractId}/approval-review",
+    "GET /buyer/contracts/{contractId}/fulfillment-events",
+    "POST /buyer/contracts/{contractId}/fulfillment-events",
     "GET /supplier/orders",
     "POST /supplier/orders/{orderId}/confirm",
     "POST /supplier/orders/{orderId}/deliveries",
     "GET /supplier/deliveries",
+    "PUT /supplier/deliveries/{deliveryId}",
     "GET /buyer/receipts",
     "POST /buyer/orders/{orderId}/receipts",
     "GET /buyer/invoices",
+    "GET /buyer/invoice-reconciliations",
+    "GET /buyer/payment-requests",
+    "GET /buyer/payment-batches",
+    "GET /buyer/payment-execution-records",
+    "POST /buyer/payment-execution-records/{executionRecordId}/registration",
+    "GET /buyer/payment-block-resolutions",
+    "GET /buyer/payment-archive-exception-requests",
+    "POST /buyer/payment-archive-exception-requests",
+    "POST /buyer/payment-archive-exception-requests/{requestId}/approval",
+    "POST /buyer/payment-archive-exception-requests/{requestId}/controlled-action",
+    "POST /buyer/payment-archive-exception-requests/{requestId}/closure",
+    "POST /buyer/payment-block-resolutions",
+    "PUT /buyer/payment-block-resolutions/{resolutionId}/status",
+    "PUT /buyer/payment-batches/{paymentBatchNo}/status",
+    "GET /buyer/three-way-matches",
+    "POST /buyer/three-way-matches/rebuild",
+    "POST /buyer/three-way-matches/{matchId}/variance-handling",
+    "POST /buyer/payment-requests",
+    "PUT /buyer/payment-requests/{paymentRequestId}/status",
+    "GET /buyer/variance-handlings",
+    "POST /buyer/variance-handlings",
+    "PUT /buyer/variance-handlings/{varianceHandlingId}/status",
+    "PUT /buyer/invoices/{invoiceId}",
     "GET /supplier/quotes",
     "GET /supplier/invoices",
+    "GET /supplier/invoice-reconciliations",
     "GET /supplier/invoices/{invoiceId}/payment-audit-logs",
+    "PUT /supplier/invoices/{invoiceId}/reconciliation",
     "POST /supplier/orders/{orderId}/invoices",
     "POST /buyer/invoices/{invoiceId}/payments",
     "GET /buyer/invoices/{invoiceId}/payment-audit-logs"

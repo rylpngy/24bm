@@ -1,10 +1,16 @@
 package com.procurement.sourcing.application;
 
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
+import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.api.SubmitQuoteRequest;
+import com.procurement.sourcing.api.UpdateQuoteRequest;
 import com.procurement.sourcing.domain.Quote;
+import com.procurement.sourcing.domain.QuoteAuditAction;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqQuoteInvitationPolicy;
@@ -16,6 +22,7 @@ import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,18 +33,24 @@ public class QuoteApplicationService {
   private final RfqInviteMapper rfqInviteMapper;
   private final QuoteMapper quoteMapper;
   private final RfqSourcingStatusTransition rfqSourcingStatusTransition;
+  private final AuditLogApplicationService auditLogApplicationService;
+  private final NotificationApplicationService notificationApplicationService;
 
   public QuoteApplicationService(
       RfqMapper rfqMapper,
       RfqDemandMapper rfqDemandMapper,
       RfqInviteMapper rfqInviteMapper,
       QuoteMapper quoteMapper,
-      RfqSourcingStatusTransition rfqSourcingStatusTransition) {
+      RfqSourcingStatusTransition rfqSourcingStatusTransition,
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
     this.rfqMapper = rfqMapper;
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.quoteMapper = quoteMapper;
     this.rfqSourcingStatusTransition = rfqSourcingStatusTransition;
+    this.auditLogApplicationService = auditLogApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   public List<RfqResponse> listSupplierRfqs() {
@@ -81,6 +94,7 @@ public class QuoteApplicationService {
     String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
     Rfq rfq = findRfqForInvitedSupplier(rfqId, supplierId);
     rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfqId);
+    rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfqId);
 
     int submittedCount = quoteMapper.countSubmittedBySupplier(
         rfq.tenantId(),
@@ -90,17 +104,68 @@ public class QuoteApplicationService {
     RfqQuoteSubmissionPolicy.requireNoSubmittedQuote(submittedCount, rfqId);
 
     String quoteId = newId("quote");
-    quoteMapper.insert(
-        quoteId,
+    try {
+      quoteMapper.insert(
+          quoteId,
+          rfq.tenantId(),
+          rfqId,
+          supplierId,
+          request.amount(),
+          request.taxRate(),
+          request.deliveryDays(),
+          QuoteStatus.SUBMITTED);
+    } catch (DuplicateKeyException exception) {
+      RfqQuoteSubmissionPolicy.requireNoSubmittedQuote(1, rfqId);
+      throw exception;
+    }
+
+    auditLogApplicationService.recordTenantAction(
+        QuoteAuditAction.SUBMITTED,
+        AuditTargetType.QUOTE,
+        quoteId);
+    notificationApplicationService.notifyActiveTenantUsers(
         rfq.tenantId(),
-        rfqId,
+        NotificationTitle.SUPPLIER_QUOTE_SUBMITTED,
+        rfq.title() + "已收到供应商报价，请进入报价对比处理。");
+    return toResponse(quoteMapper.findByTenantAndId(rfq.tenantId(), quoteId));
+  }
+
+  @Transactional
+  public QuoteResponse update(String quoteId, UpdateQuoteRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    Quote quote = quoteMapper.findBySupplierAndId(supplierId, quoteId);
+    if (quote == null) {
+      throw new IllegalArgumentException("Quote not found for supplier: " + quoteId);
+    }
+    if (QuoteStatus.LOCKED.equals(quote.status())) {
+      throw new IllegalStateException("Locked supplier quote cannot be updated: " + quoteId);
+    }
+
+    Rfq rfq = findRfqForInvitedSupplier(quote.rfqId(), supplierId);
+    rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfq.id());
+    rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfq.id());
+
+    int updated = quoteMapper.updateSubmittedQuote(
+        quote.tenantId(),
+        quoteId,
         supplierId,
         request.amount(),
         request.taxRate(),
         request.deliveryDays(),
         QuoteStatus.SUBMITTED);
+    if (updated == 0) {
+      throw new IllegalStateException("Only submitted supplier quote can be updated: " + quoteId);
+    }
 
-    return toResponse(quoteMapper.findByTenantAndId(rfq.tenantId(), quoteId));
+    auditLogApplicationService.recordTenantAction(
+        QuoteAuditAction.UPDATED,
+        AuditTargetType.QUOTE,
+        quoteId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        rfq.tenantId(),
+        NotificationTitle.SUPPLIER_QUOTE_SUBMITTED,
+        rfq.title() + "供应商报价已更新，请重新查看报价对比。");
+    return toResponse(quoteMapper.findByTenantAndId(quote.tenantId(), quoteId));
   }
 
   private Rfq findRfqForInvitedSupplier(String rfqId, String supplierId) {

@@ -21,6 +21,7 @@ describe('buyer RFQ creation UI', () => {
     expect(app).toContain('创建询价');
     expect(app).toContain('生成采购订单');
     expect(app).toContain('询价已创建');
+    expect(app).toContain('已通知受邀供应商');
     expect(app).toContain('订单已生成');
     expect(app).toContain('invitedSupplierIds');
     expect(app).toContain('deadline');

@@ -7,6 +7,7 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.PurchaseOrderResponse;
+import com.procurement.order.api.UpdatePurchaseOrderRequest;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderAuditAction;
 import com.procurement.order.domain.PurchaseOrderStatus;
@@ -14,17 +15,21 @@ import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
+import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
+import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseOrderApplicationService {
   private final AwardDecisionMapper awardDecisionMapper;
+  private final RfqMapper rfqMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -33,12 +38,14 @@ public class PurchaseOrderApplicationService {
 
   public PurchaseOrderApplicationService(
       AwardDecisionMapper awardDecisionMapper,
+      RfqMapper rfqMapper,
       PurchaseOrderMapper purchaseOrderMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       PurchaseOrderStatusTransition purchaseOrderStatusTransition) {
     this.awardDecisionMapper = awardDecisionMapper;
+    this.rfqMapper = rfqMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -115,6 +122,39 @@ public class PurchaseOrderApplicationService {
   }
 
   @Transactional
+  public PurchaseOrderResponse update(String orderId, UpdatePurchaseOrderRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    PurchaseOrder order = purchaseOrderMapper.findByTenantAndId(tenantId, orderId);
+    if (order == null) {
+      throw new IllegalArgumentException("Purchase order not found: " + orderId);
+    }
+    if (PurchaseOrderStatus.RECEIVED.equals(order.status())) {
+      throw new IllegalStateException("Received purchase order cannot be updated: " + orderId);
+    }
+
+    int updated = purchaseOrderMapper.updateExpectedReceiptDate(
+        tenantId,
+        orderId,
+        request.expectedReceiptDate());
+    if (updated == 0) {
+      throw new IllegalStateException("Purchase order status changed before update could be saved: " + orderId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        PurchaseOrderAuditAction.UPDATED,
+        AuditTargetType.PURCHASE_ORDER,
+        orderId);
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId,
+        order.supplierId(),
+        NotificationTitle.PURCHASE_ORDER_EXPECTED_RECEIPT_UPDATED,
+        "采购订单 " + orderId + " 预计到货日期已更新为 "
+            + request.expectedReceiptDate()
+            + "，请按最新交期履约。");
+
+    return toResponse(purchaseOrderMapper.findByTenantAndId(tenantId, orderId));
+  }
+
+  @Transactional
   public PurchaseOrderResponse createFromAward(CreatePurchaseOrderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
@@ -122,6 +162,7 @@ public class PurchaseOrderApplicationService {
     if (award == null) {
       throw new IllegalArgumentException("Approved award decision not found in tenant scope: " + request.awardId());
     }
+    requireFinalizedRfqAward(tenantId, award);
 
     PurchaseOrder existingOrder = purchaseOrderMapper.findByAwardSource(tenantId, award.rfqId(), award.supplierId());
     if (existingOrder != null) {
@@ -129,18 +170,31 @@ public class PurchaseOrderApplicationService {
     }
 
     String orderId = newId("po");
-    purchaseOrderMapper.insert(
-        orderId,
-        tenantId,
-        award.rfqId(),
-        award.supplierId(),
-        award.amount(),
-        PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
-        request.expectedReceiptDate());
+    try {
+      purchaseOrderMapper.insert(
+          orderId,
+          tenantId,
+          award.rfqId(),
+          award.supplierId(),
+          award.amount(),
+          PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
+          request.expectedReceiptDate());
+    } catch (DuplicateKeyException exception) {
+      PurchaseOrder concurrentOrder = purchaseOrderMapper.findByAwardSource(tenantId, award.rfqId(), award.supplierId());
+      if (concurrentOrder != null) {
+        return toResponse(concurrentOrder);
+      }
+      throw exception;
+    }
     auditLogApplicationService.recordTenantAction(
         PurchaseOrderAuditAction.CREATED,
         AuditTargetType.PURCHASE_ORDER,
         orderId);
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId,
+        award.supplierId(),
+        NotificationTitle.PURCHASE_ORDER_PENDING_CONFIRMATION,
+        "采购订单 " + orderId + " 已生成，请及时确认订单。");
 
     return toResponse(purchaseOrderMapper.findByTenantAndId(tenantId, orderId));
   }
@@ -156,6 +210,16 @@ public class PurchaseOrderApplicationService {
         order.expectedReceiptDate(),
         order.createdAt(),
         order.updatedAt());
+  }
+
+  private void requireFinalizedRfqAward(String tenantId, AwardDecision award) {
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, award.rfqId());
+    if (rfq == null
+        || !ApprovalStatus.APPROVED.equals(award.approvedStatus())
+        || !"已定标".equals(rfq.status())
+        || !award.supplierId().equals(rfq.awardedSupplierId())) {
+      throw new IllegalStateException("RFQ award is not finalized for order creation: " + award.rfqId());
+    }
   }
 
   private String newId(String prefix) {

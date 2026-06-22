@@ -16,7 +16,9 @@ import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.identity.application.BuyerUserApplicationService;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.order.api.DeliveryResponse;
 import com.procurement.order.api.PurchaseOrderResponse;
+import com.procurement.order.application.DeliveryApplicationService;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.application.RfqApplicationService;
@@ -41,6 +43,8 @@ class BuyerWorkspaceTodoSummaryTests {
       org.mockito.Mockito.mock(RfqApplicationService.class);
   private final PurchaseOrderApplicationService purchaseOrderApplicationService =
       org.mockito.Mockito.mock(PurchaseOrderApplicationService.class);
+  private final DeliveryApplicationService deliveryApplicationService =
+      org.mockito.Mockito.mock(DeliveryApplicationService.class);
   private final PaymentApplicationService paymentApplicationService =
       org.mockito.Mockito.mock(PaymentApplicationService.class);
   private final ApprovalInboxApplicationService approvalInboxApplicationService =
@@ -58,6 +62,7 @@ class BuyerWorkspaceTodoSummaryTests {
           purchaseDemandApplicationService,
           rfqApplicationService,
           purchaseOrderApplicationService,
+          deliveryApplicationService,
           paymentApplicationService,
           approvalInboxApplicationService,
           auditLogApplicationService,
@@ -76,6 +81,8 @@ class BuyerWorkspaceTodoSummaryTests {
     when(purchaseOrderApplicationService.listCurrentTenantOrders()).thenReturn(List.of(
         order("po-receipt", "已发货"),
         order("po-pending-supplier", "待供应商确认")));
+    when(deliveryApplicationService.listCurrentTenantDeliveries()).thenReturn(List.of(
+        delivery("delivery-1", "po-receipt")));
     when(paymentApplicationService.listCurrentTenantInvoices()).thenReturn(List.of(
         invoice("inv-pending", "待付款"),
         invoice("inv-partial", "部分付款"),
@@ -97,6 +104,8 @@ class BuyerWorkspaceTodoSummaryTests {
         .containsExactly("approval-reviewed");
     assertThat(response.notifications()).extracting(NotificationResponse::title)
         .containsExactly("需求审批已通过");
+    assertThat(response.deliveries()).extracting(DeliveryResponse::trackingNo)
+        .containsExactly("SF100001");
   }
 
   private RfqResponse rfq(String id, String status) {
@@ -136,8 +145,31 @@ class BuyerWorkspaceTodoSummaryTests {
         BigDecimal.valueOf(100),
         "INV-001",
         paymentStatus,
+        null,
+        LocalDate.parse("2026-07-15"),
+        false,
+        0L,
+        BigDecimal.valueOf(100),
+        BigDecimal.ZERO,
+        "已收货",
+        "三单一致",
+        "REC-" + id,
+        "待付款",
+        "登记付款",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+  }
+
+  private DeliveryResponse delivery(String id, String orderId) {
+    return new DeliveryResponse(
+        id,
+        "tenant-1",
+        orderId,
+        "supplier-1",
+        "顺丰速运",
+        "SF100001",
+        "已发货",
+        OffsetDateTime.parse("2026-06-16T10:00:00+08:00"));
   }
 
   private PendingApprovalTaskResponse approval(String id) {

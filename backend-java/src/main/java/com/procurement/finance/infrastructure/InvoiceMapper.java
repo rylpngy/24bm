@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Update;
 public interface InvoiceMapper {
 
   @Select("""
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
       from invoices
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -22,7 +22,7 @@ public interface InvoiceMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
       from invoices
       where tenant_id = #{tenantId}
         <if test="paymentStatus != null and paymentStatus != ''">
@@ -44,7 +44,7 @@ public interface InvoiceMapper {
       @Param("orderId") String orderId);
 
   @Select("""
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
       from invoices
       where supplier_id = #{supplierId,jdbcType=VARCHAR}
       order by created_at desc
@@ -53,7 +53,7 @@ public interface InvoiceMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
       from invoices
       where supplier_id = #{supplierId,jdbcType=VARCHAR}
         <if test="paymentStatus != null and paymentStatus != ''">
@@ -92,14 +92,14 @@ public interface InvoiceMapper {
       @Param("paymentStatus") String paymentStatus);
 
   @Select("""
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
       from invoices
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Invoice findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
       from invoices
       where supplier_id = #{supplierId,jdbcType=VARCHAR} and id = #{id}
       """)
@@ -117,4 +117,18 @@ public interface InvoiceMapper {
       @Param("id") String id,
       @Param("currentPaymentStatus") String currentPaymentStatus,
       @Param("paymentStatus") String paymentStatus);
+
+  @Update("""
+      update invoices
+      set reconciliation_note = #{reconciliationNote},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and supplier_id = #{supplierId,jdbcType=VARCHAR}
+      """)
+  int updateSupplierReconciliationNote(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("supplierId") String supplierId,
+      @Param("reconciliationNote") String reconciliationNote);
 }

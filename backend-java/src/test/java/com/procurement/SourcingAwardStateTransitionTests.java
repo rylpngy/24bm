@@ -105,6 +105,8 @@ class SourcingAwardStateTransitionTests {
         .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
     when(rfqMapper.updateStatus("tenant-1", "rfq-1", "报价中", "定标审批中"))
         .thenReturn(1);
+    when(quoteMapper.lockSubmittedQuoteForAward("tenant-1", "quote-1", "已提交", "已锁定"))
+        .thenReturn(1);
     when(awardDecisionMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.any()))
         .thenReturn(awardDecision("award-1", "tenant-1", "rfq-1", "quote-1", "supplier-1", "待审批"));
     when(approvalTaskMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.any()))
@@ -137,7 +139,35 @@ class SourcingAwardStateTransitionTests {
         org.mockito.ArgumentMatchers.eq("rfq_award.submitted"),
         org.mockito.ArgumentMatchers.eq("rfq_award"),
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("award-")));
+    verify(quoteMapper).lockSubmittedQuoteForAward("tenant-1", "quote-1", "已提交", "已锁定");
     verify(rfqMapper, never()).updateAward("tenant-1", "rfq-1", "定标审批中", "已定标", "supplier-1");
+  }
+
+  @Test
+  void awardFailsWhenSelectedQuoteCannotBeLocked() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
+        .thenReturn(rfq("rfq-1", "tenant-1", "报价中"));
+    when(quoteMapper.findSubmittedQuoteForAward("tenant-1", "rfq-1", "quote-1", "已提交"))
+        .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
+    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "报价中", "定标审批中"))
+        .thenReturn(1);
+    when(quoteMapper.lockSubmittedQuoteForAward("tenant-1", "quote-1", "已提交", "已锁定"))
+        .thenReturn(0);
+
+    assertThatThrownBy(() -> awardApplicationService.award("rfq-1", new AwardRfqRequest("quote-1", "最低价")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Selected quote changed before award approval could be submitted: quote-1");
+
+    verify(awardDecisionMapper, never()).insert(
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        anyString(),
+        anyString());
   }
 
   private ApprovalTemplate template(String code, String bizType) {
@@ -153,12 +183,16 @@ class SourcingAwardStateTransitionTests {
         .thenReturn(rfq("rfq-1", "tenant-1", "定标审批中"));
     when(approvalTaskMapper.findPendingByBiz("tenant-1", "rfq_award", "award-1", "待审批"))
         .thenReturn(task("approval-1", "tenant-1", "award-1", "待审批"));
-    when(approvalTaskMapper.updateStatus("tenant-1", "approval-1", "待审批", "已通过", "approver-1"))
+    when(approvalTaskMapper.updateStatus("tenant-1", "approval-1", "待审批", "已通过", "approver-1", null))
         .thenReturn(1);
     when(awardDecisionMapper.updateApprovedStatus("tenant-1", "award-1", "待审批", "已通过"))
         .thenReturn(1);
     when(rfqMapper.updateAward("tenant-1", "rfq-1", "定标审批中", "已定标", "supplier-1"))
         .thenReturn(1);
+    when(quoteMapper.markAwardedQuote("tenant-1", "quote-1", "已锁定", "已中选"))
+        .thenReturn(1);
+    when(quoteMapper.closeUnawardedQuotes("tenant-1", "rfq-1", "quote-1", "已提交", "未中选"))
+        .thenReturn(2);
     when(awardDecisionMapper.findByTenantAndId("tenant-1", "award-1"))
         .thenReturn(awardDecision("award-1", "tenant-1", "rfq-1", "quote-1", "supplier-1", "待审批"))
         .thenReturn(awardDecision("award-1", "tenant-1", "rfq-1", "quote-1", "supplier-1", "已通过"));
@@ -169,11 +203,41 @@ class SourcingAwardStateTransitionTests {
 
     assertThat(response.approvedStatus()).isEqualTo("已通过");
     verify(rfqMapper).updateAward("tenant-1", "rfq-1", "定标审批中", "已定标", "supplier-1");
+    verify(quoteMapper).markAwardedQuote("tenant-1", "quote-1", "已锁定", "已中选");
+    verify(quoteMapper).closeUnawardedQuotes("tenant-1", "rfq-1", "quote-1", "已提交", "未中选");
     verify(auditLogApplicationService).recordTenantAction("rfq_award.approved", "rfq_award", "award-1");
     verify(notificationApplicationService).notifyActiveTenantUsers(
         "tenant-1",
         "定标审批已通过",
         "办公电脑询价定标审批已通过。");
+  }
+
+  @Test
+  void awardRejectionUnlocksSelectedQuoteBackToSubmitted() {
+    TenantContext.set("tenant-1", null, "approver-1");
+    when(awardDecisionMapper.findByTenantAndId("tenant-1", "award-1"))
+        .thenReturn(awardDecision("award-1", "tenant-1", "rfq-1", "quote-1", "supplier-1", "待审批"))
+        .thenReturn(awardDecision("award-1", "tenant-1", "rfq-1", "quote-1", "supplier-1", "已驳回"));
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
+        .thenReturn(rfq("rfq-1", "tenant-1", "定标审批中"));
+    when(approvalTaskMapper.findPendingByBiz("tenant-1", "rfq_award", "award-1", "待审批"))
+        .thenReturn(task("approval-1", "tenant-1", "award-1", "待审批"));
+    when(approvalTaskMapper.updateStatus("tenant-1", "approval-1", "待审批", "已驳回", "approver-1", null))
+        .thenReturn(1);
+    when(awardDecisionMapper.updateApprovedStatus("tenant-1", "award-1", "待审批", "已驳回"))
+        .thenReturn(1);
+    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "定标审批中", "报价中"))
+        .thenReturn(1);
+    when(quoteMapper.unlockAwardQuote("tenant-1", "quote-1", "已锁定", "已提交"))
+        .thenReturn(1);
+
+    AwardDecisionResponse response = awardApplicationService.reviewApproval(
+        "rfq-1",
+        new ReviewAwardApprovalRequest("award-1", false));
+
+    assertThat(response.approvedStatus()).isEqualTo("已驳回");
+    verify(quoteMapper).unlockAwardQuote("tenant-1", "quote-1", "已锁定", "已提交");
+    verify(auditLogApplicationService).recordTenantAction("rfq_award.rejected", "rfq_award", "award-1");
   }
 
   private Rfq rfq(String id, String tenantId, String status) {

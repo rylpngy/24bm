@@ -7,17 +7,25 @@ describe('buyer fulfillment actions UI', () => {
   it('wires buyer receipt and payment actions to the Java API client', () => {
     const app = read('App.tsx');
     const apiClient = read('services/procurementApiClient.ts');
+    const buyerAdminUi = read('data/buyerAdminUi.ts');
 
     expect(apiClient).toContain('createBuyerReceipt');
     expect(apiClient).toContain('registerBuyerPayment');
+    expect(app).toContain('buildOrderFulfillmentRows');
+    expect(app).toContain('buildInvoicePaymentRows');
     expect(app).toContain('buyerFulfillmentBusyId');
     expect(app).toContain('createBuyerReceiptFromOrder');
     expect(app).toContain('registerBuyerInvoicePayment');
+    expect(app).toContain('已同步供应商应收');
     expect(app).toContain('onCreateReceipt');
     expect(app).toContain('onRegisterPayment');
     expect(app).toContain('登记收货');
     expect(app).toContain('登记付款');
-    expect(app).toContain(`order.status === '已发货'`);
-    expect(app).toContain(`invoice.paymentStatus !== '已付款'`);
+    expect(app).toContain('BuyerReceiptDraft');
+    expect(app).toContain('BuyerPaymentDraft');
+    expect(app).toContain('result: draft.result');
+    expect(app).toContain('paymentStatus: draft.paymentStatus');
+    expect(buyerAdminUi).toContain(`canRegisterReceipt: order.status === '已发货'`);
+    expect(buyerAdminUi).toContain(`canRegisterPayment: invoice.paymentStatus !== '已付款'`);
   });
 });

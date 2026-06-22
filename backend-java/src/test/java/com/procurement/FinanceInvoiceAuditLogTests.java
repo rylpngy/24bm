@@ -8,9 +8,12 @@ import static org.mockito.Mockito.when;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.finance.api.CreateInvoiceRequest;
+import com.procurement.finance.api.UpdateSupplierReceivableRequest;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.infrastructure.InvoiceMapper;
+import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
+import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
@@ -26,6 +29,9 @@ class FinanceInvoiceAuditLogTests {
 
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final InvoiceMapper invoiceMapper = org.mockito.Mockito.mock(InvoiceMapper.class);
+  private final InvoiceReconciliationMapper invoiceReconciliationMapper =
+      org.mockito.Mockito.mock(InvoiceReconciliationMapper.class);
+  private final ThreeWayMatchMapper threeWayMatchMapper = org.mockito.Mockito.mock(ThreeWayMatchMapper.class);
   private final AuditLogApplicationService auditLogApplicationService = org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
@@ -34,6 +40,8 @@ class FinanceInvoiceAuditLogTests {
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
       invoiceMapper,
+      invoiceReconciliationMapper,
+      threeWayMatchMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService);
@@ -97,6 +105,30 @@ class FinanceInvoiceAuditLogTests {
   }
 
   @Test
+  void supplierReceivableNoteUpdateRecordsAuditLogInOrderTenant() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(invoiceMapper.findBySupplierAndId("supplier-1", "invoice-1"))
+        .thenReturn(invoice("invoice-1"))
+        .thenReturn(invoiceWithNote("invoice-1", "已与采购方确认月底付款"));
+    when(invoiceMapper.updateSupplierReconciliationNote(
+        "tenant-1",
+        "invoice-1",
+        "supplier-1",
+        "已与采购方确认月底付款"))
+        .thenReturn(1);
+
+    invoiceApplicationService.updateReceivable(
+        "invoice-1",
+        new UpdateSupplierReceivableRequest("已与采购方确认月底付款"));
+
+    verify(auditLogApplicationService).recordTenantAction(
+        "tenant-1",
+        "invoice.receivable_note_updated",
+        "invoice",
+        "invoice-1");
+  }
+
+  @Test
   void supplierInvoiceCreationRejectsAmountDifferentFromOrderAmountBeforeInsert() {
     TenantContext.set(null, "supplier-1", "supplier-user");
     when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))
@@ -156,6 +188,10 @@ class FinanceInvoiceAuditLogTests {
   }
 
   private Invoice invoice(String id) {
+    return invoiceWithNote(id, null);
+  }
+
+  private Invoice invoiceWithNote(String id, String reconciliationNote) {
     return new Invoice(
         id,
         "tenant-1",
@@ -164,6 +200,7 @@ class FinanceInvoiceAuditLogTests {
         BigDecimal.valueOf(100),
         "INV-001",
         "待付款",
+        reconciliationNote,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
   }

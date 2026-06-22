@@ -64,6 +64,9 @@ class PlatformWorkspaceOperationSummaryTests {
         "晨光科技供应商",
         "supplier",
         false,
-        "pending");
+        "pending",
+        null,
+        false,
+        false);
   }
 }

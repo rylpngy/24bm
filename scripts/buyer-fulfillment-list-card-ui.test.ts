@@ -1,0 +1,146 @@
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+
+const read = (path: string) => readFileSync(path, 'utf8');
+
+describe('buyer fulfillment list card UI', () => {
+  it('uses a shared workflow list card for demand, order, receipt, and invoice rows', () => {
+    const app = read('App.tsx');
+
+    expect(app).toContain('const WorkflowListCard');
+    expect(app).toContain('title: string;');
+    expect(app).toContain('meta: string;');
+    expect(app).toContain('amountLabel?: string;');
+    expect(app).toContain('status: string;');
+    expect(app).toContain('facts?: Array<{ label: string; value: string }>;');
+    expect(app).toContain('nextAction: BuyerNextAction;');
+    expect(app).toContain('detailSelected: boolean;');
+    expect(app).toContain('onSelectDetail: () => void;');
+    expect(app).toContain('action?: React.ReactNode;');
+    expect(app).toContain('aria-label={`${title} 操作区`}');
+    expect(app).toContain('compact?: boolean;');
+    expect(app).toContain("compact ? '' : 'mt-3'");
+  });
+
+  it('keeps fulfillment card amounts and actions readable on narrow screens', () => {
+    const app = read('App.tsx');
+    const workflowCard = app.slice(
+      app.indexOf('const WorkflowListCard'),
+      app.indexOf('const SimpleList'),
+    );
+
+    expect(workflowCard).toContain('flex flex-col gap-3 md:flex-row md:items-start md:justify-between');
+    expect(workflowCard).toContain('break-words');
+    expect(workflowCard).toContain('self-start rounded-lg bg-slate-50 px-2 py-1');
+    expect(workflowCard).toContain('md:w-auto');
+    expect(workflowCard).toContain('md:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)]');
+    expect(workflowCard).not.toContain('sm:flex-row sm:items-start sm:justify-between');
+  });
+
+  it('wraps inline fulfillment actions in a shared compact operation panel', () => {
+    const app = read('App.tsx');
+    const inlineAction = app.slice(
+      app.indexOf('const InlineWorkflowAction'),
+      app.indexOf('const WorkflowListCard'),
+    );
+    const orderModule = app.slice(
+      app.indexOf("{activeModule === 'orders'"),
+      app.indexOf('<OrderDetailPanelView'),
+    );
+    const receiptModule = app.slice(
+      app.indexOf("{activeModule === 'receipts'"),
+      app.indexOf('<ReceiptInspectionDetailPanelView'),
+    );
+    const invoiceModule = app.slice(
+      app.indexOf("{activeModule === 'invoices'"),
+      app.indexOf('<InvoicePaymentDetailPanelView'),
+    );
+
+    expect(app).toContain('const InlineWorkflowAction');
+    expect(inlineAction).toContain('aria-label={`${title} 快捷操作`}');
+    expect(inlineAction).toContain('text-xs font-black');
+    expect(inlineAction).toContain('text-xs font-bold leading-5');
+    expect(inlineAction).toContain("tone === 'emerald'");
+    expect(orderModule).toContain('<InlineWorkflowAction');
+    expect(receiptModule).toContain('<InlineWorkflowAction');
+    expect(invoiceModule).toContain('<InlineWorkflowAction');
+    expect(app.match(/<InlineWorkflowAction/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(app).toContain('右侧详情可补充验收备注、异常原因和附件清单。');
+    expect(app).toContain('右侧详情可补充付款备注、付款申请状态和对账说明。');
+  });
+
+  it('keeps compact inline action buttons aligned with their fields', () => {
+    const app = read('App.tsx');
+    const primaryActionButton = app.slice(
+      app.indexOf('const PrimaryActionButton'),
+      app.indexOf('const CapabilityList'),
+    );
+    const orderModule = app.slice(
+      app.indexOf("{activeModule === 'orders'"),
+      app.indexOf('<OrderDetailPanelView'),
+    );
+    const receiptModule = app.slice(
+      app.indexOf("{activeModule === 'receipts'"),
+      app.indexOf('<ReceiptInspectionDetailPanelView'),
+    );
+    const invoiceModule = app.slice(
+      app.indexOf("{activeModule === 'invoices'"),
+      app.indexOf('<InvoicePaymentDetailPanelView'),
+    );
+
+    expect(primaryActionButton).toContain('flushTop?: boolean;');
+    expect(primaryActionButton).toContain("flushTop ? '' : 'mt-3'");
+    expect(orderModule).toContain('flushTop');
+    expect(receiptModule).toContain('flushTop');
+    expect(invoiceModule).toContain('flushTop');
+  });
+
+  it('applies the shared workflow card to demand and fulfillment list modules', () => {
+    const app = read('App.tsx');
+
+    const demandModule = app.slice(
+      app.indexOf('<Panel title="采购需求列表"'),
+      app.indexOf('<DemandDetailPanelView'),
+    );
+    const orderModule = app.slice(
+      app.indexOf("{activeModule === 'orders'"),
+      app.indexOf('<OrderDetailPanelView'),
+    );
+    const receiptModule = app.slice(
+      app.indexOf("{activeModule === 'receipts'"),
+      app.indexOf('<ReceiptInspectionDetailPanelView'),
+    );
+    const invoiceModule = app.slice(
+      app.indexOf("{activeModule === 'invoices'"),
+      app.indexOf('<InvoicePaymentDetailPanelView'),
+    );
+
+    expect(demandModule).toContain('<WorkflowListCard');
+    expect(demandModule).toContain('title={demandRow.title}');
+    expect(demandModule).toContain('meta={demandRow.materialSummary}');
+    expect(demandModule).toContain('facts={demandRow.facts}');
+    expect(demandModule).toContain('status={demandRow.status}');
+    expect(demandModule).toContain('nextAction={demandRow.nextAction}');
+
+    expect(orderModule).toContain('<WorkflowListCard');
+    expect(orderModule).toContain('title={orderRow.id}');
+    expect(orderModule).toContain('meta={orderRow.supplierName}');
+    expect(orderModule).toContain('amountLabel={orderRow.amountLabel}');
+    expect(orderModule).toContain('facts={orderRow.facts}');
+    expect(orderModule).toContain('status={orderRow.status}');
+    expect(orderModule).toContain('nextAction={orderRow.nextAction}');
+
+    expect(receiptModule).toContain('<WorkflowListCard');
+    expect(receiptModule).toContain('title={orderRow.id}');
+    expect(receiptModule).toContain('meta={`${orderRow.supplierName} · ${orderRow.logisticsLabel}`}');
+    expect(receiptModule).toContain('status={orderRow.status}');
+    expect(receiptModule).toContain('nextAction={orderRow.nextAction}');
+
+    expect(invoiceModule).toContain('<WorkflowListCard');
+    expect(invoiceModule).toContain('title={invoiceRow.id}');
+    expect(invoiceModule).toContain('meta={`${invoiceRow.supplierName} · ${invoiceRow.orderLabel}`}');
+    expect(invoiceModule).toContain('amountLabel={invoiceRow.amountLabel}');
+    expect(invoiceModule).toContain('status={invoiceRow.status}');
+    expect(invoiceModule).toContain('nextAction={invoiceRow.nextAction}');
+  });
+});

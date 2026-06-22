@@ -5,6 +5,8 @@ import {
   getTenantKpis,
   type AuditLogRecord,
   type BuyerWorkspace,
+  type ContractLedgerItem,
+  type DepartmentItem,
   type Delivery,
   type Enterprise,
   type InvoiceRecord,
@@ -14,6 +16,7 @@ import {
   type PurchaseOrder,
   type Rfq,
   type RfqQuote,
+  type SupplierQualificationRecord,
   type SupplierLevel,
   type SupplierRelation,
   type SupplierRelationStatus,
@@ -42,12 +45,52 @@ export interface CreateDemandPayload {
   department: string;
   requester: string;
   budget: number;
+  expectedDeliveryDate?: string;
+  description?: string;
+  attachmentNames?: string[];
   lineItems: PurchaseDemand['lineItems'];
+}
+
+export interface UpdateDemandPayload {
+  title: string;
+  department: string;
+  requester?: string;
+  budget: number;
+  lineItems: PurchaseDemand['lineItems'];
+}
+
+export interface SaveMaterialPayload {
+  code: string;
+  name: string;
+  category: string;
+  unit: string;
+  referencePrice: number;
+}
+
+export interface CreateBuyerSupplierRelationPayload {
+  supplierId: string;
+  status: string;
+  level: string;
+  categories: string[];
+}
+
+export interface UpdateBuyerSupplierProfilePayload {
+  level: string;
+  categories: string[];
 }
 
 export interface CreateRfqPayload {
   title: string;
   demandIds: string[];
+  invitedSupplierIds: string[];
+  deadline: string;
+  quoteRequirement?: string;
+  deliveryRequirement?: string;
+  invitationNote?: string;
+}
+
+export interface UpdateRfqPayload {
+  title: string;
   invitedSupplierIds: string[];
   deadline: string;
 }
@@ -57,6 +100,8 @@ export interface SubmitQuotePayload {
   taxRate: number;
   deliveryDays: number;
 }
+
+export type UpdateQuotePayload = SubmitQuotePayload;
 
 export interface AwardRfqPayload {
   quoteId: string;
@@ -68,13 +113,22 @@ export interface CreateOrderPayload {
   expectedReceiptDate: string;
 }
 
+export interface UpdateOrderPayload {
+  expectedReceiptDate: string;
+}
+
 export interface CreateDeliveryPayload {
   carrier: string;
   trackingNo: string;
 }
 
+export type UpdateDeliveryPayload = CreateDeliveryPayload;
+
 export interface CreateReceiptPayload {
   result: string;
+  receiptRemark?: string;
+  exceptionReason?: string;
+  attachmentNames?: string[];
 }
 
 export interface CreateInvoicePayload {
@@ -82,7 +136,18 @@ export interface CreateInvoicePayload {
   invoiceNo: string;
 }
 
+export interface UpdateSupplierReceivablePayload {
+  reconciliationNote: string;
+}
+
 export interface RegisterPaymentPayload {
+  paymentStatus: string;
+  paymentRemark?: string;
+  paymentRequestStatus?: string;
+  reconciliationNote?: string;
+}
+
+export interface UpdateInvoicePayload {
   paymentStatus: string;
 }
 
@@ -333,6 +398,7 @@ export interface JavaApprovalTaskDto {
   counterpartyName?: string | null;
   assigneeId: string | null;
   status: string;
+  reviewComment?: string | null;
   createdAt: string;
   actedAt?: string | null;
 }
@@ -371,6 +437,7 @@ export interface JavaRfqDto {
   awardedSupplierId: string | null;
   demandIds: string[];
   invitedSupplierIds: string[];
+  quotes?: JavaQuoteDto[];
 }
 
 export interface JavaQuoteDto {
@@ -406,6 +473,164 @@ export interface JavaPurchaseOrderDto {
   expectedReceiptDate: string;
 }
 
+export interface JavaContractDto {
+  id: string;
+  tenantId: string;
+  contractNo: string;
+  contractName: string;
+  relatedOrderId: string;
+  supplierId: string;
+  amount: number;
+  status: string;
+  archiveStatus: string;
+  fulfillmentProgress: string;
+  effectiveDate?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface JavaContractFulfillmentEventDto {
+  id: string;
+  tenantId: string;
+  contractId: string;
+  actionType: string;
+  targetId: string;
+  summary: string;
+  sourceLabel: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface JavaAttachmentDto {
+  id: string;
+  tenantId: string;
+  ownerType: string;
+  ownerId: string;
+  fileName: string;
+  storageKey: string;
+  uploadedBy: string;
+  visibility: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface JavaAttachmentUploadTicketDto {
+  ownerType: string;
+  ownerId: string;
+  fileName: string;
+  storageKey: string;
+  visibility: string;
+  uploadUrl: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface JavaAttachmentDownloadLinkDto {
+  attachmentId: string;
+  fileName: string;
+  storageKey: string;
+  downloadUrl: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export type ContractLedgerRecord = ContractLedgerItem;
+
+export interface ContractFulfillmentEventRecord {
+  id: string;
+  tenantId: string;
+  contractId: string;
+  actionType: string;
+  targetId: string;
+  summary: string;
+  sourceLabel: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface AttachmentRecord {
+  id: string;
+  tenantId: string;
+  ownerType: string;
+  ownerId: string;
+  fileName: string;
+  storageKey: string;
+  uploadedBy: string;
+  visibility: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface AttachmentUploadTicketRecord {
+  ownerType: string;
+  ownerId: string;
+  fileName: string;
+  storageKey: string;
+  visibility: string;
+  uploadUrl: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface AttachmentDownloadLinkRecord {
+  attachmentId: string;
+  fileName: string;
+  storageKey: string;
+  downloadUrl: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface CreateContractPayload {
+  contractNo: string;
+  contractName: string;
+  relatedOrderId: string;
+  amount: number;
+  status: string;
+  fulfillmentProgress: string;
+  effectiveDate?: string | null;
+}
+
+export interface UpdateContractPayload {
+  contractNo: string;
+  contractName: string;
+  amount: number;
+  status: string;
+  fulfillmentProgress: string;
+  effectiveDate?: string | null;
+}
+
+export interface UpdateContractStatusPayload {
+  status: string;
+  fulfillmentProgress: string;
+}
+
+export interface UpdateContractArchiveStatusPayload {
+  archiveStatus: string;
+}
+
+export interface CreateContractFulfillmentEventPayload {
+  actionType: 'receipt' | 'payment' | 'archive' | string;
+  targetId: string;
+  summary: string;
+  sourceLabel: string;
+}
+
+export interface CreateAttachmentPayload {
+  ownerType: string;
+  ownerId: string;
+  fileName: string;
+  storageKey: string;
+  visibility: 'tenant' | 'buyer_internal' | 'supplier_shared';
+}
+
+export interface CreateAttachmentUploadTicketPayload {
+  ownerType: string;
+  ownerId: string;
+  fileName: string;
+  visibility: 'tenant' | 'buyer_internal' | 'supplier_shared';
+}
+
 export interface JavaDeliveryDto {
   id: string;
   tenantId: string;
@@ -434,6 +659,301 @@ export interface JavaInvoiceDto {
   amount: number;
   invoiceNo: string;
   paymentStatus: string;
+  reconciliationNote?: string | null;
+  dueDate?: string | null;
+  overdue?: boolean;
+  overdueDays?: number;
+  orderAmount?: number | null;
+  varianceAmount?: number | null;
+  receiptStatus?: string | null;
+  reconciliationStatus?: string | null;
+  reconciliationNo?: string | null;
+  reconciliationStage?: string | null;
+  nextReconciliationAction?: string | null;
+}
+
+export interface JavaInvoiceReconciliationDto {
+  id: string;
+  tenantId: string;
+  reconciliationNo: string;
+  invoiceId: string;
+  supplierId: string;
+  orderId: string;
+  stage: string;
+  nextAction: string;
+  orderAmount: number;
+  invoiceAmount: number;
+  varianceAmount: number;
+  receiptStatus: string;
+  paymentStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceReconciliationRecord {
+  id: string;
+  tenantId: string;
+  reconciliationNo: string;
+  invoiceId: string;
+  supplierId: string;
+  orderId: string;
+  stage: string;
+  nextAction: string;
+  orderAmount: number;
+  invoiceAmount: number;
+  varianceAmount: number;
+  receiptStatus: string;
+  paymentStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListBuyerInvoiceReconciliationsParams {
+  stage?: string;
+  supplierId?: string;
+  orderId?: string;
+}
+
+export interface ListSupplierInvoiceReconciliationsParams {
+  stage?: string;
+  orderId?: string;
+}
+
+export interface PaymentRequestRecord {
+  id: string;
+  tenantId: string;
+  invoiceId: string;
+  supplierId: string;
+  orderId: string;
+  amount: number;
+  requestStatus: string;
+  paymentBatchNo: string;
+  remark?: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentBatchRecord {
+  id: string;
+  tenantId: string;
+  paymentBatchNo: string;
+  supplierId?: string | null;
+  requestCount: number;
+  totalAmount: number;
+  approvedAmount: number;
+  registeredAmount: number;
+  pendingRegistrationAmount: number;
+  blockedRegistrationAmount: number;
+  registeredCount: number;
+  pendingRegistrationCount: number;
+  blockedRegistrationCount: number;
+  executionDecision?: string | null;
+  executionBlockSummary?: string | null;
+  batchStatus: string;
+  plannedPaymentDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentExecutionRecord {
+  id: string;
+  tenantId: string;
+  paymentBatchNo: string;
+  paymentRequestId: string;
+  invoiceId: string;
+  supplierId: string;
+  registeredAmount: number;
+  plannedPaymentDate?: string | null;
+  executionStatus: string;
+  executionTrace: string;
+  executionBlockReason?: string | null;
+  executionStage?: string | null;
+  executionNextAction?: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentBlockResolutionRecord {
+  id: string;
+  tenantId: string;
+  paymentBatchNo: string;
+  paymentRequestId?: string | null;
+  invoiceId?: string | null;
+  supplierId?: string | null;
+  blockReason: string;
+  resolutionStatus: string;
+  resolutionAction: string;
+  nextStep: string;
+  handledBy?: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentArchiveExceptionRequestRecord {
+  id: string;
+  tenantId: string;
+  paymentBatchNo: string;
+  exceptionType: string;
+  exceptionReason: string;
+  approvalStatus: string;
+  actionStatus: string;
+  actionResult?: string | null;
+  closureStatus: string;
+  closureResult?: string | null;
+  requestedBy: string;
+  reviewedBy?: string | null;
+  handledBy?: string | null;
+  closedBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ThreeWayMatchRecord {
+  id: string;
+  tenantId: string;
+  invoiceId: string;
+  supplierId: string;
+  orderId: string;
+  orderAmount: number;
+  receiptStatus: string;
+  invoiceAmount: number;
+  varianceAmount: number;
+  matchStatus: string;
+  blockingReason: string;
+  paymentReadiness: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ThreeWayMatchRebuildResult {
+  tenantId: string;
+  rebuiltCount: number;
+}
+
+export interface VarianceHandlingRecord {
+  id: string;
+  tenantId: string;
+  invoiceId: string;
+  supplierId: string;
+  orderId: string;
+  varianceAmount: number;
+  reason: string;
+  ownerId: string;
+  result: string;
+  status: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListBuyerPaymentRequestsParams {
+  requestStatus?: string;
+  supplierId?: string;
+  orderId?: string;
+  invoiceId?: string;
+}
+
+export interface ListBuyerPaymentBatchesParams {
+  batchStatus?: string;
+  supplierId?: string;
+}
+
+export interface ListBuyerPaymentExecutionRecordsParams {
+  paymentBatchNo?: string;
+  executionStatus?: string;
+  supplierId?: string;
+  invoiceId?: string;
+}
+
+export interface ListBuyerPaymentBlockResolutionsParams {
+  paymentBatchNo?: string;
+  blockReason?: string;
+  resolutionStatus?: string;
+  invoiceId?: string;
+}
+
+export interface ListBuyerPaymentArchiveExceptionRequestsParams {
+  paymentBatchNo?: string;
+  approvalStatus?: string;
+  exceptionType?: string;
+}
+
+export interface CreatePaymentArchiveExceptionRequestPayload {
+  paymentBatchNo: string;
+  exceptionType: string;
+  exceptionReason: string;
+}
+
+export interface CompletePaymentArchiveExceptionActionPayload {
+  actionResult: string;
+}
+
+export interface ClosePaymentArchiveExceptionRequestPayload {
+  closureResult: string;
+}
+
+export interface ListBuyerThreeWayMatchesParams {
+  matchStatus?: string;
+  supplierId?: string;
+  orderId?: string;
+  invoiceId?: string;
+}
+
+export interface CreatePaymentRequestPayload {
+  invoiceId: string;
+  requestStatus: string;
+  paymentBatchNo: string;
+  remark?: string;
+}
+
+export interface UpdatePaymentRequestStatusPayload {
+  requestStatus: string;
+}
+
+export interface UpdatePaymentBatchStatusPayload {
+  batchStatus: string;
+}
+
+export interface CreatePaymentBlockResolutionPayload {
+  paymentBatchNo: string;
+  paymentRequestId?: string;
+  invoiceId?: string;
+  supplierId?: string;
+  blockReason: string;
+  resolutionStatus: string;
+  resolutionAction: string;
+  nextStep: string;
+  handledBy?: string;
+}
+
+export interface UpdatePaymentBlockResolutionStatusPayload {
+  resolutionStatus: string;
+  resolutionAction?: string;
+  nextStep?: string;
+  handledBy?: string;
+}
+
+export interface ListBuyerVarianceHandlingsParams {
+  status?: string;
+  supplierId?: string;
+  orderId?: string;
+  invoiceId?: string;
+}
+
+export interface CreateVarianceHandlingPayload {
+  invoiceId: string;
+  reason: string;
+  ownerId: string;
+  result: string;
+  status: string;
+}
+
+export interface UpdateVarianceHandlingStatusPayload {
+  status: string;
+  result?: string;
 }
 
 export interface JavaSupplierProfileDto {
@@ -442,7 +962,26 @@ export interface JavaSupplierProfileDto {
   type: 'supplier';
   industry: string;
   verified: boolean;
+  creditCode?: string;
+  legalPerson?: string;
+  verifiedStatus?: string;
+  profileStatus?: string;
   connectedBuyerNames: string[];
+}
+
+export type UpdateSupplierProfilePayload = {
+  name: string;
+  industry: string;
+  creditCode: string;
+  legalPerson: string;
+};
+
+export interface CreateSupplierQualificationPayload {
+  qualificationType: string;
+  certificateNo?: string;
+  expiresAt?: string;
+  fileName: string;
+  storageKey: string;
 }
 
 export interface JavaPlatformOverviewDto {
@@ -450,6 +989,11 @@ export interface JavaPlatformOverviewDto {
   tenantCount: number;
   publicSupplierCount: number;
   pendingEnterpriseReviews: number;
+  operationSummary?: {
+    activeTenantCount: number;
+    pendingEnterpriseReviewCount: number;
+    activeAnnouncementCount?: number;
+  };
 }
 
 export interface JavaPlatformTenantDto {
@@ -467,6 +1011,27 @@ export interface JavaEnterpriseReviewDto {
   type: Enterprise['type'];
   verified: boolean;
   reviewStatus: string;
+  reviewComment?: string;
+  profileConfirmed?: boolean;
+  riskConfirmed?: boolean;
+}
+
+export type PlatformEnterpriseReviewPayload = {
+  verified: boolean;
+  reviewStatus: 'approved' | 'rejected';
+  reviewComment?: string;
+  profileConfirmed?: boolean;
+  riskConfirmed?: boolean;
+};
+
+export interface JavaPlatformAnnouncementDto {
+  id: string;
+  title: string;
+  content: string;
+  audience: string;
+  status: string;
+  publishedBy: string;
+  createdAt: string;
 }
 
 export interface JavaAuditLogDto extends AuditLogRecord {}
@@ -478,11 +1043,44 @@ export interface JavaProcurementApiClient {
   getPlatformWorkspace(): Promise<JavaPlatformWorkspaceData>;
   getPlatformOverview(): Promise<JavaPlatformOverviewDto>;
   listPlatformTenants(): Promise<JavaPlatformTenantDto[]>;
+  enablePlatformTenant(tenantId: string): Promise<JavaPlatformTenantDto>;
+  disablePlatformTenant(tenantId: string): Promise<JavaPlatformTenantDto>;
+  updatePlatformTenantPlan(
+    tenantId: string,
+    payload: { plan: string; userLimit: number },
+  ): Promise<JavaPlatformTenantDto>;
+  updatePlatformTenantFeatures(
+    tenantId: string,
+    payload: { enabledFeatures: string[] },
+  ): Promise<JavaPlatformTenantDto>;
+  listPlatformAnnouncements(): Promise<JavaPlatformAnnouncementDto[]>;
+  publishPlatformAnnouncement(
+    payload: { title: string; content: string; audience: string },
+  ): Promise<JavaPlatformAnnouncementDto>;
+  updatePlatformAnnouncement(
+    announcementId: string,
+    payload: { title: string; content: string; audience: string },
+  ): Promise<JavaPlatformAnnouncementDto>;
+  withdrawPlatformAnnouncement(announcementId: string): Promise<JavaPlatformAnnouncementDto>;
   listPlatformEnterpriseReviews(): Promise<JavaEnterpriseReviewDto[]>;
+  reviewPlatformEnterprise(
+    enterpriseId: string,
+    payload: PlatformEnterpriseReviewPayload,
+  ): Promise<JavaEnterpriseReviewDto>;
   getBuyerWorkspace(): Promise<JavaBuyerMasterData>;
   listBuyerSuppliers(): Promise<BuyerSupplierRelationDto[]>;
+  createBuyerSupplierRelation(payload: CreateBuyerSupplierRelationPayload): Promise<BuyerSupplierRelationDto>;
+  updateBuyerSupplierProfile(
+    relationId: string,
+    payload: UpdateBuyerSupplierProfilePayload,
+  ): Promise<BuyerSupplierRelationDto>;
+  updateBuyerSupplierStatus(relationId: string, status: string): Promise<BuyerSupplierRelationDto>;
+  updateBuyerSupplierPerformance(relationId: string, performanceScore: number): Promise<BuyerSupplierRelationDto>;
+  listBuyerSupplierQualifications(relationId: string): Promise<SupplierQualificationRecord[]>;
   submitBuyerSupplierAdmission(relationId: string): Promise<JavaApprovalTaskDto>;
   listBuyerMaterials(): Promise<MaterialDto[]>;
+  createBuyerMaterial(payload: SaveMaterialPayload): Promise<MaterialDto>;
+  updateBuyerMaterial(materialId: string, payload: SaveMaterialPayload): Promise<MaterialDto>;
   listBuyerDepartments(): Promise<DepartmentDto[]>;
   createBuyerDepartment(payload: CreateDepartmentPayload): Promise<DepartmentDto>;
   disableBuyerDepartment(departmentId: string): Promise<DepartmentDto>;
@@ -492,33 +1090,127 @@ export interface JavaProcurementApiClient {
   changeBuyerUserStatus(userId: string, status: 'active' | 'inactive'): Promise<BuyerUserDto>;
   listBuyerDemands(): Promise<PurchaseDemand[]>;
   createBuyerDemand(payload: CreateDemandPayload): Promise<PurchaseDemand>;
+  updateBuyerDemand(demandId: string, payload: UpdateDemandPayload): Promise<PurchaseDemand>;
   submitBuyerDemand(demandId: string): Promise<JavaApprovalTaskDto>;
   listBuyerPendingApprovals(): Promise<JavaApprovalTaskDto[]>;
   listBuyerRecentApprovals(): Promise<JavaApprovalTaskDto[]>;
   listBuyerNotifications(): Promise<JavaNotificationDto[]>;
+  markBuyerNotificationRead(notificationId: string): Promise<JavaNotificationDto>;
   listBuyerApprovalTemplates(): Promise<JavaApprovalTemplateDto[]>;
   updateBuyerApprovalTemplate(
     templateCode: string,
     payload: UpdateApprovalTemplatePayload,
   ): Promise<JavaApprovalTemplateDto>;
   listBuyerAuditLogs(): Promise<JavaAuditLogDto[]>;
-  reviewBuyerDemandApproval(demandId: string, approved: boolean): Promise<JavaApprovalTaskDto>;
-  reviewBuyerSupplierAdmission(relationId: string, approved: boolean): Promise<JavaApprovalTaskDto>;
-  reviewBuyerAwardApproval(rfqId: string, awardId: string, approved: boolean): Promise<JavaAwardDecisionDto>;
+  listBuyerTargetAuditLogs(
+    targetType: string,
+    targetId: string,
+    actions?: string[],
+    limit?: number,
+  ): Promise<JavaAuditLogDto[]>;
+  reviewBuyerDemandApproval(demandId: string, approved: boolean, comment?: string): Promise<JavaApprovalTaskDto>;
+  reviewBuyerSupplierAdmission(relationId: string, approved: boolean, comment?: string): Promise<JavaApprovalTaskDto>;
+  reviewBuyerAwardApproval(rfqId: string, awardId: string, approved: boolean, comment?: string): Promise<JavaAwardDecisionDto>;
   listBuyerRfqs(): Promise<Rfq[]>;
   createBuyerRfq(payload: CreateRfqPayload): Promise<Rfq>;
+  updateBuyerRfq(rfqId: string, payload: UpdateRfqPayload): Promise<Rfq>;
   submitSupplierQuote(rfqId: string, payload: SubmitQuotePayload): Promise<RfqQuote>;
+  updateSupplierQuote(quoteId: string, payload: UpdateQuotePayload): Promise<RfqQuote>;
   awardBuyerRfq(rfqId: string, payload: AwardRfqPayload): Promise<JavaAwardDecisionDto>;
   listBuyerOrders(): Promise<PurchaseOrder[]>;
+  listBuyerContracts(): Promise<ContractLedgerRecord[]>;
+  createBuyerContract(payload: CreateContractPayload): Promise<ContractLedgerRecord>;
+  updateBuyerContract(contractId: string, payload: UpdateContractPayload): Promise<ContractLedgerRecord>;
+  submitBuyerContractApproval(contractId: string): Promise<ContractLedgerRecord>;
+  reviewBuyerContractApproval(contractId: string, approved: boolean, comment?: string): Promise<ContractLedgerRecord>;
+  listBuyerContractFulfillmentEvents(contractId: string): Promise<ContractFulfillmentEventRecord[]>;
+  createBuyerContractFulfillmentEvent(
+    contractId: string,
+    payload: CreateContractFulfillmentEventPayload,
+  ): Promise<ContractFulfillmentEventRecord>;
+  listBuyerAttachments(ownerType: string, ownerId: string): Promise<AttachmentRecord[]>;
+  createBuyerAttachment(payload: CreateAttachmentPayload): Promise<AttachmentRecord>;
+  createBuyerAttachmentUploadTicket(
+    payload: CreateAttachmentUploadTicketPayload,
+  ): Promise<AttachmentUploadTicketRecord>;
+  createBuyerAttachmentDownloadLink(attachmentId: string): Promise<AttachmentDownloadLinkRecord>;
+  updateBuyerContractStatus(contractId: string, payload: UpdateContractStatusPayload): Promise<ContractLedgerRecord>;
+  updateBuyerContractArchiveStatus(
+    contractId: string,
+    payload: UpdateContractArchiveStatusPayload,
+  ): Promise<ContractLedgerRecord>;
   createBuyerOrder(payload: CreateOrderPayload): Promise<PurchaseOrder>;
+  updateBuyerOrder(orderId: string, payload: UpdateOrderPayload): Promise<PurchaseOrder>;
   confirmSupplierOrder(orderId: string): Promise<PurchaseOrder>;
   createSupplierDelivery(orderId: string, payload: CreateDeliveryPayload): Promise<Delivery>;
+  updateSupplierDelivery(deliveryId: string, payload: UpdateDeliveryPayload): Promise<Delivery>;
   createBuyerReceipt(orderId: string, payload: CreateReceiptPayload): Promise<JavaReceiptDto>;
   listBuyerInvoices(): Promise<InvoiceRecord[]>;
+  listBuyerInvoiceReconciliations(
+    params?: ListBuyerInvoiceReconciliationsParams,
+  ): Promise<InvoiceReconciliationRecord[]>;
+  listBuyerPaymentBatches(params?: ListBuyerPaymentBatchesParams): Promise<PaymentBatchRecord[]>;
+  listBuyerPaymentExecutionRecords(
+    params?: ListBuyerPaymentExecutionRecordsParams,
+  ): Promise<PaymentExecutionRecord[]>;
+  registerBuyerPaymentExecutionRecord(executionRecordId: string): Promise<PaymentExecutionRecord>;
+  listBuyerPaymentBlockResolutions(
+    params?: ListBuyerPaymentBlockResolutionsParams,
+  ): Promise<PaymentBlockResolutionRecord[]>;
+  listBuyerPaymentArchiveExceptionRequests(
+    params?: ListBuyerPaymentArchiveExceptionRequestsParams,
+  ): Promise<PaymentArchiveExceptionRequestRecord[]>;
+  createBuyerPaymentArchiveExceptionRequest(
+    payload: CreatePaymentArchiveExceptionRequestPayload,
+  ): Promise<PaymentArchiveExceptionRequestRecord>;
+  reviewBuyerPaymentArchiveExceptionRequest(requestId: string, approved: boolean, comment?: string): Promise<JavaApprovalTaskDto>;
+  completeBuyerPaymentArchiveExceptionAction(
+    requestId: string,
+    payload: CompletePaymentArchiveExceptionActionPayload,
+  ): Promise<PaymentArchiveExceptionRequestRecord>;
+  closeBuyerPaymentArchiveExceptionRequest(
+    requestId: string,
+    payload: ClosePaymentArchiveExceptionRequestPayload,
+  ): Promise<PaymentArchiveExceptionRequestRecord>;
+  createBuyerPaymentBlockResolution(
+    payload: CreatePaymentBlockResolutionPayload,
+  ): Promise<PaymentBlockResolutionRecord>;
+  updateBuyerPaymentBlockResolutionStatus(
+    resolutionId: string,
+    payload: UpdatePaymentBlockResolutionStatusPayload,
+  ): Promise<PaymentBlockResolutionRecord>;
+  updateBuyerPaymentBatchStatus(
+    paymentBatchNo: string,
+    payload: UpdatePaymentBatchStatusPayload,
+  ): Promise<PaymentBatchRecord>;
+  listBuyerThreeWayMatches(params?: ListBuyerThreeWayMatchesParams): Promise<ThreeWayMatchRecord[]>;
+  rebuildBuyerThreeWayMatches(): Promise<ThreeWayMatchRebuildResult>;
+  listBuyerPaymentRequests(params?: ListBuyerPaymentRequestsParams): Promise<PaymentRequestRecord[]>;
+  createBuyerPaymentRequest(payload: CreatePaymentRequestPayload): Promise<PaymentRequestRecord>;
+  updateBuyerPaymentRequestStatus(
+    paymentRequestId: string,
+    payload: UpdatePaymentRequestStatusPayload,
+  ): Promise<PaymentRequestRecord>;
+  listBuyerVarianceHandlings(params?: ListBuyerVarianceHandlingsParams): Promise<VarianceHandlingRecord[]>;
+  createBuyerVarianceHandling(payload: CreateVarianceHandlingPayload): Promise<VarianceHandlingRecord>;
+  createBuyerVarianceHandlingFromThreeWayMatch(matchId: string): Promise<VarianceHandlingRecord>;
+  updateBuyerVarianceHandlingStatus(
+    varianceHandlingId: string,
+    payload: UpdateVarianceHandlingStatusPayload,
+  ): Promise<VarianceHandlingRecord>;
+  listSupplierInvoiceReconciliations(
+    params?: ListSupplierInvoiceReconciliationsParams,
+  ): Promise<InvoiceReconciliationRecord[]>;
   createSupplierInvoice(orderId: string, payload: CreateInvoicePayload): Promise<InvoiceRecord>;
+  updateSupplierReceivable(invoiceId: string, payload: UpdateSupplierReceivablePayload): Promise<InvoiceRecord>;
   registerBuyerPayment(invoiceId: string, payload: RegisterPaymentPayload): Promise<InvoiceRecord>;
+  updateBuyerInvoice(invoiceId: string, payload: UpdateInvoicePayload): Promise<InvoiceRecord>;
   getSupplierWorkspace(): Promise<JavaSupplierWorkspaceData>;
   getSupplierProfile(): Promise<JavaSupplierProfileDto>;
+  updateSupplierProfile(payload: UpdateSupplierProfilePayload): Promise<JavaSupplierProfileDto>;
+  listSupplierQualifications(): Promise<SupplierQualificationRecord[]>;
+  createSupplierQualification(payload: CreateSupplierQualificationPayload): Promise<SupplierQualificationRecord>;
+  markSupplierNotificationRead(notificationId: string): Promise<JavaNotificationDto>;
   listSupplierRfqs(): Promise<Rfq[]>;
   listSupplierQuotes(): Promise<RfqQuote[]>;
   listSupplierOrders(): Promise<PurchaseOrder[]>;
@@ -528,12 +1220,24 @@ export interface JavaProcurementApiClient {
 export interface JavaBuyerMasterData {
   suppliers: BuyerSupplierRelationDto[];
   materials: MaterialDto[];
+  departments?: DepartmentDto[];
   users: BuyerUserDto[];
   roles: BuyerRoleDto[];
   demands: PurchaseDemand[];
   rfqs: Rfq[];
   orders: PurchaseOrder[];
+  contracts?: ContractLedgerRecord[];
+  deliveries?: Delivery[];
   invoices: InvoiceRecord[];
+  invoiceReconciliations?: InvoiceReconciliationRecord[];
+  paymentBatches?: PaymentBatchRecord[];
+  paymentExecutionRecords?: PaymentExecutionRecord[];
+  paymentBlockResolutions?: PaymentBlockResolutionRecord[];
+  paymentArchiveExceptionRequests?: PaymentArchiveExceptionRequestRecord[];
+  threeWayMatches?: ThreeWayMatchRecord[];
+  paymentRequests?: PaymentRequestRecord[];
+  varianceHandlings?: VarianceHandlingRecord[];
+  buyerSupplierQualifications?: Record<string, SupplierQualificationRecord[]>;
   pendingApprovals: JavaApprovalTaskDto[];
   recentApprovals: JavaApprovalTaskDto[];
   notifications: JavaNotificationDto[];
@@ -546,7 +1250,11 @@ export interface JavaSupplierWorkspaceData {
   opportunities: Rfq[];
   quotes: RfqQuote[];
   orders: PurchaseOrder[];
+  deliveries: Delivery[];
   invoices: InvoiceRecord[];
+  qualifications?: SupplierQualificationRecord[];
+  notifications?: JavaNotificationDto[];
+  invoiceReconciliations?: InvoiceReconciliationRecord[];
 }
 
 export interface JavaPlatformWorkspaceData {
@@ -580,12 +1288,14 @@ export interface JavaProcurementApiClientOptions {
   supplierLogin?: JavaLoginPayload;
 }
 
-const parseData = async <T>(response: Response): Promise<T> => {
-  const payload = await response.json();
+const parseData = async <T>(response: Response, path?: string): Promise<T> => {
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    throw new Error(payload.error?.message ?? payload.message ?? `API request failed with ${response.status}`);
+    const suffix = path ? ` at ${path}` : '';
+    throw new Error(payload?.error?.message ?? payload?.message ?? `API request failed with ${response.status}${suffix}`);
   }
-  return payload.data as T;
+  return payload?.data as T;
 };
 
 export const createHttpApiClient = (options: HttpApiClientOptions): ProcurementApiClient => {
@@ -608,7 +1318,7 @@ export const createHttpApiClient = (options: HttpApiClientOptions): ProcurementA
 
   const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
     const response = await fetcher(`${baseUrl}${path}`, init);
-    return parseData<T>(response);
+    return parseData<T>(response, path);
   };
 
   return {
@@ -682,7 +1392,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 
   const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
     const response = await fetcher(`${baseUrl}${path}`, init);
-    return parseData<T>(response);
+    return parseData<T>(response, path);
   };
 
   const loginBuyer = async (): Promise<JavaLoginResponse> => {
@@ -796,7 +1506,7 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     owner: rfq.ownerId,
     invitedSupplierIds: rfq.invitedSupplierIds,
     awardedSupplierId: rfq.awardedSupplierId ?? undefined,
-    quotes: [],
+    quotes: (rfq.quotes ?? []).map(toQuote),
   });
 
   const toQuote = (quote: JavaQuoteDto): RfqQuote => ({
@@ -820,6 +1530,71 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     expectedReceiptDate: order.expectedReceiptDate,
   });
 
+  const toContractLedger = (contract: JavaContractDto): ContractLedgerRecord => ({
+    id: contract.id,
+    tenantId: contract.tenantId,
+    contractNo: contract.contractNo,
+    contractName: contract.contractName,
+    relatedOrderId: contract.relatedOrderId,
+    supplierId: contract.supplierId,
+    amount: Number(contract.amount),
+    status: contract.status,
+    archiveStatus: contract.archiveStatus,
+    fulfillmentProgress: contract.fulfillmentProgress,
+    effectiveDate: contract.effectiveDate ?? null,
+  });
+
+  const toAttachmentRecord = (attachment: JavaAttachmentDto): AttachmentRecord => ({
+    id: attachment.id,
+    tenantId: attachment.tenantId,
+    ownerType: attachment.ownerType,
+    ownerId: attachment.ownerId,
+    fileName: attachment.fileName,
+    storageKey: attachment.storageKey,
+    uploadedBy: attachment.uploadedBy,
+    visibility: attachment.visibility,
+    status: attachment.status,
+    createdAt: attachment.createdAt,
+  });
+
+  const toContractFulfillmentEventRecord = (
+    event: JavaContractFulfillmentEventDto,
+  ): ContractFulfillmentEventRecord => ({
+    id: event.id,
+    tenantId: event.tenantId,
+    contractId: event.contractId,
+    actionType: event.actionType,
+    targetId: event.targetId,
+    summary: event.summary,
+    sourceLabel: event.sourceLabel,
+    createdBy: event.createdBy,
+    createdAt: event.createdAt,
+  });
+
+  const toAttachmentUploadTicketRecord = (
+    ticket: JavaAttachmentUploadTicketDto,
+  ): AttachmentUploadTicketRecord => ({
+    ownerType: ticket.ownerType,
+    ownerId: ticket.ownerId,
+    fileName: ticket.fileName,
+    storageKey: ticket.storageKey,
+    visibility: ticket.visibility,
+    uploadUrl: ticket.uploadUrl,
+    createdAt: ticket.createdAt,
+    expiresAt: ticket.expiresAt,
+  });
+
+  const toAttachmentDownloadLinkRecord = (
+    link: JavaAttachmentDownloadLinkDto,
+  ): AttachmentDownloadLinkRecord => ({
+    attachmentId: link.attachmentId,
+    fileName: link.fileName,
+    storageKey: link.storageKey,
+    downloadUrl: link.downloadUrl,
+    createdAt: link.createdAt,
+    expiresAt: link.expiresAt,
+  });
+
   const toDelivery = (delivery: JavaDeliveryDto): Delivery => ({
     id: delivery.id,
     tenantId: delivery.tenantId,
@@ -836,8 +1611,180 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     supplierId: invoice.supplierId,
     orderId: invoice.orderId,
     amount: Number(invoice.amount),
+    invoiceNo: invoice.invoiceNo,
     paymentStatus: invoice.paymentStatus as InvoiceRecord['paymentStatus'],
+    reconciliationNote: invoice.reconciliationNote ?? undefined,
+    dueDate: invoice.dueDate ?? undefined,
+    overdue: invoice.overdue ?? false,
+    overdueDays: invoice.overdueDays ?? 0,
+    orderAmount: invoice.orderAmount == null ? undefined : Number(invoice.orderAmount),
+    varianceAmount: invoice.varianceAmount == null ? undefined : Number(invoice.varianceAmount),
+    receiptStatus: invoice.receiptStatus ?? undefined,
+    reconciliationStatus: invoice.reconciliationStatus ?? undefined,
+    reconciliationNo: invoice.reconciliationNo ?? undefined,
+    reconciliationStage: invoice.reconciliationStage ?? undefined,
+    nextReconciliationAction: invoice.nextReconciliationAction ?? undefined,
   });
+
+  const toInvoiceReconciliation = (reconciliation: JavaInvoiceReconciliationDto): InvoiceReconciliationRecord => ({
+    id: reconciliation.id,
+    tenantId: reconciliation.tenantId,
+    reconciliationNo: reconciliation.reconciliationNo,
+    invoiceId: reconciliation.invoiceId,
+    supplierId: reconciliation.supplierId,
+    orderId: reconciliation.orderId,
+    stage: reconciliation.stage,
+    nextAction: reconciliation.nextAction,
+    orderAmount: Number(reconciliation.orderAmount),
+    invoiceAmount: Number(reconciliation.invoiceAmount),
+    varianceAmount: Number(reconciliation.varianceAmount),
+    receiptStatus: reconciliation.receiptStatus,
+    paymentStatus: reconciliation.paymentStatus,
+    createdAt: reconciliation.createdAt,
+    updatedAt: reconciliation.updatedAt,
+  });
+
+  const toPaymentRequest = (paymentRequest: PaymentRequestRecord): PaymentRequestRecord => ({
+    ...paymentRequest,
+    amount: Number(paymentRequest.amount),
+  });
+
+  const toPaymentBatch = (paymentBatch: PaymentBatchRecord): PaymentBatchRecord => ({
+    ...paymentBatch,
+    requestCount: Number(paymentBatch.requestCount),
+    totalAmount: Number(paymentBatch.totalAmount),
+    approvedAmount: Number(paymentBatch.approvedAmount),
+    registeredAmount: Number(paymentBatch.registeredAmount ?? 0),
+    pendingRegistrationAmount: Number(paymentBatch.pendingRegistrationAmount ?? 0),
+    blockedRegistrationAmount: Number(paymentBatch.blockedRegistrationAmount ?? 0),
+    registeredCount: Number(paymentBatch.registeredCount ?? 0),
+    pendingRegistrationCount: Number(paymentBatch.pendingRegistrationCount ?? 0),
+    blockedRegistrationCount: Number(paymentBatch.blockedRegistrationCount ?? 0),
+    executionBlockSummary: paymentBatch.executionBlockSummary ?? null,
+  });
+
+  const toPaymentExecutionRecord = (record: PaymentExecutionRecord): PaymentExecutionRecord => ({
+    ...record,
+    registeredAmount: Number(record.registeredAmount),
+    executionBlockReason: record.executionBlockReason ?? null,
+    executionStage: record.executionStage ?? null,
+    executionNextAction: record.executionNextAction ?? null,
+  });
+
+  const toPaymentBlockResolution = (resolution: PaymentBlockResolutionRecord): PaymentBlockResolutionRecord => ({
+    ...resolution,
+    paymentRequestId: resolution.paymentRequestId ?? null,
+    invoiceId: resolution.invoiceId ?? null,
+    supplierId: resolution.supplierId ?? null,
+    handledBy: resolution.handledBy ?? null,
+  });
+
+  const toPaymentArchiveExceptionRequest = (
+    request: PaymentArchiveExceptionRequestRecord,
+  ): PaymentArchiveExceptionRequestRecord => ({
+    ...request,
+    actionStatus: request.actionStatus ?? '待处理',
+    actionResult: request.actionResult ?? null,
+    closureStatus: request.closureStatus ?? '待关闭',
+    closureResult: request.closureResult ?? null,
+    reviewedBy: request.reviewedBy ?? null,
+    handledBy: request.handledBy ?? null,
+    closedBy: request.closedBy ?? null,
+  });
+
+  const toThreeWayMatch = (match: ThreeWayMatchRecord): ThreeWayMatchRecord => ({
+    ...match,
+    orderAmount: Number(match.orderAmount),
+    invoiceAmount: Number(match.invoiceAmount),
+    varianceAmount: Number(match.varianceAmount),
+  });
+
+  const toVarianceHandling = (varianceHandling: VarianceHandlingRecord): VarianceHandlingRecord => ({
+    ...varianceHandling,
+    varianceAmount: Number(varianceHandling.varianceAmount),
+  });
+
+  const reconciliationQuery = (params?: ListBuyerInvoiceReconciliationsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.stage) searchParams.set('stage', params.stage);
+    if (params?.supplierId) searchParams.set('supplierId', params.supplierId);
+    if (params?.orderId) searchParams.set('orderId', params.orderId);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
+
+  const financeActionQuery = (
+    params?: ListBuyerPaymentRequestsParams | ListBuyerVarianceHandlingsParams,
+    statusKey: 'requestStatus' | 'status' = 'status',
+  ) => {
+    const searchParams = new URLSearchParams();
+    if (statusKey === 'requestStatus' && 'requestStatus' in (params ?? {}) && params?.requestStatus) {
+      searchParams.set('requestStatus', params.requestStatus);
+    }
+    if (statusKey === 'status' && 'status' in (params ?? {}) && params?.status) {
+      searchParams.set('status', params.status);
+    }
+    if (params?.supplierId) searchParams.set('supplierId', params.supplierId);
+    if (params?.orderId) searchParams.set('orderId', params.orderId);
+    if (params?.invoiceId) searchParams.set('invoiceId', params.invoiceId);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
+
+  const paymentBatchQuery = (params?: ListBuyerPaymentBatchesParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.batchStatus) searchParams.set('batchStatus', params.batchStatus);
+    if (params?.supplierId) searchParams.set('supplierId', params.supplierId);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
+
+  const paymentExecutionRecordQuery = (params?: ListBuyerPaymentExecutionRecordsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.paymentBatchNo) searchParams.set('paymentBatchNo', params.paymentBatchNo);
+    if (params?.executionStatus) searchParams.set('executionStatus', params.executionStatus);
+    if (params?.supplierId) searchParams.set('supplierId', params.supplierId);
+    if (params?.invoiceId) searchParams.set('invoiceId', params.invoiceId);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
+
+  const paymentBlockResolutionQuery = (params?: ListBuyerPaymentBlockResolutionsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.paymentBatchNo) searchParams.set('paymentBatchNo', params.paymentBatchNo);
+    if (params?.blockReason) searchParams.set('blockReason', params.blockReason);
+    if (params?.resolutionStatus) searchParams.set('resolutionStatus', params.resolutionStatus);
+    if (params?.invoiceId) searchParams.set('invoiceId', params.invoiceId);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
+
+  const paymentArchiveExceptionRequestQuery = (params?: ListBuyerPaymentArchiveExceptionRequestsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.paymentBatchNo) searchParams.set('paymentBatchNo', params.paymentBatchNo);
+    if (params?.approvalStatus) searchParams.set('approvalStatus', params.approvalStatus);
+    if (params?.exceptionType) searchParams.set('exceptionType', params.exceptionType);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
+
+  const threeWayMatchQuery = (params?: ListBuyerThreeWayMatchesParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.matchStatus) searchParams.set('matchStatus', params.matchStatus);
+    if (params?.supplierId) searchParams.set('supplierId', params.supplierId);
+    if (params?.orderId) searchParams.set('orderId', params.orderId);
+    if (params?.invoiceId) searchParams.set('invoiceId', params.invoiceId);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
+
+  const supplierReconciliationQuery = (params?: ListSupplierInvoiceReconciliationsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.stage) searchParams.set('stage', params.stage);
+    if (params?.orderId) searchParams.set('orderId', params.orderId);
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+  };
 
   return {
     loginPlatform,
@@ -852,14 +1799,77 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     listPlatformTenants() {
       return platformRequest<JavaPlatformTenantDto[]>('/api/v1/platform/tenants');
     },
+    enablePlatformTenant(tenantId: string) {
+      return platformRequest<JavaPlatformTenantDto>(`/api/v1/platform/tenants/${tenantId}/enable`, {
+        method: 'POST',
+      });
+    },
+    disablePlatformTenant(tenantId: string) {
+      return platformRequest<JavaPlatformTenantDto>(`/api/v1/platform/tenants/${tenantId}/disable`, {
+        method: 'POST',
+      });
+    },
+    updatePlatformTenantPlan(
+      tenantId: string,
+      payload: { plan: string; userLimit: number },
+    ) {
+      return platformRequest<JavaPlatformTenantDto>(`/api/v1/platform/tenants/${tenantId}/plan`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    updatePlatformTenantFeatures(
+      tenantId: string,
+      payload: { enabledFeatures: string[] },
+    ) {
+      return platformRequest<JavaPlatformTenantDto>(`/api/v1/platform/tenants/${tenantId}/features`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    listPlatformAnnouncements() {
+      return platformRequest<JavaPlatformAnnouncementDto[]>('/api/v1/platform/announcements');
+    },
+    publishPlatformAnnouncement(payload: { title: string; content: string; audience: string }) {
+      return platformRequest<JavaPlatformAnnouncementDto>('/api/v1/platform/announcements', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    updatePlatformAnnouncement(announcementId: string, payload: { title: string; content: string; audience: string }) {
+      return platformRequest<JavaPlatformAnnouncementDto>(`/api/v1/platform/announcements/${announcementId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    withdrawPlatformAnnouncement(announcementId: string) {
+      return platformRequest<JavaPlatformAnnouncementDto>(`/api/v1/platform/announcements/${announcementId}/withdraw`, {
+        method: 'POST',
+      });
+    },
     listPlatformEnterpriseReviews() {
       return platformRequest<JavaEnterpriseReviewDto[]>('/api/v1/platform/enterprise-reviews');
     },
+    reviewPlatformEnterprise(
+      enterpriseId: string,
+      payload: PlatformEnterpriseReviewPayload,
+    ) {
+      return platformRequest<JavaEnterpriseReviewDto>(`/api/v1/platform/enterprise-reviews/${enterpriseId}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
     getBuyerWorkspace() {
-      return buyerRequest<Omit<JavaBuyerMasterData, 'demands' | 'rfqs' | 'orders' | 'invoices'> & {
+      return buyerRequest<Omit<JavaBuyerMasterData, 'demands' | 'rfqs' | 'orders' | 'deliveries' | 'invoices'> & {
         demands: JavaPurchaseDemandDto[];
         rfqs: JavaRfqDto[];
         orders: JavaPurchaseOrderDto[];
+        deliveries?: JavaDeliveryDto[];
         invoices: JavaInvoiceDto[];
       }>('/api/v1/buyer/workspace')
         .then((workspace) => ({
@@ -867,11 +1877,43 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
           demands: workspace.demands.map(toPurchaseDemand),
           rfqs: workspace.rfqs.map(toRfq),
           orders: workspace.orders.map(toPurchaseOrder),
+          deliveries: (workspace.deliveries ?? []).map(toDelivery),
           invoices: workspace.invoices.map(toInvoice),
         }));
     },
     listBuyerSuppliers() {
       return buyerRequest<BuyerSupplierRelationDto[]>('/api/v1/buyer/suppliers');
+    },
+    createBuyerSupplierRelation(payload: CreateBuyerSupplierRelationPayload) {
+      return buyerRequest<BuyerSupplierRelationDto>('/api/v1/buyer/suppliers', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    updateBuyerSupplierProfile(relationId: string, payload: UpdateBuyerSupplierProfilePayload) {
+      return buyerRequest<BuyerSupplierRelationDto>(`/api/v1/buyer/suppliers/${relationId}/profile`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    updateBuyerSupplierStatus(relationId: string, status: string) {
+      return buyerRequest<BuyerSupplierRelationDto>(`/api/v1/buyer/suppliers/${relationId}/status`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+    },
+    updateBuyerSupplierPerformance(relationId: string, performanceScore: number) {
+      return buyerRequest<BuyerSupplierRelationDto>(`/api/v1/buyer/suppliers/${relationId}/performance`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ performanceScore }),
+      });
+    },
+    listBuyerSupplierQualifications(relationId: string) {
+      return buyerRequest<SupplierQualificationRecord[]>(`/api/v1/buyer/suppliers/${relationId}/qualifications`);
     },
     submitBuyerSupplierAdmission(relationId: string) {
       return buyerRequest<JavaApprovalTaskDto>(`/api/v1/buyer/suppliers/${relationId}/submit`, {
@@ -880,6 +1922,20 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     },
     listBuyerMaterials() {
       return buyerRequest<MaterialDto[]>('/api/v1/buyer/materials');
+    },
+    createBuyerMaterial(payload: SaveMaterialPayload) {
+      return buyerRequest<MaterialDto>('/api/v1/buyer/materials', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    updateBuyerMaterial(materialId: string, payload: SaveMaterialPayload) {
+      return buyerRequest<MaterialDto>(`/api/v1/buyer/materials/${materialId}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
     },
     listBuyerDepartments() {
       return buyerRequest<DepartmentDto[]>('/api/v1/buyer/departments');
@@ -933,6 +1989,19 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       });
       return toPurchaseDemand(demand);
     },
+    async updateBuyerDemand(demandId: string, payload: UpdateDemandPayload) {
+      const demand = await buyerRequest<JavaPurchaseDemandDto>(`/api/v1/buyer/demands/${demandId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          title: payload.title,
+          departmentId: payload.department,
+          budget: payload.budget,
+          lineItems: payload.lineItems,
+        }),
+      });
+      return toPurchaseDemand(demand);
+    },
     submitBuyerDemand(demandId: string) {
       return buyerRequest<JavaApprovalTaskDto>(`/api/v1/buyer/demands/${demandId}/submit`, {
         method: 'POST',
@@ -947,6 +2016,11 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     listBuyerNotifications() {
       return buyerRequest<JavaNotificationDto[]>('/api/v1/buyer/notifications');
     },
+    markBuyerNotificationRead(notificationId: string) {
+      return buyerRequest<JavaNotificationDto>(`/api/v1/buyer/notifications/${notificationId}/read`, {
+        method: 'POST',
+      });
+    },
     listBuyerApprovalTemplates() {
       return buyerRequest<JavaApprovalTemplateDto[]>('/api/v1/buyer/approvals/templates');
     },
@@ -960,25 +2034,36 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
     listBuyerAuditLogs() {
       return buyerRequest<JavaAuditLogDto[]>('/api/v1/buyer/audit-logs');
     },
-    reviewBuyerDemandApproval(demandId: string, approved: boolean) {
+    listBuyerTargetAuditLogs(targetType: string, targetId: string, actions: string[] = [], limit = 50) {
+      const searchParams = new URLSearchParams();
+      searchParams.set('targetType', targetType);
+      searchParams.set('targetId', targetId);
+      if (actions.length > 0) {
+        searchParams.set('actions', actions.join(','));
+      }
+      searchParams.set('limit', String(limit));
+      const targetAuditLogPath = `/api/v1/buyer/audit-logs/target?${searchParams.toString()}`;
+      return buyerRequest<JavaAuditLogDto[]>(targetAuditLogPath);
+    },
+    reviewBuyerDemandApproval(demandId: string, approved: boolean, comment?: string) {
       return buyerRequest<JavaApprovalTaskDto>(`/api/v1/buyer/demands/${demandId}/approval`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ approved }),
+        body: JSON.stringify({ approved, comment }),
       });
     },
-    reviewBuyerSupplierAdmission(relationId: string, approved: boolean) {
+    reviewBuyerSupplierAdmission(relationId: string, approved: boolean, comment?: string) {
       return buyerRequest<JavaApprovalTaskDto>(`/api/v1/buyer/suppliers/${relationId}/approval`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ approved }),
+        body: JSON.stringify({ approved, comment }),
       });
     },
-    reviewBuyerAwardApproval(rfqId: string, awardId: string, approved: boolean) {
+    reviewBuyerAwardApproval(rfqId: string, awardId: string, approved: boolean, comment?: string) {
       return buyerRequest<JavaAwardDecisionDto>(`/api/v1/buyer/rfqs/${rfqId}/award/approval`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ awardId, approved }),
+        body: JSON.stringify({ awardId, approved, comment }),
       });
     },
     async listBuyerRfqs() {
@@ -998,9 +2083,29 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       });
       return toRfq(rfq);
     },
+    async updateBuyerRfq(rfqId: string, payload: UpdateRfqPayload) {
+      const rfq = await buyerRequest<JavaRfqDto>(`/api/v1/buyer/rfqs/${rfqId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          title: payload.title,
+          invitedSupplierIds: payload.invitedSupplierIds,
+          deadlineAt: payload.deadline,
+        }),
+      });
+      return toRfq(rfq);
+    },
     async submitSupplierQuote(rfqId: string, payload: SubmitQuotePayload) {
       const quote = await supplierRequest<JavaQuoteDto>(`/api/v1/supplier/rfqs/${rfqId}/quotes`, {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toQuote(quote);
+    },
+    async updateSupplierQuote(quoteId: string, payload: UpdateQuotePayload) {
+      const quote = await supplierRequest<JavaQuoteDto>(`/api/v1/supplier/quotes/${quoteId}`, {
+        method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -1017,9 +2122,136 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       const orders = await buyerRequest<JavaPurchaseOrderDto[]>('/api/v1/buyer/orders');
       return orders.map(toPurchaseOrder);
     },
+    async listBuyerContracts() {
+      const contracts = await buyerRequest<JavaContractDto[]>('/api/v1/buyer/contracts');
+      return contracts.map(toContractLedger);
+    },
+    async createBuyerContract(payload: CreateContractPayload) {
+      const contract = await buyerRequest<JavaContractDto>('/api/v1/buyer/contracts', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toContractLedger(contract);
+    },
+    async updateBuyerContract(contractId: string, payload: UpdateContractPayload) {
+      const contract = await buyerRequest<JavaContractDto>(
+        `/api/v1/buyer/contracts/${contractId}`,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toContractLedger(contract);
+    },
+    async submitBuyerContractApproval(contractId: string) {
+      const contract = await buyerRequest<JavaContractDto>(
+        `/api/v1/buyer/contracts/${contractId}/approval`,
+        {
+          method: 'POST',
+        },
+      );
+      return toContractLedger(contract);
+    },
+    async reviewBuyerContractApproval(contractId: string, approved: boolean, comment?: string) {
+      const contract = await buyerRequest<JavaContractDto>(
+        `/api/v1/buyer/contracts/${contractId}/approval-review`,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ approved, comment }),
+        },
+      );
+      return toContractLedger(contract);
+    },
+    async listBuyerContractFulfillmentEvents(contractId: string) {
+      const events = await buyerRequest<JavaContractFulfillmentEventDto[]>(
+        `/api/v1/buyer/contracts/${contractId}/fulfillment-events`,
+      );
+      return events.map(toContractFulfillmentEventRecord);
+    },
+    async createBuyerContractFulfillmentEvent(
+      contractId: string,
+      payload: CreateContractFulfillmentEventPayload,
+    ) {
+      const event = await buyerRequest<JavaContractFulfillmentEventDto>(
+        `/api/v1/buyer/contracts/${contractId}/fulfillment-events`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toContractFulfillmentEventRecord(event);
+    },
+    async listBuyerAttachments(ownerType: string, ownerId: string) {
+      const searchParams = new URLSearchParams();
+      searchParams.set('ownerType', ownerType);
+      searchParams.set('ownerId', ownerId);
+      const attachments = await buyerRequest<JavaAttachmentDto[]>(
+        `/api/v1/buyer/attachments?${searchParams.toString()}`,
+      );
+      return attachments.map(toAttachmentRecord);
+    },
+    async createBuyerAttachment(payload: CreateAttachmentPayload) {
+      const attachment = await buyerRequest<JavaAttachmentDto>('/api/v1/buyer/attachments', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toAttachmentRecord(attachment);
+    },
+    async createBuyerAttachmentUploadTicket(payload: CreateAttachmentUploadTicketPayload) {
+      const ticket = await buyerRequest<JavaAttachmentUploadTicketDto>('/api/v1/buyer/attachments/upload-ticket', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toAttachmentUploadTicketRecord(ticket);
+    },
+    async createBuyerAttachmentDownloadLink(attachmentId: string) {
+      const link = await buyerRequest<JavaAttachmentDownloadLinkDto>(
+        `/api/v1/buyer/attachments/${attachmentId}/download-link`,
+        {
+          method: 'POST',
+        },
+      );
+      return toAttachmentDownloadLinkRecord(link);
+    },
+    async updateBuyerContractStatus(contractId: string, payload: UpdateContractStatusPayload) {
+      const contract = await buyerRequest<JavaContractDto>(
+        `/api/v1/buyer/contracts/${contractId}/status`,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toContractLedger(contract);
+    },
+    async updateBuyerContractArchiveStatus(contractId: string, payload: UpdateContractArchiveStatusPayload) {
+      const contract = await buyerRequest<JavaContractDto>(
+        `/api/v1/buyer/contracts/${contractId}/archive-status`,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toContractLedger(contract);
+    },
     async createBuyerOrder(payload: CreateOrderPayload) {
       const order = await buyerRequest<JavaPurchaseOrderDto>('/api/v1/buyer/orders', {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toPurchaseOrder(order);
+    },
+    async updateBuyerOrder(orderId: string, payload: UpdateOrderPayload) {
+      const order = await buyerRequest<JavaPurchaseOrderDto>(`/api/v1/buyer/orders/${orderId}`, {
+        method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -1039,16 +2271,234 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       });
       return toDelivery(delivery);
     },
+    async updateSupplierDelivery(deliveryId: string, payload: UpdateDeliveryPayload) {
+      const delivery = await supplierRequest<JavaDeliveryDto>(`/api/v1/supplier/deliveries/${deliveryId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toDelivery(delivery);
+    },
     createBuyerReceipt(orderId: string, payload: CreateReceiptPayload) {
       return buyerRequest<JavaReceiptDto>(`/api/v1/buyer/orders/${orderId}/receipts`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ result: payload.result }),
       });
     },
     async listBuyerInvoices() {
       const invoices = await buyerRequest<JavaInvoiceDto[]>('/api/v1/buyer/invoices');
       return invoices.map(toInvoice);
+    },
+    async listBuyerInvoiceReconciliations(params?: ListBuyerInvoiceReconciliationsParams) {
+      const reconciliations = await buyerRequest<JavaInvoiceReconciliationDto[]>(
+        `/api/v1/buyer/invoice-reconciliations${reconciliationQuery(params)}`,
+      );
+      return reconciliations.map(toInvoiceReconciliation);
+    },
+    async listBuyerPaymentBatches(params?: ListBuyerPaymentBatchesParams) {
+      const paymentBatches = await buyerRequest<PaymentBatchRecord[]>(
+        `/api/v1/buyer/payment-batches${paymentBatchQuery(params)}`,
+      );
+      return paymentBatches.map(toPaymentBatch);
+    },
+    async listBuyerPaymentExecutionRecords(params?: ListBuyerPaymentExecutionRecordsParams) {
+      const records = await buyerRequest<PaymentExecutionRecord[]>(
+        `/api/v1/buyer/payment-execution-records${paymentExecutionRecordQuery(params)}`,
+      );
+      return records.map(toPaymentExecutionRecord);
+    },
+    async registerBuyerPaymentExecutionRecord(executionRecordId: string) {
+      const record = await buyerRequest<PaymentExecutionRecord>(
+        `/api/v1/buyer/payment-execution-records/${executionRecordId}/registration`,
+        {
+          method: 'POST',
+        },
+      );
+      return toPaymentExecutionRecord(record);
+    },
+    async listBuyerPaymentBlockResolutions(params?: ListBuyerPaymentBlockResolutionsParams) {
+      const resolutions = await buyerRequest<PaymentBlockResolutionRecord[]>(
+        `/api/v1/buyer/payment-block-resolutions${paymentBlockResolutionQuery(params)}`,
+      );
+      return resolutions.map(toPaymentBlockResolution);
+    },
+    async listBuyerPaymentArchiveExceptionRequests(params?: ListBuyerPaymentArchiveExceptionRequestsParams) {
+      const requests = await buyerRequest<PaymentArchiveExceptionRequestRecord[]>(
+        `/api/v1/buyer/payment-archive-exception-requests${paymentArchiveExceptionRequestQuery(params)}`,
+      );
+      return requests.map(toPaymentArchiveExceptionRequest);
+    },
+    async createBuyerPaymentArchiveExceptionRequest(payload: CreatePaymentArchiveExceptionRequestPayload) {
+      const request = await buyerRequest<PaymentArchiveExceptionRequestRecord>(
+        '/api/v1/buyer/payment-archive-exception-requests',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toPaymentArchiveExceptionRequest(request);
+    },
+    reviewBuyerPaymentArchiveExceptionRequest(requestId: string, approved: boolean, comment?: string) {
+      return buyerRequest<JavaApprovalTaskDto>(
+        `/api/v1/buyer/payment-archive-exception-requests/${requestId}/approval`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ approved, comment }),
+        },
+      );
+    },
+    async completeBuyerPaymentArchiveExceptionAction(
+      requestId: string,
+      payload: CompletePaymentArchiveExceptionActionPayload,
+    ) {
+      const request = await buyerRequest<PaymentArchiveExceptionRequestRecord>(
+        `/api/v1/buyer/payment-archive-exception-requests/${requestId}/controlled-action`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toPaymentArchiveExceptionRequest(request);
+    },
+    async closeBuyerPaymentArchiveExceptionRequest(
+      requestId: string,
+      payload: ClosePaymentArchiveExceptionRequestPayload,
+    ) {
+      const request = await buyerRequest<PaymentArchiveExceptionRequestRecord>(
+        `/api/v1/buyer/payment-archive-exception-requests/${requestId}/closure`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toPaymentArchiveExceptionRequest(request);
+    },
+    async createBuyerPaymentBlockResolution(payload: CreatePaymentBlockResolutionPayload) {
+      const resolution = await buyerRequest<PaymentBlockResolutionRecord>('/api/v1/buyer/payment-block-resolutions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toPaymentBlockResolution(resolution);
+    },
+    async updateBuyerPaymentBlockResolutionStatus(
+      resolutionId: string,
+      payload: UpdatePaymentBlockResolutionStatusPayload,
+    ) {
+      const resolution = await buyerRequest<PaymentBlockResolutionRecord>(
+        `/api/v1/buyer/payment-block-resolutions/${resolutionId}/status`,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toPaymentBlockResolution(resolution);
+    },
+    async updateBuyerPaymentBatchStatus(
+      paymentBatchNo: string,
+      payload: UpdatePaymentBatchStatusPayload,
+    ) {
+      const paymentBatch = await buyerRequest<PaymentBatchRecord>(
+        `/api/v1/buyer/payment-batches/${encodeURIComponent(paymentBatchNo)}/status`,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toPaymentBatch(paymentBatch);
+    },
+    async listBuyerThreeWayMatches(params?: ListBuyerThreeWayMatchesParams) {
+      const matches = await buyerRequest<ThreeWayMatchRecord[]>(
+        `/api/v1/buyer/three-way-matches${threeWayMatchQuery(params)}`,
+      );
+      return matches.map(toThreeWayMatch);
+    },
+    async rebuildBuyerThreeWayMatches() {
+      const result = await buyerRequest<ThreeWayMatchRebuildResult>('/api/v1/buyer/three-way-matches/rebuild', {
+        method: 'POST',
+      });
+      return {
+        ...result,
+        rebuiltCount: Number(result.rebuiltCount),
+      };
+    },
+    async listBuyerPaymentRequests(params?: ListBuyerPaymentRequestsParams) {
+      const paymentRequests = await buyerRequest<PaymentRequestRecord[]>(
+        `/api/v1/buyer/payment-requests${financeActionQuery(params, 'requestStatus')}`,
+      );
+      return paymentRequests.map(toPaymentRequest);
+    },
+    async createBuyerPaymentRequest(payload: CreatePaymentRequestPayload) {
+      const paymentRequest = await buyerRequest<PaymentRequestRecord>('/api/v1/buyer/payment-requests', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toPaymentRequest(paymentRequest);
+    },
+    async updateBuyerPaymentRequestStatus(
+      paymentRequestId: string,
+      payload: UpdatePaymentRequestStatusPayload,
+    ) {
+      const paymentRequest = await buyerRequest<PaymentRequestRecord>(
+        `/api/v1/buyer/payment-requests/${paymentRequestId}/status`,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toPaymentRequest(paymentRequest);
+    },
+    async listBuyerVarianceHandlings(params?: ListBuyerVarianceHandlingsParams) {
+      const varianceHandlings = await buyerRequest<VarianceHandlingRecord[]>(
+        `/api/v1/buyer/variance-handlings${financeActionQuery(params, 'status')}`,
+      );
+      return varianceHandlings.map(toVarianceHandling);
+    },
+    async createBuyerVarianceHandling(payload: CreateVarianceHandlingPayload) {
+      const varianceHandling = await buyerRequest<VarianceHandlingRecord>('/api/v1/buyer/variance-handlings', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toVarianceHandling(varianceHandling);
+    },
+    async createBuyerVarianceHandlingFromThreeWayMatch(matchId: string) {
+      const varianceHandling = await buyerRequest<VarianceHandlingRecord>(
+        `/api/v1/buyer/three-way-matches/${matchId}/variance-handling`,
+        {
+          method: 'POST',
+        },
+      );
+      return toVarianceHandling(varianceHandling);
+    },
+    async updateBuyerVarianceHandlingStatus(
+      varianceHandlingId: string,
+      payload: UpdateVarianceHandlingStatusPayload,
+    ) {
+      const varianceHandling = await buyerRequest<VarianceHandlingRecord>(
+        `/api/v1/buyer/variance-handlings/${varianceHandlingId}/status`,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      return toVarianceHandling(varianceHandling);
+    },
+    async listSupplierInvoiceReconciliations(params?: ListSupplierInvoiceReconciliationsParams) {
+      const reconciliations = await supplierRequest<JavaInvoiceReconciliationDto[]>(
+        `/api/v1/supplier/invoice-reconciliations${supplierReconciliationQuery(params)}`,
+      );
+      return reconciliations.map(toInvoiceReconciliation);
     },
     async createSupplierInvoice(orderId: string, payload: CreateInvoicePayload) {
       const invoice = await supplierRequest<JavaInvoiceDto>(`/api/v1/supplier/orders/${orderId}/invoices`, {
@@ -1058,11 +2508,27 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
       });
       return toInvoice(invoice);
     },
+    async updateSupplierReceivable(invoiceId: string, payload: UpdateSupplierReceivablePayload) {
+      const invoice = await supplierRequest<JavaInvoiceDto>(`/api/v1/supplier/invoices/${invoiceId}/reconciliation`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return toInvoice(invoice);
+    },
     async registerBuyerPayment(invoiceId: string, payload: RegisterPaymentPayload) {
       const invoice = await buyerRequest<JavaInvoiceDto>(`/api/v1/buyer/invoices/${invoiceId}/payments`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ paymentStatus: payload.paymentStatus }),
+      });
+      return toInvoice(invoice);
+    },
+    async updateBuyerInvoice(invoiceId: string, payload: UpdateInvoicePayload) {
+      const invoice = await buyerRequest<JavaInvoiceDto>(`/api/v1/buyer/invoices/${invoiceId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ paymentStatus: payload.paymentStatus }),
       });
       return toInvoice(invoice);
     },
@@ -1072,18 +2538,44 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
         opportunities: JavaRfqDto[];
         quotes: JavaQuoteDto[];
         orders: JavaPurchaseOrderDto[];
+        deliveries?: JavaDeliveryDto[];
         invoices: JavaInvoiceDto[];
+        notifications?: JavaNotificationDto[];
       }>('/api/v1/supplier/workspace');
       return {
         profile: workspace.profile,
         opportunities: workspace.opportunities.map(toRfq),
         quotes: workspace.quotes.map(toQuote),
         orders: workspace.orders.map(toPurchaseOrder),
+        deliveries: (workspace.deliveries ?? []).map(toDelivery),
         invoices: workspace.invoices.map(toInvoice),
+        notifications: workspace.notifications ?? [],
       };
     },
     getSupplierProfile() {
       return supplierRequest<JavaSupplierProfileDto>('/api/v1/supplier/profile');
+    },
+    updateSupplierProfile(payload: UpdateSupplierProfilePayload) {
+      return supplierRequest<JavaSupplierProfileDto>('/api/v1/supplier/profile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    listSupplierQualifications() {
+      return supplierRequest<SupplierQualificationRecord[]>('/api/v1/supplier/qualifications');
+    },
+    createSupplierQualification(payload: CreateSupplierQualificationPayload) {
+      return supplierRequest<SupplierQualificationRecord>('/api/v1/supplier/qualifications', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    },
+    markSupplierNotificationRead(notificationId: string) {
+      return supplierRequest<JavaNotificationDto>(`/api/v1/supplier/notifications/${notificationId}/read`, {
+        method: 'POST',
+      });
     },
     async listSupplierRfqs() {
       const rfqs = await supplierRequest<JavaRfqDto[]>('/api/v1/supplier/rfqs');
@@ -1105,15 +2597,56 @@ export const createJavaProcurementApiClient = (options: JavaProcurementApiClient
 };
 
 export const loadJavaBuyerMasterData = async (client: JavaProcurementApiClient): Promise<JavaBuyerMasterData> => {
-  const [workspace, roles, approvalTemplates] = await Promise.all([
-    client.getBuyerWorkspace(),
-    client.listBuyerRoles(),
-    client.listBuyerApprovalTemplates(),
-  ]);
-  return {
-    ...workspace,
+  const [
+    workspace,
+    departments,
     roles,
     approvalTemplates,
+    invoiceReconciliations,
+    paymentBatches,
+    paymentExecutionRecords,
+    paymentBlockResolutions,
+    paymentArchiveExceptionRequests,
+    threeWayMatches,
+    paymentRequests,
+    varianceHandlings,
+    contracts,
+  ] = await Promise.all([
+    client.getBuyerWorkspace(),
+    client.listBuyerDepartments(),
+    client.listBuyerRoles(),
+    client.listBuyerApprovalTemplates(),
+    client.listBuyerInvoiceReconciliations(),
+    client.listBuyerPaymentBatches().catch(() => []),
+    client.listBuyerPaymentExecutionRecords().catch(() => []),
+    client.listBuyerPaymentBlockResolutions().catch(() => []),
+    client.listBuyerPaymentArchiveExceptionRequests().catch(() => []),
+    client.listBuyerThreeWayMatches().catch(() => []),
+    client.listBuyerPaymentRequests().catch(() => []),
+    client.listBuyerVarianceHandlings().catch(() => []),
+    client.listBuyerContracts().catch(() => []),
+  ]);
+  const buyerSupplierQualificationEntries = await Promise.all(
+    workspace.suppliers.map(async (supplier) => [
+      supplier.id,
+      await client.listBuyerSupplierQualifications(supplier.id).catch(() => []),
+    ] as const),
+  );
+  return {
+    ...workspace,
+    departments,
+    roles,
+    approvalTemplates,
+    invoiceReconciliations,
+    paymentBatches,
+    paymentExecutionRecords,
+    paymentBlockResolutions,
+    paymentArchiveExceptionRequests,
+    threeWayMatches,
+    paymentRequests,
+    varianceHandlings,
+    contracts,
+    buyerSupplierQualifications: Object.fromEntries(buyerSupplierQualificationEntries),
   };
 };
 
@@ -1129,6 +2662,7 @@ export const applyJavaBuyerMasterData = (
     level: supplier.level as SupplierLevel,
     categories: supplier.categories,
     performanceScore: supplier.performanceScore,
+    qualifications: masterData.buyerSupplierQualifications?.[supplier.id] ?? [],
   }));
 
   const suppliers: Enterprise[] = masterData.suppliers.map((supplier) => ({
@@ -1157,13 +2691,41 @@ export const applyJavaBuyerMasterData = (
     scope: 'buyer',
   }));
 
+  const departments: DepartmentItem[] = (masterData.departments ?? []).map((department) => ({
+    id: department.id,
+    tenantId: department.tenantId,
+    name: department.name,
+    parentId: department.parentId,
+    status: department.status,
+  }));
+  const reconciliationsByInvoice = new Map(
+    (masterData.invoiceReconciliations ?? []).map((reconciliation) => [reconciliation.invoiceId, reconciliation]),
+  );
+  const invoices = masterData.invoices.map((invoice) => {
+    const reconciliation = reconciliationsByInvoice.get(invoice.id);
+    if (!reconciliation) return invoice;
+    return {
+      ...invoice,
+      orderAmount: reconciliation.orderAmount,
+      varianceAmount: reconciliation.varianceAmount,
+      receiptStatus: reconciliation.receiptStatus,
+      reconciliationStatus: reconciliation.stage,
+      reconciliationNo: reconciliation.reconciliationNo,
+      reconciliationStage: reconciliation.stage,
+      nextReconciliationAction: reconciliation.nextAction,
+    };
+  });
+
   return {
     ...workspace,
     users,
+    departments,
     demands: masterData.demands,
     rfqs: masterData.rfqs,
     orders: masterData.orders,
-    invoices: masterData.invoices,
+    contracts: masterData.contracts ?? workspace.contracts ?? [],
+    deliveries: masterData.deliveries ?? [],
+    invoices,
     auditLogs: masterData.auditLogs,
     privateSupplierRelations,
     suppliers,
@@ -1176,6 +2738,7 @@ const toTenantPlan = (plan: string): ProcurementMvpModel['tenants'][number]['pla
     MVP: '标准版',
     starter: '标准版',
     standard: '标准版',
+    pro: '专业版',
     professional: '专业版',
     enterprise: '旗舰版',
   };
@@ -1187,6 +2750,7 @@ const toTenantStatus = (status: string): ProcurementMvpModel['tenants'][number][
     active: '已启用',
     trial: '试用中',
     pending: '待审核',
+    inactive: '停用',
   };
   return statusMap[status] ?? (status as ProcurementMvpModel['tenants'][number]['status']);
 };
@@ -1224,6 +2788,9 @@ export const applyJavaPlatformWorkspaceData = (
     type: enterprise.type,
     industry: enterprise.type === 'supplier' ? '待审核企业' : '平台企业',
     verified: enterprise.verified,
+    reviewComment: enterprise.reviewComment,
+    profileConfirmed: enterprise.profileConfirmed,
+    riskConfirmed: enterprise.riskConfirmed,
   }));
 
   const nextModel: ProcurementMvpModel = {
@@ -1244,7 +2811,16 @@ export const applyJavaPlatformWorkspaceData = (
 export const loadJavaSupplierWorkspaceData = async (
   client: JavaProcurementApiClient,
 ): Promise<JavaSupplierWorkspaceData> => {
-  return client.getSupplierWorkspace();
+  const [workspace, invoiceReconciliations, qualifications] = await Promise.all([
+    client.getSupplierWorkspace(),
+    client.listSupplierInvoiceReconciliations(),
+    client.listSupplierQualifications(),
+  ]);
+  return {
+    ...workspace,
+    invoiceReconciliations,
+    qualifications,
+  };
 };
 
 export const applyJavaSupplierWorkspaceData = (
@@ -1255,6 +2831,23 @@ export const applyJavaSupplierWorkspaceData = (
     ...rfq,
     quotes: supplierData.quotes.filter((quote) => quote.rfqId === rfq.id),
   }));
+  const reconciliationsByInvoice = new Map(
+    (supplierData.invoiceReconciliations ?? []).map((reconciliation) => [reconciliation.invoiceId, reconciliation]),
+  );
+  const invoices = supplierData.invoices.map((invoice) => {
+    const reconciliation = reconciliationsByInvoice.get(invoice.id);
+    if (!reconciliation) return invoice;
+    return {
+      ...invoice,
+      orderAmount: reconciliation.orderAmount,
+      varianceAmount: reconciliation.varianceAmount,
+      receiptStatus: reconciliation.receiptStatus,
+      reconciliationStatus: reconciliation.stage,
+      reconciliationNo: reconciliation.reconciliationNo,
+      reconciliationStage: reconciliation.stage,
+      nextReconciliationAction: reconciliation.nextAction,
+    };
+  });
 
   return {
     ...workspace,
@@ -1264,12 +2857,19 @@ export const applyJavaSupplierWorkspaceData = (
       type: 'supplier',
       industry: supplierData.profile.industry,
       verified: supplierData.profile.verified,
+      creditCode: supplierData.profile.creditCode,
+      legalPerson: supplierData.profile.legalPerson,
+      verifiedStatus: supplierData.profile.verifiedStatus,
+      profileStatus: supplierData.profile.profileStatus,
     },
     connectedBuyerNames: supplierData.profile.connectedBuyerNames,
     opportunities,
     quotes: supplierData.quotes,
     orders: supplierData.orders,
-    invoices: supplierData.invoices,
+    deliveries: supplierData.deliveries,
+    invoices,
+    qualifications: supplierData.qualifications ?? workspace.qualifications ?? [],
+    notifications: supplierData.notifications ?? [],
   };
 };
 

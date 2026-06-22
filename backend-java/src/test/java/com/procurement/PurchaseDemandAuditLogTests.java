@@ -4,6 +4,8 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.domain.ApprovalTemplate;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
@@ -83,6 +85,31 @@ class PurchaseDemandAuditLogTests {
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("dem-")));
   }
 
+  @Test
+  void submittingPurchaseDemandRecordsTenantScopedAuditLog() {
+    TenantContext.set("tenant-1", null, "buyer-user-1");
+    when(purchaseDemandMapper.findByTenantAndId("tenant-1", "demand-1"))
+        .thenReturn(demand("demand-1"));
+    when(approvalTemplateMapper.findActiveByTenantAndBizType("tenant-1", "purchase_demand"))
+        .thenReturn(template("TPL_PURCHASE_DEMAND", "purchase_demand"));
+    when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
+        .thenReturn("approver-1");
+    when(approvalTaskMapper.findByTenantAndId(
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> approvalTask(invocation.getArgument(1)));
+
+    purchaseDemandApplicationService.submit("demand-1");
+
+    verify(auditLogMapper).insert(
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("audit-")),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("buyer-user-1"),
+        org.mockito.ArgumentMatchers.eq("purchase_demand.submitted"),
+        org.mockito.ArgumentMatchers.eq("purchase_demand"),
+        org.mockito.ArgumentMatchers.eq("demand-1"));
+  }
+
   private PurchaseDemand demand(String id) {
     return new PurchaseDemand(
         id,
@@ -94,5 +121,21 @@ class PurchaseDemandAuditLogTests {
         "草稿",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+  }
+
+  private ApprovalTemplate template(String code, String bizType) {
+    return new ApprovalTemplate(code, "tenant-1", bizType, "审批模板", "role-buyer-owner", "active");
+  }
+
+  private ApprovalTask approvalTask(String id) {
+    return new ApprovalTask(
+        id,
+        "tenant-1",
+        "purchase_demand",
+        "demand-1",
+        "approver-1",
+        "待审批",
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"),
+        null);
   }
 }

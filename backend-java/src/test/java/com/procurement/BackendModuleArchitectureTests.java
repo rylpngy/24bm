@@ -429,7 +429,9 @@ class BackendModuleArchitectureTests {
         .contains("SUPPLIER = \"supplier\"");
     assertThat(Files.readString(status)).contains("ACTIVE = \"active\"");
     assertThat(Files.readString(auditAction))
-        .contains("PUBLISHED = \"platform_announcement.published\"");
+        .contains("PUBLISHED = \"platform_announcement.published\"")
+        .contains("UPDATED = \"platform_announcement.updated\"")
+        .contains("WITHDRAWN = \"platform_announcement.withdrawn\"");
     assertThat(Files.readString(policy))
         .contains("void requireSupported")
         .contains("PlatformAnnouncementAudience.ALL")
@@ -443,7 +445,10 @@ class BackendModuleArchitectureTests {
         .contains("PlatformAnnouncementAudience.BUYER")
         .contains("PlatformAnnouncementAudience.SUPPLIER")
         .contains("PlatformAnnouncementStatus.ACTIVE")
+        .contains("PlatformAnnouncementStatus.WITHDRAWN")
         .contains("PlatformAnnouncementAuditAction.PUBLISHED")
+        .contains("PlatformAnnouncementAuditAction.UPDATED")
+        .contains("PlatformAnnouncementAuditAction.WITHDRAWN")
         .doesNotContain("private static final String ACTIVE_STATUS")
         .doesNotContain("private static final String PLATFORM_ANNOUNCEMENT_PUBLISHED_ACTION")
         .doesNotContain("private static final String ALL_AUDIENCE")
@@ -765,7 +770,7 @@ class BackendModuleArchitectureTests {
     assertThat(transitionSource)
         .contains("boolean isSupportedTarget")
         .contains("void requireSupportedTarget")
-        .contains("boolean isIdempotentRegistration")
+        .contains("boolean isDuplicateRegistration")
         .contains("void requireTransition")
         .contains("Unsupported payment status")
         .contains("InvoicePaymentStatus.PENDING_PAYMENT")
@@ -778,7 +783,7 @@ class BackendModuleArchitectureTests {
         .contains("invoicePaymentStatusTransition.requireTransition")
         .doesNotContain("Unsupported payment status")
         .doesNotContain("private boolean isSupportedPaymentTarget")
-        .doesNotContain("private boolean isIdempotentPaymentRegistration")
+        .doesNotContain("private boolean isDuplicatePaymentRegistration")
         .doesNotContain("private void requirePaymentTransition");
   }
 

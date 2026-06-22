@@ -7,6 +7,7 @@ describe('buyer approval inbox UI', () => {
   it('shows the business object status separately from the approval task status', () => {
     const app = read('App.tsx');
     const apiClient = read('services/procurementApiClient.ts');
+    const buyerAdminUi = read('data/buyerAdminUi.ts');
 
     expect(apiClient).toContain('businessStatus?: string');
     expect(apiClient).toContain('priority?: number');
@@ -19,16 +20,20 @@ describe('buyer approval inbox UI', () => {
     expect(app).toContain('sortedPendingApprovals');
     expect(app).toContain('recentApprovals');
     expect(app).toContain('buyerNotifications');
-    expect(app).toContain('approval.businessStatus');
-    expect(app).toContain('approval.priority');
-    expect(app).toContain('approval.submittedByName');
+    expect(app).toContain('buildApprovalCardFacts(approval)');
     expect(app).toContain('approval.actedAt');
-    expect(app).toContain('业务状态');
-    expect(app).toContain('优先级');
-    expect(app).toContain('提交人');
+    expect(app).toContain('InlineFactGrid');
+    expect(buyerAdminUi).toContain('approval.businessStatus');
+    expect(buyerAdminUi).toContain('approval.priority');
+    expect(buyerAdminUi).toContain('approval.submittedByName');
+    expect(buyerAdminUi).toContain('业务状态');
+    expect(buyerAdminUi).toContain('优先级');
+    expect(buyerAdminUi).toContain('提交人');
     expect(app).toContain('最近审批记录');
     expect(app).toContain('处理时间');
-    expect(app).toContain('审批结果通知');
+    expect(app).toContain('审批消息中心');
+    expect(app).toContain('审批结果通知、驳回原因、流程提醒');
+    expect(app).toContain('MessageCenterPanel');
     expect(app).toContain('未读');
   });
 });

@@ -1,0 +1,142 @@
+# 阶段三第二轮执行清单
+
+## 目标
+
+第二轮目标是从后台雏形进入可操作后台。第一轮已经解决“三端后台壳、完整菜单、核心列表、详情和轻量动作入口”，第二轮要把高频业务动作做深，让页面不只是可浏览，还能承接更接近真实业务的填写、校验、状态反馈和 Java 模式联调。
+
+本轮仍坚持采购方主流程优先。平台端和供应商端继续补关键操作，但不抢占采购需求、RFQ、供应商准入、收货验收、发票付款这些主流程工作。
+
+## 范围边界
+
+本轮继续沿用当前前端架构：
+
+- 不新增 react-router，仍使用 `activeRole` / `activeModule` / 选中记录状态切换。
+- 继续通过 `services/procurementApiClient.ts` 统一访问 mock 与 Java 数据。
+- 优先复用现有组件和视觉风格，不搬旧业务页面。
+- 优先补已有 API 或已有数据结构能承接的动作，不为了页面细节提前扩张后端边界。
+
+本轮明确不做：
+
+- 不做商城、竞价、招标、合同和 AI。
+- 不做真实支付、税控开票、电子签章。
+- 不做 ERP/OA/财务系统深度集成。
+- 不做复杂 BI、套餐计费和供应商市场。
+
+## 验收门槛
+
+每个第二轮小提交至少满足：
+
+| 门槛 | 要求 |
+| --- | --- |
+| 测试优先 | 先补对应页面、数据映射或文档测试，再实现 |
+| 前端回归 | `npm test` 通过 |
+| 构建回归 | `npm run build` 通过 |
+| Java 主流程 | 涉及真实 API 的改动需要执行 `npm run java:smoke` |
+| Java 模式逐页联调 | 涉及页面结构、数据映射或状态流的改动，需要复核 `docs/stage-three-java-page-walkthrough.md` 中对应页面 |
+| 空态与错误态 | 页面不得出现 `加载失败`、`argument type mismatch`、React runtime error 或横向溢出 |
+
+## 第一批执行任务
+
+第一批任务只处理采购方高频主流程，避免第二轮一开始又铺太散。
+
+| 优先级 | 任务 | 本轮验收点 | 主要文件 |
+| --- | --- | --- | --- |
+| P0 | 采购需求新建/编辑 | 新建需求表单字段更完整，预算、期望日期、物料行、附件入口和提交审批反馈清晰 | `App.tsx`、`services/procurementApiClient.ts` |
+| P0 | RFQ 创建与邀请供应商 | 从已审批需求创建 RFQ 时可选择供应商、截止日期和报价要求；邀请供应商有状态反馈 | `App.tsx`、`services/procurementApiClient.ts` |
+| P1 | 供应商准入资料 | 准入动作从理由/品类确认扩展到资质摘要、联系人、授权品类和黑名单提示 | `App.tsx` |
+| P1 | 收货验收附件和异常处理 | 登记收货从简单结果扩展到验收备注、异常原因、附件入口和差异处理提示 | `App.tsx` |
+| P1 | 发票付款对账入口 | 登记付款补付款备注、对账入口、付款申请状态和三单匹配提示 | `App.tsx` |
+| P2 | 详情抽屉和筛选 | 采购需求、RFQ、订单、发票页补常用筛选和更稳定的详情展示结构 | `App.tsx` |
+
+## 已完成的小步验收记录
+
+当前第二轮第一批已经完成一组表单校验和反馈收尾：采购方主流程的高频动作已经从“按钮入口”推进到“可填写、可校验、有反馈”的后台操作形态，并同步补到了平台端企业审核和公告发布。第二轮后续已经开始补详情编辑和 Java 持久化闭环，采购需求草稿编辑、RFQ 报价中编辑、订单预计到货日期编辑、发票付款状态编辑和平台公告生命周期已形成页面细节优化样板。
+
+| 序号 | 增量 | 当前结论 | 验收依据 |
+| --- | --- | --- | --- |
+| 1 | 需求预算超限提示 | 新建需求表单已校验预算、期望日期、物料行和附件提示，预算超限会给出明确反馈 | `scripts/buyer-demand-create-form-ui.test.ts` |
+| 2 | RFQ 邀请校验 | RFQ 创建与邀请供应商已校验准入供应商选择、报价截止日期和报价要求 | `scripts/buyer-rfq-create-form-ui.test.ts` |
+| 3 | 定标和订单动作校验 | 报价定标、定标审批和生成订单动作已补定标理由、预计收货日期等必要校验 | `scripts/buyer-award-order-action-forms-ui.test.ts` |
+| 4 | 收货和付款登记校验 | 收货登记、异常说明、付款登记和对账提示已从轻量动作升级为可填写表单 | `scripts/buyer-fulfillment-action-forms-ui.test.ts` |
+| 5 | 审批处理校验 | 审批通过/驳回已要求处理意见和确认项，避免误操作 | `scripts/buyer-approval-action-forms-ui.test.ts` |
+| 6 | 供应商准入校验 | 供应商准入已补准入理由、资质摘要、联系人、授权品类和风险提示确认 | `scripts/buyer-supplier-admission-ui.test.ts` |
+| 7 | 平台企业审核校验 | 平台企业审核已补审核意见、资料确认和风险确认，支撑企业入驻审核闭环 | `scripts/platform-enterprise-review-actions-ui.test.ts` |
+| 8 | 平台公告发布校验 | 平台公告发布已校验标题、正文、发布范围和发布确认 | `scripts/platform-announcement-publish-form-ui.test.ts` |
+| 9 | 详情筛选摘要 | 采购需求、RFQ、订单、收货、发票页已补当前筛选、命中记录、已选详情和清空筛选入口 | `scripts/buyer-detail-filter-summary-ui.test.ts` |
+| 10 | 供应商端筛选摘要 | 供应商商机、报价、销售订单、发票应收页已补状态筛选、命中记录和清空筛选入口 | `scripts/supplier-filter-summary-ui.test.ts` |
+| 11 | 详情视觉层级 | 采购需求、RFQ、订单、发票详情已统一详情头、摘要事实和分组标题结构 | `scripts/buyer-detail-visual-hierarchy-ui.test.ts` |
+| 12 | 三端详情层级 | 平台企业审核、平台公告、供应商报价记录、供应商发票应收卡片已复用详情头和分组结构 | `scripts/cross-role-detail-visual-hierarchy-ui.test.ts` |
+| 13 | 动作按钮反馈 | 公告发布、企业审核、供应商报价、订单确认、发货和开票动作已统一禁用、处理中和 `aria-busy` 反馈 | `scripts/action-button-feedback-consistency-ui.test.ts` |
+| 14 | 移动端布局收口 | 后台壳、移动端导航、顶部工具栏、工作区选择器和状态筛选器已补窄屏宽度约束，降低横向溢出风险 | `scripts/mobile-layout-overflow-ui.test.ts` |
+| 15 | 空态一致性 | 平台待审核、供应商询价邀请筛选无结果和共享列表空态已统一复用 EmptyState | `scripts/empty-state-consistency-ui.test.ts` |
+| 16 | 提示态一致性 | 平台、采购方、供应商三端主流程运行结果已统一复用 FeedbackNotice，并按成功、失败、普通信息区分反馈样式 | `scripts/feedback-notice-consistency-ui.test.ts` |
+| 17 | 只读页详情入口 | 平台租户、企业审核、公告以及供应商报价、销售订单、应收发票列表已补筛选摘要、已选记录和详情入口 | `scripts/platform-supplier-readonly-detail-affordance-ui.test.ts` |
+| 18 | 附件中心入口 | 采购需求、收货验收、发票付款和供应商资质已补附件中心入口、业务对象关联、可见范围和元数据登记边界说明 | `scripts/attachment-center-entry-ui.test.ts` |
+| 19 | 消息中心入口 | 采购方首页、审批消息区和供应商工作台已补消息中心入口、未读摘要、通知卡片和空态，供应商通知先由商机、订单、发票状态派生 | `scripts/message-center-entry-ui.test.ts` |
+| 20 | 权限差异提示 | 平台、采购方、供应商工作台已补角色能力、不可执行动作、数据边界和 Java/Mock 模式差异说明 | `scripts/permission-boundary-hints-ui.test.ts` |
+| 21 | 操作日志筛选 | 采购方审计日志已补对象类型、动作类型组合筛选、命中摘要、已选详情和清空筛选入口 | `scripts/buyer-audit-log-filtering-ui.test.ts` |
+| 22 | 供应商档案维护入口 | 供应商企业档案页已补企业档案草稿、联系人维护、授权品类、资质上传入口和附件元数据边界说明 | `scripts/supplier-profile-maintenance-entry-ui.test.ts` |
+| 23 | 供应商报价与履约详情 | 供应商报价记录和销售订单页已补选中详情面板，覆盖关联询价、定标结果、发货详情、发票应收和履约轨迹 | `scripts/supplier-quote-order-detail-panels-ui.test.ts` |
+| 24 | 平台公告生命周期入口 | 平台公告页已补编辑草稿、撤回公告、影响范围、站内通知和审计留痕说明，Java API 后续扩展 | `scripts/platform-announcement-lifecycle-entry-ui.test.ts` |
+| 25 | 平台租户功能开关详情 | 平台租户列表已补选中租户详情面板，覆盖套餐容量、功能开关、多租户数据隔离和审计动作说明 | `scripts/platform-tenant-detail-panel-ui.test.ts` |
+| 26 | 平台企业审核详情 | 平台企业审核页已补选中审核详情面板，覆盖入驻资料、风险检查、审核轨迹和处理建议 | `scripts/platform-enterprise-review-detail-panel-ui.test.ts` |
+| 27 | 采购需求详情编辑闭环 | 采购需求详情页已补草稿需求编辑、保存、Java 更新接口和刷新后回显反馈，非草稿状态保持不可编辑边界 | `scripts/buyer-demand-detail-edit-ui.test.ts`、`PurchaseDemandUpdateDraftTests` |
+| 28 | RFQ 详情编辑闭环 | RFQ 详情页已补报价中询价编辑、邀请供应商重选、Java 更新接口和刷新后回显反馈，定标审批中和已定标状态保持不可编辑边界 | `scripts/buyer-rfq-detail-edit-ui.test.ts`、`RfqUpdateQuotingTests` |
+| 29 | 订单详情编辑闭环 | 订单详情页已补预计到货日期编辑、Java 更新接口和刷新后回显反馈，已收货订单保持不可编辑边界 | `scripts/buyer-order-detail-edit-ui.test.ts`、`PurchaseOrderUpdateExpectedReceiptTests` |
+| 30 | 发票付款详情编辑闭环 | 发票详情页已补付款状态编辑、Java 更新接口和刷新后回显反馈，已付款发票保持不可编辑边界 | `scripts/buyer-invoice-detail-edit-ui.test.ts`、`InvoicePaymentUpdateDetailTests` |
+| 31 | 平台公告生命周期持久化 | 平台公告页已补公告编辑、撤回、Java 更新接口、状态撤回接口和刷新后回显反馈，撤回后公告不再进入活跃列表 | `scripts/platform-announcement-java-persistence-ui.test.ts`、`PlatformAnnouncementLifecycleTests` |
+| 32 | 供应商档案维护持久化 | 供应商企业档案页已补企业名称、行业、统一社会信用代码、法人/联系人草稿编辑，保存后调用 Java 供应商档案接口并刷新工作台回显 | `scripts/supplier-profile-java-persistence-ui.test.ts`、`services/procurementApiClient.test.ts` |
+| 33 | 平台企业审核详情持久化 | 平台企业审核已补审核意见、资料确认、风险确认的 Java 请求传递、数据库字段、接口回显和详情页展示 | `scripts/platform-enterprise-review-java-persistence-ui.test.ts`、`PlatformAuditLogTests` |
+| 34 | 供应商报价修改持久化 | 供应商报价详情页已补报价金额、税率、交付天数编辑，保存后调用 Java 报价更新接口并刷新工作台回显，非报价中 RFQ 保持只读边界 | `scripts/supplier-quote-java-persistence-ui.test.ts`、`SupplierQuoteListFilterTests` |
+| 35 | 供应商物流信息维护持久化 | 供应商销售订单详情页已补承运商、物流单号编辑，采购方收货前可调用 Java 发货单更新接口并刷新工作台回显，已收货订单保持只读边界 | `scripts/supplier-quote-order-detail-panels-ui.test.ts`、`DeliveryNotificationTests` |
+| 36 | 供应商应收对账备注持久化 | 供应商发票应收页已补选中详情、对账备注编辑、Java 应收更新接口和刷新后回显，付款状态仍由采购方登记 | `scripts/supplier-invoice-receivable-card-ui.test.ts`、`FinancePaymentStateTransitionTests` |
+| 37 | 供应商应收逾期提醒 | Java 发票响应已基于发票创建日派生 30 天应收截止日、逾期状态和逾期天数，供应商应收详情页展示应收截止和逾期提醒 | `scripts/supplier-invoice-receivable-card-ui.test.ts`、`FinancePaymentStateTransitionTests` |
+| 38 | 发票对账单摘要 | Java 发票响应已派生订单金额、发票差异、收货状态和对账状态，采购方发票详情和供应商应收详情均展示对账单摘要 | `scripts/buyer-invoice-detail-ui.test.ts`、`scripts/supplier-invoice-receivable-card-ui.test.ts`、`FinancePaymentStateTransitionTests` |
+| 39 | 对账单台账雏形 | 采购方发票付款和供应商发票应收模块已补独立对账单台账区块，支持按对账状态筛选并展示订单金额、发票金额、差异金额、收货状态和付款状态 | `scripts/invoice-reconciliation-ledger-ui.test.ts` |
+| 40 | 对账单编号和状态流转 | Java 发票响应已派生对账单编号、对账阶段和下一步动作，采购方/供应商对账单台账展示编号、状态流转和下一步动作 | `scripts/invoice-reconciliation-ledger-ui.test.ts`、`FinancePaymentStateTransitionTests` |
+| 41 | 独立对账单落库 | Java 后端已新增 `invoice_reconciliations` 表，供应商创建发票时写入初始对账单，采购方更新付款状态时同步对账阶段和下一步动作，并对历史发票做迁移回填 | `V101__invoice_reconciliations.sql`、`InvoiceReconciliationMapper`、`FinancePaymentStateTransitionTests` |
+| 42 | 独立对账单查询 API | Java 后端已新增 `GET /api/v1/buyer/invoice-reconciliations`，支持按阶段、供应商和订单筛选独立对账单台账；前端 Java master data 会拉取该接口并合并回发票付款/对账单台账展示 | `BuyerInvoiceReconciliationController`、`InvoiceReconciliationMapper`、`services/procurementApiClient.test.ts`、`HttpSecurityContractTests` |
+| 43 | 供应商独立应收对账查询 API | Java 后端已新增 `GET /api/v1/supplier/invoice-reconciliations`，支持按阶段和订单筛选当前供应商的独立应收对账单台账；前端 Java supplier workspace 会拉取该接口并合并回发票应收/对账单台账展示 | `SupplierInvoiceReconciliationController`、`InvoiceReconciliationMapper`、`services/procurementApiClient.test.ts`、`HttpSecurityContractTests` |
+| 44 | 对账台账表格化 | 采购方应付台账和供应商应收台账已从摘要卡片扩展为桌面表格 + 移动卡片双形态，补齐台账范围、应付/应收金额、差异金额、逾期提醒、状态流转和下一步动作摘要 | `scripts/invoice-reconciliation-ledger-ui.test.ts`、`ReconciliationLedgerPanel` |
+| 45 | 对账差异处理和付款计划提示 | 采购方应付台账和供应商应收台账已补差异处理建议、付款/回款计划、逾期跟进和行级处理提示，能把金额差异、逾期、待处理状态转成下一步处理线索 | `scripts/invoice-reconciliation-ledger-ui.test.ts`、`ReconciliationLedgerPanel` |
+| 46 | 共享组件长文本抗挤压 | 指标卡片、三端模块页头和状态徽标已补 `min-w-0`、长文本换行和去截断处理，降低长编号、长状态、长动作说明导致小屏横向溢出的风险 | `scripts/mobile-layout-overflow-ui.test.ts`、`MetricCard`、`BuyerModuleHeader`、`SupplierModuleHeader`、`PlatformModuleHeader`、`StatusPill` |
+| 47 | 操作面板按钮密度收口 | 详情操作面板内容区已补局部横向滚动，主操作按钮文本已补独立换行容器，降低多按钮、长动作文本在窄屏下撑开整页的风险 | `scripts/stage-three-first-round-form-density-ui.test.ts`、`DetailActionPanel`、`PrimaryActionButton` |
+| 48 | 共享表格滚动可读性收口 | 桌面表格共享框架已补横向滚动约束、背景和阴影，并增加 `min-w-max` 内层容器，降低长列内容挤压表格、破坏列表观感的风险 | `scripts/responsive-table-frame-ui.test.ts`、`ResponsiveTableFrame` |
+| 49 | 共享空态稳定区域收口 | `ShellState` 已补非全屏空态最小高度、居中排布和长文本换行，降低列表筛选无结果时页面跳动和空态观感松散的风险 | `scripts/empty-state-consistency-ui.test.ts`、`ShellState`、`EmptyState` |
+| 50 | mock 浏览器视觉复核记录 | 已在 `http://localhost:5173/` 的 mock 视觉模式下完成 1280x720 与 390x844 两个视口复核，覆盖采购方首页、采购需求、询价项目、采购订单、发票付款，以及供应商看板和询价邀请；页面无加载失败、无浏览器错误日志、无整页横向溢出 | `docs/stage-three-admin-shell-acceptance-checklist.md`、`scripts/stage-three-admin-shell-acceptance-checklist.test.ts` |
+| 51 | Java smoke 回归复核记录 | 已在 Java 后端 `schema public 当前版本 101`、Flyway `Successfully validated 9 migrations` 的环境下完成 `GET /api/v1/health` 和 `npm run java:smoke` 回归；本轮主流程创建 `Created demand dem-46fe98c4-eb93-4304-b40a-9ccc6a3673d1` 并跑通 RFQ、报价、定标、订单、发货、收货、发票和 `payment status 已付款` | `docs/stage-three-round-two-java-walkthrough-result.md`、`scripts/stage-three-round-two-java-walkthrough-result.test.ts` |
+| 52 | 工作台页面节奏收口 | 后台壳主滚动区已补 `scrollbar-gutter:stable` 和稳定工作台底色，顶部栏补半透明阴影与 backdrop blur，列表工具条、详情体、详情头和移动摘要卡片补层级边界与按压反馈，降低长页面滚动和移动端点击时的粗糙感 | `scripts/stage-three-admin-workbench-rhythm-ui.test.ts`、`AppHeader`、`DetailPanelBody`、`ResponsiveSummaryCard` |
+| 53 | 筛选结果表面节奏收口 | 状态筛选和结果摘要已从散落控件收口为统一查询表面，补齐 `查询条件`、`结果摘要`、命中记录、已选详情、清空筛选禁用态和 `aria-disabled`，三端列表复用筛选区的页面同步受益 | `scripts/stage-three-filter-surface-rhythm-ui.test.ts`、`StatusFilterControl`、`FilterResultSummary` |
+| 54 | 列表操作表面节奏收口 | 工作流卡片操作区已从普通浅底行升级为带边界的双列操作表面，补齐 `操作状态`、`状态与详情`、`快捷动作` 和快捷面板分割线，订单、收货、付款等行内动作更接近后台操作面板 | `scripts/stage-three-list-action-surface-ui.test.ts`、`WorkflowListCard`、`InlineWorkflowAction` |
+| 55 | 跨角色详情操作表面收口 | 平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片的详情入口已从孤立按钮收口为 `详情操作` 表面，和采购方工作流操作区形成一致的后台操作语言 | `scripts/cross-role-detail-action-surface-ui.test.ts`、`DetailSelectionSurface` |
+| 56 | 跨角色只读卡片密度收口 | 平台公告、平台企业审核、供应商报价记录和供应商发票应收卡片已统一为 `只读详情卡片` 表面，补齐左边界、浅阴影、选中态、hover 和 focus 层级，降低跨角色只读列表的松散感 | `scripts/cross-role-readonly-card-density-ui.test.ts`、`ReadonlyDetailCardSurface` |
+| 57 | 采购方主流程第三轮细化 | 采购需求、询价、比价、订单、发票付款详情已补 `采购需求主流程判断`、`询价状态流转`、`报价比较矩阵`、`订单履约时间线` 和 `付款计划`，把审批状态、创建询价可用性、供应商邀请、推荐定标理由、不可操作边界、预计到货日期、差异处理、逾期提醒和付款状态反馈沉淀为只读业务判断层 | `scripts/buyer-main-flow-third-round-ui.test.ts`、`App.tsx` |
+| 58 | 采购方列表业务接力提示 | 采购需求、询价项目、报价对比、采购订单和发票付款模块已补 `业务接力提示`，把当前选中、下一处理、详情核对和处理边界放在列表与详情之间，降低采购人员从列表进入下一步业务动作时的判断成本 | `scripts/buyer-selected-business-handoff-ui.test.ts`、`SelectedBusinessHandoffPanel` |
+| 59 | 供应商端业务接力提示 | 询价邀请、报价记录、销售订单和发票应收模块已补 `业务接力提示`，把供应商侧下一处理、详情核对和处理边界接到列表筛选之后，明确报价、确认、发货、开票、应收对账分别能做什么和不能做什么 | `scripts/supplier-business-handoff-ui.test.ts`、`SelectedBusinessHandoffPanel` |
+| 60 | 平台端业务接力提示 | 租户列表、企业审核和平台公告模块已补 `业务接力提示`，把平台侧下一处理、详情核对和处理边界接到列表筛选之后，明确租户配置、企业准入、公告发布/撤回与采购业务决策之间的职责边界 | `scripts/platform-business-handoff-ui.test.ts`、`SelectedBusinessHandoffPanel` |
+| 61 | 采购需求转询价准备摘要 | 采购需求列表已补 `转询价准备摘要`，按可转询价、已关联询价、审批阻断和供应商准入阻断统计需求池状态，并修正创建询价可用性判断统一使用 `已通过` 状态 | `scripts/buyer-demand-rfq-readiness-summary-ui.test.ts`、`App.tsx` |
+| 62 | 询价项目推进摘要 | 询价项目列表已补 `询价推进摘要`，按待补邀请、报价不足、可进入比价定标和已完成定标统计 RFQ 状态，帮助采购人员先催报价再推进定标审批 | `scripts/buyer-rfq-progress-summary-ui.test.ts`、`App.tsx` |
+| 63 | 报价对比定标准备摘要 | 报价对比页已补 `定标准备摘要`，按可定标报价、推荐报价项目、待审批定标和已生成订单统计比价池状态，帮助采购人员先确认推荐报价、再提交定标审批、最后生成采购订单 | `scripts/buyer-quote-award-readiness-summary-ui.test.ts`、`App.tsx` |
+| 64 | 采购订单履约推进摘要 | 采购订单页已补 `订单履约推进摘要`，按待生成订单、待供应商确认、待发货、待收货和已完成统计订单履约状态，把定标后的订单生成、供应商确认、发货和收货验收串成连续处理线索 | `scripts/buyer-order-fulfillment-progress-summary-ui.test.ts`、`App.tsx` |
+| 65 | 收货验收推进摘要 | 收货验收页已补 `收货验收推进摘要`，按待发货、待收货、可登记验收、异常待处理和已验收统计收货状态，帮助采购人员先跟进供应商发货，再登记收货验收并处理异常 | `scripts/buyer-receipt-progress-summary-ui.test.ts`、`App.tsx` |
+| 66 | 发票付款推进摘要 | 发票付款页已补 `发票付款推进摘要`，按待开票、待对账、差异待处理、待付款和已付款统计发票付款状态，把收货后的开票、对账、差异处理和付款登记串成主流程入口 | `scripts/buyer-invoice-payment-progress-summary-ui.test.ts`、`App.tsx` |
+
+## 第二批候选任务
+
+第一批验收后，再进入以下任务：
+
+| 方向 | 任务 | 说明 |
+| --- | --- | --- |
+| 平台端 | 企业审核持久化、租户功能开关、公告编辑/撤回 | 以 Java API 能力为边界，不提前做套餐计费 |
+| 供应商端 | 企业档案编辑、资质上传入口、报价详情、发货详情 | 先保证供应商能完成 RFQ 和订单协同 |
+| 通用能力 | 附件中心入口、消息中心、权限差异提示、操作日志筛选 | 围绕主流程补，不单独做大平台能力 |
+
+## 本轮结束标准
+
+第二轮可以收口的最低标准：
+
+1. 采购方主流程页面不再只有轻量入口，关键动作具备可填写表单、校验和反馈。
+2. Java 模式逐页联调覆盖采购方主流程页面，页面无加载失败、无运行时错误。
+3. 平台端和供应商端至少补齐与采购方主流程直接相关的关键操作。
+4. `npm test`、`npm run build` 通过。
+5. 涉及 Java API 的提交保留 `npm run java:smoke` 通过记录，或明确说明本机环境阻塞原因。

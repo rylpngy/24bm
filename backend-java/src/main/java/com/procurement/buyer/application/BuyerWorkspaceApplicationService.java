@@ -15,7 +15,9 @@ import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.application.BuyerUserApplicationService;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.order.api.DeliveryResponse;
 import com.procurement.order.api.PurchaseOrderResponse;
+import com.procurement.order.application.DeliveryApplicationService;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.application.RfqApplicationService;
@@ -35,6 +37,7 @@ public class BuyerWorkspaceApplicationService {
   private final PurchaseDemandApplicationService purchaseDemandApplicationService;
   private final RfqApplicationService rfqApplicationService;
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
+  private final DeliveryApplicationService deliveryApplicationService;
   private final PaymentApplicationService paymentApplicationService;
   private final ApprovalInboxApplicationService approvalInboxApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -48,6 +51,7 @@ public class BuyerWorkspaceApplicationService {
       PurchaseDemandApplicationService purchaseDemandApplicationService,
       RfqApplicationService rfqApplicationService,
       PurchaseOrderApplicationService purchaseOrderApplicationService,
+      DeliveryApplicationService deliveryApplicationService,
       PaymentApplicationService paymentApplicationService,
       ApprovalInboxApplicationService approvalInboxApplicationService,
       AuditLogApplicationService auditLogApplicationService,
@@ -59,6 +63,7 @@ public class BuyerWorkspaceApplicationService {
     this.purchaseDemandApplicationService = purchaseDemandApplicationService;
     this.rfqApplicationService = rfqApplicationService;
     this.purchaseOrderApplicationService = purchaseOrderApplicationService;
+    this.deliveryApplicationService = deliveryApplicationService;
     this.paymentApplicationService = paymentApplicationService;
     this.approvalInboxApplicationService = approvalInboxApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -73,6 +78,7 @@ public class BuyerWorkspaceApplicationService {
     List<PurchaseDemandResponse> demands = purchaseDemandApplicationService.listCurrentTenantDemands();
     List<RfqResponse> rfqs = rfqApplicationService.listCurrentTenantRfqs();
     List<PurchaseOrderResponse> orders = purchaseOrderApplicationService.listCurrentTenantOrders();
+    List<DeliveryResponse> deliveries = deliveryApplicationService.listCurrentTenantDeliveries();
     List<InvoiceResponse> invoices = paymentApplicationService.listCurrentTenantInvoices();
     List<PendingApprovalTaskResponse> pendingApprovals = approvalInboxApplicationService.listPending();
     List<PendingApprovalTaskResponse> recentApprovals = approvalInboxApplicationService.listRecentReviewed();
@@ -88,6 +94,7 @@ public class BuyerWorkspaceApplicationService {
         demands,
         rfqs,
         orders,
+        deliveries,
         invoices,
         pendingApprovals,
         recentApprovals,

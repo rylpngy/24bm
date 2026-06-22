@@ -13,6 +13,10 @@ class ApprovalTemplateCodeTests {
     assertThat(ApprovalTemplateCode.PURCHASE_DEMAND).isEqualTo("TPL_PURCHASE_DEMAND");
     assertThat(ApprovalTemplateCode.SUPPLIER_ADMISSION).isEqualTo("TPL_SUPPLIER_ADMISSION");
     assertThat(ApprovalTemplateCode.RFQ_AWARD).isEqualTo("TPL_RFQ_AWARD");
+    assertThat(ApprovalTemplateCode.PAYMENT_REQUEST).isEqualTo("TPL_PAYMENT_REQUEST");
+    assertThat(ApprovalTemplateCode.PAYMENT_BATCH).isEqualTo("TPL_PAYMENT_BATCH");
+    assertThat(ApprovalTemplateCode.PAYMENT_ARCHIVE_EXCEPTION)
+        .isEqualTo("TPL_PAYMENT_ARCHIVE_EXCEPTION");
 
     assertThat(ApprovalTemplateCode.requireByBusinessType(ApprovalBusinessType.PURCHASE_DEMAND))
         .isEqualTo(ApprovalTemplateCode.PURCHASE_DEMAND);
@@ -20,6 +24,12 @@ class ApprovalTemplateCodeTests {
         .isEqualTo(ApprovalTemplateCode.SUPPLIER_ADMISSION);
     assertThat(ApprovalTemplateCode.requireByBusinessType(ApprovalBusinessType.RFQ_AWARD))
         .isEqualTo(ApprovalTemplateCode.RFQ_AWARD);
+    assertThat(ApprovalTemplateCode.requireByBusinessType(ApprovalBusinessType.PAYMENT_REQUEST))
+        .isEqualTo(ApprovalTemplateCode.PAYMENT_REQUEST);
+    assertThat(ApprovalTemplateCode.requireByBusinessType(ApprovalBusinessType.PAYMENT_BATCH))
+        .isEqualTo(ApprovalTemplateCode.PAYMENT_BATCH);
+    assertThat(ApprovalTemplateCode.requireByBusinessType(ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION))
+        .isEqualTo(ApprovalTemplateCode.PAYMENT_ARCHIVE_EXCEPTION);
   }
 
   @Test

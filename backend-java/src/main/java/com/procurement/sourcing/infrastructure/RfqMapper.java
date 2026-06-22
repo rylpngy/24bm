@@ -128,4 +128,19 @@ public interface RfqMapper {
       @Param("id") String id,
       @Param("currentStatus") String currentStatus,
       @Param("status") String status);
+
+  @Update("""
+      update rfqs
+      set title = #{title},
+          deadline_at = #{deadlineAt},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = '报价中'
+      """)
+  int updateQuotingDetails(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("title") String title,
+      @Param("deadlineAt") OffsetDateTime deadlineAt);
 }

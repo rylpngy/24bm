@@ -18,6 +18,8 @@ import com.procurement.order.domain.Receipt;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.order.infrastructure.ReceiptMapper;
+import com.procurement.supplier.domain.SupplierUser;
+import com.procurement.supplier.infrastructure.SupplierUserMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,8 +37,9 @@ class ReceiptNotificationTests {
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationMapper notificationMapper = org.mockito.Mockito.mock(NotificationMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
+  private final SupplierUserMapper supplierUserMapper = org.mockito.Mockito.mock(SupplierUserMapper.class);
   private final NotificationApplicationService notificationApplicationService =
-      new NotificationApplicationService(notificationMapper, buyerUserMapper);
+      new NotificationApplicationService(notificationMapper, buyerUserMapper, supplierUserMapper);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final ReceiptApplicationService receiptApplicationService = new ReceiptApplicationService(
@@ -86,6 +89,39 @@ class ReceiptNotificationTests {
         org.mockito.ArgumentMatchers.anyString());
   }
 
+  @Test
+  void buyerReceiptNotifiesActiveSupplierUsersThatInvoiceCanBeSubmitted() {
+    TenantContext.set("tenant-1", null, "user-buyer");
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "已发货"));
+    when(deliveryMapper.countByTenantOrderAndStatus("tenant-1", "po-1", "已发货"))
+        .thenReturn(1);
+    when(purchaseOrderMapper.updateStatus("tenant-1", "po-1", "已发货", "已收货"))
+        .thenReturn(1);
+    when(receiptMapper.findByTenantAndId(
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> receipt(invocation.getArgument(1)));
+    when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
+        supplierUser("supplier-user-active", "启用"),
+        supplierUser("supplier-user-disabled", "停用")));
+
+    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过"));
+
+    verify(notificationMapper).insert(
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("supplier-user-active"),
+        org.mockito.ArgumentMatchers.eq("采购订单已收货"),
+        org.mockito.ArgumentMatchers.eq("采购订单 po-1 已完成收货验收，供应商可提交发票。"));
+    verify(notificationMapper, never()).insert(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("supplier-user-disabled"),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
   private PurchaseOrder order(String id, String tenantId, String supplierId, String status) {
     return new PurchaseOrder(
         id,
@@ -107,5 +143,16 @@ class ReceiptNotificationTests {
         "user-buyer",
         "验收通过",
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"));
+  }
+
+  private SupplierUser supplierUser(String id, String status) {
+    return new SupplierUser(
+        id,
+        "supplier-1",
+        "供应商用户",
+        "13800000001",
+        id + "@example.com",
+        status,
+        "role-supplier-sales");
   }
 }
