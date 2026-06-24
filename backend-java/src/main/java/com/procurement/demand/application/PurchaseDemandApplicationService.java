@@ -94,7 +94,10 @@ public class PurchaseDemandApplicationService {
         request.departmentId(),
         userId,
         request.budget(),
-        PurchaseDemandStatus.DRAFT);
+        PurchaseDemandStatus.DRAFT,
+        request.expectedDeliveryDate(),
+        request.priority() == null ? "常规" : request.priority(),
+        request.purpose() == null ? "" : request.purpose());
 
     for (var lineItem : request.lineItems()) {
       purchaseDemandItemMapper.insert(
@@ -129,7 +132,10 @@ public class PurchaseDemandApplicationService {
         demandId,
         request.title(),
         request.departmentId(),
-        request.budget());
+        request.budget(),
+        request.expectedDeliveryDate(),
+        request.priority() == null ? "常规" : request.priority(),
+        request.purpose() == null ? "" : request.purpose());
     if (updated == 0) {
       throw new IllegalStateException("Purchase demand status changed before update could be saved: " + demandId);
     }
@@ -262,7 +268,10 @@ public class PurchaseDemandApplicationService {
         demand.status(),
         demand.createdAt(),
         demand.updatedAt(),
-        lineItems);
+        lineItems,
+        demand.expectedDeliveryDate(),
+        demand.priority(),
+        demand.purpose());
   }
 
   private PurchaseDemandLineItemResponse toLineItemResponse(PurchaseDemandItem item) {

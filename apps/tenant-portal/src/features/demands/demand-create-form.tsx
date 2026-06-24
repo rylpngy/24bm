@@ -13,6 +13,9 @@ const schema = z.object({
   title: z.string().min(2, '标题至少 2 个字'),
   departmentId: z.string().min(1, '请选择申请部门'),
   budget: z.number().min(0, '预算不能为负'),
+  expectedDeliveryDate: z.string(),
+  priority: z.string(),
+  purpose: z.string(),
   lineItems: z
     .array(
       z.object({
@@ -42,7 +45,15 @@ export function DemandCreateForm({ onCreated }: { onCreated: () => void }) {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { title: '', departmentId: '', budget: 0, lineItems: [{ materialId: '', quantity: 1 }] },
+    defaultValues: {
+      title: '',
+      departmentId: '',
+      budget: 0,
+      expectedDeliveryDate: '',
+      priority: '常规',
+      purpose: '',
+      lineItems: [{ materialId: '', quantity: 1 }],
+    },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' });
 
@@ -54,6 +65,9 @@ export function DemandCreateForm({ onCreated }: { onCreated: () => void }) {
           departmentId: values.departmentId,
           budget: values.budget,
           lineItems: values.lineItems,
+          expectedDeliveryDate: values.expectedDeliveryDate || undefined,
+          priority: values.priority,
+          purpose: values.purpose,
         },
       },
       {
@@ -104,6 +118,23 @@ export function DemandCreateForm({ onCreated }: { onCreated: () => void }) {
             {...register('budget', { valueAsNumber: true })}
           />
         </div>
+        <div>
+          <label className={labelCls}>期望交期</label>
+          <input className={inputCls} type="date" {...register('expectedDeliveryDate')} />
+        </div>
+        <div>
+          <label className={labelCls}>优先级</label>
+          <select className={inputCls} {...register('priority')}>
+            <option value="常规">常规</option>
+            <option value="紧急">紧急</option>
+            <option value="低">低</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <label className={labelCls}>用途说明</label>
+        <input className={inputCls} placeholder="如：研发团队扩编办公电脑配备" {...register('purpose')} />
       </div>
 
       <div className="mt-4">

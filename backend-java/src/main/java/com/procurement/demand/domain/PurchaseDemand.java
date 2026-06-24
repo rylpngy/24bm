@@ -1,6 +1,7 @@
 package com.procurement.demand.domain;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record PurchaseDemand(
@@ -12,5 +13,8 @@ public record PurchaseDemand(
     BigDecimal budget,
     String status,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    LocalDate expectedDeliveryDate,
+    String priority,
+    String purpose) {
 }

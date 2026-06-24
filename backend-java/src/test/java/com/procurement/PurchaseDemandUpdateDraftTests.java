@@ -68,7 +68,7 @@ class PurchaseDemandUpdateDraftTests {
         "demand-1",
         "更新后的采购需求",
         "dept-admin",
-        BigDecimal.valueOf(88000)))
+        BigDecimal.valueOf(88000), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明"))
         .thenReturn(1);
     when(purchaseDemandItemMapper.listByDemand("tenant-1", "demand-1"))
         .thenReturn(List.of(new com.procurement.demand.domain.PurchaseDemandItem(
@@ -78,7 +78,7 @@ class PurchaseDemandUpdateDraftTests {
         "更新后的采购需求",
         "dept-admin",
         BigDecimal.valueOf(88000),
-        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.valueOf(4)))));
+        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.valueOf(4))), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明"));
 
     assertThat(response.title()).isEqualTo("更新后的采购需求");
     assertThat(response.departmentId()).isEqualTo("dept-admin");
@@ -88,7 +88,7 @@ class PurchaseDemandUpdateDraftTests {
         "demand-1",
         "更新后的采购需求",
         "dept-admin",
-        BigDecimal.valueOf(88000));
+        BigDecimal.valueOf(88000), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
     verify(purchaseDemandItemMapper).deleteByDemand("tenant-1", "demand-1");
     verify(purchaseDemandItemMapper).insert(
         org.mockito.ArgumentMatchers.anyString(),
@@ -108,7 +108,7 @@ class PurchaseDemandUpdateDraftTests {
         "审批中需求",
         "dept-it",
         BigDecimal.valueOf(88000),
-        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.ONE)))))
+        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.ONE)), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Only draft purchase demand can be updated");
 
@@ -117,7 +117,7 @@ class PurchaseDemandUpdateDraftTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.any());
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
   }
 
   private PurchaseDemand demand(String id, String status) {
@@ -130,7 +130,7 @@ class PurchaseDemandUpdateDraftTests {
         BigDecimal.valueOf(120000),
         status,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
   }
 
   private PurchaseDemand updatedDemand(String id) {
@@ -143,6 +143,6 @@ class PurchaseDemandUpdateDraftTests {
         BigDecimal.valueOf(88000),
         "草稿",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
   }
 }

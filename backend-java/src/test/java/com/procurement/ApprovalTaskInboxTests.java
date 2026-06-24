@@ -319,7 +319,7 @@ class ApprovalTaskInboxTests {
         budget,
         "审批中",
         OffsetDateTime.parse("2026-06-15T09:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
   }
 
   private BuyerSupplierRelation supplierRelation(String id, String tenantId, String supplierName) {

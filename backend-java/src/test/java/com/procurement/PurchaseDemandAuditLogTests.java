@@ -74,7 +74,7 @@ class PurchaseDemandAuditLogTests {
         "办公电脑采购",
         "dept-it",
         BigDecimal.valueOf(120000),
-        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.TEN))));
+        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.TEN)), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明"));
 
     verify(auditLogMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("audit-")),
@@ -120,7 +120,7 @@ class PurchaseDemandAuditLogTests {
         BigDecimal.valueOf(120000),
         "草稿",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
   }
 
   private ApprovalTemplate template(String code, String bizType) {

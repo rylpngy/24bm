@@ -66,7 +66,7 @@ class PurchaseDemandDepartmentValidationTests {
         "办公电脑采购",
         "dept-other",
         BigDecimal.valueOf(120000),
-        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.TEN)))))
+        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.TEN)), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Department not found in tenant scope: dept-other");
 
@@ -77,7 +77,7 @@ class PurchaseDemandDepartmentValidationTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.any(),
-        org.mockito.ArgumentMatchers.anyString());
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -97,7 +97,7 @@ class PurchaseDemandDepartmentValidationTests {
         "办公电脑采购",
         "dept-it",
         BigDecimal.valueOf(120000),
-        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.TEN))));
+        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.TEN)), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明"));
 
     assertThat(response.departmentId()).isEqualTo("dept-it");
     verify(departmentMapper).existsActiveByTenantAndId("tenant-1", "dept-it");
@@ -108,7 +108,7 @@ class PurchaseDemandDepartmentValidationTests {
         org.mockito.ArgumentMatchers.eq("dept-it"),
         org.mockito.ArgumentMatchers.eq("buyer-user-1"),
         org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(120000)),
-        org.mockito.ArgumentMatchers.eq("草稿"));
+        org.mockito.ArgumentMatchers.eq("草稿"), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -132,6 +132,6 @@ class PurchaseDemandDepartmentValidationTests {
         BigDecimal.valueOf(120000),
         "草稿",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
   }
 }

@@ -467,7 +467,7 @@ class HttpSecurityContractTests {
             "已通过",
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-            List.of())));
+            List.of(), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明")));
     String buyerToken = loginAndExtractToken("""
         {
           "account": "buyer",

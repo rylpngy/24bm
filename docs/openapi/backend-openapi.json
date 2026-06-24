@@ -6731,6 +6731,16 @@
             "items": {
               "$ref": "#/components/schemas/PurchaseDemandLineItemRequest"
             }
+          },
+          "expectedDeliveryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
           }
         }
       },
@@ -6799,6 +6809,16 @@
             "items": {
               "$ref": "#/components/schemas/PurchaseDemandLineItemResponse"
             }
+          },
+          "expectedDeliveryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
           }
         }
       },
@@ -8522,6 +8542,16 @@
             "items": {
               "$ref": "#/components/schemas/PurchaseDemandLineItemRequest"
             }
+          },
+          "expectedDeliveryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
           }
         }
       },

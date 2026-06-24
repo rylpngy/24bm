@@ -95,14 +95,29 @@ export function DemandDetail({
         title={demand.title ?? '—'}
         meta={`需求编号 ${demand.id} · 部门 ${demand.departmentId ?? '—'}`}
         status={demand.status}
-        amountLabel={currency(demand.budget)}
+        amountLabel={`预算 ${currency(demand.budget)}`}
         facts={[
           { label: '申请部门', value: demand.departmentId ?? '—' },
           { label: '申请人', value: demand.requesterId ?? '—' },
-          { label: '创建时间', value: demand.createdAt?.slice(0, 10) ?? '—' },
-          { label: '更新时间', value: demand.updatedAt?.slice(0, 10) ?? '—' },
+          { label: '期望交期', value: demand.expectedDeliveryDate ?? '待定' },
+          { label: '优先级', value: demand.priority ?? '常规' },
         ]}
       />
+
+      <DetailSection title="需求信息">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <DetailKeyValueRow label="预算金额" value={currency(demand.budget)} fontMono />
+          <DetailKeyValueRow label="优先级" value={demand.priority ?? '常规'} />
+          <DetailKeyValueRow label="期望交期" value={demand.expectedDeliveryDate ?? '待定'} />
+          <DetailKeyValueRow label="创建时间" value={demand.createdAt?.slice(0, 10) ?? '—'} />
+        </div>
+        <div className="mt-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
+          <p className="text-[11px] font-black text-slate-400">用途说明</p>
+          <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">
+            {demand.purpose || '未填写用途说明。'}
+          </p>
+        </div>
+      </DetailSection>
 
       <DetailSection title="物料明细" countLabel={`${lineItems.length} 项`}>
         {lineItems.length === 0 ? (

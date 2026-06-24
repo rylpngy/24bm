@@ -18,4 +18,7 @@ export interface PurchaseDemandResponse {
   createdAt?: string;
   updatedAt?: string;
   lineItems?: PurchaseDemandLineItemResponse[];
+  expectedDeliveryDate?: string;
+  priority?: string;
+  purpose?: string;
 }

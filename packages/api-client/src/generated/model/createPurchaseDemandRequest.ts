@@ -12,4 +12,7 @@ export interface CreatePurchaseDemandRequest {
   departmentId: string;
   budget?: number;
   lineItems: PurchaseDemandLineItemRequest[];
+  expectedDeliveryDate?: string;
+  priority?: string;
+  purpose?: string;
 }
