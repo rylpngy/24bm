@@ -1,5 +1,8 @@
-// @24bid/api-client — orval 从后端 OpenAPI 生成的 client + TanStack Query hooks
-// 生成物落在 ./generated（S0-4 接通后填充）。本文件统一再导出。
+// @24bid/api-client — orval 从后端 OpenAPI(springdoc)生成的 client + TanStack Query hooks。
+// 正向契约：后端是唯一事实源。重新生成：pnpm --filter @24bid/api-client generate
 
-// export * from './generated';
-export {};
+export { configureApiClient, setAuthToken, axiosInstance } from './http-client';
+export type { ErrorType, BodyType } from './http-client';
+
+export * from './generated/model';
+export * from './generated/controllers';
