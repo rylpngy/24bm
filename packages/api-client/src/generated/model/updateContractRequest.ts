@@ -13,4 +13,8 @@ export interface UpdateContractRequest {
   status: string;
   fulfillmentProgress: string;
   effectiveDate?: string;
+  signDate?: string;
+  expiryDate?: string;
+  paymentTerms?: string;
+  warrantyTerms?: string;
 }

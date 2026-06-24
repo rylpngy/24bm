@@ -123,7 +123,11 @@ public class ContractApplicationService {
         request.status(),
         "未归档",
         request.fulfillmentProgress(),
-        request.effectiveDate());
+        request.effectiveDate(),
+        request.signDate(),
+        request.expiryDate(),
+        orEmpty(request.paymentTerms()),
+        orEmpty(request.warrantyTerms()));
     return toResponse(requireContract(tenantId, contractId));
   }
 
@@ -145,7 +149,11 @@ public class ContractApplicationService {
         request.amount(),
         request.status(),
         request.fulfillmentProgress(),
-        request.effectiveDate());
+        request.effectiveDate(),
+        request.signDate(),
+        request.expiryDate(),
+        orEmpty(request.paymentTerms()),
+        orEmpty(request.warrantyTerms()));
     if (updated == 0) {
       throw new IllegalStateException("Contract changed before update could be saved: " + contractId);
     }
@@ -356,7 +364,15 @@ public class ContractApplicationService {
         contract.fulfillmentProgress(),
         contract.effectiveDate(),
         contract.createdAt(),
-        contract.updatedAt());
+        contract.updatedAt(),
+        contract.signDate(),
+        contract.expiryDate(),
+        contract.paymentTerms(),
+        contract.warrantyTerms());
+  }
+
+  private static String orEmpty(String value) {
+    return value == null ? "" : value;
   }
 
   private ContractFulfillmentEventResponse toFulfillmentEventResponse(ContractFulfillmentEvent event) {

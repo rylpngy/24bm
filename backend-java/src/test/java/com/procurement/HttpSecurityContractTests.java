@@ -3835,7 +3835,7 @@ class HttpSecurityContractTests {
         "已收货验收",
         LocalDate.parse("2026-06-15"),
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), java.time.LocalDate.parse("2026-06-01"), java.time.LocalDate.parse("2027-06-01"), "验收后30天内电汇", "质保2年，逾期交付按日0.5%计违约金");
   }
 
   private InvoiceReconciliationResponse invoiceReconciliationResponse(String id, String invoiceId, String stage) {

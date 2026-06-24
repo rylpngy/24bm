@@ -16,7 +16,8 @@ public interface ContractMapper {
   @Select("""
       <script>
       select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
-             amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at
+             amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at,
+             sign_date, expiry_date, payment_terms, warranty_terms
       from contracts
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -39,7 +40,8 @@ public interface ContractMapper {
 
   @Select("""
       select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
-             amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at
+             amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at,
+             sign_date, expiry_date, payment_terms, warranty_terms
       from contracts
       where tenant_id = #{tenantId}
         and id = #{contractId}
@@ -71,11 +73,13 @@ public interface ContractMapper {
   @Insert("""
       insert into contracts (
         id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
-        amount, status, archive_status, fulfillment_progress, effective_date
+        amount, status, archive_status, fulfillment_progress, effective_date,
+        sign_date, expiry_date, payment_terms, warranty_terms
       )
       values (
         #{id}, #{tenantId}, #{contractNo}, #{contractName}, #{relatedOrderId}, #{supplierId},
-        #{amount}, #{status}, #{archiveStatus}, #{fulfillmentProgress}, #{effectiveDate}
+        #{amount}, #{status}, #{archiveStatus}, #{fulfillmentProgress}, #{effectiveDate},
+        #{signDate,jdbcType=DATE}, #{expiryDate,jdbcType=DATE}, #{paymentTerms}, #{warrantyTerms}
       )
       """)
   void insert(
@@ -89,7 +93,11 @@ public interface ContractMapper {
       @Param("status") String status,
       @Param("archiveStatus") String archiveStatus,
       @Param("fulfillmentProgress") String fulfillmentProgress,
-      @Param("effectiveDate") LocalDate effectiveDate);
+      @Param("effectiveDate") LocalDate effectiveDate,
+      @Param("signDate") LocalDate signDate,
+      @Param("expiryDate") LocalDate expiryDate,
+      @Param("paymentTerms") String paymentTerms,
+      @Param("warrantyTerms") String warrantyTerms);
 
   @Update("""
       update contracts
@@ -99,6 +107,10 @@ public interface ContractMapper {
           status = #{status},
           fulfillment_progress = #{fulfillmentProgress},
           effective_date = #{effectiveDate},
+          sign_date = #{signDate,jdbcType=DATE},
+          expiry_date = #{expiryDate,jdbcType=DATE},
+          payment_terms = #{paymentTerms},
+          warranty_terms = #{warrantyTerms},
           updated_at = now()
       where tenant_id = #{tenantId}
         and id = #{contractId}
@@ -111,7 +123,11 @@ public interface ContractMapper {
       @Param("amount") BigDecimal amount,
       @Param("status") String status,
       @Param("fulfillmentProgress") String fulfillmentProgress,
-      @Param("effectiveDate") LocalDate effectiveDate);
+      @Param("effectiveDate") LocalDate effectiveDate,
+      @Param("signDate") LocalDate signDate,
+      @Param("expiryDate") LocalDate expiryDate,
+      @Param("paymentTerms") String paymentTerms,
+      @Param("warrantyTerms") String warrantyTerms);
 
   @Update("""
       update contracts

@@ -176,11 +176,42 @@ export function ContractsPage() {
                   {c.archiveStatus && <StatusPill label={c.archiveStatus} />}
                 </div>
               </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <div className="mt-3 grid gap-2 sm:grid-cols-4">
                 <MiniFact label="关联订单" value={c.relatedOrderId ?? '—'} />
                 <MiniFact label="金额" value={currency(c.amount)} />
                 <MiniFact label="履约进度" value={c.fulfillmentProgress ?? '—'} />
+                <MiniFact
+                  label="合同期限"
+                  value={
+                    c.effectiveDate || c.expiryDate
+                      ? `${c.effectiveDate ?? '—'} ~ ${c.expiryDate ?? '—'}`
+                      : '—'
+                  }
+                />
               </div>
+
+              <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <p className="text-xs font-black text-slate-500">合同条款</p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <MiniFact label="签订日期" value={c.signDate ?? '—'} />
+                  <MiniFact label="生效日期" value={c.effectiveDate ?? '—'} />
+                </div>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <div className="rounded-lg border border-slate-100 bg-white/80 p-3">
+                    <p className="text-[11px] font-black text-slate-400">付款条款</p>
+                    <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">
+                      {c.paymentTerms || '未约定付款条款。'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-100 bg-white/80 p-3">
+                    <p className="text-[11px] font-black text-slate-400">质保与违约条款</p>
+                    <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">
+                      {c.warrantyTerms || '未约定质保与违约条款。'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="mt-3 flex flex-wrap gap-2">
                 {c.status === '草案' && (
                   <button

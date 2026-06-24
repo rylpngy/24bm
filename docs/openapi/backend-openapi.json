@@ -6908,6 +6908,20 @@
           "effectiveDate": {
             "type": "string",
             "format": "date"
+          },
+          "signDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "paymentTerms": {
+            "type": "string"
+          },
+          "warrantyTerms": {
+            "type": "string"
           }
         }
       },
@@ -6969,6 +6983,20 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "signDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "paymentTerms": {
+            "type": "string"
+          },
+          "warrantyTerms": {
+            "type": "string"
           }
         }
       },
@@ -8678,6 +8706,20 @@
           "effectiveDate": {
             "type": "string",
             "format": "date"
+          },
+          "signDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "paymentTerms": {
+            "type": "string"
+          },
+          "warrantyTerms": {
+            "type": "string"
           }
         }
       },

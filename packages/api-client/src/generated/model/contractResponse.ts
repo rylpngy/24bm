@@ -20,4 +20,8 @@ export interface ContractResponse {
   effectiveDate?: string;
   createdAt?: string;
   updatedAt?: string;
+  signDate?: string;
+  expiryDate?: string;
+  paymentTerms?: string;
+  warrantyTerms?: string;
 }
