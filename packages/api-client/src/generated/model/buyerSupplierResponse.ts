@@ -15,4 +15,6 @@ export interface BuyerSupplierResponse {
   level?: string;
   categories?: string[];
   performanceScore?: number;
+  cooperationTier?: string;
+  lastEvaluationScore?: number;
 }

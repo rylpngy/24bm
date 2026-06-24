@@ -124,9 +124,14 @@ export function SuppliersPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="break-words font-black text-slate-950">{s.supplierName}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">等级 {s.level} · 绩效 {s.performanceScore}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">
+                    等级 {s.level} · 最近评分 {s.lastEvaluationScore ?? '—'}
+                  </p>
                 </div>
-                {s.status && <StatusPill label={s.status} />}
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {s.status && <StatusPill label={s.status} />}
+                  {s.cooperationTier && <StatusPill label={s.cooperationTier} />}
+                </div>
               </div>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <MiniFact label="授权品类" value={(s.categories ?? []).join('、') || '—'} />
@@ -154,6 +159,7 @@ export function SuppliersPage() {
                 <th className="px-4 py-3">供应商</th>
                 <th className="px-4 py-3">准入状态</th>
                 <th className="px-4 py-3">等级</th>
+                <th className="px-4 py-3">生命周期标记</th>
                 <th className="px-4 py-3">授权品类</th>
                 <th className="px-4 py-3 text-right">绩效</th>
                 <th className="px-4 py-3 text-right">操作</th>
@@ -165,6 +171,7 @@ export function SuppliersPage() {
                   <td className="px-4 py-4 font-bold text-slate-900">{s.supplierName}</td>
                   <td className="px-4 py-4">{s.status && <StatusPill label={s.status} />}</td>
                   <td className="px-4 py-4 font-black text-slate-700">{s.level}</td>
+                  <td className="px-4 py-4">{s.cooperationTier && <StatusPill label={s.cooperationTier} />}</td>
                   <td className="px-4 py-4 text-slate-600">{(s.categories ?? []).join('、')}</td>
                   <td className="px-4 py-4 text-right font-mono font-black text-slate-900">
                     {s.performanceScore}

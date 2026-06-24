@@ -11,5 +11,7 @@ public record BuyerSupplierResponse(
     String status,
     String level,
     List<String> categories,
-    BigDecimal performanceScore) {
+    BigDecimal performanceScore,
+    String cooperationTier,
+    BigDecimal lastEvaluationScore) {
 }

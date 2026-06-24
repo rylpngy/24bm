@@ -207,7 +207,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
             "已准入",
             "S",
             "[\"办公设备\",\"电脑整机\"]",
-            BigDecimal.valueOf(90)));
+            BigDecimal.valueOf(90), "合格", null));
 
     buyerSupplierApplicationService.changeRelationProfile(
         "rel-1",
@@ -237,7 +237,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
             "已准入",
             "A",
             "[\"办公设备\"]",
-            BigDecimal.valueOf(96.50)));
+            BigDecimal.valueOf(96.50), "合格", null));
 
     BuyerSupplierResponse response = buyerSupplierApplicationService.changeRelationPerformance(
         "rel-1",
@@ -309,7 +309,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         status,
         "A",
         "[\"办公设备\"]",
-        BigDecimal.valueOf(90));
+        BigDecimal.valueOf(90), "合格", null);
   }
 
   private ApprovalTask task(String id, String tenantId, String relationId, String status) {

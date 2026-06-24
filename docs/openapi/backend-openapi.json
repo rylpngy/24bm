@@ -7712,6 +7712,12 @@
           },
           "performanceScore": {
             "type": "number"
+          },
+          "cooperationTier": {
+            "type": "string"
+          },
+          "lastEvaluationScore": {
+            "type": "number"
           }
         }
       },

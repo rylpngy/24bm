@@ -10,5 +10,7 @@ public record BuyerSupplierRelation(
     String status,
     String level,
     String categoriesJson,
-    BigDecimal performanceScore) {
+    BigDecimal performanceScore,
+    String cooperationTier,
+    BigDecimal lastEvaluationScore) {
 }

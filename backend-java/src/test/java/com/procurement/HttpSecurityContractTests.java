@@ -2590,7 +2590,7 @@ class HttpSecurityContractTests {
         "已准入",
         "A",
         List.of("办公设备"),
-        BigDecimal.valueOf(92.50))));
+        BigDecimal.valueOf(92.50), "合格", null)));
 
     mockMvc.perform(get("/api/v1/buyer/suppliers")
             .header("Authorization", "Bearer " + buyerToken))
@@ -2611,7 +2611,7 @@ class HttpSecurityContractTests {
             "已准入",
             "A",
             List.of("办公设备"),
-            BigDecimal.valueOf(92.50))));
+            BigDecimal.valueOf(92.50), "合格", null)));
 
     mockMvc.perform(get("/api/v1/buyer/suppliers")
             .queryParam("status", "已准入")
@@ -2632,7 +2632,7 @@ class HttpSecurityContractTests {
             "待准入",
             "B",
             List.of("服务"),
-            BigDecimal.ZERO));
+            BigDecimal.ZERO, "合格", null));
 
     mockMvc.perform(post("/api/v1/buyer/suppliers")
             .header("Authorization", "Bearer " + buyerToken)
@@ -2745,7 +2745,7 @@ class HttpSecurityContractTests {
             "黑名单",
             "B",
             List.of("服务"),
-            BigDecimal.ZERO));
+            BigDecimal.ZERO, "合格", null));
 
     mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/status")
             .header("Authorization", "Bearer " + buyerToken)
@@ -2780,7 +2780,7 @@ class HttpSecurityContractTests {
             "黑名单",
             "S",
             List.of("服务", "办公设备"),
-            BigDecimal.ZERO));
+            BigDecimal.ZERO, "合格", null));
 
     mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/profile")
             .header("Authorization", "Bearer " + buyerToken)
@@ -2816,7 +2816,7 @@ class HttpSecurityContractTests {
             "黑名单",
             "S",
             List.of("服务", "办公设备"),
-            BigDecimal.valueOf(96.50)));
+            BigDecimal.valueOf(96.50), "合格", null));
 
     mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/performance")
             .header("Authorization", "Bearer " + buyerToken)

@@ -216,6 +216,6 @@ class BuyerMasterDataAuditLogTests {
         "待准入",
         "A",
         "[\"办公设备\"]",
-        BigDecimal.valueOf(90));
+        BigDecimal.valueOf(90), "合格", null);
   }
 }

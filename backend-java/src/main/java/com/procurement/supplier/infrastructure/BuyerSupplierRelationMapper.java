@@ -15,7 +15,8 @@ public interface BuyerSupplierRelationMapper {
   @Select("""
       <script>
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
-             r.categories::text as categories_json, r.performance_score
+             r.categories::text as categories_json, r.performance_score,
+             r.cooperation_tier, r.last_evaluation_score
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
       where r.tenant_id = #{tenantId}
@@ -46,7 +47,8 @@ public interface BuyerSupplierRelationMapper {
 
   @Select("""
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
-             r.categories::text as categories_json, r.performance_score
+             r.categories::text as categories_json, r.performance_score,
+             r.cooperation_tier, r.last_evaluation_score
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
       where r.tenant_id = #{tenantId} and r.id = #{id}

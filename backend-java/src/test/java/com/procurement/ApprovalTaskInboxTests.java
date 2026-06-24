@@ -331,7 +331,7 @@ class ApprovalTaskInboxTests {
         "准入审批中",
         "A",
         "[]",
-        BigDecimal.ZERO);
+        BigDecimal.ZERO, "合格", null);
   }
 
   private AwardDecision awardDecision(String id, String tenantId, String rfqId, String supplierId) {

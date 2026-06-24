@@ -272,7 +272,9 @@ public class BuyerSupplierApplicationService {
         relation.status(),
         relation.level(),
         readCategories(relation.categoriesJson()),
-        relation.performanceScore());
+        relation.performanceScore(),
+        relation.cooperationTier(),
+        relation.lastEvaluationScore());
   }
 
   private SupplierQualificationResponse toQualificationResponse(SupplierQualification qualification) {
