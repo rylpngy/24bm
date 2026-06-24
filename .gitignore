@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 backend-java/target
+.npm-cache
 *.local
 
 # Editor directories and files
