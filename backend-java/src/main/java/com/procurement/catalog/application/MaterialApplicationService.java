@@ -47,7 +47,11 @@ public class MaterialApplicationService {
         request.name(),
         request.category(),
         request.unit(),
-        request.referencePrice());
+        request.referencePrice(),
+        orEmpty(request.specification()),
+        orEmpty(request.brand()),
+        orDefaultTax(request.taxRate()),
+        orEmpty(request.description()));
     auditLogApplicationService.recordTenantAction(MaterialAuditAction.CREATED, AuditTargetType.MATERIAL, materialId);
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
   }
@@ -63,7 +67,11 @@ public class MaterialApplicationService {
         request.name(),
         request.category(),
         request.unit(),
-        request.referencePrice());
+        request.referencePrice(),
+        orEmpty(request.specification()),
+        orEmpty(request.brand()),
+        orDefaultTax(request.taxRate()),
+        orEmpty(request.description()));
     auditLogApplicationService.recordTenantAction(MaterialAuditAction.UPDATED, AuditTargetType.MATERIAL, materialId);
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
   }
@@ -82,7 +90,19 @@ public class MaterialApplicationService {
         material.name(),
         material.category(),
         material.unit(),
-        material.referencePrice());
+        material.referencePrice(),
+        material.specification(),
+        material.brand(),
+        material.taxRate(),
+        material.description());
+  }
+
+  private static String orEmpty(String value) {
+    return value == null ? "" : value;
+  }
+
+  private static java.math.BigDecimal orDefaultTax(java.math.BigDecimal value) {
+    return value == null ? new java.math.BigDecimal("13.00") : value;
   }
 
   private String blankToNull(String value) {

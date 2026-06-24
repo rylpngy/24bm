@@ -2839,7 +2839,7 @@ class HttpSecurityContractTests {
         "办公电脑",
         "办公设备",
         "台",
-        BigDecimal.valueOf(6000))));
+        BigDecimal.valueOf(6000), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述")));
 
     mockMvc.perform(get("/api/v1/buyer/materials")
             .header("Authorization", "Bearer " + buyerToken))
@@ -2856,7 +2856,7 @@ class HttpSecurityContractTests {
             "办公电脑",
             "办公设备",
             "台",
-            BigDecimal.valueOf(6000))));
+            BigDecimal.valueOf(6000), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述")));
 
     mockMvc.perform(get("/api/v1/buyer/materials")
             .queryParam("category", "办公设备")
@@ -2874,7 +2874,7 @@ class HttpSecurityContractTests {
             "显示器",
             "办公设备",
             "台",
-            BigDecimal.valueOf(1200)));
+            BigDecimal.valueOf(1200), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述"));
 
     mockMvc.perform(post("/api/v1/buyer/materials")
             .header("Authorization", "Bearer " + buyerToken)
@@ -2915,7 +2915,7 @@ class HttpSecurityContractTests {
             "27寸显示器",
             "办公设备",
             "台",
-            BigDecimal.valueOf(1500)));
+            BigDecimal.valueOf(1500), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述"));
 
     mockMvc.perform(post("/api/v1/buyer/materials/mat-monitor")
             .header("Authorization", "Bearer " + buyerToken)

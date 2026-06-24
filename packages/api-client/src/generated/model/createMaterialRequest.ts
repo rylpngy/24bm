@@ -12,4 +12,8 @@ export interface CreateMaterialRequest {
   category: string;
   unit: string;
   referencePrice?: number;
+  specification?: string;
+  brand?: string;
+  taxRate?: number;
+  description?: string;
 }

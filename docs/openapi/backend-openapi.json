@@ -8374,6 +8374,18 @@
           },
           "referencePrice": {
             "type": "number"
+          },
+          "specification": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "taxRate": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
           }
         }
       },
@@ -8414,6 +8426,18 @@
           },
           "referencePrice": {
             "type": "number"
+          },
+          "specification": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "taxRate": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
           }
         }
       },

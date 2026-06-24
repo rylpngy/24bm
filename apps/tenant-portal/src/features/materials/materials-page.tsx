@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Package, Plus } from 'lucide-react';
-import { useMaterialCreate, useMaterialList } from '@24bid/api-client';
+import { type MaterialResponse, useMaterialCreate, useMaterialList } from '@24bid/api-client';
 import {
   FeedbackNotice,
   ListToolbar,
@@ -13,6 +13,7 @@ import {
   PrimaryActionButton,
   ResponsiveTableFrame,
 } from '@24bid/ui';
+import { MaterialDetail } from './material-detail';
 
 const currency = (value?: number) =>
   value == null ? '—' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -23,6 +24,10 @@ const schema = z.object({
   category: z.string().min(1, '请填写分类'),
   unit: z.string().min(1, '请填写单位'),
   referencePrice: z.number().min(0, '参考价不能为负'),
+  specification: z.string(),
+  brand: z.string(),
+  taxRate: z.number().min(0, '税率不能为负').max(100, '税率不超过 100'),
+  description: z.string(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -33,6 +38,7 @@ export function MaterialsPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [keyword, setKeyword] = useState('');
+  const [selected, setSelected] = useState<MaterialResponse | null>(null);
 
   const query = useMaterialList(keyword ? { keyword } : undefined);
   const create = useMaterialCreate();
@@ -45,7 +51,17 @@ export function MaterialsPage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { code: '', name: '', category: '', unit: '', referencePrice: 0 },
+    defaultValues: {
+      code: '',
+      name: '',
+      category: '',
+      unit: '',
+      referencePrice: 0,
+      specification: '',
+      brand: '',
+      taxRate: 13,
+      description: '',
+    },
   });
 
   const refresh = () =>
@@ -65,6 +81,11 @@ export function MaterialsPage() {
         },
       },
     );
+
+  if (selected) {
+    const fresh = materials.find((m) => m.id === selected.id) ?? selected;
+    return <MaterialDetail material={fresh} onBack={() => setSelected(null)} />;
+  }
 
   return (
     <Panel title="物料目录" icon={Package} subtitle="物料与服务主数据">
@@ -119,13 +140,34 @@ export function MaterialsPage() {
               {errors.unit && <p className="mt-1 text-xs font-bold text-red-600">{errors.unit.message}</p>}
             </div>
             <div>
-              <label className="text-xs font-black text-slate-500">参考价</label>
+              <label className="text-xs font-black text-slate-500">参考单价(未税)</label>
               <input
                 className={inputCls}
                 type="number"
                 step="0.01"
                 {...register('referencePrice', { valueAsNumber: true })}
               />
+            </div>
+            <div>
+              <label className="text-xs font-black text-slate-500">规格型号</label>
+              <input className={inputCls} placeholder='如 i7/16G/512G/14"' {...register('specification')} />
+            </div>
+            <div>
+              <label className="text-xs font-black text-slate-500">品牌</label>
+              <input className={inputCls} placeholder="如 联想 ThinkPad" {...register('brand')} />
+            </div>
+            <div>
+              <label className="text-xs font-black text-slate-500">税率(%)</label>
+              <input
+                className={inputCls}
+                type="number"
+                step="0.01"
+                {...register('taxRate', { valueAsNumber: true })}
+              />
+            </div>
+            <div className="sm:col-span-2 lg:col-span-3">
+              <label className="text-xs font-black text-slate-500">物料描述</label>
+              <input className={inputCls} placeholder="规格/质保/采购备注…" {...register('description')} />
             </div>
           </div>
           {create.isError && (
@@ -151,23 +193,36 @@ export function MaterialsPage() {
               className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50"
             >
               <p className="break-words font-black text-slate-950">{m.name}</p>
-              <p className="mt-1 font-mono text-xs font-bold text-slate-500">{m.code}</p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                <MiniFact label="分类" value={m.category ?? '—'} />
-                <MiniFact label="单位" value={m.unit ?? '—'} />
-                <MiniFact label="参考价" value={currency(m.referencePrice)} />
+              <p className="mt-1 font-mono text-xs font-bold text-slate-500">
+                {m.code} · {m.brand || '—'}
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <MiniFact label="规格型号" value={m.specification || '—'} />
+                <MiniFact label="分类 / 单位" value={`${m.category ?? '—'} / ${m.unit ?? '—'}`} />
+                <MiniFact label="参考单价" value={currency(m.referencePrice)} />
+                <MiniFact label="税率" value={`${m.taxRate ?? 0}%`} />
               </div>
+              <button
+                type="button"
+                onClick={() => setSelected(m)}
+                className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
+              >
+                查看详情
+              </button>
             </div>
           ))}
         >
-          <table className="min-w-[640px] w-full text-left text-sm">
+          <table className="min-w-[860px] w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
               <tr>
                 <th className="px-4 py-3">编码</th>
                 <th className="px-4 py-3">名称</th>
-                <th className="px-4 py-3">分类</th>
+                <th className="px-4 py-3">规格型号</th>
+                <th className="px-4 py-3">品牌</th>
                 <th className="px-4 py-3">单位</th>
-                <th className="px-4 py-3 text-right">参考价</th>
+                <th className="px-4 py-3 text-right">参考单价</th>
+                <th className="px-4 py-3 text-right">税率</th>
+                <th className="px-4 py-3 text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
@@ -175,10 +230,21 @@ export function MaterialsPage() {
                 <tr key={m.id}>
                   <td className="px-4 py-4 font-mono font-black text-slate-700">{m.code}</td>
                   <td className="px-4 py-4 font-bold text-slate-900">{m.name}</td>
-                  <td className="px-4 py-4 text-slate-600">{m.category}</td>
+                  <td className="px-4 py-4 text-slate-600">{m.specification || '—'}</td>
+                  <td className="px-4 py-4 text-slate-600">{m.brand || '—'}</td>
                   <td className="px-4 py-4 text-slate-600">{m.unit}</td>
                   <td className="px-4 py-4 text-right font-mono font-black text-slate-900">
                     {currency(m.referencePrice)}
+                  </td>
+                  <td className="px-4 py-4 text-right text-slate-600">{m.taxRate ?? 0}%</td>
+                  <td className="px-4 py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setSelected(m)}
+                      className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                    >
+                      详情
+                    </button>
                   </td>
                 </tr>
               ))}

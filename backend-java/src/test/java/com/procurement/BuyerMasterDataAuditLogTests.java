@@ -101,7 +101,7 @@ class BuyerMasterDataAuditLogTests {
         "办公椅",
         "办公家具",
         "把",
-        BigDecimal.valueOf(300)));
+        BigDecimal.valueOf(300), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述"));
 
     verify(auditLogApplicationService).recordTenantAction(
         org.mockito.ArgumentMatchers.eq("material.created"),
@@ -125,7 +125,7 @@ class BuyerMasterDataAuditLogTests {
             "人体工学椅",
             "办公家具",
             "把",
-            BigDecimal.valueOf(480)));
+            BigDecimal.valueOf(480), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述"));
 
     verify(materialMapper).update(
         "tenant-1",
@@ -134,7 +134,11 @@ class BuyerMasterDataAuditLogTests {
         "人体工学椅",
         "办公家具",
         "把",
-        BigDecimal.valueOf(480));
+        BigDecimal.valueOf(480),
+        "i7/16G/512G SSD",
+        "演示品牌",
+        java.math.BigDecimal.valueOf(13.00),
+        "演示物料描述");
     verify(auditLogApplicationService).recordTenantAction(
         "material.updated",
         "material",
@@ -204,7 +208,7 @@ class BuyerMasterDataAuditLogTests {
   }
 
   private Material material(String id) {
-    return new Material(id, "tenant-1", "MAT-001", "办公椅", "办公家具", "把", BigDecimal.valueOf(300));
+    return new Material(id, "tenant-1", "MAT-001", "办公椅", "办公家具", "把", BigDecimal.valueOf(300), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述");
   }
 
   private BuyerSupplierRelation relation(String id) {
