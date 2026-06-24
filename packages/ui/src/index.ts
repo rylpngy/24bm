@@ -26,3 +26,21 @@ export type { FeedbackNoticeProps } from './components/feedback-notice';
 
 export { AppShell } from './components/app-shell';
 export type { AppShellProps } from './components/app-shell';
+
+export {
+  DetailHeroCard,
+  DetailSection,
+  DetailActionPanel,
+  DetailKeyValueRow,
+  RelatedBusinessRow,
+  InlineFactGrid,
+} from './components/detail';
+export type { Fact } from './components/detail';
+
+export { NextActionNotice, ProcessStateNotice } from './components/notices';
+export type { NextActionTone } from './components/notices';
+
+export { WorkflowRail } from './components/workflow-rail';
+export type { WorkflowStep } from './components/workflow-rail';
+
+export { ShellState } from './components/shell-state';
