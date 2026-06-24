@@ -8,6 +8,7 @@ import { DemandsPage } from './features/demands/demands-page';
 import { ApprovalsPage } from './features/approvals/approvals-page';
 import { SuppliersPage } from './features/suppliers/suppliers-page';
 import { MaterialsPage } from './features/materials/materials-page';
+import { RfqsPage } from './features/rfqs/rfqs-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
@@ -36,6 +37,8 @@ export function App() {
         <SuppliersPage />
       ) : activeModuleId === 'materials' ? (
         <MaterialsPage />
+      ) : activeModuleId === 'rfqs' ? (
+        <RfqsPage />
       ) : (
         <Panel title={activeModule?.label ?? '模块'} icon={Construction} subtitle="后续切片实现">
           <FeedbackNotice
