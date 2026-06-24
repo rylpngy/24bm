@@ -1,21 +1,27 @@
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckSquare } from 'lucide-react';
 import {
   useApprovalInboxPending,
   useApprovalInboxRecent,
   usePurchaseDemandReview,
+  usePurchaseOrderCreate,
+  useRfqAwardReviewApproval,
 } from '@24bid/api-client';
 import { FeedbackNotice, ListToolbar, MiniFact, Panel, StatusPill } from '@24bid/ui';
 
 const currency = (value?: number) =>
   value == null ? '—' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
 
-// S1c：审批中心。待办收件箱 + 通过/驳回。需求审批走 usePurchaseDemandReview(bizId)。
+// S1c/S5a：审批中心。需求审批 + 定标审批(通过后自动生成采购订单)。
 export function ApprovalsPage() {
   const queryClient = useQueryClient();
   const pending = useApprovalInboxPending();
   const recent = useApprovalInboxRecent();
   const review = usePurchaseDemandReview();
+  const awardReview = useRfqAwardReviewApproval();
+  const orderCreate = usePurchaseOrderCreate();
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const tasks = pending.data?.data ?? [];
   const recentTasks = recent.data?.data ?? [];
@@ -24,11 +30,46 @@ export function ApprovalsPage() {
     queryClient.invalidateQueries({
       predicate: (q) =>
         typeof q.queryKey[0] === 'string' &&
-        /\/buyer\/(approvals|demands)/.test(q.queryKey[0] as string),
+        /\/buyer\/(approvals|demands|rfqs|orders)/.test(q.queryKey[0] as string),
     });
 
-  const handleReview = (demandId: string, approved: boolean) => {
+  const busyBizId =
+    (review.isPending && review.variables?.demandId) ||
+    (awardReview.isPending && awardReview.variables?.data.awardId) ||
+    (orderCreate.isPending && orderCreate.variables?.data.awardId) ||
+    null;
+
+  const handleDemandReview = (demandId: string, approved: boolean) => {
     review.mutate({ demandId, data: { approved } }, { onSuccess: () => refresh() });
+  };
+
+  // 定标审批：rfq_award 任务 bizId=awardId、parentBizId=rfqId。通过后自动生成订单。
+  const handleAwardReview = (rfqId: string, awardId: string, approved: boolean) => {
+    awardReview.mutate(
+      { rfqId, data: { awardId, approved } },
+      {
+        onSuccess: () => {
+          if (approved) {
+            const eta = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+            orderCreate.mutate(
+              { data: { awardId, expectedReceiptDate: eta } },
+              {
+                onSuccess: (res) => {
+                  setFeedback(`定标审批通过，已生成采购订单 ${res.data?.id ?? ''}`);
+                  refresh();
+                },
+                onError: () => {
+                  setFeedback('定标已通过，但订单生成失败(可能已生成)。');
+                  refresh();
+                },
+              },
+            );
+          } else {
+            refresh();
+          }
+        },
+      },
+    );
   };
 
   return (
@@ -40,6 +81,11 @@ export function ApprovalsPage() {
           filterLabel="全部待办"
           actionLabel="固定模板"
         />
+        {feedback && (
+          <div className="mb-4">
+            <FeedbackNotice tone="success" message={feedback} />
+          </div>
+        )}
         {pending.isLoading ? (
           <FeedbackNotice tone="info" message="正在加载待办审批…" />
         ) : tasks.length === 0 ? (
@@ -48,7 +94,18 @@ export function ApprovalsPage() {
           <div className="space-y-3">
             {tasks.map((t) => {
               const isDemand = t.bizType === 'purchase_demand';
-              const busy = review.isPending && review.variables?.demandId === t.bizId;
+              const isAward = t.bizType === 'rfq_award';
+              const busy = busyBizId === t.bizId;
+              const onApprove = () => {
+                if (isDemand && t.bizId) handleDemandReview(t.bizId, true);
+                else if (isAward && t.bizId && t.parentBizId)
+                  handleAwardReview(t.parentBizId, t.bizId, true);
+              };
+              const onReject = () => {
+                if (isDemand && t.bizId) handleDemandReview(t.bizId, false);
+                else if (isAward && t.bizId && t.parentBizId)
+                  handleAwardReview(t.parentBizId, t.bizId, false);
+              };
               return (
                 <div
                   key={t.id}
@@ -68,19 +125,19 @@ export function ApprovalsPage() {
                     <MiniFact label="金额" value={currency(t.amount)} />
                     <MiniFact label="任务状态" value={t.status ?? '—'} />
                   </div>
-                  {isDemand && t.bizId ? (
+                  {isDemand || isAward ? (
                     <div className="mt-3 flex gap-2">
                       <button
                         type="button"
-                        onClick={() => handleReview(t.bizId!, true)}
+                        onClick={onApprove}
                         disabled={busy}
                         className="inline-flex h-9 items-center rounded-lg bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-400"
                       >
-                        {busy ? '处理中' : '通过'}
+                        {busy ? '处理中' : isAward ? '通过并生成订单' : '通过'}
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleReview(t.bizId!, false)}
+                        onClick={onReject}
                         disabled={busy}
                         className="inline-flex h-9 items-center rounded-lg border border-red-200 bg-white px-4 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                       >
