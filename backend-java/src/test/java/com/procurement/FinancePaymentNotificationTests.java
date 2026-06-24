@@ -3,6 +3,7 @@ package com.procurement;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
@@ -94,12 +95,14 @@ class FinancePaymentNotificationTests {
   }
 
   @Test
-  void idempotentPaidRegistrationDoesNotNotifySupplierAgain() {
+  void duplicatePaidRegistrationDoesNotNotifySupplierAgain() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
         .thenReturn(invoice("已付款"));
 
-    paymentApplicationService.register("invoice-1", new RegisterPaymentRequest("已付款"));
+    assertThatThrownBy(() -> paymentApplicationService.register("invoice-1", new RegisterPaymentRequest("已付款")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Payment status already registered: invoice-1");
 
     verify(notificationMapper, never()).insert(
         org.mockito.ArgumentMatchers.anyString(),

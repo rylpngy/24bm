@@ -1,0 +1,4 @@
+#
+#Wed Jun 24 14:38:24 CST 2026
+no\ classes\ should\ access\ another\ module's\ infrastructure=0649b193-b7d6-4ad2-99ea-2e8ef427123c
+no\ classes\ that\ reside\ in\ any\ package\ ['..application..',\ '..domain..']\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..api..'=040c9e08-71e9-4151-a841-6f9dd98fae1a
