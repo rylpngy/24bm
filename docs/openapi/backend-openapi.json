@@ -2356,6 +2356,56 @@
         }
       }
     },
+    "/api/v1/buyer/suppliers/{relationId}/tier": {
+      "post": {
+        "tags": [
+          "supplier-evaluation-controller"
+        ],
+        "operationId": "SupplierEvaluation_confirmTier",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmCooperationTierRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/suppliers/{relationId}/submit": {
       "post": {
         "tags": [
@@ -2529,6 +2579,94 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseBuyerSupplierResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/{relationId}/evaluations": {
+      "get": {
+        "tags": [
+          "supplier-evaluation-controller"
+        ],
+        "operationId": "SupplierEvaluation_listEvaluations",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListSupplierEvaluationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "supplier-evaluation-controller"
+        ],
+        "operationId": "SupplierEvaluation_createEvaluation",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupplierEvaluationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierEvaluationResponse"
                 }
               }
             }
@@ -7577,6 +7715,20 @@
           }
         }
       },
+      "ConfirmCooperationTierRequest": {
+        "required": [
+          "cooperationTier"
+        ],
+        "type": "object",
+        "properties": {
+          "cooperationTier": {
+            "type": "string"
+          },
+          "evaluationScore": {
+            "type": "number"
+          }
+        }
+      },
       "ApiResponseApprovalTaskResponse": {
         "type": "object",
         "properties": {
@@ -7662,6 +7814,92 @@
             "minimum": 0,
             "exclusiveMinimum": false,
             "type": "number"
+          }
+        }
+      },
+      "CreateSupplierEvaluationRequest": {
+        "required": [
+          "deliveryScore",
+          "period",
+          "priceScore",
+          "qualityScore",
+          "serviceScore"
+        ],
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "qualityScore": {
+            "type": "number"
+          },
+          "deliveryScore": {
+            "type": "number"
+          },
+          "priceScore": {
+            "type": "number"
+          },
+          "serviceScore": {
+            "type": "number"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseSupplierEvaluationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SupplierEvaluationResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierEvaluationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "supplierId": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "qualityScore": {
+            "type": "number"
+          },
+          "deliveryScore": {
+            "type": "number"
+          },
+          "priceScore": {
+            "type": "number"
+          },
+          "serviceScore": {
+            "type": "number"
+          },
+          "totalScore": {
+            "type": "number"
+          },
+          "suggestedTier": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "evaluatedBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -9501,6 +9739,23 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BuyerSupplierResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListSupplierEvaluationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierEvaluationResponse"
             }
           },
           "message": {

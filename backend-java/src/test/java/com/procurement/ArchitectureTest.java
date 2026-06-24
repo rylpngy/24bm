@@ -37,30 +37,30 @@ class ArchitectureTest {
           .that().resideInAPackage("..domain..")
           .should().dependOnClassesThat().resideInAPackage("..infrastructure..");
 
-  /** 内层（application/domain）不反向依赖控制器层。冻结现有跨模块 api 复用违规。 */
+  /**
+   * 跨模块禁止直接复用别人 api 层的 DTO（同模块用自己的 api DTO 是正常约定，放行）。
+   * 冻结现有违规（如 supplier 工作台聚合 order/sourcing 的 Response）。
+   */
   @ArchTest
-  static final ArchRule inner_layers_should_not_depend_on_api =
-      FreezingArchRule.freeze(
-          noClasses()
-              .that().resideInAnyPackage("..application..", "..domain..")
-              .should().dependOnClassesThat().resideInAPackage("..api.."));
+  static final ArchRule api_is_module_private =
+      FreezingArchRule.freeze(noClasses().should(accessAnotherModulesPackage("api")));
 
   /** 每模块独占表：跨模块禁止直接访问别人的 infrastructure。冻结现有违规。 */
   @ArchTest
   static final ArchRule infrastructure_is_module_private =
-      FreezingArchRule.freeze(
-          noClasses().should(accessAnotherModulesInfrastructure()));
+      FreezingArchRule.freeze(noClasses().should(accessAnotherModulesPackage("infrastructure")));
 
-  private static ArchCondition<JavaClass> accessAnotherModulesInfrastructure() {
-    return new ArchCondition<>("access another module's infrastructure") {
+  /** 跨模块访问另一模块的指定层包（api / infrastructure）即视为越界。 */
+  private static ArchCondition<JavaClass> accessAnotherModulesPackage(String layerSegment) {
+    return new ArchCondition<>("access another module's " + layerSegment) {
       @Override
       public void check(JavaClass clazz, ConditionEvents events) {
         String ownModule = moduleOf(clazz);
         for (Dependency dependency : clazz.getDirectDependenciesFromSelf()) {
           JavaClass target = dependency.getTargetClass();
           String targetModule = moduleOf(target);
-          boolean targetIsInfrastructure = target.getPackageName().contains(".infrastructure");
-          if (targetIsInfrastructure
+          boolean targetInLayer = target.getPackageName().contains("." + layerSegment);
+          if (targetInLayer
               && !targetModule.isEmpty()
               && !targetModule.equals(ownModule)) {
             // noClasses().should(...) 语义：匹配到坏依赖发 satisfied，由 noClasses 翻转为违规。

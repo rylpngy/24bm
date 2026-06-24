@@ -16,12 +16,14 @@ import {
   StatusPill,
   cn,
 } from '@24bid/ui';
+import { SupplierEvaluationPanel } from './supplier-evaluation-panel';
 
 const STATUS_FILTERS = ['全部', '待准入', '准入审批中', '已准入', '已驳回', '黑名单'] as const;
 
 export function SuppliersPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>('全部');
+  const [evalOpenId, setEvalOpenId] = useState<string | null>(null);
 
   const query = useBuyerSupplierList(status === '全部' ? undefined : { status });
   const submit = useBuyerSupplierSubmitAdmission();
@@ -130,7 +132,19 @@ export function SuppliersPage() {
                 <MiniFact label="授权品类" value={(s.categories ?? []).join('、') || '—'} />
                 <MiniFact label="绩效评分" value={String(s.performanceScore ?? '—')} />
               </div>
-              <div className="mt-3">{actionsFor(s)}</div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {actionsFor(s)}
+                {s.id && (
+                  <button
+                    type="button"
+                    onClick={() => setEvalOpenId(evalOpenId === s.id ? null : s.id!)}
+                    className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
+                  >
+                    {evalOpenId === s.id ? '收起考核' : '绩效考核'}
+                  </button>
+                )}
+              </div>
+              {evalOpenId === s.id && s.id && <SupplierEvaluationPanel relationId={s.id} />}
             </div>
           ))}
         >
@@ -156,13 +170,30 @@ export function SuppliersPage() {
                     {s.performanceScore}
                   </td>
                   <td className="px-4 py-4 text-right">
-                    <div className="flex justify-end">{actionsFor(s)}</div>
+                    <div className="flex justify-end gap-2">
+                      {actionsFor(s)}
+                      {s.id && (
+                        <button
+                          type="button"
+                          onClick={() => setEvalOpenId(evalOpenId === s.id ? null : s.id!)}
+                          className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
+                        >
+                          {evalOpenId === s.id ? '收起' : '考核'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </ResponsiveTableFrame>
+      )}
+
+      {evalOpenId && (
+        <div className="hidden lg:block">
+          <SupplierEvaluationPanel relationId={evalOpenId} />
+        </div>
       )}
     </Panel>
   );

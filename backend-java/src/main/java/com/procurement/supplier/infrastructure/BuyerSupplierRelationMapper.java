@@ -116,4 +116,19 @@ public interface BuyerSupplierRelationMapper {
       @Param("tenantId") String tenantId,
       @Param("id") String id,
       @Param("performanceScore") BigDecimal performanceScore);
+
+  @Update("""
+      update buyer_supplier_relations
+      set cooperation_tier = #{cooperationTier},
+          last_evaluation_score = #{lastEvaluationScore},
+          last_evaluated_at = now(),
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+      """)
+  void updateCooperationTier(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("cooperationTier") String cooperationTier,
+      @Param("lastEvaluationScore") BigDecimal lastEvaluationScore);
 }
