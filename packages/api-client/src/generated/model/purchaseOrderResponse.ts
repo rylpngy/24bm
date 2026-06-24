@@ -16,4 +16,8 @@ export interface PurchaseOrderResponse {
   expectedReceiptDate?: string;
   createdAt?: string;
   updatedAt?: string;
+  deliveryAddress?: string;
+  contactName?: string;
+  contactPhone?: string;
+  paymentTerms?: string;
 }

@@ -8,4 +8,8 @@
 
 export interface UpdatePurchaseOrderRequest {
   expectedReceiptDate?: string;
+  deliveryAddress?: string;
+  contactName?: string;
+  contactPhone?: string;
+  paymentTerms?: string;
 }

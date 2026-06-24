@@ -139,6 +139,13 @@ public class PurchaseOrderApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("Purchase order status changed before update could be saved: " + orderId);
     }
+    purchaseOrderMapper.updateOrderDetails(
+        tenantId,
+        orderId,
+        blankToNull(request.deliveryAddress()),
+        blankToNull(request.contactName()),
+        blankToNull(request.contactPhone()),
+        blankToNull(request.paymentTerms()));
     auditLogApplicationService.recordTenantAction(
         PurchaseOrderAuditAction.UPDATED,
         AuditTargetType.PURCHASE_ORDER,
@@ -209,7 +216,11 @@ public class PurchaseOrderApplicationService {
         order.status(),
         order.expectedReceiptDate(),
         order.createdAt(),
-        order.updatedAt());
+        order.updatedAt(),
+        order.deliveryAddress(),
+        order.contactName(),
+        order.contactPhone(),
+        order.paymentTerms());
   }
 
   private void requireFinalizedRfqAward(String tenantId, AwardDecision award) {

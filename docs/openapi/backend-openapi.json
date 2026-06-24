@@ -6650,6 +6650,18 @@
           "expectedReceiptDate": {
             "type": "string",
             "format": "date"
+          },
+          "deliveryAddress": {
+            "type": "string"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "paymentTerms": {
+            "type": "string"
           }
         }
       },
@@ -6699,6 +6711,18 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "deliveryAddress": {
+            "type": "string"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "paymentTerms": {
+            "type": "string"
           }
         }
       },

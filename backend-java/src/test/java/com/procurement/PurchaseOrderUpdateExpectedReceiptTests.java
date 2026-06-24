@@ -59,7 +59,7 @@ class PurchaseOrderUpdateExpectedReceiptTests {
     when(purchaseOrderMapper.updateExpectedReceiptDate("tenant-1", "po-1", nextDate))
         .thenReturn(1);
 
-    var response = purchaseOrderApplicationService.update("po-1", new UpdatePurchaseOrderRequest(nextDate));
+    var response = purchaseOrderApplicationService.update("po-1", new UpdatePurchaseOrderRequest(nextDate, null, null, null, null));
 
     assertThat(response.expectedReceiptDate()).isEqualTo(nextDate);
     verify(purchaseOrderMapper).updateExpectedReceiptDate("tenant-1", "po-1", nextDate);
@@ -75,7 +75,7 @@ class PurchaseOrderUpdateExpectedReceiptTests {
     when(purchaseOrderMapper.updateExpectedReceiptDate("tenant-1", "po-1", nextDate))
         .thenReturn(1);
 
-    purchaseOrderApplicationService.update("po-1", new UpdatePurchaseOrderRequest(nextDate));
+    purchaseOrderApplicationService.update("po-1", new UpdatePurchaseOrderRequest(nextDate, null, null, null, null));
 
     verify(notificationApplicationService).notifyActiveSupplierUsers(
         "tenant-1",
@@ -92,7 +92,7 @@ class PurchaseOrderUpdateExpectedReceiptTests {
 
     assertThatThrownBy(() -> purchaseOrderApplicationService.update(
         "po-1",
-        new UpdatePurchaseOrderRequest(LocalDate.parse("2026-07-12"))))
+        new UpdatePurchaseOrderRequest(LocalDate.parse("2026-07-12"), null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Received purchase order cannot be updated");
 
@@ -112,6 +112,6 @@ class PurchaseOrderUpdateExpectedReceiptTests {
         status,
         expectedReceiptDate,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
   }
 }
