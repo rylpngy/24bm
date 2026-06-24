@@ -43,3 +43,28 @@ export const moduleAccent = {
   receipt: 'lime',
   invoice: 'fuchsia',
 } as const;
+
+/** 操作反馈色调，原样搬自现有实现。 */
+export type FeedbackTone = 'success' | 'error' | 'info';
+
+export const feedbackToneClasses: Record<FeedbackTone, string> = {
+  success: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+  error: 'border-red-100 bg-red-50 text-red-700',
+  info: 'border-blue-100 bg-blue-50 text-blue-700',
+};
+
+/** 按反馈文案推断色调（失败/拒绝→红，已完成/已…→绿，其余→蓝）。 */
+export function resolveFeedbackTone(message: string): FeedbackTone {
+  if (
+    message.includes('失败') ||
+    message.includes('拒绝') ||
+    message.includes('冻结') ||
+    message.includes('不允许')
+  ) {
+    return 'error';
+  }
+  if (message.includes('已完成') || message.includes('已')) {
+    return 'success';
+  }
+  return 'info';
+}

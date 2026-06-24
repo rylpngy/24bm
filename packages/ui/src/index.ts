@@ -1,6 +1,28 @@
 // @24bid/ui — shadcn/ui + Radix 复刻的组件库
-// 视觉逐像素对齐现有 App.tsx；逐切片补齐 Panel/ListToolbar/ResponsiveTableFrame 等。
+// 视觉逐像素对齐现有 App.tsx；逐切片补齐 Detail* / *ListRowCard 等其余组件。
 
 export { cn } from './lib/cn';
+
 export { StatusPill } from './components/status-pill';
 export type { StatusPillProps } from './components/status-pill';
+
+export { MiniFact } from './components/mini-fact';
+export type { MiniFactProps } from './components/mini-fact';
+
+export { Panel } from './components/panel';
+export type { PanelProps } from './components/panel';
+
+export { PrimaryActionButton } from './components/primary-action-button';
+export type { PrimaryActionButtonProps } from './components/primary-action-button';
+
+export { ListToolbar } from './components/list-toolbar';
+export type { ListToolbarProps } from './components/list-toolbar';
+
+export { ResponsiveTableFrame } from './components/responsive-table-frame';
+export type { ResponsiveTableFrameProps } from './components/responsive-table-frame';
+
+export { FeedbackNotice } from './components/feedback-notice';
+export type { FeedbackNoticeProps } from './components/feedback-notice';
+
+export { AppShell } from './components/app-shell';
+export type { AppShellProps } from './components/app-shell';
