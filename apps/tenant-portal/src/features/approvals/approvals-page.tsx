@@ -4,6 +4,7 @@ import { CheckSquare } from 'lucide-react';
 import {
   useApprovalInboxPending,
   useApprovalInboxRecent,
+  useBuyerContractReviewApproval,
   usePurchaseDemandReview,
   usePurchaseOrderCreate,
   useRfqAwardReviewApproval,
@@ -21,6 +22,7 @@ export function ApprovalsPage() {
   const review = usePurchaseDemandReview();
   const awardReview = useRfqAwardReviewApproval();
   const orderCreate = usePurchaseOrderCreate();
+  const contractReview = useBuyerContractReviewApproval();
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const tasks = pending.data?.data ?? [];
@@ -37,7 +39,20 @@ export function ApprovalsPage() {
     (review.isPending && review.variables?.demandId) ||
     (awardReview.isPending && awardReview.variables?.data.awardId) ||
     (orderCreate.isPending && orderCreate.variables?.data.awardId) ||
+    (contractReview.isPending && contractReview.variables?.contractId) ||
     null;
+
+  const handleContractReview = (contractId: string, approved: boolean) => {
+    contractReview.mutate(
+      { contractId, data: { approved } },
+      {
+        onSuccess: () => {
+          setFeedback(approved ? '合同审批通过，已生效' : '合同审批已驳回');
+          refresh();
+        },
+      },
+    );
+  };
 
   const handleDemandReview = (demandId: string, approved: boolean) => {
     review.mutate({ demandId, data: { approved } }, { onSuccess: () => refresh() });
@@ -95,16 +110,19 @@ export function ApprovalsPage() {
             {tasks.map((t) => {
               const isDemand = t.bizType === 'purchase_demand';
               const isAward = t.bizType === 'rfq_award';
+              const isContract = t.bizType === 'contract_approval';
               const busy = busyBizId === t.bizId;
               const onApprove = () => {
                 if (isDemand && t.bizId) handleDemandReview(t.bizId, true);
                 else if (isAward && t.bizId && t.parentBizId)
                   handleAwardReview(t.parentBizId, t.bizId, true);
+                else if (isContract && t.bizId) handleContractReview(t.bizId, true);
               };
               const onReject = () => {
                 if (isDemand && t.bizId) handleDemandReview(t.bizId, false);
                 else if (isAward && t.bizId && t.parentBizId)
                   handleAwardReview(t.parentBizId, t.bizId, false);
+                else if (isContract && t.bizId) handleContractReview(t.bizId, false);
               };
               return (
                 <div
@@ -125,7 +143,7 @@ export function ApprovalsPage() {
                     <MiniFact label="金额" value={currency(t.amount)} />
                     <MiniFact label="任务状态" value={t.status ?? '—'} />
                   </div>
-                  {isDemand || isAward ? (
+                  {isDemand || isAward || isContract ? (
                     <div className="mt-3 flex gap-2">
                       <button
                         type="button"
