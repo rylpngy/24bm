@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, Plus } from 'lucide-react';
-import { usePurchaseDemandList, usePurchaseDemandSubmit } from '@24bid/api-client';
+import {
+  type PurchaseDemandResponse,
+  usePurchaseDemandList,
+  usePurchaseDemandSubmit,
+} from '@24bid/api-client';
 import {
   FeedbackNotice,
   ListToolbar,
@@ -13,6 +17,7 @@ import {
   cn,
 } from '@24bid/ui';
 import { DemandCreateForm } from './demand-create-form';
+import { DemandDetail } from './demand-detail';
 
 const currency = (value?: number) =>
   value == null ? '—' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -23,10 +28,16 @@ export function DemandsPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>('全部');
   const [showForm, setShowForm] = useState(false);
+  const [selected, setSelected] = useState<PurchaseDemandResponse | null>(null);
 
   const query = usePurchaseDemandList(status === '全部' ? undefined : { status });
   const submit = usePurchaseDemandSubmit();
   const demands = query.data?.data ?? [];
+
+  if (selected) {
+    const fresh = demands.find((d) => d.id === selected.id) ?? selected;
+    return <DemandDetail demand={fresh} onBack={() => setSelected(null)} />;
+  }
 
   const refreshDemands = () =>
     queryClient.invalidateQueries({
@@ -105,6 +116,13 @@ export function DemandsPage() {
                 <MiniFact label="申请部门" value={d.departmentId ?? '—'} />
                 <MiniFact label="预算金额" value={currency(d.budget)} />
               </div>
+              <button
+                type="button"
+                onClick={() => setSelected(d)}
+                className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
+              >
+                查看详情
+              </button>
               {d.status === '草稿' && d.id && (
                 <PrimaryActionButton
                   onClick={() => handleSubmitForApproval(d.id!)}
@@ -140,18 +158,25 @@ export function DemandsPage() {
                     {currency(d.budget)}
                   </td>
                   <td className="px-4 py-4 text-right">
-                    {d.status === '草稿' && d.id ? (
+                    <div className="flex justify-end gap-2">
+                      {d.status === '草稿' && d.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleSubmitForApproval(d.id!)}
+                          disabled={submit.isPending && submit.variables?.demandId === d.id}
+                          className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:bg-slate-400"
+                        >
+                          {submit.isPending && submit.variables?.demandId === d.id ? '提交中' : '提交审批'}
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => handleSubmitForApproval(d.id!)}
-                        disabled={submit.isPending && submit.variables?.demandId === d.id}
-                        className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:bg-slate-400"
+                        onClick={() => setSelected(d)}
+                        className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
                       >
-                        {submit.isPending && submit.variables?.demandId === d.id ? '提交中' : '提交审批'}
+                        详情
                       </button>
-                    ) : (
-                      <span className="text-xs font-bold text-slate-400">—</span>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
