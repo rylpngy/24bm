@@ -1,0 +1,74 @@
+# 24Bid 本地基础设施——全部可自托管开源件（标准第四章私有化硬约束）。
+# 用法：docker compose -f infra/docker-compose.yml up -d
+#
+# 端口分配：
+#   postgres 5432 / redis 6379 / minio 9000(API) 9001(控制台) / keycloak 8081
+#   后端 Spring Boot 占 8080，前端 5173/5174。
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: 24bid-postgres
+    environment:
+      POSTGRES_DB: procurement_saas
+      POSTGRES_USER: procurement
+      POSTGRES_PASSWORD: procurement
+    ports:
+      - "5432:5432"
+    volumes:
+      - 24bid-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U procurement -d procurement_saas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: 24bid-redis
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - 24bid-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: 24bid-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - 24bid-minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: 24bid-keycloak
+    command: ["start-dev", "--http-port=8081", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./keycloak/realm:/opt/keycloak/data/import:ro
+
+volumes:
+  24bid-postgres-data:
+  24bid-redis-data:
+  24bid-minio-data:
