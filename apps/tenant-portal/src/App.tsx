@@ -7,6 +7,7 @@ import { LoginGate } from './features/login-gate';
 import { DemandsPage } from './features/demands/demands-page';
 import { ApprovalsPage } from './features/approvals/approvals-page';
 import { SuppliersPage } from './features/suppliers/suppliers-page';
+import { MaterialsPage } from './features/materials/materials-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
@@ -33,6 +34,8 @@ export function App() {
         <ApprovalsPage />
       ) : activeModuleId === 'suppliers' ? (
         <SuppliersPage />
+      ) : activeModuleId === 'materials' ? (
+        <MaterialsPage />
       ) : (
         <Panel title={activeModule?.label ?? '模块'} icon={Construction} subtitle="后续切片实现">
           <FeedbackNotice
