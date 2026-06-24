@@ -37,6 +37,9 @@ export function RfqsPage() {
   const [demandId, setDemandId] = useState('');
   const [supplierIds, setSupplierIds] = useState<string[]>([]);
   const [deadline, setDeadline] = useState('');
+  const [evaluationMethod, setEvaluationMethod] = useState('最低价');
+  const [quoteRequirement, setQuoteRequirement] = useState('');
+  const [deliveryRequirement, setDeliveryRequirement] = useState('');
 
   const list = rfqs.data?.data ?? [];
   const demands = approvedDemands.data?.data ?? [];
@@ -65,6 +68,9 @@ export function RfqsPage() {
           demandIds: demandId ? [demandId] : [],
           invitedSupplierIds: supplierIds,
           deadlineAt: deadline ? `${deadline}T18:00:00+08:00` : undefined,
+          evaluationMethod,
+          quoteRequirement: quoteRequirement || undefined,
+          deliveryRequirement: deliveryRequirement || undefined,
         },
       },
       {
@@ -73,6 +79,9 @@ export function RfqsPage() {
           setDemandId('');
           setSupplierIds([]);
           setDeadline('');
+          setEvaluationMethod('最低价');
+          setQuoteRequirement('');
+          setDeliveryRequirement('');
           setShowForm(false);
           refresh();
         },
@@ -137,6 +146,37 @@ export function RfqsPage() {
                 onChange={(e) => setDeadline(e.target.value)}
               />
             </div>
+            <div>
+              <label className="text-xs font-black text-slate-500">评选方式</label>
+              <select
+                className={inputCls}
+                value={evaluationMethod}
+                onChange={(e) => setEvaluationMethod(e.target.value)}
+              >
+                <option value="最低价">最低价</option>
+                <option value="综合评分">综合评分</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-black text-slate-500">报价要求</label>
+              <textarea
+                className={cn(inputCls, 'min-h-[64px] resize-y')}
+                placeholder="如：报价含13%增值税专票，单价精确到分，报价有效期不少于30天。"
+                value={quoteRequirement}
+                onChange={(e) => setQuoteRequirement(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-black text-slate-500">交付要求</label>
+              <textarea
+                className={cn(inputCls, 'min-h-[64px] resize-y')}
+                placeholder="如：到货地址、到货时限、质保期限与验收方式。"
+                value={deliveryRequirement}
+                onChange={(e) => setDeliveryRequirement(e.target.value)}
+              />
+            </div>
           </div>
           <div className="mt-3">
             <label className="text-xs font-black text-slate-500">邀请供应商(已准入)</label>
@@ -192,11 +232,28 @@ export function RfqsPage() {
                 </div>
                 {r.status && <StatusPill label={r.status} />}
               </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <div className="mt-3 grid gap-2 sm:grid-cols-4">
                 <MiniFact label="邀请供应商" value={String((r.invitedSupplierIds ?? []).length)} />
                 <MiniFact label="收到报价" value={String((r.quotes ?? []).length)} />
                 <MiniFact label="报价截止" value={r.deadlineAt?.slice(0, 10) ?? '—'} />
+                <MiniFact label="评选方式" value={r.evaluationMethod ?? '最低价'} />
               </div>
+              {(r.quoteRequirement || r.deliveryRequirement) && (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                    <p className="text-[11px] font-black text-slate-400">报价要求</p>
+                    <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">
+                      {r.quoteRequirement || '未填写。'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                    <p className="text-[11px] font-black text-slate-400">交付要求</p>
+                    <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">
+                      {r.deliveryRequirement || '未填写。'}
+                    </p>
+                  </div>
+                </div>
+              )}
               {(r.quotes ?? []).length > 0 && (
                 <button
                   type="button"

@@ -68,7 +68,7 @@ class RfqUpdateQuotingTests {
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
         .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")))
         .thenReturn(rfq("rfq-1", "报价中", deadline));
-    when(rfqMapper.updateQuotingDetails("tenant-1", "rfq-1", "更新后的询价", deadline))
+    when(rfqMapper.updateQuotingDetails("tenant-1", "rfq-1", "更新后的询价", deadline, "", "", "最低价"))
         .thenReturn(1);
     when(buyerSupplierRelationMapper.countByTenantSupplierAndStatus("tenant-1", "supplier-1", "已准入"))
         .thenReturn(1);
@@ -85,12 +85,12 @@ class RfqUpdateQuotingTests {
     var response = rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
         "更新后的询价",
         List.of("supplier-1", "supplier-2"),
-        deadline));
+        deadline, "", "", "最低价"));
 
     assertThat(response.title()).isEqualTo("更新后的询价");
     assertThat(response.deadlineAt()).isEqualTo(deadline);
     assertThat(response.invitedSupplierIds()).containsExactly("supplier-1", "supplier-2");
-    verify(rfqMapper).updateQuotingDetails("tenant-1", "rfq-1", "更新后的询价", deadline);
+    verify(rfqMapper).updateQuotingDetails("tenant-1", "rfq-1", "更新后的询价", deadline, "", "", "最低价");
     verify(rfqInviteMapper).deleteByRfq("tenant-1", "rfq-1");
     verify(rfqInviteMapper).insert(
         org.mockito.ArgumentMatchers.anyString(),
@@ -113,7 +113,7 @@ class RfqUpdateQuotingTests {
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
         .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")))
         .thenReturn(rfq("rfq-1", "报价中", deadline));
-    when(rfqMapper.updateQuotingDetails("tenant-1", "rfq-1", "更新后的询价", deadline))
+    when(rfqMapper.updateQuotingDetails("tenant-1", "rfq-1", "更新后的询价", deadline, "", "", "最低价"))
         .thenReturn(1);
     when(buyerSupplierRelationMapper.countByTenantSupplierAndStatus("tenant-1", "supplier-1", "已准入"))
         .thenReturn(1);
@@ -130,7 +130,7 @@ class RfqUpdateQuotingTests {
     rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
         "更新后的询价",
         List.of("supplier-1", "supplier-2"),
-        deadline));
+        deadline, "", "", "最低价"));
 
     verify(auditLogApplicationService)
         .recordTenantAction("rfq.updated", AuditTargetType.RFQ, "rfq-1");
@@ -155,7 +155,7 @@ class RfqUpdateQuotingTests {
     assertThatThrownBy(() -> rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
         "审批中的询价",
         List.of("supplier-1"),
-        OffsetDateTime.parse("2026-07-05T18:00:00+08:00"))))
+        OffsetDateTime.parse("2026-07-05T18:00:00+08:00"), "", "", "最低价")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Only quoting RFQ can be updated");
 
@@ -163,7 +163,10 @@ class RfqUpdateQuotingTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.any());
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
   }
 
   @Test
@@ -175,7 +178,7 @@ class RfqUpdateQuotingTests {
     assertThatThrownBy(() -> rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
         "重复邀请询价",
         List.of("supplier-1", "supplier-1"),
-        OffsetDateTime.parse("2026-07-05T18:00:00+08:00"))))
+        OffsetDateTime.parse("2026-07-05T18:00:00+08:00"), "", "", "最低价")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("RFQ cannot invite the same supplier more than once: supplier-1");
 
@@ -184,7 +187,10 @@ class RfqUpdateQuotingTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.any());
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
   }
 
   @Test
@@ -200,7 +206,7 @@ class RfqUpdateQuotingTests {
     assertThatThrownBy(() -> rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
         "更新后的询价",
         List.of("supplier-1"),
-        OffsetDateTime.parse("2026-07-05T18:00:00+08:00"))))
+        OffsetDateTime.parse("2026-07-05T18:00:00+08:00"), "", "", "最低价")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Supplier lacks active qualification for tenant RFQ: supplier-1");
 
@@ -217,7 +223,7 @@ class RfqUpdateQuotingTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价");
   }
 
   private SupplierQualification qualification(String id, String supplierId) {

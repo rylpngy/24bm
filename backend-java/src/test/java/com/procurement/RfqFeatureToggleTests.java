@@ -70,7 +70,7 @@ class RfqFeatureToggleTests {
         "办公电脑询价",
         List.of("demand-1"),
         List.of("supplier-1"),
-        OffsetDateTime.parse("2026-06-20T18:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-20T18:00:00+08:00"), "", "", "最低价");
 
     assertThatThrownBy(() -> rfqApplicationService.create(request))
         .isInstanceOf(IllegalStateException.class)
@@ -82,6 +82,9 @@ class RfqFeatureToggleTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString());
   }
 }

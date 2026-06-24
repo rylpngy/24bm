@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Update;
 public interface RfqMapper {
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method
       from rfqs
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -22,7 +22,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method
       from rfqs
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -40,14 +40,14 @@ public interface RfqMapper {
       @Param("keyword") String keyword);
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method
       from rfqs
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Rfq findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where r.id = #{rfqId}
@@ -57,7 +57,7 @@ public interface RfqMapper {
   Rfq findBySupplierInvite(@Param("rfqId") String rfqId, @Param("supplierId") String supplierId);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -68,7 +68,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -88,8 +88,10 @@ public interface RfqMapper {
       @Param("keyword") String keyword);
 
   @Insert("""
-      insert into rfqs (id, tenant_id, title, status, deadline_at, owner_id)
-      values (#{id}, #{tenantId}, #{title}, #{status}, #{deadlineAt}, #{ownerId})
+      insert into rfqs (id, tenant_id, title, status, deadline_at, owner_id,
+                        quote_requirement, delivery_requirement, evaluation_method)
+      values (#{id}, #{tenantId}, #{title}, #{status}, #{deadlineAt}, #{ownerId},
+              #{quoteRequirement}, #{deliveryRequirement}, #{evaluationMethod})
       """)
   void insert(
       @Param("id") String id,
@@ -97,7 +99,10 @@ public interface RfqMapper {
       @Param("title") String title,
       @Param("status") String status,
       @Param("deadlineAt") OffsetDateTime deadlineAt,
-      @Param("ownerId") String ownerId);
+      @Param("ownerId") String ownerId,
+      @Param("quoteRequirement") String quoteRequirement,
+      @Param("deliveryRequirement") String deliveryRequirement,
+      @Param("evaluationMethod") String evaluationMethod);
 
   @Update("""
       update rfqs
@@ -133,6 +138,9 @@ public interface RfqMapper {
       update rfqs
       set title = #{title},
           deadline_at = #{deadlineAt},
+          quote_requirement = #{quoteRequirement},
+          delivery_requirement = #{deliveryRequirement},
+          evaluation_method = #{evaluationMethod},
           updated_at = now()
       where tenant_id = #{tenantId}
         and id = #{id}
@@ -142,5 +150,8 @@ public interface RfqMapper {
       @Param("tenantId") String tenantId,
       @Param("id") String id,
       @Param("title") String title,
-      @Param("deadlineAt") OffsetDateTime deadlineAt);
+      @Param("deadlineAt") OffsetDateTime deadlineAt,
+      @Param("quoteRequirement") String quoteRequirement,
+      @Param("deliveryRequirement") String deliveryRequirement,
+      @Param("evaluationMethod") String evaluationMethod);
 }

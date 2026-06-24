@@ -20,4 +20,7 @@ export interface RfqResponse {
   demandIds?: string[];
   invitedSupplierIds?: string[];
   quotes?: QuoteResponse[];
+  quoteRequirement?: string;
+  deliveryRequirement?: string;
+  evaluationMethod?: string;
 }

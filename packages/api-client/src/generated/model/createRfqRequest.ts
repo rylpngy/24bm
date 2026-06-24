@@ -11,4 +11,7 @@ export interface CreateRfqRequest {
   demandIds: string[];
   invitedSupplierIds: string[];
   deadlineAt?: string;
+  quoteRequirement?: string;
+  deliveryRequirement?: string;
+  evaluationMethod?: string;
 }

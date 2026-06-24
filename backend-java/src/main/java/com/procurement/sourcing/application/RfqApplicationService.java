@@ -101,7 +101,16 @@ public class RfqApplicationService {
     validateSuppliers(tenantId, request.invitedSupplierIds());
 
     String rfqId = newId("rfq");
-    rfqMapper.insert(rfqId, tenantId, request.title(), RfqStatus.QUOTING, request.deadlineAt(), userId);
+    rfqMapper.insert(
+        rfqId,
+        tenantId,
+        request.title(),
+        RfqStatus.QUOTING,
+        request.deadlineAt(),
+        userId,
+        orEmpty(request.quoteRequirement()),
+        orEmpty(request.deliveryRequirement()),
+        orDefaultEvaluation(request.evaluationMethod()));
 
     insertRfqDemandLinks(tenantId, rfqId, request.demandIds());
 
@@ -141,7 +150,10 @@ public class RfqApplicationService {
         tenantId,
         rfqId,
         request.title(),
-        request.deadlineAt());
+        request.deadlineAt(),
+        orEmpty(request.quoteRequirement()),
+        orEmpty(request.deliveryRequirement()),
+        orDefaultEvaluation(request.evaluationMethod()));
     if (updated == 0) {
       throw new IllegalStateException("RFQ status changed before update could be saved: " + rfqId);
     }
@@ -220,7 +232,18 @@ public class RfqApplicationService {
         rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()),
         quoteMapper.listByTenantAndRfq(rfq.tenantId(), rfq.id()).stream()
             .map(this::toQuoteResponse)
-            .toList());
+            .toList(),
+        rfq.quoteRequirement(),
+        rfq.deliveryRequirement(),
+        rfq.evaluationMethod());
+  }
+
+  private static String orEmpty(String value) {
+    return value == null ? "" : value;
+  }
+
+  private static String orDefaultEvaluation(String value) {
+    return value == null || value.isBlank() ? "最低价" : value;
   }
 
   private QuoteResponse toQuoteResponse(Quote quote) {

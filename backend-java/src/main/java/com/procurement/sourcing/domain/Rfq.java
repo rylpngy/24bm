@@ -11,5 +11,8 @@ public record Rfq(
     String ownerId,
     String awardedSupplierId,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    String quoteRequirement,
+    String deliveryRequirement,
+    String evaluationMethod) {
 }

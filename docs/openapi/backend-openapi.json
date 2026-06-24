@@ -6311,6 +6311,15 @@
           "deadlineAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "quoteRequirement": {
+            "type": "string"
+          },
+          "deliveryRequirement": {
+            "type": "string"
+          },
+          "evaluationMethod": {
+            "type": "string"
           }
         }
       },
@@ -6378,6 +6387,15 @@
             "items": {
               "$ref": "#/components/schemas/QuoteResponse"
             }
+          },
+          "quoteRequirement": {
+            "type": "string"
+          },
+          "deliveryRequirement": {
+            "type": "string"
+          },
+          "evaluationMethod": {
+            "type": "string"
           }
         }
       },
@@ -7969,6 +7987,15 @@
           "deadlineAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "quoteRequirement": {
+            "type": "string"
+          },
+          "deliveryRequirement": {
+            "type": "string"
+          },
+          "evaluationMethod": {
+            "type": "string"
           }
         }
       },

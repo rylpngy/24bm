@@ -9,5 +9,8 @@ import java.util.List;
 public record UpdateRfqRequest(
     @NotBlank String title,
     @NotEmpty List<String> invitedSupplierIds,
-    @Future OffsetDateTime deadlineAt) {
+    @Future OffsetDateTime deadlineAt,
+    String quoteRequirement,
+    String deliveryRequirement,
+    String evaluationMethod) {
 }
