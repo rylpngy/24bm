@@ -121,7 +121,10 @@ public class InvoiceApplicationService {
         order.id(),
         request.amount(),
         request.invoiceNo(),
-        InvoicePaymentStatus.PENDING_PAYMENT);
+        InvoicePaymentStatus.PENDING_PAYMENT,
+        request.invoiceCode() == null ? "" : request.invoiceCode(),
+        request.invoiceDate() == null ? java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai")) : request.invoiceDate(),
+        request.taxRate() == null ? new java.math.BigDecimal("13.00") : request.taxRate());
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
         InvoiceAuditAction.CREATED,

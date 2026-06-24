@@ -6096,6 +6096,22 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "invoiceCode": {
+            "type": "string"
+          },
+          "invoiceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "taxRate": {
+            "type": "number"
+          },
+          "taxAmount": {
+            "type": "number"
+          },
+          "netAmount": {
+            "type": "number"
           }
         }
       },
@@ -7269,6 +7285,16 @@
           },
           "invoiceNo": {
             "type": "string"
+          },
+          "invoiceCode": {
+            "type": "string"
+          },
+          "invoiceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "taxRate": {
+            "type": "number"
           }
         }
       },

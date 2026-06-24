@@ -27,4 +27,9 @@ export interface InvoiceResponse {
   nextReconciliationAction?: string;
   createdAt?: string;
   updatedAt?: string;
+  invoiceCode?: string;
+  invoiceDate?: string;
+  taxRate?: number;
+  taxAmount?: number;
+  netAmount?: number;
 }

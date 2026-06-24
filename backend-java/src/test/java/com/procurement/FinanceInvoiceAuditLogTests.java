@@ -95,7 +95,7 @@ class FinanceInvoiceAuditLogTests {
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> invoice(invocation.getArgument(1)));
 
-    invoiceApplicationService.create("po-1", new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001"));
+    invoiceApplicationService.create("po-1", new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001", null, null, null));
 
     verify(auditLogApplicationService).recordTenantAction(
         org.mockito.ArgumentMatchers.eq("tenant-1"),
@@ -136,7 +136,7 @@ class FinanceInvoiceAuditLogTests {
 
     assertThatThrownBy(() -> invoiceApplicationService.create(
         "po-1",
-        new CreateInvoiceRequest(BigDecimal.valueOf(99), "INV-001")))
+        new CreateInvoiceRequest(BigDecimal.valueOf(99), "INV-001", null, null, null)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invoice amount must equal purchase order amount");
 
@@ -147,7 +147,10 @@ class FinanceInvoiceAuditLogTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyString());
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -160,7 +163,7 @@ class FinanceInvoiceAuditLogTests {
 
     assertThatThrownBy(() -> invoiceApplicationService.create(
         "po-1",
-        new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001")))
+        new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001", null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Purchase order already has an invoice");
 
@@ -171,7 +174,10 @@ class FinanceInvoiceAuditLogTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyString());
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
   }
 
   private PurchaseOrder order() {
@@ -202,6 +208,6 @@ class FinanceInvoiceAuditLogTests {
         "待付款",
         reconciliationNote,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "144031909110", java.time.LocalDate.parse("2026-06-01"), new java.math.BigDecimal("13.00"));
   }
 }

@@ -9,4 +9,7 @@
 export interface CreateInvoiceRequest {
   amount?: number;
   invoiceNo: string;
+  invoiceCode?: string;
+  invoiceDate?: string;
+  taxRate?: number;
 }

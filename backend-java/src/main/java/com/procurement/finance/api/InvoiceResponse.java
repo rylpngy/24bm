@@ -24,5 +24,10 @@ public record InvoiceResponse(
     String reconciliationStage,
     String nextReconciliationAction,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    String invoiceCode,
+    LocalDate invoiceDate,
+    BigDecimal taxRate,
+    BigDecimal taxAmount,
+    BigDecimal netAmount) {
 }

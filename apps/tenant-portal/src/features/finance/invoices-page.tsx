@@ -73,6 +73,24 @@ export function InvoicesPage() {
                 </div>
 
                 <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                  <p className="text-xs font-black text-slate-500">发票信息（增值税专用发票）</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                    <MiniFact label="发票代码" value={inv.invoiceCode || '—'} />
+                    <MiniFact label="发票号码" value={inv.invoiceNo ?? '—'} />
+                    <MiniFact label="开票日期" value={inv.invoiceDate ?? '—'} />
+                    <MiniFact
+                      label="税率"
+                      value={inv.taxRate != null ? `${inv.taxRate}%` : '—'}
+                    />
+                  </div>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    <MiniFact label="不含税金额" value={currency(inv.netAmount)} />
+                    <MiniFact label="税额" value={currency(inv.taxAmount)} />
+                    <MiniFact label="价税合计" value={currency(inv.amount)} />
+                  </div>
+                </div>
+
+                <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
                   <p className="text-xs font-black text-slate-500">三单匹配</p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-4">
                     <MiniFact label="发票金额" value={currency(inv.amount)} />

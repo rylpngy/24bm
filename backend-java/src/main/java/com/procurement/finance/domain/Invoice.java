@@ -1,6 +1,7 @@
 package com.procurement.finance.domain;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record Invoice(
@@ -13,5 +14,8 @@ public record Invoice(
     String paymentStatus,
     String reconciliationNote,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    String invoiceCode,
+    LocalDate invoiceDate,
+    BigDecimal taxRate) {
 }

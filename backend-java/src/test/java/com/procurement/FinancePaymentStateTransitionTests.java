@@ -298,7 +298,7 @@ class FinancePaymentStateTransitionTests {
 
     InvoiceResponse response = invoiceApplicationService.create(
         "po-1",
-        new com.procurement.finance.api.CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001"));
+        new com.procurement.finance.api.CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001", null, null, null));
 
     org.assertj.core.api.Assertions.assertThat(response.reconciliationStage()).isEqualTo("待付款");
     org.mockito.ArgumentCaptor<String> invoiceIdCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
@@ -390,7 +390,7 @@ class FinancePaymentStateTransitionTests {
         paymentStatus,
         reconciliationNote,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "144031909110", java.time.LocalDate.parse("2026-06-01"), new java.math.BigDecimal("13.00"));
   }
 
   private PurchaseOrder order(BigDecimal amount) {

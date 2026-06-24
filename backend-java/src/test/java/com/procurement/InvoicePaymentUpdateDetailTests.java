@@ -104,7 +104,7 @@ class InvoicePaymentUpdateDetailTests {
         paymentStatus,
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "144031909110", java.time.LocalDate.parse("2026-06-01"), new java.math.BigDecimal("13.00"));
   }
 
   private PurchaseOrder order(BigDecimal amount) {

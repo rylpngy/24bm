@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Update;
 public interface InvoiceMapper {
 
   @Select("""
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at, invoice_code, invoice_date, tax_rate
       from invoices
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -22,7 +22,7 @@ public interface InvoiceMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at, invoice_code, invoice_date, tax_rate
       from invoices
       where tenant_id = #{tenantId}
         <if test="paymentStatus != null and paymentStatus != ''">
@@ -44,7 +44,7 @@ public interface InvoiceMapper {
       @Param("orderId") String orderId);
 
   @Select("""
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at, invoice_code, invoice_date, tax_rate
       from invoices
       where supplier_id = #{supplierId,jdbcType=VARCHAR}
       order by created_at desc
@@ -53,7 +53,7 @@ public interface InvoiceMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at, invoice_code, invoice_date, tax_rate
       from invoices
       where supplier_id = #{supplierId,jdbcType=VARCHAR}
         <if test="paymentStatus != null and paymentStatus != ''">
@@ -79,8 +79,8 @@ public interface InvoiceMapper {
   int countByTenantAndOrder(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
 
   @Insert("""
-      insert into invoices (id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status)
-      values (#{id}, #{tenantId}, #{supplierId}, #{orderId}, #{amount}, #{invoiceNo}, #{paymentStatus,jdbcType=VARCHAR})
+      insert into invoices (id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, invoice_code, invoice_date, tax_rate)
+      values (#{id}, #{tenantId}, #{supplierId}, #{orderId}, #{amount}, #{invoiceNo}, #{paymentStatus,jdbcType=VARCHAR}, #{invoiceCode}, #{invoiceDate,jdbcType=DATE}, #{taxRate})
       """)
   void insert(
       @Param("id") String id,
@@ -89,17 +89,20 @@ public interface InvoiceMapper {
       @Param("orderId") String orderId,
       @Param("amount") BigDecimal amount,
       @Param("invoiceNo") String invoiceNo,
-      @Param("paymentStatus") String paymentStatus);
+      @Param("paymentStatus") String paymentStatus,
+      @Param("invoiceCode") String invoiceCode,
+      @Param("invoiceDate") java.time.LocalDate invoiceDate,
+      @Param("taxRate") BigDecimal taxRate);
 
   @Select("""
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at, invoice_code, invoice_date, tax_rate
       from invoices
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Invoice findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at, invoice_code, invoice_date, tax_rate
       from invoices
       where supplier_id = #{supplierId,jdbcType=VARCHAR} and id = #{id}
       """)

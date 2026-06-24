@@ -568,7 +568,7 @@ class FinanceActionPaymentBlockingTests {
         "待付款",
         null,
         OffsetDateTime.now(),
-        OffsetDateTime.now());
+        OffsetDateTime.now(), "144031909110", java.time.LocalDate.parse("2026-06-01"), new java.math.BigDecimal("13.00"));
   }
 
   private PaymentBatch paymentBatch(String batchStatus) {

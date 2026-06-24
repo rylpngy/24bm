@@ -116,7 +116,7 @@ class OrderFinanceFeatureToggleTests {
 
     assertThatThrownBy(() -> invoiceApplicationService.create(
         "po-1",
-        new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-1")))
+        new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-1", null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Feature is not enabled for tenant: finance");
 
@@ -127,7 +127,10 @@ class OrderFinanceFeatureToggleTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyString());
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
   }
 
   @Test

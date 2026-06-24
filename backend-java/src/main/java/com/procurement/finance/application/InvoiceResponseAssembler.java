@@ -33,6 +33,13 @@ final class InvoiceResponseAssembler {
     String reconciliationStage = toReconciliationStage(invoice.paymentStatus(), reconciliationStatus);
     String nextReconciliationAction = toNextReconciliationAction(reconciliationStage);
 
+    // 价税合计(amount)与税率推导税额与不含税金额：税额 = 价税合计 × 税率 / (100 + 税率)。
+    BigDecimal taxRate = invoice.taxRate() == null ? BigDecimal.ZERO : invoice.taxRate();
+    BigDecimal taxAmount = invoice.amount()
+        .multiply(taxRate)
+        .divide(taxRate.add(new BigDecimal("100")), 2, java.math.RoundingMode.HALF_UP);
+    BigDecimal netAmount = invoice.amount().subtract(taxAmount);
+
     return new InvoiceResponse(
         invoice.id(),
         invoice.tenantId(),
@@ -53,7 +60,12 @@ final class InvoiceResponseAssembler {
         reconciliationStage,
         nextReconciliationAction,
         invoice.createdAt(),
-        invoice.updatedAt());
+        invoice.updatedAt(),
+        invoice.invoiceCode(),
+        invoice.invoiceDate(),
+        taxRate,
+        taxAmount,
+        netAmount);
   }
 
   private static String toReconciliationStatus(
