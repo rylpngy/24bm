@@ -37,6 +37,7 @@ public class SecurityConfig {
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/v1/health", "/api/v1/auth/login").permitAll()
+            .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
             .requestMatchers("/api/v1/platform/**").hasRole("PLATFORM_ADMIN")
             .requestMatchers("/api/v1/buyer/**").hasRole("BUYER_OWNER")
             .requestMatchers("/api/v1/supplier/**").hasRole("SUPPLIER_SALES")
@@ -55,9 +56,11 @@ public class SecurityConfig {
         "http://127.0.0.1:3001",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
         "http://localhost:4173",
         "http://127.0.0.1:4173"));
-    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "OPTIONS"));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("authorization", "content-type"));
     configuration.setExposedHeaders(List.of("authorization"));
     configuration.setAllowCredentials(true);

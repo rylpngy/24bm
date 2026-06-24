@@ -19,6 +19,7 @@
     "legacy:backend:demo": "node scripts/backend-demo.mjs",
     "java:dev": "cd backend-java && SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev' mvn spring-boot:run -Dspring-boot.run.profiles=local",
     "java:smoke": "node scripts/java-local-smoke.mjs",
+    "openapi:backend": "node scripts/export-backend-openapi.mjs",
     "openapi:export": "node scripts/export-openapi.mjs",
     "openapi:check": "node scripts/check-openapi.mjs",
     "verify": "node scripts/verify-local.mjs",
