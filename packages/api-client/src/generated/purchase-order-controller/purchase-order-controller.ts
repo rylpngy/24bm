@@ -29,7 +29,7 @@ import type {
   ApiResponsePurchaseOrderResponse,
   ApiResponseVoid,
   CreatePurchaseOrderRequest,
-  List17Params,
+  PurchaseOrderListParams,
   UpdatePurchaseOrderRequest
 } from '.././model';
 
@@ -39,7 +39,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const update4 = (
+export const purchaseOrderUpdate = (
     orderId: string,
     updatePurchaseOrderRequest: BodyType<UpdatePurchaseOrderRequest>,
  ) => {
@@ -55,11 +55,11 @@ export const update4 = (
   
 
 
-export const getUpdate4MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update4>>, TError,{orderId: string;data: BodyType<UpdatePurchaseOrderRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof update4>>, TError,{orderId: string;data: BodyType<UpdatePurchaseOrderRequest>}, TContext> => {
+export const getPurchaseOrderUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderUpdate>>, TError,{orderId: string;data: BodyType<UpdatePurchaseOrderRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderUpdate>>, TError,{orderId: string;data: BodyType<UpdatePurchaseOrderRequest>}, TContext> => {
 
-const mutationKey = ['update4'];
+const mutationKey = ['purchaseOrderUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -69,10 +69,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof update4>>, {orderId: string;data: BodyType<UpdatePurchaseOrderRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseOrderUpdate>>, {orderId: string;data: BodyType<UpdatePurchaseOrderRequest>}> = (props) => {
           const {orderId,data} = props ?? {};
 
-          return  update4(orderId,data,)
+          return  purchaseOrderUpdate(orderId,data,)
         }
 
         
@@ -80,25 +80,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Update4MutationResult = NonNullable<Awaited<ReturnType<typeof update4>>>
-    export type Update4MutationBody = BodyType<UpdatePurchaseOrderRequest>
-    export type Update4MutationError = ErrorType<ApiResponseVoid>
+    export type PurchaseOrderUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseOrderUpdate>>>
+    export type PurchaseOrderUpdateMutationBody = BodyType<UpdatePurchaseOrderRequest>
+    export type PurchaseOrderUpdateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdate4 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update4>>, TError,{orderId: string;data: BodyType<UpdatePurchaseOrderRequest>}, TContext>, }
+    export const usePurchaseOrderUpdate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderUpdate>>, TError,{orderId: string;data: BodyType<UpdatePurchaseOrderRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof update4>>,
+        Awaited<ReturnType<typeof purchaseOrderUpdate>>,
         TError,
         {orderId: string;data: BodyType<UpdatePurchaseOrderRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdate4MutationOptions(options);
+      const mutationOptions = getPurchaseOrderUpdateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const list17 = (
-    params?: List17Params,
+    export const purchaseOrderList = (
+    params?: PurchaseOrderListParams,
  signal?: AbortSignal
 ) => {
       
@@ -113,66 +113,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getList17QueryKey = (params?: List17Params,) => {
+export const getPurchaseOrderListQueryKey = (params?: PurchaseOrderListParams,) => {
     return [
     `/api/v1/buyer/orders`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList17QueryOptions = <TData = Awaited<ReturnType<typeof list17>>, TError = ErrorType<ApiResponseVoid>>(params?: List17Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list17>>, TError, TData>>, }
+export const getPurchaseOrderListQueryOptions = <TData = Awaited<ReturnType<typeof purchaseOrderList>>, TError = ErrorType<ApiResponseVoid>>(params?: PurchaseOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList17QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getPurchaseOrderListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list17>>> = ({ signal }) => list17(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof purchaseOrderList>>> = ({ signal }) => purchaseOrderList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list17>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List17QueryResult = NonNullable<Awaited<ReturnType<typeof list17>>>
-export type List17QueryError = ErrorType<ApiResponseVoid>
+export type PurchaseOrderListQueryResult = NonNullable<Awaited<ReturnType<typeof purchaseOrderList>>>
+export type PurchaseOrderListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList17<TData = Awaited<ReturnType<typeof list17>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List17Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list17>>, TError, TData>> & Pick<
+export function usePurchaseOrderList<TData = Awaited<ReturnType<typeof purchaseOrderList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  PurchaseOrderListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list17>>,
+          Awaited<ReturnType<typeof purchaseOrderList>>,
           TError,
-          Awaited<ReturnType<typeof list17>>
+          Awaited<ReturnType<typeof purchaseOrderList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList17<TData = Awaited<ReturnType<typeof list17>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List17Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list17>>, TError, TData>> & Pick<
+export function usePurchaseOrderList<TData = Awaited<ReturnType<typeof purchaseOrderList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: PurchaseOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list17>>,
+          Awaited<ReturnType<typeof purchaseOrderList>>,
           TError,
-          Awaited<ReturnType<typeof list17>>
+          Awaited<ReturnType<typeof purchaseOrderList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList17<TData = Awaited<ReturnType<typeof list17>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List17Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list17>>, TError, TData>>, }
+export function usePurchaseOrderList<TData = Awaited<ReturnType<typeof purchaseOrderList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: PurchaseOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList17<TData = Awaited<ReturnType<typeof list17>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List17Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list17>>, TError, TData>>, }
+export function usePurchaseOrderList<TData = Awaited<ReturnType<typeof purchaseOrderList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: PurchaseOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList17QueryOptions(params,options)
+  const queryOptions = getPurchaseOrderListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -184,7 +184,7 @@ export function useList17<TData = Awaited<ReturnType<typeof list17>>, TError = E
 
 
 
-export const create8 = (
+export const purchaseOrderCreate = (
     createPurchaseOrderRequest: BodyType<CreatePurchaseOrderRequest>,
  signal?: AbortSignal
 ) => {
@@ -200,11 +200,11 @@ export const create8 = (
   
 
 
-export const getCreate8MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create8>>, TError,{data: BodyType<CreatePurchaseOrderRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create8>>, TError,{data: BodyType<CreatePurchaseOrderRequest>}, TContext> => {
+export const getPurchaseOrderCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderCreate>>, TError,{data: BodyType<CreatePurchaseOrderRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderCreate>>, TError,{data: BodyType<CreatePurchaseOrderRequest>}, TContext> => {
 
-const mutationKey = ['create8'];
+const mutationKey = ['purchaseOrderCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -214,10 +214,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create8>>, {data: BodyType<CreatePurchaseOrderRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseOrderCreate>>, {data: BodyType<CreatePurchaseOrderRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  create8(data,)
+          return  purchaseOrderCreate(data,)
         }
 
         
@@ -225,20 +225,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create8MutationResult = NonNullable<Awaited<ReturnType<typeof create8>>>
-    export type Create8MutationBody = BodyType<CreatePurchaseOrderRequest>
-    export type Create8MutationError = ErrorType<ApiResponseVoid>
+    export type PurchaseOrderCreateMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseOrderCreate>>>
+    export type PurchaseOrderCreateMutationBody = BodyType<CreatePurchaseOrderRequest>
+    export type PurchaseOrderCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate8 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create8>>, TError,{data: BodyType<CreatePurchaseOrderRequest>}, TContext>, }
+    export const usePurchaseOrderCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderCreate>>, TError,{data: BodyType<CreatePurchaseOrderRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create8>>,
+        Awaited<ReturnType<typeof purchaseOrderCreate>>,
         TError,
         {data: BodyType<CreatePurchaseOrderRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate8MutationOptions(options);
+      const mutationOptions = getPurchaseOrderCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

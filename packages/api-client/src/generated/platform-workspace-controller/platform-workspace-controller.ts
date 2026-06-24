@@ -31,7 +31,7 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const load1 = (
+export const platformWorkspaceLoad = (
     
  signal?: AbortSignal
 ) => {
@@ -46,66 +46,66 @@ export const load1 = (
 
 
 
-export const getLoad1QueryKey = () => {
+export const getPlatformWorkspaceLoadQueryKey = () => {
     return [
     `/api/v1/platform/workspace`
     ] as const;
     }
 
     
-export const getLoad1QueryOptions = <TData = Awaited<ReturnType<typeof load1>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof load1>>, TError, TData>>, }
+export const getPlatformWorkspaceLoadQueryOptions = <TData = Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getLoad1QueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getPlatformWorkspaceLoadQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof load1>>> = ({ signal }) => load1(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformWorkspaceLoad>>> = ({ signal }) => platformWorkspaceLoad(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof load1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type Load1QueryResult = NonNullable<Awaited<ReturnType<typeof load1>>>
-export type Load1QueryError = ErrorType<ApiResponseVoid>
+export type PlatformWorkspaceLoadQueryResult = NonNullable<Awaited<ReturnType<typeof platformWorkspaceLoad>>>
+export type PlatformWorkspaceLoadQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useLoad1<TData = Awaited<ReturnType<typeof load1>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof load1>>, TError, TData>> & Pick<
+export function usePlatformWorkspaceLoad<TData = Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof load1>>,
+          Awaited<ReturnType<typeof platformWorkspaceLoad>>,
           TError,
-          Awaited<ReturnType<typeof load1>>
+          Awaited<ReturnType<typeof platformWorkspaceLoad>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useLoad1<TData = Awaited<ReturnType<typeof load1>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof load1>>, TError, TData>> & Pick<
+export function usePlatformWorkspaceLoad<TData = Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof load1>>,
+          Awaited<ReturnType<typeof platformWorkspaceLoad>>,
           TError,
-          Awaited<ReturnType<typeof load1>>
+          Awaited<ReturnType<typeof platformWorkspaceLoad>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useLoad1<TData = Awaited<ReturnType<typeof load1>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof load1>>, TError, TData>>, }
+export function usePlatformWorkspaceLoad<TData = Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useLoad1<TData = Awaited<ReturnType<typeof load1>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof load1>>, TError, TData>>, }
+export function usePlatformWorkspaceLoad<TData = Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getLoad1QueryOptions(options)
+  const queryOptions = getPlatformWorkspaceLoadQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

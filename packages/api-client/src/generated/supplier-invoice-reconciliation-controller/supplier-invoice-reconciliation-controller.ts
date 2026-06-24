@@ -23,7 +23,7 @@ import type {
 import type {
   ApiResponseListInvoiceReconciliationResponse,
   ApiResponseVoid,
-  List6Params
+  SupplierInvoiceReconciliationListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -32,8 +32,8 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const list6 = (
-    params?: List6Params,
+export const supplierInvoiceReconciliationList = (
+    params?: SupplierInvoiceReconciliationListParams,
  signal?: AbortSignal
 ) => {
       
@@ -48,66 +48,66 @@ export const list6 = (
 
 
 
-export const getList6QueryKey = (params?: List6Params,) => {
+export const getSupplierInvoiceReconciliationListQueryKey = (params?: SupplierInvoiceReconciliationListParams,) => {
     return [
     `/api/v1/supplier/invoice-reconciliations`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList6QueryOptions = <TData = Awaited<ReturnType<typeof list6>>, TError = ErrorType<ApiResponseVoid>>(params?: List6Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list6>>, TError, TData>>, }
+export const getSupplierInvoiceReconciliationListQueryOptions = <TData = Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList6QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getSupplierInvoiceReconciliationListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list6>>> = ({ signal }) => list6(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>> = ({ signal }) => supplierInvoiceReconciliationList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list6>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List6QueryResult = NonNullable<Awaited<ReturnType<typeof list6>>>
-export type List6QueryError = ErrorType<ApiResponseVoid>
+export type SupplierInvoiceReconciliationListQueryResult = NonNullable<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>>
+export type SupplierInvoiceReconciliationListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList6<TData = Awaited<ReturnType<typeof list6>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List6Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list6>>, TError, TData>> & Pick<
+export function useSupplierInvoiceReconciliationList<TData = Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  SupplierInvoiceReconciliationListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list6>>,
+          Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>,
           TError,
-          Awaited<ReturnType<typeof list6>>
+          Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList6<TData = Awaited<ReturnType<typeof list6>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List6Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list6>>, TError, TData>> & Pick<
+export function useSupplierInvoiceReconciliationList<TData = Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list6>>,
+          Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>,
           TError,
-          Awaited<ReturnType<typeof list6>>
+          Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList6<TData = Awaited<ReturnType<typeof list6>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List6Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list6>>, TError, TData>>, }
+export function useSupplierInvoiceReconciliationList<TData = Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList6<TData = Awaited<ReturnType<typeof list6>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List6Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list6>>, TError, TData>>, }
+export function useSupplierInvoiceReconciliationList<TData = Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList6QueryOptions(params,options)
+  const queryOptions = getSupplierInvoiceReconciliationListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

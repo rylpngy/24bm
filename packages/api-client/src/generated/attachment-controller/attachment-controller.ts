@@ -30,9 +30,9 @@ import type {
   ApiResponseAttachmentUploadTicketResponse,
   ApiResponseListAttachmentResponse,
   ApiResponseVoid,
+  AttachmentListParams,
   CreateAttachmentRequest,
-  CreateAttachmentUploadTicketRequest,
-  List26Params
+  CreateAttachmentUploadTicketRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -41,8 +41,8 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const list26 = (
-    params: List26Params,
+export const attachmentList = (
+    params: AttachmentListParams,
  signal?: AbortSignal
 ) => {
       
@@ -57,66 +57,66 @@ export const list26 = (
 
 
 
-export const getList26QueryKey = (params?: List26Params,) => {
+export const getAttachmentListQueryKey = (params?: AttachmentListParams,) => {
     return [
     `/api/v1/buyer/attachments`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList26QueryOptions = <TData = Awaited<ReturnType<typeof list26>>, TError = ErrorType<ApiResponseVoid>>(params: List26Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list26>>, TError, TData>>, }
+export const getAttachmentListQueryOptions = <TData = Awaited<ReturnType<typeof attachmentList>>, TError = ErrorType<ApiResponseVoid>>(params: AttachmentListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList26QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getAttachmentListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list26>>> = ({ signal }) => list26(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof attachmentList>>> = ({ signal }) => attachmentList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list26>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof attachmentList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List26QueryResult = NonNullable<Awaited<ReturnType<typeof list26>>>
-export type List26QueryError = ErrorType<ApiResponseVoid>
+export type AttachmentListQueryResult = NonNullable<Awaited<ReturnType<typeof attachmentList>>>
+export type AttachmentListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList26<TData = Awaited<ReturnType<typeof list26>>, TError = ErrorType<ApiResponseVoid>>(
- params: List26Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list26>>, TError, TData>> & Pick<
+export function useAttachmentList<TData = Awaited<ReturnType<typeof attachmentList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: AttachmentListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list26>>,
+          Awaited<ReturnType<typeof attachmentList>>,
           TError,
-          Awaited<ReturnType<typeof list26>>
+          Awaited<ReturnType<typeof attachmentList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList26<TData = Awaited<ReturnType<typeof list26>>, TError = ErrorType<ApiResponseVoid>>(
- params: List26Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list26>>, TError, TData>> & Pick<
+export function useAttachmentList<TData = Awaited<ReturnType<typeof attachmentList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: AttachmentListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list26>>,
+          Awaited<ReturnType<typeof attachmentList>>,
           TError,
-          Awaited<ReturnType<typeof list26>>
+          Awaited<ReturnType<typeof attachmentList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList26<TData = Awaited<ReturnType<typeof list26>>, TError = ErrorType<ApiResponseVoid>>(
- params: List26Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list26>>, TError, TData>>, }
+export function useAttachmentList<TData = Awaited<ReturnType<typeof attachmentList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: AttachmentListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList26<TData = Awaited<ReturnType<typeof list26>>, TError = ErrorType<ApiResponseVoid>>(
- params: List26Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list26>>, TError, TData>>, }
+export function useAttachmentList<TData = Awaited<ReturnType<typeof attachmentList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: AttachmentListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList26QueryOptions(params,options)
+  const queryOptions = getAttachmentListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -128,7 +128,7 @@ export function useList26<TData = Awaited<ReturnType<typeof list26>>, TError = E
 
 
 
-export const create14 = (
+export const attachmentCreate = (
     createAttachmentRequest: BodyType<CreateAttachmentRequest>,
  signal?: AbortSignal
 ) => {
@@ -144,11 +144,11 @@ export const create14 = (
   
 
 
-export const getCreate14MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create14>>, TError,{data: BodyType<CreateAttachmentRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create14>>, TError,{data: BodyType<CreateAttachmentRequest>}, TContext> => {
+export const getAttachmentCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentCreate>>, TError,{data: BodyType<CreateAttachmentRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof attachmentCreate>>, TError,{data: BodyType<CreateAttachmentRequest>}, TContext> => {
 
-const mutationKey = ['create14'];
+const mutationKey = ['attachmentCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -158,10 +158,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create14>>, {data: BodyType<CreateAttachmentRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachmentCreate>>, {data: BodyType<CreateAttachmentRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  create14(data,)
+          return  attachmentCreate(data,)
         }
 
         
@@ -169,24 +169,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create14MutationResult = NonNullable<Awaited<ReturnType<typeof create14>>>
-    export type Create14MutationBody = BodyType<CreateAttachmentRequest>
-    export type Create14MutationError = ErrorType<ApiResponseVoid>
+    export type AttachmentCreateMutationResult = NonNullable<Awaited<ReturnType<typeof attachmentCreate>>>
+    export type AttachmentCreateMutationBody = BodyType<CreateAttachmentRequest>
+    export type AttachmentCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate14 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create14>>, TError,{data: BodyType<CreateAttachmentRequest>}, TContext>, }
+    export const useAttachmentCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentCreate>>, TError,{data: BodyType<CreateAttachmentRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create14>>,
+        Awaited<ReturnType<typeof attachmentCreate>>,
         TError,
         {data: BodyType<CreateAttachmentRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate14MutationOptions(options);
+      const mutationOptions = getAttachmentCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const createDownloadLink = (
+    export const attachmentCreateDownloadLink = (
     attachmentId: string,
  signal?: AbortSignal
 ) => {
@@ -200,11 +200,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getCreateDownloadLinkMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDownloadLink>>, TError,{attachmentId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof createDownloadLink>>, TError,{attachmentId: string}, TContext> => {
+export const getAttachmentCreateDownloadLinkMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentCreateDownloadLink>>, TError,{attachmentId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof attachmentCreateDownloadLink>>, TError,{attachmentId: string}, TContext> => {
 
-const mutationKey = ['createDownloadLink'];
+const mutationKey = ['attachmentCreateDownloadLink'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -214,10 +214,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDownloadLink>>, {attachmentId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachmentCreateDownloadLink>>, {attachmentId: string}> = (props) => {
           const {attachmentId} = props ?? {};
 
-          return  createDownloadLink(attachmentId,)
+          return  attachmentCreateDownloadLink(attachmentId,)
         }
 
         
@@ -225,24 +225,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreateDownloadLinkMutationResult = NonNullable<Awaited<ReturnType<typeof createDownloadLink>>>
+    export type AttachmentCreateDownloadLinkMutationResult = NonNullable<Awaited<ReturnType<typeof attachmentCreateDownloadLink>>>
     
-    export type CreateDownloadLinkMutationError = ErrorType<ApiResponseVoid>
+    export type AttachmentCreateDownloadLinkMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreateDownloadLink = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDownloadLink>>, TError,{attachmentId: string}, TContext>, }
+    export const useAttachmentCreateDownloadLink = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentCreateDownloadLink>>, TError,{attachmentId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createDownloadLink>>,
+        Awaited<ReturnType<typeof attachmentCreateDownloadLink>>,
         TError,
         {attachmentId: string},
         TContext
       > => {
 
-      const mutationOptions = getCreateDownloadLinkMutationOptions(options);
+      const mutationOptions = getAttachmentCreateDownloadLinkMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const createUploadTicket = (
+    export const attachmentCreateUploadTicket = (
     createAttachmentUploadTicketRequest: BodyType<CreateAttachmentUploadTicketRequest>,
  signal?: AbortSignal
 ) => {
@@ -258,11 +258,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getCreateUploadTicketMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUploadTicket>>, TError,{data: BodyType<CreateAttachmentUploadTicketRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof createUploadTicket>>, TError,{data: BodyType<CreateAttachmentUploadTicketRequest>}, TContext> => {
+export const getAttachmentCreateUploadTicketMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentCreateUploadTicket>>, TError,{data: BodyType<CreateAttachmentUploadTicketRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof attachmentCreateUploadTicket>>, TError,{data: BodyType<CreateAttachmentUploadTicketRequest>}, TContext> => {
 
-const mutationKey = ['createUploadTicket'];
+const mutationKey = ['attachmentCreateUploadTicket'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -272,10 +272,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createUploadTicket>>, {data: BodyType<CreateAttachmentUploadTicketRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachmentCreateUploadTicket>>, {data: BodyType<CreateAttachmentUploadTicketRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createUploadTicket(data,)
+          return  attachmentCreateUploadTicket(data,)
         }
 
         
@@ -283,20 +283,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreateUploadTicketMutationResult = NonNullable<Awaited<ReturnType<typeof createUploadTicket>>>
-    export type CreateUploadTicketMutationBody = BodyType<CreateAttachmentUploadTicketRequest>
-    export type CreateUploadTicketMutationError = ErrorType<ApiResponseVoid>
+    export type AttachmentCreateUploadTicketMutationResult = NonNullable<Awaited<ReturnType<typeof attachmentCreateUploadTicket>>>
+    export type AttachmentCreateUploadTicketMutationBody = BodyType<CreateAttachmentUploadTicketRequest>
+    export type AttachmentCreateUploadTicketMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreateUploadTicket = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUploadTicket>>, TError,{data: BodyType<CreateAttachmentUploadTicketRequest>}, TContext>, }
+    export const useAttachmentCreateUploadTicket = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentCreateUploadTicket>>, TError,{data: BodyType<CreateAttachmentUploadTicketRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createUploadTicket>>,
+        Awaited<ReturnType<typeof attachmentCreateUploadTicket>>,
         TError,
         {data: BodyType<CreateAttachmentUploadTicketRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreateUploadTicketMutationOptions(options);
+      const mutationOptions = getAttachmentCreateUploadTicketMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

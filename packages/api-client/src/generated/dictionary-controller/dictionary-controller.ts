@@ -23,7 +23,7 @@ import type {
 import type {
   ApiResponseListDictionaryEntryResponse,
   ApiResponseVoid,
-  List11Params
+  DictionaryListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -32,8 +32,8 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const list11 = (
-    params: List11Params,
+export const dictionaryList = (
+    params: DictionaryListParams,
  signal?: AbortSignal
 ) => {
       
@@ -48,66 +48,66 @@ export const list11 = (
 
 
 
-export const getList11QueryKey = (params?: List11Params,) => {
+export const getDictionaryListQueryKey = (params?: DictionaryListParams,) => {
     return [
     `/api/v1/dictionaries`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList11QueryOptions = <TData = Awaited<ReturnType<typeof list11>>, TError = ErrorType<ApiResponseVoid>>(params: List11Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list11>>, TError, TData>>, }
+export const getDictionaryListQueryOptions = <TData = Awaited<ReturnType<typeof dictionaryList>>, TError = ErrorType<ApiResponseVoid>>(params: DictionaryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionaryList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList11QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getDictionaryListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list11>>> = ({ signal }) => list11(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof dictionaryList>>> = ({ signal }) => dictionaryList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list11>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof dictionaryList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List11QueryResult = NonNullable<Awaited<ReturnType<typeof list11>>>
-export type List11QueryError = ErrorType<ApiResponseVoid>
+export type DictionaryListQueryResult = NonNullable<Awaited<ReturnType<typeof dictionaryList>>>
+export type DictionaryListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList11<TData = Awaited<ReturnType<typeof list11>>, TError = ErrorType<ApiResponseVoid>>(
- params: List11Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list11>>, TError, TData>> & Pick<
+export function useDictionaryList<TData = Awaited<ReturnType<typeof dictionaryList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: DictionaryListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionaryList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list11>>,
+          Awaited<ReturnType<typeof dictionaryList>>,
           TError,
-          Awaited<ReturnType<typeof list11>>
+          Awaited<ReturnType<typeof dictionaryList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList11<TData = Awaited<ReturnType<typeof list11>>, TError = ErrorType<ApiResponseVoid>>(
- params: List11Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list11>>, TError, TData>> & Pick<
+export function useDictionaryList<TData = Awaited<ReturnType<typeof dictionaryList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: DictionaryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionaryList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list11>>,
+          Awaited<ReturnType<typeof dictionaryList>>,
           TError,
-          Awaited<ReturnType<typeof list11>>
+          Awaited<ReturnType<typeof dictionaryList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList11<TData = Awaited<ReturnType<typeof list11>>, TError = ErrorType<ApiResponseVoid>>(
- params: List11Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list11>>, TError, TData>>, }
+export function useDictionaryList<TData = Awaited<ReturnType<typeof dictionaryList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: DictionaryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionaryList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList11<TData = Awaited<ReturnType<typeof list11>>, TError = ErrorType<ApiResponseVoid>>(
- params: List11Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list11>>, TError, TData>>, }
+export function useDictionaryList<TData = Awaited<ReturnType<typeof dictionaryList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: DictionaryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionaryList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList11QueryOptions(params,options)
+  const queryOptions = getDictionaryListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

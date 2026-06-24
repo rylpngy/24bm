@@ -28,7 +28,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const award = (
+export const rfqAwardAward = (
     rfqId: string,
     awardRfqRequest: BodyType<AwardRfqRequest>,
  signal?: AbortSignal
@@ -45,11 +45,11 @@ export const award = (
   
 
 
-export const getAwardMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof award>>, TError,{rfqId: string;data: BodyType<AwardRfqRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof award>>, TError,{rfqId: string;data: BodyType<AwardRfqRequest>}, TContext> => {
+export const getRfqAwardAwardMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAwardAward>>, TError,{rfqId: string;data: BodyType<AwardRfqRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqAwardAward>>, TError,{rfqId: string;data: BodyType<AwardRfqRequest>}, TContext> => {
 
-const mutationKey = ['award'];
+const mutationKey = ['rfqAwardAward'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -59,10 +59,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof award>>, {rfqId: string;data: BodyType<AwardRfqRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqAwardAward>>, {rfqId: string;data: BodyType<AwardRfqRequest>}> = (props) => {
           const {rfqId,data} = props ?? {};
 
-          return  award(rfqId,data,)
+          return  rfqAwardAward(rfqId,data,)
         }
 
         
@@ -70,24 +70,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AwardMutationResult = NonNullable<Awaited<ReturnType<typeof award>>>
-    export type AwardMutationBody = BodyType<AwardRfqRequest>
-    export type AwardMutationError = ErrorType<ApiResponseVoid>
+    export type RfqAwardAwardMutationResult = NonNullable<Awaited<ReturnType<typeof rfqAwardAward>>>
+    export type RfqAwardAwardMutationBody = BodyType<AwardRfqRequest>
+    export type RfqAwardAwardMutationError = ErrorType<ApiResponseVoid>
 
-    export const useAward = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof award>>, TError,{rfqId: string;data: BodyType<AwardRfqRequest>}, TContext>, }
+    export const useRfqAwardAward = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAwardAward>>, TError,{rfqId: string;data: BodyType<AwardRfqRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof award>>,
+        Awaited<ReturnType<typeof rfqAwardAward>>,
         TError,
         {rfqId: string;data: BodyType<AwardRfqRequest>},
         TContext
       > => {
 
-      const mutationOptions = getAwardMutationOptions(options);
+      const mutationOptions = getRfqAwardAwardMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const reviewApproval1 = (
+    export const rfqAwardReviewApproval = (
     rfqId: string,
     reviewAwardApprovalRequest: BodyType<ReviewAwardApprovalRequest>,
  signal?: AbortSignal
@@ -104,11 +104,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getReviewApproval1MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewApproval1>>, TError,{rfqId: string;data: BodyType<ReviewAwardApprovalRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof reviewApproval1>>, TError,{rfqId: string;data: BodyType<ReviewAwardApprovalRequest>}, TContext> => {
+export const getRfqAwardReviewApprovalMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAwardReviewApproval>>, TError,{rfqId: string;data: BodyType<ReviewAwardApprovalRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqAwardReviewApproval>>, TError,{rfqId: string;data: BodyType<ReviewAwardApprovalRequest>}, TContext> => {
 
-const mutationKey = ['reviewApproval1'];
+const mutationKey = ['rfqAwardReviewApproval'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -118,10 +118,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewApproval1>>, {rfqId: string;data: BodyType<ReviewAwardApprovalRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqAwardReviewApproval>>, {rfqId: string;data: BodyType<ReviewAwardApprovalRequest>}> = (props) => {
           const {rfqId,data} = props ?? {};
 
-          return  reviewApproval1(rfqId,data,)
+          return  rfqAwardReviewApproval(rfqId,data,)
         }
 
         
@@ -129,20 +129,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ReviewApproval1MutationResult = NonNullable<Awaited<ReturnType<typeof reviewApproval1>>>
-    export type ReviewApproval1MutationBody = BodyType<ReviewAwardApprovalRequest>
-    export type ReviewApproval1MutationError = ErrorType<ApiResponseVoid>
+    export type RfqAwardReviewApprovalMutationResult = NonNullable<Awaited<ReturnType<typeof rfqAwardReviewApproval>>>
+    export type RfqAwardReviewApprovalMutationBody = BodyType<ReviewAwardApprovalRequest>
+    export type RfqAwardReviewApprovalMutationError = ErrorType<ApiResponseVoid>
 
-    export const useReviewApproval1 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewApproval1>>, TError,{rfqId: string;data: BodyType<ReviewAwardApprovalRequest>}, TContext>, }
+    export const useRfqAwardReviewApproval = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAwardReviewApproval>>, TError,{rfqId: string;data: BodyType<ReviewAwardApprovalRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof reviewApproval1>>,
+        Awaited<ReturnType<typeof rfqAwardReviewApproval>>,
         TError,
         {rfqId: string;data: BodyType<ReviewAwardApprovalRequest>},
         TContext
       > => {
 
-      const mutationOptions = getReviewApproval1MutationOptions(options);
+      const mutationOptions = getRfqAwardReviewApprovalMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

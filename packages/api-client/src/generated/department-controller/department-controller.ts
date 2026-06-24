@@ -37,7 +37,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const list22 = (
+export const departmentList = (
     
  signal?: AbortSignal
 ) => {
@@ -52,66 +52,66 @@ export const list22 = (
 
 
 
-export const getList22QueryKey = () => {
+export const getDepartmentListQueryKey = () => {
     return [
     `/api/v1/buyer/departments`
     ] as const;
     }
 
     
-export const getList22QueryOptions = <TData = Awaited<ReturnType<typeof list22>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list22>>, TError, TData>>, }
+export const getDepartmentListQueryOptions = <TData = Awaited<ReturnType<typeof departmentList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof departmentList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList22QueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getDepartmentListQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list22>>> = ({ signal }) => list22(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof departmentList>>> = ({ signal }) => departmentList(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list22>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof departmentList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List22QueryResult = NonNullable<Awaited<ReturnType<typeof list22>>>
-export type List22QueryError = ErrorType<ApiResponseVoid>
+export type DepartmentListQueryResult = NonNullable<Awaited<ReturnType<typeof departmentList>>>
+export type DepartmentListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList22<TData = Awaited<ReturnType<typeof list22>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list22>>, TError, TData>> & Pick<
+export function useDepartmentList<TData = Awaited<ReturnType<typeof departmentList>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof departmentList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list22>>,
+          Awaited<ReturnType<typeof departmentList>>,
           TError,
-          Awaited<ReturnType<typeof list22>>
+          Awaited<ReturnType<typeof departmentList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList22<TData = Awaited<ReturnType<typeof list22>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list22>>, TError, TData>> & Pick<
+export function useDepartmentList<TData = Awaited<ReturnType<typeof departmentList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof departmentList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list22>>,
+          Awaited<ReturnType<typeof departmentList>>,
           TError,
-          Awaited<ReturnType<typeof list22>>
+          Awaited<ReturnType<typeof departmentList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList22<TData = Awaited<ReturnType<typeof list22>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list22>>, TError, TData>>, }
+export function useDepartmentList<TData = Awaited<ReturnType<typeof departmentList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof departmentList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList22<TData = Awaited<ReturnType<typeof list22>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list22>>, TError, TData>>, }
+export function useDepartmentList<TData = Awaited<ReturnType<typeof departmentList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof departmentList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList22QueryOptions(options)
+  const queryOptions = getDepartmentListQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -123,7 +123,7 @@ export function useList22<TData = Awaited<ReturnType<typeof list22>>, TError = E
 
 
 
-export const create11 = (
+export const departmentCreate = (
     createDepartmentRequest: BodyType<CreateDepartmentRequest>,
  signal?: AbortSignal
 ) => {
@@ -139,11 +139,11 @@ export const create11 = (
   
 
 
-export const getCreate11MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create11>>, TError,{data: BodyType<CreateDepartmentRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create11>>, TError,{data: BodyType<CreateDepartmentRequest>}, TContext> => {
+export const getDepartmentCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof departmentCreate>>, TError,{data: BodyType<CreateDepartmentRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof departmentCreate>>, TError,{data: BodyType<CreateDepartmentRequest>}, TContext> => {
 
-const mutationKey = ['create11'];
+const mutationKey = ['departmentCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -153,10 +153,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create11>>, {data: BodyType<CreateDepartmentRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof departmentCreate>>, {data: BodyType<CreateDepartmentRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  create11(data,)
+          return  departmentCreate(data,)
         }
 
         
@@ -164,24 +164,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create11MutationResult = NonNullable<Awaited<ReturnType<typeof create11>>>
-    export type Create11MutationBody = BodyType<CreateDepartmentRequest>
-    export type Create11MutationError = ErrorType<ApiResponseVoid>
+    export type DepartmentCreateMutationResult = NonNullable<Awaited<ReturnType<typeof departmentCreate>>>
+    export type DepartmentCreateMutationBody = BodyType<CreateDepartmentRequest>
+    export type DepartmentCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate11 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create11>>, TError,{data: BodyType<CreateDepartmentRequest>}, TContext>, }
+    export const useDepartmentCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof departmentCreate>>, TError,{data: BodyType<CreateDepartmentRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create11>>,
+        Awaited<ReturnType<typeof departmentCreate>>,
         TError,
         {data: BodyType<CreateDepartmentRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate11MutationOptions(options);
+      const mutationOptions = getDepartmentCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const disable1 = (
+    export const departmentDisable = (
     departmentId: string,
  signal?: AbortSignal
 ) => {
@@ -195,11 +195,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getDisable1MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disable1>>, TError,{departmentId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof disable1>>, TError,{departmentId: string}, TContext> => {
+export const getDepartmentDisableMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof departmentDisable>>, TError,{departmentId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof departmentDisable>>, TError,{departmentId: string}, TContext> => {
 
-const mutationKey = ['disable1'];
+const mutationKey = ['departmentDisable'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -209,10 +209,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disable1>>, {departmentId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof departmentDisable>>, {departmentId: string}> = (props) => {
           const {departmentId} = props ?? {};
 
-          return  disable1(departmentId,)
+          return  departmentDisable(departmentId,)
         }
 
         
@@ -220,20 +220,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Disable1MutationResult = NonNullable<Awaited<ReturnType<typeof disable1>>>
+    export type DepartmentDisableMutationResult = NonNullable<Awaited<ReturnType<typeof departmentDisable>>>
     
-    export type Disable1MutationError = ErrorType<ApiResponseVoid>
+    export type DepartmentDisableMutationError = ErrorType<ApiResponseVoid>
 
-    export const useDisable1 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disable1>>, TError,{departmentId: string}, TContext>, }
+    export const useDepartmentDisable = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof departmentDisable>>, TError,{departmentId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof disable1>>,
+        Awaited<ReturnType<typeof departmentDisable>>,
         TError,
         {departmentId: string},
         TContext
       > => {
 
-      const mutationOptions = getDisable1MutationOptions(options);
+      const mutationOptions = getDepartmentDisableMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

@@ -28,8 +28,8 @@ import type {
   ApiResponseListReceiptResponse,
   ApiResponseReceiptResponse,
   ApiResponseVoid,
-  CreateReceiptRequest,
-  List16Params
+  BuyerReceiptListParams,
+  CreateReceiptRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -38,7 +38,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const create9 = (
+export const buyerReceiptCreate = (
     orderId: string,
     createReceiptRequest: BodyType<CreateReceiptRequest>,
  signal?: AbortSignal
@@ -55,11 +55,11 @@ export const create9 = (
   
 
 
-export const getCreate9MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create9>>, TError,{orderId: string;data: BodyType<CreateReceiptRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create9>>, TError,{orderId: string;data: BodyType<CreateReceiptRequest>}, TContext> => {
+export const getBuyerReceiptCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerReceiptCreate>>, TError,{orderId: string;data: BodyType<CreateReceiptRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerReceiptCreate>>, TError,{orderId: string;data: BodyType<CreateReceiptRequest>}, TContext> => {
 
-const mutationKey = ['create9'];
+const mutationKey = ['buyerReceiptCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -69,10 +69,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create9>>, {orderId: string;data: BodyType<CreateReceiptRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerReceiptCreate>>, {orderId: string;data: BodyType<CreateReceiptRequest>}> = (props) => {
           const {orderId,data} = props ?? {};
 
-          return  create9(orderId,data,)
+          return  buyerReceiptCreate(orderId,data,)
         }
 
         
@@ -80,25 +80,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create9MutationResult = NonNullable<Awaited<ReturnType<typeof create9>>>
-    export type Create9MutationBody = BodyType<CreateReceiptRequest>
-    export type Create9MutationError = ErrorType<ApiResponseVoid>
+    export type BuyerReceiptCreateMutationResult = NonNullable<Awaited<ReturnType<typeof buyerReceiptCreate>>>
+    export type BuyerReceiptCreateMutationBody = BodyType<CreateReceiptRequest>
+    export type BuyerReceiptCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate9 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create9>>, TError,{orderId: string;data: BodyType<CreateReceiptRequest>}, TContext>, }
+    export const useBuyerReceiptCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerReceiptCreate>>, TError,{orderId: string;data: BodyType<CreateReceiptRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create9>>,
+        Awaited<ReturnType<typeof buyerReceiptCreate>>,
         TError,
         {orderId: string;data: BodyType<CreateReceiptRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate9MutationOptions(options);
+      const mutationOptions = getBuyerReceiptCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const list16 = (
-    params?: List16Params,
+    export const buyerReceiptList = (
+    params?: BuyerReceiptListParams,
  signal?: AbortSignal
 ) => {
       
@@ -113,66 +113,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getList16QueryKey = (params?: List16Params,) => {
+export const getBuyerReceiptListQueryKey = (params?: BuyerReceiptListParams,) => {
     return [
     `/api/v1/buyer/receipts`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList16QueryOptions = <TData = Awaited<ReturnType<typeof list16>>, TError = ErrorType<ApiResponseVoid>>(params?: List16Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list16>>, TError, TData>>, }
+export const getBuyerReceiptListQueryOptions = <TData = Awaited<ReturnType<typeof buyerReceiptList>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerReceiptListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList16QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerReceiptListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list16>>> = ({ signal }) => list16(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerReceiptList>>> = ({ signal }) => buyerReceiptList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list16>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List16QueryResult = NonNullable<Awaited<ReturnType<typeof list16>>>
-export type List16QueryError = ErrorType<ApiResponseVoid>
+export type BuyerReceiptListQueryResult = NonNullable<Awaited<ReturnType<typeof buyerReceiptList>>>
+export type BuyerReceiptListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList16<TData = Awaited<ReturnType<typeof list16>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List16Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list16>>, TError, TData>> & Pick<
+export function useBuyerReceiptList<TData = Awaited<ReturnType<typeof buyerReceiptList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerReceiptListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list16>>,
+          Awaited<ReturnType<typeof buyerReceiptList>>,
           TError,
-          Awaited<ReturnType<typeof list16>>
+          Awaited<ReturnType<typeof buyerReceiptList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList16<TData = Awaited<ReturnType<typeof list16>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List16Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list16>>, TError, TData>> & Pick<
+export function useBuyerReceiptList<TData = Awaited<ReturnType<typeof buyerReceiptList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerReceiptListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list16>>,
+          Awaited<ReturnType<typeof buyerReceiptList>>,
           TError,
-          Awaited<ReturnType<typeof list16>>
+          Awaited<ReturnType<typeof buyerReceiptList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList16<TData = Awaited<ReturnType<typeof list16>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List16Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list16>>, TError, TData>>, }
+export function useBuyerReceiptList<TData = Awaited<ReturnType<typeof buyerReceiptList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerReceiptListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList16<TData = Awaited<ReturnType<typeof list16>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List16Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list16>>, TError, TData>>, }
+export function useBuyerReceiptList<TData = Awaited<ReturnType<typeof buyerReceiptList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerReceiptListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList16QueryOptions(params,options)
+  const queryOptions = getBuyerReceiptListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

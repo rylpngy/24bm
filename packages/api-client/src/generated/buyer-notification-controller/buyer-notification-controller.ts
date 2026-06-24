@@ -28,7 +28,7 @@ import type {
   ApiResponseListNotificationResponse,
   ApiResponseNotificationResponse,
   ApiResponseVoid,
-  List18Params
+  BuyerNotificationListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -37,7 +37,7 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const markRead1 = (
+export const buyerNotificationMarkRead = (
     notificationId: string,
  signal?: AbortSignal
 ) => {
@@ -51,11 +51,11 @@ export const markRead1 = (
   
 
 
-export const getMarkRead1MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markRead1>>, TError,{notificationId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof markRead1>>, TError,{notificationId: string}, TContext> => {
+export const getBuyerNotificationMarkReadMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerNotificationMarkRead>>, TError,{notificationId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerNotificationMarkRead>>, TError,{notificationId: string}, TContext> => {
 
-const mutationKey = ['markRead1'];
+const mutationKey = ['buyerNotificationMarkRead'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -65,10 +65,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markRead1>>, {notificationId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerNotificationMarkRead>>, {notificationId: string}> = (props) => {
           const {notificationId} = props ?? {};
 
-          return  markRead1(notificationId,)
+          return  buyerNotificationMarkRead(notificationId,)
         }
 
         
@@ -76,25 +76,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type MarkRead1MutationResult = NonNullable<Awaited<ReturnType<typeof markRead1>>>
+    export type BuyerNotificationMarkReadMutationResult = NonNullable<Awaited<ReturnType<typeof buyerNotificationMarkRead>>>
     
-    export type MarkRead1MutationError = ErrorType<ApiResponseVoid>
+    export type BuyerNotificationMarkReadMutationError = ErrorType<ApiResponseVoid>
 
-    export const useMarkRead1 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markRead1>>, TError,{notificationId: string}, TContext>, }
+    export const useBuyerNotificationMarkRead = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerNotificationMarkRead>>, TError,{notificationId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof markRead1>>,
+        Awaited<ReturnType<typeof buyerNotificationMarkRead>>,
         TError,
         {notificationId: string},
         TContext
       > => {
 
-      const mutationOptions = getMarkRead1MutationOptions(options);
+      const mutationOptions = getBuyerNotificationMarkReadMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const list18 = (
-    params?: List18Params,
+    export const buyerNotificationList = (
+    params?: BuyerNotificationListParams,
  signal?: AbortSignal
 ) => {
       
@@ -109,66 +109,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getList18QueryKey = (params?: List18Params,) => {
+export const getBuyerNotificationListQueryKey = (params?: BuyerNotificationListParams,) => {
     return [
     `/api/v1/buyer/notifications`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList18QueryOptions = <TData = Awaited<ReturnType<typeof list18>>, TError = ErrorType<ApiResponseVoid>>(params?: List18Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list18>>, TError, TData>>, }
+export const getBuyerNotificationListQueryOptions = <TData = Awaited<ReturnType<typeof buyerNotificationList>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList18QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerNotificationListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list18>>> = ({ signal }) => list18(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerNotificationList>>> = ({ signal }) => buyerNotificationList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list18>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List18QueryResult = NonNullable<Awaited<ReturnType<typeof list18>>>
-export type List18QueryError = ErrorType<ApiResponseVoid>
+export type BuyerNotificationListQueryResult = NonNullable<Awaited<ReturnType<typeof buyerNotificationList>>>
+export type BuyerNotificationListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList18<TData = Awaited<ReturnType<typeof list18>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List18Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list18>>, TError, TData>> & Pick<
+export function useBuyerNotificationList<TData = Awaited<ReturnType<typeof buyerNotificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerNotificationListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list18>>,
+          Awaited<ReturnType<typeof buyerNotificationList>>,
           TError,
-          Awaited<ReturnType<typeof list18>>
+          Awaited<ReturnType<typeof buyerNotificationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList18<TData = Awaited<ReturnType<typeof list18>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List18Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list18>>, TError, TData>> & Pick<
+export function useBuyerNotificationList<TData = Awaited<ReturnType<typeof buyerNotificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list18>>,
+          Awaited<ReturnType<typeof buyerNotificationList>>,
           TError,
-          Awaited<ReturnType<typeof list18>>
+          Awaited<ReturnType<typeof buyerNotificationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList18<TData = Awaited<ReturnType<typeof list18>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List18Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list18>>, TError, TData>>, }
+export function useBuyerNotificationList<TData = Awaited<ReturnType<typeof buyerNotificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList18<TData = Awaited<ReturnType<typeof list18>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List18Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list18>>, TError, TData>>, }
+export function useBuyerNotificationList<TData = Awaited<ReturnType<typeof buyerNotificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList18QueryOptions(params,options)
+  const queryOptions = getBuyerNotificationListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -29,7 +29,7 @@ import type {
   ApiResponseMaterialResponse,
   ApiResponseVoid,
   CreateMaterialRequest,
-  List19Params
+  MaterialListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -38,8 +38,8 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const list19 = (
-    params?: List19Params,
+export const materialList = (
+    params?: MaterialListParams,
  signal?: AbortSignal
 ) => {
       
@@ -54,66 +54,66 @@ export const list19 = (
 
 
 
-export const getList19QueryKey = (params?: List19Params,) => {
+export const getMaterialListQueryKey = (params?: MaterialListParams,) => {
     return [
     `/api/v1/buyer/materials`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList19QueryOptions = <TData = Awaited<ReturnType<typeof list19>>, TError = ErrorType<ApiResponseVoid>>(params?: List19Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list19>>, TError, TData>>, }
+export const getMaterialListQueryOptions = <TData = Awaited<ReturnType<typeof materialList>>, TError = ErrorType<ApiResponseVoid>>(params?: MaterialListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList19QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getMaterialListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list19>>> = ({ signal }) => list19(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof materialList>>> = ({ signal }) => materialList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list19>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof materialList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List19QueryResult = NonNullable<Awaited<ReturnType<typeof list19>>>
-export type List19QueryError = ErrorType<ApiResponseVoid>
+export type MaterialListQueryResult = NonNullable<Awaited<ReturnType<typeof materialList>>>
+export type MaterialListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList19<TData = Awaited<ReturnType<typeof list19>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List19Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list19>>, TError, TData>> & Pick<
+export function useMaterialList<TData = Awaited<ReturnType<typeof materialList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  MaterialListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list19>>,
+          Awaited<ReturnType<typeof materialList>>,
           TError,
-          Awaited<ReturnType<typeof list19>>
+          Awaited<ReturnType<typeof materialList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList19<TData = Awaited<ReturnType<typeof list19>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List19Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list19>>, TError, TData>> & Pick<
+export function useMaterialList<TData = Awaited<ReturnType<typeof materialList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: MaterialListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list19>>,
+          Awaited<ReturnType<typeof materialList>>,
           TError,
-          Awaited<ReturnType<typeof list19>>
+          Awaited<ReturnType<typeof materialList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList19<TData = Awaited<ReturnType<typeof list19>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List19Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list19>>, TError, TData>>, }
+export function useMaterialList<TData = Awaited<ReturnType<typeof materialList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: MaterialListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList19<TData = Awaited<ReturnType<typeof list19>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List19Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list19>>, TError, TData>>, }
+export function useMaterialList<TData = Awaited<ReturnType<typeof materialList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: MaterialListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList19QueryOptions(params,options)
+  const queryOptions = getMaterialListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -125,7 +125,7 @@ export function useList19<TData = Awaited<ReturnType<typeof list19>>, TError = E
 
 
 
-export const create10 = (
+export const materialCreate = (
     createMaterialRequest: BodyType<CreateMaterialRequest>,
  signal?: AbortSignal
 ) => {
@@ -141,11 +141,11 @@ export const create10 = (
   
 
 
-export const getCreate10MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create10>>, TError,{data: BodyType<CreateMaterialRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create10>>, TError,{data: BodyType<CreateMaterialRequest>}, TContext> => {
+export const getMaterialCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof materialCreate>>, TError,{data: BodyType<CreateMaterialRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof materialCreate>>, TError,{data: BodyType<CreateMaterialRequest>}, TContext> => {
 
-const mutationKey = ['create10'];
+const mutationKey = ['materialCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -155,10 +155,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create10>>, {data: BodyType<CreateMaterialRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof materialCreate>>, {data: BodyType<CreateMaterialRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  create10(data,)
+          return  materialCreate(data,)
         }
 
         
@@ -166,24 +166,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create10MutationResult = NonNullable<Awaited<ReturnType<typeof create10>>>
-    export type Create10MutationBody = BodyType<CreateMaterialRequest>
-    export type Create10MutationError = ErrorType<ApiResponseVoid>
+    export type MaterialCreateMutationResult = NonNullable<Awaited<ReturnType<typeof materialCreate>>>
+    export type MaterialCreateMutationBody = BodyType<CreateMaterialRequest>
+    export type MaterialCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate10 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create10>>, TError,{data: BodyType<CreateMaterialRequest>}, TContext>, }
+    export const useMaterialCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof materialCreate>>, TError,{data: BodyType<CreateMaterialRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create10>>,
+        Awaited<ReturnType<typeof materialCreate>>,
         TError,
         {data: BodyType<CreateMaterialRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate10MutationOptions(options);
+      const mutationOptions = getMaterialCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const update9 = (
+    export const materialUpdate = (
     materialId: string,
     createMaterialRequest: BodyType<CreateMaterialRequest>,
  signal?: AbortSignal
@@ -200,11 +200,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getUpdate9MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update9>>, TError,{materialId: string;data: BodyType<CreateMaterialRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof update9>>, TError,{materialId: string;data: BodyType<CreateMaterialRequest>}, TContext> => {
+export const getMaterialUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof materialUpdate>>, TError,{materialId: string;data: BodyType<CreateMaterialRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof materialUpdate>>, TError,{materialId: string;data: BodyType<CreateMaterialRequest>}, TContext> => {
 
-const mutationKey = ['update9'];
+const mutationKey = ['materialUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -214,10 +214,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof update9>>, {materialId: string;data: BodyType<CreateMaterialRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof materialUpdate>>, {materialId: string;data: BodyType<CreateMaterialRequest>}> = (props) => {
           const {materialId,data} = props ?? {};
 
-          return  update9(materialId,data,)
+          return  materialUpdate(materialId,data,)
         }
 
         
@@ -225,20 +225,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Update9MutationResult = NonNullable<Awaited<ReturnType<typeof update9>>>
-    export type Update9MutationBody = BodyType<CreateMaterialRequest>
-    export type Update9MutationError = ErrorType<ApiResponseVoid>
+    export type MaterialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof materialUpdate>>>
+    export type MaterialUpdateMutationBody = BodyType<CreateMaterialRequest>
+    export type MaterialUpdateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdate9 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update9>>, TError,{materialId: string;data: BodyType<CreateMaterialRequest>}, TContext>, }
+    export const useMaterialUpdate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof materialUpdate>>, TError,{materialId: string;data: BodyType<CreateMaterialRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof update9>>,
+        Awaited<ReturnType<typeof materialUpdate>>,
         TError,
         {materialId: string;data: BodyType<CreateMaterialRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdate9MutationOptions(options);
+      const mutationOptions = getMaterialUpdateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

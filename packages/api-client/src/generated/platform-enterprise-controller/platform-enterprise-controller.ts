@@ -37,7 +37,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const review = (
+export const platformEnterpriseReview = (
     enterpriseId: string,
     enterpriseReviewRequest: BodyType<EnterpriseReviewRequest>,
  signal?: AbortSignal
@@ -54,11 +54,11 @@ export const review = (
   
 
 
-export const getReviewMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof review>>, TError,{enterpriseId: string;data: BodyType<EnterpriseReviewRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof review>>, TError,{enterpriseId: string;data: BodyType<EnterpriseReviewRequest>}, TContext> => {
+export const getPlatformEnterpriseReviewMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformEnterpriseReview>>, TError,{enterpriseId: string;data: BodyType<EnterpriseReviewRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformEnterpriseReview>>, TError,{enterpriseId: string;data: BodyType<EnterpriseReviewRequest>}, TContext> => {
 
-const mutationKey = ['review'];
+const mutationKey = ['platformEnterpriseReview'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -68,10 +68,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof review>>, {enterpriseId: string;data: BodyType<EnterpriseReviewRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformEnterpriseReview>>, {enterpriseId: string;data: BodyType<EnterpriseReviewRequest>}> = (props) => {
           const {enterpriseId,data} = props ?? {};
 
-          return  review(enterpriseId,data,)
+          return  platformEnterpriseReview(enterpriseId,data,)
         }
 
         
@@ -79,24 +79,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ReviewMutationResult = NonNullable<Awaited<ReturnType<typeof review>>>
-    export type ReviewMutationBody = BodyType<EnterpriseReviewRequest>
-    export type ReviewMutationError = ErrorType<ApiResponseVoid>
+    export type PlatformEnterpriseReviewMutationResult = NonNullable<Awaited<ReturnType<typeof platformEnterpriseReview>>>
+    export type PlatformEnterpriseReviewMutationBody = BodyType<EnterpriseReviewRequest>
+    export type PlatformEnterpriseReviewMutationError = ErrorType<ApiResponseVoid>
 
-    export const useReview = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof review>>, TError,{enterpriseId: string;data: BodyType<EnterpriseReviewRequest>}, TContext>, }
+    export const usePlatformEnterpriseReview = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformEnterpriseReview>>, TError,{enterpriseId: string;data: BodyType<EnterpriseReviewRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof review>>,
+        Awaited<ReturnType<typeof platformEnterpriseReview>>,
         TError,
         {enterpriseId: string;data: BodyType<EnterpriseReviewRequest>},
         TContext
       > => {
 
-      const mutationOptions = getReviewMutationOptions(options);
+      const mutationOptions = getPlatformEnterpriseReviewMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const listPendingReviews = (
+    export const platformEnterpriseListPendingReviews = (
     
  signal?: AbortSignal
 ) => {
@@ -111,66 +111,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getListPendingReviewsQueryKey = () => {
+export const getPlatformEnterpriseListPendingReviewsQueryKey = () => {
     return [
     `/api/v1/platform/enterprise-reviews`
     ] as const;
     }
 
     
-export const getListPendingReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listPendingReviews>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingReviews>>, TError, TData>>, }
+export const getPlatformEnterpriseListPendingReviewsQueryOptions = <TData = Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListPendingReviewsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getPlatformEnterpriseListPendingReviewsQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPendingReviews>>> = ({ signal }) => listPendingReviews(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>> = ({ signal }) => platformEnterpriseListPendingReviews(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPendingReviews>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ListPendingReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listPendingReviews>>>
-export type ListPendingReviewsQueryError = ErrorType<ApiResponseVoid>
+export type PlatformEnterpriseListPendingReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>>
+export type PlatformEnterpriseListPendingReviewsQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useListPendingReviews<TData = Awaited<ReturnType<typeof listPendingReviews>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingReviews>>, TError, TData>> & Pick<
+export function usePlatformEnterpriseListPendingReviews<TData = Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listPendingReviews>>,
+          Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>,
           TError,
-          Awaited<ReturnType<typeof listPendingReviews>>
+          Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListPendingReviews<TData = Awaited<ReturnType<typeof listPendingReviews>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingReviews>>, TError, TData>> & Pick<
+export function usePlatformEnterpriseListPendingReviews<TData = Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listPendingReviews>>,
+          Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>,
           TError,
-          Awaited<ReturnType<typeof listPendingReviews>>
+          Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListPendingReviews<TData = Awaited<ReturnType<typeof listPendingReviews>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingReviews>>, TError, TData>>, }
+export function usePlatformEnterpriseListPendingReviews<TData = Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useListPendingReviews<TData = Awaited<ReturnType<typeof listPendingReviews>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingReviews>>, TError, TData>>, }
+export function usePlatformEnterpriseListPendingReviews<TData = Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListPendingReviewsQueryOptions(options)
+  const queryOptions = getPlatformEnterpriseListPendingReviewsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

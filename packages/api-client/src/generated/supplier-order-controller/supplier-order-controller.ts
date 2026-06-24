@@ -28,7 +28,7 @@ import type {
   ApiResponseListPurchaseOrderResponse,
   ApiResponsePurchaseOrderResponse,
   ApiResponseVoid,
-  List3Params
+  SupplierOrderListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -37,7 +37,7 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const confirm = (
+export const supplierOrderConfirm = (
     orderId: string,
  signal?: AbortSignal
 ) => {
@@ -51,11 +51,11 @@ export const confirm = (
   
 
 
-export const getConfirmMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirm>>, TError,{orderId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof confirm>>, TError,{orderId: string}, TContext> => {
+export const getSupplierOrderConfirmMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierOrderConfirm>>, TError,{orderId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierOrderConfirm>>, TError,{orderId: string}, TContext> => {
 
-const mutationKey = ['confirm'];
+const mutationKey = ['supplierOrderConfirm'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -65,10 +65,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirm>>, {orderId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierOrderConfirm>>, {orderId: string}> = (props) => {
           const {orderId} = props ?? {};
 
-          return  confirm(orderId,)
+          return  supplierOrderConfirm(orderId,)
         }
 
         
@@ -76,25 +76,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ConfirmMutationResult = NonNullable<Awaited<ReturnType<typeof confirm>>>
+    export type SupplierOrderConfirmMutationResult = NonNullable<Awaited<ReturnType<typeof supplierOrderConfirm>>>
     
-    export type ConfirmMutationError = ErrorType<ApiResponseVoid>
+    export type SupplierOrderConfirmMutationError = ErrorType<ApiResponseVoid>
 
-    export const useConfirm = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirm>>, TError,{orderId: string}, TContext>, }
+    export const useSupplierOrderConfirm = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierOrderConfirm>>, TError,{orderId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof confirm>>,
+        Awaited<ReturnType<typeof supplierOrderConfirm>>,
         TError,
         {orderId: string},
         TContext
       > => {
 
-      const mutationOptions = getConfirmMutationOptions(options);
+      const mutationOptions = getSupplierOrderConfirmMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const list3 = (
-    params?: List3Params,
+    export const supplierOrderList = (
+    params?: SupplierOrderListParams,
  signal?: AbortSignal
 ) => {
       
@@ -109,66 +109,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getList3QueryKey = (params?: List3Params,) => {
+export const getSupplierOrderListQueryKey = (params?: SupplierOrderListParams,) => {
     return [
     `/api/v1/supplier/orders`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList3QueryOptions = <TData = Awaited<ReturnType<typeof list3>>, TError = ErrorType<ApiResponseVoid>>(params?: List3Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list3>>, TError, TData>>, }
+export const getSupplierOrderListQueryOptions = <TData = Awaited<ReturnType<typeof supplierOrderList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList3QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getSupplierOrderListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list3>>> = ({ signal }) => list3(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierOrderList>>> = ({ signal }) => supplierOrderList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list3>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierOrderList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List3QueryResult = NonNullable<Awaited<ReturnType<typeof list3>>>
-export type List3QueryError = ErrorType<ApiResponseVoid>
+export type SupplierOrderListQueryResult = NonNullable<Awaited<ReturnType<typeof supplierOrderList>>>
+export type SupplierOrderListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList3<TData = Awaited<ReturnType<typeof list3>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List3Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list3>>, TError, TData>> & Pick<
+export function useSupplierOrderList<TData = Awaited<ReturnType<typeof supplierOrderList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  SupplierOrderListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list3>>,
+          Awaited<ReturnType<typeof supplierOrderList>>,
           TError,
-          Awaited<ReturnType<typeof list3>>
+          Awaited<ReturnType<typeof supplierOrderList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList3<TData = Awaited<ReturnType<typeof list3>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List3Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list3>>, TError, TData>> & Pick<
+export function useSupplierOrderList<TData = Awaited<ReturnType<typeof supplierOrderList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list3>>,
+          Awaited<ReturnType<typeof supplierOrderList>>,
           TError,
-          Awaited<ReturnType<typeof list3>>
+          Awaited<ReturnType<typeof supplierOrderList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList3<TData = Awaited<ReturnType<typeof list3>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List3Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list3>>, TError, TData>>, }
+export function useSupplierOrderList<TData = Awaited<ReturnType<typeof supplierOrderList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList3<TData = Awaited<ReturnType<typeof list3>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List3Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list3>>, TError, TData>>, }
+export function useSupplierOrderList<TData = Awaited<ReturnType<typeof supplierOrderList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList3QueryOptions(params,options)
+  const queryOptions = getSupplierOrderListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -38,7 +38,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const updateTemplateConfig = (
+export const approvalInboxUpdateTemplateConfig = (
     templateCode: string,
     updateApprovalTemplateRequest: BodyType<UpdateApprovalTemplateRequest>,
  signal?: AbortSignal
@@ -55,11 +55,11 @@ export const updateTemplateConfig = (
   
 
 
-export const getUpdateTemplateConfigMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTemplateConfig>>, TError,{templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof updateTemplateConfig>>, TError,{templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>}, TContext> => {
+export const getApprovalInboxUpdateTemplateConfigMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approvalInboxUpdateTemplateConfig>>, TError,{templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof approvalInboxUpdateTemplateConfig>>, TError,{templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>}, TContext> => {
 
-const mutationKey = ['updateTemplateConfig'];
+const mutationKey = ['approvalInboxUpdateTemplateConfig'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -69,10 +69,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTemplateConfig>>, {templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approvalInboxUpdateTemplateConfig>>, {templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>}> = (props) => {
           const {templateCode,data} = props ?? {};
 
-          return  updateTemplateConfig(templateCode,data,)
+          return  approvalInboxUpdateTemplateConfig(templateCode,data,)
         }
 
         
@@ -80,24 +80,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdateTemplateConfigMutationResult = NonNullable<Awaited<ReturnType<typeof updateTemplateConfig>>>
-    export type UpdateTemplateConfigMutationBody = BodyType<UpdateApprovalTemplateRequest>
-    export type UpdateTemplateConfigMutationError = ErrorType<ApiResponseVoid>
+    export type ApprovalInboxUpdateTemplateConfigMutationResult = NonNullable<Awaited<ReturnType<typeof approvalInboxUpdateTemplateConfig>>>
+    export type ApprovalInboxUpdateTemplateConfigMutationBody = BodyType<UpdateApprovalTemplateRequest>
+    export type ApprovalInboxUpdateTemplateConfigMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdateTemplateConfig = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTemplateConfig>>, TError,{templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>}, TContext>, }
+    export const useApprovalInboxUpdateTemplateConfig = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approvalInboxUpdateTemplateConfig>>, TError,{templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateTemplateConfig>>,
+        Awaited<ReturnType<typeof approvalInboxUpdateTemplateConfig>>,
         TError,
         {templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdateTemplateConfigMutationOptions(options);
+      const mutationOptions = getApprovalInboxUpdateTemplateConfigMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const templates = (
+    export const approvalInboxTemplates = (
     
  signal?: AbortSignal
 ) => {
@@ -112,66 +112,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getTemplatesQueryKey = () => {
+export const getApprovalInboxTemplatesQueryKey = () => {
     return [
     `/api/v1/buyer/approvals/templates`
     ] as const;
     }
 
     
-export const getTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof templates>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof templates>>, TError, TData>>, }
+export const getApprovalInboxTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof approvalInboxTemplates>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxTemplates>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getTemplatesQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getApprovalInboxTemplatesQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof templates>>> = ({ signal }) => templates(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof approvalInboxTemplates>>> = ({ signal }) => approvalInboxTemplates(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof templates>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof approvalInboxTemplates>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type TemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof templates>>>
-export type TemplatesQueryError = ErrorType<ApiResponseVoid>
+export type ApprovalInboxTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof approvalInboxTemplates>>>
+export type ApprovalInboxTemplatesQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useTemplates<TData = Awaited<ReturnType<typeof templates>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof templates>>, TError, TData>> & Pick<
+export function useApprovalInboxTemplates<TData = Awaited<ReturnType<typeof approvalInboxTemplates>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxTemplates>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof templates>>,
+          Awaited<ReturnType<typeof approvalInboxTemplates>>,
           TError,
-          Awaited<ReturnType<typeof templates>>
+          Awaited<ReturnType<typeof approvalInboxTemplates>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useTemplates<TData = Awaited<ReturnType<typeof templates>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof templates>>, TError, TData>> & Pick<
+export function useApprovalInboxTemplates<TData = Awaited<ReturnType<typeof approvalInboxTemplates>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxTemplates>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof templates>>,
+          Awaited<ReturnType<typeof approvalInboxTemplates>>,
           TError,
-          Awaited<ReturnType<typeof templates>>
+          Awaited<ReturnType<typeof approvalInboxTemplates>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useTemplates<TData = Awaited<ReturnType<typeof templates>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof templates>>, TError, TData>>, }
+export function useApprovalInboxTemplates<TData = Awaited<ReturnType<typeof approvalInboxTemplates>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxTemplates>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useTemplates<TData = Awaited<ReturnType<typeof templates>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof templates>>, TError, TData>>, }
+export function useApprovalInboxTemplates<TData = Awaited<ReturnType<typeof approvalInboxTemplates>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxTemplates>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getTemplatesQueryOptions(options)
+  const queryOptions = getApprovalInboxTemplatesQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -183,7 +183,7 @@ export function useTemplates<TData = Awaited<ReturnType<typeof templates>>, TErr
 
 
 
-export const recent = (
+export const approvalInboxRecent = (
     
  signal?: AbortSignal
 ) => {
@@ -198,66 +198,66 @@ export const recent = (
 
 
 
-export const getRecentQueryKey = () => {
+export const getApprovalInboxRecentQueryKey = () => {
     return [
     `/api/v1/buyer/approvals/recent`
     ] as const;
     }
 
     
-export const getRecentQueryOptions = <TData = Awaited<ReturnType<typeof recent>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recent>>, TError, TData>>, }
+export const getApprovalInboxRecentQueryOptions = <TData = Awaited<ReturnType<typeof approvalInboxRecent>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxRecent>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getRecentQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getApprovalInboxRecentQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof recent>>> = ({ signal }) => recent(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof approvalInboxRecent>>> = ({ signal }) => approvalInboxRecent(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof recent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof approvalInboxRecent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type RecentQueryResult = NonNullable<Awaited<ReturnType<typeof recent>>>
-export type RecentQueryError = ErrorType<ApiResponseVoid>
+export type ApprovalInboxRecentQueryResult = NonNullable<Awaited<ReturnType<typeof approvalInboxRecent>>>
+export type ApprovalInboxRecentQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useRecent<TData = Awaited<ReturnType<typeof recent>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof recent>>, TError, TData>> & Pick<
+export function useApprovalInboxRecent<TData = Awaited<ReturnType<typeof approvalInboxRecent>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxRecent>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof recent>>,
+          Awaited<ReturnType<typeof approvalInboxRecent>>,
           TError,
-          Awaited<ReturnType<typeof recent>>
+          Awaited<ReturnType<typeof approvalInboxRecent>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRecent<TData = Awaited<ReturnType<typeof recent>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recent>>, TError, TData>> & Pick<
+export function useApprovalInboxRecent<TData = Awaited<ReturnType<typeof approvalInboxRecent>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxRecent>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof recent>>,
+          Awaited<ReturnType<typeof approvalInboxRecent>>,
           TError,
-          Awaited<ReturnType<typeof recent>>
+          Awaited<ReturnType<typeof approvalInboxRecent>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRecent<TData = Awaited<ReturnType<typeof recent>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recent>>, TError, TData>>, }
+export function useApprovalInboxRecent<TData = Awaited<ReturnType<typeof approvalInboxRecent>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxRecent>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useRecent<TData = Awaited<ReturnType<typeof recent>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recent>>, TError, TData>>, }
+export function useApprovalInboxRecent<TData = Awaited<ReturnType<typeof approvalInboxRecent>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxRecent>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getRecentQueryOptions(options)
+  const queryOptions = getApprovalInboxRecentQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -269,7 +269,7 @@ export function useRecent<TData = Awaited<ReturnType<typeof recent>>, TError = E
 
 
 
-export const pending = (
+export const approvalInboxPending = (
     
  signal?: AbortSignal
 ) => {
@@ -284,66 +284,66 @@ export const pending = (
 
 
 
-export const getPendingQueryKey = () => {
+export const getApprovalInboxPendingQueryKey = () => {
     return [
     `/api/v1/buyer/approvals/pending`
     ] as const;
     }
 
     
-export const getPendingQueryOptions = <TData = Awaited<ReturnType<typeof pending>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pending>>, TError, TData>>, }
+export const getApprovalInboxPendingQueryOptions = <TData = Awaited<ReturnType<typeof approvalInboxPending>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxPending>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getPendingQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getApprovalInboxPendingQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof pending>>> = ({ signal }) => pending(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof approvalInboxPending>>> = ({ signal }) => approvalInboxPending(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof pending>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof approvalInboxPending>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type PendingQueryResult = NonNullable<Awaited<ReturnType<typeof pending>>>
-export type PendingQueryError = ErrorType<ApiResponseVoid>
+export type ApprovalInboxPendingQueryResult = NonNullable<Awaited<ReturnType<typeof approvalInboxPending>>>
+export type ApprovalInboxPendingQueryError = ErrorType<ApiResponseVoid>
 
 
-export function usePending<TData = Awaited<ReturnType<typeof pending>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof pending>>, TError, TData>> & Pick<
+export function useApprovalInboxPending<TData = Awaited<ReturnType<typeof approvalInboxPending>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxPending>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof pending>>,
+          Awaited<ReturnType<typeof approvalInboxPending>>,
           TError,
-          Awaited<ReturnType<typeof pending>>
+          Awaited<ReturnType<typeof approvalInboxPending>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePending<TData = Awaited<ReturnType<typeof pending>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pending>>, TError, TData>> & Pick<
+export function useApprovalInboxPending<TData = Awaited<ReturnType<typeof approvalInboxPending>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxPending>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof pending>>,
+          Awaited<ReturnType<typeof approvalInboxPending>>,
           TError,
-          Awaited<ReturnType<typeof pending>>
+          Awaited<ReturnType<typeof approvalInboxPending>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePending<TData = Awaited<ReturnType<typeof pending>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pending>>, TError, TData>>, }
+export function useApprovalInboxPending<TData = Awaited<ReturnType<typeof approvalInboxPending>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxPending>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function usePending<TData = Awaited<ReturnType<typeof pending>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pending>>, TError, TData>>, }
+export function useApprovalInboxPending<TData = Awaited<ReturnType<typeof approvalInboxPending>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxPending>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPendingQueryOptions(options)
+  const queryOptions = getApprovalInboxPendingQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

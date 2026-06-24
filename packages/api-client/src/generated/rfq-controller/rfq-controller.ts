@@ -29,7 +29,7 @@ import type {
   ApiResponseRfqResponse,
   ApiResponseVoid,
   CreateRfqRequest,
-  List15Params,
+  RfqListParams,
   UpdateRfqRequest
 } from '.././model';
 
@@ -39,7 +39,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const update3 = (
+export const rfqUpdate = (
     rfqId: string,
     updateRfqRequest: BodyType<UpdateRfqRequest>,
  ) => {
@@ -55,11 +55,11 @@ export const update3 = (
   
 
 
-export const getUpdate3MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update3>>, TError,{rfqId: string;data: BodyType<UpdateRfqRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof update3>>, TError,{rfqId: string;data: BodyType<UpdateRfqRequest>}, TContext> => {
+export const getRfqUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqUpdate>>, TError,{rfqId: string;data: BodyType<UpdateRfqRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqUpdate>>, TError,{rfqId: string;data: BodyType<UpdateRfqRequest>}, TContext> => {
 
-const mutationKey = ['update3'];
+const mutationKey = ['rfqUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -69,10 +69,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof update3>>, {rfqId: string;data: BodyType<UpdateRfqRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqUpdate>>, {rfqId: string;data: BodyType<UpdateRfqRequest>}> = (props) => {
           const {rfqId,data} = props ?? {};
 
-          return  update3(rfqId,data,)
+          return  rfqUpdate(rfqId,data,)
         }
 
         
@@ -80,25 +80,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Update3MutationResult = NonNullable<Awaited<ReturnType<typeof update3>>>
-    export type Update3MutationBody = BodyType<UpdateRfqRequest>
-    export type Update3MutationError = ErrorType<ApiResponseVoid>
+    export type RfqUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof rfqUpdate>>>
+    export type RfqUpdateMutationBody = BodyType<UpdateRfqRequest>
+    export type RfqUpdateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdate3 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update3>>, TError,{rfqId: string;data: BodyType<UpdateRfqRequest>}, TContext>, }
+    export const useRfqUpdate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqUpdate>>, TError,{rfqId: string;data: BodyType<UpdateRfqRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof update3>>,
+        Awaited<ReturnType<typeof rfqUpdate>>,
         TError,
         {rfqId: string;data: BodyType<UpdateRfqRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdate3MutationOptions(options);
+      const mutationOptions = getRfqUpdateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const list15 = (
-    params?: List15Params,
+    export const rfqList = (
+    params?: RfqListParams,
  signal?: AbortSignal
 ) => {
       
@@ -113,66 +113,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getList15QueryKey = (params?: List15Params,) => {
+export const getRfqListQueryKey = (params?: RfqListParams,) => {
     return [
     `/api/v1/buyer/rfqs`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList15QueryOptions = <TData = Awaited<ReturnType<typeof list15>>, TError = ErrorType<ApiResponseVoid>>(params?: List15Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list15>>, TError, TData>>, }
+export const getRfqListQueryOptions = <TData = Awaited<ReturnType<typeof rfqList>>, TError = ErrorType<ApiResponseVoid>>(params?: RfqListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList15QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getRfqListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list15>>> = ({ signal }) => list15(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof rfqList>>> = ({ signal }) => rfqList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list15>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rfqList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List15QueryResult = NonNullable<Awaited<ReturnType<typeof list15>>>
-export type List15QueryError = ErrorType<ApiResponseVoid>
+export type RfqListQueryResult = NonNullable<Awaited<ReturnType<typeof rfqList>>>
+export type RfqListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList15<TData = Awaited<ReturnType<typeof list15>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List15Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list15>>, TError, TData>> & Pick<
+export function useRfqList<TData = Awaited<ReturnType<typeof rfqList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  RfqListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list15>>,
+          Awaited<ReturnType<typeof rfqList>>,
           TError,
-          Awaited<ReturnType<typeof list15>>
+          Awaited<ReturnType<typeof rfqList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList15<TData = Awaited<ReturnType<typeof list15>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List15Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list15>>, TError, TData>> & Pick<
+export function useRfqList<TData = Awaited<ReturnType<typeof rfqList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: RfqListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list15>>,
+          Awaited<ReturnType<typeof rfqList>>,
           TError,
-          Awaited<ReturnType<typeof list15>>
+          Awaited<ReturnType<typeof rfqList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList15<TData = Awaited<ReturnType<typeof list15>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List15Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list15>>, TError, TData>>, }
+export function useRfqList<TData = Awaited<ReturnType<typeof rfqList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: RfqListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList15<TData = Awaited<ReturnType<typeof list15>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List15Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list15>>, TError, TData>>, }
+export function useRfqList<TData = Awaited<ReturnType<typeof rfqList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: RfqListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList15QueryOptions(params,options)
+  const queryOptions = getRfqListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -184,7 +184,7 @@ export function useList15<TData = Awaited<ReturnType<typeof list15>>, TError = E
 
 
 
-export const create7 = (
+export const rfqCreate = (
     createRfqRequest: BodyType<CreateRfqRequest>,
  signal?: AbortSignal
 ) => {
@@ -200,11 +200,11 @@ export const create7 = (
   
 
 
-export const getCreate7MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create7>>, TError,{data: BodyType<CreateRfqRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create7>>, TError,{data: BodyType<CreateRfqRequest>}, TContext> => {
+export const getRfqCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqCreate>>, TError,{data: BodyType<CreateRfqRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqCreate>>, TError,{data: BodyType<CreateRfqRequest>}, TContext> => {
 
-const mutationKey = ['create7'];
+const mutationKey = ['rfqCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -214,10 +214,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create7>>, {data: BodyType<CreateRfqRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqCreate>>, {data: BodyType<CreateRfqRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  create7(data,)
+          return  rfqCreate(data,)
         }
 
         
@@ -225,20 +225,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create7MutationResult = NonNullable<Awaited<ReturnType<typeof create7>>>
-    export type Create7MutationBody = BodyType<CreateRfqRequest>
-    export type Create7MutationError = ErrorType<ApiResponseVoid>
+    export type RfqCreateMutationResult = NonNullable<Awaited<ReturnType<typeof rfqCreate>>>
+    export type RfqCreateMutationBody = BodyType<CreateRfqRequest>
+    export type RfqCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate7 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create7>>, TError,{data: BodyType<CreateRfqRequest>}, TContext>, }
+    export const useRfqCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqCreate>>, TError,{data: BodyType<CreateRfqRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create7>>,
+        Awaited<ReturnType<typeof rfqCreate>>,
         TError,
         {data: BodyType<CreateRfqRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate7MutationOptions(options);
+      const mutationOptions = getRfqCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

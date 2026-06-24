@@ -31,7 +31,7 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const list14 = (
+export const buyerRoleList = (
     
  signal?: AbortSignal
 ) => {
@@ -46,66 +46,66 @@ export const list14 = (
 
 
 
-export const getList14QueryKey = () => {
+export const getBuyerRoleListQueryKey = () => {
     return [
     `/api/v1/buyer/roles`
     ] as const;
     }
 
     
-export const getList14QueryOptions = <TData = Awaited<ReturnType<typeof list14>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list14>>, TError, TData>>, }
+export const getBuyerRoleListQueryOptions = <TData = Awaited<ReturnType<typeof buyerRoleList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList14QueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getBuyerRoleListQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list14>>> = ({ signal }) => list14(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerRoleList>>> = ({ signal }) => buyerRoleList(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list14>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerRoleList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List14QueryResult = NonNullable<Awaited<ReturnType<typeof list14>>>
-export type List14QueryError = ErrorType<ApiResponseVoid>
+export type BuyerRoleListQueryResult = NonNullable<Awaited<ReturnType<typeof buyerRoleList>>>
+export type BuyerRoleListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList14<TData = Awaited<ReturnType<typeof list14>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list14>>, TError, TData>> & Pick<
+export function useBuyerRoleList<TData = Awaited<ReturnType<typeof buyerRoleList>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list14>>,
+          Awaited<ReturnType<typeof buyerRoleList>>,
           TError,
-          Awaited<ReturnType<typeof list14>>
+          Awaited<ReturnType<typeof buyerRoleList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList14<TData = Awaited<ReturnType<typeof list14>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list14>>, TError, TData>> & Pick<
+export function useBuyerRoleList<TData = Awaited<ReturnType<typeof buyerRoleList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list14>>,
+          Awaited<ReturnType<typeof buyerRoleList>>,
           TError,
-          Awaited<ReturnType<typeof list14>>
+          Awaited<ReturnType<typeof buyerRoleList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList14<TData = Awaited<ReturnType<typeof list14>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list14>>, TError, TData>>, }
+export function useBuyerRoleList<TData = Awaited<ReturnType<typeof buyerRoleList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList14<TData = Awaited<ReturnType<typeof list14>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list14>>, TError, TData>>, }
+export function useBuyerRoleList<TData = Awaited<ReturnType<typeof buyerRoleList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList14QueryOptions(options)
+  const queryOptions = getBuyerRoleListQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

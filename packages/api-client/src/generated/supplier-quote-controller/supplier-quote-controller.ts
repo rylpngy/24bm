@@ -28,8 +28,8 @@ import type {
   ApiResponseListRfqResponse,
   ApiResponseQuoteResponse,
   ApiResponseVoid,
-  ListRfqsParams,
-  SubmitQuoteRequest
+  SubmitQuoteRequest,
+  SupplierQuoteListRfqsParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -38,7 +38,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const submit = (
+export const supplierQuoteSubmit = (
     rfqId: string,
     submitQuoteRequest: BodyType<SubmitQuoteRequest>,
  signal?: AbortSignal
@@ -55,11 +55,11 @@ export const submit = (
   
 
 
-export const getSubmitMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submit>>, TError,{rfqId: string;data: BodyType<SubmitQuoteRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof submit>>, TError,{rfqId: string;data: BodyType<SubmitQuoteRequest>}, TContext> => {
+export const getSupplierQuoteSubmitMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteSubmit>>, TError,{rfqId: string;data: BodyType<SubmitQuoteRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteSubmit>>, TError,{rfqId: string;data: BodyType<SubmitQuoteRequest>}, TContext> => {
 
-const mutationKey = ['submit'];
+const mutationKey = ['supplierQuoteSubmit'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -69,10 +69,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submit>>, {rfqId: string;data: BodyType<SubmitQuoteRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQuoteSubmit>>, {rfqId: string;data: BodyType<SubmitQuoteRequest>}> = (props) => {
           const {rfqId,data} = props ?? {};
 
-          return  submit(rfqId,data,)
+          return  supplierQuoteSubmit(rfqId,data,)
         }
 
         
@@ -80,25 +80,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SubmitMutationResult = NonNullable<Awaited<ReturnType<typeof submit>>>
-    export type SubmitMutationBody = BodyType<SubmitQuoteRequest>
-    export type SubmitMutationError = ErrorType<ApiResponseVoid>
+    export type SupplierQuoteSubmitMutationResult = NonNullable<Awaited<ReturnType<typeof supplierQuoteSubmit>>>
+    export type SupplierQuoteSubmitMutationBody = BodyType<SubmitQuoteRequest>
+    export type SupplierQuoteSubmitMutationError = ErrorType<ApiResponseVoid>
 
-    export const useSubmit = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submit>>, TError,{rfqId: string;data: BodyType<SubmitQuoteRequest>}, TContext>, }
+    export const useSupplierQuoteSubmit = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteSubmit>>, TError,{rfqId: string;data: BodyType<SubmitQuoteRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof submit>>,
+        Awaited<ReturnType<typeof supplierQuoteSubmit>>,
         TError,
         {rfqId: string;data: BodyType<SubmitQuoteRequest>},
         TContext
       > => {
 
-      const mutationOptions = getSubmitMutationOptions(options);
+      const mutationOptions = getSupplierQuoteSubmitMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const listRfqs = (
-    params?: ListRfqsParams,
+    export const supplierQuoteListRfqs = (
+    params?: SupplierQuoteListRfqsParams,
  signal?: AbortSignal
 ) => {
       
@@ -113,66 +113,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getListRfqsQueryKey = (params?: ListRfqsParams,) => {
+export const getSupplierQuoteListRfqsQueryKey = (params?: SupplierQuoteListRfqsParams,) => {
     return [
     `/api/v1/supplier/rfqs`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getListRfqsQueryOptions = <TData = Awaited<ReturnType<typeof listRfqs>>, TError = ErrorType<ApiResponseVoid>>(params?: ListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRfqs>>, TError, TData>>, }
+export const getSupplierQuoteListRfqsQueryOptions = <TData = Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierQuoteListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListRfqsQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getSupplierQuoteListRfqsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRfqs>>> = ({ signal }) => listRfqs(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQuoteListRfqs>>> = ({ signal }) => supplierQuoteListRfqs(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRfqs>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ListRfqsQueryResult = NonNullable<Awaited<ReturnType<typeof listRfqs>>>
-export type ListRfqsQueryError = ErrorType<ApiResponseVoid>
+export type SupplierQuoteListRfqsQueryResult = NonNullable<Awaited<ReturnType<typeof supplierQuoteListRfqs>>>
+export type SupplierQuoteListRfqsQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useListRfqs<TData = Awaited<ReturnType<typeof listRfqs>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  ListRfqsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRfqs>>, TError, TData>> & Pick<
+export function useSupplierQuoteListRfqs<TData = Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  SupplierQuoteListRfqsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listRfqs>>,
+          Awaited<ReturnType<typeof supplierQuoteListRfqs>>,
           TError,
-          Awaited<ReturnType<typeof listRfqs>>
+          Awaited<ReturnType<typeof supplierQuoteListRfqs>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRfqs<TData = Awaited<ReturnType<typeof listRfqs>>, TError = ErrorType<ApiResponseVoid>>(
- params?: ListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRfqs>>, TError, TData>> & Pick<
+export function useSupplierQuoteListRfqs<TData = Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierQuoteListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listRfqs>>,
+          Awaited<ReturnType<typeof supplierQuoteListRfqs>>,
           TError,
-          Awaited<ReturnType<typeof listRfqs>>
+          Awaited<ReturnType<typeof supplierQuoteListRfqs>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRfqs<TData = Awaited<ReturnType<typeof listRfqs>>, TError = ErrorType<ApiResponseVoid>>(
- params?: ListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRfqs>>, TError, TData>>, }
+export function useSupplierQuoteListRfqs<TData = Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierQuoteListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useListRfqs<TData = Awaited<ReturnType<typeof listRfqs>>, TError = ErrorType<ApiResponseVoid>>(
- params?: ListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRfqs>>, TError, TData>>, }
+export function useSupplierQuoteListRfqs<TData = Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierQuoteListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListRfqsQueryOptions(params,options)
+  const queryOptions = getSupplierQuoteListRfqsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

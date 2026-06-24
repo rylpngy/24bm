@@ -41,24 +41,24 @@ import type {
   ApiResponseThreeWayMatchRebuildResponse,
   ApiResponseVarianceHandlingResponse,
   ApiResponseVoid,
+  BuyerFinanceActionPaymentArchiveExceptionRequestsParams,
+  BuyerFinanceActionPaymentBatchesParams,
+  BuyerFinanceActionPaymentBlockResolutionsParams,
+  BuyerFinanceActionPaymentExecutionRecordsParams,
+  BuyerFinanceActionPaymentRequestsParams,
+  BuyerFinanceActionThreeWayMatchesParams,
+  BuyerFinanceActionVarianceHandlingsParams,
   ClosePaymentArchiveExceptionRequestRequest,
   CompletePaymentArchiveExceptionActionRequest,
   CreatePaymentArchiveExceptionRequestRequest,
   CreatePaymentBlockResolutionRequest,
   CreatePaymentRequestRequest,
   CreateVarianceHandlingRequest,
-  PaymentArchiveExceptionRequestsParams,
-  PaymentBatchesParams,
-  PaymentBlockResolutionsParams,
-  PaymentExecutionRecordsParams,
-  PaymentRequestsParams,
   ReviewPaymentArchiveExceptionRequest,
-  ThreeWayMatchesParams,
   UpdatePaymentBatchStatusRequest,
   UpdatePaymentBlockResolutionStatusRequest,
   UpdatePaymentRequestStatusRequest,
-  UpdateVarianceHandlingStatusRequest,
-  VarianceHandlingsParams
+  UpdateVarianceHandlingStatusRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -67,7 +67,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const updateVarianceHandlingStatus = (
+export const buyerFinanceActionUpdateVarianceHandlingStatus = (
     varianceHandlingId: string,
     updateVarianceHandlingStatusRequest: BodyType<UpdateVarianceHandlingStatusRequest>,
  ) => {
@@ -83,11 +83,11 @@ export const updateVarianceHandlingStatus = (
   
 
 
-export const getUpdateVarianceHandlingStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVarianceHandlingStatus>>, TError,{varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof updateVarianceHandlingStatus>>, TError,{varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>}, TContext> => {
+export const getBuyerFinanceActionUpdateVarianceHandlingStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdateVarianceHandlingStatus>>, TError,{varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdateVarianceHandlingStatus>>, TError,{varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>}, TContext> => {
 
-const mutationKey = ['updateVarianceHandlingStatus'];
+const mutationKey = ['buyerFinanceActionUpdateVarianceHandlingStatus'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -97,10 +97,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVarianceHandlingStatus>>, {varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionUpdateVarianceHandlingStatus>>, {varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>}> = (props) => {
           const {varianceHandlingId,data} = props ?? {};
 
-          return  updateVarianceHandlingStatus(varianceHandlingId,data,)
+          return  buyerFinanceActionUpdateVarianceHandlingStatus(varianceHandlingId,data,)
         }
 
         
@@ -108,24 +108,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdateVarianceHandlingStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateVarianceHandlingStatus>>>
-    export type UpdateVarianceHandlingStatusMutationBody = BodyType<UpdateVarianceHandlingStatusRequest>
-    export type UpdateVarianceHandlingStatusMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionUpdateVarianceHandlingStatusMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionUpdateVarianceHandlingStatus>>>
+    export type BuyerFinanceActionUpdateVarianceHandlingStatusMutationBody = BodyType<UpdateVarianceHandlingStatusRequest>
+    export type BuyerFinanceActionUpdateVarianceHandlingStatusMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdateVarianceHandlingStatus = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVarianceHandlingStatus>>, TError,{varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>}, TContext>, }
+    export const useBuyerFinanceActionUpdateVarianceHandlingStatus = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdateVarianceHandlingStatus>>, TError,{varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateVarianceHandlingStatus>>,
+        Awaited<ReturnType<typeof buyerFinanceActionUpdateVarianceHandlingStatus>>,
         TError,
         {varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdateVarianceHandlingStatusMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionUpdateVarianceHandlingStatusMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const updatePaymentRequestStatus = (
+    export const buyerFinanceActionUpdatePaymentRequestStatus = (
     paymentRequestId: string,
     updatePaymentRequestStatusRequest: BodyType<UpdatePaymentRequestStatusRequest>,
  ) => {
@@ -141,11 +141,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getUpdatePaymentRequestStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaymentRequestStatus>>, TError,{paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof updatePaymentRequestStatus>>, TError,{paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>}, TContext> => {
+export const getBuyerFinanceActionUpdatePaymentRequestStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentRequestStatus>>, TError,{paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentRequestStatus>>, TError,{paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>}, TContext> => {
 
-const mutationKey = ['updatePaymentRequestStatus'];
+const mutationKey = ['buyerFinanceActionUpdatePaymentRequestStatus'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -155,10 +155,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePaymentRequestStatus>>, {paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentRequestStatus>>, {paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>}> = (props) => {
           const {paymentRequestId,data} = props ?? {};
 
-          return  updatePaymentRequestStatus(paymentRequestId,data,)
+          return  buyerFinanceActionUpdatePaymentRequestStatus(paymentRequestId,data,)
         }
 
         
@@ -166,24 +166,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdatePaymentRequestStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updatePaymentRequestStatus>>>
-    export type UpdatePaymentRequestStatusMutationBody = BodyType<UpdatePaymentRequestStatusRequest>
-    export type UpdatePaymentRequestStatusMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionUpdatePaymentRequestStatusMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentRequestStatus>>>
+    export type BuyerFinanceActionUpdatePaymentRequestStatusMutationBody = BodyType<UpdatePaymentRequestStatusRequest>
+    export type BuyerFinanceActionUpdatePaymentRequestStatusMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdatePaymentRequestStatus = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaymentRequestStatus>>, TError,{paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>}, TContext>, }
+    export const useBuyerFinanceActionUpdatePaymentRequestStatus = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentRequestStatus>>, TError,{paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updatePaymentRequestStatus>>,
+        Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentRequestStatus>>,
         TError,
         {paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdatePaymentRequestStatusMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionUpdatePaymentRequestStatusMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const updatePaymentBlockResolutionStatus = (
+    export const buyerFinanceActionUpdatePaymentBlockResolutionStatus = (
     resolutionId: string,
     updatePaymentBlockResolutionStatusRequest: BodyType<UpdatePaymentBlockResolutionStatusRequest>,
  ) => {
@@ -199,11 +199,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getUpdatePaymentBlockResolutionStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaymentBlockResolutionStatus>>, TError,{resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof updatePaymentBlockResolutionStatus>>, TError,{resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>}, TContext> => {
+export const getBuyerFinanceActionUpdatePaymentBlockResolutionStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBlockResolutionStatus>>, TError,{resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBlockResolutionStatus>>, TError,{resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>}, TContext> => {
 
-const mutationKey = ['updatePaymentBlockResolutionStatus'];
+const mutationKey = ['buyerFinanceActionUpdatePaymentBlockResolutionStatus'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -213,10 +213,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePaymentBlockResolutionStatus>>, {resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBlockResolutionStatus>>, {resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>}> = (props) => {
           const {resolutionId,data} = props ?? {};
 
-          return  updatePaymentBlockResolutionStatus(resolutionId,data,)
+          return  buyerFinanceActionUpdatePaymentBlockResolutionStatus(resolutionId,data,)
         }
 
         
@@ -224,24 +224,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdatePaymentBlockResolutionStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updatePaymentBlockResolutionStatus>>>
-    export type UpdatePaymentBlockResolutionStatusMutationBody = BodyType<UpdatePaymentBlockResolutionStatusRequest>
-    export type UpdatePaymentBlockResolutionStatusMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionUpdatePaymentBlockResolutionStatusMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBlockResolutionStatus>>>
+    export type BuyerFinanceActionUpdatePaymentBlockResolutionStatusMutationBody = BodyType<UpdatePaymentBlockResolutionStatusRequest>
+    export type BuyerFinanceActionUpdatePaymentBlockResolutionStatusMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdatePaymentBlockResolutionStatus = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaymentBlockResolutionStatus>>, TError,{resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>}, TContext>, }
+    export const useBuyerFinanceActionUpdatePaymentBlockResolutionStatus = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBlockResolutionStatus>>, TError,{resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updatePaymentBlockResolutionStatus>>,
+        Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBlockResolutionStatus>>,
         TError,
         {resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdatePaymentBlockResolutionStatusMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionUpdatePaymentBlockResolutionStatusMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const updatePaymentBatchStatus = (
+    export const buyerFinanceActionUpdatePaymentBatchStatus = (
     paymentBatchNo: string,
     updatePaymentBatchStatusRequest: BodyType<UpdatePaymentBatchStatusRequest>,
  ) => {
@@ -257,11 +257,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getUpdatePaymentBatchStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaymentBatchStatus>>, TError,{paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof updatePaymentBatchStatus>>, TError,{paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>}, TContext> => {
+export const getBuyerFinanceActionUpdatePaymentBatchStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBatchStatus>>, TError,{paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBatchStatus>>, TError,{paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>}, TContext> => {
 
-const mutationKey = ['updatePaymentBatchStatus'];
+const mutationKey = ['buyerFinanceActionUpdatePaymentBatchStatus'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -271,10 +271,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePaymentBatchStatus>>, {paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBatchStatus>>, {paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>}> = (props) => {
           const {paymentBatchNo,data} = props ?? {};
 
-          return  updatePaymentBatchStatus(paymentBatchNo,data,)
+          return  buyerFinanceActionUpdatePaymentBatchStatus(paymentBatchNo,data,)
         }
 
         
@@ -282,25 +282,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdatePaymentBatchStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updatePaymentBatchStatus>>>
-    export type UpdatePaymentBatchStatusMutationBody = BodyType<UpdatePaymentBatchStatusRequest>
-    export type UpdatePaymentBatchStatusMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionUpdatePaymentBatchStatusMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBatchStatus>>>
+    export type BuyerFinanceActionUpdatePaymentBatchStatusMutationBody = BodyType<UpdatePaymentBatchStatusRequest>
+    export type BuyerFinanceActionUpdatePaymentBatchStatusMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdatePaymentBatchStatus = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaymentBatchStatus>>, TError,{paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>}, TContext>, }
+    export const useBuyerFinanceActionUpdatePaymentBatchStatus = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBatchStatus>>, TError,{paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updatePaymentBatchStatus>>,
+        Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBatchStatus>>,
         TError,
         {paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdatePaymentBatchStatusMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionUpdatePaymentBatchStatusMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const varianceHandlings = (
-    params?: VarianceHandlingsParams,
+    export const buyerFinanceActionVarianceHandlings = (
+    params?: BuyerFinanceActionVarianceHandlingsParams,
  signal?: AbortSignal
 ) => {
       
@@ -315,66 +315,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getVarianceHandlingsQueryKey = (params?: VarianceHandlingsParams,) => {
+export const getBuyerFinanceActionVarianceHandlingsQueryKey = (params?: BuyerFinanceActionVarianceHandlingsParams,) => {
     return [
     `/api/v1/buyer/variance-handlings`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getVarianceHandlingsQueryOptions = <TData = Awaited<ReturnType<typeof varianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(params?: VarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof varianceHandlings>>, TError, TData>>, }
+export const getBuyerFinanceActionVarianceHandlingsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionVarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getVarianceHandlingsQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionVarianceHandlingsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof varianceHandlings>>> = ({ signal }) => varianceHandlings(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>> = ({ signal }) => buyerFinanceActionVarianceHandlings(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof varianceHandlings>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type VarianceHandlingsQueryResult = NonNullable<Awaited<ReturnType<typeof varianceHandlings>>>
-export type VarianceHandlingsQueryError = ErrorType<ApiResponseVoid>
+export type BuyerFinanceActionVarianceHandlingsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>>
+export type BuyerFinanceActionVarianceHandlingsQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useVarianceHandlings<TData = Awaited<ReturnType<typeof varianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  VarianceHandlingsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof varianceHandlings>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionVarianceHandlings<TData = Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionVarianceHandlingsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof varianceHandlings>>,
+          Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>,
           TError,
-          Awaited<ReturnType<typeof varianceHandlings>>
+          Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useVarianceHandlings<TData = Awaited<ReturnType<typeof varianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(
- params?: VarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof varianceHandlings>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionVarianceHandlings<TData = Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionVarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof varianceHandlings>>,
+          Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>,
           TError,
-          Awaited<ReturnType<typeof varianceHandlings>>
+          Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useVarianceHandlings<TData = Awaited<ReturnType<typeof varianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(
- params?: VarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof varianceHandlings>>, TError, TData>>, }
+export function useBuyerFinanceActionVarianceHandlings<TData = Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionVarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useVarianceHandlings<TData = Awaited<ReturnType<typeof varianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(
- params?: VarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof varianceHandlings>>, TError, TData>>, }
+export function useBuyerFinanceActionVarianceHandlings<TData = Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionVarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getVarianceHandlingsQueryOptions(params,options)
+  const queryOptions = getBuyerFinanceActionVarianceHandlingsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -386,7 +386,7 @@ export function useVarianceHandlings<TData = Awaited<ReturnType<typeof varianceH
 
 
 
-export const createVarianceHandling = (
+export const buyerFinanceActionCreateVarianceHandling = (
     createVarianceHandlingRequest: BodyType<CreateVarianceHandlingRequest>,
  signal?: AbortSignal
 ) => {
@@ -402,11 +402,11 @@ export const createVarianceHandling = (
   
 
 
-export const getCreateVarianceHandlingMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVarianceHandling>>, TError,{data: BodyType<CreateVarianceHandlingRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof createVarianceHandling>>, TError,{data: BodyType<CreateVarianceHandlingRequest>}, TContext> => {
+export const getBuyerFinanceActionCreateVarianceHandlingMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandling>>, TError,{data: BodyType<CreateVarianceHandlingRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandling>>, TError,{data: BodyType<CreateVarianceHandlingRequest>}, TContext> => {
 
-const mutationKey = ['createVarianceHandling'];
+const mutationKey = ['buyerFinanceActionCreateVarianceHandling'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -416,10 +416,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createVarianceHandling>>, {data: BodyType<CreateVarianceHandlingRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandling>>, {data: BodyType<CreateVarianceHandlingRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createVarianceHandling(data,)
+          return  buyerFinanceActionCreateVarianceHandling(data,)
         }
 
         
@@ -427,24 +427,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreateVarianceHandlingMutationResult = NonNullable<Awaited<ReturnType<typeof createVarianceHandling>>>
-    export type CreateVarianceHandlingMutationBody = BodyType<CreateVarianceHandlingRequest>
-    export type CreateVarianceHandlingMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionCreateVarianceHandlingMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandling>>>
+    export type BuyerFinanceActionCreateVarianceHandlingMutationBody = BodyType<CreateVarianceHandlingRequest>
+    export type BuyerFinanceActionCreateVarianceHandlingMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreateVarianceHandling = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVarianceHandling>>, TError,{data: BodyType<CreateVarianceHandlingRequest>}, TContext>, }
+    export const useBuyerFinanceActionCreateVarianceHandling = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandling>>, TError,{data: BodyType<CreateVarianceHandlingRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createVarianceHandling>>,
+        Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandling>>,
         TError,
         {data: BodyType<CreateVarianceHandlingRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreateVarianceHandlingMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionCreateVarianceHandlingMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const createVarianceHandlingFromThreeWayMatch = (
+    export const buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch = (
     matchId: string,
  signal?: AbortSignal
 ) => {
@@ -458,11 +458,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getCreateVarianceHandlingFromThreeWayMatchMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVarianceHandlingFromThreeWayMatch>>, TError,{matchId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof createVarianceHandlingFromThreeWayMatch>>, TError,{matchId: string}, TContext> => {
+export const getBuyerFinanceActionCreateVarianceHandlingFromThreeWayMatchMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch>>, TError,{matchId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch>>, TError,{matchId: string}, TContext> => {
 
-const mutationKey = ['createVarianceHandlingFromThreeWayMatch'];
+const mutationKey = ['buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -472,10 +472,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createVarianceHandlingFromThreeWayMatch>>, {matchId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch>>, {matchId: string}> = (props) => {
           const {matchId} = props ?? {};
 
-          return  createVarianceHandlingFromThreeWayMatch(matchId,)
+          return  buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch(matchId,)
         }
 
         
@@ -483,24 +483,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreateVarianceHandlingFromThreeWayMatchMutationResult = NonNullable<Awaited<ReturnType<typeof createVarianceHandlingFromThreeWayMatch>>>
+    export type BuyerFinanceActionCreateVarianceHandlingFromThreeWayMatchMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch>>>
     
-    export type CreateVarianceHandlingFromThreeWayMatchMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionCreateVarianceHandlingFromThreeWayMatchMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreateVarianceHandlingFromThreeWayMatch = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVarianceHandlingFromThreeWayMatch>>, TError,{matchId: string}, TContext>, }
+    export const useBuyerFinanceActionCreateVarianceHandlingFromThreeWayMatch = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch>>, TError,{matchId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createVarianceHandlingFromThreeWayMatch>>,
+        Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch>>,
         TError,
         {matchId: string},
         TContext
       > => {
 
-      const mutationOptions = getCreateVarianceHandlingFromThreeWayMatchMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionCreateVarianceHandlingFromThreeWayMatchMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const rebuildThreeWayMatches = (
+    export const buyerFinanceActionRebuildThreeWayMatches = (
     
  signal?: AbortSignal
 ) => {
@@ -514,11 +514,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getRebuildThreeWayMatchesMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rebuildThreeWayMatches>>, TError,void, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof rebuildThreeWayMatches>>, TError,void, TContext> => {
+export const getBuyerFinanceActionRebuildThreeWayMatchesMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRebuildThreeWayMatches>>, TError,void, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRebuildThreeWayMatches>>, TError,void, TContext> => {
 
-const mutationKey = ['rebuildThreeWayMatches'];
+const mutationKey = ['buyerFinanceActionRebuildThreeWayMatches'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -528,10 +528,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rebuildThreeWayMatches>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionRebuildThreeWayMatches>>, void> = () => {
           
 
-          return  rebuildThreeWayMatches()
+          return  buyerFinanceActionRebuildThreeWayMatches()
         }
 
         
@@ -539,25 +539,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type RebuildThreeWayMatchesMutationResult = NonNullable<Awaited<ReturnType<typeof rebuildThreeWayMatches>>>
+    export type BuyerFinanceActionRebuildThreeWayMatchesMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionRebuildThreeWayMatches>>>
     
-    export type RebuildThreeWayMatchesMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionRebuildThreeWayMatchesMutationError = ErrorType<ApiResponseVoid>
 
-    export const useRebuildThreeWayMatches = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rebuildThreeWayMatches>>, TError,void, TContext>, }
+    export const useBuyerFinanceActionRebuildThreeWayMatches = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRebuildThreeWayMatches>>, TError,void, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof rebuildThreeWayMatches>>,
+        Awaited<ReturnType<typeof buyerFinanceActionRebuildThreeWayMatches>>,
         TError,
         void,
         TContext
       > => {
 
-      const mutationOptions = getRebuildThreeWayMatchesMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionRebuildThreeWayMatchesMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const paymentRequests = (
-    params?: PaymentRequestsParams,
+    export const buyerFinanceActionPaymentRequests = (
+    params?: BuyerFinanceActionPaymentRequestsParams,
  signal?: AbortSignal
 ) => {
       
@@ -572,66 +572,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getPaymentRequestsQueryKey = (params?: PaymentRequestsParams,) => {
+export const getBuyerFinanceActionPaymentRequestsQueryKey = (params?: BuyerFinanceActionPaymentRequestsParams,) => {
     return [
     `/api/v1/buyer/payment-requests`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getPaymentRequestsQueryOptions = <TData = Awaited<ReturnType<typeof paymentRequests>>, TError = ErrorType<ApiResponseVoid>>(params?: PaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentRequests>>, TError, TData>>, }
+export const getBuyerFinanceActionPaymentRequestsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getPaymentRequestsQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentRequestsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof paymentRequests>>> = ({ signal }) => paymentRequests(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>> = ({ signal }) => buyerFinanceActionPaymentRequests(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof paymentRequests>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type PaymentRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof paymentRequests>>>
-export type PaymentRequestsQueryError = ErrorType<ApiResponseVoid>
+export type BuyerFinanceActionPaymentRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>>
+export type BuyerFinanceActionPaymentRequestsQueryError = ErrorType<ApiResponseVoid>
 
 
-export function usePaymentRequests<TData = Awaited<ReturnType<typeof paymentRequests>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  PaymentRequestsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentRequests>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionPaymentRequestsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentRequests>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>,
           TError,
-          Awaited<ReturnType<typeof paymentRequests>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentRequests<TData = Awaited<ReturnType<typeof paymentRequests>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentRequests>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentRequests>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>,
           TError,
-          Awaited<ReturnType<typeof paymentRequests>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentRequests<TData = Awaited<ReturnType<typeof paymentRequests>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentRequests>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function usePaymentRequests<TData = Awaited<ReturnType<typeof paymentRequests>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentRequests>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPaymentRequestsQueryOptions(params,options)
+  const queryOptions = getBuyerFinanceActionPaymentRequestsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -643,7 +643,7 @@ export function usePaymentRequests<TData = Awaited<ReturnType<typeof paymentRequ
 
 
 
-export const createPaymentRequest = (
+export const buyerFinanceActionCreatePaymentRequest = (
     createPaymentRequestRequest: BodyType<CreatePaymentRequestRequest>,
  signal?: AbortSignal
 ) => {
@@ -659,11 +659,11 @@ export const createPaymentRequest = (
   
 
 
-export const getCreatePaymentRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaymentRequest>>, TError,{data: BodyType<CreatePaymentRequestRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof createPaymentRequest>>, TError,{data: BodyType<CreatePaymentRequestRequest>}, TContext> => {
+export const getBuyerFinanceActionCreatePaymentRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentRequest>>, TError,{data: BodyType<CreatePaymentRequestRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentRequest>>, TError,{data: BodyType<CreatePaymentRequestRequest>}, TContext> => {
 
-const mutationKey = ['createPaymentRequest'];
+const mutationKey = ['buyerFinanceActionCreatePaymentRequest'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -673,10 +673,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPaymentRequest>>, {data: BodyType<CreatePaymentRequestRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentRequest>>, {data: BodyType<CreatePaymentRequestRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createPaymentRequest(data,)
+          return  buyerFinanceActionCreatePaymentRequest(data,)
         }
 
         
@@ -684,24 +684,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreatePaymentRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createPaymentRequest>>>
-    export type CreatePaymentRequestMutationBody = BodyType<CreatePaymentRequestRequest>
-    export type CreatePaymentRequestMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionCreatePaymentRequestMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentRequest>>>
+    export type BuyerFinanceActionCreatePaymentRequestMutationBody = BodyType<CreatePaymentRequestRequest>
+    export type BuyerFinanceActionCreatePaymentRequestMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreatePaymentRequest = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaymentRequest>>, TError,{data: BodyType<CreatePaymentRequestRequest>}, TContext>, }
+    export const useBuyerFinanceActionCreatePaymentRequest = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentRequest>>, TError,{data: BodyType<CreatePaymentRequestRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createPaymentRequest>>,
+        Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentRequest>>,
         TError,
         {data: BodyType<CreatePaymentRequestRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreatePaymentRequestMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionCreatePaymentRequestMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const registerPaymentExecutionRecord = (
+    export const buyerFinanceActionRegisterPaymentExecutionRecord = (
     executionRecordId: string,
  signal?: AbortSignal
 ) => {
@@ -715,11 +715,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getRegisterPaymentExecutionRecordMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPaymentExecutionRecord>>, TError,{executionRecordId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof registerPaymentExecutionRecord>>, TError,{executionRecordId: string}, TContext> => {
+export const getBuyerFinanceActionRegisterPaymentExecutionRecordMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, TError,{executionRecordId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, TError,{executionRecordId: string}, TContext> => {
 
-const mutationKey = ['registerPaymentExecutionRecord'];
+const mutationKey = ['buyerFinanceActionRegisterPaymentExecutionRecord'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -729,10 +729,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerPaymentExecutionRecord>>, {executionRecordId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, {executionRecordId: string}> = (props) => {
           const {executionRecordId} = props ?? {};
 
-          return  registerPaymentExecutionRecord(executionRecordId,)
+          return  buyerFinanceActionRegisterPaymentExecutionRecord(executionRecordId,)
         }
 
         
@@ -740,25 +740,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type RegisterPaymentExecutionRecordMutationResult = NonNullable<Awaited<ReturnType<typeof registerPaymentExecutionRecord>>>
+    export type BuyerFinanceActionRegisterPaymentExecutionRecordMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>>
     
-    export type RegisterPaymentExecutionRecordMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionRegisterPaymentExecutionRecordMutationError = ErrorType<ApiResponseVoid>
 
-    export const useRegisterPaymentExecutionRecord = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPaymentExecutionRecord>>, TError,{executionRecordId: string}, TContext>, }
+    export const useBuyerFinanceActionRegisterPaymentExecutionRecord = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, TError,{executionRecordId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof registerPaymentExecutionRecord>>,
+        Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>,
         TError,
         {executionRecordId: string},
         TContext
       > => {
 
-      const mutationOptions = getRegisterPaymentExecutionRecordMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionRegisterPaymentExecutionRecordMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const paymentBlockResolutions = (
-    params?: PaymentBlockResolutionsParams,
+    export const buyerFinanceActionPaymentBlockResolutions = (
+    params?: BuyerFinanceActionPaymentBlockResolutionsParams,
  signal?: AbortSignal
 ) => {
       
@@ -773,66 +773,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getPaymentBlockResolutionsQueryKey = (params?: PaymentBlockResolutionsParams,) => {
+export const getBuyerFinanceActionPaymentBlockResolutionsQueryKey = (params?: BuyerFinanceActionPaymentBlockResolutionsParams,) => {
     return [
     `/api/v1/buyer/payment-block-resolutions`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getPaymentBlockResolutionsQueryOptions = <TData = Awaited<ReturnType<typeof paymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(params?: PaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBlockResolutions>>, TError, TData>>, }
+export const getBuyerFinanceActionPaymentBlockResolutionsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getPaymentBlockResolutionsQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentBlockResolutionsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof paymentBlockResolutions>>> = ({ signal }) => paymentBlockResolutions(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>> = ({ signal }) => buyerFinanceActionPaymentBlockResolutions(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof paymentBlockResolutions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type PaymentBlockResolutionsQueryResult = NonNullable<Awaited<ReturnType<typeof paymentBlockResolutions>>>
-export type PaymentBlockResolutionsQueryError = ErrorType<ApiResponseVoid>
+export type BuyerFinanceActionPaymentBlockResolutionsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>>
+export type BuyerFinanceActionPaymentBlockResolutionsQueryError = ErrorType<ApiResponseVoid>
 
 
-export function usePaymentBlockResolutions<TData = Awaited<ReturnType<typeof paymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  PaymentBlockResolutionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBlockResolutions>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentBlockResolutions<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionPaymentBlockResolutionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentBlockResolutions>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>,
           TError,
-          Awaited<ReturnType<typeof paymentBlockResolutions>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentBlockResolutions<TData = Awaited<ReturnType<typeof paymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBlockResolutions>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentBlockResolutions<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentBlockResolutions>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>,
           TError,
-          Awaited<ReturnType<typeof paymentBlockResolutions>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentBlockResolutions<TData = Awaited<ReturnType<typeof paymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBlockResolutions>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentBlockResolutions<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function usePaymentBlockResolutions<TData = Awaited<ReturnType<typeof paymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBlockResolutions>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentBlockResolutions<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPaymentBlockResolutionsQueryOptions(params,options)
+  const queryOptions = getBuyerFinanceActionPaymentBlockResolutionsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -844,7 +844,7 @@ export function usePaymentBlockResolutions<TData = Awaited<ReturnType<typeof pay
 
 
 
-export const createPaymentBlockResolution = (
+export const buyerFinanceActionCreatePaymentBlockResolution = (
     createPaymentBlockResolutionRequest: BodyType<CreatePaymentBlockResolutionRequest>,
  signal?: AbortSignal
 ) => {
@@ -860,11 +860,11 @@ export const createPaymentBlockResolution = (
   
 
 
-export const getCreatePaymentBlockResolutionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaymentBlockResolution>>, TError,{data: BodyType<CreatePaymentBlockResolutionRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof createPaymentBlockResolution>>, TError,{data: BodyType<CreatePaymentBlockResolutionRequest>}, TContext> => {
+export const getBuyerFinanceActionCreatePaymentBlockResolutionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentBlockResolution>>, TError,{data: BodyType<CreatePaymentBlockResolutionRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentBlockResolution>>, TError,{data: BodyType<CreatePaymentBlockResolutionRequest>}, TContext> => {
 
-const mutationKey = ['createPaymentBlockResolution'];
+const mutationKey = ['buyerFinanceActionCreatePaymentBlockResolution'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -874,10 +874,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPaymentBlockResolution>>, {data: BodyType<CreatePaymentBlockResolutionRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentBlockResolution>>, {data: BodyType<CreatePaymentBlockResolutionRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createPaymentBlockResolution(data,)
+          return  buyerFinanceActionCreatePaymentBlockResolution(data,)
         }
 
         
@@ -885,25 +885,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreatePaymentBlockResolutionMutationResult = NonNullable<Awaited<ReturnType<typeof createPaymentBlockResolution>>>
-    export type CreatePaymentBlockResolutionMutationBody = BodyType<CreatePaymentBlockResolutionRequest>
-    export type CreatePaymentBlockResolutionMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionCreatePaymentBlockResolutionMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentBlockResolution>>>
+    export type BuyerFinanceActionCreatePaymentBlockResolutionMutationBody = BodyType<CreatePaymentBlockResolutionRequest>
+    export type BuyerFinanceActionCreatePaymentBlockResolutionMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreatePaymentBlockResolution = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaymentBlockResolution>>, TError,{data: BodyType<CreatePaymentBlockResolutionRequest>}, TContext>, }
+    export const useBuyerFinanceActionCreatePaymentBlockResolution = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentBlockResolution>>, TError,{data: BodyType<CreatePaymentBlockResolutionRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createPaymentBlockResolution>>,
+        Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentBlockResolution>>,
         TError,
         {data: BodyType<CreatePaymentBlockResolutionRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreatePaymentBlockResolutionMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionCreatePaymentBlockResolutionMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const paymentArchiveExceptionRequests = (
-    params?: PaymentArchiveExceptionRequestsParams,
+    export const buyerFinanceActionPaymentArchiveExceptionRequests = (
+    params?: BuyerFinanceActionPaymentArchiveExceptionRequestsParams,
  signal?: AbortSignal
 ) => {
       
@@ -918,66 +918,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getPaymentArchiveExceptionRequestsQueryKey = (params?: PaymentArchiveExceptionRequestsParams,) => {
+export const getBuyerFinanceActionPaymentArchiveExceptionRequestsQueryKey = (params?: BuyerFinanceActionPaymentArchiveExceptionRequestsParams,) => {
     return [
     `/api/v1/buyer/payment-archive-exception-requests`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getPaymentArchiveExceptionRequestsQueryOptions = <TData = Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(params?: PaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError, TData>>, }
+export const getBuyerFinanceActionPaymentArchiveExceptionRequestsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getPaymentArchiveExceptionRequestsQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentArchiveExceptionRequestsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>> = ({ signal }) => paymentArchiveExceptionRequests(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>> = ({ signal }) => buyerFinanceActionPaymentArchiveExceptionRequests(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type PaymentArchiveExceptionRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>>
-export type PaymentArchiveExceptionRequestsQueryError = ErrorType<ApiResponseVoid>
+export type BuyerFinanceActionPaymentArchiveExceptionRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>>
+export type BuyerFinanceActionPaymentArchiveExceptionRequestsQueryError = ErrorType<ApiResponseVoid>
 
 
-export function usePaymentArchiveExceptionRequests<TData = Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  PaymentArchiveExceptionRequestsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentArchiveExceptionRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionPaymentArchiveExceptionRequestsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>,
           TError,
-          Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentArchiveExceptionRequests<TData = Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentArchiveExceptionRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>,
           TError,
-          Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentArchiveExceptionRequests<TData = Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentArchiveExceptionRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function usePaymentArchiveExceptionRequests<TData = Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentArchiveExceptionRequests>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentArchiveExceptionRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPaymentArchiveExceptionRequestsQueryOptions(params,options)
+  const queryOptions = getBuyerFinanceActionPaymentArchiveExceptionRequestsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -989,7 +989,7 @@ export function usePaymentArchiveExceptionRequests<TData = Awaited<ReturnType<ty
 
 
 
-export const createPaymentArchiveExceptionRequest = (
+export const buyerFinanceActionCreatePaymentArchiveExceptionRequest = (
     createPaymentArchiveExceptionRequestRequest: BodyType<CreatePaymentArchiveExceptionRequestRequest>,
  signal?: AbortSignal
 ) => {
@@ -1005,11 +1005,11 @@ export const createPaymentArchiveExceptionRequest = (
   
 
 
-export const getCreatePaymentArchiveExceptionRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaymentArchiveExceptionRequest>>, TError,{data: BodyType<CreatePaymentArchiveExceptionRequestRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof createPaymentArchiveExceptionRequest>>, TError,{data: BodyType<CreatePaymentArchiveExceptionRequestRequest>}, TContext> => {
+export const getBuyerFinanceActionCreatePaymentArchiveExceptionRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentArchiveExceptionRequest>>, TError,{data: BodyType<CreatePaymentArchiveExceptionRequestRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentArchiveExceptionRequest>>, TError,{data: BodyType<CreatePaymentArchiveExceptionRequestRequest>}, TContext> => {
 
-const mutationKey = ['createPaymentArchiveExceptionRequest'];
+const mutationKey = ['buyerFinanceActionCreatePaymentArchiveExceptionRequest'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -1019,10 +1019,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPaymentArchiveExceptionRequest>>, {data: BodyType<CreatePaymentArchiveExceptionRequestRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentArchiveExceptionRequest>>, {data: BodyType<CreatePaymentArchiveExceptionRequestRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createPaymentArchiveExceptionRequest(data,)
+          return  buyerFinanceActionCreatePaymentArchiveExceptionRequest(data,)
         }
 
         
@@ -1030,24 +1030,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreatePaymentArchiveExceptionRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createPaymentArchiveExceptionRequest>>>
-    export type CreatePaymentArchiveExceptionRequestMutationBody = BodyType<CreatePaymentArchiveExceptionRequestRequest>
-    export type CreatePaymentArchiveExceptionRequestMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionCreatePaymentArchiveExceptionRequestMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentArchiveExceptionRequest>>>
+    export type BuyerFinanceActionCreatePaymentArchiveExceptionRequestMutationBody = BodyType<CreatePaymentArchiveExceptionRequestRequest>
+    export type BuyerFinanceActionCreatePaymentArchiveExceptionRequestMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreatePaymentArchiveExceptionRequest = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaymentArchiveExceptionRequest>>, TError,{data: BodyType<CreatePaymentArchiveExceptionRequestRequest>}, TContext>, }
+    export const useBuyerFinanceActionCreatePaymentArchiveExceptionRequest = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentArchiveExceptionRequest>>, TError,{data: BodyType<CreatePaymentArchiveExceptionRequestRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createPaymentArchiveExceptionRequest>>,
+        Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentArchiveExceptionRequest>>,
         TError,
         {data: BodyType<CreatePaymentArchiveExceptionRequestRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreatePaymentArchiveExceptionRequestMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionCreatePaymentArchiveExceptionRequestMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const completePaymentArchiveExceptionAction = (
+    export const buyerFinanceActionCompletePaymentArchiveExceptionAction = (
     requestId: string,
     completePaymentArchiveExceptionActionRequest: BodyType<CompletePaymentArchiveExceptionActionRequest>,
  signal?: AbortSignal
@@ -1064,11 +1064,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getCompletePaymentArchiveExceptionActionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completePaymentArchiveExceptionAction>>, TError,{requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof completePaymentArchiveExceptionAction>>, TError,{requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>}, TContext> => {
+export const getBuyerFinanceActionCompletePaymentArchiveExceptionActionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCompletePaymentArchiveExceptionAction>>, TError,{requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCompletePaymentArchiveExceptionAction>>, TError,{requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>}, TContext> => {
 
-const mutationKey = ['completePaymentArchiveExceptionAction'];
+const mutationKey = ['buyerFinanceActionCompletePaymentArchiveExceptionAction'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -1078,10 +1078,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completePaymentArchiveExceptionAction>>, {requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCompletePaymentArchiveExceptionAction>>, {requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>}> = (props) => {
           const {requestId,data} = props ?? {};
 
-          return  completePaymentArchiveExceptionAction(requestId,data,)
+          return  buyerFinanceActionCompletePaymentArchiveExceptionAction(requestId,data,)
         }
 
         
@@ -1089,24 +1089,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CompletePaymentArchiveExceptionActionMutationResult = NonNullable<Awaited<ReturnType<typeof completePaymentArchiveExceptionAction>>>
-    export type CompletePaymentArchiveExceptionActionMutationBody = BodyType<CompletePaymentArchiveExceptionActionRequest>
-    export type CompletePaymentArchiveExceptionActionMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionCompletePaymentArchiveExceptionActionMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionCompletePaymentArchiveExceptionAction>>>
+    export type BuyerFinanceActionCompletePaymentArchiveExceptionActionMutationBody = BodyType<CompletePaymentArchiveExceptionActionRequest>
+    export type BuyerFinanceActionCompletePaymentArchiveExceptionActionMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCompletePaymentArchiveExceptionAction = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completePaymentArchiveExceptionAction>>, TError,{requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>}, TContext>, }
+    export const useBuyerFinanceActionCompletePaymentArchiveExceptionAction = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCompletePaymentArchiveExceptionAction>>, TError,{requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof completePaymentArchiveExceptionAction>>,
+        Awaited<ReturnType<typeof buyerFinanceActionCompletePaymentArchiveExceptionAction>>,
         TError,
         {requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCompletePaymentArchiveExceptionActionMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionCompletePaymentArchiveExceptionActionMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const closePaymentArchiveExceptionRequest = (
+    export const buyerFinanceActionClosePaymentArchiveExceptionRequest = (
     requestId: string,
     closePaymentArchiveExceptionRequestRequest: BodyType<ClosePaymentArchiveExceptionRequestRequest>,
  signal?: AbortSignal
@@ -1123,11 +1123,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getClosePaymentArchiveExceptionRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closePaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof closePaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>}, TContext> => {
+export const getBuyerFinanceActionClosePaymentArchiveExceptionRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionClosePaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionClosePaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>}, TContext> => {
 
-const mutationKey = ['closePaymentArchiveExceptionRequest'];
+const mutationKey = ['buyerFinanceActionClosePaymentArchiveExceptionRequest'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -1137,10 +1137,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closePaymentArchiveExceptionRequest>>, {requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionClosePaymentArchiveExceptionRequest>>, {requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>}> = (props) => {
           const {requestId,data} = props ?? {};
 
-          return  closePaymentArchiveExceptionRequest(requestId,data,)
+          return  buyerFinanceActionClosePaymentArchiveExceptionRequest(requestId,data,)
         }
 
         
@@ -1148,24 +1148,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ClosePaymentArchiveExceptionRequestMutationResult = NonNullable<Awaited<ReturnType<typeof closePaymentArchiveExceptionRequest>>>
-    export type ClosePaymentArchiveExceptionRequestMutationBody = BodyType<ClosePaymentArchiveExceptionRequestRequest>
-    export type ClosePaymentArchiveExceptionRequestMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionClosePaymentArchiveExceptionRequestMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionClosePaymentArchiveExceptionRequest>>>
+    export type BuyerFinanceActionClosePaymentArchiveExceptionRequestMutationBody = BodyType<ClosePaymentArchiveExceptionRequestRequest>
+    export type BuyerFinanceActionClosePaymentArchiveExceptionRequestMutationError = ErrorType<ApiResponseVoid>
 
-    export const useClosePaymentArchiveExceptionRequest = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closePaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>}, TContext>, }
+    export const useBuyerFinanceActionClosePaymentArchiveExceptionRequest = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionClosePaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof closePaymentArchiveExceptionRequest>>,
+        Awaited<ReturnType<typeof buyerFinanceActionClosePaymentArchiveExceptionRequest>>,
         TError,
         {requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>},
         TContext
       > => {
 
-      const mutationOptions = getClosePaymentArchiveExceptionRequestMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionClosePaymentArchiveExceptionRequestMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const reviewPaymentArchiveExceptionRequest = (
+    export const buyerFinanceActionReviewPaymentArchiveExceptionRequest = (
     requestId: string,
     reviewPaymentArchiveExceptionRequest: BodyType<ReviewPaymentArchiveExceptionRequest>,
  signal?: AbortSignal
@@ -1182,11 +1182,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getReviewPaymentArchiveExceptionRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof reviewPaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>}, TContext> => {
+export const getBuyerFinanceActionReviewPaymentArchiveExceptionRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionReviewPaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionReviewPaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>}, TContext> => {
 
-const mutationKey = ['reviewPaymentArchiveExceptionRequest'];
+const mutationKey = ['buyerFinanceActionReviewPaymentArchiveExceptionRequest'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -1196,10 +1196,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewPaymentArchiveExceptionRequest>>, {requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionReviewPaymentArchiveExceptionRequest>>, {requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>}> = (props) => {
           const {requestId,data} = props ?? {};
 
-          return  reviewPaymentArchiveExceptionRequest(requestId,data,)
+          return  buyerFinanceActionReviewPaymentArchiveExceptionRequest(requestId,data,)
         }
 
         
@@ -1207,25 +1207,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ReviewPaymentArchiveExceptionRequestMutationResult = NonNullable<Awaited<ReturnType<typeof reviewPaymentArchiveExceptionRequest>>>
-    export type ReviewPaymentArchiveExceptionRequestMutationBody = BodyType<ReviewPaymentArchiveExceptionRequest>
-    export type ReviewPaymentArchiveExceptionRequestMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerFinanceActionReviewPaymentArchiveExceptionRequestMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionReviewPaymentArchiveExceptionRequest>>>
+    export type BuyerFinanceActionReviewPaymentArchiveExceptionRequestMutationBody = BodyType<ReviewPaymentArchiveExceptionRequest>
+    export type BuyerFinanceActionReviewPaymentArchiveExceptionRequestMutationError = ErrorType<ApiResponseVoid>
 
-    export const useReviewPaymentArchiveExceptionRequest = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>}, TContext>, }
+    export const useBuyerFinanceActionReviewPaymentArchiveExceptionRequest = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionReviewPaymentArchiveExceptionRequest>>, TError,{requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof reviewPaymentArchiveExceptionRequest>>,
+        Awaited<ReturnType<typeof buyerFinanceActionReviewPaymentArchiveExceptionRequest>>,
         TError,
         {requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>},
         TContext
       > => {
 
-      const mutationOptions = getReviewPaymentArchiveExceptionRequestMutationOptions(options);
+      const mutationOptions = getBuyerFinanceActionReviewPaymentArchiveExceptionRequestMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const threeWayMatches = (
-    params?: ThreeWayMatchesParams,
+    export const buyerFinanceActionThreeWayMatches = (
+    params?: BuyerFinanceActionThreeWayMatchesParams,
  signal?: AbortSignal
 ) => {
       
@@ -1240,66 +1240,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getThreeWayMatchesQueryKey = (params?: ThreeWayMatchesParams,) => {
+export const getBuyerFinanceActionThreeWayMatchesQueryKey = (params?: BuyerFinanceActionThreeWayMatchesParams,) => {
     return [
     `/api/v1/buyer/three-way-matches`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getThreeWayMatchesQueryOptions = <TData = Awaited<ReturnType<typeof threeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(params?: ThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof threeWayMatches>>, TError, TData>>, }
+export const getBuyerFinanceActionThreeWayMatchesQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getThreeWayMatchesQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionThreeWayMatchesQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof threeWayMatches>>> = ({ signal }) => threeWayMatches(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>> = ({ signal }) => buyerFinanceActionThreeWayMatches(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof threeWayMatches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ThreeWayMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof threeWayMatches>>>
-export type ThreeWayMatchesQueryError = ErrorType<ApiResponseVoid>
+export type BuyerFinanceActionThreeWayMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>>
+export type BuyerFinanceActionThreeWayMatchesQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useThreeWayMatches<TData = Awaited<ReturnType<typeof threeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  ThreeWayMatchesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof threeWayMatches>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionThreeWayMatches<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionThreeWayMatchesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof threeWayMatches>>,
+          Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>,
           TError,
-          Awaited<ReturnType<typeof threeWayMatches>>
+          Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useThreeWayMatches<TData = Awaited<ReturnType<typeof threeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(
- params?: ThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof threeWayMatches>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionThreeWayMatches<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof threeWayMatches>>,
+          Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>,
           TError,
-          Awaited<ReturnType<typeof threeWayMatches>>
+          Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useThreeWayMatches<TData = Awaited<ReturnType<typeof threeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(
- params?: ThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof threeWayMatches>>, TError, TData>>, }
+export function useBuyerFinanceActionThreeWayMatches<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useThreeWayMatches<TData = Awaited<ReturnType<typeof threeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(
- params?: ThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof threeWayMatches>>, TError, TData>>, }
+export function useBuyerFinanceActionThreeWayMatches<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getThreeWayMatchesQueryOptions(params,options)
+  const queryOptions = getBuyerFinanceActionThreeWayMatchesQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1311,8 +1311,8 @@ export function useThreeWayMatches<TData = Awaited<ReturnType<typeof threeWayMat
 
 
 
-export const paymentExecutionRecords = (
-    params?: PaymentExecutionRecordsParams,
+export const buyerFinanceActionPaymentExecutionRecords = (
+    params?: BuyerFinanceActionPaymentExecutionRecordsParams,
  signal?: AbortSignal
 ) => {
       
@@ -1327,66 +1327,66 @@ export const paymentExecutionRecords = (
 
 
 
-export const getPaymentExecutionRecordsQueryKey = (params?: PaymentExecutionRecordsParams,) => {
+export const getBuyerFinanceActionPaymentExecutionRecordsQueryKey = (params?: BuyerFinanceActionPaymentExecutionRecordsParams,) => {
     return [
     `/api/v1/buyer/payment-execution-records`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getPaymentExecutionRecordsQueryOptions = <TData = Awaited<ReturnType<typeof paymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(params?: PaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentExecutionRecords>>, TError, TData>>, }
+export const getBuyerFinanceActionPaymentExecutionRecordsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getPaymentExecutionRecordsQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentExecutionRecordsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof paymentExecutionRecords>>> = ({ signal }) => paymentExecutionRecords(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>> = ({ signal }) => buyerFinanceActionPaymentExecutionRecords(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof paymentExecutionRecords>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type PaymentExecutionRecordsQueryResult = NonNullable<Awaited<ReturnType<typeof paymentExecutionRecords>>>
-export type PaymentExecutionRecordsQueryError = ErrorType<ApiResponseVoid>
+export type BuyerFinanceActionPaymentExecutionRecordsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>>
+export type BuyerFinanceActionPaymentExecutionRecordsQueryError = ErrorType<ApiResponseVoid>
 
 
-export function usePaymentExecutionRecords<TData = Awaited<ReturnType<typeof paymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  PaymentExecutionRecordsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentExecutionRecords>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentExecutionRecords<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionPaymentExecutionRecordsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentExecutionRecords>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>,
           TError,
-          Awaited<ReturnType<typeof paymentExecutionRecords>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentExecutionRecords<TData = Awaited<ReturnType<typeof paymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentExecutionRecords>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentExecutionRecords<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentExecutionRecords>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>,
           TError,
-          Awaited<ReturnType<typeof paymentExecutionRecords>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentExecutionRecords<TData = Awaited<ReturnType<typeof paymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentExecutionRecords>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentExecutionRecords<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function usePaymentExecutionRecords<TData = Awaited<ReturnType<typeof paymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentExecutionRecords>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentExecutionRecords<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPaymentExecutionRecordsQueryOptions(params,options)
+  const queryOptions = getBuyerFinanceActionPaymentExecutionRecordsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1398,8 +1398,8 @@ export function usePaymentExecutionRecords<TData = Awaited<ReturnType<typeof pay
 
 
 
-export const paymentBatches = (
-    params?: PaymentBatchesParams,
+export const buyerFinanceActionPaymentBatches = (
+    params?: BuyerFinanceActionPaymentBatchesParams,
  signal?: AbortSignal
 ) => {
       
@@ -1414,66 +1414,66 @@ export const paymentBatches = (
 
 
 
-export const getPaymentBatchesQueryKey = (params?: PaymentBatchesParams,) => {
+export const getBuyerFinanceActionPaymentBatchesQueryKey = (params?: BuyerFinanceActionPaymentBatchesParams,) => {
     return [
     `/api/v1/buyer/payment-batches`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getPaymentBatchesQueryOptions = <TData = Awaited<ReturnType<typeof paymentBatches>>, TError = ErrorType<ApiResponseVoid>>(params?: PaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBatches>>, TError, TData>>, }
+export const getBuyerFinanceActionPaymentBatchesQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getPaymentBatchesQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentBatchesQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof paymentBatches>>> = ({ signal }) => paymentBatches(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>> = ({ signal }) => buyerFinanceActionPaymentBatches(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof paymentBatches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type PaymentBatchesQueryResult = NonNullable<Awaited<ReturnType<typeof paymentBatches>>>
-export type PaymentBatchesQueryError = ErrorType<ApiResponseVoid>
+export type BuyerFinanceActionPaymentBatchesQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>>
+export type BuyerFinanceActionPaymentBatchesQueryError = ErrorType<ApiResponseVoid>
 
 
-export function usePaymentBatches<TData = Awaited<ReturnType<typeof paymentBatches>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  PaymentBatchesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBatches>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentBatches<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionPaymentBatchesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentBatches>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>,
           TError,
-          Awaited<ReturnType<typeof paymentBatches>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentBatches<TData = Awaited<ReturnType<typeof paymentBatches>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBatches>>, TError, TData>> & Pick<
+export function useBuyerFinanceActionPaymentBatches<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof paymentBatches>>,
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>,
           TError,
-          Awaited<ReturnType<typeof paymentBatches>>
+          Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePaymentBatches<TData = Awaited<ReturnType<typeof paymentBatches>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBatches>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentBatches<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function usePaymentBatches<TData = Awaited<ReturnType<typeof paymentBatches>>, TError = ErrorType<ApiResponseVoid>>(
- params?: PaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentBatches>>, TError, TData>>, }
+export function useBuyerFinanceActionPaymentBatches<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionPaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPaymentBatchesQueryOptions(params,options)
+  const queryOptions = getBuyerFinanceActionPaymentBatchesQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

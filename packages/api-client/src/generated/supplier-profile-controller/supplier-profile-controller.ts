@@ -36,7 +36,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const get = (
+export const supplierProfileGet = (
     
  signal?: AbortSignal
 ) => {
@@ -51,66 +51,66 @@ export const get = (
 
 
 
-export const getGetQueryKey = () => {
+export const getSupplierProfileGetQueryKey = () => {
     return [
     `/api/v1/supplier/profile`
     ] as const;
     }
 
     
-export const getGetQueryOptions = <TData = Awaited<ReturnType<typeof get>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof get>>, TError, TData>>, }
+export const getSupplierProfileGetQueryOptions = <TData = Awaited<ReturnType<typeof supplierProfileGet>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierProfileGet>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getSupplierProfileGetQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof get>>> = ({ signal }) => get(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierProfileGet>>> = ({ signal }) => supplierProfileGet(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof get>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierProfileGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetQueryResult = NonNullable<Awaited<ReturnType<typeof get>>>
-export type GetQueryError = ErrorType<ApiResponseVoid>
+export type SupplierProfileGetQueryResult = NonNullable<Awaited<ReturnType<typeof supplierProfileGet>>>
+export type SupplierProfileGetQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useGet<TData = Awaited<ReturnType<typeof get>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof get>>, TError, TData>> & Pick<
+export function useSupplierProfileGet<TData = Awaited<ReturnType<typeof supplierProfileGet>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierProfileGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof get>>,
+          Awaited<ReturnType<typeof supplierProfileGet>>,
           TError,
-          Awaited<ReturnType<typeof get>>
+          Awaited<ReturnType<typeof supplierProfileGet>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGet<TData = Awaited<ReturnType<typeof get>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof get>>, TError, TData>> & Pick<
+export function useSupplierProfileGet<TData = Awaited<ReturnType<typeof supplierProfileGet>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierProfileGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof get>>,
+          Awaited<ReturnType<typeof supplierProfileGet>>,
           TError,
-          Awaited<ReturnType<typeof get>>
+          Awaited<ReturnType<typeof supplierProfileGet>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGet<TData = Awaited<ReturnType<typeof get>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof get>>, TError, TData>>, }
+export function useSupplierProfileGet<TData = Awaited<ReturnType<typeof supplierProfileGet>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierProfileGet>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useGet<TData = Awaited<ReturnType<typeof get>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof get>>, TError, TData>>, }
+export function useSupplierProfileGet<TData = Awaited<ReturnType<typeof supplierProfileGet>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierProfileGet>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetQueryOptions(options)
+  const queryOptions = getSupplierProfileGetQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -122,7 +122,7 @@ export function useGet<TData = Awaited<ReturnType<typeof get>>, TError = ErrorTy
 
 
 
-export const update8 = (
+export const supplierProfileUpdate = (
     updateSupplierProfileRequest: BodyType<UpdateSupplierProfileRequest>,
  signal?: AbortSignal
 ) => {
@@ -138,11 +138,11 @@ export const update8 = (
   
 
 
-export const getUpdate8MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update8>>, TError,{data: BodyType<UpdateSupplierProfileRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof update8>>, TError,{data: BodyType<UpdateSupplierProfileRequest>}, TContext> => {
+export const getSupplierProfileUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierProfileUpdate>>, TError,{data: BodyType<UpdateSupplierProfileRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierProfileUpdate>>, TError,{data: BodyType<UpdateSupplierProfileRequest>}, TContext> => {
 
-const mutationKey = ['update8'];
+const mutationKey = ['supplierProfileUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -152,10 +152,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof update8>>, {data: BodyType<UpdateSupplierProfileRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierProfileUpdate>>, {data: BodyType<UpdateSupplierProfileRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  update8(data,)
+          return  supplierProfileUpdate(data,)
         }
 
         
@@ -163,20 +163,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Update8MutationResult = NonNullable<Awaited<ReturnType<typeof update8>>>
-    export type Update8MutationBody = BodyType<UpdateSupplierProfileRequest>
-    export type Update8MutationError = ErrorType<ApiResponseVoid>
+    export type SupplierProfileUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof supplierProfileUpdate>>>
+    export type SupplierProfileUpdateMutationBody = BodyType<UpdateSupplierProfileRequest>
+    export type SupplierProfileUpdateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdate8 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update8>>, TError,{data: BodyType<UpdateSupplierProfileRequest>}, TContext>, }
+    export const useSupplierProfileUpdate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierProfileUpdate>>, TError,{data: BodyType<UpdateSupplierProfileRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof update8>>,
+        Awaited<ReturnType<typeof supplierProfileUpdate>>,
         TError,
         {data: BodyType<UpdateSupplierProfileRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdate8MutationOptions(options);
+      const mutationOptions = getSupplierProfileUpdateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

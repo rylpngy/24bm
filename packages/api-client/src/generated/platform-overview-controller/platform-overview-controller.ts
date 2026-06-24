@@ -31,7 +31,7 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const overview = (
+export const platformOverviewOverview = (
     
  signal?: AbortSignal
 ) => {
@@ -46,66 +46,66 @@ export const overview = (
 
 
 
-export const getOverviewQueryKey = () => {
+export const getPlatformOverviewOverviewQueryKey = () => {
     return [
     `/api/v1/platform/overview`
     ] as const;
     }
 
     
-export const getOverviewQueryOptions = <TData = Awaited<ReturnType<typeof overview>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof overview>>, TError, TData>>, }
+export const getPlatformOverviewOverviewQueryOptions = <TData = Awaited<ReturnType<typeof platformOverviewOverview>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewOverview>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getOverviewQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getPlatformOverviewOverviewQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof overview>>> = ({ signal }) => overview(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformOverviewOverview>>> = ({ signal }) => platformOverviewOverview(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof overview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformOverviewOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type OverviewQueryResult = NonNullable<Awaited<ReturnType<typeof overview>>>
-export type OverviewQueryError = ErrorType<ApiResponseVoid>
+export type PlatformOverviewOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof platformOverviewOverview>>>
+export type PlatformOverviewOverviewQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useOverview<TData = Awaited<ReturnType<typeof overview>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof overview>>, TError, TData>> & Pick<
+export function usePlatformOverviewOverview<TData = Awaited<ReturnType<typeof platformOverviewOverview>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewOverview>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof overview>>,
+          Awaited<ReturnType<typeof platformOverviewOverview>>,
           TError,
-          Awaited<ReturnType<typeof overview>>
+          Awaited<ReturnType<typeof platformOverviewOverview>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useOverview<TData = Awaited<ReturnType<typeof overview>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof overview>>, TError, TData>> & Pick<
+export function usePlatformOverviewOverview<TData = Awaited<ReturnType<typeof platformOverviewOverview>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewOverview>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof overview>>,
+          Awaited<ReturnType<typeof platformOverviewOverview>>,
           TError,
-          Awaited<ReturnType<typeof overview>>
+          Awaited<ReturnType<typeof platformOverviewOverview>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useOverview<TData = Awaited<ReturnType<typeof overview>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof overview>>, TError, TData>>, }
+export function usePlatformOverviewOverview<TData = Awaited<ReturnType<typeof platformOverviewOverview>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewOverview>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useOverview<TData = Awaited<ReturnType<typeof overview>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof overview>>, TError, TData>>, }
+export function usePlatformOverviewOverview<TData = Awaited<ReturnType<typeof platformOverviewOverview>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewOverview>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getOverviewQueryOptions(options)
+  const queryOptions = getPlatformOverviewOverviewQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

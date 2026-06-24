@@ -38,7 +38,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const update2 = (
+export const platformAnnouncementUpdate = (
     announcementId: string,
     updatePlatformAnnouncementRequest: BodyType<UpdatePlatformAnnouncementRequest>,
  ) => {
@@ -54,11 +54,11 @@ export const update2 = (
   
 
 
-export const getUpdate2MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update2>>, TError,{announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof update2>>, TError,{announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>}, TContext> => {
+export const getPlatformAnnouncementUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAnnouncementUpdate>>, TError,{announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformAnnouncementUpdate>>, TError,{announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>}, TContext> => {
 
-const mutationKey = ['update2'];
+const mutationKey = ['platformAnnouncementUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -68,10 +68,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof update2>>, {announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformAnnouncementUpdate>>, {announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>}> = (props) => {
           const {announcementId,data} = props ?? {};
 
-          return  update2(announcementId,data,)
+          return  platformAnnouncementUpdate(announcementId,data,)
         }
 
         
@@ -79,24 +79,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Update2MutationResult = NonNullable<Awaited<ReturnType<typeof update2>>>
-    export type Update2MutationBody = BodyType<UpdatePlatformAnnouncementRequest>
-    export type Update2MutationError = ErrorType<ApiResponseVoid>
+    export type PlatformAnnouncementUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformAnnouncementUpdate>>>
+    export type PlatformAnnouncementUpdateMutationBody = BodyType<UpdatePlatformAnnouncementRequest>
+    export type PlatformAnnouncementUpdateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdate2 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update2>>, TError,{announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>}, TContext>, }
+    export const usePlatformAnnouncementUpdate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAnnouncementUpdate>>, TError,{announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof update2>>,
+        Awaited<ReturnType<typeof platformAnnouncementUpdate>>,
         TError,
         {announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdate2MutationOptions(options);
+      const mutationOptions = getPlatformAnnouncementUpdateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const list10 = (
+    export const platformAnnouncementList = (
     
  signal?: AbortSignal
 ) => {
@@ -111,66 +111,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getList10QueryKey = () => {
+export const getPlatformAnnouncementListQueryKey = () => {
     return [
     `/api/v1/platform/announcements`
     ] as const;
     }
 
     
-export const getList10QueryOptions = <TData = Awaited<ReturnType<typeof list10>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list10>>, TError, TData>>, }
+export const getPlatformAnnouncementListQueryOptions = <TData = Awaited<ReturnType<typeof platformAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAnnouncementList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList10QueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getPlatformAnnouncementListQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list10>>> = ({ signal }) => list10(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformAnnouncementList>>> = ({ signal }) => platformAnnouncementList(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list10>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformAnnouncementList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List10QueryResult = NonNullable<Awaited<ReturnType<typeof list10>>>
-export type List10QueryError = ErrorType<ApiResponseVoid>
+export type PlatformAnnouncementListQueryResult = NonNullable<Awaited<ReturnType<typeof platformAnnouncementList>>>
+export type PlatformAnnouncementListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList10<TData = Awaited<ReturnType<typeof list10>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list10>>, TError, TData>> & Pick<
+export function usePlatformAnnouncementList<TData = Awaited<ReturnType<typeof platformAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAnnouncementList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list10>>,
+          Awaited<ReturnType<typeof platformAnnouncementList>>,
           TError,
-          Awaited<ReturnType<typeof list10>>
+          Awaited<ReturnType<typeof platformAnnouncementList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList10<TData = Awaited<ReturnType<typeof list10>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list10>>, TError, TData>> & Pick<
+export function usePlatformAnnouncementList<TData = Awaited<ReturnType<typeof platformAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAnnouncementList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list10>>,
+          Awaited<ReturnType<typeof platformAnnouncementList>>,
           TError,
-          Awaited<ReturnType<typeof list10>>
+          Awaited<ReturnType<typeof platformAnnouncementList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList10<TData = Awaited<ReturnType<typeof list10>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list10>>, TError, TData>>, }
+export function usePlatformAnnouncementList<TData = Awaited<ReturnType<typeof platformAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAnnouncementList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList10<TData = Awaited<ReturnType<typeof list10>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list10>>, TError, TData>>, }
+export function usePlatformAnnouncementList<TData = Awaited<ReturnType<typeof platformAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAnnouncementList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList10QueryOptions(options)
+  const queryOptions = getPlatformAnnouncementListQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -182,7 +182,7 @@ export function useList10<TData = Awaited<ReturnType<typeof list10>>, TError = E
 
 
 
-export const publish = (
+export const platformAnnouncementPublish = (
     createPlatformAnnouncementRequest: BodyType<CreatePlatformAnnouncementRequest>,
  signal?: AbortSignal
 ) => {
@@ -198,11 +198,11 @@ export const publish = (
   
 
 
-export const getPublishMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publish>>, TError,{data: BodyType<CreatePlatformAnnouncementRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof publish>>, TError,{data: BodyType<CreatePlatformAnnouncementRequest>}, TContext> => {
+export const getPlatformAnnouncementPublishMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAnnouncementPublish>>, TError,{data: BodyType<CreatePlatformAnnouncementRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformAnnouncementPublish>>, TError,{data: BodyType<CreatePlatformAnnouncementRequest>}, TContext> => {
 
-const mutationKey = ['publish'];
+const mutationKey = ['platformAnnouncementPublish'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -212,10 +212,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publish>>, {data: BodyType<CreatePlatformAnnouncementRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformAnnouncementPublish>>, {data: BodyType<CreatePlatformAnnouncementRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  publish(data,)
+          return  platformAnnouncementPublish(data,)
         }
 
         
@@ -223,24 +223,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PublishMutationResult = NonNullable<Awaited<ReturnType<typeof publish>>>
-    export type PublishMutationBody = BodyType<CreatePlatformAnnouncementRequest>
-    export type PublishMutationError = ErrorType<ApiResponseVoid>
+    export type PlatformAnnouncementPublishMutationResult = NonNullable<Awaited<ReturnType<typeof platformAnnouncementPublish>>>
+    export type PlatformAnnouncementPublishMutationBody = BodyType<CreatePlatformAnnouncementRequest>
+    export type PlatformAnnouncementPublishMutationError = ErrorType<ApiResponseVoid>
 
-    export const usePublish = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publish>>, TError,{data: BodyType<CreatePlatformAnnouncementRequest>}, TContext>, }
+    export const usePlatformAnnouncementPublish = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAnnouncementPublish>>, TError,{data: BodyType<CreatePlatformAnnouncementRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof publish>>,
+        Awaited<ReturnType<typeof platformAnnouncementPublish>>,
         TError,
         {data: BodyType<CreatePlatformAnnouncementRequest>},
         TContext
       > => {
 
-      const mutationOptions = getPublishMutationOptions(options);
+      const mutationOptions = getPlatformAnnouncementPublishMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const withdraw = (
+    export const platformAnnouncementWithdraw = (
     announcementId: string,
  signal?: AbortSignal
 ) => {
@@ -254,11 +254,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getWithdrawMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdraw>>, TError,{announcementId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof withdraw>>, TError,{announcementId: string}, TContext> => {
+export const getPlatformAnnouncementWithdrawMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAnnouncementWithdraw>>, TError,{announcementId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformAnnouncementWithdraw>>, TError,{announcementId: string}, TContext> => {
 
-const mutationKey = ['withdraw'];
+const mutationKey = ['platformAnnouncementWithdraw'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -268,10 +268,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof withdraw>>, {announcementId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformAnnouncementWithdraw>>, {announcementId: string}> = (props) => {
           const {announcementId} = props ?? {};
 
-          return  withdraw(announcementId,)
+          return  platformAnnouncementWithdraw(announcementId,)
         }
 
         
@@ -279,20 +279,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type WithdrawMutationResult = NonNullable<Awaited<ReturnType<typeof withdraw>>>
+    export type PlatformAnnouncementWithdrawMutationResult = NonNullable<Awaited<ReturnType<typeof platformAnnouncementWithdraw>>>
     
-    export type WithdrawMutationError = ErrorType<ApiResponseVoid>
+    export type PlatformAnnouncementWithdrawMutationError = ErrorType<ApiResponseVoid>
 
-    export const useWithdraw = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdraw>>, TError,{announcementId: string}, TContext>, }
+    export const usePlatformAnnouncementWithdraw = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformAnnouncementWithdraw>>, TError,{announcementId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof withdraw>>,
+        Awaited<ReturnType<typeof platformAnnouncementWithdraw>>,
         TError,
         {announcementId: string},
         TContext
       > => {
 
-      const mutationOptions = getWithdrawMutationOptions(options);
+      const mutationOptions = getPlatformAnnouncementWithdrawMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

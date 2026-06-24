@@ -30,11 +30,11 @@ import type {
   ApiResponseListBuyerSupplierResponse,
   ApiResponseListSupplierQualificationResponse,
   ApiResponseVoid,
+  BuyerSupplierListParams,
   ChangeBuyerSupplierPerformanceRequest,
   ChangeBuyerSupplierProfileRequest,
   ChangeBuyerSupplierStatusRequest,
   CreateBuyerSupplierRequest,
-  List13Params,
   ReviewBuyerSupplierAdmissionRequest
 } from '.././model';
 
@@ -44,8 +44,8 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const list13 = (
-    params?: List13Params,
+export const buyerSupplierList = (
+    params?: BuyerSupplierListParams,
  signal?: AbortSignal
 ) => {
       
@@ -60,66 +60,66 @@ export const list13 = (
 
 
 
-export const getList13QueryKey = (params?: List13Params,) => {
+export const getBuyerSupplierListQueryKey = (params?: BuyerSupplierListParams,) => {
     return [
     `/api/v1/buyer/suppliers`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList13QueryOptions = <TData = Awaited<ReturnType<typeof list13>>, TError = ErrorType<ApiResponseVoid>>(params?: List13Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list13>>, TError, TData>>, }
+export const getBuyerSupplierListQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierList>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerSupplierListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList13QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list13>>> = ({ signal }) => list13(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierList>>> = ({ signal }) => buyerSupplierList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list13>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List13QueryResult = NonNullable<Awaited<ReturnType<typeof list13>>>
-export type List13QueryError = ErrorType<ApiResponseVoid>
+export type BuyerSupplierListQueryResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierList>>>
+export type BuyerSupplierListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList13<TData = Awaited<ReturnType<typeof list13>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List13Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list13>>, TError, TData>> & Pick<
+export function useBuyerSupplierList<TData = Awaited<ReturnType<typeof buyerSupplierList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerSupplierListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list13>>,
+          Awaited<ReturnType<typeof buyerSupplierList>>,
           TError,
-          Awaited<ReturnType<typeof list13>>
+          Awaited<ReturnType<typeof buyerSupplierList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList13<TData = Awaited<ReturnType<typeof list13>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List13Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list13>>, TError, TData>> & Pick<
+export function useBuyerSupplierList<TData = Awaited<ReturnType<typeof buyerSupplierList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerSupplierListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list13>>,
+          Awaited<ReturnType<typeof buyerSupplierList>>,
           TError,
-          Awaited<ReturnType<typeof list13>>
+          Awaited<ReturnType<typeof buyerSupplierList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList13<TData = Awaited<ReturnType<typeof list13>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List13Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list13>>, TError, TData>>, }
+export function useBuyerSupplierList<TData = Awaited<ReturnType<typeof buyerSupplierList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerSupplierListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList13<TData = Awaited<ReturnType<typeof list13>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List13Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list13>>, TError, TData>>, }
+export function useBuyerSupplierList<TData = Awaited<ReturnType<typeof buyerSupplierList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerSupplierListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList13QueryOptions(params,options)
+  const queryOptions = getBuyerSupplierListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -131,7 +131,7 @@ export function useList13<TData = Awaited<ReturnType<typeof list13>>, TError = E
 
 
 
-export const create6 = (
+export const buyerSupplierCreate = (
     createBuyerSupplierRequest: BodyType<CreateBuyerSupplierRequest>,
  signal?: AbortSignal
 ) => {
@@ -147,11 +147,11 @@ export const create6 = (
   
 
 
-export const getCreate6MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create6>>, TError,{data: BodyType<CreateBuyerSupplierRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create6>>, TError,{data: BodyType<CreateBuyerSupplierRequest>}, TContext> => {
+export const getBuyerSupplierCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierCreate>>, TError,{data: BodyType<CreateBuyerSupplierRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierCreate>>, TError,{data: BodyType<CreateBuyerSupplierRequest>}, TContext> => {
 
-const mutationKey = ['create6'];
+const mutationKey = ['buyerSupplierCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -161,10 +161,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create6>>, {data: BodyType<CreateBuyerSupplierRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierCreate>>, {data: BodyType<CreateBuyerSupplierRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  create6(data,)
+          return  buyerSupplierCreate(data,)
         }
 
         
@@ -172,24 +172,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create6MutationResult = NonNullable<Awaited<ReturnType<typeof create6>>>
-    export type Create6MutationBody = BodyType<CreateBuyerSupplierRequest>
-    export type Create6MutationError = ErrorType<ApiResponseVoid>
+    export type BuyerSupplierCreateMutationResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierCreate>>>
+    export type BuyerSupplierCreateMutationBody = BodyType<CreateBuyerSupplierRequest>
+    export type BuyerSupplierCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate6 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create6>>, TError,{data: BodyType<CreateBuyerSupplierRequest>}, TContext>, }
+    export const useBuyerSupplierCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierCreate>>, TError,{data: BodyType<CreateBuyerSupplierRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create6>>,
+        Awaited<ReturnType<typeof buyerSupplierCreate>>,
         TError,
         {data: BodyType<CreateBuyerSupplierRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate6MutationOptions(options);
+      const mutationOptions = getBuyerSupplierCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const submitAdmission = (
+    export const buyerSupplierSubmitAdmission = (
     relationId: string,
  signal?: AbortSignal
 ) => {
@@ -203,11 +203,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getSubmitAdmissionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitAdmission>>, TError,{relationId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof submitAdmission>>, TError,{relationId: string}, TContext> => {
+export const getBuyerSupplierSubmitAdmissionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, TError,{relationId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, TError,{relationId: string}, TContext> => {
 
-const mutationKey = ['submitAdmission'];
+const mutationKey = ['buyerSupplierSubmitAdmission'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -217,10 +217,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitAdmission>>, {relationId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, {relationId: string}> = (props) => {
           const {relationId} = props ?? {};
 
-          return  submitAdmission(relationId,)
+          return  buyerSupplierSubmitAdmission(relationId,)
         }
 
         
@@ -228,24 +228,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SubmitAdmissionMutationResult = NonNullable<Awaited<ReturnType<typeof submitAdmission>>>
+    export type BuyerSupplierSubmitAdmissionMutationResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>>
     
-    export type SubmitAdmissionMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerSupplierSubmitAdmissionMutationError = ErrorType<ApiResponseVoid>
 
-    export const useSubmitAdmission = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitAdmission>>, TError,{relationId: string}, TContext>, }
+    export const useBuyerSupplierSubmitAdmission = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, TError,{relationId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof submitAdmission>>,
+        Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>,
         TError,
         {relationId: string},
         TContext
       > => {
 
-      const mutationOptions = getSubmitAdmissionMutationOptions(options);
+      const mutationOptions = getBuyerSupplierSubmitAdmissionMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const changeStatus3 = (
+    export const buyerSupplierChangeStatus = (
     relationId: string,
     changeBuyerSupplierStatusRequest: BodyType<ChangeBuyerSupplierStatusRequest>,
  signal?: AbortSignal
@@ -262,11 +262,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getChangeStatus3MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeStatus3>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof changeStatus3>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>}, TContext> => {
+export const getBuyerSupplierChangeStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierChangeStatus>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierChangeStatus>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>}, TContext> => {
 
-const mutationKey = ['changeStatus3'];
+const mutationKey = ['buyerSupplierChangeStatus'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -276,10 +276,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeStatus3>>, {relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierChangeStatus>>, {relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>}> = (props) => {
           const {relationId,data} = props ?? {};
 
-          return  changeStatus3(relationId,data,)
+          return  buyerSupplierChangeStatus(relationId,data,)
         }
 
         
@@ -287,24 +287,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ChangeStatus3MutationResult = NonNullable<Awaited<ReturnType<typeof changeStatus3>>>
-    export type ChangeStatus3MutationBody = BodyType<ChangeBuyerSupplierStatusRequest>
-    export type ChangeStatus3MutationError = ErrorType<ApiResponseVoid>
+    export type BuyerSupplierChangeStatusMutationResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierChangeStatus>>>
+    export type BuyerSupplierChangeStatusMutationBody = BodyType<ChangeBuyerSupplierStatusRequest>
+    export type BuyerSupplierChangeStatusMutationError = ErrorType<ApiResponseVoid>
 
-    export const useChangeStatus3 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeStatus3>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>}, TContext>, }
+    export const useBuyerSupplierChangeStatus = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierChangeStatus>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof changeStatus3>>,
+        Awaited<ReturnType<typeof buyerSupplierChangeStatus>>,
         TError,
         {relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>},
         TContext
       > => {
 
-      const mutationOptions = getChangeStatus3MutationOptions(options);
+      const mutationOptions = getBuyerSupplierChangeStatusMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const changeProfile = (
+    export const buyerSupplierChangeProfile = (
     relationId: string,
     changeBuyerSupplierProfileRequest: BodyType<ChangeBuyerSupplierProfileRequest>,
  signal?: AbortSignal
@@ -321,11 +321,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getChangeProfileMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeProfile>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof changeProfile>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>}, TContext> => {
+export const getBuyerSupplierChangeProfileMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierChangeProfile>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierChangeProfile>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>}, TContext> => {
 
-const mutationKey = ['changeProfile'];
+const mutationKey = ['buyerSupplierChangeProfile'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -335,10 +335,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeProfile>>, {relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierChangeProfile>>, {relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>}> = (props) => {
           const {relationId,data} = props ?? {};
 
-          return  changeProfile(relationId,data,)
+          return  buyerSupplierChangeProfile(relationId,data,)
         }
 
         
@@ -346,24 +346,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ChangeProfileMutationResult = NonNullable<Awaited<ReturnType<typeof changeProfile>>>
-    export type ChangeProfileMutationBody = BodyType<ChangeBuyerSupplierProfileRequest>
-    export type ChangeProfileMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerSupplierChangeProfileMutationResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierChangeProfile>>>
+    export type BuyerSupplierChangeProfileMutationBody = BodyType<ChangeBuyerSupplierProfileRequest>
+    export type BuyerSupplierChangeProfileMutationError = ErrorType<ApiResponseVoid>
 
-    export const useChangeProfile = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeProfile>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>}, TContext>, }
+    export const useBuyerSupplierChangeProfile = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierChangeProfile>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof changeProfile>>,
+        Awaited<ReturnType<typeof buyerSupplierChangeProfile>>,
         TError,
         {relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>},
         TContext
       > => {
 
-      const mutationOptions = getChangeProfileMutationOptions(options);
+      const mutationOptions = getBuyerSupplierChangeProfileMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const changePerformance = (
+    export const buyerSupplierChangePerformance = (
     relationId: string,
     changeBuyerSupplierPerformanceRequest: BodyType<ChangeBuyerSupplierPerformanceRequest>,
  signal?: AbortSignal
@@ -380,11 +380,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getChangePerformanceMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePerformance>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof changePerformance>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>}, TContext> => {
+export const getBuyerSupplierChangePerformanceMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierChangePerformance>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierChangePerformance>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>}, TContext> => {
 
-const mutationKey = ['changePerformance'];
+const mutationKey = ['buyerSupplierChangePerformance'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -394,10 +394,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changePerformance>>, {relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierChangePerformance>>, {relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>}> = (props) => {
           const {relationId,data} = props ?? {};
 
-          return  changePerformance(relationId,data,)
+          return  buyerSupplierChangePerformance(relationId,data,)
         }
 
         
@@ -405,24 +405,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ChangePerformanceMutationResult = NonNullable<Awaited<ReturnType<typeof changePerformance>>>
-    export type ChangePerformanceMutationBody = BodyType<ChangeBuyerSupplierPerformanceRequest>
-    export type ChangePerformanceMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerSupplierChangePerformanceMutationResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierChangePerformance>>>
+    export type BuyerSupplierChangePerformanceMutationBody = BodyType<ChangeBuyerSupplierPerformanceRequest>
+    export type BuyerSupplierChangePerformanceMutationError = ErrorType<ApiResponseVoid>
 
-    export const useChangePerformance = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePerformance>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>}, TContext>, }
+    export const useBuyerSupplierChangePerformance = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierChangePerformance>>, TError,{relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof changePerformance>>,
+        Awaited<ReturnType<typeof buyerSupplierChangePerformance>>,
         TError,
         {relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>},
         TContext
       > => {
 
-      const mutationOptions = getChangePerformanceMutationOptions(options);
+      const mutationOptions = getBuyerSupplierChangePerformanceMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const reviewAdmission = (
+    export const buyerSupplierReviewAdmission = (
     relationId: string,
     reviewBuyerSupplierAdmissionRequest: BodyType<ReviewBuyerSupplierAdmissionRequest>,
  signal?: AbortSignal
@@ -439,11 +439,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getReviewAdmissionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewAdmission>>, TError,{relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof reviewAdmission>>, TError,{relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>}, TContext> => {
+export const getBuyerSupplierReviewAdmissionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierReviewAdmission>>, TError,{relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierReviewAdmission>>, TError,{relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>}, TContext> => {
 
-const mutationKey = ['reviewAdmission'];
+const mutationKey = ['buyerSupplierReviewAdmission'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -453,10 +453,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewAdmission>>, {relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierReviewAdmission>>, {relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>}> = (props) => {
           const {relationId,data} = props ?? {};
 
-          return  reviewAdmission(relationId,data,)
+          return  buyerSupplierReviewAdmission(relationId,data,)
         }
 
         
@@ -464,24 +464,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ReviewAdmissionMutationResult = NonNullable<Awaited<ReturnType<typeof reviewAdmission>>>
-    export type ReviewAdmissionMutationBody = BodyType<ReviewBuyerSupplierAdmissionRequest>
-    export type ReviewAdmissionMutationError = ErrorType<ApiResponseVoid>
+    export type BuyerSupplierReviewAdmissionMutationResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierReviewAdmission>>>
+    export type BuyerSupplierReviewAdmissionMutationBody = BodyType<ReviewBuyerSupplierAdmissionRequest>
+    export type BuyerSupplierReviewAdmissionMutationError = ErrorType<ApiResponseVoid>
 
-    export const useReviewAdmission = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewAdmission>>, TError,{relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>}, TContext>, }
+    export const useBuyerSupplierReviewAdmission = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierReviewAdmission>>, TError,{relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof reviewAdmission>>,
+        Awaited<ReturnType<typeof buyerSupplierReviewAdmission>>,
         TError,
         {relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>},
         TContext
       > => {
 
-      const mutationOptions = getReviewAdmissionMutationOptions(options);
+      const mutationOptions = getBuyerSupplierReviewAdmissionMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const listRelationQualifications = (
+    export const buyerSupplierListRelationQualifications = (
     relationId: string,
  signal?: AbortSignal
 ) => {
@@ -496,66 +496,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getListRelationQualificationsQueryKey = (relationId?: string,) => {
+export const getBuyerSupplierListRelationQualificationsQueryKey = (relationId?: string,) => {
     return [
     `/api/v1/buyer/suppliers/${relationId}/qualifications`
     ] as const;
     }
 
     
-export const getListRelationQualificationsQueryOptions = <TData = Awaited<ReturnType<typeof listRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRelationQualifications>>, TError, TData>>, }
+export const getBuyerSupplierListRelationQualificationsQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListRelationQualificationsQueryKey(relationId);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierListRelationQualificationsQueryKey(relationId);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRelationQualifications>>> = ({ signal }) => listRelationQualifications(relationId, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>> = ({ signal }) => buyerSupplierListRelationQualifications(relationId, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(relationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRelationQualifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(relationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ListRelationQualificationsQueryResult = NonNullable<Awaited<ReturnType<typeof listRelationQualifications>>>
-export type ListRelationQualificationsQueryError = ErrorType<ApiResponseVoid>
+export type BuyerSupplierListRelationQualificationsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>>
+export type BuyerSupplierListRelationQualificationsQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useListRelationQualifications<TData = Awaited<ReturnType<typeof listRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(
- relationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRelationQualifications>>, TError, TData>> & Pick<
+export function useBuyerSupplierListRelationQualifications<TData = Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listRelationQualifications>>,
+          Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>,
           TError,
-          Awaited<ReturnType<typeof listRelationQualifications>>
+          Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRelationQualifications<TData = Awaited<ReturnType<typeof listRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(
- relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRelationQualifications>>, TError, TData>> & Pick<
+export function useBuyerSupplierListRelationQualifications<TData = Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listRelationQualifications>>,
+          Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>,
           TError,
-          Awaited<ReturnType<typeof listRelationQualifications>>
+          Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRelationQualifications<TData = Awaited<ReturnType<typeof listRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(
- relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRelationQualifications>>, TError, TData>>, }
+export function useBuyerSupplierListRelationQualifications<TData = Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useListRelationQualifications<TData = Awaited<ReturnType<typeof listRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(
- relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRelationQualifications>>, TError, TData>>, }
+export function useBuyerSupplierListRelationQualifications<TData = Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListRelationQualificationsQueryOptions(relationId,options)
+  const queryOptions = getBuyerSupplierListRelationQualificationsQueryOptions(relationId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

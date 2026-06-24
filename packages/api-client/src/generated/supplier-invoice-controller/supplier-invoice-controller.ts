@@ -27,7 +27,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const create2 = (
+export const supplierInvoiceCreate = (
     orderId: string,
     createInvoiceRequest: BodyType<CreateInvoiceRequest>,
  signal?: AbortSignal
@@ -44,11 +44,11 @@ export const create2 = (
   
 
 
-export const getCreate2MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create2>>, TError,{orderId: string;data: BodyType<CreateInvoiceRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create2>>, TError,{orderId: string;data: BodyType<CreateInvoiceRequest>}, TContext> => {
+export const getSupplierInvoiceCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierInvoiceCreate>>, TError,{orderId: string;data: BodyType<CreateInvoiceRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierInvoiceCreate>>, TError,{orderId: string;data: BodyType<CreateInvoiceRequest>}, TContext> => {
 
-const mutationKey = ['create2'];
+const mutationKey = ['supplierInvoiceCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -58,10 +58,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create2>>, {orderId: string;data: BodyType<CreateInvoiceRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierInvoiceCreate>>, {orderId: string;data: BodyType<CreateInvoiceRequest>}> = (props) => {
           const {orderId,data} = props ?? {};
 
-          return  create2(orderId,data,)
+          return  supplierInvoiceCreate(orderId,data,)
         }
 
         
@@ -69,20 +69,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create2MutationResult = NonNullable<Awaited<ReturnType<typeof create2>>>
-    export type Create2MutationBody = BodyType<CreateInvoiceRequest>
-    export type Create2MutationError = ErrorType<ApiResponseVoid>
+    export type SupplierInvoiceCreateMutationResult = NonNullable<Awaited<ReturnType<typeof supplierInvoiceCreate>>>
+    export type SupplierInvoiceCreateMutationBody = BodyType<CreateInvoiceRequest>
+    export type SupplierInvoiceCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate2 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create2>>, TError,{orderId: string;data: BodyType<CreateInvoiceRequest>}, TContext>, }
+    export const useSupplierInvoiceCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierInvoiceCreate>>, TError,{orderId: string;data: BodyType<CreateInvoiceRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create2>>,
+        Awaited<ReturnType<typeof supplierInvoiceCreate>>,
         TError,
         {orderId: string;data: BodyType<CreateInvoiceRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate2MutationOptions(options);
+      const mutationOptions = getSupplierInvoiceCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

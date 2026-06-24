@@ -28,7 +28,7 @@ import type {
   ApiResponseListNotificationResponse,
   ApiResponseNotificationResponse,
   ApiResponseVoid,
-  List4Params
+  SupplierNotificationListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -37,7 +37,7 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const markRead = (
+export const supplierNotificationMarkRead = (
     notificationId: string,
  signal?: AbortSignal
 ) => {
@@ -51,11 +51,11 @@ export const markRead = (
   
 
 
-export const getMarkReadMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markRead>>, TError,{notificationId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof markRead>>, TError,{notificationId: string}, TContext> => {
+export const getSupplierNotificationMarkReadMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierNotificationMarkRead>>, TError,{notificationId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierNotificationMarkRead>>, TError,{notificationId: string}, TContext> => {
 
-const mutationKey = ['markRead'];
+const mutationKey = ['supplierNotificationMarkRead'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -65,10 +65,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markRead>>, {notificationId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierNotificationMarkRead>>, {notificationId: string}> = (props) => {
           const {notificationId} = props ?? {};
 
-          return  markRead(notificationId,)
+          return  supplierNotificationMarkRead(notificationId,)
         }
 
         
@@ -76,25 +76,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type MarkReadMutationResult = NonNullable<Awaited<ReturnType<typeof markRead>>>
+    export type SupplierNotificationMarkReadMutationResult = NonNullable<Awaited<ReturnType<typeof supplierNotificationMarkRead>>>
     
-    export type MarkReadMutationError = ErrorType<ApiResponseVoid>
+    export type SupplierNotificationMarkReadMutationError = ErrorType<ApiResponseVoid>
 
-    export const useMarkRead = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markRead>>, TError,{notificationId: string}, TContext>, }
+    export const useSupplierNotificationMarkRead = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierNotificationMarkRead>>, TError,{notificationId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof markRead>>,
+        Awaited<ReturnType<typeof supplierNotificationMarkRead>>,
         TError,
         {notificationId: string},
         TContext
       > => {
 
-      const mutationOptions = getMarkReadMutationOptions(options);
+      const mutationOptions = getSupplierNotificationMarkReadMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const list4 = (
-    params?: List4Params,
+    export const supplierNotificationList = (
+    params?: SupplierNotificationListParams,
  signal?: AbortSignal
 ) => {
       
@@ -109,66 +109,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getList4QueryKey = (params?: List4Params,) => {
+export const getSupplierNotificationListQueryKey = (params?: SupplierNotificationListParams,) => {
     return [
     `/api/v1/supplier/notifications`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList4QueryOptions = <TData = Awaited<ReturnType<typeof list4>>, TError = ErrorType<ApiResponseVoid>>(params?: List4Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list4>>, TError, TData>>, }
+export const getSupplierNotificationListQueryOptions = <TData = Awaited<ReturnType<typeof supplierNotificationList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierNotificationList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList4QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getSupplierNotificationListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list4>>> = ({ signal }) => list4(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierNotificationList>>> = ({ signal }) => supplierNotificationList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list4>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierNotificationList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List4QueryResult = NonNullable<Awaited<ReturnType<typeof list4>>>
-export type List4QueryError = ErrorType<ApiResponseVoid>
+export type SupplierNotificationListQueryResult = NonNullable<Awaited<ReturnType<typeof supplierNotificationList>>>
+export type SupplierNotificationListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList4<TData = Awaited<ReturnType<typeof list4>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List4Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list4>>, TError, TData>> & Pick<
+export function useSupplierNotificationList<TData = Awaited<ReturnType<typeof supplierNotificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  SupplierNotificationListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierNotificationList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list4>>,
+          Awaited<ReturnType<typeof supplierNotificationList>>,
           TError,
-          Awaited<ReturnType<typeof list4>>
+          Awaited<ReturnType<typeof supplierNotificationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList4<TData = Awaited<ReturnType<typeof list4>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List4Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list4>>, TError, TData>> & Pick<
+export function useSupplierNotificationList<TData = Awaited<ReturnType<typeof supplierNotificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierNotificationList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list4>>,
+          Awaited<ReturnType<typeof supplierNotificationList>>,
           TError,
-          Awaited<ReturnType<typeof list4>>
+          Awaited<ReturnType<typeof supplierNotificationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList4<TData = Awaited<ReturnType<typeof list4>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List4Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list4>>, TError, TData>>, }
+export function useSupplierNotificationList<TData = Awaited<ReturnType<typeof supplierNotificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierNotificationList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList4<TData = Awaited<ReturnType<typeof list4>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List4Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list4>>, TError, TData>>, }
+export function useSupplierNotificationList<TData = Awaited<ReturnType<typeof supplierNotificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierNotificationList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList4QueryOptions(params,options)
+  const queryOptions = getSupplierNotificationListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

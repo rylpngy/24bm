@@ -30,8 +30,8 @@ import type {
   ApiResponseVoid,
   ChangeSupplierUserStatusRequest,
   CreateSupplierUserRequest,
-  ListParams,
-  ResetSupplierUserPasswordRequest
+  ResetSupplierUserPasswordRequest,
+  SupplierUserListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -40,8 +40,8 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const list = (
-    params?: ListParams,
+export const supplierUserList = (
+    params?: SupplierUserListParams,
  signal?: AbortSignal
 ) => {
       
@@ -56,66 +56,66 @@ export const list = (
 
 
 
-export const getListQueryKey = (params?: ListParams,) => {
+export const getSupplierUserListQueryKey = (params?: SupplierUserListParams,) => {
     return [
     `/api/v1/supplier/users`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getListQueryOptions = <TData = Awaited<ReturnType<typeof list>>, TError = ErrorType<ApiResponseVoid>>(params?: ListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>>, }
+export const getSupplierUserListQueryOptions = <TData = Awaited<ReturnType<typeof supplierUserList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierUserListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierUserList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getSupplierUserListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list>>> = ({ signal }) => list(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierUserList>>> = ({ signal }) => supplierUserList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierUserList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ListQueryResult = NonNullable<Awaited<ReturnType<typeof list>>>
-export type ListQueryError = ErrorType<ApiResponseVoid>
+export type SupplierUserListQueryResult = NonNullable<Awaited<ReturnType<typeof supplierUserList>>>
+export type SupplierUserListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList<TData = Awaited<ReturnType<typeof list>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  ListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>> & Pick<
+export function useSupplierUserList<TData = Awaited<ReturnType<typeof supplierUserList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  SupplierUserListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierUserList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list>>,
+          Awaited<ReturnType<typeof supplierUserList>>,
           TError,
-          Awaited<ReturnType<typeof list>>
+          Awaited<ReturnType<typeof supplierUserList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList<TData = Awaited<ReturnType<typeof list>>, TError = ErrorType<ApiResponseVoid>>(
- params?: ListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>> & Pick<
+export function useSupplierUserList<TData = Awaited<ReturnType<typeof supplierUserList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierUserListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierUserList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list>>,
+          Awaited<ReturnType<typeof supplierUserList>>,
           TError,
-          Awaited<ReturnType<typeof list>>
+          Awaited<ReturnType<typeof supplierUserList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList<TData = Awaited<ReturnType<typeof list>>, TError = ErrorType<ApiResponseVoid>>(
- params?: ListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>>, }
+export function useSupplierUserList<TData = Awaited<ReturnType<typeof supplierUserList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierUserListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierUserList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList<TData = Awaited<ReturnType<typeof list>>, TError = ErrorType<ApiResponseVoid>>(
- params?: ListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list>>, TError, TData>>, }
+export function useSupplierUserList<TData = Awaited<ReturnType<typeof supplierUserList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierUserListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierUserList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListQueryOptions(params,options)
+  const queryOptions = getSupplierUserListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -127,7 +127,7 @@ export function useList<TData = Awaited<ReturnType<typeof list>>, TError = Error
 
 
 
-export const create = (
+export const supplierUserCreate = (
     createSupplierUserRequest: BodyType<CreateSupplierUserRequest>,
  signal?: AbortSignal
 ) => {
@@ -143,11 +143,11 @@ export const create = (
   
 
 
-export const getCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create>>, TError,{data: BodyType<CreateSupplierUserRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create>>, TError,{data: BodyType<CreateSupplierUserRequest>}, TContext> => {
+export const getSupplierUserCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserCreate>>, TError,{data: BodyType<CreateSupplierUserRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierUserCreate>>, TError,{data: BodyType<CreateSupplierUserRequest>}, TContext> => {
 
-const mutationKey = ['create'];
+const mutationKey = ['supplierUserCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -157,10 +157,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create>>, {data: BodyType<CreateSupplierUserRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierUserCreate>>, {data: BodyType<CreateSupplierUserRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  create(data,)
+          return  supplierUserCreate(data,)
         }
 
         
@@ -168,24 +168,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreateMutationResult = NonNullable<Awaited<ReturnType<typeof create>>>
-    export type CreateMutationBody = BodyType<CreateSupplierUserRequest>
-    export type CreateMutationError = ErrorType<ApiResponseVoid>
+    export type SupplierUserCreateMutationResult = NonNullable<Awaited<ReturnType<typeof supplierUserCreate>>>
+    export type SupplierUserCreateMutationBody = BodyType<CreateSupplierUserRequest>
+    export type SupplierUserCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create>>, TError,{data: BodyType<CreateSupplierUserRequest>}, TContext>, }
+    export const useSupplierUserCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserCreate>>, TError,{data: BodyType<CreateSupplierUserRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create>>,
+        Awaited<ReturnType<typeof supplierUserCreate>>,
         TError,
         {data: BodyType<CreateSupplierUserRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreateMutationOptions(options);
+      const mutationOptions = getSupplierUserCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const changeStatus = (
+    export const supplierUserChangeStatus = (
     userId: string,
     changeSupplierUserStatusRequest: BodyType<ChangeSupplierUserStatusRequest>,
  signal?: AbortSignal
@@ -202,11 +202,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getChangeStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeStatus>>, TError,{userId: string;data: BodyType<ChangeSupplierUserStatusRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof changeStatus>>, TError,{userId: string;data: BodyType<ChangeSupplierUserStatusRequest>}, TContext> => {
+export const getSupplierUserChangeStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserChangeStatus>>, TError,{userId: string;data: BodyType<ChangeSupplierUserStatusRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierUserChangeStatus>>, TError,{userId: string;data: BodyType<ChangeSupplierUserStatusRequest>}, TContext> => {
 
-const mutationKey = ['changeStatus'];
+const mutationKey = ['supplierUserChangeStatus'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -216,10 +216,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeStatus>>, {userId: string;data: BodyType<ChangeSupplierUserStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierUserChangeStatus>>, {userId: string;data: BodyType<ChangeSupplierUserStatusRequest>}> = (props) => {
           const {userId,data} = props ?? {};
 
-          return  changeStatus(userId,data,)
+          return  supplierUserChangeStatus(userId,data,)
         }
 
         
@@ -227,24 +227,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ChangeStatusMutationResult = NonNullable<Awaited<ReturnType<typeof changeStatus>>>
-    export type ChangeStatusMutationBody = BodyType<ChangeSupplierUserStatusRequest>
-    export type ChangeStatusMutationError = ErrorType<ApiResponseVoid>
+    export type SupplierUserChangeStatusMutationResult = NonNullable<Awaited<ReturnType<typeof supplierUserChangeStatus>>>
+    export type SupplierUserChangeStatusMutationBody = BodyType<ChangeSupplierUserStatusRequest>
+    export type SupplierUserChangeStatusMutationError = ErrorType<ApiResponseVoid>
 
-    export const useChangeStatus = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeStatus>>, TError,{userId: string;data: BodyType<ChangeSupplierUserStatusRequest>}, TContext>, }
+    export const useSupplierUserChangeStatus = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserChangeStatus>>, TError,{userId: string;data: BodyType<ChangeSupplierUserStatusRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof changeStatus>>,
+        Awaited<ReturnType<typeof supplierUserChangeStatus>>,
         TError,
         {userId: string;data: BodyType<ChangeSupplierUserStatusRequest>},
         TContext
       > => {
 
-      const mutationOptions = getChangeStatusMutationOptions(options);
+      const mutationOptions = getSupplierUserChangeStatusMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const resetPassword = (
+    export const supplierUserResetPassword = (
     userId: string,
     resetSupplierUserPasswordRequest: BodyType<ResetSupplierUserPasswordRequest>,
  signal?: AbortSignal
@@ -261,11 +261,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getResetPasswordMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetPassword>>, TError,{userId: string;data: BodyType<ResetSupplierUserPasswordRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof resetPassword>>, TError,{userId: string;data: BodyType<ResetSupplierUserPasswordRequest>}, TContext> => {
+export const getSupplierUserResetPasswordMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserResetPassword>>, TError,{userId: string;data: BodyType<ResetSupplierUserPasswordRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierUserResetPassword>>, TError,{userId: string;data: BodyType<ResetSupplierUserPasswordRequest>}, TContext> => {
 
-const mutationKey = ['resetPassword'];
+const mutationKey = ['supplierUserResetPassword'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -275,10 +275,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetPassword>>, {userId: string;data: BodyType<ResetSupplierUserPasswordRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierUserResetPassword>>, {userId: string;data: BodyType<ResetSupplierUserPasswordRequest>}> = (props) => {
           const {userId,data} = props ?? {};
 
-          return  resetPassword(userId,data,)
+          return  supplierUserResetPassword(userId,data,)
         }
 
         
@@ -286,20 +286,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof resetPassword>>>
-    export type ResetPasswordMutationBody = BodyType<ResetSupplierUserPasswordRequest>
-    export type ResetPasswordMutationError = ErrorType<ApiResponseVoid>
+    export type SupplierUserResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof supplierUserResetPassword>>>
+    export type SupplierUserResetPasswordMutationBody = BodyType<ResetSupplierUserPasswordRequest>
+    export type SupplierUserResetPasswordMutationError = ErrorType<ApiResponseVoid>
 
-    export const useResetPassword = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetPassword>>, TError,{userId: string;data: BodyType<ResetSupplierUserPasswordRequest>}, TContext>, }
+    export const useSupplierUserResetPassword = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserResetPassword>>, TError,{userId: string;data: BodyType<ResetSupplierUserPasswordRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof resetPassword>>,
+        Awaited<ReturnType<typeof supplierUserResetPassword>>,
         TError,
         {userId: string;data: BodyType<ResetSupplierUserPasswordRequest>},
         TContext
       > => {
 
-      const mutationOptions = getResetPasswordMutationOptions(options);
+      const mutationOptions = getSupplierUserResetPasswordMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

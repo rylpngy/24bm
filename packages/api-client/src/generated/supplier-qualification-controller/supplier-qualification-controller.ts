@@ -30,7 +30,7 @@ import type {
   ApiResponseVoid,
   ChangeSupplierQualificationStatusRequest,
   CreateSupplierQualificationRequest,
-  List2Params
+  SupplierQualificationListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -39,8 +39,8 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const list2 = (
-    params?: List2Params,
+export const supplierQualificationList = (
+    params?: SupplierQualificationListParams,
  signal?: AbortSignal
 ) => {
       
@@ -55,66 +55,66 @@ export const list2 = (
 
 
 
-export const getList2QueryKey = (params?: List2Params,) => {
+export const getSupplierQualificationListQueryKey = (params?: SupplierQualificationListParams,) => {
     return [
     `/api/v1/supplier/qualifications`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList2QueryOptions = <TData = Awaited<ReturnType<typeof list2>>, TError = ErrorType<ApiResponseVoid>>(params?: List2Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list2>>, TError, TData>>, }
+export const getSupplierQualificationListQueryOptions = <TData = Awaited<ReturnType<typeof supplierQualificationList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierQualificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList2QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getSupplierQualificationListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list2>>> = ({ signal }) => list2(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQualificationList>>> = ({ signal }) => supplierQualificationList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list2>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List2QueryResult = NonNullable<Awaited<ReturnType<typeof list2>>>
-export type List2QueryError = ErrorType<ApiResponseVoid>
+export type SupplierQualificationListQueryResult = NonNullable<Awaited<ReturnType<typeof supplierQualificationList>>>
+export type SupplierQualificationListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList2<TData = Awaited<ReturnType<typeof list2>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List2Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list2>>, TError, TData>> & Pick<
+export function useSupplierQualificationList<TData = Awaited<ReturnType<typeof supplierQualificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  SupplierQualificationListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list2>>,
+          Awaited<ReturnType<typeof supplierQualificationList>>,
           TError,
-          Awaited<ReturnType<typeof list2>>
+          Awaited<ReturnType<typeof supplierQualificationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList2<TData = Awaited<ReturnType<typeof list2>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List2Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list2>>, TError, TData>> & Pick<
+export function useSupplierQualificationList<TData = Awaited<ReturnType<typeof supplierQualificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierQualificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list2>>,
+          Awaited<ReturnType<typeof supplierQualificationList>>,
           TError,
-          Awaited<ReturnType<typeof list2>>
+          Awaited<ReturnType<typeof supplierQualificationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList2<TData = Awaited<ReturnType<typeof list2>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List2Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list2>>, TError, TData>>, }
+export function useSupplierQualificationList<TData = Awaited<ReturnType<typeof supplierQualificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierQualificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList2<TData = Awaited<ReturnType<typeof list2>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List2Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list2>>, TError, TData>>, }
+export function useSupplierQualificationList<TData = Awaited<ReturnType<typeof supplierQualificationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierQualificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList2QueryOptions(params,options)
+  const queryOptions = getSupplierQualificationListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -126,7 +126,7 @@ export function useList2<TData = Awaited<ReturnType<typeof list2>>, TError = Err
 
 
 
-export const create1 = (
+export const supplierQualificationCreate = (
     createSupplierQualificationRequest: BodyType<CreateSupplierQualificationRequest>,
  signal?: AbortSignal
 ) => {
@@ -142,11 +142,11 @@ export const create1 = (
   
 
 
-export const getCreate1MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create1>>, TError,{data: BodyType<CreateSupplierQualificationRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create1>>, TError,{data: BodyType<CreateSupplierQualificationRequest>}, TContext> => {
+export const getSupplierQualificationCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationCreate>>, TError,{data: BodyType<CreateSupplierQualificationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationCreate>>, TError,{data: BodyType<CreateSupplierQualificationRequest>}, TContext> => {
 
-const mutationKey = ['create1'];
+const mutationKey = ['supplierQualificationCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -156,10 +156,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create1>>, {data: BodyType<CreateSupplierQualificationRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQualificationCreate>>, {data: BodyType<CreateSupplierQualificationRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  create1(data,)
+          return  supplierQualificationCreate(data,)
         }
 
         
@@ -167,24 +167,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create1MutationResult = NonNullable<Awaited<ReturnType<typeof create1>>>
-    export type Create1MutationBody = BodyType<CreateSupplierQualificationRequest>
-    export type Create1MutationError = ErrorType<ApiResponseVoid>
+    export type SupplierQualificationCreateMutationResult = NonNullable<Awaited<ReturnType<typeof supplierQualificationCreate>>>
+    export type SupplierQualificationCreateMutationBody = BodyType<CreateSupplierQualificationRequest>
+    export type SupplierQualificationCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate1 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create1>>, TError,{data: BodyType<CreateSupplierQualificationRequest>}, TContext>, }
+    export const useSupplierQualificationCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationCreate>>, TError,{data: BodyType<CreateSupplierQualificationRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create1>>,
+        Awaited<ReturnType<typeof supplierQualificationCreate>>,
         TError,
         {data: BodyType<CreateSupplierQualificationRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate1MutationOptions(options);
+      const mutationOptions = getSupplierQualificationCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const changeStatus1 = (
+    export const supplierQualificationChangeStatus = (
     qualificationId: string,
     changeSupplierQualificationStatusRequest: BodyType<ChangeSupplierQualificationStatusRequest>,
  signal?: AbortSignal
@@ -201,11 +201,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getChangeStatus1MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeStatus1>>, TError,{qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof changeStatus1>>, TError,{qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>}, TContext> => {
+export const getSupplierQualificationChangeStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationChangeStatus>>, TError,{qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationChangeStatus>>, TError,{qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>}, TContext> => {
 
-const mutationKey = ['changeStatus1'];
+const mutationKey = ['supplierQualificationChangeStatus'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -215,10 +215,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeStatus1>>, {qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQualificationChangeStatus>>, {qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>}> = (props) => {
           const {qualificationId,data} = props ?? {};
 
-          return  changeStatus1(qualificationId,data,)
+          return  supplierQualificationChangeStatus(qualificationId,data,)
         }
 
         
@@ -226,20 +226,20 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ChangeStatus1MutationResult = NonNullable<Awaited<ReturnType<typeof changeStatus1>>>
-    export type ChangeStatus1MutationBody = BodyType<ChangeSupplierQualificationStatusRequest>
-    export type ChangeStatus1MutationError = ErrorType<ApiResponseVoid>
+    export type SupplierQualificationChangeStatusMutationResult = NonNullable<Awaited<ReturnType<typeof supplierQualificationChangeStatus>>>
+    export type SupplierQualificationChangeStatusMutationBody = BodyType<ChangeSupplierQualificationStatusRequest>
+    export type SupplierQualificationChangeStatusMutationError = ErrorType<ApiResponseVoid>
 
-    export const useChangeStatus1 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeStatus1>>, TError,{qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>}, TContext>, }
+    export const useSupplierQualificationChangeStatus = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationChangeStatus>>, TError,{qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof changeStatus1>>,
+        Awaited<ReturnType<typeof supplierQualificationChangeStatus>>,
         TError,
         {qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>},
         TContext
       > => {
 
-      const mutationOptions = getChangeStatus1MutationOptions(options);
+      const mutationOptions = getSupplierQualificationChangeStatusMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

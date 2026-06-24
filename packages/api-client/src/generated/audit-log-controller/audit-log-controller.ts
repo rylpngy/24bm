@@ -23,8 +23,8 @@ import type {
 import type {
   ApiResponseListAuditLogResponse,
   ApiResponseVoid,
-  List25Params,
-  ListTargetActionsParams
+  AuditLogListParams,
+  AuditLogListTargetActionsParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -33,8 +33,8 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const list25 = (
-    params?: List25Params,
+export const auditLogList = (
+    params?: AuditLogListParams,
  signal?: AbortSignal
 ) => {
       
@@ -49,66 +49,66 @@ export const list25 = (
 
 
 
-export const getList25QueryKey = (params?: List25Params,) => {
+export const getAuditLogListQueryKey = (params?: AuditLogListParams,) => {
     return [
     `/api/v1/buyer/audit-logs`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList25QueryOptions = <TData = Awaited<ReturnType<typeof list25>>, TError = ErrorType<ApiResponseVoid>>(params?: List25Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list25>>, TError, TData>>, }
+export const getAuditLogListQueryOptions = <TData = Awaited<ReturnType<typeof auditLogList>>, TError = ErrorType<ApiResponseVoid>>(params?: AuditLogListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList25QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getAuditLogListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list25>>> = ({ signal }) => list25(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof auditLogList>>> = ({ signal }) => auditLogList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list25>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof auditLogList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List25QueryResult = NonNullable<Awaited<ReturnType<typeof list25>>>
-export type List25QueryError = ErrorType<ApiResponseVoid>
+export type AuditLogListQueryResult = NonNullable<Awaited<ReturnType<typeof auditLogList>>>
+export type AuditLogListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList25<TData = Awaited<ReturnType<typeof list25>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List25Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list25>>, TError, TData>> & Pick<
+export function useAuditLogList<TData = Awaited<ReturnType<typeof auditLogList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  AuditLogListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list25>>,
+          Awaited<ReturnType<typeof auditLogList>>,
           TError,
-          Awaited<ReturnType<typeof list25>>
+          Awaited<ReturnType<typeof auditLogList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList25<TData = Awaited<ReturnType<typeof list25>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List25Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list25>>, TError, TData>> & Pick<
+export function useAuditLogList<TData = Awaited<ReturnType<typeof auditLogList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: AuditLogListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list25>>,
+          Awaited<ReturnType<typeof auditLogList>>,
           TError,
-          Awaited<ReturnType<typeof list25>>
+          Awaited<ReturnType<typeof auditLogList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList25<TData = Awaited<ReturnType<typeof list25>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List25Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list25>>, TError, TData>>, }
+export function useAuditLogList<TData = Awaited<ReturnType<typeof auditLogList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: AuditLogListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList25<TData = Awaited<ReturnType<typeof list25>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List25Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list25>>, TError, TData>>, }
+export function useAuditLogList<TData = Awaited<ReturnType<typeof auditLogList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: AuditLogListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList25QueryOptions(params,options)
+  const queryOptions = getAuditLogListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -120,8 +120,8 @@ export function useList25<TData = Awaited<ReturnType<typeof list25>>, TError = E
 
 
 
-export const listTargetActions = (
-    params: ListTargetActionsParams,
+export const auditLogListTargetActions = (
+    params: AuditLogListTargetActionsParams,
  signal?: AbortSignal
 ) => {
       
@@ -136,66 +136,66 @@ export const listTargetActions = (
 
 
 
-export const getListTargetActionsQueryKey = (params?: ListTargetActionsParams,) => {
+export const getAuditLogListTargetActionsQueryKey = (params?: AuditLogListTargetActionsParams,) => {
     return [
     `/api/v1/buyer/audit-logs/target`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getListTargetActionsQueryOptions = <TData = Awaited<ReturnType<typeof listTargetActions>>, TError = ErrorType<ApiResponseVoid>>(params: ListTargetActionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTargetActions>>, TError, TData>>, }
+export const getAuditLogListTargetActionsQueryOptions = <TData = Awaited<ReturnType<typeof auditLogListTargetActions>>, TError = ErrorType<ApiResponseVoid>>(params: AuditLogListTargetActionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogListTargetActions>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListTargetActionsQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getAuditLogListTargetActionsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTargetActions>>> = ({ signal }) => listTargetActions(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof auditLogListTargetActions>>> = ({ signal }) => auditLogListTargetActions(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTargetActions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof auditLogListTargetActions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ListTargetActionsQueryResult = NonNullable<Awaited<ReturnType<typeof listTargetActions>>>
-export type ListTargetActionsQueryError = ErrorType<ApiResponseVoid>
+export type AuditLogListTargetActionsQueryResult = NonNullable<Awaited<ReturnType<typeof auditLogListTargetActions>>>
+export type AuditLogListTargetActionsQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useListTargetActions<TData = Awaited<ReturnType<typeof listTargetActions>>, TError = ErrorType<ApiResponseVoid>>(
- params: ListTargetActionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTargetActions>>, TError, TData>> & Pick<
+export function useAuditLogListTargetActions<TData = Awaited<ReturnType<typeof auditLogListTargetActions>>, TError = ErrorType<ApiResponseVoid>>(
+ params: AuditLogListTargetActionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogListTargetActions>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listTargetActions>>,
+          Awaited<ReturnType<typeof auditLogListTargetActions>>,
           TError,
-          Awaited<ReturnType<typeof listTargetActions>>
+          Awaited<ReturnType<typeof auditLogListTargetActions>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListTargetActions<TData = Awaited<ReturnType<typeof listTargetActions>>, TError = ErrorType<ApiResponseVoid>>(
- params: ListTargetActionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTargetActions>>, TError, TData>> & Pick<
+export function useAuditLogListTargetActions<TData = Awaited<ReturnType<typeof auditLogListTargetActions>>, TError = ErrorType<ApiResponseVoid>>(
+ params: AuditLogListTargetActionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogListTargetActions>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listTargetActions>>,
+          Awaited<ReturnType<typeof auditLogListTargetActions>>,
           TError,
-          Awaited<ReturnType<typeof listTargetActions>>
+          Awaited<ReturnType<typeof auditLogListTargetActions>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListTargetActions<TData = Awaited<ReturnType<typeof listTargetActions>>, TError = ErrorType<ApiResponseVoid>>(
- params: ListTargetActionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTargetActions>>, TError, TData>>, }
+export function useAuditLogListTargetActions<TData = Awaited<ReturnType<typeof auditLogListTargetActions>>, TError = ErrorType<ApiResponseVoid>>(
+ params: AuditLogListTargetActionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogListTargetActions>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useListTargetActions<TData = Awaited<ReturnType<typeof listTargetActions>>, TError = ErrorType<ApiResponseVoid>>(
- params: ListTargetActionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTargetActions>>, TError, TData>>, }
+export function useAuditLogListTargetActions<TData = Awaited<ReturnType<typeof auditLogListTargetActions>>, TError = ErrorType<ApiResponseVoid>>(
+ params: AuditLogListTargetActionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditLogListTargetActions>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListTargetActionsQueryOptions(params,options)
+  const queryOptions = getAuditLogListTargetActionsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

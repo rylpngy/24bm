@@ -39,7 +39,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const list9 = (
+export const platformTenantList = (
     
  signal?: AbortSignal
 ) => {
@@ -54,66 +54,66 @@ export const list9 = (
 
 
 
-export const getList9QueryKey = () => {
+export const getPlatformTenantListQueryKey = () => {
     return [
     `/api/v1/platform/tenants`
     ] as const;
     }
 
     
-export const getList9QueryOptions = <TData = Awaited<ReturnType<typeof list9>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list9>>, TError, TData>>, }
+export const getPlatformTenantListQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList9QueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantListQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list9>>> = ({ signal }) => list9(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantList>>> = ({ signal }) => platformTenantList(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list9>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List9QueryResult = NonNullable<Awaited<ReturnType<typeof list9>>>
-export type List9QueryError = ErrorType<ApiResponseVoid>
+export type PlatformTenantListQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantList>>>
+export type PlatformTenantListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList9<TData = Awaited<ReturnType<typeof list9>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list9>>, TError, TData>> & Pick<
+export function usePlatformTenantList<TData = Awaited<ReturnType<typeof platformTenantList>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list9>>,
+          Awaited<ReturnType<typeof platformTenantList>>,
           TError,
-          Awaited<ReturnType<typeof list9>>
+          Awaited<ReturnType<typeof platformTenantList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList9<TData = Awaited<ReturnType<typeof list9>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list9>>, TError, TData>> & Pick<
+export function usePlatformTenantList<TData = Awaited<ReturnType<typeof platformTenantList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list9>>,
+          Awaited<ReturnType<typeof platformTenantList>>,
           TError,
-          Awaited<ReturnType<typeof list9>>
+          Awaited<ReturnType<typeof platformTenantList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList9<TData = Awaited<ReturnType<typeof list9>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list9>>, TError, TData>>, }
+export function usePlatformTenantList<TData = Awaited<ReturnType<typeof platformTenantList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList9<TData = Awaited<ReturnType<typeof list9>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list9>>, TError, TData>>, }
+export function usePlatformTenantList<TData = Awaited<ReturnType<typeof platformTenantList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList9QueryOptions(options)
+  const queryOptions = getPlatformTenantListQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -125,7 +125,7 @@ export function useList9<TData = Awaited<ReturnType<typeof list9>>, TError = Err
 
 
 
-export const create4 = (
+export const platformTenantCreate = (
     createTenantRequest: BodyType<CreateTenantRequest>,
  signal?: AbortSignal
 ) => {
@@ -141,11 +141,11 @@ export const create4 = (
   
 
 
-export const getCreate4MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create4>>, TError,{data: BodyType<CreateTenantRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create4>>, TError,{data: BodyType<CreateTenantRequest>}, TContext> => {
+export const getPlatformTenantCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantCreate>>, TError,{data: BodyType<CreateTenantRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantCreate>>, TError,{data: BodyType<CreateTenantRequest>}, TContext> => {
 
-const mutationKey = ['create4'];
+const mutationKey = ['platformTenantCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -155,10 +155,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create4>>, {data: BodyType<CreateTenantRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantCreate>>, {data: BodyType<CreateTenantRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  create4(data,)
+          return  platformTenantCreate(data,)
         }
 
         
@@ -166,24 +166,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create4MutationResult = NonNullable<Awaited<ReturnType<typeof create4>>>
-    export type Create4MutationBody = BodyType<CreateTenantRequest>
-    export type Create4MutationError = ErrorType<ApiResponseVoid>
+    export type PlatformTenantCreateMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantCreate>>>
+    export type PlatformTenantCreateMutationBody = BodyType<CreateTenantRequest>
+    export type PlatformTenantCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate4 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create4>>, TError,{data: BodyType<CreateTenantRequest>}, TContext>, }
+    export const usePlatformTenantCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantCreate>>, TError,{data: BodyType<CreateTenantRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create4>>,
+        Awaited<ReturnType<typeof platformTenantCreate>>,
         TError,
         {data: BodyType<CreateTenantRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate4MutationOptions(options);
+      const mutationOptions = getPlatformTenantCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const updatePlan = (
+    export const platformTenantUpdatePlan = (
     tenantId: string,
     updateTenantPlanRequest: BodyType<UpdateTenantPlanRequest>,
  signal?: AbortSignal
@@ -200,11 +200,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getUpdatePlanMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlan>>, TError,{tenantId: string;data: BodyType<UpdateTenantPlanRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof updatePlan>>, TError,{tenantId: string;data: BodyType<UpdateTenantPlanRequest>}, TContext> => {
+export const getPlatformTenantUpdatePlanMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantUpdatePlan>>, TError,{tenantId: string;data: BodyType<UpdateTenantPlanRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantUpdatePlan>>, TError,{tenantId: string;data: BodyType<UpdateTenantPlanRequest>}, TContext> => {
 
-const mutationKey = ['updatePlan'];
+const mutationKey = ['platformTenantUpdatePlan'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -214,10 +214,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePlan>>, {tenantId: string;data: BodyType<UpdateTenantPlanRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantUpdatePlan>>, {tenantId: string;data: BodyType<UpdateTenantPlanRequest>}> = (props) => {
           const {tenantId,data} = props ?? {};
 
-          return  updatePlan(tenantId,data,)
+          return  platformTenantUpdatePlan(tenantId,data,)
         }
 
         
@@ -225,24 +225,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdatePlanMutationResult = NonNullable<Awaited<ReturnType<typeof updatePlan>>>
-    export type UpdatePlanMutationBody = BodyType<UpdateTenantPlanRequest>
-    export type UpdatePlanMutationError = ErrorType<ApiResponseVoid>
+    export type PlatformTenantUpdatePlanMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantUpdatePlan>>>
+    export type PlatformTenantUpdatePlanMutationBody = BodyType<UpdateTenantPlanRequest>
+    export type PlatformTenantUpdatePlanMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdatePlan = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlan>>, TError,{tenantId: string;data: BodyType<UpdateTenantPlanRequest>}, TContext>, }
+    export const usePlatformTenantUpdatePlan = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantUpdatePlan>>, TError,{tenantId: string;data: BodyType<UpdateTenantPlanRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updatePlan>>,
+        Awaited<ReturnType<typeof platformTenantUpdatePlan>>,
         TError,
         {tenantId: string;data: BodyType<UpdateTenantPlanRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdatePlanMutationOptions(options);
+      const mutationOptions = getPlatformTenantUpdatePlanMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const updateFeatures = (
+    export const platformTenantUpdateFeatures = (
     tenantId: string,
     featureToggleRequest: BodyType<FeatureToggleRequest>,
  signal?: AbortSignal
@@ -259,11 +259,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getUpdateFeaturesMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFeatures>>, TError,{tenantId: string;data: BodyType<FeatureToggleRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof updateFeatures>>, TError,{tenantId: string;data: BodyType<FeatureToggleRequest>}, TContext> => {
+export const getPlatformTenantUpdateFeaturesMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantUpdateFeatures>>, TError,{tenantId: string;data: BodyType<FeatureToggleRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantUpdateFeatures>>, TError,{tenantId: string;data: BodyType<FeatureToggleRequest>}, TContext> => {
 
-const mutationKey = ['updateFeatures'];
+const mutationKey = ['platformTenantUpdateFeatures'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -273,10 +273,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFeatures>>, {tenantId: string;data: BodyType<FeatureToggleRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantUpdateFeatures>>, {tenantId: string;data: BodyType<FeatureToggleRequest>}> = (props) => {
           const {tenantId,data} = props ?? {};
 
-          return  updateFeatures(tenantId,data,)
+          return  platformTenantUpdateFeatures(tenantId,data,)
         }
 
         
@@ -284,24 +284,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdateFeaturesMutationResult = NonNullable<Awaited<ReturnType<typeof updateFeatures>>>
-    export type UpdateFeaturesMutationBody = BodyType<FeatureToggleRequest>
-    export type UpdateFeaturesMutationError = ErrorType<ApiResponseVoid>
+    export type PlatformTenantUpdateFeaturesMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantUpdateFeatures>>>
+    export type PlatformTenantUpdateFeaturesMutationBody = BodyType<FeatureToggleRequest>
+    export type PlatformTenantUpdateFeaturesMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdateFeatures = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFeatures>>, TError,{tenantId: string;data: BodyType<FeatureToggleRequest>}, TContext>, }
+    export const usePlatformTenantUpdateFeatures = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantUpdateFeatures>>, TError,{tenantId: string;data: BodyType<FeatureToggleRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateFeatures>>,
+        Awaited<ReturnType<typeof platformTenantUpdateFeatures>>,
         TError,
         {tenantId: string;data: BodyType<FeatureToggleRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdateFeaturesMutationOptions(options);
+      const mutationOptions = getPlatformTenantUpdateFeaturesMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const enable = (
+    export const platformTenantEnable = (
     tenantId: string,
  signal?: AbortSignal
 ) => {
@@ -315,11 +315,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getEnableMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enable>>, TError,{tenantId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof enable>>, TError,{tenantId: string}, TContext> => {
+export const getPlatformTenantEnableMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantEnable>>, TError,{tenantId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantEnable>>, TError,{tenantId: string}, TContext> => {
 
-const mutationKey = ['enable'];
+const mutationKey = ['platformTenantEnable'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -329,10 +329,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof enable>>, {tenantId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantEnable>>, {tenantId: string}> = (props) => {
           const {tenantId} = props ?? {};
 
-          return  enable(tenantId,)
+          return  platformTenantEnable(tenantId,)
         }
 
         
@@ -340,24 +340,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type EnableMutationResult = NonNullable<Awaited<ReturnType<typeof enable>>>
+    export type PlatformTenantEnableMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantEnable>>>
     
-    export type EnableMutationError = ErrorType<ApiResponseVoid>
+    export type PlatformTenantEnableMutationError = ErrorType<ApiResponseVoid>
 
-    export const useEnable = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enable>>, TError,{tenantId: string}, TContext>, }
+    export const usePlatformTenantEnable = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantEnable>>, TError,{tenantId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof enable>>,
+        Awaited<ReturnType<typeof platformTenantEnable>>,
         TError,
         {tenantId: string},
         TContext
       > => {
 
-      const mutationOptions = getEnableMutationOptions(options);
+      const mutationOptions = getPlatformTenantEnableMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const disable = (
+    export const platformTenantDisable = (
     tenantId: string,
  signal?: AbortSignal
 ) => {
@@ -371,11 +371,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getDisableMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disable>>, TError,{tenantId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof disable>>, TError,{tenantId: string}, TContext> => {
+export const getPlatformTenantDisableMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantDisable>>, TError,{tenantId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantDisable>>, TError,{tenantId: string}, TContext> => {
 
-const mutationKey = ['disable'];
+const mutationKey = ['platformTenantDisable'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -385,10 +385,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disable>>, {tenantId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantDisable>>, {tenantId: string}> = (props) => {
           const {tenantId} = props ?? {};
 
-          return  disable(tenantId,)
+          return  platformTenantDisable(tenantId,)
         }
 
         
@@ -396,24 +396,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DisableMutationResult = NonNullable<Awaited<ReturnType<typeof disable>>>
+    export type PlatformTenantDisableMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantDisable>>>
     
-    export type DisableMutationError = ErrorType<ApiResponseVoid>
+    export type PlatformTenantDisableMutationError = ErrorType<ApiResponseVoid>
 
-    export const useDisable = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disable>>, TError,{tenantId: string}, TContext>, }
+    export const usePlatformTenantDisable = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantDisable>>, TError,{tenantId: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof disable>>,
+        Awaited<ReturnType<typeof platformTenantDisable>>,
         TError,
         {tenantId: string},
         TContext
       > => {
 
-      const mutationOptions = getDisableMutationOptions(options);
+      const mutationOptions = getPlatformTenantDisableMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const get1 = (
+    export const platformTenantGet = (
     tenantId: string,
  signal?: AbortSignal
 ) => {
@@ -428,66 +428,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getGet1QueryKey = (tenantId?: string,) => {
+export const getPlatformTenantGetQueryKey = (tenantId?: string,) => {
     return [
     `/api/v1/platform/tenants/${tenantId}`
     ] as const;
     }
 
     
-export const getGet1QueryOptions = <TData = Awaited<ReturnType<typeof get1>>, TError = ErrorType<ApiResponseVoid>>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof get1>>, TError, TData>>, }
+export const getPlatformTenantGetQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantGet>>, TError = ErrorType<ApiResponseVoid>>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantGet>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGet1QueryKey(tenantId);
+  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantGetQueryKey(tenantId);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof get1>>> = ({ signal }) => get1(tenantId, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantGet>>> = ({ signal }) => platformTenantGet(tenantId, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(tenantId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof get1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(tenantId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type Get1QueryResult = NonNullable<Awaited<ReturnType<typeof get1>>>
-export type Get1QueryError = ErrorType<ApiResponseVoid>
+export type PlatformTenantGetQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantGet>>>
+export type PlatformTenantGetQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useGet1<TData = Awaited<ReturnType<typeof get1>>, TError = ErrorType<ApiResponseVoid>>(
- tenantId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof get1>>, TError, TData>> & Pick<
+export function usePlatformTenantGet<TData = Awaited<ReturnType<typeof platformTenantGet>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof get1>>,
+          Awaited<ReturnType<typeof platformTenantGet>>,
           TError,
-          Awaited<ReturnType<typeof get1>>
+          Awaited<ReturnType<typeof platformTenantGet>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGet1<TData = Awaited<ReturnType<typeof get1>>, TError = ErrorType<ApiResponseVoid>>(
- tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof get1>>, TError, TData>> & Pick<
+export function usePlatformTenantGet<TData = Awaited<ReturnType<typeof platformTenantGet>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof get1>>,
+          Awaited<ReturnType<typeof platformTenantGet>>,
           TError,
-          Awaited<ReturnType<typeof get1>>
+          Awaited<ReturnType<typeof platformTenantGet>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGet1<TData = Awaited<ReturnType<typeof get1>>, TError = ErrorType<ApiResponseVoid>>(
- tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof get1>>, TError, TData>>, }
+export function usePlatformTenantGet<TData = Awaited<ReturnType<typeof platformTenantGet>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantGet>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useGet1<TData = Awaited<ReturnType<typeof get1>>, TError = ErrorType<ApiResponseVoid>>(
- tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof get1>>, TError, TData>>, }
+export function usePlatformTenantGet<TData = Awaited<ReturnType<typeof platformTenantGet>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantGet>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGet1QueryOptions(tenantId,options)
+  const queryOptions = getPlatformTenantGetQueryOptions(tenantId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

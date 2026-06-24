@@ -23,7 +23,7 @@ import type {
 import type {
   ApiResponseListInvoiceReconciliationResponse,
   ApiResponseVoid,
-  List21Params
+  BuyerInvoiceReconciliationListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -32,8 +32,8 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const list21 = (
-    params?: List21Params,
+export const buyerInvoiceReconciliationList = (
+    params?: BuyerInvoiceReconciliationListParams,
  signal?: AbortSignal
 ) => {
       
@@ -48,66 +48,66 @@ export const list21 = (
 
 
 
-export const getList21QueryKey = (params?: List21Params,) => {
+export const getBuyerInvoiceReconciliationListQueryKey = (params?: BuyerInvoiceReconciliationListParams,) => {
     return [
     `/api/v1/buyer/invoice-reconciliations`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList21QueryOptions = <TData = Awaited<ReturnType<typeof list21>>, TError = ErrorType<ApiResponseVoid>>(params?: List21Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list21>>, TError, TData>>, }
+export const getBuyerInvoiceReconciliationListQueryOptions = <TData = Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList21QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getBuyerInvoiceReconciliationListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list21>>> = ({ signal }) => list21(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>> = ({ signal }) => buyerInvoiceReconciliationList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list21>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List21QueryResult = NonNullable<Awaited<ReturnType<typeof list21>>>
-export type List21QueryError = ErrorType<ApiResponseVoid>
+export type BuyerInvoiceReconciliationListQueryResult = NonNullable<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>>
+export type BuyerInvoiceReconciliationListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList21<TData = Awaited<ReturnType<typeof list21>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List21Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list21>>, TError, TData>> & Pick<
+export function useBuyerInvoiceReconciliationList<TData = Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerInvoiceReconciliationListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list21>>,
+          Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>,
           TError,
-          Awaited<ReturnType<typeof list21>>
+          Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList21<TData = Awaited<ReturnType<typeof list21>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List21Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list21>>, TError, TData>> & Pick<
+export function useBuyerInvoiceReconciliationList<TData = Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list21>>,
+          Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>,
           TError,
-          Awaited<ReturnType<typeof list21>>
+          Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList21<TData = Awaited<ReturnType<typeof list21>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List21Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list21>>, TError, TData>>, }
+export function useBuyerInvoiceReconciliationList<TData = Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList21<TData = Awaited<ReturnType<typeof list21>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List21Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list21>>, TError, TData>>, }
+export function useBuyerInvoiceReconciliationList<TData = Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList21QueryOptions(params,options)
+  const queryOptions = getBuyerInvoiceReconciliationListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

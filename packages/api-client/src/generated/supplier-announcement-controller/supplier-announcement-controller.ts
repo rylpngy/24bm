@@ -31,7 +31,7 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const list8 = (
+export const supplierAnnouncementList = (
     
  signal?: AbortSignal
 ) => {
@@ -46,66 +46,66 @@ export const list8 = (
 
 
 
-export const getList8QueryKey = () => {
+export const getSupplierAnnouncementListQueryKey = () => {
     return [
     `/api/v1/supplier/announcements`
     ] as const;
     }
 
     
-export const getList8QueryOptions = <TData = Awaited<ReturnType<typeof list8>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list8>>, TError, TData>>, }
+export const getSupplierAnnouncementListQueryOptions = <TData = Awaited<ReturnType<typeof supplierAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAnnouncementList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList8QueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getSupplierAnnouncementListQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list8>>> = ({ signal }) => list8(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierAnnouncementList>>> = ({ signal }) => supplierAnnouncementList(signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list8>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierAnnouncementList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List8QueryResult = NonNullable<Awaited<ReturnType<typeof list8>>>
-export type List8QueryError = ErrorType<ApiResponseVoid>
+export type SupplierAnnouncementListQueryResult = NonNullable<Awaited<ReturnType<typeof supplierAnnouncementList>>>
+export type SupplierAnnouncementListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList8<TData = Awaited<ReturnType<typeof list8>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list8>>, TError, TData>> & Pick<
+export function useSupplierAnnouncementList<TData = Awaited<ReturnType<typeof supplierAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAnnouncementList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list8>>,
+          Awaited<ReturnType<typeof supplierAnnouncementList>>,
           TError,
-          Awaited<ReturnType<typeof list8>>
+          Awaited<ReturnType<typeof supplierAnnouncementList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList8<TData = Awaited<ReturnType<typeof list8>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list8>>, TError, TData>> & Pick<
+export function useSupplierAnnouncementList<TData = Awaited<ReturnType<typeof supplierAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAnnouncementList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list8>>,
+          Awaited<ReturnType<typeof supplierAnnouncementList>>,
           TError,
-          Awaited<ReturnType<typeof list8>>
+          Awaited<ReturnType<typeof supplierAnnouncementList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList8<TData = Awaited<ReturnType<typeof list8>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list8>>, TError, TData>>, }
+export function useSupplierAnnouncementList<TData = Awaited<ReturnType<typeof supplierAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAnnouncementList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList8<TData = Awaited<ReturnType<typeof list8>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list8>>, TError, TData>>, }
+export function useSupplierAnnouncementList<TData = Awaited<ReturnType<typeof supplierAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAnnouncementList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList8QueryOptions(options)
+  const queryOptions = getSupplierAnnouncementListQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

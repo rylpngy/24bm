@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
+import org.springdoc.core.customizers.OperationCustomizer;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -23,4 +25,19 @@ import org.springframework.context.annotation.Configuration;
     type = SecuritySchemeType.HTTP,
     scheme = "bearer",
     bearerFormat = "JWT")
-public class OpenApiConfig {}
+public class OpenApiConfig {
+
+  /**
+   * 生成语义化、唯一的 operationId（控制器名_方法名），让 orval 派生出
+   * 例如 useBuyerWorkspaceLoad 这样的可读 hook，而非 useLoad2。
+   */
+  @Bean
+  OperationCustomizer operationIdCustomizer() {
+    return (operation, handlerMethod) -> {
+      String controller = handlerMethod.getBeanType().getSimpleName().replaceAll("Controller$", "");
+      String method = handlerMethod.getMethod().getName();
+      operation.setOperationId(controller + "_" + method);
+      return operation;
+    };
+  }
+}

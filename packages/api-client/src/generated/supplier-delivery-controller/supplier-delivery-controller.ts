@@ -29,7 +29,7 @@ import type {
   ApiResponseListDeliveryResponse,
   ApiResponseVoid,
   CreateDeliveryRequest,
-  List7Params,
+  SupplierDeliveryListParams,
   UpdateDeliveryRequest
 } from '.././model';
 
@@ -39,7 +39,7 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const update1 = (
+export const supplierDeliveryUpdate = (
     deliveryId: string,
     updateDeliveryRequest: BodyType<UpdateDeliveryRequest>,
  ) => {
@@ -55,11 +55,11 @@ export const update1 = (
   
 
 
-export const getUpdate1MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update1>>, TError,{deliveryId: string;data: BodyType<UpdateDeliveryRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof update1>>, TError,{deliveryId: string;data: BodyType<UpdateDeliveryRequest>}, TContext> => {
+export const getSupplierDeliveryUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierDeliveryUpdate>>, TError,{deliveryId: string;data: BodyType<UpdateDeliveryRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierDeliveryUpdate>>, TError,{deliveryId: string;data: BodyType<UpdateDeliveryRequest>}, TContext> => {
 
-const mutationKey = ['update1'];
+const mutationKey = ['supplierDeliveryUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -69,10 +69,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof update1>>, {deliveryId: string;data: BodyType<UpdateDeliveryRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierDeliveryUpdate>>, {deliveryId: string;data: BodyType<UpdateDeliveryRequest>}> = (props) => {
           const {deliveryId,data} = props ?? {};
 
-          return  update1(deliveryId,data,)
+          return  supplierDeliveryUpdate(deliveryId,data,)
         }
 
         
@@ -80,24 +80,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Update1MutationResult = NonNullable<Awaited<ReturnType<typeof update1>>>
-    export type Update1MutationBody = BodyType<UpdateDeliveryRequest>
-    export type Update1MutationError = ErrorType<ApiResponseVoid>
+    export type SupplierDeliveryUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof supplierDeliveryUpdate>>>
+    export type SupplierDeliveryUpdateMutationBody = BodyType<UpdateDeliveryRequest>
+    export type SupplierDeliveryUpdateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useUpdate1 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof update1>>, TError,{deliveryId: string;data: BodyType<UpdateDeliveryRequest>}, TContext>, }
+    export const useSupplierDeliveryUpdate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierDeliveryUpdate>>, TError,{deliveryId: string;data: BodyType<UpdateDeliveryRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof update1>>,
+        Awaited<ReturnType<typeof supplierDeliveryUpdate>>,
         TError,
         {deliveryId: string;data: BodyType<UpdateDeliveryRequest>},
         TContext
       > => {
 
-      const mutationOptions = getUpdate1MutationOptions(options);
+      const mutationOptions = getSupplierDeliveryUpdateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const create3 = (
+    export const supplierDeliveryCreate = (
     orderId: string,
     createDeliveryRequest: BodyType<CreateDeliveryRequest>,
  signal?: AbortSignal
@@ -114,11 +114,11 @@ const {mutation: mutationOptions} = options ?
   
 
 
-export const getCreate3MutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create3>>, TError,{orderId: string;data: BodyType<CreateDeliveryRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof create3>>, TError,{orderId: string;data: BodyType<CreateDeliveryRequest>}, TContext> => {
+export const getSupplierDeliveryCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierDeliveryCreate>>, TError,{orderId: string;data: BodyType<CreateDeliveryRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierDeliveryCreate>>, TError,{orderId: string;data: BodyType<CreateDeliveryRequest>}, TContext> => {
 
-const mutationKey = ['create3'];
+const mutationKey = ['supplierDeliveryCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -128,10 +128,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof create3>>, {orderId: string;data: BodyType<CreateDeliveryRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierDeliveryCreate>>, {orderId: string;data: BodyType<CreateDeliveryRequest>}> = (props) => {
           const {orderId,data} = props ?? {};
 
-          return  create3(orderId,data,)
+          return  supplierDeliveryCreate(orderId,data,)
         }
 
         
@@ -139,25 +139,25 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type Create3MutationResult = NonNullable<Awaited<ReturnType<typeof create3>>>
-    export type Create3MutationBody = BodyType<CreateDeliveryRequest>
-    export type Create3MutationError = ErrorType<ApiResponseVoid>
+    export type SupplierDeliveryCreateMutationResult = NonNullable<Awaited<ReturnType<typeof supplierDeliveryCreate>>>
+    export type SupplierDeliveryCreateMutationBody = BodyType<CreateDeliveryRequest>
+    export type SupplierDeliveryCreateMutationError = ErrorType<ApiResponseVoid>
 
-    export const useCreate3 = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof create3>>, TError,{orderId: string;data: BodyType<CreateDeliveryRequest>}, TContext>, }
+    export const useSupplierDeliveryCreate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierDeliveryCreate>>, TError,{orderId: string;data: BodyType<CreateDeliveryRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof create3>>,
+        Awaited<ReturnType<typeof supplierDeliveryCreate>>,
         TError,
         {orderId: string;data: BodyType<CreateDeliveryRequest>},
         TContext
       > => {
 
-      const mutationOptions = getCreate3MutationOptions(options);
+      const mutationOptions = getSupplierDeliveryCreateMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const list7 = (
-    params?: List7Params,
+    export const supplierDeliveryList = (
+    params?: SupplierDeliveryListParams,
  signal?: AbortSignal
 ) => {
       
@@ -172,66 +172,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getList7QueryKey = (params?: List7Params,) => {
+export const getSupplierDeliveryListQueryKey = (params?: SupplierDeliveryListParams,) => {
     return [
     `/api/v1/supplier/deliveries`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getList7QueryOptions = <TData = Awaited<ReturnType<typeof list7>>, TError = ErrorType<ApiResponseVoid>>(params?: List7Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list7>>, TError, TData>>, }
+export const getSupplierDeliveryListQueryOptions = <TData = Awaited<ReturnType<typeof supplierDeliveryList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierDeliveryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierDeliveryList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getList7QueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getSupplierDeliveryListQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof list7>>> = ({ signal }) => list7(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierDeliveryList>>> = ({ signal }) => supplierDeliveryList(params, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof list7>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierDeliveryList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type List7QueryResult = NonNullable<Awaited<ReturnType<typeof list7>>>
-export type List7QueryError = ErrorType<ApiResponseVoid>
+export type SupplierDeliveryListQueryResult = NonNullable<Awaited<ReturnType<typeof supplierDeliveryList>>>
+export type SupplierDeliveryListQueryError = ErrorType<ApiResponseVoid>
 
 
-export function useList7<TData = Awaited<ReturnType<typeof list7>>, TError = ErrorType<ApiResponseVoid>>(
- params: undefined |  List7Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof list7>>, TError, TData>> & Pick<
+export function useSupplierDeliveryList<TData = Awaited<ReturnType<typeof supplierDeliveryList>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  SupplierDeliveryListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierDeliveryList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list7>>,
+          Awaited<ReturnType<typeof supplierDeliveryList>>,
           TError,
-          Awaited<ReturnType<typeof list7>>
+          Awaited<ReturnType<typeof supplierDeliveryList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList7<TData = Awaited<ReturnType<typeof list7>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List7Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list7>>, TError, TData>> & Pick<
+export function useSupplierDeliveryList<TData = Awaited<ReturnType<typeof supplierDeliveryList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierDeliveryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierDeliveryList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof list7>>,
+          Awaited<ReturnType<typeof supplierDeliveryList>>,
           TError,
-          Awaited<ReturnType<typeof list7>>
+          Awaited<ReturnType<typeof supplierDeliveryList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useList7<TData = Awaited<ReturnType<typeof list7>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List7Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list7>>, TError, TData>>, }
+export function useSupplierDeliveryList<TData = Awaited<ReturnType<typeof supplierDeliveryList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierDeliveryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierDeliveryList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useList7<TData = Awaited<ReturnType<typeof list7>>, TError = ErrorType<ApiResponseVoid>>(
- params?: List7Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof list7>>, TError, TData>>, }
+export function useSupplierDeliveryList<TData = Awaited<ReturnType<typeof supplierDeliveryList>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierDeliveryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierDeliveryList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getList7QueryOptions(params,options)
+  const queryOptions = getSupplierDeliveryListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

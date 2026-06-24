@@ -17,7 +17,7 @@
         "tags": [
           "supplier-quote-list-controller"
         ],
-        "operationId": "update",
+        "operationId": "SupplierQuoteList_update",
         "parameters": [
           {
             "name": "quoteId",
@@ -67,7 +67,7 @@
         "tags": [
           "supplier-receivable-controller"
         ],
-        "operationId": "updateReceivable",
+        "operationId": "SupplierReceivable_updateReceivable",
         "parameters": [
           {
             "name": "invoiceId",
@@ -117,7 +117,7 @@
         "tags": [
           "supplier-delivery-controller"
         ],
-        "operationId": "update_1",
+        "operationId": "SupplierDelivery_update",
         "parameters": [
           {
             "name": "deliveryId",
@@ -167,7 +167,7 @@
         "tags": [
           "platform-announcement-controller"
         ],
-        "operationId": "update_2",
+        "operationId": "PlatformAnnouncement_update",
         "parameters": [
           {
             "name": "announcementId",
@@ -217,7 +217,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "updateVarianceHandlingStatus",
+        "operationId": "BuyerFinanceAction_updateVarianceHandlingStatus",
         "parameters": [
           {
             "name": "varianceHandlingId",
@@ -267,7 +267,7 @@
         "tags": [
           "rfq-controller"
         ],
-        "operationId": "update_3",
+        "operationId": "Rfq_update",
         "parameters": [
           {
             "name": "rfqId",
@@ -317,7 +317,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "updatePaymentRequestStatus",
+        "operationId": "BuyerFinanceAction_updatePaymentRequestStatus",
         "parameters": [
           {
             "name": "paymentRequestId",
@@ -367,7 +367,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "updatePaymentBlockResolutionStatus",
+        "operationId": "BuyerFinanceAction_updatePaymentBlockResolutionStatus",
         "parameters": [
           {
             "name": "resolutionId",
@@ -417,7 +417,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "updatePaymentBatchStatus",
+        "operationId": "BuyerFinanceAction_updatePaymentBatchStatus",
         "parameters": [
           {
             "name": "paymentBatchNo",
@@ -467,7 +467,7 @@
         "tags": [
           "purchase-order-controller"
         ],
-        "operationId": "update_4",
+        "operationId": "PurchaseOrder_update",
         "parameters": [
           {
             "name": "orderId",
@@ -517,7 +517,7 @@
         "tags": [
           "buyer-payment-controller"
         ],
-        "operationId": "update_5",
+        "operationId": "BuyerPayment_update",
         "parameters": [
           {
             "name": "invoiceId",
@@ -567,7 +567,7 @@
         "tags": [
           "purchase-demand-controller"
         ],
-        "operationId": "update_6",
+        "operationId": "PurchaseDemand_update",
         "parameters": [
           {
             "name": "demandId",
@@ -617,7 +617,7 @@
         "tags": [
           "buyer-contract-controller"
         ],
-        "operationId": "update_7",
+        "operationId": "BuyerContract_update",
         "parameters": [
           {
             "name": "contractId",
@@ -667,7 +667,7 @@
         "tags": [
           "buyer-contract-controller"
         ],
-        "operationId": "updateStatus",
+        "operationId": "BuyerContract_updateStatus",
         "parameters": [
           {
             "name": "contractId",
@@ -717,7 +717,7 @@
         "tags": [
           "buyer-contract-controller"
         ],
-        "operationId": "updateArchiveStatus",
+        "operationId": "BuyerContract_updateArchiveStatus",
         "parameters": [
           {
             "name": "contractId",
@@ -767,7 +767,7 @@
         "tags": [
           "buyer-contract-controller"
         ],
-        "operationId": "reviewApproval",
+        "operationId": "BuyerContract_reviewApproval",
         "parameters": [
           {
             "name": "contractId",
@@ -817,7 +817,7 @@
         "tags": [
           "supplier-user-controller"
         ],
-        "operationId": "list",
+        "operationId": "SupplierUser_list",
         "parameters": [
           {
             "name": "status",
@@ -863,7 +863,7 @@
         "tags": [
           "supplier-user-controller"
         ],
-        "operationId": "create",
+        "operationId": "SupplierUser_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -903,7 +903,7 @@
         "tags": [
           "supplier-user-controller"
         ],
-        "operationId": "changeStatus",
+        "operationId": "SupplierUser_changeStatus",
         "parameters": [
           {
             "name": "userId",
@@ -953,7 +953,7 @@
         "tags": [
           "supplier-user-controller"
         ],
-        "operationId": "resetPassword",
+        "operationId": "SupplierUser_resetPassword",
         "parameters": [
           {
             "name": "userId",
@@ -1003,7 +1003,7 @@
         "tags": [
           "supplier-quote-controller"
         ],
-        "operationId": "submit",
+        "operationId": "SupplierQuote_submit",
         "parameters": [
           {
             "name": "rfqId",
@@ -1053,7 +1053,7 @@
         "tags": [
           "supplier-qualification-controller"
         ],
-        "operationId": "list_2",
+        "operationId": "SupplierQualification_list",
         "parameters": [
           {
             "name": "status",
@@ -1099,7 +1099,7 @@
         "tags": [
           "supplier-qualification-controller"
         ],
-        "operationId": "create_1",
+        "operationId": "SupplierQualification_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1139,7 +1139,7 @@
         "tags": [
           "supplier-qualification-controller"
         ],
-        "operationId": "changeStatus_1",
+        "operationId": "SupplierQualification_changeStatus",
         "parameters": [
           {
             "name": "qualificationId",
@@ -1189,7 +1189,7 @@
         "tags": [
           "supplier-profile-controller"
         ],
-        "operationId": "get",
+        "operationId": "SupplierProfile_get",
         "responses": {
           "200": {
             "description": "OK",
@@ -1217,7 +1217,7 @@
         "tags": [
           "supplier-profile-controller"
         ],
-        "operationId": "update_8",
+        "operationId": "SupplierProfile_update",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1257,7 +1257,7 @@
         "tags": [
           "supplier-invoice-controller"
         ],
-        "operationId": "create_2",
+        "operationId": "SupplierInvoice_create",
         "parameters": [
           {
             "name": "orderId",
@@ -1307,7 +1307,7 @@
         "tags": [
           "supplier-delivery-controller"
         ],
-        "operationId": "create_3",
+        "operationId": "SupplierDelivery_create",
         "parameters": [
           {
             "name": "orderId",
@@ -1357,7 +1357,7 @@
         "tags": [
           "supplier-order-controller"
         ],
-        "operationId": "confirm",
+        "operationId": "SupplierOrder_confirm",
         "parameters": [
           {
             "name": "orderId",
@@ -1397,7 +1397,7 @@
         "tags": [
           "supplier-notification-controller"
         ],
-        "operationId": "markRead",
+        "operationId": "SupplierNotification_markRead",
         "parameters": [
           {
             "name": "notificationId",
@@ -1437,7 +1437,7 @@
         "tags": [
           "platform-tenant-controller"
         ],
-        "operationId": "list_9",
+        "operationId": "PlatformTenant_list",
         "responses": {
           "200": {
             "description": "OK",
@@ -1465,7 +1465,7 @@
         "tags": [
           "platform-tenant-controller"
         ],
-        "operationId": "create_4",
+        "operationId": "PlatformTenant_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1505,7 +1505,7 @@
         "tags": [
           "platform-tenant-controller"
         ],
-        "operationId": "updatePlan",
+        "operationId": "PlatformTenant_updatePlan",
         "parameters": [
           {
             "name": "tenantId",
@@ -1555,7 +1555,7 @@
         "tags": [
           "platform-tenant-controller"
         ],
-        "operationId": "updateFeatures",
+        "operationId": "PlatformTenant_updateFeatures",
         "parameters": [
           {
             "name": "tenantId",
@@ -1605,7 +1605,7 @@
         "tags": [
           "platform-tenant-controller"
         ],
-        "operationId": "enable",
+        "operationId": "PlatformTenant_enable",
         "parameters": [
           {
             "name": "tenantId",
@@ -1645,7 +1645,7 @@
         "tags": [
           "platform-tenant-controller"
         ],
-        "operationId": "disable",
+        "operationId": "PlatformTenant_disable",
         "parameters": [
           {
             "name": "tenantId",
@@ -1685,7 +1685,7 @@
         "tags": [
           "platform-enterprise-controller"
         ],
-        "operationId": "review",
+        "operationId": "PlatformEnterprise_review",
         "parameters": [
           {
             "name": "enterpriseId",
@@ -1735,7 +1735,7 @@
         "tags": [
           "platform-announcement-controller"
         ],
-        "operationId": "list_10",
+        "operationId": "PlatformAnnouncement_list",
         "responses": {
           "200": {
             "description": "OK",
@@ -1763,7 +1763,7 @@
         "tags": [
           "platform-announcement-controller"
         ],
-        "operationId": "publish",
+        "operationId": "PlatformAnnouncement_publish",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1803,7 +1803,7 @@
         "tags": [
           "platform-announcement-controller"
         ],
-        "operationId": "withdraw",
+        "operationId": "PlatformAnnouncement_withdraw",
         "parameters": [
           {
             "name": "announcementId",
@@ -1843,7 +1843,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "varianceHandlings",
+        "operationId": "BuyerFinanceAction_varianceHandlings",
         "parameters": [
           {
             "name": "status",
@@ -1905,7 +1905,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "createVarianceHandling",
+        "operationId": "BuyerFinanceAction_createVarianceHandling",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1945,7 +1945,7 @@
         "tags": [
           "buyer-user-controller"
         ],
-        "operationId": "list_12",
+        "operationId": "BuyerUser_list",
         "parameters": [
           {
             "name": "status",
@@ -1999,7 +1999,7 @@
         "tags": [
           "buyer-user-controller"
         ],
-        "operationId": "create_5",
+        "operationId": "BuyerUser_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2039,7 +2039,7 @@
         "tags": [
           "buyer-user-controller"
         ],
-        "operationId": "changeStatus_2",
+        "operationId": "BuyerUser_changeStatus",
         "parameters": [
           {
             "name": "userId",
@@ -2089,7 +2089,7 @@
         "tags": [
           "buyer-user-controller"
         ],
-        "operationId": "changeRole",
+        "operationId": "BuyerUser_changeRole",
         "parameters": [
           {
             "name": "userId",
@@ -2139,7 +2139,7 @@
         "tags": [
           "buyer-user-controller"
         ],
-        "operationId": "resetPassword_1",
+        "operationId": "BuyerUser_resetPassword",
         "parameters": [
           {
             "name": "userId",
@@ -2189,7 +2189,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "createVarianceHandlingFromThreeWayMatch",
+        "operationId": "BuyerFinanceAction_createVarianceHandlingFromThreeWayMatch",
         "parameters": [
           {
             "name": "matchId",
@@ -2229,7 +2229,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "rebuildThreeWayMatches",
+        "operationId": "BuyerFinanceAction_rebuildThreeWayMatches",
         "responses": {
           "200": {
             "description": "OK",
@@ -2259,7 +2259,7 @@
         "tags": [
           "buyer-supplier-controller"
         ],
-        "operationId": "list_13",
+        "operationId": "BuyerSupplier_list",
         "parameters": [
           {
             "name": "status",
@@ -2321,7 +2321,7 @@
         "tags": [
           "buyer-supplier-controller"
         ],
-        "operationId": "create_6",
+        "operationId": "BuyerSupplier_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2361,7 +2361,7 @@
         "tags": [
           "buyer-supplier-controller"
         ],
-        "operationId": "submitAdmission",
+        "operationId": "BuyerSupplier_submitAdmission",
         "parameters": [
           {
             "name": "relationId",
@@ -2401,7 +2401,7 @@
         "tags": [
           "buyer-supplier-controller"
         ],
-        "operationId": "changeStatus_3",
+        "operationId": "BuyerSupplier_changeStatus",
         "parameters": [
           {
             "name": "relationId",
@@ -2451,7 +2451,7 @@
         "tags": [
           "buyer-supplier-controller"
         ],
-        "operationId": "changeProfile",
+        "operationId": "BuyerSupplier_changeProfile",
         "parameters": [
           {
             "name": "relationId",
@@ -2501,7 +2501,7 @@
         "tags": [
           "buyer-supplier-controller"
         ],
-        "operationId": "changePerformance",
+        "operationId": "BuyerSupplier_changePerformance",
         "parameters": [
           {
             "name": "relationId",
@@ -2551,7 +2551,7 @@
         "tags": [
           "buyer-supplier-controller"
         ],
-        "operationId": "reviewAdmission",
+        "operationId": "BuyerSupplier_reviewAdmission",
         "parameters": [
           {
             "name": "relationId",
@@ -2601,7 +2601,7 @@
         "tags": [
           "rfq-controller"
         ],
-        "operationId": "list_15",
+        "operationId": "Rfq_list",
         "parameters": [
           {
             "name": "status",
@@ -2647,7 +2647,7 @@
         "tags": [
           "rfq-controller"
         ],
-        "operationId": "create_7",
+        "operationId": "Rfq_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2687,7 +2687,7 @@
         "tags": [
           "rfq-award-controller"
         ],
-        "operationId": "award",
+        "operationId": "RfqAward_award",
         "parameters": [
           {
             "name": "rfqId",
@@ -2737,7 +2737,7 @@
         "tags": [
           "rfq-award-controller"
         ],
-        "operationId": "reviewApproval_1",
+        "operationId": "RfqAward_reviewApproval",
         "parameters": [
           {
             "name": "rfqId",
@@ -2787,7 +2787,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "paymentRequests",
+        "operationId": "BuyerFinanceAction_paymentRequests",
         "parameters": [
           {
             "name": "requestStatus",
@@ -2849,7 +2849,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "createPaymentRequest",
+        "operationId": "BuyerFinanceAction_createPaymentRequest",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2889,7 +2889,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "registerPaymentExecutionRecord",
+        "operationId": "BuyerFinanceAction_registerPaymentExecutionRecord",
         "parameters": [
           {
             "name": "executionRecordId",
@@ -2929,7 +2929,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "paymentBlockResolutions",
+        "operationId": "BuyerFinanceAction_paymentBlockResolutions",
         "parameters": [
           {
             "name": "paymentBatchNo",
@@ -2991,7 +2991,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "createPaymentBlockResolution",
+        "operationId": "BuyerFinanceAction_createPaymentBlockResolution",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3031,7 +3031,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "paymentArchiveExceptionRequests",
+        "operationId": "BuyerFinanceAction_paymentArchiveExceptionRequests",
         "parameters": [
           {
             "name": "paymentBatchNo",
@@ -3085,7 +3085,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "createPaymentArchiveExceptionRequest",
+        "operationId": "BuyerFinanceAction_createPaymentArchiveExceptionRequest",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3125,7 +3125,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "completePaymentArchiveExceptionAction",
+        "operationId": "BuyerFinanceAction_completePaymentArchiveExceptionAction",
         "parameters": [
           {
             "name": "requestId",
@@ -3175,7 +3175,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "closePaymentArchiveExceptionRequest",
+        "operationId": "BuyerFinanceAction_closePaymentArchiveExceptionRequest",
         "parameters": [
           {
             "name": "requestId",
@@ -3225,7 +3225,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "reviewPaymentArchiveExceptionRequest",
+        "operationId": "BuyerFinanceAction_reviewPaymentArchiveExceptionRequest",
         "parameters": [
           {
             "name": "requestId",
@@ -3275,7 +3275,7 @@
         "tags": [
           "purchase-order-controller"
         ],
-        "operationId": "list_17",
+        "operationId": "PurchaseOrder_list",
         "parameters": [
           {
             "name": "status",
@@ -3329,7 +3329,7 @@
         "tags": [
           "purchase-order-controller"
         ],
-        "operationId": "create_8",
+        "operationId": "PurchaseOrder_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3369,7 +3369,7 @@
         "tags": [
           "buyer-receipt-controller"
         ],
-        "operationId": "create_9",
+        "operationId": "BuyerReceipt_create",
         "parameters": [
           {
             "name": "orderId",
@@ -3419,7 +3419,7 @@
         "tags": [
           "buyer-notification-controller"
         ],
-        "operationId": "markRead_1",
+        "operationId": "BuyerNotification_markRead",
         "parameters": [
           {
             "name": "notificationId",
@@ -3459,7 +3459,7 @@
         "tags": [
           "material-controller"
         ],
-        "operationId": "list_19",
+        "operationId": "Material_list",
         "parameters": [
           {
             "name": "category",
@@ -3505,7 +3505,7 @@
         "tags": [
           "material-controller"
         ],
-        "operationId": "create_10",
+        "operationId": "Material_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3545,7 +3545,7 @@
         "tags": [
           "material-controller"
         ],
-        "operationId": "update_9",
+        "operationId": "Material_update",
         "parameters": [
           {
             "name": "materialId",
@@ -3595,7 +3595,7 @@
         "tags": [
           "buyer-payment-controller"
         ],
-        "operationId": "register",
+        "operationId": "BuyerPayment_register",
         "parameters": [
           {
             "name": "invoiceId",
@@ -3645,7 +3645,7 @@
         "tags": [
           "department-controller"
         ],
-        "operationId": "list_22",
+        "operationId": "Department_list",
         "responses": {
           "200": {
             "description": "OK",
@@ -3673,7 +3673,7 @@
         "tags": [
           "department-controller"
         ],
-        "operationId": "create_11",
+        "operationId": "Department_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3713,7 +3713,7 @@
         "tags": [
           "department-controller"
         ],
-        "operationId": "disable_1",
+        "operationId": "Department_disable",
         "parameters": [
           {
             "name": "departmentId",
@@ -3753,7 +3753,7 @@
         "tags": [
           "purchase-demand-controller"
         ],
-        "operationId": "list_23",
+        "operationId": "PurchaseDemand_list",
         "parameters": [
           {
             "name": "status",
@@ -3807,7 +3807,7 @@
         "tags": [
           "purchase-demand-controller"
         ],
-        "operationId": "create_12",
+        "operationId": "PurchaseDemand_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3847,7 +3847,7 @@
         "tags": [
           "purchase-demand-controller"
         ],
-        "operationId": "submit_1",
+        "operationId": "PurchaseDemand_submit",
         "parameters": [
           {
             "name": "demandId",
@@ -3887,7 +3887,7 @@
         "tags": [
           "purchase-demand-controller"
         ],
-        "operationId": "review_1",
+        "operationId": "PurchaseDemand_review",
         "parameters": [
           {
             "name": "demandId",
@@ -3937,7 +3937,7 @@
         "tags": [
           "buyer-contract-controller"
         ],
-        "operationId": "list_24",
+        "operationId": "BuyerContract_list",
         "parameters": [
           {
             "name": "status",
@@ -3991,7 +3991,7 @@
         "tags": [
           "buyer-contract-controller"
         ],
-        "operationId": "create_13",
+        "operationId": "BuyerContract_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4031,7 +4031,7 @@
         "tags": [
           "buyer-contract-controller"
         ],
-        "operationId": "listFulfillmentEvents",
+        "operationId": "BuyerContract_listFulfillmentEvents",
         "parameters": [
           {
             "name": "contractId",
@@ -4069,7 +4069,7 @@
         "tags": [
           "buyer-contract-controller"
         ],
-        "operationId": "createFulfillmentEvent",
+        "operationId": "BuyerContract_createFulfillmentEvent",
         "parameters": [
           {
             "name": "contractId",
@@ -4119,7 +4119,7 @@
         "tags": [
           "buyer-contract-controller"
         ],
-        "operationId": "submitApproval",
+        "operationId": "BuyerContract_submitApproval",
         "parameters": [
           {
             "name": "contractId",
@@ -4159,7 +4159,7 @@
         "tags": [
           "attachment-controller"
         ],
-        "operationId": "list_26",
+        "operationId": "Attachment_list",
         "parameters": [
           {
             "name": "ownerType",
@@ -4205,7 +4205,7 @@
         "tags": [
           "attachment-controller"
         ],
-        "operationId": "create_14",
+        "operationId": "Attachment_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4245,7 +4245,7 @@
         "tags": [
           "attachment-controller"
         ],
-        "operationId": "createDownloadLink",
+        "operationId": "Attachment_createDownloadLink",
         "parameters": [
           {
             "name": "attachmentId",
@@ -4285,7 +4285,7 @@
         "tags": [
           "attachment-controller"
         ],
-        "operationId": "createUploadTicket",
+        "operationId": "Attachment_createUploadTicket",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4325,7 +4325,7 @@
         "tags": [
           "approval-inbox-controller"
         ],
-        "operationId": "updateTemplateConfig",
+        "operationId": "ApprovalInbox_updateTemplateConfig",
         "parameters": [
           {
             "name": "templateCode",
@@ -4375,7 +4375,7 @@
         "tags": [
           "auth-controller"
         ],
-        "operationId": "login",
+        "operationId": "Auth_login",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4415,7 +4415,7 @@
         "tags": [
           "supplier-workspace-controller"
         ],
-        "operationId": "load",
+        "operationId": "SupplierWorkspace_load",
         "responses": {
           "200": {
             "description": "OK",
@@ -4445,7 +4445,7 @@
         "tags": [
           "supplier-quote-controller"
         ],
-        "operationId": "listRfqs",
+        "operationId": "SupplierQuote_listRfqs",
         "parameters": [
           {
             "name": "status",
@@ -4493,7 +4493,7 @@
         "tags": [
           "supplier-quote-list-controller"
         ],
-        "operationId": "list_1",
+        "operationId": "SupplierQuoteList_list",
         "parameters": [
           {
             "name": "rfqId",
@@ -4541,7 +4541,7 @@
         "tags": [
           "supplier-order-controller"
         ],
-        "operationId": "list_3",
+        "operationId": "SupplierOrder_list",
         "parameters": [
           {
             "name": "status",
@@ -4589,7 +4589,7 @@
         "tags": [
           "supplier-notification-controller"
         ],
-        "operationId": "list_4",
+        "operationId": "SupplierNotification_list",
         "parameters": [
           {
             "name": "limit",
@@ -4631,7 +4631,7 @@
         "tags": [
           "supplier-receivable-controller"
         ],
-        "operationId": "list_5",
+        "operationId": "SupplierReceivable_list",
         "parameters": [
           {
             "name": "paymentStatus",
@@ -4679,7 +4679,7 @@
         "tags": [
           "supplier-receivable-controller"
         ],
-        "operationId": "paymentAuditLogs",
+        "operationId": "SupplierReceivable_paymentAuditLogs",
         "parameters": [
           {
             "name": "invoiceId",
@@ -4719,7 +4719,7 @@
         "tags": [
           "supplier-invoice-reconciliation-controller"
         ],
-        "operationId": "list_6",
+        "operationId": "SupplierInvoiceReconciliation_list",
         "parameters": [
           {
             "name": "stage",
@@ -4767,7 +4767,7 @@
         "tags": [
           "supplier-delivery-controller"
         ],
-        "operationId": "list_7",
+        "operationId": "SupplierDelivery_list",
         "parameters": [
           {
             "name": "status",
@@ -4815,7 +4815,7 @@
         "tags": [
           "supplier-announcement-controller"
         ],
-        "operationId": "list_8",
+        "operationId": "SupplierAnnouncement_list",
         "responses": {
           "200": {
             "description": "OK",
@@ -4845,7 +4845,7 @@
         "tags": [
           "platform-workspace-controller"
         ],
-        "operationId": "load_1",
+        "operationId": "PlatformWorkspace_load",
         "responses": {
           "200": {
             "description": "OK",
@@ -4875,7 +4875,7 @@
         "tags": [
           "platform-tenant-controller"
         ],
-        "operationId": "get_1",
+        "operationId": "PlatformTenant_get",
         "parameters": [
           {
             "name": "tenantId",
@@ -4915,7 +4915,7 @@
         "tags": [
           "platform-overview-controller"
         ],
-        "operationId": "overview",
+        "operationId": "PlatformOverview_overview",
         "responses": {
           "200": {
             "description": "OK",
@@ -4945,7 +4945,7 @@
         "tags": [
           "platform-enterprise-controller"
         ],
-        "operationId": "listPendingReviews",
+        "operationId": "PlatformEnterprise_listPendingReviews",
         "responses": {
           "200": {
             "description": "OK",
@@ -4975,7 +4975,7 @@
         "tags": [
           "health-controller"
         ],
-        "operationId": "health",
+        "operationId": "Health_health",
         "responses": {
           "200": {
             "description": "OK",
@@ -5005,7 +5005,7 @@
         "tags": [
           "dictionary-controller"
         ],
-        "operationId": "list_11",
+        "operationId": "Dictionary_list",
         "parameters": [
           {
             "name": "type",
@@ -5045,7 +5045,7 @@
         "tags": [
           "buyer-workspace-controller"
         ],
-        "operationId": "load_2",
+        "operationId": "BuyerWorkspace_load",
         "responses": {
           "200": {
             "description": "OK",
@@ -5075,7 +5075,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "threeWayMatches",
+        "operationId": "BuyerFinanceAction_threeWayMatches",
         "parameters": [
           {
             "name": "matchStatus",
@@ -5139,7 +5139,7 @@
         "tags": [
           "buyer-supplier-controller"
         ],
-        "operationId": "listRelationQualifications",
+        "operationId": "BuyerSupplier_listRelationQualifications",
         "parameters": [
           {
             "name": "relationId",
@@ -5179,7 +5179,7 @@
         "tags": [
           "buyer-role-controller"
         ],
-        "operationId": "list_14",
+        "operationId": "BuyerRole_list",
         "responses": {
           "200": {
             "description": "OK",
@@ -5209,7 +5209,7 @@
         "tags": [
           "buyer-receipt-controller"
         ],
-        "operationId": "list_16",
+        "operationId": "BuyerReceipt_list",
         "parameters": [
           {
             "name": "orderId",
@@ -5257,7 +5257,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "paymentExecutionRecords",
+        "operationId": "BuyerFinanceAction_paymentExecutionRecords",
         "parameters": [
           {
             "name": "paymentBatchNo",
@@ -5321,7 +5321,7 @@
         "tags": [
           "buyer-finance-action-controller"
         ],
-        "operationId": "paymentBatches",
+        "operationId": "BuyerFinanceAction_paymentBatches",
         "parameters": [
           {
             "name": "batchStatus",
@@ -5369,7 +5369,7 @@
         "tags": [
           "buyer-notification-controller"
         ],
-        "operationId": "list_18",
+        "operationId": "BuyerNotification_list",
         "parameters": [
           {
             "name": "limit",
@@ -5411,7 +5411,7 @@
         "tags": [
           "buyer-payment-controller"
         ],
-        "operationId": "list_20",
+        "operationId": "BuyerPayment_list",
         "parameters": [
           {
             "name": "paymentStatus",
@@ -5467,7 +5467,7 @@
         "tags": [
           "buyer-payment-controller"
         ],
-        "operationId": "paymentAuditLogs_1",
+        "operationId": "BuyerPayment_paymentAuditLogs",
         "parameters": [
           {
             "name": "invoiceId",
@@ -5507,7 +5507,7 @@
         "tags": [
           "buyer-invoice-reconciliation-controller"
         ],
-        "operationId": "list_21",
+        "operationId": "BuyerInvoiceReconciliation_list",
         "parameters": [
           {
             "name": "stage",
@@ -5563,7 +5563,7 @@
         "tags": [
           "audit-log-controller"
         ],
-        "operationId": "list_25",
+        "operationId": "AuditLog_list",
         "parameters": [
           {
             "name": "limit",
@@ -5605,7 +5605,7 @@
         "tags": [
           "audit-log-controller"
         ],
-        "operationId": "listTargetActions",
+        "operationId": "AuditLog_listTargetActions",
         "parameters": [
           {
             "name": "targetType",
@@ -5672,7 +5672,7 @@
         "tags": [
           "approval-inbox-controller"
         ],
-        "operationId": "templates",
+        "operationId": "ApprovalInbox_templates",
         "responses": {
           "200": {
             "description": "OK",
@@ -5702,7 +5702,7 @@
         "tags": [
           "approval-inbox-controller"
         ],
-        "operationId": "recent",
+        "operationId": "ApprovalInbox_recent",
         "responses": {
           "200": {
             "description": "OK",
@@ -5732,7 +5732,7 @@
         "tags": [
           "approval-inbox-controller"
         ],
-        "operationId": "pending",
+        "operationId": "ApprovalInbox_pending",
         "responses": {
           "200": {
             "description": "OK",
@@ -5762,7 +5762,7 @@
         "tags": [
           "buyer-announcement-controller"
         ],
-        "operationId": "list_27",
+        "operationId": "BuyerAnnouncement_list",
         "responses": {
           "200": {
             "description": "OK",
