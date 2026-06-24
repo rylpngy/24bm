@@ -12,10 +12,11 @@ import { RfqsPage } from './features/rfqs/rfqs-page';
 import { OrdersPage } from './features/orders/orders-page';
 import { InvoicesPage } from './features/finance/invoices-page';
 import { ContractsPage } from './features/contracts/contracts-page';
+import { DashboardPage } from './features/dashboard/dashboard-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
-  const [activeModuleId, setActiveModuleId] = useState('demands');
+  const [activeModuleId, setActiveModuleId] = useState('dashboard');
   const activeModule = buyerNavigation.modules.find((m) => m.id === activeModuleId);
 
   if (!session) {
@@ -32,7 +33,9 @@ export function App() {
       title={activeModule?.label ?? '企业工作台'}
       accountLabel={`${session.displayName} · ${session.tenantId}`}
     >
-      {activeModuleId === 'demands' ? (
+      {activeModuleId === 'dashboard' ? (
+        <DashboardPage />
+      ) : activeModuleId === 'demands' ? (
         <DemandsPage />
       ) : activeModuleId === 'approvals' ? (
         <ApprovalsPage />
