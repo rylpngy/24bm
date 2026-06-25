@@ -1,16 +1,58 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Receipt } from 'lucide-react';
-import { useBuyerPaymentList, useBuyerPaymentUpdate } from '@24bid/api-client';
+import {
+  useBuyerPaymentList,
+  useBuyerPaymentPaymentAuditLogs,
+  useBuyerPaymentUpdate,
+} from '@24bid/api-client';
 import { FeedbackNotice, ListToolbar, MiniFact, Panel, StatusPill } from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
 
+const PAYMENT_ACTION_LABELS: Record<string, string> = {
+  'invoice.paid': '登记已付款',
+  'invoice.partial_paid': '登记部分付款',
+};
+
+// 付款执行记录：展开某张发票的付款审计流水(谁、何时、登记了什么)。
+function PaymentExecutionTimeline({ invoiceId }: { invoiceId: string }) {
+  const audit = useBuyerPaymentPaymentAuditLogs(invoiceId);
+  const logs = audit.data?.data ?? [];
+  return (
+    <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+      <p className="text-xs font-black text-slate-500">付款执行记录</p>
+      {audit.isLoading ? (
+        <p className="mt-2 text-xs font-bold text-slate-400">加载付款流水…</p>
+      ) : logs.length === 0 ? (
+        <p className="mt-2 text-xs font-bold text-slate-400">尚无付款登记记录。</p>
+      ) : (
+        <div className="mt-2 space-y-2">
+          {logs.map((l) => (
+            <div
+              key={l.id}
+              className="flex items-center justify-between rounded-md border border-slate-100 bg-white px-3 py-2"
+            >
+              <span className="text-xs font-black text-slate-700">
+                {PAYMENT_ACTION_LABELS[l.action ?? ''] ?? l.action}
+              </span>
+              <span className="text-xs font-bold text-slate-400">
+                {l.actorId} · {l.createdAt?.slice(0, 16).replace('T', ' ')}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // S6：发票付款 + 三单匹配。发票列表 + 付款登记(待付款→部分付款→已付款)。
 export function InvoicesPage() {
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const query = useBuyerPaymentList();
   const pay = useBuyerPaymentUpdate();
@@ -135,6 +177,17 @@ export function InvoicesPage() {
                     </button>
                   </div>
                 )}
+
+                {inv.id && (
+                  <button
+                    type="button"
+                    onClick={() => setOpenId(openId === inv.id ? null : inv.id!)}
+                    className="mt-3 inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
+                  >
+                    {openId === inv.id ? '收起付款记录' : '付款执行记录'}
+                  </button>
+                )}
+                {openId === inv.id && inv.id && <PaymentExecutionTimeline invoiceId={inv.id} />}
               </div>
             );
           })}
