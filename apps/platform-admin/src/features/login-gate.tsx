@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { KeyRound, LogIn } from 'lucide-react';
 import { LoginRequestScope, useAuthLogin } from '@24bid/api-client';
 import { FeedbackNotice, Panel, PrimaryActionButton } from '@24bid/ui';
@@ -20,6 +21,7 @@ function decodeJwt(token: string): Record<string, unknown> {
 // 平台运营登录门:自研 JWT 与 Keycloak(OIDC)双路径,PLATFORM scope。
 export function LoginGate() {
   const signIn = useAuthStore((s) => s.signIn);
+  const queryClient = useQueryClient();
   const login = useAuthLogin();
   const [kcBusy, setKcBusy] = useState(false);
   const [kcError, setKcError] = useState(false);
@@ -47,6 +49,7 @@ export function LoginGate() {
         userId: (claims.userId as string) ?? '',
         displayName: `${(claims.displayName as string) ?? '平台管理员'}（Keycloak）`,
       });
+      queryClient.clear();
     } catch {
       setKcError(true);
     } finally {
@@ -72,6 +75,7 @@ export function LoginGate() {
             userId: data.userId ?? '',
             displayName: data.displayName ?? '平台管理员',
           });
+          queryClient.clear();
         },
       },
     );

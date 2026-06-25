@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { KeyRound, LogIn } from 'lucide-react';
 import { LoginRequestScope, useAuthLogin } from '@24bid/api-client';
 import { FeedbackNotice, Panel, PrimaryActionButton } from '@24bid/ui';
@@ -21,6 +22,7 @@ function decodeJwt(token: string): Record<string, unknown> {
 // S1：采购方登录门。自研 JWT(/auth/login)与 Keycloak(OIDC direct-grant)双路径。
 export function LoginGate() {
   const signIn = useAuthStore((s) => s.signIn);
+  const queryClient = useQueryClient();
   const login = useAuthLogin();
   const [kcBusy, setKcBusy] = useState(false);
   const [kcError, setKcError] = useState(false);
@@ -49,6 +51,7 @@ export function LoginGate() {
         displayName: `${(claims.displayName as string) ?? '采购负责人'}（Keycloak）`,
         tenantId: (claims.tenantId as string) ?? 'tenant-acme',
       });
+      queryClient.clear();
     } catch {
       setKcError(true);
     } finally {
@@ -76,6 +79,7 @@ export function LoginGate() {
             displayName: data.displayName ?? '采购负责人',
             tenantId: data.tenantId,
           });
+          queryClient.clear();
         },
       },
     );

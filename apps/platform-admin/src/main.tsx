@@ -9,7 +9,15 @@ configureApiClient({
   baseUrl: import.meta.env.VITE_JAVA_API_BASE_URL ?? 'http://localhost:8080',
 });
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnMount: 'always',
+      retry: 1,
+      staleTime: 0,
+    },
+  },
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

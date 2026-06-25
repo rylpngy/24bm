@@ -7,6 +7,7 @@ import {
   useBuyerPaymentUpdate,
 } from '@24bid/api-client';
 import { FeedbackNotice, ListToolbar, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -78,6 +79,8 @@ export function InvoicesPage() {
   };
 
   return (
+    <div className="space-y-5">
+      <ReconciliationVariancePanel />
     <Panel title="发票付款" icon={Receipt} subtitle="发票 · 三单匹配 · 付款登记">
       <ListToolbar
         title="发票"
@@ -194,5 +197,6 @@ export function InvoicesPage() {
         </div>
       )}
     </Panel>
+    </div>
   );
 }
