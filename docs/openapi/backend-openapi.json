@@ -5509,6 +5509,46 @@
         }
       }
     },
+    "/api/v1/buyer/three-way-matches/{invoiceId}/lines": {
+      "get": {
+        "tags": [
+          "buyer-finance-action-controller"
+        ],
+        "operationId": "BuyerFinanceAction_threeWayMatchLines",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListThreeWayMatchLineResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/suppliers/{relationId}/qualifications": {
       "get": {
         "tags": [
@@ -10598,6 +10638,67 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseListThreeWayMatchLineResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThreeWayMatchLineResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ThreeWayMatchLineResponse": {
+        "type": "object",
+        "properties": {
+          "orderLineId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "orderedQuantity": {
+            "type": "number"
+          },
+          "orderUnitPrice": {
+            "type": "number"
+          },
+          "orderLineAmount": {
+            "type": "number"
+          },
+          "receivedQuantity": {
+            "type": "number"
+          },
+          "qualifiedQuantity": {
+            "type": "number"
+          },
+          "invoicedQuantity": {
+            "type": "number"
+          },
+          "invoiceUnitPrice": {
+            "type": "number"
+          },
+          "invoiceLineAmount": {
+            "type": "number"
+          },
+          "amountVariance": {
+            "type": "number"
+          },
+          "lineMatchStatus": {
+            "type": "string"
           }
         }
       },

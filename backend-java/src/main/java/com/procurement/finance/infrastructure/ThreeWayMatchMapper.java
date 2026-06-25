@@ -1,6 +1,7 @@
 package com.procurement.finance.infrastructure;
 
 import com.procurement.finance.domain.ThreeWayMatch;
+import com.procurement.finance.domain.ThreeWayMatchLineRow;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -9,6 +10,33 @@ import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface ThreeWayMatchMapper {
+
+  // 行级对账:以订单行项为脊柱,左连收货行项(按 order_line_id)与该发票的发票行项。
+  @Select("""
+      select ol.id              as order_line_id,
+             ol.description      as description,
+             ol.unit             as unit,
+             ol.quantity         as ordered_quantity,
+             ol.unit_price       as order_unit_price,
+             ol.line_amount      as order_line_amount,
+             rl.received_quantity   as received_quantity,
+             rl.qualified_quantity  as qualified_quantity,
+             il.quantity         as invoiced_quantity,
+             il.unit_price       as invoice_unit_price,
+             il.line_amount      as invoice_line_amount
+      from order_line_items ol
+      left join receipt_line_items rl
+        on rl.order_line_id = ol.id and rl.tenant_id = ol.tenant_id
+      left join invoice_line_items il
+        on il.order_line_id = ol.id and il.tenant_id = ol.tenant_id
+        and il.invoice_id = #{invoiceId}
+      where ol.tenant_id = #{tenantId} and ol.order_id = #{orderId}
+      order by ol.sort_no asc, ol.id asc
+      """)
+  List<ThreeWayMatchLineRow> listLineReconciliation(
+      @Param("tenantId") String tenantId,
+      @Param("orderId") String orderId,
+      @Param("invoiceId") String invoiceId);
 
   @Select("""
       <script>

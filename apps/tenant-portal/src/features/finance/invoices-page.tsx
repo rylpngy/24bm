@@ -8,6 +8,7 @@ import {
 } from '@24bid/api-client';
 import { FeedbackNotice, ListToolbar, MiniFact, Panel, StatusPill } from '@24bid/ui';
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
+import { InvoiceLineMatchPanel } from './invoice-line-match-panel';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -54,6 +55,7 @@ export function InvoicesPage() {
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [lineMatchId, setLineMatchId] = useState<string | null>(null);
 
   const query = useBuyerPaymentList();
   const pay = useBuyerPaymentUpdate();
@@ -186,6 +188,19 @@ export function InvoicesPage() {
                       <StatusPill label={inv.quantityMatchStatus ?? '待收货'} />
                     </div>
                   </div>
+
+                  {inv.id && (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={() => setLineMatchId((cur) => (cur === inv.id ? null : inv.id!))}
+                        className="text-xs font-black text-blue-600 hover:text-blue-700"
+                      >
+                        {lineMatchId === inv.id ? '收起行级对账 ▲' : '查看行级对账（逐行匹配）▾'}
+                      </button>
+                      {lineMatchId === inv.id && <InvoiceLineMatchPanel invoiceId={inv.id} />}
+                    </div>
+                  )}
                 </div>
 
                 {(inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款') && inv.id && (

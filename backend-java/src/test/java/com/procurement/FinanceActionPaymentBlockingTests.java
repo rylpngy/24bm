@@ -557,6 +557,37 @@ class FinanceActionPaymentBlockingTests {
         org.mockito.ArgumentMatchers.anyString());
   }
 
+  @Test
+  void lineThreeWayMatchFlagsAmountVarianceShortfallAndUninvoicedPerLine() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1")).thenReturn(invoice());
+    when(threeWayMatchMapper.listLineReconciliation("tenant-1", "po-1", "invoice-1"))
+        .thenReturn(java.util.List.of(
+            // 金额差异:发票行金额 50000 > 订单行金额 48000。
+            new com.procurement.finance.domain.ThreeWayMatchLineRow(
+                "oli-a", "网络机柜", "台", BigDecimal.valueOf(4), BigDecimal.valueOf(12000),
+                BigDecimal.valueOf(48000), BigDecimal.valueOf(4), BigDecimal.valueOf(4),
+                BigDecimal.valueOf(4), BigDecimal.valueOf(12500), BigDecimal.valueOf(50000)),
+            // 数量短缺:合格 1995 < 订购 2000,金额一致。
+            new com.procurement.finance.domain.ThreeWayMatchLineRow(
+                "oli-b", "综合布线", "米", BigDecimal.valueOf(2000), BigDecimal.valueOf(20),
+                BigDecimal.valueOf(40000), BigDecimal.valueOf(2000), BigDecimal.valueOf(1995),
+                BigDecimal.valueOf(2000), BigDecimal.valueOf(20), BigDecimal.valueOf(40000)),
+            // 未开票:无发票行项。
+            new com.procurement.finance.domain.ThreeWayMatchLineRow(
+                "oli-c", "理线架", "个", BigDecimal.valueOf(10), BigDecimal.valueOf(100),
+                BigDecimal.valueOf(1000), BigDecimal.valueOf(10), BigDecimal.valueOf(10),
+                null, null, null)));
+
+    var lines = financeActionApplicationService.listCurrentTenantThreeWayMatchLines("invoice-1");
+
+    org.assertj.core.api.Assertions.assertThat(lines).hasSize(3);
+    org.assertj.core.api.Assertions.assertThat(lines.get(0).lineMatchStatus()).isEqualTo("金额差异");
+    org.assertj.core.api.Assertions.assertThat(lines.get(0).amountVariance()).isEqualByComparingTo("2000");
+    org.assertj.core.api.Assertions.assertThat(lines.get(1).lineMatchStatus()).isEqualTo("数量短缺");
+    org.assertj.core.api.Assertions.assertThat(lines.get(2).lineMatchStatus()).isEqualTo("未开票");
+  }
+
   private Invoice invoice() {
     return new Invoice(
         "invoice-1",

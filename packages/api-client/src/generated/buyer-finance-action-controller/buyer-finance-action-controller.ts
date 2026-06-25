@@ -31,6 +31,7 @@ import type {
   ApiResponseListPaymentBlockResolutionResponse,
   ApiResponseListPaymentExecutionRecordResponse,
   ApiResponseListPaymentRequestResponse,
+  ApiResponseListThreeWayMatchLineResponse,
   ApiResponseListThreeWayMatchResponse,
   ApiResponseListVarianceHandlingResponse,
   ApiResponsePaymentArchiveExceptionRequestResponse,
@@ -1300,6 +1301,92 @@ export function useBuyerFinanceActionThreeWayMatches<TData = Awaited<ReturnType<
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionThreeWayMatchesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerFinanceActionThreeWayMatchLines = (
+    invoiceId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListThreeWayMatchLineResponse>(
+      {url: `/api/v1/buyer/three-way-matches/${invoiceId}/lines`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerFinanceActionThreeWayMatchLinesQueryKey = (invoiceId?: string,) => {
+    return [
+    `/api/v1/buyer/three-way-matches/${invoiceId}/lines`
+    ] as const;
+    }
+
+    
+export const getBuyerFinanceActionThreeWayMatchLinesQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError = ErrorType<ApiResponseVoid>>(invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionThreeWayMatchLinesQueryKey(invoiceId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>> = ({ signal }) => buyerFinanceActionThreeWayMatchLines(invoiceId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(invoiceId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerFinanceActionThreeWayMatchLinesQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>>
+export type BuyerFinanceActionThreeWayMatchLinesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerFinanceActionThreeWayMatchLines<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError = ErrorType<ApiResponseVoid>>(
+ invoiceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>,
+          TError,
+          Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerFinanceActionThreeWayMatchLines<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError = ErrorType<ApiResponseVoid>>(
+ invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>,
+          TError,
+          Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerFinanceActionThreeWayMatchLines<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError = ErrorType<ApiResponseVoid>>(
+ invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerFinanceActionThreeWayMatchLines<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError = ErrorType<ApiResponseVoid>>(
+ invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerFinanceActionThreeWayMatchLinesQueryOptions(invoiceId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

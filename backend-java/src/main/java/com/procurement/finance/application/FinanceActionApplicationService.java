@@ -21,6 +21,7 @@ import com.procurement.finance.api.PaymentExecutionRecordResponse;
 import com.procurement.finance.api.PaymentRequestResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.ReviewPaymentArchiveExceptionRequest;
+import com.procurement.finance.api.ThreeWayMatchLineResponse;
 import com.procurement.finance.api.ThreeWayMatchRebuildResponse;
 import com.procurement.finance.api.ThreeWayMatchResponse;
 import com.procurement.finance.api.UpdatePaymentBatchStatusRequest;
@@ -36,6 +37,7 @@ import com.procurement.finance.domain.PaymentBlockResolution;
 import com.procurement.finance.domain.PaymentExecutionRecord;
 import com.procurement.finance.domain.PaymentRequest;
 import com.procurement.finance.domain.ThreeWayMatch;
+import com.procurement.finance.domain.ThreeWayMatchLineRow;
 import com.procurement.finance.domain.VarianceHandling;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.PaymentArchiveExceptionRequestMapper;
@@ -545,6 +547,54 @@ public class FinanceActionApplicationService {
         .stream()
         .map(this::toThreeWayMatchResponse)
         .toList();
+  }
+
+  // 行级三单匹配:给定发票,按订单行项逐行对照订单/收货/发票,标注金额差异与数量短缺。
+  public List<ThreeWayMatchLineResponse> listCurrentTenantThreeWayMatchLines(String invoiceId) {
+    String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
+    Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
+    if (invoice == null) {
+      throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
+    }
+    return threeWayMatchMapper.listLineReconciliation(tenantId, invoice.orderId(), invoiceId).stream()
+        .map(this::toThreeWayMatchLineResponse)
+        .toList();
+  }
+
+  private ThreeWayMatchLineResponse toThreeWayMatchLineResponse(ThreeWayMatchLineRow row) {
+    BigDecimal invoiceLineAmount = row.invoiceLineAmount();
+    BigDecimal amountVariance =
+        invoiceLineAmount == null
+            ? BigDecimal.ZERO
+            : invoiceLineAmount.subtract(row.orderLineAmount());
+    String status;
+    if (invoiceLineAmount == null) {
+      status = "未开票";
+    } else if (amountVariance.compareTo(BigDecimal.ZERO) != 0) {
+      status = "金额差异";
+    } else if (row.receivedQuantity() == null) {
+      status = "待收货";
+    } else if (row.qualifiedQuantity() != null
+        && row.orderedQuantity() != null
+        && row.qualifiedQuantity().compareTo(row.orderedQuantity()) < 0) {
+      status = "数量短缺";
+    } else {
+      status = "三单一致";
+    }
+    return new ThreeWayMatchLineResponse(
+        row.orderLineId(),
+        row.description(),
+        row.unit(),
+        row.orderedQuantity(),
+        row.orderUnitPrice(),
+        row.orderLineAmount(),
+        row.receivedQuantity(),
+        row.qualifiedQuantity(),
+        row.invoicedQuantity(),
+        row.invoiceUnitPrice(),
+        invoiceLineAmount,
+        amountVariance,
+        status);
   }
 
   @Transactional

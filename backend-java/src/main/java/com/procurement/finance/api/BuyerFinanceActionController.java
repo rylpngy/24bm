@@ -146,6 +146,13 @@ public class BuyerFinanceActionController {
         invoiceId));
   }
 
+  @GetMapping("/three-way-matches/{invoiceId}/lines")
+  public ApiResponse<List<ThreeWayMatchLineResponse>> threeWayMatchLines(
+      @PathVariable String invoiceId) {
+    return ApiResponse.ok(
+        financeActionApplicationService.listCurrentTenantThreeWayMatchLines(invoiceId));
+  }
+
   @PostMapping("/three-way-matches/rebuild")
   public ApiResponse<ThreeWayMatchRebuildResponse> rebuildThreeWayMatches() {
     return ApiResponse.ok(financeActionApplicationService.rebuildCurrentTenantThreeWayMatches());
