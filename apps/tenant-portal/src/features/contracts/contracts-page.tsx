@@ -17,6 +17,7 @@ import {
   PrimaryActionButton,
   StatusPill,
 } from '@24bid/ui';
+import { ContractAttachments } from './contract-attachments';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -32,6 +33,7 @@ export function ContractsPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [orderId, setOrderId] = useState('');
   const [name, setName] = useState('');
+  const [attachOpenId, setAttachOpenId] = useState<string | null>(null);
 
   const query = useBuyerContractList();
   const orders = usePurchaseOrderList();
@@ -243,7 +245,17 @@ export function ContractsPage() {
                     归档
                   </button>
                 )}
+                {c.id && (
+                  <button
+                    type="button"
+                    onClick={() => setAttachOpenId(attachOpenId === c.id ? null : c.id!)}
+                    className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                  >
+                    {attachOpenId === c.id ? '收起附件' : '合同附件'}
+                  </button>
+                )}
               </div>
+              {attachOpenId === c.id && c.id && <ContractAttachments contractId={c.id} />}
             </div>
           ))}
         </div>
