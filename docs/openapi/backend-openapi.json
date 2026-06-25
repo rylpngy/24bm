@@ -6947,6 +6947,56 @@
         }
       }
     },
+    "/api/v1/buyer/suppliers/{supplierId}/fulfillment-metrics": {
+      "get": {
+        "tags": [
+          "supplier-fulfillment-controller"
+        ],
+        "operationId": "SupplierFulfillment_fulfillmentMetrics",
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierFulfillmentMetricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/suppliers/{relationId}/qualifications": {
       "get": {
         "tags": [
@@ -12535,6 +12585,60 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseSupplierFulfillmentMetricsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SupplierFulfillmentMetricsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierFulfillmentMetricsResponse": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string"
+          },
+          "receiptCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onTimeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onTimeRate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalReceived": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalQualified": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "qualifiedRate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "derivedQualityScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "derivedDeliveryScore": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

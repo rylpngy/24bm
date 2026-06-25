@@ -5,6 +5,7 @@ import {
   useSupplierEvaluationConfirmTier,
   useSupplierEvaluationCreateEvaluation,
   useSupplierEvaluationListEvaluations,
+  useSupplierFulfillmentFulfillmentMetrics,
 } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, PrimaryActionButton, StatusPill } from '@24bid/ui';
 
@@ -33,7 +34,13 @@ function suggestTier(total: number): string {
   return '淘汰';
 }
 
-export function SupplierEvaluationPanel({ relationId }: { relationId: string }) {
+export function SupplierEvaluationPanel({
+  relationId,
+  supplierId,
+}: {
+  relationId: string;
+  supplierId?: string;
+}) {
   const queryClient = useQueryClient();
   const [scores, setScores] = useState<Record<DimKey, number>>({
     qualityScore: 90,
@@ -45,6 +52,10 @@ export function SupplierEvaluationPanel({ relationId }: { relationId: string }) 
 
   const history = useSupplierEvaluationListEvaluations(relationId);
   const qualifications = useBuyerSupplierListRelationQualifications(relationId);
+  const metrics = useSupplierFulfillmentFulfillmentMetrics(supplierId ?? '', {
+    query: { enabled: !!supplierId },
+  });
+  const fulfillment = metrics.data?.data;
   const create = useSupplierEvaluationCreateEvaluation();
   const confirm = useSupplierEvaluationConfirmTier();
 
@@ -98,6 +109,45 @@ export function SupplierEvaluationPanel({ relationId }: { relationId: string }) 
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {fulfillment && (fulfillment.receiptCount ?? 0) > 0 && (
+        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-xs font-black text-emerald-800">实测绩效（源自真实收货验收）</p>
+            <button
+              type="button"
+              onClick={() =>
+                setScores((s) => ({
+                  ...s,
+                  qualityScore: fulfillment.derivedQualityScore ?? s.qualityScore,
+                  deliveryScore: fulfillment.derivedDeliveryScore ?? s.deliveryScore,
+                }))
+              }
+              className="inline-flex h-7 items-center rounded-md bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700"
+            >
+              回填到质量/交付评分
+            </button>
+          </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-4">
+            <MiniFact
+              label="实测质量分(合格率)"
+              value={fulfillment.qualifiedRate != null ? `${fulfillment.qualifiedRate}` : '—'}
+            />
+            <MiniFact
+              label="实测交付分(准时率)"
+              value={fulfillment.onTimeRate != null ? `${fulfillment.onTimeRate}` : '—'}
+            />
+            <MiniFact
+              label="验收单 / 准时"
+              value={`${fulfillment.receiptCount} / ${fulfillment.onTimeCount}`}
+            />
+            <MiniFact
+              label="收货 / 合格"
+              value={`${fulfillment.totalReceived} / ${fulfillment.totalQualified}`}
+            />
           </div>
         </div>
       )}

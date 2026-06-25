@@ -162,7 +162,9 @@ export function SuppliersPage() {
                 )}
               </div>
               {profileOpenId === s.id && <SupplierProfileBlock s={s} />}
-              {evalOpenId === s.id && s.id && <SupplierEvaluationPanel relationId={s.id} />}
+              {evalOpenId === s.id && s.id && (
+                <SupplierEvaluationPanel relationId={s.id} supplierId={s.supplierId} />
+              )}
             </div>
           ))}
         >
@@ -230,7 +232,10 @@ export function SuppliersPage() {
 
       {evalOpenId && (
         <div className="hidden lg:block">
-          <SupplierEvaluationPanel relationId={evalOpenId} />
+          <SupplierEvaluationPanel
+            relationId={evalOpenId}
+            supplierId={suppliers.find((x) => x.id === evalOpenId)?.supplierId}
+          />
         </div>
       )}
     </Panel>

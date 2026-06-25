@@ -145,6 +145,7 @@ import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.api.UpdateQuoteRequest;
 import com.procurement.supplier.api.BuyerSupplierController;
 import com.procurement.supplier.api.SupplierEvaluationController;
+import com.procurement.supplier.api.SupplierFulfillmentController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierPerformanceRequest;
@@ -204,6 +205,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierAnnouncementController.class,
     BuyerSupplierController.class,
     SupplierEvaluationController.class,
+    SupplierFulfillmentController.class,
     MaterialController.class,
     BuyerRoleController.class,
     BuyerUserController.class,
@@ -319,6 +321,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private SupplierEvaluationApplicationService supplierEvaluationApplicationService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierFulfillmentMetricsService supplierFulfillmentMetricsService;
 
   @MockBean
   private SupplierProfileApplicationService supplierProfileApplicationService;

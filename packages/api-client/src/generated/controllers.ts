@@ -33,6 +33,7 @@ export * from './rfq-controller/rfq-controller';
 export * from './supplier-announcement-controller/supplier-announcement-controller';
 export * from './supplier-delivery-controller/supplier-delivery-controller';
 export * from './supplier-evaluation-controller/supplier-evaluation-controller';
+export * from './supplier-fulfillment-controller/supplier-fulfillment-controller';
 export * from './supplier-invoice-controller/supplier-invoice-controller';
 export * from './supplier-invoice-reconciliation-controller/supplier-invoice-reconciliation-controller';
 export * from './supplier-notification-controller/supplier-notification-controller';
