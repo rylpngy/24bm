@@ -6,23 +6,30 @@
  * OpenAPI spec version: v1
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseBillingStatementResponse,
+  ApiResponseListBillingStatementResponse,
   ApiResponseTenantUsageResponse,
-  ApiResponseVoid
+  ApiResponseVoid,
+  PlatformBillingGenerateStatementParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -31,7 +38,265 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const platformBillingUsage = (
+export const platformBillingStatements = (
+    tenantId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListBillingStatementResponse>(
+      {url: `/api/v1/platform/tenants/${tenantId}/billing-statements`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getPlatformBillingStatementsQueryKey = (tenantId?: string,) => {
+    return [
+    `/api/v1/platform/tenants/${tenantId}/billing-statements`
+    ] as const;
+    }
+
+    
+export const getPlatformBillingStatementsQueryOptions = <TData = Awaited<ReturnType<typeof platformBillingStatements>>, TError = ErrorType<ApiResponseVoid>>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformBillingStatements>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformBillingStatementsQueryKey(tenantId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformBillingStatements>>> = ({ signal }) => platformBillingStatements(tenantId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(tenantId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformBillingStatements>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformBillingStatementsQueryResult = NonNullable<Awaited<ReturnType<typeof platformBillingStatements>>>
+export type PlatformBillingStatementsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function usePlatformBillingStatements<TData = Awaited<ReturnType<typeof platformBillingStatements>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformBillingStatements>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformBillingStatements>>,
+          TError,
+          Awaited<ReturnType<typeof platformBillingStatements>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformBillingStatements<TData = Awaited<ReturnType<typeof platformBillingStatements>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformBillingStatements>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformBillingStatements>>,
+          TError,
+          Awaited<ReturnType<typeof platformBillingStatements>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformBillingStatements<TData = Awaited<ReturnType<typeof platformBillingStatements>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformBillingStatements>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformBillingStatements<TData = Awaited<ReturnType<typeof platformBillingStatements>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformBillingStatements>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformBillingStatementsQueryOptions(tenantId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const platformBillingGenerateStatement = (
+    tenantId: string,
+    params?: PlatformBillingGenerateStatementParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseBillingStatementResponse>(
+      {url: `/api/v1/platform/tenants/${tenantId}/billing-statements`, method: 'POST',
+        params, signal
+    },
+      );
+    }
+  
+
+
+export const getPlatformBillingGenerateStatementMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformBillingGenerateStatement>>, TError,{tenantId: string;params?: PlatformBillingGenerateStatementParams}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformBillingGenerateStatement>>, TError,{tenantId: string;params?: PlatformBillingGenerateStatementParams}, TContext> => {
+
+const mutationKey = ['platformBillingGenerateStatement'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformBillingGenerateStatement>>, {tenantId: string;params?: PlatformBillingGenerateStatementParams}> = (props) => {
+          const {tenantId,params} = props ?? {};
+
+          return  platformBillingGenerateStatement(tenantId,params,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformBillingGenerateStatementMutationResult = NonNullable<Awaited<ReturnType<typeof platformBillingGenerateStatement>>>
+    
+    export type PlatformBillingGenerateStatementMutationError = ErrorType<ApiResponseVoid>
+
+    export const usePlatformBillingGenerateStatement = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformBillingGenerateStatement>>, TError,{tenantId: string;params?: PlatformBillingGenerateStatementParams}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformBillingGenerateStatement>>,
+        TError,
+        {tenantId: string;params?: PlatformBillingGenerateStatementParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPlatformBillingGenerateStatementMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const platformBillingPayStatement = (
+    tenantId: string,
+    statementId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseBillingStatementResponse>(
+      {url: `/api/v1/platform/tenants/${tenantId}/billing-statements/${statementId}/pay`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getPlatformBillingPayStatementMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformBillingPayStatement>>, TError,{tenantId: string;statementId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformBillingPayStatement>>, TError,{tenantId: string;statementId: string}, TContext> => {
+
+const mutationKey = ['platformBillingPayStatement'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformBillingPayStatement>>, {tenantId: string;statementId: string}> = (props) => {
+          const {tenantId,statementId} = props ?? {};
+
+          return  platformBillingPayStatement(tenantId,statementId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformBillingPayStatementMutationResult = NonNullable<Awaited<ReturnType<typeof platformBillingPayStatement>>>
+    
+    export type PlatformBillingPayStatementMutationError = ErrorType<ApiResponseVoid>
+
+    export const usePlatformBillingPayStatement = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformBillingPayStatement>>, TError,{tenantId: string;statementId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformBillingPayStatement>>,
+        TError,
+        {tenantId: string;statementId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getPlatformBillingPayStatementMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const platformBillingIssueStatement = (
+    tenantId: string,
+    statementId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseBillingStatementResponse>(
+      {url: `/api/v1/platform/tenants/${tenantId}/billing-statements/${statementId}/issue`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getPlatformBillingIssueStatementMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformBillingIssueStatement>>, TError,{tenantId: string;statementId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof platformBillingIssueStatement>>, TError,{tenantId: string;statementId: string}, TContext> => {
+
+const mutationKey = ['platformBillingIssueStatement'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformBillingIssueStatement>>, {tenantId: string;statementId: string}> = (props) => {
+          const {tenantId,statementId} = props ?? {};
+
+          return  platformBillingIssueStatement(tenantId,statementId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformBillingIssueStatementMutationResult = NonNullable<Awaited<ReturnType<typeof platformBillingIssueStatement>>>
+    
+    export type PlatformBillingIssueStatementMutationError = ErrorType<ApiResponseVoid>
+
+    export const usePlatformBillingIssueStatement = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformBillingIssueStatement>>, TError,{tenantId: string;statementId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformBillingIssueStatement>>,
+        TError,
+        {tenantId: string;statementId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getPlatformBillingIssueStatementMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const platformBillingUsage = (
     tenantId: string,
  signal?: AbortSignal
 ) => {

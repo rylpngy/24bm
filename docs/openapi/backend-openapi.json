@@ -2040,6 +2040,228 @@
         }
       }
     },
+    "/api/v1/platform/tenants/{tenantId}/billing-statements": {
+      "get": {
+        "tags": [
+          "platform-billing-controller"
+        ],
+        "operationId": "PlatformBilling_statements",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListBillingStatementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "platform-billing-controller"
+        ],
+        "operationId": "PlatformBilling_generateStatement",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBillingStatementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/tenants/{tenantId}/billing-statements/{statementId}/pay": {
+      "post": {
+        "tags": [
+          "platform-billing-controller"
+        ],
+        "operationId": "PlatformBilling_payStatement",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "statementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBillingStatementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/tenants/{tenantId}/billing-statements/{statementId}/issue": {
+      "post": {
+        "tags": [
+          "platform-billing-controller"
+        ],
+        "operationId": "PlatformBilling_issueStatement",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "statementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBillingStatementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/platform/enterprise-reviews/{enterpriseId}": {
       "post": {
         "tags": [
@@ -9821,6 +10043,96 @@
           }
         }
       },
+      "ApiResponseBillingStatementResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BillingStatementResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BillingStatementResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string"
+          },
+          "basePrice": {
+            "type": "number"
+          },
+          "overageTotal": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsageLineResponse"
+            }
+          }
+        }
+      },
+      "UsageLineResponse": {
+        "type": "object",
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "includedQuota": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "used": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overage": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overageUnitPrice": {
+            "type": "number"
+          },
+          "overageCost": {
+            "type": "number"
+          }
+        }
+      },
       "EnterpriseReviewRequest": {
         "required": [
           "reviewStatus",
@@ -12064,32 +12376,20 @@
           }
         }
       },
-      "UsageLineResponse": {
+      "ApiResponseListBillingStatementResponse": {
         "type": "object",
         "properties": {
-          "metric": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillingStatementResponse"
+            }
+          },
+          "message": {
             "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "includedQuota": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "used": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "overage": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "overageUnitPrice": {
-            "type": "number"
-          },
-          "overageCost": {
-            "type": "number"
           }
         }
       },

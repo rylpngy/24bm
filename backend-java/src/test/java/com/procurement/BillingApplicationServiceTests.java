@@ -2,6 +2,7 @@ package com.procurement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.procurement.platform.application.BillingApplicationService;
@@ -22,8 +23,13 @@ class BillingApplicationServiceTests {
   private final PlatformTenantMapper tenantMapper = mock(PlatformTenantMapper.class);
   private final SubscriptionPlanMapper planMapper = mock(SubscriptionPlanMapper.class);
   private final UsageMeteringMapper meteringMapper = mock(UsageMeteringMapper.class);
+  private final com.procurement.platform.infrastructure.BillingStatementMapper statementMapper =
+      mock(com.procurement.platform.infrastructure.BillingStatementMapper.class);
+  private final com.procurement.platform.infrastructure.BillingStatementLineMapper statementLineMapper =
+      mock(com.procurement.platform.infrastructure.BillingStatementLineMapper.class);
   private final BillingApplicationService service =
-      new BillingApplicationService(tenantMapper, planMapper, meteringMapper);
+      new BillingApplicationService(
+          tenantMapper, planMapper, meteringMapper, statementMapper, statementLineMapper);
 
   @Test
   void computesOverageAndTotalBill() {
@@ -53,5 +59,67 @@ class BillingApplicationServiceTests {
     // 超额合计 = 2×50 + 1×20 = 120;应付 = 999 + 120 = 1119。
     assertThat(usage.overageTotal()).isEqualByComparingTo("120.00");
     assertThat(usage.totalBill()).isEqualByComparingTo("1119.00");
+  }
+
+  private void stubUsage() {
+    when(tenantMapper.findById("tenant-acme"))
+        .thenReturn(new PlatformTenant("tenant-acme", "Acme", "MVP", "active", "[]", 3));
+    when(planMapper.findPlan("MVP"))
+        .thenReturn(new SubscriptionPlan("MVP", "入门版", new BigDecimal("999.00")));
+    when(planMapper.listQuotas("MVP"))
+        .thenReturn(List.of(new PlanQuota("MVP", "orders", 3, new BigDecimal("50.00"))));
+    when(meteringMapper.countOrders("tenant-acme")).thenReturn(5);
+  }
+
+  @Test
+  void generateStatementSnapshotsUsageAsDraftWhenNoneExists() {
+    stubUsage();
+    when(statementMapper.findByTenantAndPeriod("tenant-acme", "2026-06")).thenReturn(null);
+    when(statementMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-acme"),
+            org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(new com.procurement.platform.domain.BillingStatement(
+            "stmt-1", "tenant-acme", "2026-06", "MVP", new BigDecimal("999.00"),
+            new BigDecimal("100.00"), new BigDecimal("1099.00"), "草稿", null, null, null));
+
+    var stmt = service.generateStatement("tenant-acme", "2026-06");
+
+    verify(statementMapper).insert(org.mockito.ArgumentMatchers.startsWith("stmt-"),
+        org.mockito.ArgumentMatchers.eq("tenant-acme"), org.mockito.ArgumentMatchers.eq("2026-06"),
+        org.mockito.ArgumentMatchers.eq("MVP"), org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.eq("草稿"));
+    assertThat(stmt.status()).isEqualTo("草稿");
+  }
+
+  @Test
+  void generateStatementIsIdempotentWhenPeriodExists() {
+    when(statementMapper.findByTenantAndPeriod("tenant-acme", "2026-06"))
+        .thenReturn(new com.procurement.platform.domain.BillingStatement(
+            "stmt-1", "tenant-acme", "2026-06", "MVP", new BigDecimal("999.00"),
+            new BigDecimal("100.00"), new BigDecimal("1099.00"), "已开票", null, null, null));
+
+    var stmt = service.generateStatement("tenant-acme", "2026-06");
+
+    assertThat(stmt.status()).isEqualTo("已开票");
+    verify(statementMapper, org.mockito.Mockito.never()).insert(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void issueOnlyFromDraftAndPayOnlyFromIssued() {
+    when(statementMapper.markIssued("tenant-acme", "stmt-x", "草稿", "已开票")).thenReturn(0);
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.issueStatement("tenant-acme", "stmt-x"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("草稿");
+
+    when(statementMapper.markPaid("tenant-acme", "stmt-y", "已开票", "已结清")).thenReturn(0);
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.payStatement("tenant-acme", "stmt-y"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("已开票");
   }
 }

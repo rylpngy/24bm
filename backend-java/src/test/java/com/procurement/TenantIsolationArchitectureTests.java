@@ -26,7 +26,9 @@ class TenantIsolationArchitectureTests {
       // 身份/安全的跨切面映射:权限按用户解析(用户本身归属租户),非租户业务表。
       "identity/infrastructure/PermissionMapper.java",
       // 订阅套餐/配额为平台级参考数据(非租户业务表),按 plan_code 检索。
-      "platform/infrastructure/SubscriptionPlanMapper.java");
+      "platform/infrastructure/SubscriptionPlanMapper.java",
+      // 账单快照行按 statement_id 检索(账单头已按 tenant_id 限定)。
+      "platform/infrastructure/BillingStatementLineMapper.java");
 
   @Test
   void applicationServicesUseCentralTenantAccessGuardInsteadOfLocalThreadLocalReads() throws IOException {
