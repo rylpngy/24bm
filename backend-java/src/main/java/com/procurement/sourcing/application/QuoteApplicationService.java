@@ -5,21 +5,26 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
+import com.procurement.sourcing.api.QuoteLineItemRequest;
+import com.procurement.sourcing.api.QuoteLineItemResponse;
 import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.api.SubmitQuoteRequest;
 import com.procurement.sourcing.api.UpdateQuoteRequest;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteAuditAction;
+import com.procurement.sourcing.domain.QuoteLineItem;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqQuoteInvitationPolicy;
 import com.procurement.sourcing.domain.RfqQuoteSubmissionPolicy;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
+import com.procurement.sourcing.infrastructure.QuoteLineItemMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
@@ -32,6 +37,7 @@ public class QuoteApplicationService {
   private final RfqDemandMapper rfqDemandMapper;
   private final RfqInviteMapper rfqInviteMapper;
   private final QuoteMapper quoteMapper;
+  private final QuoteLineItemMapper quoteLineItemMapper;
   private final RfqSourcingStatusTransition rfqSourcingStatusTransition;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -41,6 +47,7 @@ public class QuoteApplicationService {
       RfqDemandMapper rfqDemandMapper,
       RfqInviteMapper rfqInviteMapper,
       QuoteMapper quoteMapper,
+      QuoteLineItemMapper quoteLineItemMapper,
       RfqSourcingStatusTransition rfqSourcingStatusTransition,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService) {
@@ -48,6 +55,7 @@ public class QuoteApplicationService {
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.quoteMapper = quoteMapper;
+    this.quoteLineItemMapper = quoteLineItemMapper;
     this.rfqSourcingStatusTransition = rfqSourcingStatusTransition;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -104,13 +112,14 @@ public class QuoteApplicationService {
     RfqQuoteSubmissionPolicy.requireNoSubmittedQuote(submittedCount, rfqId);
 
     String quoteId = newId("quote");
+    BigDecimal amount = effectiveAmount(request.amount(), request.lineItems());
     try {
       quoteMapper.insert(
           quoteId,
           rfq.tenantId(),
           rfqId,
           supplierId,
-          request.amount(),
+          amount,
           request.taxRate(),
           request.deliveryDays(),
           QuoteStatus.SUBMITTED);
@@ -118,6 +127,7 @@ public class QuoteApplicationService {
       RfqQuoteSubmissionPolicy.requireNoSubmittedQuote(1, rfqId);
       throw exception;
     }
+    persistLineItems(rfq.tenantId(), quoteId, request.lineItems());
 
     // 供应商无租户上下文,审计需显式落到 RFQ 所属租户(否则 requireTenantId 抛错)。
     auditLogApplicationService.recordTenantAction(
@@ -147,17 +157,19 @@ public class QuoteApplicationService {
     rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfq.id());
     rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfq.id());
 
+    BigDecimal amount = effectiveAmount(request.amount(), request.lineItems());
     int updated = quoteMapper.updateSubmittedQuote(
         quote.tenantId(),
         quoteId,
         supplierId,
-        request.amount(),
+        amount,
         request.taxRate(),
         request.deliveryDays(),
         QuoteStatus.SUBMITTED);
     if (updated == 0) {
       throw new IllegalStateException("Only submitted supplier quote can be updated: " + quoteId);
     }
+    persistLineItems(quote.tenantId(), quoteId, request.lineItems());
 
     auditLogApplicationService.recordTenantAction(
         rfq.tenantId(),
@@ -193,7 +205,55 @@ public class QuoteApplicationService {
         quote.taxRate(),
         quote.deliveryDays(),
         quote.status(),
-        quote.submittedAt());
+        quote.submittedAt(),
+        lineItemResponses(quote.tenantId(), quote.id()));
+  }
+
+  // 行项明细持久化:全量替换(先删后插),行金额按 数量 × 单价 计算。
+  private void persistLineItems(
+      String tenantId, String quoteId, List<QuoteLineItemRequest> lineItems) {
+    quoteLineItemMapper.deleteByQuote(tenantId, quoteId);
+    if (lineItems == null || lineItems.isEmpty()) {
+      return;
+    }
+    int sortNo = 0;
+    for (QuoteLineItemRequest line : lineItems) {
+      BigDecimal lineAmount = line.quantity().multiply(line.unitPrice());
+      String unit = line.unit() == null || line.unit().isBlank() ? "项" : line.unit();
+      quoteLineItemMapper.insert(
+          newId("qli"),
+          tenantId,
+          quoteId,
+          line.description(),
+          unit,
+          line.quantity(),
+          line.unitPrice(),
+          lineAmount,
+          sortNo++);
+    }
+  }
+
+  private List<QuoteLineItemResponse> lineItemResponses(String tenantId, String quoteId) {
+    List<QuoteLineItem> lines = quoteLineItemMapper.listByQuote(tenantId, quoteId);
+    if (lines == null) {
+      return List.of();
+    }
+    return lines.stream()
+        .map(
+            l ->
+                new QuoteLineItemResponse(
+                    l.id(), l.description(), l.unit(), l.quantity(), l.unitPrice(), l.lineAmount()))
+        .toList();
+  }
+
+  // 提供行项时按行汇总覆盖报价头金额(头/明细一致);否则沿用供应商填写的 amount。
+  private BigDecimal effectiveAmount(BigDecimal headerAmount, List<QuoteLineItemRequest> lineItems) {
+    if (lineItems == null || lineItems.isEmpty()) {
+      return headerAmount;
+    }
+    return lineItems.stream()
+        .map(l -> l.quantity().multiply(l.unitPrice()))
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   private RfqResponse toRfqResponse(Rfq rfq) {

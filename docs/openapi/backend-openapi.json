@@ -6250,6 +6250,26 @@
           }
         }
       },
+      "QuoteLineItemRequest": {
+        "required": [
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unitPrice": {
+            "type": "number"
+          }
+        }
+      },
       "UpdateQuoteRequest": {
         "type": "object",
         "properties": {
@@ -6262,6 +6282,12 @@
           "deliveryDays": {
             "type": "integer",
             "format": "int32"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteLineItemRequest"
+            }
           }
         }
       },
@@ -6276,6 +6302,29 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "QuoteLineItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "lineAmount": {
+            "type": "number"
           }
         }
       },
@@ -6310,6 +6359,12 @@
           "submittedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteLineItemResponse"
+            }
           }
         }
       },
@@ -7492,6 +7547,12 @@
           "deliveryDays": {
             "type": "integer",
             "format": "int32"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteLineItemRequest"
+            }
           }
         }
       },

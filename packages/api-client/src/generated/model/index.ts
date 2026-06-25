@@ -186,6 +186,8 @@ export * from './purchaseDemandListParams';
 export * from './purchaseDemandResponse';
 export * from './purchaseOrderListParams';
 export * from './purchaseOrderResponse';
+export * from './quoteLineItemRequest';
+export * from './quoteLineItemResponse';
 export * from './quoteResponse';
 export * from './receiptResponse';
 export * from './registerPaymentRequest';

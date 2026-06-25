@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import {
   type ColumnDef,
   type SortingState,
@@ -7,7 +7,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, ChevronRight } from 'lucide-react';
 import type { QuoteResponse } from '@24bid/api-client';
 import { StatusPill, cn } from '@24bid/ui';
 
@@ -35,6 +35,7 @@ export function QuoteComparisonTable({
   onAward: (quoteId: string) => void;
 }) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'taxedAmount', desc: false }]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const rows = useMemo<QuoteRow[]>(() => {
     const withTax = quotes.map((q) => ({
@@ -49,6 +50,26 @@ export function QuoteComparisonTable({
 
   const columns = useMemo<ColumnDef<QuoteRow>[]>(
     () => [
+      {
+        id: 'expander',
+        header: '',
+        cell: (c) => {
+          const q = c.row.original;
+          const lines = q.lineItems ?? [];
+          if (!q.id || lines.length === 0) return null;
+          const open = expanded[q.id];
+          return (
+            <button
+              type="button"
+              onClick={() => setExpanded((s) => ({ ...s, [q.id!]: !s[q.id!] }))}
+              className="text-slate-400 hover:text-slate-700"
+              aria-label="展开明细"
+            >
+              {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </button>
+          );
+        },
+      },
       {
         accessorKey: 'supplierName',
         header: '供应商',
@@ -98,7 +119,7 @@ export function QuoteComparisonTable({
         },
       },
     ],
-    [canAward, awardingQuoteId, onAward],
+    [canAward, awardingQuoteId, onAward, expanded],
   );
 
   const table = useReactTable({
@@ -136,15 +157,56 @@ export function QuoteComparisonTable({
           ))}
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className={row.original.recommended ? 'bg-blue-50/40' : undefined}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-4">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {table.getRowModel().rows.map((row) => {
+            const q = row.original;
+            const lines = q.lineItems ?? [];
+            const open = q.id ? expanded[q.id] : false;
+            return (
+              <Fragment key={row.id}>
+                <tr className={q.recommended ? 'bg-blue-50/40' : undefined}>
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-4 py-4">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+                {open && lines.length > 0 && (
+                  <tr className="bg-slate-50/70">
+                    <td colSpan={row.getVisibleCells().length} className="px-4 py-3">
+                      <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                        报价行项明细（{lines.length} 项）
+                      </p>
+                      <table className="w-full text-left text-xs">
+                        <thead className="text-[11px] font-black text-slate-400">
+                          <tr>
+                            <th className="px-2 py-1">品名/规格</th>
+                            <th className="px-2 py-1 text-right">数量</th>
+                            <th className="px-2 py-1 text-right">单价</th>
+                            <th className="px-2 py-1 text-right">行金额</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {lines.map((l) => (
+                            <tr key={l.id} className="font-bold text-slate-700">
+                              <td className="px-2 py-1">{l.description}</td>
+                              <td className="px-2 py-1 text-right">
+                                {l.quantity}
+                                {l.unit ? ` ${l.unit}` : ''}
+                              </td>
+                              <td className="px-2 py-1 text-right">{currency(l.unitPrice)}</td>
+                              <td className="px-2 py-1 text-right font-black text-slate-900">
+                                {currency(l.lineAmount)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>

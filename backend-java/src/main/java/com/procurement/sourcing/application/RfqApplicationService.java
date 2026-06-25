@@ -8,10 +8,12 @@ import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.sourcing.api.CreateRfqRequest;
+import com.procurement.sourcing.api.QuoteLineItemResponse;
 import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.api.UpdateRfqRequest;
 import com.procurement.sourcing.domain.Quote;
+import com.procurement.sourcing.domain.QuoteLineItem;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqAuditAction;
 import com.procurement.sourcing.domain.RfqDemandLinkPolicy;
@@ -19,6 +21,7 @@ import com.procurement.sourcing.domain.RfqInviteStatus;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.domain.RfqSupplierInvitationPolicy;
+import com.procurement.sourcing.infrastructure.QuoteLineItemMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
@@ -38,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RfqApplicationService {
   private final RfqMapper rfqMapper;
   private final QuoteMapper quoteMapper;
+  private final QuoteLineItemMapper quoteLineItemMapper;
   private final RfqDemandMapper rfqDemandMapper;
   private final RfqInviteMapper rfqInviteMapper;
   private final PurchaseDemandMapper purchaseDemandMapper;
@@ -51,6 +55,7 @@ public class RfqApplicationService {
   public RfqApplicationService(
       RfqMapper rfqMapper,
       QuoteMapper quoteMapper,
+      QuoteLineItemMapper quoteLineItemMapper,
       RfqDemandMapper rfqDemandMapper,
       RfqInviteMapper rfqInviteMapper,
       PurchaseDemandMapper purchaseDemandMapper,
@@ -62,6 +67,7 @@ public class RfqApplicationService {
       NotificationApplicationService notificationApplicationService) {
     this.rfqMapper = rfqMapper;
     this.quoteMapper = quoteMapper;
+    this.quoteLineItemMapper = quoteLineItemMapper;
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
@@ -247,6 +253,21 @@ public class RfqApplicationService {
   }
 
   private QuoteResponse toQuoteResponse(Quote quote) {
+    List<QuoteLineItem> lines = quoteLineItemMapper.listByQuote(quote.tenantId(), quote.id());
+    List<QuoteLineItemResponse> lineItems =
+        lines == null
+            ? List.of()
+            : lines.stream()
+                .map(
+                    l ->
+                        new QuoteLineItemResponse(
+                            l.id(),
+                            l.description(),
+                            l.unit(),
+                            l.quantity(),
+                            l.unitPrice(),
+                            l.lineAmount()))
+                .toList();
     return new QuoteResponse(
         quote.id(),
         quote.tenantId(),
@@ -256,7 +277,8 @@ public class RfqApplicationService {
         quote.taxRate(),
         quote.deliveryDays(),
         quote.status(),
-        quote.submittedAt());
+        quote.submittedAt(),
+        lineItems);
   }
 
   private String newId(String prefix) {

@@ -1166,7 +1166,8 @@ class HttpSecurityContractTests {
             BigDecimal.valueOf(13),
             7,
             "已提交",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+            List.of()));
     when(supplierProfileApplicationService.getCurrentSupplierProfile())
         .thenReturn(new SupplierProfileResponse(
             "ent-supplier-sunrise",
@@ -1332,7 +1333,8 @@ class HttpSecurityContractTests {
             BigDecimal.valueOf(13),
             7,
             "已提交",
-            OffsetDateTime.parse("2026-06-15T13:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T13:00:00+08:00"),
+            List.of())));
     when(quoteApplicationService.update(
         org.mockito.ArgumentMatchers.eq("quote-demo"),
         org.mockito.ArgumentMatchers.any(UpdateQuoteRequest.class)))
@@ -1345,7 +1347,8 @@ class HttpSecurityContractTests {
             BigDecimal.valueOf(13),
             6,
             "已提交",
-            OffsetDateTime.parse("2026-06-15T13:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T13:00:00+08:00"),
+            List.of()));
     when(purchaseOrderApplicationService.listCurrentSupplierOrders(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull()))

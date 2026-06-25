@@ -33,6 +33,33 @@ export function QuotesPage() {
                 <MiniFact label="税率" value={q.taxRate != null ? `${q.taxRate}%` : '—'} />
                 <MiniFact label="交期" value={q.deliveryDays != null ? `${q.deliveryDays} 天` : '—'} />
               </div>
+              {(q.lineItems ?? []).length > 0 && (
+                <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                      <tr>
+                        <th className="px-3 py-1.5">品名/规格</th>
+                        <th className="px-3 py-1.5 text-right">数量</th>
+                        <th className="px-3 py-1.5 text-right">单价</th>
+                        <th className="px-3 py-1.5 text-right">行金额</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(q.lineItems ?? []).map((l) => (
+                        <tr key={l.id} className="font-bold text-slate-700">
+                          <td className="px-3 py-1.5">{l.description}</td>
+                          <td className="px-3 py-1.5 text-right">
+                            {l.quantity}
+                            {l.unit ? ` ${l.unit}` : ''}
+                          </td>
+                          <td className="px-3 py-1.5 text-right">{currency(l.unitPrice)}</td>
+                          <td className="px-3 py-1.5 text-right font-black text-slate-900">{currency(l.lineAmount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           ))}
         </div>
