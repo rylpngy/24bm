@@ -9,6 +9,7 @@ import {
   usePlatformTenantUpdatePlan,
 } from '@24bid/api-client';
 import { FeedbackNotice, ListToolbar, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import { TenantUsagePanel } from './tenant-usage-panel';
 
 const PLAN_OPTIONS = ['MVP', '标准版', '企业版'];
 const FEATURE_DEFS = [
@@ -28,6 +29,7 @@ export function TenantsPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ plan: string; userLimit: string; features: string[] } | null>(null);
+  const [usageId, setUsageId] = useState<string | null>(null);
 
   const list = tenants.data?.data ?? [];
 
@@ -133,7 +135,12 @@ export function TenantsPage() {
                     className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-700 hover:bg-slate-50">
                     {editId === t.id ? '收起编辑' : '编辑套餐/功能'}
                   </button>
+                  <button type="button" onClick={() => setUsageId((cur) => (cur === t.id ? null : t.id ?? null))}
+                    className="inline-flex h-9 items-center rounded-lg border border-indigo-200 bg-white px-4 text-xs font-black text-indigo-700 hover:bg-indigo-50">
+                    {usageId === t.id ? '收起用量计费' : '用量与计费'}
+                  </button>
                 </div>
+                {usageId === t.id && t.id && <TenantUsagePanel tenantId={t.id} />}
 
                 {editId === t.id && draft && (
                   <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/40 p-4">

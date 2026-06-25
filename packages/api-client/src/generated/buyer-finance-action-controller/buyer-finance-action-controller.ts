@@ -43,6 +43,9 @@ import type {
   ApiResponseVarianceHandlingResponse,
   ApiResponseVoid,
   ApproveVarianceHandlingRequest,
+  BuyerFinanceActionExportInvoicesParams,
+  BuyerFinanceActionExportProcurementAnalyticsParams,
+  BuyerFinanceActionExportReconciliationParams,
   BuyerFinanceActionPaymentArchiveExceptionRequestsParams,
   BuyerFinanceActionPaymentBatchesParams,
   BuyerFinanceActionPaymentBlockResolutionsParams,
@@ -1504,6 +1507,270 @@ export function useBuyerFinanceActionThreeWayMatchLines<TData = Awaited<ReturnTy
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionThreeWayMatchLinesQueryOptions(invoiceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerFinanceActionExportReconciliation = (
+    params?: BuyerFinanceActionExportReconciliationParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<Blob>(
+      {url: `/api/v1/buyer/reports/reconciliation`, method: 'GET',
+        params,
+        responseType: 'blob', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerFinanceActionExportReconciliationQueryKey = (params?: BuyerFinanceActionExportReconciliationParams,) => {
+    return [
+    `/api/v1/buyer/reports/reconciliation`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getBuyerFinanceActionExportReconciliationQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionExportReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionExportReconciliationQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>> = ({ signal }) => buyerFinanceActionExportReconciliation(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerFinanceActionExportReconciliationQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>>
+export type BuyerFinanceActionExportReconciliationQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerFinanceActionExportReconciliation<TData = Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionExportReconciliationParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>,
+          TError,
+          Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerFinanceActionExportReconciliation<TData = Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionExportReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>,
+          TError,
+          Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerFinanceActionExportReconciliation<TData = Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionExportReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerFinanceActionExportReconciliation<TData = Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionExportReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerFinanceActionExportReconciliationQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerFinanceActionExportProcurementAnalytics = (
+    params?: BuyerFinanceActionExportProcurementAnalyticsParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<Blob>(
+      {url: `/api/v1/buyer/reports/procurement-analytics`, method: 'GET',
+        params,
+        responseType: 'blob', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerFinanceActionExportProcurementAnalyticsQueryKey = (params?: BuyerFinanceActionExportProcurementAnalyticsParams,) => {
+    return [
+    `/api/v1/buyer/reports/procurement-analytics`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getBuyerFinanceActionExportProcurementAnalyticsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionExportProcurementAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionExportProcurementAnalyticsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>> = ({ signal }) => buyerFinanceActionExportProcurementAnalytics(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerFinanceActionExportProcurementAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>>
+export type BuyerFinanceActionExportProcurementAnalyticsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerFinanceActionExportProcurementAnalytics<TData = Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionExportProcurementAnalyticsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>,
+          TError,
+          Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerFinanceActionExportProcurementAnalytics<TData = Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionExportProcurementAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>,
+          TError,
+          Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerFinanceActionExportProcurementAnalytics<TData = Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionExportProcurementAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerFinanceActionExportProcurementAnalytics<TData = Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionExportProcurementAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerFinanceActionExportProcurementAnalyticsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerFinanceActionExportInvoices = (
+    params?: BuyerFinanceActionExportInvoicesParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<Blob>(
+      {url: `/api/v1/buyer/reports/invoices`, method: 'GET',
+        params,
+        responseType: 'blob', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerFinanceActionExportInvoicesQueryKey = (params?: BuyerFinanceActionExportInvoicesParams,) => {
+    return [
+    `/api/v1/buyer/reports/invoices`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getBuyerFinanceActionExportInvoicesQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionExportInvoicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionExportInvoicesQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>> = ({ signal }) => buyerFinanceActionExportInvoices(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerFinanceActionExportInvoicesQueryResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>>
+export type BuyerFinanceActionExportInvoicesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerFinanceActionExportInvoices<TData = Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerFinanceActionExportInvoicesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>,
+          TError,
+          Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerFinanceActionExportInvoices<TData = Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionExportInvoicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>,
+          TError,
+          Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerFinanceActionExportInvoices<TData = Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionExportInvoicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerFinanceActionExportInvoices<TData = Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerFinanceActionExportInvoicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerFinanceActionExportInvoicesQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
