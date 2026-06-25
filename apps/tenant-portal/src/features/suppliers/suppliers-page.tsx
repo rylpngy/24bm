@@ -18,6 +18,7 @@ import {
   cn,
 } from '@24bid/ui';
 import { SupplierEvaluationPanel } from './supplier-evaluation-panel';
+import { OwnerAttachments } from '../attachments/owner-attachments';
 
 const STATUS_FILTERS = ['全部', '待准入', '准入审批中', '已准入', '已驳回', '黑名单'] as const;
 
@@ -258,6 +259,14 @@ function SupplierProfileBlock({ s }: { s: BuyerSupplierResponse }) {
           {s.businessScope || '未填写经营范围。'}
         </p>
       </div>
+      {s.supplierId && (
+        <OwnerAttachments
+          ownerType="supplier"
+          ownerId={s.supplierId}
+          title="资质附件"
+          emptyHint="暂无资质附件，点击右上角上传营业执照、资质证书、开户许可证等。"
+        />
+      )}
     </div>
   );
 }

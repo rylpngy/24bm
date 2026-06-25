@@ -9,14 +9,25 @@ import {
 } from '@24bid/api-client';
 import { FeedbackNotice } from '@24bid/ui';
 
-// 合同附件：上传(服务端代收落 MinIO)→ 落元数据 → 列表 → 流式下载。
-export function ContractAttachments({ contractId }: { contractId: string }) {
+// 通用附件面板:按 ownerType/ownerId 复用(合同附件、供应商资质、报价单影像等)。
+// 上传服务端代收落 MinIO → 落元数据 → 列表 → 流式下载。
+export function OwnerAttachments({
+  ownerType,
+  ownerId,
+  title = '附件',
+  emptyHint = '暂无附件,点击右上角上传。',
+}: {
+  ownerType: string;
+  ownerId: string;
+  title?: string;
+  emptyHint?: string;
+}) {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const list = useAttachmentList({ ownerType: 'contract', ownerId: contractId });
+  const list = useAttachmentList({ ownerType, ownerId });
   const ticket = useAttachmentCreateUploadTicket();
   const create = useAttachmentCreate();
   const attachments = list.data?.data ?? [];
@@ -32,32 +43,18 @@ export function ContractAttachments({ contractId }: { contractId: string }) {
     setError(null);
     setBusy(true);
     try {
-      // 1) 申请上传票据 → 拿到租户隔离的 storageKey
       const t = await ticket.mutateAsync({
-        data: {
-          ownerType: 'contract',
-          ownerId: contractId,
-          fileName: file.name,
-          visibility: 'buyer_internal',
-        },
+        data: { ownerType, ownerId, fileName: file.name, visibility: 'buyer_internal' },
       });
       const storageKey = t.data?.storageKey;
       if (!storageKey) throw new Error('no storage key');
-      // 2) 把字节代收到服务端(再落 MinIO)
       const buffer = await file.arrayBuffer();
       await axiosInstance.post('/api/v1/buyer/attachments/upload-sink', buffer, {
         params: { storageKey, contentType: file.type || 'application/octet-stream' },
         headers: { 'Content-Type': 'application/octet-stream' },
       });
-      // 3) 落附件元数据
       await create.mutateAsync({
-        data: {
-          ownerType: 'contract',
-          ownerId: contractId,
-          fileName: file.name,
-          storageKey,
-          visibility: 'buyer_internal',
-        },
+        data: { ownerType, ownerId, fileName: file.name, storageKey, visibility: 'buyer_internal' },
       });
       refreshList();
     } catch {
@@ -90,7 +87,7 @@ export function ContractAttachments({ contractId }: { contractId: string }) {
     <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-center justify-between gap-3">
         <p className="inline-flex items-center gap-1.5 text-xs font-black text-slate-600">
-          <Paperclip size={13} /> 合同附件
+          <Paperclip size={13} /> {title}
         </p>
         <button
           type="button"
@@ -121,7 +118,7 @@ export function ContractAttachments({ contractId }: { contractId: string }) {
         {list.isLoading ? (
           <p className="text-xs font-bold text-slate-400">加载附件…</p>
         ) : attachments.length === 0 ? (
-          <p className="text-xs font-bold text-slate-400">暂无附件，点击右上角上传合同正本、补充协议等。</p>
+          <p className="text-xs font-bold text-slate-400">{emptyHint}</p>
         ) : (
           attachments.map((a) => (
             <div

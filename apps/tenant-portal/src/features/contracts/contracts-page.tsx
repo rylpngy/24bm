@@ -17,7 +17,7 @@ import {
   PrimaryActionButton,
   StatusPill,
 } from '@24bid/ui';
-import { ContractAttachments } from './contract-attachments';
+import { OwnerAttachments } from '../attachments/owner-attachments';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -255,7 +255,14 @@ export function ContractsPage() {
                   </button>
                 )}
               </div>
-              {attachOpenId === c.id && c.id && <ContractAttachments contractId={c.id} />}
+              {attachOpenId === c.id && c.id && (
+                <OwnerAttachments
+                  ownerType="contract"
+                  ownerId={c.id}
+                  title="合同附件"
+                  emptyHint="暂无附件，点击右上角上传合同正本、补充协议等。"
+                />
+              )}
             </div>
           ))}
         </div>
