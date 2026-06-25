@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart } from 'lucide-react';
 import {
   useSupplierDeliveryCreate,
+  useSupplierInvoiceCreate,
   useSupplierOrderConfirm,
   useSupplierOrderList,
 } from '@24bid/api-client';
@@ -17,16 +18,47 @@ export function OrdersPage() {
   const orders = useSupplierOrderList();
   const confirm = useSupplierOrderConfirm();
   const ship = useSupplierDeliveryCreate();
+  const issue = useSupplierInvoiceCreate();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [shipForm, setShipForm] = useState<{ orderId: string; carrier: string; trackingNo: string; qty: string } | null>(null);
+  const [invForm, setInvForm] = useState<{
+    orderId: string;
+    invoiceNo: string;
+    invoiceCode: string;
+    taxRate: string;
+  } | null>(null);
 
   const list = orders.data?.data ?? [];
 
   const refresh = () =>
     queryClient.invalidateQueries({
       predicate: (q) =>
-        typeof q.queryKey[0] === 'string' && /\/supplier\/(orders|deliveries)/.test(q.queryKey[0] as string),
+        typeof q.queryKey[0] === 'string' &&
+        /\/supplier\/(orders|deliveries|invoices|receivables)/.test(q.queryKey[0] as string),
     });
+
+  const onIssueInvoice = (orderId: string, orderAmount?: number) => {
+    const f = invForm?.orderId === orderId ? invForm : null;
+    issue.mutate(
+      {
+        orderId,
+        data: {
+          amount: orderAmount ?? 0,
+          invoiceNo: f?.invoiceNo || `INV-${Date.now().toString().slice(-8)}`,
+          invoiceCode: f?.invoiceCode || undefined,
+          taxRate: Number(f?.taxRate) || 13,
+        },
+      },
+      {
+        onSuccess: () => {
+          setFeedback(`订单 ${orderId} 已开具发票`);
+          setInvForm(null);
+          refresh();
+        },
+        onError: () => setFeedback('开票失败:该订单可能已开票或金额需与订单一致。'),
+      },
+    );
+  };
 
   const onConfirm = (orderId: string) =>
     confirm.mutate({ orderId }, { onSuccess: () => { setFeedback(`订单 ${orderId} 已确认`); refresh(); } });
@@ -67,7 +99,9 @@ export function OrdersPage() {
           {list.map((o) => {
             const busyC = confirm.isPending && confirm.variables?.orderId === o.id;
             const busyS = ship.isPending && ship.variables?.orderId === o.id;
+            const busyI = issue.isPending && issue.variables?.orderId === o.id;
             const editing = shipForm?.orderId === o.id;
+            const invEditing = invForm?.orderId === o.id;
             return (
               <div key={o.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <div className="flex items-start justify-between gap-3">
@@ -119,6 +153,37 @@ export function OrdersPage() {
                       onClick={() => setShipForm({ orderId: o.id!, carrier: '顺丰速运', trackingNo: '', qty: '' })}
                       className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700">
                       登记发货
+                    </button>
+                  )
+                )}
+
+                {o.status === '已收货' && o.id && (
+                  invEditing ? (
+                    <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/40 p-3">
+                      <p className="text-xs font-black text-emerald-800">开具发票(金额须与订单一致 {currency(o.amount)})</p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                        <input className={inputCls} placeholder="发票号码" value={invForm!.invoiceNo}
+                          onChange={(e) => setInvForm({ ...invForm!, invoiceNo: e.target.value })} />
+                        <input className={inputCls} placeholder="发票代码" value={invForm!.invoiceCode}
+                          onChange={(e) => setInvForm({ ...invForm!, invoiceCode: e.target.value })} />
+                        <input className={inputCls} type="number" placeholder="税率%" value={invForm!.taxRate}
+                          onChange={(e) => setInvForm({ ...invForm!, taxRate: e.target.value })} />
+                      </div>
+                      <div className="mt-2 flex gap-2">
+                        <PrimaryActionButton onClick={() => onIssueInvoice(o.id!, o.amount)} busy={busyI} pendingLabel="开票中">
+                          提交开票
+                        </PrimaryActionButton>
+                        <button type="button" onClick={() => setInvForm(null)}
+                          className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50">
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button type="button"
+                      onClick={() => setInvForm({ orderId: o.id!, invoiceNo: '', invoiceCode: '', taxRate: '13' })}
+                      className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700">
+                      开具发票
                     </button>
                   )
                 )}
