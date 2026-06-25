@@ -5696,6 +5696,36 @@
         }
       }
     },
+    "/api/v1/buyer/deliveries": {
+      "get": {
+        "tags": [
+          "buyer-delivery-controller"
+        ],
+        "operationId": "BuyerDelivery_list",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListDeliveryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/audit-logs": {
       "get": {
         "tags": [
@@ -6127,6 +6157,21 @@
           },
           "trackingNo": {
             "type": "string"
+          },
+          "shippedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shippedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimatedArrival": {
+            "type": "string",
+            "format": "date"
+          },
+          "logisticsNote": {
+            "type": "string"
           }
         }
       },
@@ -6171,6 +6216,21 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "shippedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shippedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimatedArrival": {
+            "type": "string",
+            "format": "date"
+          },
+          "logisticsNote": {
+            "type": "string"
           }
         }
       },
@@ -7337,6 +7397,21 @@
             "type": "string"
           },
           "trackingNo": {
+            "type": "string"
+          },
+          "shippedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shippedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimatedArrival": {
+            "type": "string",
+            "format": "date"
+          },
+          "logisticsNote": {
             "type": "string"
           }
         }

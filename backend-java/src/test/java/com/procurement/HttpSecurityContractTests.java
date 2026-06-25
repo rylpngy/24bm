@@ -89,6 +89,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.organization.api.DepartmentController;
 import com.procurement.organization.api.DepartmentResponse;
 import com.procurement.organization.application.DepartmentApplicationService;
+import com.procurement.order.api.BuyerDeliveryController;
 import com.procurement.order.api.BuyerReceiptController;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.CreateReceiptRequest;
@@ -213,6 +214,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierOrderController.class,
     BuyerReceiptController.class,
     SupplierDeliveryController.class,
+    BuyerDeliveryController.class,
     BuyerInvoiceReconciliationController.class,
     SupplierInvoiceReconciliationController.class,
     BuyerFinanceActionController.class,
@@ -3588,7 +3590,7 @@ class HttpSecurityContractTests {
             "顺丰",
             "SF123",
             "已发货",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货"));
     when(deliveryApplicationService.listCurrentSupplierDeliveries(
         org.mockito.ArgumentMatchers.eq("已发货"),
         org.mockito.ArgumentMatchers.eq("po-demo")))
@@ -3600,7 +3602,7 @@ class HttpSecurityContractTests {
             "顺丰",
             "SF123",
             "已发货",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货")));
     when(deliveryApplicationService.update(
         org.mockito.ArgumentMatchers.eq("delivery-demo"),
         org.mockito.ArgumentMatchers.any(UpdateDeliveryRequest.class)))
@@ -3612,7 +3614,7 @@ class HttpSecurityContractTests {
             "京东物流",
             "JD987654321",
             "已发货",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货"));
     when(invoiceApplicationService.create(
         org.mockito.ArgumentMatchers.eq("po-demo"),
         org.mockito.ArgumentMatchers.any()))

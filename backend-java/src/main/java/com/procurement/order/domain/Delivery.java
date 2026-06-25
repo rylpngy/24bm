@@ -1,5 +1,6 @@
 package com.procurement.order.domain;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record Delivery(
@@ -10,5 +11,9 @@ public record Delivery(
     String carrier,
     String trackingNo,
     String status,
-    OffsetDateTime createdAt) {
+    OffsetDateTime createdAt,
+    Integer shippedQuantity,
+    LocalDate shippedDate,
+    LocalDate estimatedArrival,
+    String logisticsNote) {
 }

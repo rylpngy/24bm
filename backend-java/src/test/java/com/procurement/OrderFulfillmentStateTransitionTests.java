@@ -116,7 +116,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123", null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("status changed before delivery");
   }
@@ -137,7 +137,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123", null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Purchase order already has a delivery");
 
@@ -148,6 +148,10 @@ class OrderFulfillmentStateTransitionTests {
         anyString(),
         anyString(),
         anyString(),
+        anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
         anyString());
   }
 
@@ -434,7 +438,7 @@ class OrderFulfillmentStateTransitionTests {
             "顺丰",
             "SF123",
             "已发货",
-            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货"));
 
     DeliveryApplicationService service = new DeliveryApplicationService(
         purchaseOrderMapper,
@@ -444,7 +448,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123"));
+    service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123", null, null, null, null));
 
     verify(auditLogApplicationService).recordTenantAction(
         org.mockito.ArgumentMatchers.eq("tenant-1"),

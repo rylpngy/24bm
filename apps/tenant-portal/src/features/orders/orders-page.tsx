@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Truck } from 'lucide-react';
 import {
+  useBuyerDeliveryList,
   useBuyerReceiptCreate,
   useBuyerReceiptList,
   useBuyerSupplierList,
@@ -26,6 +27,7 @@ export function OrdersPage() {
   const query = usePurchaseOrderList();
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
   const receiptsQuery = useBuyerReceiptList();
+  const deliveriesQuery = useBuyerDeliveryList();
   const receipt = useBuyerReceiptCreate();
   const orders = query.data?.data ?? [];
 
@@ -53,6 +55,15 @@ export function OrdersPage() {
     });
     return map;
   }, [receiptsQuery.data]);
+
+  const deliveryByOrder = useMemo(() => {
+    const list = deliveriesQuery.data?.data ?? [];
+    const map: Record<string, (typeof list)[number]> = {};
+    list.forEach((d) => {
+      if (d.orderId) map[d.orderId] = d;
+    });
+    return map;
+  }, [deliveriesQuery.data]);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -155,6 +166,33 @@ export function OrdersPage() {
                   </p>
                 </div>
               </div>
+
+              {o.id && deliveryByOrder[o.id] && (
+                <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/40 p-3">
+                  <p className="text-xs font-black text-indigo-700">物流信息</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                    <MiniFact label="承运商" value={deliveryByOrder[o.id]!.carrier ?? '—'} />
+                    <MiniFact label="运单号" value={deliveryByOrder[o.id]!.trackingNo ?? '—'} />
+                    <MiniFact
+                      label="发货数量"
+                      value={String(deliveryByOrder[o.id]!.shippedQuantity ?? '—')}
+                    />
+                    <MiniFact label="发货日期" value={deliveryByOrder[o.id]!.shippedDate ?? '—'} />
+                  </div>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <MiniFact
+                      label="预计到货"
+                      value={deliveryByOrder[o.id]!.estimatedArrival ?? '—'}
+                    />
+                    <MiniFact label="物流状态" value={deliveryByOrder[o.id]!.status ?? '—'} />
+                  </div>
+                  {deliveryByOrder[o.id]!.logisticsNote && (
+                    <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-700">
+                      {deliveryByOrder[o.id]!.logisticsNote}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {o.status === '已收货' && o.id && receiptByOrder[o.id] && (
                 <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/50 p-3">

@@ -169,7 +169,7 @@ class BuyerWorkspaceTodoSummaryTests {
         "顺丰速运",
         "SF100001",
         "已发货",
-        OffsetDateTime.parse("2026-06-16T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-16T10:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货");
   }
 
   private PendingApprovalTaskResponse approval(String id) {

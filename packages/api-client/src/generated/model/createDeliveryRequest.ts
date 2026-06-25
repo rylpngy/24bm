@@ -9,4 +9,8 @@
 export interface CreateDeliveryRequest {
   carrier: string;
   trackingNo: string;
+  shippedQuantity?: number;
+  shippedDate?: string;
+  estimatedArrival?: string;
+  logisticsNote?: string;
 }

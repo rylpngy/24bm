@@ -15,4 +15,8 @@ export interface DeliveryResponse {
   trackingNo?: string;
   status?: string;
   createdAt?: string;
+  shippedQuantity?: number;
+  shippedDate?: string;
+  estimatedArrival?: string;
+  logisticsNote?: string;
 }
