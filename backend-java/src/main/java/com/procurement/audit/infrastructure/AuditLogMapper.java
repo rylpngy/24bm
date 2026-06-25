@@ -38,10 +38,12 @@ public interface AuditLogMapper {
       where tenant_id = #{tenantId}
         and target_type = #{targetType}
         and target_id = #{targetId}
+        <if test="actions != null and !actions.isEmpty()">
         and action in
         <foreach collection="actions" item="action" open="(" separator="," close=")">
           #{action}
         </foreach>
+        </if>
       order by created_at desc
       limit #{limit}
       </script>

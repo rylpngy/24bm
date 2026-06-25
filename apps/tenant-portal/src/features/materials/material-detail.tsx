@@ -25,10 +25,10 @@ export function MaterialDetail({
   material: MaterialResponse;
   onBack: () => void;
 }) {
+  // 后端已支持空 actions(返回该目标全部动作)。
   const audit = useAuditLogListTargetActions({
     targetType: 'material',
     targetId: material.id ?? '',
-    actions: Object.keys(ACTION_LABELS).join(','),
   });
   const history = audit.data?.data ?? [];
 

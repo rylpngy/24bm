@@ -14,6 +14,8 @@ import { InvoicesPage } from './features/finance/invoices-page';
 import { PaymentBatchesPage } from './features/finance/payment-batches-page';
 import { ContractsPage } from './features/contracts/contracts-page';
 import { DashboardPage } from './features/dashboard/dashboard-page';
+import { AuditPage } from './features/audit/audit-page';
+import { QuoteComparisonPage } from './features/quotes/quote-comparison-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
@@ -52,6 +54,10 @@ export function App() {
         <InvoicesPage />
       ) : activeModuleId === 'payment-batches' ? (
         <PaymentBatchesPage />
+      ) : activeModuleId === 'quotes' ? (
+        <QuoteComparisonPage />
+      ) : activeModuleId === 'audit' ? (
+        <AuditPage />
       ) : activeModuleId === 'contracts' ? (
         <ContractsPage />
       ) : (

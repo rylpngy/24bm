@@ -38,10 +38,10 @@ export function DemandDetail({
 }) {
   const queryClient = useQueryClient();
   const materials = useMaterialList();
+  // 后端已支持空 actions(返回该目标全部动作),无需再传全量 action key。
   const audit = useAuditLogListTargetActions({
     targetType: 'purchase_demand',
     targetId: demand.id ?? '',
-    actions: Object.keys(ACTION_LABELS).join(','),
   });
   const submit = usePurchaseDemandSubmit();
 
