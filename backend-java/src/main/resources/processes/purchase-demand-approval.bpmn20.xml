@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://24bid/processes">
+  <process id="purchaseDemandApproval" name="采购需求审批" isExecutable="true">
+    <startEvent id="start" name="提交审批"/>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="review"/>
+    <userTask id="review" name="审批采购需求" flowable:candidateGroups="buyer-approver"/>
+    <sequenceFlow id="f2" sourceRef="review" targetRef="gw"/>
+    <exclusiveGateway id="gw" name="审批结果"/>
+    <sequenceFlow id="f3" sourceRef="gw" targetRef="endApproved">
+      <conditionExpression xsi:type="tFormalExpression">${approved == true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f4" sourceRef="gw" targetRef="endRejected">
+      <conditionExpression xsi:type="tFormalExpression">${approved == false}</conditionExpression>
+    </sequenceFlow>
+    <endEvent id="endApproved" name="已通过"/>
+    <endEvent id="endRejected" name="已驳回"/>
+  </process>
+</definitions>

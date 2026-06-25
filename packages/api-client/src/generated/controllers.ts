@@ -17,6 +17,7 @@ export * from './buyer-user-controller/buyer-user-controller';
 export * from './buyer-workspace-controller/buyer-workspace-controller';
 export * from './department-controller/department-controller';
 export * from './dictionary-controller/dictionary-controller';
+export * from './flowable-demand-approval-controller/flowable-demand-approval-controller';
 export * from './health-controller/health-controller';
 export * from './material-controller/material-controller';
 export * from './platform-announcement-controller/platform-announcement-controller';

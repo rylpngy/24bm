@@ -1838,6 +1838,96 @@
         }
       }
     },
+    "/api/v1/buyer/workflow/demand-approvals/{demandId}/start": {
+      "post": {
+        "tags": [
+          "flowable-demand-approval-controller"
+        ],
+        "operationId": "FlowableDemandApproval_start",
+        "parameters": [
+          {
+            "name": "demandId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseStartProcessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/workflow/demand-approvals/tasks/{taskId}/complete": {
+      "post": {
+        "tags": [
+          "flowable-demand-approval-controller"
+        ],
+        "operationId": "FlowableDemandApproval_complete",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteApprovalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/variance-handlings": {
       "get": {
         "tags": [
@@ -5267,6 +5357,76 @@
         }
       }
     },
+    "/api/v1/buyer/workflow/demand-approvals/{demandId}/outcome": {
+      "get": {
+        "tags": [
+          "flowable-demand-approval-controller"
+        ],
+        "operationId": "FlowableDemandApproval_outcome",
+        "parameters": [
+          {
+            "name": "demandId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseString"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/workflow/demand-approvals/tasks": {
+      "get": {
+        "tags": [
+          "flowable-demand-approval-controller"
+        ],
+        "operationId": "FlowableDemandApproval_tasks",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListWorkflowTaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/three-way-matches": {
       "get": {
         "tags": [
@@ -7787,6 +7947,48 @@
           }
         }
       },
+      "ApiResponseStartProcessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/StartProcessResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "StartProcessResponse": {
+        "type": "object",
+        "properties": {
+          "processInstanceId": {
+            "type": "string"
+          },
+          "demandId": {
+            "type": "string"
+          },
+          "ended": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CompleteApprovalRequest": {
+        "required": [
+          "approved"
+        ],
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "boolean"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
       "CreateVarianceHandlingRequest": {
         "required": [
           "invoiceId",
@@ -10041,6 +10243,57 @@
           "actedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseString": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListWorkflowTaskResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowTaskResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkflowTaskResponse": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "demandId": {
+            "type": "string"
+          },
+          "processInstanceId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
           }
         }
       },

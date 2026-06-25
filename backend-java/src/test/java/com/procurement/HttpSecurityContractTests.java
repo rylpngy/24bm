@@ -90,6 +90,7 @@ import com.procurement.organization.api.DepartmentController;
 import com.procurement.organization.api.DepartmentResponse;
 import com.procurement.organization.application.DepartmentApplicationService;
 import com.procurement.order.api.BuyerDeliveryController;
+import com.procurement.workflow.api.FlowableDemandApprovalController;
 import com.procurement.order.api.BuyerReceiptController;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.CreateReceiptRequest;
@@ -215,6 +216,7 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerReceiptController.class,
     SupplierDeliveryController.class,
     BuyerDeliveryController.class,
+    FlowableDemandApprovalController.class,
     BuyerInvoiceReconciliationController.class,
     SupplierInvoiceReconciliationController.class,
     BuyerFinanceActionController.class,
@@ -245,6 +247,9 @@ class HttpSecurityContractTests {
 
   @Autowired
   private MockMvc mockMvc;
+
+  @MockBean
+  private com.procurement.workflow.application.FlowableDemandApprovalService flowableDemandApprovalService;
 
   @MockBean
   private PurchaseDemandApplicationService purchaseDemandApplicationService;

@@ -30,3 +30,9 @@ procurement:
       access-key: ${MINIO_ACCESS_KEY:minio}
       secret-key: ${MINIO_SECRET_KEY:minio12345}
       bucket: ${MINIO_BUCKET:24bid-attachments}
+
+# Flowable 工作流引擎(内嵌):自建 ACT_* 表(Liquibase),关闭异步执行器降低本地噪声。
+flowable:
+  database-schema-update: true
+  async-executor-activate: false
+  process-definition-location-prefix: classpath:/processes/

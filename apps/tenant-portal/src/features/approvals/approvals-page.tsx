@@ -10,6 +10,7 @@ import {
   useRfqAwardReviewApproval,
 } from '@24bid/api-client';
 import { FeedbackNotice, ListToolbar, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { FlowableWorkflowPanel } from './flowable-workflow-panel';
 
 const currency = (value?: number) =>
   value == null ? '—' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -93,6 +94,7 @@ export function ApprovalsPage() {
 
   return (
     <div className="space-y-5">
+      <FlowableWorkflowPanel />
       <Panel title="审批中心" icon={CheckSquare} subtitle="待办审批 · 通过 / 驳回">
         <ListToolbar
           title="待办审批"
