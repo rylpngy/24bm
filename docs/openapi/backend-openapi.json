@@ -7909,6 +7909,30 @@
           },
           "lastEvaluationScore": {
             "type": "number"
+          },
+          "creditCode": {
+            "type": "string"
+          },
+          "legalPerson": {
+            "type": "string"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "contactEmail": {
+            "type": "string"
+          },
+          "businessScope": {
+            "type": "string"
+          },
+          "bankName": {
+            "type": "string"
+          },
+          "bankAccount": {
+            "type": "string"
           }
         }
       },

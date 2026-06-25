@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Boxes } from 'lucide-react';
 import {
+  type BuyerSupplierResponse,
   useBuyerSupplierChangeStatus,
   useBuyerSupplierList,
   useBuyerSupplierReviewAdmission,
@@ -24,6 +25,7 @@ export function SuppliersPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>('全部');
   const [evalOpenId, setEvalOpenId] = useState<string | null>(null);
+  const [profileOpenId, setProfileOpenId] = useState<string | null>(null);
 
   const query = useBuyerSupplierList(status === '全部' ? undefined : { status });
   const submit = useBuyerSupplierSubmitAdmission();
@@ -142,6 +144,15 @@ export function SuppliersPage() {
                 {s.id && (
                   <button
                     type="button"
+                    onClick={() => setProfileOpenId(profileOpenId === s.id ? null : s.id!)}
+                    className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
+                  >
+                    {profileOpenId === s.id ? '收起档案' : '供应商档案'}
+                  </button>
+                )}
+                {s.id && (
+                  <button
+                    type="button"
                     onClick={() => setEvalOpenId(evalOpenId === s.id ? null : s.id!)}
                     className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
                   >
@@ -149,6 +160,7 @@ export function SuppliersPage() {
                   </button>
                 )}
               </div>
+              {profileOpenId === s.id && <SupplierProfileBlock s={s} />}
               {evalOpenId === s.id && s.id && <SupplierEvaluationPanel relationId={s.id} />}
             </div>
           ))}
@@ -182,6 +194,15 @@ export function SuppliersPage() {
                       {s.id && (
                         <button
                           type="button"
+                          onClick={() => setProfileOpenId(profileOpenId === s.id ? null : s.id!)}
+                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
+                        >
+                          {profileOpenId === s.id ? '收起' : '档案'}
+                        </button>
+                      )}
+                      {s.id && (
+                        <button
+                          type="button"
                           onClick={() => setEvalOpenId(evalOpenId === s.id ? null : s.id!)}
                           className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
                         >
@@ -197,11 +218,46 @@ export function SuppliersPage() {
         </ResponsiveTableFrame>
       )}
 
+      {profileOpenId && (
+        <div className="hidden lg:block">
+          {(() => {
+            const s = suppliers.find((x) => x.id === profileOpenId);
+            return s ? <SupplierProfileBlock s={s} /> : null;
+          })()}
+        </div>
+      )}
+
       {evalOpenId && (
         <div className="hidden lg:block">
           <SupplierEvaluationPanel relationId={evalOpenId} />
         </div>
       )}
     </Panel>
+  );
+}
+
+// 供应商档案：采购方视角的供应商主数据（信用代码/法人/联系人/银行/经营范围）。
+function SupplierProfileBlock({ s }: { s: BuyerSupplierResponse }) {
+  return (
+    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs font-black text-slate-600">供应商档案 · {s.supplierName}</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-4">
+        <MiniFact label="统一社会信用代码" value={s.creditCode || '—'} />
+        <MiniFact label="法定代表人" value={s.legalPerson || '—'} />
+        <MiniFact label="联系人" value={s.contactName || '—'} />
+        <MiniFact label="联系电话" value={s.contactPhone || '—'} />
+      </div>
+      <div className="mt-2 grid gap-2 sm:grid-cols-3">
+        <MiniFact label="联系邮箱" value={s.contactEmail || '—'} />
+        <MiniFact label="开户银行" value={s.bankName || '—'} />
+        <MiniFact label="银行账号" value={s.bankAccount || '—'} />
+      </div>
+      <div className="mt-2 rounded-lg border border-slate-100 bg-white p-3">
+        <p className="text-[11px] font-black text-slate-400">经营范围</p>
+        <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">
+          {s.businessScope || '未填写经营范围。'}
+        </p>
+      </div>
+    </div>
   );
 }

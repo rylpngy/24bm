@@ -12,5 +12,13 @@ public record BuyerSupplierRelation(
     String categoriesJson,
     BigDecimal performanceScore,
     String cooperationTier,
-    BigDecimal lastEvaluationScore) {
+    BigDecimal lastEvaluationScore,
+    String creditCode,
+    String legalPerson,
+    String contactName,
+    String contactPhone,
+    String contactEmail,
+    String businessScope,
+    String bankName,
+    String bankAccount) {
 }

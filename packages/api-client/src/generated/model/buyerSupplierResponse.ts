@@ -17,4 +17,12 @@ export interface BuyerSupplierResponse {
   performanceScore?: number;
   cooperationTier?: string;
   lastEvaluationScore?: number;
+  creditCode?: string;
+  legalPerson?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  businessScope?: string;
+  bankName?: string;
+  bankAccount?: string;
 }

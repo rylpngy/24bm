@@ -16,9 +16,12 @@ public interface BuyerSupplierRelationMapper {
       <script>
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
              r.categories::text as categories_json, r.performance_score,
-             r.cooperation_tier, r.last_evaluation_score
+             r.cooperation_tier, r.last_evaluation_score,
+             s.credit_code, s.legal_person, s.contact_name, s.contact_phone,
+             s.contact_email, s.business_scope, s.bank_name, s.bank_account
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
+      left join supplier_enterprises s on s.enterprise_id = r.supplier_id
       where r.tenant_id = #{tenantId}
         <if test="status != null and status != ''">
         and r.status = #{status}
@@ -48,9 +51,12 @@ public interface BuyerSupplierRelationMapper {
   @Select("""
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
              r.categories::text as categories_json, r.performance_score,
-             r.cooperation_tier, r.last_evaluation_score
+             r.cooperation_tier, r.last_evaluation_score,
+             s.credit_code, s.legal_person, s.contact_name, s.contact_phone,
+             s.contact_email, s.business_scope, s.bank_name, s.bank_account
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
+      left join supplier_enterprises s on s.enterprise_id = r.supplier_id
       where r.tenant_id = #{tenantId} and r.id = #{id}
       """)
   BuyerSupplierRelation findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);

@@ -220,6 +220,6 @@ class BuyerMasterDataAuditLogTests {
         "待准入",
         "A",
         "[\"办公设备\"]",
-        BigDecimal.valueOf(90), "合格", null);
+        BigDecimal.valueOf(90), "合格", null, "91310000MA1FL00001", "王法人", "李采购", "13900000000", "sales@demo.com", "电子元器件批发；五金交电销售", "招商银行上海分行", "6225880000000001");
   }
 }
