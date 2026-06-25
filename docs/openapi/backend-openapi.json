@@ -6142,6 +6142,21 @@
           },
           "netAmount": {
             "type": "number"
+          },
+          "receivedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "qualifiedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "qualifiedRate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "quantityMatchStatus": {
+            "type": "string"
           }
         }
       },

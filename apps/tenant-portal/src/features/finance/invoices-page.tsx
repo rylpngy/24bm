@@ -91,7 +91,7 @@ export function InvoicesPage() {
                 </div>
 
                 <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-xs font-black text-slate-500">三单匹配</p>
+                  <p className="text-xs font-black text-slate-500">三单匹配 · 金额维度</p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-4">
                     <MiniFact label="发票金额" value={currency(inv.amount)} />
                     <MiniFact label="订单金额" value={currency(inv.orderAmount)} />
@@ -99,6 +99,16 @@ export function InvoicesPage() {
                     <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white/80 px-3 py-2">
                       <span className="text-[11px] font-black text-slate-400">匹配</span>
                       <StatusPill label={matched ? '已匹配' : `差异 ${currency(variance)}`} />
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs font-black text-slate-500">三单匹配 · 数量维度</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                    <MiniFact label="收货数量" value={inv.receivedQuantity != null ? String(inv.receivedQuantity) : '—'} />
+                    <MiniFact label="合格数量" value={inv.qualifiedQuantity != null ? String(inv.qualifiedQuantity) : '—'} />
+                    <MiniFact label="合格率" value={inv.qualifiedRate != null ? `${inv.qualifiedRate}%` : '—'} />
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white/80 px-3 py-2">
+                      <span className="text-[11px] font-black text-slate-400">数量</span>
+                      <StatusPill label={inv.quantityMatchStatus ?? '待收货'} />
                     </div>
                   </div>
                 </div>

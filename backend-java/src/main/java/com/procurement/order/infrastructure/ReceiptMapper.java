@@ -34,6 +34,16 @@ public interface ReceiptMapper {
   Receipt findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
+      select id, tenant_id, order_id, receiver_id, result, received_at, received_quantity, qualified_quantity, quality_note
+      from receipts
+      where tenant_id = #{tenantId}
+        and order_id = #{orderId,jdbcType=VARCHAR}
+      order by received_at desc
+      limit 1
+      """)
+  Receipt findByTenantAndOrder(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
+
+  @Select("""
       select count(1)
       from receipts
       where tenant_id = #{tenantId}

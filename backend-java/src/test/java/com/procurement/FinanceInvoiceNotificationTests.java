@@ -44,6 +44,7 @@ class FinanceInvoiceNotificationTests {
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
       invoiceMapper,
       invoiceReconciliationMapper,
       threeWayMatchMapper,

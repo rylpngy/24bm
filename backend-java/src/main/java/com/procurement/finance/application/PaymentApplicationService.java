@@ -21,6 +21,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.supplier.domain.BuyerSupplierPaymentPolicy;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
@@ -36,6 +37,7 @@ public class PaymentApplicationService {
   private final InvoiceReconciliationMapper invoiceReconciliationMapper;
   private final ThreeWayMatchMapper threeWayMatchMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
+  private final ReceiptMapper receiptMapper;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
@@ -47,6 +49,7 @@ public class PaymentApplicationService {
       InvoiceReconciliationMapper invoiceReconciliationMapper,
       ThreeWayMatchMapper threeWayMatchMapper,
       PurchaseOrderMapper purchaseOrderMapper,
+      ReceiptMapper receiptMapper,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
@@ -56,6 +59,7 @@ public class PaymentApplicationService {
     this.invoiceReconciliationMapper = invoiceReconciliationMapper;
     this.threeWayMatchMapper = threeWayMatchMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
+    this.receiptMapper = receiptMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
@@ -161,7 +165,8 @@ public class PaymentApplicationService {
   private InvoiceResponse toResponse(Invoice invoice) {
     return InvoiceResponseAssembler.from(
         invoice,
-        purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()));
+        purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()),
+        receiptMapper.findByTenantAndOrder(invoice.tenantId(), invoice.orderId()));
   }
 
   private InvoiceReconciliationResponse toReconciliationResponse(InvoiceReconciliation reconciliation) {

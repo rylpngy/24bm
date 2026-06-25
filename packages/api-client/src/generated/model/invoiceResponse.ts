@@ -32,4 +32,8 @@ export interface InvoiceResponse {
   taxRate?: number;
   taxAmount?: number;
   netAmount?: number;
+  receivedQuantity?: number;
+  qualifiedQuantity?: number;
+  qualifiedRate?: number;
+  quantityMatchStatus?: string;
 }

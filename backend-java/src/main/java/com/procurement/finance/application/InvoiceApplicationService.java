@@ -22,6 +22,7 @@ import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderDocumentUniquenessPolicy;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class InvoiceApplicationService {
   private final PurchaseOrderMapper purchaseOrderMapper;
+  private final ReceiptMapper receiptMapper;
   private final InvoiceMapper invoiceMapper;
   private final InvoiceReconciliationMapper invoiceReconciliationMapper;
   private final ThreeWayMatchMapper threeWayMatchMapper;
@@ -41,6 +43,7 @@ public class InvoiceApplicationService {
 
   public InvoiceApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
+      ReceiptMapper receiptMapper,
       InvoiceMapper invoiceMapper,
       InvoiceReconciliationMapper invoiceReconciliationMapper,
       ThreeWayMatchMapper threeWayMatchMapper,
@@ -48,6 +51,7 @@ public class InvoiceApplicationService {
       TenantFeatureApplicationService tenantFeatureApplicationService,
       NotificationApplicationService notificationApplicationService) {
     this.purchaseOrderMapper = purchaseOrderMapper;
+    this.receiptMapper = receiptMapper;
     this.invoiceMapper = invoiceMapper;
     this.invoiceReconciliationMapper = invoiceReconciliationMapper;
     this.threeWayMatchMapper = threeWayMatchMapper;
@@ -179,7 +183,8 @@ public class InvoiceApplicationService {
   private InvoiceResponse toResponse(Invoice invoice) {
     return InvoiceResponseAssembler.from(
         invoice,
-        purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()));
+        purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()),
+        receiptMapper.findByTenantAndOrder(invoice.tenantId(), invoice.orderId()));
   }
 
   private InvoiceReconciliationResponse toReconciliationResponse(InvoiceReconciliation reconciliation) {

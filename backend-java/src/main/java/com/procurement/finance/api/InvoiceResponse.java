@@ -29,5 +29,9 @@ public record InvoiceResponse(
     LocalDate invoiceDate,
     BigDecimal taxRate,
     BigDecimal taxAmount,
-    BigDecimal netAmount) {
+    BigDecimal netAmount,
+    Integer receivedQuantity,
+    Integer qualifiedQuantity,
+    Integer qualifiedRate,
+    String quantityMatchStatus) {
 }

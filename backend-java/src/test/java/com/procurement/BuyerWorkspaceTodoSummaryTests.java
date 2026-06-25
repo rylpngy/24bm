@@ -157,7 +157,7 @@ class BuyerWorkspaceTodoSummaryTests {
         "待付款",
         "登记付款",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO);
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格");
   }
 
   private DeliveryResponse delivery(String id, String orderId) {

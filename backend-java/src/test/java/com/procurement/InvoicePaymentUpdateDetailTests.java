@@ -45,6 +45,7 @@ class InvoicePaymentUpdateDetailTests {
       invoiceReconciliationMapper,
       threeWayMatchMapper,
       purchaseOrderMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
       buyerSupplierRelationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
