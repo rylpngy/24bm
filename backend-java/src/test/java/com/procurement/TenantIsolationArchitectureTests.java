@@ -22,7 +22,9 @@ class TenantIsolationArchitectureTests {
       "platform/infrastructure/PlatformEnterpriseMapper.java",
       "supplier/infrastructure/SupplierProfileMapper.java",
       "tenant/infrastructure/TenantFeatureMapper.java",
-      "tenant/infrastructure/TenantEntitlementMapper.java");
+      "tenant/infrastructure/TenantEntitlementMapper.java",
+      // 身份/安全的跨切面映射:权限按用户解析(用户本身归属租户),非租户业务表。
+      "identity/infrastructure/PermissionMapper.java");
 
   @Test
   void applicationServicesUseCentralTenantAccessGuardInsteadOfLocalThreadLocalReads() throws IOException {

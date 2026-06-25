@@ -70,6 +70,8 @@ class FinanceActionPaymentBlockingTests {
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
+  private final com.procurement.identity.application.PermissionService permissionService =
+      org.mockito.Mockito.mock(com.procurement.identity.application.PermissionService.class);
   private final FinanceActionApplicationService financeActionApplicationService =
       new FinanceActionApplicationService(
           invoiceMapper,
@@ -85,7 +87,8 @@ class FinanceActionPaymentBlockingTests {
           approvalTaskApplicationService,
           approvalTaskMapper,
           auditLogApplicationService,
-          tenantFeatureApplicationService);
+          tenantFeatureApplicationService,
+          permissionService);
 
   @AfterEach
   void clearTenantContext() {
@@ -644,6 +647,23 @@ class FinanceActionPaymentBlockingTests {
         org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
+  void managerApprovalDeniedWithoutVariancePermission() {
+    TenantContext.set("tenant-1", null, "finance-specialist");
+    org.mockito.Mockito.doThrow(
+            new com.procurement.common.tenant.PermissionDeniedException("缺少所需权限:buyer:variance:approve"))
+        .when(permissionService)
+        .require("buyer:variance:approve");
+
+    assertThatThrownBy(() -> financeActionApplicationService.approveCurrentTenantVarianceHandling(
+            "variance-1", new com.procurement.finance.api.ApproveVarianceHandlingRequest(true, null)))
+        .isInstanceOf(com.procurement.common.tenant.PermissionDeniedException.class)
+        .hasMessageContaining("buyer:variance:approve");
+    verify(varianceHandlingMapper, never()).updateStatus(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
   }
 
   private VarianceHandling varianceHandling(String status, java.math.BigDecimal amount) {

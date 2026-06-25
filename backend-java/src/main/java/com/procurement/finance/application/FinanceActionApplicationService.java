@@ -1,6 +1,7 @@
 package com.procurement.finance.application;
 
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.identity.application.PermissionService;
 import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.domain.ApprovalTask;
@@ -85,6 +86,7 @@ public class FinanceActionApplicationService {
   private final ApprovalTaskMapper approvalTaskMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
+  private final PermissionService permissionService;
 
   public FinanceActionApplicationService(
       InvoiceMapper invoiceMapper,
@@ -100,7 +102,8 @@ public class FinanceActionApplicationService {
       ApprovalTaskApplicationService approvalTaskApplicationService,
       ApprovalTaskMapper approvalTaskMapper,
       AuditLogApplicationService auditLogApplicationService,
-      TenantFeatureApplicationService tenantFeatureApplicationService) {
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      PermissionService permissionService) {
     this.invoiceMapper = invoiceMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.paymentBatchMapper = paymentBatchMapper;
@@ -115,6 +118,7 @@ public class FinanceActionApplicationService {
     this.approvalTaskMapper = approvalTaskMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+    this.permissionService = permissionService;
   }
 
   public List<PaymentBatchResponse> listCurrentTenantPaymentBatches(
@@ -724,6 +728,7 @@ public class FinanceActionApplicationService {
   public PaymentRequestResponse createCurrentTenantPaymentRequest(CreatePaymentRequestRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment request APIs");
     String userId = TenantAccessGuard.requireUserId("payment request APIs");
+    permissionService.require("buyer:payment:register"); // 发起付款申请须具备该权限
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     Invoice invoice = requireTenantInvoice(tenantId, request.invoiceId());
     ensureAmountVarianceHandledBeforePaymentRequest(tenantId, invoice);
@@ -870,6 +875,7 @@ public class FinanceActionApplicationService {
   public VarianceHandlingResponse approveCurrentTenantVarianceHandling(
       String varianceHandlingId, ApproveVarianceHandlingRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("variance handling APIs");
+    permissionService.require("buyer:variance:approve"); // 财务经理签核须具备该权限
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     VarianceHandling varianceHandling =
         varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId);
@@ -910,6 +916,7 @@ public class FinanceActionApplicationService {
 
   public FinanceReport exportInvoices(String format) {
     String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    permissionService.require("buyer:report:export");
     List<String> headers =
         List.of("发票号", "发票代码", "订单", "供应商", "价税合计", "税率(%)", "开票日期", "付款状态");
     List<List<String>> rows = new ArrayList<>();
@@ -929,6 +936,7 @@ public class FinanceActionApplicationService {
 
   public FinanceReport exportReconciliation(String format) {
     String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    permissionService.require("buyer:report:export");
     List<String> headers =
         List.of("发票", "订单", "供应商", "订单金额", "发票金额", "差异金额", "匹配状态", "收货状态", "付款就绪");
     List<List<String>> rows = new ArrayList<>();
@@ -950,6 +958,7 @@ public class FinanceActionApplicationService {
   // 采购分析:按订单状态汇总订单数与金额(含合计行)。
   public FinanceReport exportProcurementAnalytics(String format) {
     String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    permissionService.require("buyer:report:export");
     Map<String, long[]> byStatusCount = new LinkedHashMap<>();
     Map<String, BigDecimal> byStatusAmount = new LinkedHashMap<>();
     BigDecimal total = BigDecimal.ZERO;

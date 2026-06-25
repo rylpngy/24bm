@@ -1,5 +1,6 @@
 package com.procurement.common.api;
 
+import com.procurement.common.tenant.PermissionDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -8,6 +9,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+  @ExceptionHandler(PermissionDeniedException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  public ApiResponse<Void> handlePermissionDenied(PermissionDeniedException exception) {
+    return ApiResponse.fail(exception.getMessage());
+  }
 
   @ExceptionHandler(IllegalArgumentException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
