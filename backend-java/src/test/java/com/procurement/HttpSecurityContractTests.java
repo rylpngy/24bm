@@ -235,6 +235,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SecurityConfig.class,
     JwtAuthenticationFilter.class,
     JwtTokenService.class,
+    com.procurement.identity.security.KeycloakTokenService.class,
     AuthenticationApplicationService.class
 })
 @TestPropertySource(properties = {

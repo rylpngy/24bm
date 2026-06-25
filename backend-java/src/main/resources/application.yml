@@ -36,3 +36,8 @@ flowable:
   database-schema-update: true
   async-executor-activate: false
   process-definition-location-prefix: classpath:/processes/
+
+# Keycloak(OIDC):后端作为资源服务器,通过 JWKS 验签 Keycloak 令牌(与自研 JWT 双签发器共存)。
+keycloak:
+  enabled: ${KEYCLOAK_ENABLED:true}
+  jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8081/realms/24bid/protocol/openid-connect/certs}
