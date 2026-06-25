@@ -15,7 +15,8 @@ public interface VarianceHandlingMapper {
   @Select("""
       <script>
       select id, tenant_id, invoice_id, supplier_id, order_id, variance_amount, reason,
-             owner_id, result, status, created_by, created_at, updated_at
+             owner_id, result, status, created_by, created_at, updated_at,
+             order_line_id, line_description
       from variance_handlings
       where tenant_id = #{tenantId}
       <if test="status != null">
@@ -42,7 +43,8 @@ public interface VarianceHandlingMapper {
 
   @Select("""
       select id, tenant_id, invoice_id, supplier_id, order_id, variance_amount, reason,
-             owner_id, result, status, created_by, created_at, updated_at
+             owner_id, result, status, created_by, created_at, updated_at,
+             order_line_id, line_description
       from variance_handlings
       where tenant_id = #{tenantId}
         and id = #{id}
@@ -66,11 +68,12 @@ public interface VarianceHandlingMapper {
   @Insert("""
       insert into variance_handlings (
         id, tenant_id, invoice_id, supplier_id, order_id, variance_amount, reason,
-        owner_id, result, status, created_by
+        owner_id, result, status, created_by, order_line_id, line_description
       )
       values (
         #{id}, #{tenantId}, #{invoiceId}, #{supplierId}, #{orderId}, #{varianceAmount}, #{reason},
-        #{ownerId}, #{result}, #{status}, #{createdBy}
+        #{ownerId}, #{result}, #{status}, #{createdBy}, #{orderLineId,jdbcType=VARCHAR},
+        #{lineDescription,jdbcType=VARCHAR}
       )
       on conflict (tenant_id, invoice_id) do update
         set variance_amount = excluded.variance_amount,
@@ -78,6 +81,8 @@ public interface VarianceHandlingMapper {
             owner_id = excluded.owner_id,
             result = excluded.result,
             status = excluded.status,
+            order_line_id = excluded.order_line_id,
+            line_description = excluded.line_description,
             updated_at = now()
       """)
   void upsert(
@@ -91,11 +96,14 @@ public interface VarianceHandlingMapper {
       @Param("ownerId") String ownerId,
       @Param("result") String result,
       @Param("status") String status,
-      @Param("createdBy") String createdBy);
+      @Param("createdBy") String createdBy,
+      @Param("orderLineId") String orderLineId,
+      @Param("lineDescription") String lineDescription);
 
   @Select("""
       select id, tenant_id, invoice_id, supplier_id, order_id, variance_amount, reason,
-             owner_id, result, status, created_by, created_at, updated_at
+             owner_id, result, status, created_by, created_at, updated_at,
+             order_line_id, line_description
       from variance_handlings
       where tenant_id = #{tenantId}
         and invoice_id = #{invoiceId}

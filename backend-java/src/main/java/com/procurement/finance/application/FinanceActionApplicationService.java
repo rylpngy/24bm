@@ -628,13 +628,56 @@ public class FinanceActionApplicationService {
         userId,
         "待财务复核",
         "待处理",
-        userId);
+        userId,
+        null,
+        null);
     auditLogApplicationService.recordTenantAction(
         tenantId,
         "variance_handling.created_from_three_way_match",
         AuditTargetType.INVOICE,
         match.invoiceId());
     return toVarianceHandlingResponse(varianceHandlingMapper.findByTenantAndInvoice(tenantId, match.invoiceId()));
+  }
+
+  // 行级差异处理:从某条被标记的发票行项(金额差异/数量短缺)发起差异处理,
+  // 标注触发行(orderLineId + 品名)并以该行的差异金额/结论为依据。
+  @Transactional
+  public VarianceHandlingResponse createVarianceHandlingFromMatchLine(
+      String invoiceId, String orderLineId) {
+    String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
+    String userId = TenantAccessGuard.requireUserId("three-way match APIs");
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    Invoice invoice = requireTenantInvoice(tenantId, invoiceId);
+    ThreeWayMatchLineResponse line =
+        listCurrentTenantThreeWayMatchLines(invoiceId).stream()
+            .filter(l -> orderLineId.equals(l.orderLineId()))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Order line not found for invoice " + invoiceId + ": " + orderLineId));
+    if (!"金额差异".equals(line.lineMatchStatus()) && !"数量短缺".equals(line.lineMatchStatus())) {
+      throw new IllegalStateException(
+          "Only flagged invoice lines can open variance handling: " + orderLineId);
+    }
+    String reason = line.description() + " · " + line.lineMatchStatus();
+    varianceHandlingMapper.upsert(
+        "variance-" + UUID.randomUUID(),
+        tenantId,
+        invoice.id(),
+        invoice.supplierId(),
+        invoice.orderId(),
+        line.amountVariance(),
+        reason,
+        userId,
+        "待财务复核",
+        "待处理",
+        userId,
+        orderLineId,
+        line.description());
+    auditLogApplicationService.recordTenantAction(
+        tenantId, "variance_handling.created_from_match_line", AuditTargetType.INVOICE, invoice.id());
+    return toVarianceHandlingResponse(varianceHandlingMapper.findByTenantAndInvoice(tenantId, invoice.id()));
   }
 
   public List<PaymentRequestResponse> listCurrentTenantPaymentRequests(
@@ -775,7 +818,9 @@ public class FinanceActionApplicationService {
         request.ownerId(),
         request.result(),
         request.status(),
-        userId);
+        userId,
+        null,
+        null);
     return toVarianceHandlingResponse(varianceHandlingMapper.findByTenantAndInvoice(tenantId, invoice.id()));
   }
 
@@ -1084,7 +1129,9 @@ public class FinanceActionApplicationService {
         handling.status(),
         handling.createdBy(),
         handling.createdAt(),
-        handling.updatedAt());
+        handling.updatedAt(),
+        handling.orderLineId(),
+        handling.lineDescription());
   }
 
   private String blankToNull(String value) {

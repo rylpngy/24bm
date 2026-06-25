@@ -3952,6 +3952,7 @@ class HttpSecurityContractTests {
         status,
         "user-buyer-owner",
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"),
+        null, null);
   }
 }

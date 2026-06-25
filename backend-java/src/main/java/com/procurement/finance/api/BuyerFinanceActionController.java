@@ -153,6 +153,13 @@ public class BuyerFinanceActionController {
         financeActionApplicationService.listCurrentTenantThreeWayMatchLines(invoiceId));
   }
 
+  @PostMapping("/three-way-matches/{invoiceId}/lines/{orderLineId}/variance")
+  public ApiResponse<VarianceHandlingResponse> createVarianceFromMatchLine(
+      @PathVariable String invoiceId, @PathVariable String orderLineId) {
+    return ApiResponse.ok(
+        financeActionApplicationService.createVarianceHandlingFromMatchLine(invoiceId, orderLineId));
+  }
+
   @PostMapping("/three-way-matches/rebuild")
   public ApiResponse<ThreeWayMatchRebuildResponse> rebuildThreeWayMatches() {
     return ApiResponse.ok(financeActionApplicationService.rebuildCurrentTenantThreeWayMatches());

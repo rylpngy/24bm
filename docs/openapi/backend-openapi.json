@@ -2332,6 +2332,54 @@
         }
       }
     },
+    "/api/v1/buyer/three-way-matches/{invoiceId}/lines/{orderLineId}/variance": {
+      "post": {
+        "tags": [
+          "buyer-finance-action-controller"
+        ],
+        "operationId": "BuyerFinanceAction_createVarianceFromMatchLine",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderLineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVarianceHandlingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/three-way-matches/rebuild": {
       "post": {
         "tags": [
@@ -6785,6 +6833,12 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "orderLineId": {
+            "type": "string"
+          },
+          "lineDescription": {
+            "type": "string"
           }
         }
       },

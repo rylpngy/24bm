@@ -1,7 +1,14 @@
-import { useBuyerFinanceActionThreeWayMatchLines } from '@24bid/api-client';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useBuyerFinanceActionCreateVarianceFromMatchLine,
+  useBuyerFinanceActionThreeWayMatchLines,
+} from '@24bid/api-client';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
+
+const FLAGGED = new Set(['金额差异', '数量短缺']);
 
 // 行级三单对账状态 → 徽章配色。
 const STATUS_STYLE: Record<string, string> = {
@@ -14,8 +21,26 @@ const STATUS_STYLE: Record<string, string> = {
 
 // 行级三单匹配:订单行项↔收货行项↔发票行项逐行对照,标注每行的金额差异/数量短缺。
 export function InvoiceLineMatchPanel({ invoiceId }: { invoiceId: string }) {
+  const queryClient = useQueryClient();
   const query = useBuyerFinanceActionThreeWayMatchLines(invoiceId);
+  const createVariance = useBuyerFinanceActionCreateVarianceFromMatchLine();
+  const [done, setDone] = useState<string | null>(null);
   const lines = query.data?.data ?? [];
+
+  const onRegister = (orderLineId: string) =>
+    createVariance.mutate(
+      { invoiceId, orderLineId },
+      {
+        onSuccess: () => {
+          setDone(orderLineId);
+          queryClient.invalidateQueries({
+            predicate: (q) =>
+              typeof q.queryKey[0] === 'string' &&
+              (q.queryKey[0] as string).includes('/variance-handlings'),
+          });
+        },
+      },
+    );
 
   if (query.isLoading) {
     return <p className="mt-2 px-1 text-xs font-bold text-slate-400">加载行级对账…</p>;
@@ -40,6 +65,7 @@ export function InvoiceLineMatchPanel({ invoiceId }: { invoiceId: string }) {
             <th className="px-3 py-1.5 text-right">订单/发票金额</th>
             <th className="px-3 py-1.5 text-right">差异</th>
             <th className="px-3 py-1.5">行结论</th>
+            <th className="px-3 py-1.5">操作</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -72,6 +98,29 @@ export function InvoiceLineMatchPanel({ invoiceId }: { invoiceId: string }) {
                 >
                   {l.lineMatchStatus ?? '—'}
                 </span>
+              </td>
+              <td className="px-3 py-1.5">
+                {FLAGGED.has(l.lineMatchStatus ?? '') ? (
+                  done === l.orderLineId ? (
+                    <span className="text-[11px] font-black text-emerald-600">已登记差异</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => l.orderLineId && onRegister(l.orderLineId)}
+                      disabled={
+                        createVariance.isPending &&
+                        createVariance.variables?.orderLineId === l.orderLineId
+                      }
+                      className="inline-flex h-7 items-center rounded-md border border-red-200 bg-white px-2 text-[11px] font-black text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {createVariance.isPending && createVariance.variables?.orderLineId === l.orderLineId
+                        ? '登记中'
+                        : '登记差异'}
+                    </button>
+                  )
+                ) : (
+                  <span className="text-[11px] font-bold text-slate-300">—</span>
+                )}
               </td>
             </tr>
           ))}

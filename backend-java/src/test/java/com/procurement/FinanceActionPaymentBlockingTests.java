@@ -588,6 +588,64 @@ class FinanceActionPaymentBlockingTests {
     org.assertj.core.api.Assertions.assertThat(lines.get(2).lineMatchStatus()).isEqualTo("未开票");
   }
 
+  @Test
+  void createVarianceFromFlaggedLineStampsTriggeringLineAndAmount() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1")).thenReturn(invoice());
+    when(threeWayMatchMapper.listLineReconciliation("tenant-1", "po-1", "invoice-1"))
+        .thenReturn(java.util.List.of(new com.procurement.finance.domain.ThreeWayMatchLineRow(
+            "oli-x", "网络机柜", "台", BigDecimal.valueOf(4), BigDecimal.valueOf(12000),
+            BigDecimal.valueOf(48000), BigDecimal.valueOf(4), BigDecimal.valueOf(4),
+            BigDecimal.valueOf(4), BigDecimal.valueOf(12500), BigDecimal.valueOf(50000))));
+    when(varianceHandlingMapper.findByTenantAndInvoice("tenant-1", "invoice-1"))
+        .thenReturn(new VarianceHandling("variance-1", "tenant-1", "invoice-1", "supplier-1", "po-1",
+            BigDecimal.valueOf(2000), "网络机柜 · 金额差异", "buyer-user", "待财务复核", "待处理",
+            "buyer-user", OffsetDateTime.now(), OffsetDateTime.now(), "oli-x", "网络机柜"));
+
+    var response = financeActionApplicationService.createVarianceHandlingFromMatchLine("invoice-1", "oli-x");
+
+    verify(varianceHandlingMapper).upsert(
+        org.mockito.ArgumentMatchers.startsWith("variance-"),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("invoice-1"),
+        org.mockito.ArgumentMatchers.eq("supplier-1"),
+        org.mockito.ArgumentMatchers.eq("po-1"),
+        org.mockito.ArgumentMatchers.argThat(v -> v.compareTo(BigDecimal.valueOf(2000)) == 0),
+        org.mockito.ArgumentMatchers.eq("网络机柜 · 金额差异"),
+        org.mockito.ArgumentMatchers.eq("buyer-user"),
+        org.mockito.ArgumentMatchers.eq("待财务复核"),
+        org.mockito.ArgumentMatchers.eq("待处理"),
+        org.mockito.ArgumentMatchers.eq("buyer-user"),
+        org.mockito.ArgumentMatchers.eq("oli-x"),
+        org.mockito.ArgumentMatchers.eq("网络机柜"));
+    assertThat(response.orderLineId()).isEqualTo("oli-x");
+    assertThat(response.lineDescription()).isEqualTo("网络机柜");
+  }
+
+  @Test
+  void createVarianceFromConsistentLineIsRejected() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1")).thenReturn(invoice());
+    when(threeWayMatchMapper.listLineReconciliation("tenant-1", "po-1", "invoice-1"))
+        .thenReturn(java.util.List.of(new com.procurement.finance.domain.ThreeWayMatchLineRow(
+            "oli-ok", "网络机柜", "台", BigDecimal.valueOf(4), BigDecimal.valueOf(12000),
+            BigDecimal.valueOf(48000), BigDecimal.valueOf(4), BigDecimal.valueOf(4),
+            BigDecimal.valueOf(4), BigDecimal.valueOf(12000), BigDecimal.valueOf(48000))));
+
+    assertThatThrownBy(
+            () -> financeActionApplicationService.createVarianceHandlingFromMatchLine("invoice-1", "oli-ok"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Only flagged invoice lines");
+    verify(varianceHandlingMapper, never()).upsert(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
+  }
+
   private Invoice invoice() {
     return new Invoice(
         "invoice-1",
@@ -760,6 +818,7 @@ class FinanceActionPaymentBlockingTests {
         status,
         "buyer-user",
         OffsetDateTime.now(),
-        OffsetDateTime.now());
+        OffsetDateTime.now(),
+        null, null);
   }
 }

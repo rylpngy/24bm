@@ -20,4 +20,6 @@ export interface VarianceHandlingResponse {
   createdBy?: string;
   createdAt?: string;
   updatedAt?: string;
+  orderLineId?: string;
+  lineDescription?: string;
 }

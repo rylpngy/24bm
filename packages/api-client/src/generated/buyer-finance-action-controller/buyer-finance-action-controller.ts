@@ -501,6 +501,63 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerFinanceActionCreateVarianceFromMatchLine = (
+    invoiceId: string,
+    orderLineId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseVarianceHandlingResponse>(
+      {url: `/api/v1/buyer/three-way-matches/${invoiceId}/lines/${orderLineId}/variance`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerFinanceActionCreateVarianceFromMatchLineMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceFromMatchLine>>, TError,{invoiceId: string;orderLineId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceFromMatchLine>>, TError,{invoiceId: string;orderLineId: string}, TContext> => {
+
+const mutationKey = ['buyerFinanceActionCreateVarianceFromMatchLine'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceFromMatchLine>>, {invoiceId: string;orderLineId: string}> = (props) => {
+          const {invoiceId,orderLineId} = props ?? {};
+
+          return  buyerFinanceActionCreateVarianceFromMatchLine(invoiceId,orderLineId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerFinanceActionCreateVarianceFromMatchLineMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceFromMatchLine>>>
+    
+    export type BuyerFinanceActionCreateVarianceFromMatchLineMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerFinanceActionCreateVarianceFromMatchLine = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceFromMatchLine>>, TError,{invoiceId: string;orderLineId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceFromMatchLine>>,
+        TError,
+        {invoiceId: string;orderLineId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerFinanceActionCreateVarianceFromMatchLineMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const buyerFinanceActionRebuildThreeWayMatches = (
     
  signal?: AbortSignal

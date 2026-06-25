@@ -16,5 +16,7 @@ public record VarianceHandlingResponse(
     String status,
     String createdBy,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    String orderLineId,
+    String lineDescription) {
 }
