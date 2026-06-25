@@ -19,6 +19,7 @@ import {
 } from '@24bid/ui';
 import { OwnerAttachments } from '../attachments/owner-attachments';
 import { ContractFulfillmentEvents } from './contract-fulfillment-events';
+import { ContractScheduleSection } from './contract-schedule-section';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -36,6 +37,7 @@ export function ContractsPage() {
   const [name, setName] = useState('');
   const [attachOpenId, setAttachOpenId] = useState<string | null>(null);
   const [eventsOpenId, setEventsOpenId] = useState<string | null>(null);
+  const [scheduleOpenId, setScheduleOpenId] = useState<string | null>(null);
 
   const query = useBuyerContractList();
   const orders = usePurchaseOrderList();
@@ -265,8 +267,18 @@ export function ContractsPage() {
                     {eventsOpenId === c.id ? '收起履约事件' : '履约事件'}
                   </button>
                 )}
+                {c.id && (
+                  <button
+                    type="button"
+                    onClick={() => setScheduleOpenId(scheduleOpenId === c.id ? null : c.id!)}
+                    className="inline-flex h-8 items-center rounded-md border border-violet-200 bg-white px-3 text-xs font-black text-violet-700 hover:bg-violet-50"
+                  >
+                    {scheduleOpenId === c.id ? '收起行项与付款' : '行项与付款计划'}
+                  </button>
+                )}
               </div>
               {eventsOpenId === c.id && c.id && <ContractFulfillmentEvents contractId={c.id} />}
+              {scheduleOpenId === c.id && c.id && <ContractScheduleSection contractId={c.id} />}
               {attachOpenId === c.id && c.id && (
                 <OwnerAttachments
                   ownerType="contract"

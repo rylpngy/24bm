@@ -16,6 +16,7 @@ export * from './buyer-role-controller/buyer-role-controller';
 export * from './buyer-supplier-controller/buyer-supplier-controller';
 export * from './buyer-user-controller/buyer-user-controller';
 export * from './buyer-workspace-controller/buyer-workspace-controller';
+export * from './contract-schedule-controller/contract-schedule-controller';
 export * from './department-controller/department-controller';
 export * from './dictionary-controller/dictionary-controller';
 export * from './flowable-demand-approval-controller/flowable-demand-approval-controller';

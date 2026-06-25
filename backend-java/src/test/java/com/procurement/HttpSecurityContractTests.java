@@ -19,6 +19,7 @@ import com.procurement.catalog.api.MaterialController;
 import com.procurement.catalog.api.MaterialResponse;
 import com.procurement.catalog.application.MaterialApplicationService;
 import com.procurement.contract.api.BuyerContractController;
+import com.procurement.contract.api.ContractScheduleController;
 import com.procurement.contract.api.ContractResponse;
 import com.procurement.contract.api.UpdateContractArchiveStatusRequest;
 import com.procurement.contract.api.UpdateContractStatusRequest;
@@ -217,6 +218,7 @@ import org.springframework.test.web.servlet.MvcResult;
     RfqAwardController.class,
     PurchaseOrderController.class,
     BuyerContractController.class,
+    ContractScheduleController.class,
     SupplierOrderController.class,
     BuyerReceiptController.class,
     SupplierDeliveryController.class,
@@ -284,6 +286,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private ContractApplicationService contractApplicationService;
+
+  @MockBean
+  private com.procurement.contract.application.ContractScheduleService contractScheduleService;
 
   @MockBean
   private ReceiptApplicationService receiptApplicationService;
