@@ -71,7 +71,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     org.assertj.core.api.Assertions.assertThat(service.confirmCurrentSupplierOrder("po-1").status())
         .isEqualTo("待发货");
@@ -93,7 +94,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     assertThatThrownBy(() -> service.confirmCurrentSupplierOrder("po-1"))
         .isInstanceOf(IllegalStateException.class)
@@ -196,7 +198,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
 
@@ -243,7 +246,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     var response = service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
 
@@ -284,7 +288,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     assertThatThrownBy(() -> service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20"))))
         .isInstanceOf(IllegalStateException.class)
@@ -324,7 +329,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     assertThatThrownBy(() -> service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20"))))
         .isInstanceOf(IllegalStateException.class)
@@ -354,7 +360,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     service.listCurrentTenantOrders("待供应商确认", "supplier-1", "rfq-1");
 
@@ -374,7 +381,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     service.listCurrentSupplierOrders("待发货", "rfq-1");
 

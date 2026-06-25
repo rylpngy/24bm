@@ -35,6 +35,7 @@ public class PurchaseOrderApplicationService {
   private final NotificationApplicationService notificationApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final PurchaseOrderStatusTransition purchaseOrderStatusTransition;
+  private final OrderLineItemApplicationService orderLineItemApplicationService;
 
   public PurchaseOrderApplicationService(
       AwardDecisionMapper awardDecisionMapper,
@@ -43,7 +44,8 @@ public class PurchaseOrderApplicationService {
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
-      PurchaseOrderStatusTransition purchaseOrderStatusTransition) {
+      PurchaseOrderStatusTransition purchaseOrderStatusTransition,
+      OrderLineItemApplicationService orderLineItemApplicationService) {
     this.awardDecisionMapper = awardDecisionMapper;
     this.rfqMapper = rfqMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
@@ -51,6 +53,7 @@ public class PurchaseOrderApplicationService {
     this.notificationApplicationService = notificationApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.purchaseOrderStatusTransition = purchaseOrderStatusTransition;
+    this.orderLineItemApplicationService = orderLineItemApplicationService;
   }
 
   public List<PurchaseOrderResponse> listCurrentTenantOrders() {
@@ -193,6 +196,8 @@ public class PurchaseOrderApplicationService {
       }
       throw exception;
     }
+    // 从中标报价复制行项明细,贯通「报价→订单」行级追溯。
+    orderLineItemApplicationService.copyFromQuote(tenantId, orderId, award.quoteId());
     auditLogApplicationService.recordTenantAction(
         PurchaseOrderAuditAction.CREATED,
         AuditTargetType.PURCHASE_ORDER,
@@ -220,7 +225,8 @@ public class PurchaseOrderApplicationService {
         order.deliveryAddress(),
         order.contactName(),
         order.contactPhone(),
-        order.paymentTerms());
+        order.paymentTerms(),
+        orderLineItemApplicationService.listForOrder(order.tenantId(), order.id()));
   }
 
   private void requireFinalizedRfqAward(String tenantId, AwardDecision award) {

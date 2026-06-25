@@ -167,6 +167,37 @@ export function OrdersPage() {
                 </div>
               </div>
 
+              {(o.lineItems ?? []).length > 0 && (
+                <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+                  <p className="bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                    订单行项明细（{(o.lineItems ?? []).length} 项 · 源自中标报价）
+                  </p>
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                      <tr>
+                        <th className="px-3 py-1.5">品名/规格</th>
+                        <th className="px-3 py-1.5 text-right">数量</th>
+                        <th className="px-3 py-1.5 text-right">单价</th>
+                        <th className="px-3 py-1.5 text-right">行金额</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(o.lineItems ?? []).map((l) => (
+                        <tr key={l.id} className="font-bold text-slate-700">
+                          <td className="px-3 py-1.5">{l.description}</td>
+                          <td className="px-3 py-1.5 text-right">
+                            {l.quantity}
+                            {l.unit ? ` ${l.unit}` : ''}
+                          </td>
+                          <td className="px-3 py-1.5 text-right">{currency(l.unitPrice)}</td>
+                          <td className="px-3 py-1.5 text-right font-black text-slate-900">{currency(l.lineAmount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               {o.id && deliveryByOrder[o.id] && (
                 <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/40 p-3">
                   <p className="text-xs font-black text-indigo-700">物流信息</p>

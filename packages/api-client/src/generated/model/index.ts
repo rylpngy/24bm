@@ -170,6 +170,7 @@ export * from './loginResponseScope';
 export * from './materialListParams';
 export * from './materialResponse';
 export * from './notificationResponse';
+export * from './orderLineItemResponse';
 export * from './paymentArchiveExceptionRequestResponse';
 export * from './paymentBatchResponse';
 export * from './paymentBlockResolutionResponse';

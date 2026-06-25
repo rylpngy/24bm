@@ -3,6 +3,7 @@ package com.procurement.order.api;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public record PurchaseOrderResponse(
     String id,
@@ -17,5 +18,6 @@ public record PurchaseOrderResponse(
     String deliveryAddress,
     String contactName,
     String contactPhone,
-    String paymentTerms) {
+    String paymentTerms,
+    List<OrderLineItemResponse> lineItems) {
 }

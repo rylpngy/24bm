@@ -50,7 +50,8 @@ class PurchaseOrderNotificationTests {
       auditLogApplicationService,
       notificationApplicationService,
       tenantFeatureApplicationService,
-      new PurchaseOrderStatusTransition());
+      new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
   @AfterEach
   void clearTenantContext() {

@@ -1365,7 +1365,8 @@ class HttpSecurityContractTests {
             "待发货",
             LocalDate.parse("2026-07-10"),
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-            OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款")));
+            OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款",
+            java.util.List.of())));
     when(purchaseOrderApplicationService.confirmCurrentSupplierOrder("po-demo"))
         .thenReturn(new PurchaseOrderResponse(
             "po-demo",
@@ -1376,7 +1377,8 @@ class HttpSecurityContractTests {
             "待发货",
             LocalDate.parse("2026-07-10"),
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-            OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款"));
+            OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款",
+            java.util.List.of()));
     when(invoiceApplicationService.listCurrentSupplierInvoices(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull()))
@@ -3805,7 +3807,8 @@ class HttpSecurityContractTests {
         status,
         LocalDate.parse("2026-07-10"),
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款",
+            java.util.List.of());
   }
 
   private InvoiceResponse invoiceResponse(String id, String paymentStatus) {

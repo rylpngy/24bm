@@ -7103,6 +7103,29 @@
           }
         }
       },
+      "OrderLineItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "lineAmount": {
+            "type": "number"
+          }
+        }
+      },
       "PurchaseOrderResponse": {
         "type": "object",
         "properties": {
@@ -7147,6 +7170,12 @@
           },
           "paymentTerms": {
             "type": "string"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLineItemResponse"
+            }
           }
         }
       },
