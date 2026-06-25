@@ -190,6 +190,8 @@ export * from './purchaseOrderResponse';
 export * from './quoteLineItemRequest';
 export * from './quoteLineItemResponse';
 export * from './quoteResponse';
+export * from './receiptLineItemRequest';
+export * from './receiptLineItemResponse';
 export * from './receiptResponse';
 export * from './registerPaymentRequest';
 export * from './resetBuyerUserPasswordRequest';

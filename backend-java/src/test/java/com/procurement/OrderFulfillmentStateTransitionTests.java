@@ -399,6 +399,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
@@ -479,12 +481,14 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null)))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("status changed before receipt");
 
@@ -503,12 +507,14 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null)))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Shipped delivery not found for receipt");
 
@@ -537,12 +543,14 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null)))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Purchase order already has a receipt");
 
@@ -581,17 +589,60 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null));
+    service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null));
 
     verify(auditLogApplicationService).recordTenantAction(
         "purchase_order.received",
         "purchase_order",
         "po-1");
+  }
+
+  @Test
+  void buyerReceiptWithLineItemsPersistsPerLineInspectionFromOrderLines() {
+    TenantContext.set("tenant-1", null, "user-buyer");
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "已发货"));
+    when(deliveryMapper.countByTenantOrderAndStatus("tenant-1", "po-1", "已发货")).thenReturn(1);
+    when(purchaseOrderMapper.updateStatus("tenant-1", "po-1", "已发货", "已收货")).thenReturn(1);
+    when(receiptMapper.findByTenantAndId(
+            org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> new Receipt(invocation.getArgument(1), "tenant-1", "po-1",
+            "user-buyer", "部分合格", OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 0, 0, ""));
+
+    var orderLineItemMapper =
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class);
+    var receiptLineItemMapper =
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class);
+    when(orderLineItemMapper.listByOrder("tenant-1", "po-1"))
+        .thenReturn(List.of(new com.procurement.order.domain.OrderLineItem(
+            "oli-1", "tenant-1", "po-1", "网络机柜", "台",
+            BigDecimal.valueOf(4), BigDecimal.valueOf(12000), BigDecimal.valueOf(48000), 0)));
+
+    ReceiptApplicationService service = new ReceiptApplicationService(
+        purchaseOrderMapper, deliveryMapper, receiptMapper,
+        orderLineItemMapper, receiptLineItemMapper,
+        auditLogApplicationService, notificationApplicationService,
+        tenantFeatureApplicationService, new PurchaseOrderStatusTransition());
+
+    service.create("po-1", new CreateReceiptRequest("部分合格", null, null, null,
+        List.of(new com.procurement.order.api.ReceiptLineItemRequest(
+            "oli-1", BigDecimal.valueOf(4), BigDecimal.valueOf(3)))));
+
+    // 冗余订单行项的 品名/单位/订购数量,并记录收货 4 / 合格 3。
+    verify(receiptLineItemMapper).insert(anyString(), org.mockito.ArgumentMatchers.eq("tenant-1"),
+        anyString(), org.mockito.ArgumentMatchers.eq("oli-1"),
+        org.mockito.ArgumentMatchers.eq("网络机柜"), org.mockito.ArgumentMatchers.eq("台"),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(4)),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(4)),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(3)),
+        org.mockito.ArgumentMatchers.eq(0));
   }
 
   private PurchaseOrder order(String id, String tenantId, String supplierId, String status) {

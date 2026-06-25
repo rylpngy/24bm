@@ -1,6 +1,7 @@
 package com.procurement.order.api;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public record ReceiptResponse(
     String id,
@@ -11,5 +12,6 @@ public record ReceiptResponse(
     OffsetDateTime receivedAt,
     Integer receivedQuantity,
     Integer qualifiedQuantity,
-    String qualityNote) {
+    String qualityNote,
+    List<ReceiptLineItemResponse> lineItems) {
 }

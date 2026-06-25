@@ -8973,6 +8973,29 @@
           },
           "qualityNote": {
             "type": "string"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptLineItemRequest"
+            }
+          }
+        }
+      },
+      "ReceiptLineItemRequest": {
+        "required": [
+          "orderLineId"
+        ],
+        "type": "object",
+        "properties": {
+          "orderLineId": {
+            "type": "string"
+          },
+          "receivedQuantity": {
+            "type": "number"
+          },
+          "qualifiedQuantity": {
+            "type": "number"
           }
         }
       },
@@ -8987,6 +9010,32 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ReceiptLineItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "orderLineId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "orderedQuantity": {
+            "type": "number"
+          },
+          "receivedQuantity": {
+            "type": "number"
+          },
+          "qualifiedQuantity": {
+            "type": "number"
           }
         }
       },
@@ -9022,6 +9071,12 @@
           },
           "qualityNote": {
             "type": "string"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptLineItemResponse"
+            }
           }
         }
       },

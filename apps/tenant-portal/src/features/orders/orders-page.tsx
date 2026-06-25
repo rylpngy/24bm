@@ -31,12 +31,20 @@ export function OrdersPage() {
   const receipt = useBuyerReceiptCreate();
   const orders = query.data?.data ?? [];
 
-  // 收货验收的录入表单（每次只展开一个订单）。
+  // 收货验收的录入表单（每次只展开一个订单）。lines 非空时按行验收,否则退化为抬头数量。
   const [receiveForm, setReceiveForm] = useState<{
     orderId: string;
     received: string;
     qualified: string;
     note: string;
+    lines: {
+      orderLineId: string;
+      description: string;
+      unit?: string;
+      ordered?: number;
+      received: string;
+      qualified: string;
+    }[];
   } | null>(null);
 
   const supplierNames = useMemo(() => {
@@ -74,19 +82,32 @@ export function OrdersPage() {
 
   const handleReceive = (orderId: string) => {
     const form = receiveForm?.orderId === orderId ? receiveForm : null;
-    const received = form ? Number(form.received) || 0 : 0;
-    const qualified = form ? Number(form.qualified) || 0 : 0;
-    const result = qualified > 0 && qualified < received ? '部分合格' : '验收合格';
+    const hasLines = (form?.lines ?? []).length > 0;
+    let data;
+    if (hasLines && form) {
+      const lineItems = form.lines.map((r) => ({
+        orderLineId: r.orderLineId,
+        receivedQuantity: Number(r.received) || 0,
+        qualifiedQuantity: Number(r.qualified) || 0,
+      }));
+      const anyPartial = lineItems.some((li) => li.qualifiedQuantity < li.receivedQuantity);
+      data = {
+        result: anyPartial ? '部分合格' : '验收合格',
+        qualityNote: form.note || '',
+        lineItems,
+      };
+    } else {
+      const received = form ? Number(form.received) || 0 : 0;
+      const qualified = form ? Number(form.qualified) || 0 : 0;
+      data = {
+        result: qualified > 0 && qualified < received ? '部分合格' : '验收合格',
+        receivedQuantity: received,
+        qualifiedQuantity: qualified,
+        qualityNote: form?.note || '',
+      };
+    }
     receipt.mutate(
-      {
-        orderId,
-        data: {
-          result,
-          receivedQuantity: received,
-          qualifiedQuantity: qualified,
-          qualityNote: form?.note || '',
-        },
-      },
+      { orderId, data },
       {
         onSuccess: () => {
           setFeedback(`订单 ${orderId} 收货验收完成`);
@@ -246,6 +267,35 @@ export function OrdersPage() {
                       )}
                     />
                   </div>
+                  {(receiptByOrder[o.id]!.lineItems ?? []).length > 0 && (
+                    <div className="mt-2 overflow-hidden rounded-lg border border-emerald-100 bg-white">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-emerald-50 text-[11px] font-black text-emerald-700">
+                          <tr>
+                            <th className="px-3 py-1.5">品名/规格</th>
+                            <th className="px-3 py-1.5 text-right">订购</th>
+                            <th className="px-3 py-1.5 text-right">收货</th>
+                            <th className="px-3 py-1.5 text-right">合格</th>
+                            <th className="px-3 py-1.5 text-right">合格率</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-emerald-50">
+                          {(receiptByOrder[o.id]!.lineItems ?? []).map((l) => (
+                            <tr key={l.id} className="font-bold text-slate-700">
+                              <td className="px-3 py-1.5">{l.description}</td>
+                              <td className="px-3 py-1.5 text-right">
+                                {l.orderedQuantity}
+                                {l.unit ? ` ${l.unit}` : ''}
+                              </td>
+                              <td className="px-3 py-1.5 text-right">{l.receivedQuantity}</td>
+                              <td className="px-3 py-1.5 text-right font-black text-slate-900">{l.qualifiedQuantity}</td>
+                              <td className="px-3 py-1.5 text-right">{ratePct(Number(l.qualifiedQuantity), Number(l.receivedQuantity))}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                   {receiptByOrder[o.id]!.qualityNote && (
                     <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-700">
                       {receiptByOrder[o.id]!.qualityNote}
@@ -259,32 +309,82 @@ export function OrdersPage() {
                   {receiveForm?.orderId === o.id ? (
                     <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-3">
                       <p className="text-xs font-black text-blue-800">收货验收登记</p>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                        <div>
-                          <label className="text-[11px] font-black text-slate-500">收货数量</label>
-                          <input
-                            type="number"
-                            min={0}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                            value={receiveForm.received}
-                            onChange={(e) =>
-                              setReceiveForm((f) => f && { ...f, received: e.target.value })
-                            }
-                          />
+                      {receiveForm.lines.length > 0 ? (
+                        <div className="mt-2 overflow-hidden rounded-lg border border-blue-100 bg-white">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-blue-50 text-[11px] font-black text-blue-700">
+                              <tr>
+                                <th className="px-3 py-1.5">品名/规格</th>
+                                <th className="px-3 py-1.5 text-right">订购</th>
+                                <th className="px-2 py-1.5 w-20">收货</th>
+                                <th className="px-2 py-1.5 w-20">合格</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-blue-50">
+                              {receiveForm.lines.map((r, idx) => (
+                                <tr key={r.orderLineId} className="font-bold text-slate-700">
+                                  <td className="px-3 py-1.5">{r.description}</td>
+                                  <td className="px-3 py-1.5 text-right">
+                                    {r.ordered}
+                                    {r.unit ? ` ${r.unit}` : ''}
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <input type="number" min={0}
+                                      className="w-full rounded border border-slate-200 px-2 py-1 text-xs font-semibold outline-none focus:border-blue-300"
+                                      value={r.received}
+                                      onChange={(e) =>
+                                        setReceiveForm((f) => {
+                                          if (!f) return f;
+                                          const lines = f.lines.map((x, i) => (i === idx ? { ...x, received: e.target.value } : x));
+                                          return { ...f, lines };
+                                        })
+                                      } />
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <input type="number" min={0}
+                                      className="w-full rounded border border-slate-200 px-2 py-1 text-xs font-semibold outline-none focus:border-blue-300"
+                                      value={r.qualified}
+                                      onChange={(e) =>
+                                        setReceiveForm((f) => {
+                                          if (!f) return f;
+                                          const lines = f.lines.map((x, i) => (i === idx ? { ...x, qualified: e.target.value } : x));
+                                          return { ...f, lines };
+                                        })
+                                      } />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
-                        <div>
-                          <label className="text-[11px] font-black text-slate-500">合格数量</label>
-                          <input
-                            type="number"
-                            min={0}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                            value={receiveForm.qualified}
-                            onChange={(e) =>
-                              setReceiveForm((f) => f && { ...f, qualified: e.target.value })
-                            }
-                          />
+                      ) : (
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                          <div>
+                            <label className="text-[11px] font-black text-slate-500">收货数量</label>
+                            <input
+                              type="number"
+                              min={0}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                              value={receiveForm.received}
+                              onChange={(e) =>
+                                setReceiveForm((f) => f && { ...f, received: e.target.value })
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-black text-slate-500">合格数量</label>
+                            <input
+                              type="number"
+                              min={0}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                              value={receiveForm.qualified}
+                              onChange={(e) =>
+                                setReceiveForm((f) => f && { ...f, qualified: e.target.value })
+                              }
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )}
                       <div className="mt-2">
                         <label className="text-[11px] font-black text-slate-500">验收说明</label>
                         <input
@@ -318,7 +418,20 @@ export function OrdersPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        setReceiveForm({ orderId: o.id!, received: '', qualified: '', note: '' })
+                        setReceiveForm({
+                          orderId: o.id!,
+                          received: '',
+                          qualified: '',
+                          note: '',
+                          lines: (o.lineItems ?? []).map((l) => ({
+                            orderLineId: l.id!,
+                            description: l.description ?? '',
+                            unit: l.unit,
+                            ordered: l.quantity,
+                            received: String(l.quantity ?? ''),
+                            qualified: String(l.quantity ?? ''),
+                          })),
+                        })
                       }
                       className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700"
                     >

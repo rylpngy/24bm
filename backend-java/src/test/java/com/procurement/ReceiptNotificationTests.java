@@ -46,6 +46,8 @@ class ReceiptNotificationTests {
       purchaseOrderMapper,
       deliveryMapper,
       receiptMapper,
+      org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+      org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
       auditLogApplicationService,
       notificationApplicationService,
       tenantFeatureApplicationService,
@@ -73,7 +75,7 @@ class ReceiptNotificationTests {
         new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester"),
         new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it", "role-buyer-requester")));
 
-    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null));
+    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null));
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
@@ -106,7 +108,7 @@ class ReceiptNotificationTests {
         supplierUser("supplier-user-active", "启用"),
         supplierUser("supplier-user-disabled", "停用")));
 
-    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null));
+    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null));
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
