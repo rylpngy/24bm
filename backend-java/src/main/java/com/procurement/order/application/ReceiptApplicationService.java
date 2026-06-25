@@ -79,7 +79,15 @@ public class ReceiptApplicationService {
         orderId);
 
     String receiptId = newId("receipt");
-    receiptMapper.insert(receiptId, tenantId, orderId, userId, request.result());
+    receiptMapper.insert(
+        receiptId,
+        tenantId,
+        orderId,
+        userId,
+        request.result(),
+        request.receivedQuantity() == null ? 0 : request.receivedQuantity(),
+        request.qualifiedQuantity() == null ? 0 : request.qualifiedQuantity(),
+        request.qualityNote() == null ? "" : request.qualityNote());
     int updated = purchaseOrderMapper.updateStatus(
         tenantId,
         orderId,
@@ -112,7 +120,10 @@ public class ReceiptApplicationService {
         receipt.orderId(),
         receipt.receiverId(),
         receipt.result(),
-        receipt.receivedAt());
+        receipt.receivedAt(),
+        receipt.receivedQuantity(),
+        receipt.qualifiedQuantity(),
+        receipt.qualityNote());
   }
 
   private String newId(String prefix) {

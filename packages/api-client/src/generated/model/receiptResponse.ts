@@ -13,4 +13,7 @@ export interface ReceiptResponse {
   receiverId?: string;
   result?: string;
   receivedAt?: string;
+  receivedQuantity?: number;
+  qualifiedQuantity?: number;
+  qualityNote?: string;
 }

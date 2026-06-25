@@ -8,4 +8,7 @@
 
 export interface CreateReceiptRequest {
   result: string;
+  receivedQuantity?: number;
+  qualifiedQuantity?: number;
+  qualityNote?: string;
 }

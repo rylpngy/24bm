@@ -8435,6 +8435,17 @@
         "properties": {
           "result": {
             "type": "string"
+          },
+          "receivedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "qualifiedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "qualityNote": {
+            "type": "string"
           }
         }
       },
@@ -8473,6 +8484,17 @@
           "receivedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "receivedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "qualifiedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "qualityNote": {
+            "type": "string"
           }
         }
       },

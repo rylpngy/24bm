@@ -3247,7 +3247,7 @@ class HttpSecurityContractTests {
             "po-demo",
             "user-buyer-owner",
             "验收通过",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 100, 98, "外观完好，抽检合格"));
     when(receiptApplicationService.listCurrentTenantReceipts(
         org.mockito.ArgumentMatchers.eq("po-demo"),
         org.mockito.ArgumentMatchers.eq("user-buyer-owner")))
@@ -3257,7 +3257,7 @@ class HttpSecurityContractTests {
             "po-demo",
             "user-buyer-owner",
             "验收通过",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 100, 98, "外观完好，抽检合格")));
     when(paymentApplicationService.listCurrentTenantInvoices(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull(),

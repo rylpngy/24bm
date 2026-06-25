@@ -11,18 +11,23 @@ import org.apache.ibatis.annotations.Select;
 public interface ReceiptMapper {
 
   @Insert("""
-      insert into receipts (id, tenant_id, order_id, receiver_id, result)
-      values (#{id}, #{tenantId}, #{orderId}, #{receiverId}, #{result})
+      insert into receipts (id, tenant_id, order_id, receiver_id, result,
+                            received_quantity, qualified_quantity, quality_note)
+      values (#{id}, #{tenantId}, #{orderId}, #{receiverId}, #{result},
+              #{receivedQuantity}, #{qualifiedQuantity}, #{qualityNote})
       """)
   void insert(
       @Param("id") String id,
       @Param("tenantId") String tenantId,
       @Param("orderId") String orderId,
       @Param("receiverId") String receiverId,
-      @Param("result") String result);
+      @Param("result") String result,
+      @Param("receivedQuantity") Integer receivedQuantity,
+      @Param("qualifiedQuantity") Integer qualifiedQuantity,
+      @Param("qualityNote") String qualityNote);
 
   @Select("""
-      select id, tenant_id, order_id, receiver_id, result, received_at
+      select id, tenant_id, order_id, receiver_id, result, received_at, received_quantity, qualified_quantity, quality_note
       from receipts
       where tenant_id = #{tenantId} and id = #{id}
       """)
@@ -38,7 +43,7 @@ public interface ReceiptMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, order_id, receiver_id, result, received_at
+      select id, tenant_id, order_id, receiver_id, result, received_at, received_quantity, qualified_quantity, quality_note
       from receipts
       where tenant_id = #{tenantId}
         <if test="orderId != null and orderId != ''">

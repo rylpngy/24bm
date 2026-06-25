@@ -472,7 +472,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("status changed before receipt");
 
@@ -496,7 +496,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Shipped delivery not found for receipt");
 
@@ -505,6 +505,9 @@ class OrderFulfillmentStateTransitionTests {
         anyString(),
         anyString(),
         anyString(),
+        anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
         anyString());
   }
 
@@ -527,7 +530,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Purchase order already has a receipt");
 
@@ -536,6 +539,9 @@ class OrderFulfillmentStateTransitionTests {
         anyString(),
         anyString(),
         anyString(),
+        anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
         anyString());
   }
 
@@ -557,7 +563,7 @@ class OrderFulfillmentStateTransitionTests {
             "po-1",
             "user-buyer",
             "验收通过",
-            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 100, 98, "外观完好，抽检合格"));
 
     ReceiptApplicationService service = new ReceiptApplicationService(
         purchaseOrderMapper,
@@ -568,7 +574,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    service.create("po-1", new CreateReceiptRequest("验收通过"));
+    service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null));
 
     verify(auditLogApplicationService).recordTenantAction(
         "purchase_order.received",

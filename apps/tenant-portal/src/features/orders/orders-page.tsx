@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Truck } from 'lucide-react';
 import {
   useBuyerReceiptCreate,
+  useBuyerReceiptList,
   useBuyerSupplierList,
   usePurchaseOrderList,
 } from '@24bid/api-client';
@@ -24,8 +25,17 @@ export function OrdersPage() {
 
   const query = usePurchaseOrderList();
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
+  const receiptsQuery = useBuyerReceiptList();
   const receipt = useBuyerReceiptCreate();
   const orders = query.data?.data ?? [];
+
+  // 收货验收的录入表单（每次只展开一个订单）。
+  const [receiveForm, setReceiveForm] = useState<{
+    orderId: string;
+    received: string;
+    qualified: string;
+    note: string;
+  } | null>(null);
 
   const supplierNames = useMemo(() => {
     const map: Record<string, string> = {};
@@ -35,6 +45,15 @@ export function OrdersPage() {
     return map;
   }, [suppliersQuery.data]);
 
+  const receiptByOrder = useMemo(() => {
+    const list = receiptsQuery.data?.data ?? [];
+    const map: Record<string, (typeof list)[number]> = {};
+    list.forEach((r) => {
+      if (r.orderId) map[r.orderId] = r;
+    });
+    return map;
+  }, [receiptsQuery.data]);
+
   const refresh = () =>
     queryClient.invalidateQueries({
       predicate: (q) =>
@@ -43,16 +62,32 @@ export function OrdersPage() {
     });
 
   const handleReceive = (orderId: string) => {
+    const form = receiveForm?.orderId === orderId ? receiveForm : null;
+    const received = form ? Number(form.received) || 0 : 0;
+    const qualified = form ? Number(form.qualified) || 0 : 0;
+    const result = qualified > 0 && qualified < received ? '部分合格' : '验收合格';
     receipt.mutate(
-      { orderId, data: { result: '验收合格' } },
+      {
+        orderId,
+        data: {
+          result,
+          receivedQuantity: received,
+          qualifiedQuantity: qualified,
+          qualityNote: form?.note || '',
+        },
+      },
       {
         onSuccess: () => {
           setFeedback(`订单 ${orderId} 收货验收完成`);
+          setReceiveForm(null);
           refresh();
         },
       },
     );
   };
+
+  const ratePct = (q?: number, r?: number) =>
+    r && r > 0 && q != null ? `${Math.round((q / r) * 100)}%` : '—';
 
   return (
     <Panel title="采购订单" icon={Truck} subtitle="订单履约 · 抬头信息 · 收货验收">
@@ -121,15 +156,107 @@ export function OrdersPage() {
                 </div>
               </div>
 
+              {o.status === '已收货' && o.id && receiptByOrder[o.id] && (
+                <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/50 p-3">
+                  <p className="text-xs font-black text-emerald-700">收货验收明细</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                    <MiniFact label="验收结论" value={receiptByOrder[o.id]!.result ?? '—'} />
+                    <MiniFact
+                      label="收货数量"
+                      value={String(receiptByOrder[o.id]!.receivedQuantity ?? '—')}
+                    />
+                    <MiniFact
+                      label="合格数量"
+                      value={String(receiptByOrder[o.id]!.qualifiedQuantity ?? '—')}
+                    />
+                    <MiniFact
+                      label="合格率"
+                      value={ratePct(
+                        receiptByOrder[o.id]!.qualifiedQuantity,
+                        receiptByOrder[o.id]!.receivedQuantity,
+                      )}
+                    />
+                  </div>
+                  {receiptByOrder[o.id]!.qualityNote && (
+                    <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-700">
+                      {receiptByOrder[o.id]!.qualityNote}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {o.status === '已发货' && o.id && (
-                <button
-                  type="button"
-                  onClick={() => handleReceive(o.id!)}
-                  disabled={receipt.isPending && receipt.variables?.orderId === o.id}
-                  className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700 disabled:bg-slate-400"
-                >
-                  {receipt.isPending && receipt.variables?.orderId === o.id ? '收货中' : '确认收货'}
-                </button>
+                <div className="mt-3">
+                  {receiveForm?.orderId === o.id ? (
+                    <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-3">
+                      <p className="text-xs font-black text-blue-800">收货验收登记</p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        <div>
+                          <label className="text-[11px] font-black text-slate-500">收货数量</label>
+                          <input
+                            type="number"
+                            min={0}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                            value={receiveForm.received}
+                            onChange={(e) =>
+                              setReceiveForm((f) => f && { ...f, received: e.target.value })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-black text-slate-500">合格数量</label>
+                          <input
+                            type="number"
+                            min={0}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                            value={receiveForm.qualified}
+                            onChange={(e) =>
+                              setReceiveForm((f) => f && { ...f, qualified: e.target.value })
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <label className="text-[11px] font-black text-slate-500">验收说明</label>
+                        <input
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                          placeholder="如：抽检结果、外观与数量核对情况"
+                          value={receiveForm.note}
+                          onChange={(e) =>
+                            setReceiveForm((f) => f && { ...f, note: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleReceive(o.id!)}
+                          disabled={receipt.isPending && receipt.variables?.orderId === o.id}
+                          className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700 disabled:bg-slate-400"
+                        >
+                          {receipt.isPending && receipt.variables?.orderId === o.id ? '提交中' : '提交验收'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReceiveForm(null)}
+                          className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50"
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setReceiveForm({ orderId: o.id!, received: '', qualified: '', note: '' })
+                      }
+                      className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700"
+                    >
+                      确认收货
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           ))}
