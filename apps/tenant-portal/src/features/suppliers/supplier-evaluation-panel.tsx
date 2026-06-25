@@ -7,6 +7,7 @@ import {
   useSupplierEvaluationListEvaluations,
   useSupplierFulfillmentFulfillmentMetrics,
 } from '@24bid/api-client';
+import { suggestTier } from '@24bid/shared';
 import { FeedbackNotice, MiniFact, PrimaryActionButton, StatusPill } from '@24bid/ui';
 
 // 资质到期状态：已过期 / 即将到期(30天内) / 正常。
@@ -26,13 +27,6 @@ const DIMENSIONS = [
 ] as const;
 
 type DimKey = (typeof DIMENSIONS)[number]['key'];
-
-function suggestTier(total: number): string {
-  if (total >= 90) return '优选';
-  if (total >= 75) return '合格';
-  if (total >= 60) return '观察';
-  return '淘汰';
-}
 
 export function SupplierEvaluationPanel({
   relationId,
