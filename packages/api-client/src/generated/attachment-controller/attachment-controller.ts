@@ -31,6 +31,7 @@ import type {
   ApiResponseListAttachmentResponse,
   ApiResponseVoid,
   AttachmentListParams,
+  AttachmentUploadSinkParams,
   CreateAttachmentRequest,
   CreateAttachmentUploadTicketRequest
 } from '.././model';
@@ -300,4 +301,150 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const attachmentUploadSink = (
+    attachmentUploadSinkBody: BodyType<string>,
+    params: AttachmentUploadSinkParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseVoid>(
+      {url: `/api/v1/buyer/attachments/upload-sink`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: attachmentUploadSinkBody,
+        params, signal
+    },
+      );
+    }
+  
+
+
+export const getAttachmentUploadSinkMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentUploadSink>>, TError,{data: BodyType<string>;params: AttachmentUploadSinkParams}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof attachmentUploadSink>>, TError,{data: BodyType<string>;params: AttachmentUploadSinkParams}, TContext> => {
+
+const mutationKey = ['attachmentUploadSink'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachmentUploadSink>>, {data: BodyType<string>;params: AttachmentUploadSinkParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  attachmentUploadSink(data,params,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AttachmentUploadSinkMutationResult = NonNullable<Awaited<ReturnType<typeof attachmentUploadSink>>>
+    export type AttachmentUploadSinkMutationBody = BodyType<string>
+    export type AttachmentUploadSinkMutationError = ErrorType<ApiResponseVoid>
+
+    export const useAttachmentUploadSink = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentUploadSink>>, TError,{data: BodyType<string>;params: AttachmentUploadSinkParams}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof attachmentUploadSink>>,
+        TError,
+        {data: BodyType<string>;params: AttachmentUploadSinkParams},
+        TContext
+      > => {
+
+      const mutationOptions = getAttachmentUploadSinkMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const attachmentDownload = (
+    attachmentId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<Blob>(
+      {url: `/api/v1/buyer/attachments/${attachmentId}/download`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      );
+    }
+  
+
+
+
+export const getAttachmentDownloadQueryKey = (attachmentId?: string,) => {
+    return [
+    `/api/v1/buyer/attachments/${attachmentId}/download`
+    ] as const;
+    }
+
     
+export const getAttachmentDownloadQueryOptions = <TData = Awaited<ReturnType<typeof attachmentDownload>>, TError = ErrorType<ApiResponseVoid>>(attachmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentDownload>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAttachmentDownloadQueryKey(attachmentId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof attachmentDownload>>> = ({ signal }) => attachmentDownload(attachmentId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(attachmentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof attachmentDownload>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AttachmentDownloadQueryResult = NonNullable<Awaited<ReturnType<typeof attachmentDownload>>>
+export type AttachmentDownloadQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useAttachmentDownload<TData = Awaited<ReturnType<typeof attachmentDownload>>, TError = ErrorType<ApiResponseVoid>>(
+ attachmentId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentDownload>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof attachmentDownload>>,
+          TError,
+          Awaited<ReturnType<typeof attachmentDownload>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAttachmentDownload<TData = Awaited<ReturnType<typeof attachmentDownload>>, TError = ErrorType<ApiResponseVoid>>(
+ attachmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentDownload>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof attachmentDownload>>,
+          TError,
+          Awaited<ReturnType<typeof attachmentDownload>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAttachmentDownload<TData = Awaited<ReturnType<typeof attachmentDownload>>, TError = ErrorType<ApiResponseVoid>>(
+ attachmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentDownload>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAttachmentDownload<TData = Awaited<ReturnType<typeof attachmentDownload>>, TError = ErrorType<ApiResponseVoid>>(
+ attachmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentDownload>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAttachmentDownloadQueryOptions(attachmentId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+

@@ -88,6 +88,7 @@ export * from './approvalTemplateResponse';
 export * from './attachmentDownloadLinkResponse';
 export * from './attachmentListParams';
 export * from './attachmentResponse';
+export * from './attachmentUploadSinkParams';
 export * from './attachmentUploadTicketResponse';
 export * from './auditLogListParams';
 export * from './auditLogListTargetActionsParams';

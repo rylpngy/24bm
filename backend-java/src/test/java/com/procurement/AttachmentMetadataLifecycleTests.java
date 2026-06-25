@@ -22,7 +22,7 @@ class AttachmentMetadataLifecycleTests {
   private final AuditLogMapper auditLogMapper = org.mockito.Mockito.mock(AuditLogMapper.class);
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final AttachmentApplicationService attachmentApplicationService =
-      new AttachmentApplicationService(attachmentMapper, auditLogMapper, quoteMapper);
+      new AttachmentApplicationService(attachmentMapper, auditLogMapper, quoteMapper, org.mockito.Mockito.mock(com.procurement.common.storage.ObjectStorageService.class));
 
   @AfterEach
   void clearTenantContext() {

@@ -10,6 +10,7 @@ import com.procurement.attachment.domain.AttachmentStatus;
 import com.procurement.attachment.domain.AttachmentVisibility;
 import com.procurement.attachment.infrastructure.AttachmentMapper;
 import com.procurement.audit.infrastructure.AuditLogMapper;
+import com.procurement.common.storage.ObjectStorageService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import java.net.URLEncoder;
@@ -25,14 +26,17 @@ public class AttachmentApplicationService {
   private final AttachmentMapper attachmentMapper;
   private final AuditLogMapper auditLogMapper;
   private final QuoteMapper quoteMapper;
+  private final ObjectStorageService objectStorageService;
 
   public AttachmentApplicationService(
       AttachmentMapper attachmentMapper,
       AuditLogMapper auditLogMapper,
-      QuoteMapper quoteMapper) {
+      QuoteMapper quoteMapper,
+      ObjectStorageService objectStorageService) {
     this.attachmentMapper = attachmentMapper;
     this.auditLogMapper = auditLogMapper;
     this.quoteMapper = quoteMapper;
+    this.objectStorageService = objectStorageService;
   }
 
   public List<AttachmentResponse> listCurrentTenantAttachments(String ownerType, String ownerId) {
@@ -112,6 +116,29 @@ public class AttachmentApplicationService {
         request.ownerType(),
         request.ownerId());
     return toResponse(attachmentMapper.findByTenantAndId(tenantId, attachmentId));
+  }
+
+  // 服务端代收上传字节并落到对象存储(浏览器只与 :8080 通信,规避跨域)。
+  public void storeCurrentTenantObject(String storageKey, byte[] data, String contentType) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
+    if (storageKey == null || !storageKey.startsWith(tenantId + "/")) {
+      throw new IllegalArgumentException("Storage key out of tenant scope: " + storageKey);
+    }
+    objectStorageService.put(storageKey, data, contentType);
+  }
+
+  // 按附件 id(租户内)取回字节,供下载端点流式返回。
+  public DownloadedObject loadCurrentTenantObject(String attachmentId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
+    Attachment attachment = attachmentMapper.findByTenantAndId(tenantId, attachmentId);
+    if (attachment == null || !AttachmentStatus.ACTIVE.equals(attachment.status())) {
+      throw new IllegalArgumentException("Attachment not found in tenant scope: " + attachmentId);
+    }
+    ObjectStorageService.StoredObject stored = objectStorageService.get(attachment.storageKey());
+    return new DownloadedObject(attachment.fileName(), stored.data(), stored.contentType());
+  }
+
+  public record DownloadedObject(String fileName, byte[] data, String contentType) {
   }
 
   private AttachmentResponse toResponse(Attachment attachment) {
