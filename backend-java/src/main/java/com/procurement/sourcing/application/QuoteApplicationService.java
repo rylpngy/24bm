@@ -119,7 +119,9 @@ public class QuoteApplicationService {
       throw exception;
     }
 
+    // 供应商无租户上下文,审计需显式落到 RFQ 所属租户(否则 requireTenantId 抛错)。
     auditLogApplicationService.recordTenantAction(
+        rfq.tenantId(),
         QuoteAuditAction.SUBMITTED,
         AuditTargetType.QUOTE,
         quoteId);
@@ -158,6 +160,7 @@ public class QuoteApplicationService {
     }
 
     auditLogApplicationService.recordTenantAction(
+        rfq.tenantId(),
         QuoteAuditAction.UPDATED,
         AuditTargetType.QUOTE,
         quoteId);

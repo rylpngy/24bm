@@ -77,7 +77,7 @@ class SupplierQuoteAuditLogTests {
 
     assertThat(response.id()).startsWith("quote-");
     verify(auditLogApplicationService)
-        .recordTenantAction(QuoteAuditAction.SUBMITTED, AuditTargetType.QUOTE, response.id());
+        .recordTenantAction("tenant-1", QuoteAuditAction.SUBMITTED, AuditTargetType.QUOTE, response.id());
   }
 
   @Test
@@ -142,7 +142,7 @@ class SupplierQuoteAuditLogTests {
 
     assertThat(response.id()).isEqualTo("quote-1");
     verify(auditLogApplicationService)
-        .recordTenantAction(QuoteAuditAction.UPDATED, AuditTargetType.QUOTE, "quote-1");
+        .recordTenantAction("tenant-1", QuoteAuditAction.UPDATED, AuditTargetType.QUOTE, "quote-1");
   }
 
   @Test
