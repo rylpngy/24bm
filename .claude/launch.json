@@ -12,6 +12,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@24bid/platform-admin", "dev"],
       "port": 5174
+    },
+    {
+      "name": "supplier-portal",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@24bid/supplier-portal", "dev"],
+      "port": 5175
     }
   ]
 }
