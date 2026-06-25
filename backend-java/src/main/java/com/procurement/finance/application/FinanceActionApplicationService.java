@@ -28,6 +28,8 @@ import com.procurement.finance.api.UpdatePaymentBatchStatusRequest;
 import com.procurement.finance.api.UpdatePaymentBlockResolutionStatusRequest;
 import com.procurement.finance.api.UpdatePaymentRequestStatusRequest;
 import com.procurement.finance.api.ApproveVarianceHandlingRequest;
+import com.procurement.finance.api.FinanceReport;
+import com.procurement.finance.infrastructure.FinanceReportRenderer;
 import com.procurement.finance.api.UpdateVarianceHandlingStatusRequest;
 import com.procurement.finance.api.VarianceHandlingResponse;
 import com.procurement.demand.api.ApprovalTaskResponse;
@@ -54,6 +56,8 @@ import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -892,6 +896,92 @@ public class FinanceActionApplicationService {
         varianceHandling.invoiceId());
     return toVarianceHandlingResponse(
         varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId));
+  }
+
+  // ============ 报表导出(发票清单 / 对账单 / 采购分析)============
+
+  private static String money(BigDecimal v) {
+    return v == null ? "" : v.toPlainString();
+  }
+
+  private static String orEmpty(String v) {
+    return v == null ? "" : v;
+  }
+
+  public FinanceReport exportInvoices(String format) {
+    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    List<String> headers =
+        List.of("发票号", "发票代码", "订单", "供应商", "价税合计", "税率(%)", "开票日期", "付款状态");
+    List<List<String>> rows = new ArrayList<>();
+    for (Invoice inv : invoiceMapper.listByTenant(tenantId)) {
+      rows.add(List.of(
+          orEmpty(inv.invoiceNo()),
+          orEmpty(inv.invoiceCode()),
+          orEmpty(inv.orderId()),
+          orEmpty(inv.supplierId()),
+          money(inv.amount()),
+          money(inv.taxRate()),
+          inv.invoiceDate() == null ? "" : inv.invoiceDate().toString(),
+          orEmpty(inv.paymentStatus())));
+    }
+    return render("发票清单", "invoices", headers, rows, format);
+  }
+
+  public FinanceReport exportReconciliation(String format) {
+    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    List<String> headers =
+        List.of("发票", "订单", "供应商", "订单金额", "发票金额", "差异金额", "匹配状态", "收货状态", "付款就绪");
+    List<List<String>> rows = new ArrayList<>();
+    for (ThreeWayMatch m : threeWayMatchMapper.listByTenantFiltered(tenantId, null, null, null, null)) {
+      rows.add(List.of(
+          orEmpty(m.invoiceId()),
+          orEmpty(m.orderId()),
+          orEmpty(m.supplierId()),
+          money(m.orderAmount()),
+          money(m.invoiceAmount()),
+          money(m.varianceAmount()),
+          orEmpty(m.matchStatus()),
+          orEmpty(m.receiptStatus()),
+          orEmpty(m.paymentReadiness())));
+    }
+    return render("三单匹配对账单", "reconciliation", headers, rows, format);
+  }
+
+  // 采购分析:按订单状态汇总订单数与金额(含合计行)。
+  public FinanceReport exportProcurementAnalytics(String format) {
+    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    Map<String, long[]> byStatusCount = new LinkedHashMap<>();
+    Map<String, BigDecimal> byStatusAmount = new LinkedHashMap<>();
+    BigDecimal total = BigDecimal.ZERO;
+    long totalCount = 0;
+    for (PurchaseOrder po : purchaseOrderMapper.listByTenant(tenantId)) {
+      String status = orEmpty(po.status());
+      byStatusCount.computeIfAbsent(status, k -> new long[1])[0]++;
+      byStatusAmount.merge(status, po.amount() == null ? BigDecimal.ZERO : po.amount(), BigDecimal::add);
+      total = total.add(po.amount() == null ? BigDecimal.ZERO : po.amount());
+      totalCount++;
+    }
+    List<String> headers = List.of("订单状态", "订单数", "订单金额合计");
+    List<List<String>> rows = new ArrayList<>();
+    for (String status : byStatusCount.keySet()) {
+      rows.add(List.of(status, String.valueOf(byStatusCount.get(status)[0]), money(byStatusAmount.get(status))));
+    }
+    rows.add(List.of("合计", String.valueOf(totalCount), money(total)));
+    return render("采购分析汇总", "procurement-analytics", headers, rows, format);
+  }
+
+  private FinanceReport render(
+      String title, String base, List<String> headers, List<List<String>> rows, String format) {
+    if ("pdf".equalsIgnoreCase(format)) {
+      return new FinanceReport(
+          FinanceReportRenderer.toPdf(title, headers, rows),
+          base + ".pdf",
+          FinanceReport.PDF_CONTENT_TYPE);
+    }
+    return new FinanceReport(
+        FinanceReportRenderer.toXlsx(title, headers, rows),
+        base + ".xlsx",
+        FinanceReport.XLSX_CONTENT_TYPE);
   }
 
   private void syncPaymentBatch(String tenantId, String paymentBatchNo) {
