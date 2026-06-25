@@ -161,6 +161,7 @@ export * from './enterpriseReviewRequest';
 export * from './enterpriseReviewResponse';
 export * from './featureToggleRequest';
 export * from './flowableDemandApprovalStartParams';
+export * from './invoiceLineItemResponse';
 export * from './invoiceReconciliationResponse';
 export * from './invoiceResponse';
 export * from './loginRequest';

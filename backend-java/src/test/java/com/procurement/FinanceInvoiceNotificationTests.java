@@ -50,7 +50,9 @@ class FinanceInvoiceNotificationTests {
       threeWayMatchMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+          org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
 
   @AfterEach
   void clearTenantContext() {

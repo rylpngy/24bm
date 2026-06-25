@@ -5,6 +5,7 @@
  * 多租户采购协同管理 SaaS 后端契约（平台 / 采购方 / 供应商三端）。
  * OpenAPI spec version: v1
  */
+import type { InvoiceLineItemResponse } from './invoiceLineItemResponse';
 
 export interface InvoiceResponse {
   id?: string;
@@ -36,4 +37,5 @@ export interface InvoiceResponse {
   qualifiedQuantity?: number;
   qualifiedRate?: number;
   quantityMatchStatus?: string;
+  lineItems?: InvoiceLineItemResponse[];
 }

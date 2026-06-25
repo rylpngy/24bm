@@ -37,6 +37,10 @@ class FinanceInvoiceAuditLogTests {
       org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
+  private final com.procurement.order.infrastructure.OrderLineItemMapper orderLineItemMapper =
+      org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class);
+  private final com.procurement.finance.infrastructure.InvoiceLineItemMapper invoiceLineItemMapper =
+      org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class);
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
         org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
@@ -45,7 +49,9 @@ class FinanceInvoiceAuditLogTests {
       threeWayMatchMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+      orderLineItemMapper,
+      invoiceLineItemMapper);
 
   @AfterEach
   void clearTenantContext() {
@@ -103,6 +109,34 @@ class FinanceInvoiceAuditLogTests {
         org.mockito.ArgumentMatchers.eq("invoice.created"),
         org.mockito.ArgumentMatchers.eq("invoice"),
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("invoice-")));
+  }
+
+  @Test
+  void supplierInvoiceCreationCopiesOrderLineItemsIntoInvoiceLines() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1")).thenReturn(order());
+    when(invoiceMapper.findByTenantAndId(
+            org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> invoice(invocation.getArgument(1)));
+    when(orderLineItemMapper.listByOrder("tenant-1", "po-1"))
+        .thenReturn(List.of(new com.procurement.order.domain.OrderLineItem(
+            "oli-1", "tenant-1", "po-1", "网络机柜", "台",
+            BigDecimal.valueOf(4), BigDecimal.valueOf(25), BigDecimal.valueOf(100), 0)));
+
+    invoiceApplicationService.create("po-1", new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001", null, null, null));
+
+    // 发票行项保留 order_line_id 并冗余订单行项的 品名/单位/数量/单价/行金额。
+    verify(invoiceLineItemMapper).insert(
+        org.mockito.ArgumentMatchers.startsWith("ili-"),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.eq("oli-1"),
+        org.mockito.ArgumentMatchers.eq("网络机柜"),
+        org.mockito.ArgumentMatchers.eq("台"),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(4)),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(25)),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(100)),
+        org.mockito.ArgumentMatchers.eq(0));
   }
 
   @Test

@@ -3,6 +3,7 @@ package com.procurement.finance.api;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public record InvoiceResponse(
     String id,
@@ -33,5 +34,6 @@ public record InvoiceResponse(
     Integer receivedQuantity,
     Integer qualifiedQuantity,
     Integer qualifiedRate,
-    String quantityMatchStatus) {
+    String quantityMatchStatus,
+    List<InvoiceLineItemResponse> lineItems) {
 }

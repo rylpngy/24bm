@@ -70,7 +70,9 @@ class OrderFinanceFeatureToggleTests {
       threeWayMatchMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+          org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
       invoiceReconciliationMapper,
@@ -81,7 +83,8 @@ class OrderFinanceFeatureToggleTests {
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService,
-      new InvoicePaymentStatusTransition());
+      new InvoicePaymentStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
 
   @AfterEach
   void clearTenantContext() {

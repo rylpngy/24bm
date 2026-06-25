@@ -58,7 +58,8 @@ class FinancePaymentNotificationTests {
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService,
-      new InvoicePaymentStatusTransition());
+      new InvoicePaymentStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
 
   @AfterEach
   void clearTenantContext() {

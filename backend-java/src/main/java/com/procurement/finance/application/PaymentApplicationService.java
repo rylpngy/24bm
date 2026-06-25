@@ -4,6 +4,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.api.AuditLogResponse;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.finance.api.InvoiceLineItemResponse;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.api.InvoiceReconciliationResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
@@ -13,7 +14,9 @@ import com.procurement.finance.domain.InvoiceAmountPolicy;
 import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.domain.InvoicePaymentStatusTransition;
+import com.procurement.finance.domain.InvoiceLineItem;
 import com.procurement.finance.domain.InvoiceReconciliation;
+import com.procurement.finance.infrastructure.InvoiceLineItemMapper;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
 import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
@@ -43,6 +46,7 @@ public class PaymentApplicationService {
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final InvoicePaymentStatusTransition invoicePaymentStatusTransition;
+  private final InvoiceLineItemMapper invoiceLineItemMapper;
 
   public PaymentApplicationService(
       InvoiceMapper invoiceMapper,
@@ -54,7 +58,8 @@ public class PaymentApplicationService {
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       NotificationApplicationService notificationApplicationService,
-      InvoicePaymentStatusTransition invoicePaymentStatusTransition) {
+      InvoicePaymentStatusTransition invoicePaymentStatusTransition,
+      InvoiceLineItemMapper invoiceLineItemMapper) {
     this.invoiceMapper = invoiceMapper;
     this.invoiceReconciliationMapper = invoiceReconciliationMapper;
     this.threeWayMatchMapper = threeWayMatchMapper;
@@ -65,6 +70,7 @@ public class PaymentApplicationService {
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.invoicePaymentStatusTransition = invoicePaymentStatusTransition;
+    this.invoiceLineItemMapper = invoiceLineItemMapper;
   }
 
   public List<InvoiceResponse> listCurrentTenantInvoices() {
@@ -163,10 +169,23 @@ public class PaymentApplicationService {
   }
 
   private InvoiceResponse toResponse(Invoice invoice) {
+    List<InvoiceLineItem> lines =
+        invoiceLineItemMapper.listByInvoice(invoice.tenantId(), invoice.id());
+    List<InvoiceLineItemResponse> lineItems =
+        lines == null
+            ? List.of()
+            : lines.stream()
+                .map(
+                    l ->
+                        new InvoiceLineItemResponse(
+                            l.id(), l.orderLineId(), l.description(), l.unit(),
+                            l.quantity(), l.unitPrice(), l.lineAmount()))
+                .toList();
     return InvoiceResponseAssembler.from(
         invoice,
         purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()),
-        receiptMapper.findByTenantAndOrder(invoice.tenantId(), invoice.orderId()));
+        receiptMapper.findByTenantAndOrder(invoice.tenantId(), invoice.orderId()),
+        lineItems);
   }
 
   private InvoiceReconciliationResponse toReconciliationResponse(InvoiceReconciliation reconciliation) {

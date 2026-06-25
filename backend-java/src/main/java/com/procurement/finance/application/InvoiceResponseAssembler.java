@@ -1,5 +1,6 @@
 package com.procurement.finance.application;
 
+import com.procurement.finance.api.InvoiceLineItemResponse;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoicePaymentStatus;
@@ -9,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 final class InvoiceResponseAssembler {
   private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
@@ -17,7 +19,16 @@ final class InvoiceResponseAssembler {
   private InvoiceResponseAssembler() {
   }
 
+  // 不带行项的重载(付款上下文等无需展示发票明细的场景)。
   static InvoiceResponse from(Invoice invoice, PurchaseOrder order, Receipt receipt) {
+    return from(invoice, order, receipt, List.of());
+  }
+
+  static InvoiceResponse from(
+      Invoice invoice,
+      PurchaseOrder order,
+      Receipt receipt,
+      List<InvoiceLineItemResponse> lineItems) {
     LocalDate dueDate = invoice.createdAt()
         .atZoneSameInstant(BUSINESS_ZONE)
         .toLocalDate()
@@ -86,7 +97,8 @@ final class InvoiceResponseAssembler {
         receivedQuantity,
         qualifiedQuantity,
         qualifiedRate,
-        quantityMatchStatus);
+        quantityMatchStatus,
+        lineItems == null ? List.of() : lineItems);
   }
 
   private static String toReconciliationStatus(

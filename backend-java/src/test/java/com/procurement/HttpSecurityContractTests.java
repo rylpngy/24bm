@@ -1406,7 +1406,8 @@ class HttpSecurityContractTests {
             "待付款",
             "登记付款",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
-            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格")));
+            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格",
+            java.util.List.of())));
     when(invoiceApplicationService.listCurrentSupplierReconciliations(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull()))
@@ -1447,7 +1448,8 @@ class HttpSecurityContractTests {
             "待付款",
             "登记付款",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
-            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格"));
+            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格",
+            java.util.List.of()));
 
     mockMvc.perform(post("/api/v1/supplier/rfqs/rfq-demo/quotes")
             .header("Authorization", "Bearer " + supplierToken)
@@ -3834,7 +3836,8 @@ class HttpSecurityContractTests {
         "待付款",
         "登记付款",
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格");
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格",
+            java.util.List.of());
   }
 
   private ContractResponse contractResponse(String id, String status, String archiveStatus) {

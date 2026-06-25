@@ -6393,6 +6393,32 @@
           }
         }
       },
+      "InvoiceLineItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "orderLineId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "lineAmount": {
+            "type": "number"
+          }
+        }
+      },
       "InvoiceResponse": {
         "type": "object",
         "properties": {
@@ -6490,6 +6516,12 @@
           },
           "quantityMatchStatus": {
             "type": "string"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineItemResponse"
+            }
           }
         }
       },
