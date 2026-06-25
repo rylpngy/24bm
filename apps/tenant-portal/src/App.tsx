@@ -16,6 +16,7 @@ import { ContractsPage } from './features/contracts/contracts-page';
 import { DashboardPage } from './features/dashboard/dashboard-page';
 import { AuditPage } from './features/audit/audit-page';
 import { QuoteComparisonPage } from './features/quotes/quote-comparison-page';
+import { TeamPage } from './features/team/team-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
@@ -56,6 +57,8 @@ export function App() {
         <PaymentBatchesPage />
       ) : activeModuleId === 'quotes' ? (
         <QuoteComparisonPage />
+      ) : activeModuleId === 'team' ? (
+        <TeamPage />
       ) : activeModuleId === 'audit' ? (
         <AuditPage />
       ) : activeModuleId === 'contracts' ? (

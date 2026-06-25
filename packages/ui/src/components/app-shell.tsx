@@ -38,6 +38,7 @@ const MODULE_ICONS: Record<string, ElementType> = {
   receipts: PackageCheck,
   invoices: Receipt,
   'payment-batches': Banknote,
+  team: Users,
   audit: ClipboardList,
   tenants: Building2,
   announcements: Megaphone,
