@@ -3,17 +3,19 @@ package com.procurement.workflow.api;
 import com.procurement.common.api.ApiResponse;
 import com.procurement.workflow.application.FlowableDemandApprovalService;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-// 采购需求审批的 Flowable 工作流入口(引擎驱动,区别于固定审批模板)。
+// Flowable 通用业务审批入口(引擎驱动,接管全部审批类型 + 按金额二级会签)。
 @RestController
-@RequestMapping("/api/v1/buyer/workflow/demand-approvals")
+@RequestMapping("/api/v1/buyer/workflow/approvals")
 public class FlowableDemandApprovalController {
   private final FlowableDemandApprovalService service;
 
@@ -21,9 +23,12 @@ public class FlowableDemandApprovalController {
     this.service = service;
   }
 
-  @PostMapping("/{demandId}/start")
-  public ApiResponse<StartProcessResponse> start(@PathVariable String demandId) {
-    return ApiResponse.ok(service.start(demandId));
+  @PostMapping("/{bizId}/start")
+  public ApiResponse<StartProcessResponse> start(
+      @PathVariable String bizId,
+      @RequestParam(defaultValue = "purchase_demand") String bizType,
+      @RequestParam(defaultValue = "0") BigDecimal amount) {
+    return ApiResponse.ok(service.start(bizType, bizId, amount));
   }
 
   @GetMapping("/tasks")
@@ -38,8 +43,8 @@ public class FlowableDemandApprovalController {
     return ApiResponse.ok(null);
   }
 
-  @GetMapping("/{demandId}/outcome")
-  public ApiResponse<String> outcome(@PathVariable String demandId) {
-    return ApiResponse.ok(service.outcome(demandId));
+  @GetMapping("/{bizId}/outcome")
+  public ApiResponse<String> outcome(@PathVariable String bizId) {
+    return ApiResponse.ok(service.outcome(bizId));
   }
 }

@@ -160,6 +160,7 @@ export * from './dictionaryListParams';
 export * from './enterpriseReviewRequest';
 export * from './enterpriseReviewResponse';
 export * from './featureToggleRequest';
+export * from './flowableDemandApprovalStartParams';
 export * from './invoiceReconciliationResponse';
 export * from './invoiceResponse';
 export * from './loginRequest';

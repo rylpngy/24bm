@@ -28,17 +28,24 @@ export function FlowableWorkflowPanel() {
       predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/workflow/'),
     });
 
-  const onStart = () =>
+  const onStart = () => {
+    const demand = demandList.find((d) => d.id === demandId);
+    const amount = demand?.budget ?? 0;
     start.mutate(
-      { demandId },
+      { bizId: demandId, params: { bizType: 'purchase_demand', amount } },
       {
         onSuccess: () => {
-          setFeedback(`已为需求 ${demandId} 启动 Flowable 审批流程`);
+          setFeedback(
+            amount >= 100000
+              ? `已启动:金额 ¥${amount.toLocaleString('zh-CN')} ≥ ¥10万,需一级+二级会签。`
+              : `已启动:金额 ¥${amount.toLocaleString('zh-CN')} < ¥10万,单级审批。`,
+          );
           setDemandId('');
           refresh();
         },
       },
     );
+  };
 
   const onComplete = (taskId: string, approved: boolean) =>
     complete.mutate(
@@ -50,7 +57,7 @@ export function FlowableWorkflowPanel() {
     'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
 
   return (
-    <Panel title="工作流审批(Flowable)" icon={Workflow} subtitle="引擎驱动 · BPMN 流程 · 区别于固定模板">
+    <Panel title="工作流审批(Flowable)" icon={Workflow} subtitle="引擎驱动 · 接管全部审批 · 按金额二级会签">
       {feedback && (
         <div className="mb-3">
           <FeedbackNotice tone="success" message={feedback} />
@@ -89,12 +96,15 @@ export function FlowableWorkflowPanel() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="break-words font-black text-slate-950">{t.name}</p>
-                      <p className="mt-1 font-mono text-xs font-bold text-slate-500">需求 {t.demandId}</p>
+                      <p className="mt-1 font-mono text-xs font-bold text-slate-500">
+                        {t.bizType} · {t.bizId}
+                      </p>
                     </div>
-                    <StatusPill label="审批中" />
+                    <StatusPill label={t.name?.startsWith('二级') ? '二级会签' : '一级审批'} />
                   </div>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                    <MiniFact label="流程实例" value={t.processInstanceId?.slice(0, 12) ?? '—'} />
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    <MiniFact label="金额" value={t.amount != null ? `¥${Number(t.amount).toLocaleString('zh-CN')}` : '—'} />
+                    <MiniFact label="流程实例" value={t.processInstanceId?.slice(0, 10) ?? '—'} />
                     <MiniFact label="创建时间" value={t.createdAt?.slice(0, 24) ?? '—'} />
                   </div>
                   <input className={`${inputCls} mt-2`} placeholder="审批意见(选填)"

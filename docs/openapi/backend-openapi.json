@@ -1838,7 +1838,7 @@
         }
       }
     },
-    "/api/v1/buyer/workflow/demand-approvals/{demandId}/start": {
+    "/api/v1/buyer/workflow/approvals/{bizId}/start": {
       "post": {
         "tags": [
           "flowable-demand-approval-controller"
@@ -1846,11 +1846,29 @@
         "operationId": "FlowableDemandApproval_start",
         "parameters": [
           {
-            "name": "demandId",
+            "name": "bizId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "bizType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "purchase_demand"
+            }
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0
             }
           }
         ],
@@ -1878,7 +1896,7 @@
         }
       }
     },
-    "/api/v1/buyer/workflow/demand-approvals/tasks/{taskId}/complete": {
+    "/api/v1/buyer/workflow/approvals/tasks/{taskId}/complete": {
       "post": {
         "tags": [
           "flowable-demand-approval-controller"
@@ -5357,7 +5375,7 @@
         }
       }
     },
-    "/api/v1/buyer/workflow/demand-approvals/{demandId}/outcome": {
+    "/api/v1/buyer/workflow/approvals/{bizId}/outcome": {
       "get": {
         "tags": [
           "flowable-demand-approval-controller"
@@ -5365,7 +5383,7 @@
         "operationId": "FlowableDemandApproval_outcome",
         "parameters": [
           {
-            "name": "demandId",
+            "name": "bizId",
             "in": "path",
             "required": true,
             "schema": {
@@ -5397,7 +5415,7 @@
         }
       }
     },
-    "/api/v1/buyer/workflow/demand-approvals/tasks": {
+    "/api/v1/buyer/workflow/approvals/tasks": {
       "get": {
         "tags": [
           "flowable-demand-approval-controller"
@@ -7967,7 +7985,10 @@
           "processInstanceId": {
             "type": "string"
           },
-          "demandId": {
+          "bizType": {
+            "type": "string"
+          },
+          "bizId": {
             "type": "string"
           },
           "ended": {
@@ -10286,8 +10307,14 @@
           "name": {
             "type": "string"
           },
-          "demandId": {
+          "bizType": {
             "type": "string"
+          },
+          "bizId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
           },
           "processInstanceId": {
             "type": "string"

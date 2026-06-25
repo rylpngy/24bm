@@ -8,6 +8,7 @@
 
 export interface StartProcessResponse {
   processInstanceId?: string;
-  demandId?: string;
+  bizType?: string;
+  bizId?: string;
   ended?: boolean;
 }

@@ -9,7 +9,9 @@
 export interface WorkflowTaskResponse {
   taskId?: string;
   name?: string;
-  demandId?: string;
+  bizType?: string;
+  bizId?: string;
+  amount?: number;
   processInstanceId?: string;
   createdAt?: string;
 }

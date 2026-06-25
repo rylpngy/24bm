@@ -29,7 +29,8 @@ import type {
   ApiResponseStartProcessResponse,
   ApiResponseString,
   ApiResponseVoid,
-  CompleteApprovalRequest
+  CompleteApprovalRequest,
+  FlowableDemandApprovalStartParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -39,13 +40,15 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 export const flowableDemandApprovalStart = (
-    demandId: string,
+    bizId: string,
+    params?: FlowableDemandApprovalStartParams,
  signal?: AbortSignal
 ) => {
       
       
       return customInstance<ApiResponseStartProcessResponse>(
-      {url: `/api/v1/buyer/workflow/demand-approvals/${demandId}/start`, method: 'POST', signal
+      {url: `/api/v1/buyer/workflow/approvals/${bizId}/start`, method: 'POST',
+        params, signal
     },
       );
     }
@@ -53,8 +56,8 @@ export const flowableDemandApprovalStart = (
 
 
 export const getFlowableDemandApprovalStartMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flowableDemandApprovalStart>>, TError,{demandId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof flowableDemandApprovalStart>>, TError,{demandId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flowableDemandApprovalStart>>, TError,{bizId: string;params?: FlowableDemandApprovalStartParams}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof flowableDemandApprovalStart>>, TError,{bizId: string;params?: FlowableDemandApprovalStartParams}, TContext> => {
 
 const mutationKey = ['flowableDemandApprovalStart'];
 const {mutation: mutationOptions} = options ?
@@ -66,10 +69,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof flowableDemandApprovalStart>>, {demandId: string}> = (props) => {
-          const {demandId} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof flowableDemandApprovalStart>>, {bizId: string;params?: FlowableDemandApprovalStartParams}> = (props) => {
+          const {bizId,params} = props ?? {};
 
-          return  flowableDemandApprovalStart(demandId,)
+          return  flowableDemandApprovalStart(bizId,params,)
         }
 
         
@@ -82,11 +85,11 @@ const {mutation: mutationOptions} = options ?
     export type FlowableDemandApprovalStartMutationError = ErrorType<ApiResponseVoid>
 
     export const useFlowableDemandApprovalStart = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flowableDemandApprovalStart>>, TError,{demandId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flowableDemandApprovalStart>>, TError,{bizId: string;params?: FlowableDemandApprovalStartParams}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof flowableDemandApprovalStart>>,
         TError,
-        {demandId: string},
+        {bizId: string;params?: FlowableDemandApprovalStartParams},
         TContext
       > => {
 
@@ -102,7 +105,7 @@ const {mutation: mutationOptions} = options ?
       
       
       return customInstance<ApiResponseVoid>(
-      {url: `/api/v1/buyer/workflow/demand-approvals/tasks/${taskId}/complete`, method: 'POST',
+      {url: `/api/v1/buyer/workflow/approvals/tasks/${taskId}/complete`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: completeApprovalRequest, signal
     },
@@ -154,13 +157,13 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const flowableDemandApprovalOutcome = (
-    demandId: string,
+    bizId: string,
  signal?: AbortSignal
 ) => {
       
       
       return customInstance<ApiResponseString>(
-      {url: `/api/v1/buyer/workflow/demand-approvals/${demandId}/outcome`, method: 'GET', signal
+      {url: `/api/v1/buyer/workflow/approvals/${bizId}/outcome`, method: 'GET', signal
     },
       );
     }
@@ -168,29 +171,29 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getFlowableDemandApprovalOutcomeQueryKey = (demandId?: string,) => {
+export const getFlowableDemandApprovalOutcomeQueryKey = (bizId?: string,) => {
     return [
-    `/api/v1/buyer/workflow/demand-approvals/${demandId}/outcome`
+    `/api/v1/buyer/workflow/approvals/${bizId}/outcome`
     ] as const;
     }
 
     
-export const getFlowableDemandApprovalOutcomeQueryOptions = <TData = Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError = ErrorType<ApiResponseVoid>>(demandId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>>, }
+export const getFlowableDemandApprovalOutcomeQueryOptions = <TData = Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError = ErrorType<ApiResponseVoid>>(bizId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getFlowableDemandApprovalOutcomeQueryKey(demandId);
+  const queryKey =  queryOptions?.queryKey ?? getFlowableDemandApprovalOutcomeQueryKey(bizId);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>> = ({ signal }) => flowableDemandApprovalOutcome(demandId, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>> = ({ signal }) => flowableDemandApprovalOutcome(bizId, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(demandId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(bizId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type FlowableDemandApprovalOutcomeQueryResult = NonNullable<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>>
@@ -198,7 +201,7 @@ export type FlowableDemandApprovalOutcomeQueryError = ErrorType<ApiResponseVoid>
 
 
 export function useFlowableDemandApprovalOutcome<TData = Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError = ErrorType<ApiResponseVoid>>(
- demandId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>> & Pick<
+ bizId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>,
           TError,
@@ -208,7 +211,7 @@ export function useFlowableDemandApprovalOutcome<TData = Awaited<ReturnType<type
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useFlowableDemandApprovalOutcome<TData = Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError = ErrorType<ApiResponseVoid>>(
- demandId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>> & Pick<
+ bizId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>,
           TError,
@@ -218,16 +221,16 @@ export function useFlowableDemandApprovalOutcome<TData = Awaited<ReturnType<type
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useFlowableDemandApprovalOutcome<TData = Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError = ErrorType<ApiResponseVoid>>(
- demandId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>>, }
+ bizId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useFlowableDemandApprovalOutcome<TData = Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError = ErrorType<ApiResponseVoid>>(
- demandId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>>, }
+ bizId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof flowableDemandApprovalOutcome>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getFlowableDemandApprovalOutcomeQueryOptions(demandId,options)
+  const queryOptions = getFlowableDemandApprovalOutcomeQueryOptions(bizId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -246,7 +249,7 @@ export const flowableDemandApprovalTasks = (
       
       
       return customInstance<ApiResponseListWorkflowTaskResponse>(
-      {url: `/api/v1/buyer/workflow/demand-approvals/tasks`, method: 'GET', signal
+      {url: `/api/v1/buyer/workflow/approvals/tasks`, method: 'GET', signal
     },
       );
     }
@@ -256,7 +259,7 @@ export const flowableDemandApprovalTasks = (
 
 export const getFlowableDemandApprovalTasksQueryKey = () => {
     return [
-    `/api/v1/buyer/workflow/demand-approvals/tasks`
+    `/api/v1/buyer/workflow/approvals/tasks`
     ] as const;
     }
 
