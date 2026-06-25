@@ -1,30 +1,40 @@
 import { useState } from 'react';
-import { Building2 } from 'lucide-react';
+import { Construction } from 'lucide-react';
 import { platformNavigation } from '@24bid/shared';
-import { AppShell, FeedbackNotice, Panel, StatusPill } from '@24bid/ui';
+import { AppShell, FeedbackNotice, Panel } from '@24bid/ui';
+import { useAuthStore } from './lib/auth-store';
+import { LoginGate } from './features/login-gate';
+import { EnterpriseReviewsPage } from './features/reviews/enterprise-reviews-page';
 
-// S0-3 骨架：运营后台独立 app，复用同一组件库与布局壳。
 export function App() {
-  const [activeModuleId, setActiveModuleId] = useState('overview');
+  const session = useAuthStore((s) => s.session);
+  const [activeModuleId, setActiveModuleId] = useState('reviews');
   const activeModule = platformNavigation.modules.find((m) => m.id === activeModuleId);
+
+  if (!session) {
+    return <LoginGate />;
+  }
 
   return (
     <AppShell
       brandSubtitle={platformNavigation.label}
+      mainlineHint="企业审核 - 租户运营 - 平台公告"
       modules={platformNavigation.modules}
       activeModuleId={activeModuleId}
       onSelectModule={setActiveModuleId}
       title={activeModule?.label ?? '平台运营后台'}
-      accountLabel="平台运营账户"
+      accountLabel={`${session.displayName} · 平台运营`}
     >
-      <FeedbackNotice message="运营后台已与外部门户物理隔离为独立 app。" />
-      <Panel title={activeModule?.label ?? '平台看板'} icon={Building2}>
-        <div className="flex flex-wrap gap-2">
-          <StatusPill label="已启用" />
-          <StatusPill label="试用中" />
-          <StatusPill label="已停用" />
-        </div>
-      </Panel>
+      {activeModuleId === 'reviews' ? (
+        <EnterpriseReviewsPage />
+      ) : (
+        <Panel title={activeModule?.label ?? '模块'} icon={Construction} subtitle="后续切片实现">
+          <FeedbackNotice
+            tone="info"
+            message={`「${activeModule?.label}」将在后续切片接通真实后端。`}
+          />
+        </Panel>
+      )}
     </AppShell>
   );
 }
