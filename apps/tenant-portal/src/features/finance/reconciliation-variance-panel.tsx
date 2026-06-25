@@ -24,6 +24,8 @@ export function ReconciliationVariancePanel() {
   const varianceMatches = (matches.data?.data ?? []).filter((m) => m.matchStatus === '金额差异');
   const handlingList = handlings.data?.data ?? [];
   const handlingByInvoice = new Map(handlingList.map((h) => [h.invoiceId, h]));
+  // 行级差异处理:由被标记的发票行项发起(带 orderLineId),抬头可能并无金额差异。
+  const lineHandlings = handlingList.filter((h) => h.orderLineId);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -97,6 +99,51 @@ export function ReconciliationVariancePanel() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {lineHandlings.length > 0 && (
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <p className="text-xs font-black text-slate-500">行级差异处理（源自被标记的发票行项）</p>
+          <div className="mt-2 space-y-3">
+            {lineHandlings.map((h) => {
+              const handled = h.status === '已处理';
+              const busyR = resolve.isPending && resolve.variables?.varianceHandlingId === h.id;
+              return (
+                <div key={h.id} className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-words font-black text-slate-950">{h.lineDescription}</p>
+                      <p className="mt-1 font-mono text-xs font-bold text-slate-500">
+                        {h.invoiceId} · 订单 {h.orderId}
+                      </p>
+                    </div>
+                    <StatusPill label={handled ? '已处理' : '待处理'} />
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <MiniFact label="触发行" value={h.lineDescription ?? '—'} />
+                    <MiniFact label="差异结论" value={h.reason ?? '—'} />
+                    <MiniFact label="行差异金额" value={currency(h.varianceAmount)} />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {!handled && h.id && (
+                      <button
+                        type="button"
+                        onClick={() => onResolve(h.id!)}
+                        disabled={busyR}
+                        className="inline-flex h-9 items-center rounded-lg bg-emerald-600 px-4 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-400"
+                      >
+                        {busyR ? '处理中' : '标记已处理(解除阻断)'}
+                      </button>
+                    )}
+                    {handled && (
+                      <span className="text-xs font-bold text-emerald-700">该行差异已处理,付款可继续。</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </Panel>
