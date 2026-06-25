@@ -646,6 +646,72 @@ class FinanceActionPaymentBlockingTests {
         org.mockito.ArgumentMatchers.any());
   }
 
+  private VarianceHandling varianceHandling(String status, java.math.BigDecimal amount) {
+    return new VarianceHandling("variance-1", "tenant-1", "invoice-1", "supplier-1", "po-1",
+        amount, "发票金额与订单金额不一致", "buyer-user", "待财务复核", status, "buyer-user",
+        OffsetDateTime.now(), OffsetDateTime.now(), null, null);
+  }
+
+  @Test
+  void overThresholdVarianceResolutionRoutesToManagerReviewNotResolved() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(varianceHandlingMapper.findByTenantAndId("tenant-1", "variance-1"))
+        .thenReturn(varianceHandling("待处理", BigDecimal.valueOf(15000)));
+
+    financeActionApplicationService.updateCurrentTenantVarianceHandlingStatus(
+        "variance-1", new UpdateVarianceHandlingStatusRequest("已处理", "核实完成"));
+
+    verify(varianceHandlingMapper).updateStatus(
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("variance-1"),
+        org.mockito.ArgumentMatchers.eq("待财务经理签核"),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void underThresholdVarianceResolvesDirectly() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(varianceHandlingMapper.findByTenantAndId("tenant-1", "variance-1"))
+        .thenReturn(varianceHandling("待处理", BigDecimal.valueOf(2000)));
+
+    financeActionApplicationService.updateCurrentTenantVarianceHandlingStatus(
+        "variance-1", new UpdateVarianceHandlingStatusRequest("已处理", "核实完成"));
+
+    verify(varianceHandlingMapper).updateStatus(
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("variance-1"),
+        org.mockito.ArgumentMatchers.eq("已处理"),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void managerApprovalResolvesOverThresholdVariance() {
+    TenantContext.set("tenant-1", null, "finance-manager");
+    when(varianceHandlingMapper.findByTenantAndId("tenant-1", "variance-1"))
+        .thenReturn(varianceHandling("待财务经理签核", BigDecimal.valueOf(15000)));
+
+    financeActionApplicationService.approveCurrentTenantVarianceHandling(
+        "variance-1", new com.procurement.finance.api.ApproveVarianceHandlingRequest(true, "同意调整入账"));
+
+    verify(varianceHandlingMapper).updateStatus(
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("variance-1"),
+        org.mockito.ArgumentMatchers.eq("已处理"),
+        org.mockito.ArgumentMatchers.eq("同意调整入账"));
+  }
+
+  @Test
+  void managerApprovalRejectedFromNonReviewStatus() {
+    TenantContext.set("tenant-1", null, "finance-manager");
+    when(varianceHandlingMapper.findByTenantAndId("tenant-1", "variance-1"))
+        .thenReturn(varianceHandling("待处理", BigDecimal.valueOf(15000)));
+
+    assertThatThrownBy(() -> financeActionApplicationService.approveCurrentTenantVarianceHandling(
+            "variance-1", new com.procurement.finance.api.ApproveVarianceHandlingRequest(true, null)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("pending manager approval");
+  }
+
   private Invoice invoice() {
     return new Invoice(
         "invoice-1",

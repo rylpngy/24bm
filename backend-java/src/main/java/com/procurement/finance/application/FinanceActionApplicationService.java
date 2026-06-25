@@ -27,6 +27,7 @@ import com.procurement.finance.api.ThreeWayMatchResponse;
 import com.procurement.finance.api.UpdatePaymentBatchStatusRequest;
 import com.procurement.finance.api.UpdatePaymentBlockResolutionStatusRequest;
 import com.procurement.finance.api.UpdatePaymentRequestStatusRequest;
+import com.procurement.finance.api.ApproveVarianceHandlingRequest;
 import com.procurement.finance.api.UpdateVarianceHandlingStatusRequest;
 import com.procurement.finance.api.VarianceHandlingResponse;
 import com.procurement.demand.api.ApprovalTaskResponse;
@@ -37,6 +38,7 @@ import com.procurement.finance.domain.PaymentBlockResolution;
 import com.procurement.finance.domain.PaymentExecutionRecord;
 import com.procurement.finance.domain.PaymentRequest;
 import com.procurement.finance.domain.ThreeWayMatch;
+import com.procurement.finance.domain.VarianceApprovalPolicy;
 import com.procurement.finance.domain.ThreeWayMatchLineRow;
 import com.procurement.finance.domain.VarianceHandling;
 import com.procurement.finance.infrastructure.InvoiceMapper;
@@ -842,13 +844,54 @@ public class FinanceActionApplicationService {
     String result = request.result() == null || request.result().isBlank()
         ? varianceHandling.result()
         : request.result();
-    varianceHandlingMapper.updateStatus(tenantId, varianceHandlingId, request.status(), result);
+    String status = request.status();
+    // 差异分级审批:超阈值差异不能由买方直接结案,改置「待财务经理签核」(付款仍阻断)。
+    if (VarianceApprovalPolicy.STATUS_RESOLVED.equals(status)
+        && VarianceApprovalPolicy.requiresManagerApproval(varianceHandling.varianceAmount())) {
+      status = VarianceApprovalPolicy.STATUS_MANAGER_REVIEW;
+      result =
+          "差异金额 " + varianceHandling.varianceAmount() + " 达 ¥10,000 阈值,转财务经理签核";
+    }
+    varianceHandlingMapper.updateStatus(tenantId, varianceHandlingId, status, result);
     auditLogApplicationService.recordTenantAction(
         tenantId,
         "variance_handling.updated",
         AuditTargetType.INVOICE,
         varianceHandling.invoiceId());
     return toVarianceHandlingResponse(varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId));
+  }
+
+  // 财务经理签核超阈值差异:通过→已处理(解除付款阻断),驳回→退回待处理。
+  @Transactional
+  public VarianceHandlingResponse approveCurrentTenantVarianceHandling(
+      String varianceHandlingId, ApproveVarianceHandlingRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("variance handling APIs");
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    VarianceHandling varianceHandling =
+        varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId);
+    if (varianceHandling == null) {
+      throw new IllegalArgumentException(
+          "Variance handling not found in tenant scope: " + varianceHandlingId);
+    }
+    if (!VarianceApprovalPolicy.STATUS_MANAGER_REVIEW.equals(varianceHandling.status())) {
+      throw new IllegalStateException(
+          "Only variance handlings pending manager approval can be reviewed: " + varianceHandlingId);
+    }
+    boolean approved = Boolean.TRUE.equals(request.approved());
+    String status =
+        approved ? VarianceApprovalPolicy.STATUS_RESOLVED : VarianceApprovalPolicy.STATUS_PENDING;
+    String result =
+        request.comment() == null || request.comment().isBlank()
+            ? (approved ? "财务经理签核通过,差异结案" : "财务经理驳回,退回重新核实")
+            : request.comment();
+    varianceHandlingMapper.updateStatus(tenantId, varianceHandlingId, status, result);
+    auditLogApplicationService.recordTenantAction(
+        tenantId,
+        approved ? "variance_handling.manager_approved" : "variance_handling.manager_rejected",
+        AuditTargetType.INVOICE,
+        varianceHandling.invoiceId());
+    return toVarianceHandlingResponse(
+        varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId));
   }
 
   private void syncPaymentBatch(String tenantId, String paymentBatchNo) {

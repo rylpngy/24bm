@@ -226,4 +226,13 @@ public class BuyerFinanceActionController {
         varianceHandlingId,
         request));
   }
+
+  @PostMapping("/variance-handlings/{varianceHandlingId}/manager-approval")
+  public ApiResponse<VarianceHandlingResponse> approveVarianceHandling(
+      @PathVariable String varianceHandlingId,
+      @Valid @RequestBody ApproveVarianceHandlingRequest request) {
+    return ApiResponse.ok(
+        financeActionApplicationService.approveCurrentTenantVarianceHandling(
+            varianceHandlingId, request));
+  }
 }

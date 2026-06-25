@@ -2048,6 +2048,56 @@
         }
       }
     },
+    "/api/v1/buyer/variance-handlings/{varianceHandlingId}/manager-approval": {
+      "post": {
+        "tags": [
+          "buyer-finance-action-controller"
+        ],
+        "operationId": "BuyerFinanceAction_approveVarianceHandling",
+        "parameters": [
+          {
+            "name": "varianceHandlingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveVarianceHandlingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVarianceHandlingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/users": {
       "get": {
         "tags": [
@@ -8249,6 +8299,20 @@
             "type": "string"
           },
           "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ApproveVarianceHandlingRequest": {
+        "required": [
+          "approved"
+        ],
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "boolean"
+          },
+          "comment": {
             "type": "string"
           }
         }

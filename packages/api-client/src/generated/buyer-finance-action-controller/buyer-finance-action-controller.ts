@@ -42,6 +42,7 @@ import type {
   ApiResponseThreeWayMatchRebuildResponse,
   ApiResponseVarianceHandlingResponse,
   ApiResponseVoid,
+  ApproveVarianceHandlingRequest,
   BuyerFinanceActionPaymentArchiveExceptionRequestsParams,
   BuyerFinanceActionPaymentBatchesParams,
   BuyerFinanceActionPaymentBlockResolutionsParams,
@@ -442,6 +443,65 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerFinanceActionCreateVarianceHandlingMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerFinanceActionApproveVarianceHandling = (
+    varianceHandlingId: string,
+    approveVarianceHandlingRequest: BodyType<ApproveVarianceHandlingRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseVarianceHandlingResponse>(
+      {url: `/api/v1/buyer/variance-handlings/${varianceHandlingId}/manager-approval`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: approveVarianceHandlingRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerFinanceActionApproveVarianceHandlingMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionApproveVarianceHandling>>, TError,{varianceHandlingId: string;data: BodyType<ApproveVarianceHandlingRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionApproveVarianceHandling>>, TError,{varianceHandlingId: string;data: BodyType<ApproveVarianceHandlingRequest>}, TContext> => {
+
+const mutationKey = ['buyerFinanceActionApproveVarianceHandling'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionApproveVarianceHandling>>, {varianceHandlingId: string;data: BodyType<ApproveVarianceHandlingRequest>}> = (props) => {
+          const {varianceHandlingId,data} = props ?? {};
+
+          return  buyerFinanceActionApproveVarianceHandling(varianceHandlingId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerFinanceActionApproveVarianceHandlingMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionApproveVarianceHandling>>>
+    export type BuyerFinanceActionApproveVarianceHandlingMutationBody = BodyType<ApproveVarianceHandlingRequest>
+    export type BuyerFinanceActionApproveVarianceHandlingMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerFinanceActionApproveVarianceHandling = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionApproveVarianceHandling>>, TError,{varianceHandlingId: string;data: BodyType<ApproveVarianceHandlingRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerFinanceActionApproveVarianceHandling>>,
+        TError,
+        {varianceHandlingId: string;data: BodyType<ApproveVarianceHandlingRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerFinanceActionApproveVarianceHandlingMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

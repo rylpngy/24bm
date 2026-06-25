@@ -89,6 +89,7 @@ export * from './apiResponseVoid';
 export * from './apiResponseVoidData';
 export * from './approvalTaskResponse';
 export * from './approvalTemplateResponse';
+export * from './approveVarianceHandlingRequest';
 export * from './attachmentDownloadLinkResponse';
 export * from './attachmentListParams';
 export * from './attachmentResponse';
