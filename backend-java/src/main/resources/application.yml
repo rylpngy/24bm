@@ -24,6 +24,9 @@ procurement:
   security:
     jwt-secret: ${JWT_SECRET:change-me-in-non-local-environments}
     jwt-expires-in-seconds: ${JWT_EXPIRES_IN_SECONDS:7200}
+    # 自研 JWT 签发(/auth/login)开关:生产以 Keycloak 为唯一签发方时置 false 退役;
+    # 默认 true 仅为 CI/测试确定性(令牌验签仍双签发器共存)。
+    self-issued-login-enabled: ${SELF_LOGIN_ENABLED:true}
   storage:
     minio:
       endpoint: ${MINIO_ENDPOINT:http://localhost:9000}

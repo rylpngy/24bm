@@ -5,6 +5,9 @@ import { LoginRequestScope, useAuthLogin } from '@24bid/api-client';
 import { FeedbackNotice, Panel, PrimaryActionButton } from '@24bid/ui';
 import { useAuthStore } from '../lib/auth-store';
 
+// 自研 JWT 已退役为 CI/开发后备;生产登录走 Keycloak(OIDC)。
+const SELF_LOGIN_FALLBACK = (import.meta.env.VITE_SELF_LOGIN ?? 'true') !== 'false';
+
 const KEYCLOAK_TOKEN_URL =
   (import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081') +
   '/realms/24bid/protocol/openid-connect/token';
@@ -97,30 +100,32 @@ export function LoginGate() {
           </div>
         </div>
         <Panel title="登录" icon={LogIn} subtitle="供应商端 · 商机 / 报价 / 订单 / 应收">
-          <FeedbackNotice tone="info" message="演示账号：供应商销售(晨光科技)。点击登录进入供应商协作。" />
-          <PrimaryActionButton onClick={handleLogin} busy={login.isPending} pendingLabel="登录中" icon={LogIn} fullWidth>
-            以供应商销售登录
+          <FeedbackNotice tone="info" message="生产登录走 Keycloak（OIDC 统一身份）。演示账号：供应商销售(晨光科技)。" />
+          <PrimaryActionButton onClick={handleKeycloakLogin} busy={kcBusy} pendingLabel="登录中" icon={KeyRound} fullWidth>
+            用 Keycloak 登录
           </PrimaryActionButton>
-          {login.isError && (
+          {kcError && (
             <div className="mt-3">
-              <FeedbackNotice tone="error" message="登录失败：请确认后端已在 8080 运行。" />
+              <FeedbackNotice tone="error" message="Keycloak 登录失败：请确认 Keycloak 已在 8081 运行。" />
             </div>
           )}
 
-          <div className="mt-4 border-t border-slate-100 pt-4">
-            <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
-              或使用 Keycloak（OIDC）
-            </p>
-            <button type="button" onClick={handleKeycloakLogin} disabled={kcBusy}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
-              <KeyRound size={16} /> {kcBusy ? '登录中…' : '用 Keycloak 登录'}
-            </button>
-            {kcError && (
-              <div className="mt-3">
-                <FeedbackNotice tone="error" message="Keycloak 登录失败：请确认 Keycloak 已在 8081 运行。" />
-              </div>
-            )}
-          </div>
+          {SELF_LOGIN_FALLBACK && (
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
+                自研 JWT（已退役 · 仅 CI/开发后备）
+              </p>
+              <button type="button" onClick={handleLogin} disabled={login.isPending}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
+                <LogIn size={16} /> {login.isPending ? '登录中…' : '以供应商销售登录（自研 JWT）'}
+              </button>
+              {login.isError && (
+                <div className="mt-3">
+                  <FeedbackNotice tone="error" message="登录失败：自研登录可能已在后端关闭（SELF_LOGIN_ENABLED=false）。" />
+                </div>
+              )}
+            </div>
+          )}
         </Panel>
       </div>
     </div>
