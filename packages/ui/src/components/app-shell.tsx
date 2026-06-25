@@ -1,6 +1,48 @@
-import type { ReactNode } from 'react';
+import type { ElementType, ReactNode } from 'react';
+import {
+  BadgeCheck,
+  BarChart3,
+  Banknote,
+  Building2,
+  ClipboardList,
+  Database,
+  FileSignature,
+  FileText,
+  LayoutGrid,
+  Megaphone,
+  PackageCheck,
+  Receipt,
+  Send,
+  ShieldCheck,
+  ShoppingCart,
+  SquareStack,
+  Users,
+} from 'lucide-react';
 import type { AdminNavigationModule } from '@24bid/shared';
 import { cn } from '../lib/cn';
+
+// 模块 id → 菜单 icon。三端 id 复用同一映射;未命中用占位 icon。
+const MODULE_ICONS: Record<string, ElementType> = {
+  dashboard: LayoutGrid,
+  overview: LayoutGrid,
+  demands: FileText,
+  approvals: ShieldCheck,
+  reviews: ShieldCheck,
+  suppliers: Users,
+  materials: Database,
+  rfqs: Send,
+  opportunities: Send,
+  quotes: BarChart3,
+  orders: ShoppingCart,
+  contracts: FileSignature,
+  receipts: PackageCheck,
+  invoices: Receipt,
+  'payment-batches': Banknote,
+  audit: ClipboardList,
+  tenants: Building2,
+  announcements: Megaphone,
+  profile: BadgeCheck,
+};
 
 export interface AppShellProps {
   /** 侧栏品牌副标题，如「采购方企业端」「平台运营端」。 */
@@ -54,24 +96,38 @@ export function AppShell({
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-4">
           {modules.map((module) => {
             const active = module.id === activeModuleId;
+            const Icon = MODULE_ICONS[module.id] ?? SquareStack;
             return (
               <button
                 key={module.id}
                 type="button"
                 onClick={() => onSelectModule(module.id)}
                 className={cn(
-                  'flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition',
-                  active ? 'bg-blue-600' : 'hover:bg-white/5',
+                  'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition',
+                  active ? 'bg-white shadow-sm shadow-slate-900/20' : 'hover:bg-white/5',
                 )}
               >
-                <span className="text-sm font-black leading-tight">{module.label}</span>
-                <span
-                  className={cn(
-                    'text-[11px] font-bold leading-tight',
-                    active ? 'text-blue-100' : 'text-slate-400',
-                  )}
-                >
-                  {module.desc}
+                <Icon
+                  size={18}
+                  className={cn('shrink-0', active ? 'text-blue-600' : 'text-slate-400')}
+                />
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span
+                    className={cn(
+                      'text-sm font-black leading-tight',
+                      active ? 'text-slate-900' : 'text-white',
+                    )}
+                  >
+                    {module.label}
+                  </span>
+                  <span
+                    className={cn(
+                      'truncate text-[11px] font-bold leading-tight',
+                      active ? 'text-slate-500' : 'text-slate-400',
+                    )}
+                  >
+                    {module.desc}
+                  </span>
                 </span>
               </button>
             );
