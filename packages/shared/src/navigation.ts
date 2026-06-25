@@ -28,6 +28,7 @@ export const buyerAdminModules: AdminNavigationModule[] = [
   { id: 'contracts', label: '合同管理', desc: '合同台账、审批与履约' },
   { id: 'receipts', label: '收货验收', desc: '待收货与验收登记' },
   { id: 'invoices', label: '发票付款', desc: '发票列表与付款状态' },
+  { id: 'payment-batches', label: '付款批次', desc: '批量付款计划与执行' },
   { id: 'audit', label: '审计日志', desc: '最近操作留痕' },
 ];
 

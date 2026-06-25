@@ -11,6 +11,7 @@ import { MaterialsPage } from './features/materials/materials-page';
 import { RfqsPage } from './features/rfqs/rfqs-page';
 import { OrdersPage } from './features/orders/orders-page';
 import { InvoicesPage } from './features/finance/invoices-page';
+import { PaymentBatchesPage } from './features/finance/payment-batches-page';
 import { ContractsPage } from './features/contracts/contracts-page';
 import { DashboardPage } from './features/dashboard/dashboard-page';
 
@@ -49,6 +50,8 @@ export function App() {
         <OrdersPage />
       ) : activeModuleId === 'invoices' ? (
         <InvoicesPage />
+      ) : activeModuleId === 'payment-batches' ? (
+        <PaymentBatchesPage />
       ) : activeModuleId === 'contracts' ? (
         <ContractsPage />
       ) : (
