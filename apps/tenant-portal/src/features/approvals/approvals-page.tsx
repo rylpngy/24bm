@@ -24,6 +24,7 @@ export function ApprovalsPage() {
   const orderCreate = usePurchaseOrderCreate();
   const contractReview = useBuyerContractReviewApproval();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [comments, setComments] = useState<Record<string, string>>({});
 
   const tasks = pending.data?.data ?? [];
   const recentTasks = recent.data?.data ?? [];
@@ -42,9 +43,9 @@ export function ApprovalsPage() {
     (contractReview.isPending && contractReview.variables?.contractId) ||
     null;
 
-  const handleContractReview = (contractId: string, approved: boolean) => {
+  const handleContractReview = (contractId: string, approved: boolean, comment?: string) => {
     contractReview.mutate(
-      { contractId, data: { approved } },
+      { contractId, data: { approved, comment: comment || undefined } },
       {
         onSuccess: () => {
           setFeedback(approved ? '合同审批通过，已生效' : '合同审批已驳回');
@@ -54,14 +55,17 @@ export function ApprovalsPage() {
     );
   };
 
-  const handleDemandReview = (demandId: string, approved: boolean) => {
-    review.mutate({ demandId, data: { approved } }, { onSuccess: () => refresh() });
+  const handleDemandReview = (demandId: string, approved: boolean, comment?: string) => {
+    review.mutate(
+      { demandId, data: { approved, comment: comment || undefined } },
+      { onSuccess: () => refresh() },
+    );
   };
 
   // 定标审批：rfq_award 任务 bizId=awardId、parentBizId=rfqId。通过后自动生成订单。
-  const handleAwardReview = (rfqId: string, awardId: string, approved: boolean) => {
+  const handleAwardReview = (rfqId: string, awardId: string, approved: boolean, comment?: string) => {
     awardReview.mutate(
-      { rfqId, data: { awardId, approved } },
+      { rfqId, data: { awardId, approved, comment: comment || undefined } },
       {
         onSuccess: () => {
           if (approved) {
@@ -112,17 +116,18 @@ export function ApprovalsPage() {
               const isAward = t.bizType === 'rfq_award';
               const isContract = t.bizType === 'contract_approval';
               const busy = busyBizId === t.bizId;
+              const comment = comments[t.id ?? ''] ?? '';
               const onApprove = () => {
-                if (isDemand && t.bizId) handleDemandReview(t.bizId, true);
+                if (isDemand && t.bizId) handleDemandReview(t.bizId, true, comment);
                 else if (isAward && t.bizId && t.parentBizId)
-                  handleAwardReview(t.parentBizId, t.bizId, true);
-                else if (isContract && t.bizId) handleContractReview(t.bizId, true);
+                  handleAwardReview(t.parentBizId, t.bizId, true, comment);
+                else if (isContract && t.bizId) handleContractReview(t.bizId, true, comment);
               };
               const onReject = () => {
-                if (isDemand && t.bizId) handleDemandReview(t.bizId, false);
+                if (isDemand && t.bizId) handleDemandReview(t.bizId, false, comment);
                 else if (isAward && t.bizId && t.parentBizId)
-                  handleAwardReview(t.parentBizId, t.bizId, false);
-                else if (isContract && t.bizId) handleContractReview(t.bizId, false);
+                  handleAwardReview(t.parentBizId, t.bizId, false, comment);
+                else if (isContract && t.bizId) handleContractReview(t.bizId, false, comment);
               };
               return (
                 <div
@@ -143,6 +148,19 @@ export function ApprovalsPage() {
                     <MiniFact label="金额" value={currency(t.amount)} />
                     <MiniFact label="任务状态" value={t.status ?? '—'} />
                   </div>
+                  {isDemand || isAward || isContract ? (
+                    <div className="mt-3">
+                      <label className="text-[11px] font-black text-slate-500">审批意见(选填)</label>
+                      <textarea
+                        className="mt-1 min-h-[56px] w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                        placeholder="如：预算合理，同意采购 / 金额超标，请补充说明后再提"
+                        value={comment}
+                        onChange={(e) =>
+                          setComments((c) => ({ ...c, [t.id ?? '']: e.target.value }))
+                        }
+                      />
+                    </div>
+                  ) : null}
                   {isDemand || isAward || isContract ? (
                     <div className="mt-3 flex gap-2">
                       <button
@@ -180,13 +198,23 @@ export function ApprovalsPage() {
             {recentTasks.slice(0, 8).map((t) => (
               <div
                 key={t.id}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3"
+                className="rounded-lg border border-slate-200 bg-slate-50 p-3"
               >
-                <div className="min-w-0">
-                  <p className="break-words text-sm font-black text-slate-900">{t.summaryTitle}</p>
-                  <p className="mt-0.5 text-xs font-bold text-slate-500">{t.bizType}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-black text-slate-900">{t.summaryTitle}</p>
+                    <p className="mt-0.5 text-xs font-bold text-slate-500">
+                      {t.bizType} · {t.status ?? '—'}
+                    </p>
+                  </div>
+                  {t.businessStatus && <StatusPill label={t.businessStatus} />}
                 </div>
-                {t.businessStatus && <StatusPill label={t.businessStatus} />}
+                {t.reviewComment && (
+                  <div className="mt-2 rounded-md border border-slate-100 bg-white px-3 py-2">
+                    <span className="text-[11px] font-black text-slate-400">审批意见 · </span>
+                    <span className="text-xs font-bold text-slate-700">{t.reviewComment}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
