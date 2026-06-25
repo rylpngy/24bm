@@ -27,7 +27,8 @@ class PlatformTenantOnboardingTests {
           platformTenantMapper,
           new ObjectMapper(),
           auditLogApplicationService,
-          passwordEncoder);
+          passwordEncoder,
+        org.mockito.Mockito.mock(com.procurement.platform.infrastructure.TenantPlanChangeMapper.class));
 
   @AfterEach
   void clearTenantContext() {

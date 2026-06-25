@@ -390,3 +390,5 @@ Method <com.procurement.platform.api.PlatformBillingController.payStatement(java
 Method <com.procurement.platform.api.PlatformBillingController.payStatement(java.lang.String, java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (PlatformBillingController.java:0)
 Method <com.procurement.platform.api.PlatformBillingController.statements(java.lang.String)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (PlatformBillingController.java:29)
 Method <com.procurement.platform.api.PlatformBillingController.statements(java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (PlatformBillingController.java:0)
+Method <com.procurement.platform.api.PlatformTenantController.planChanges(java.lang.String)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (PlatformTenantController.java:54)
+Method <com.procurement.platform.api.PlatformTenantController.planChanges(java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (PlatformTenantController.java:0)

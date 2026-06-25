@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseListTenantPlanChangeResponse,
   ApiResponseListTenantResponse,
   ApiResponseTenantResponse,
   ApiResponseVoid,
@@ -488,6 +489,92 @@ export function usePlatformTenantGet<TData = Awaited<ReturnType<typeof platformT
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformTenantGetQueryOptions(tenantId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const platformTenantPlanChanges = (
+    tenantId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListTenantPlanChangeResponse>(
+      {url: `/api/v1/platform/tenants/${tenantId}/plan-changes`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getPlatformTenantPlanChangesQueryKey = (tenantId?: string,) => {
+    return [
+    `/api/v1/platform/tenants/${tenantId}/plan-changes`
+    ] as const;
+    }
+
+    
+export const getPlatformTenantPlanChangesQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError = ErrorType<ApiResponseVoid>>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantPlanChangesQueryKey(tenantId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantPlanChanges>>> = ({ signal }) => platformTenantPlanChanges(tenantId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(tenantId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformTenantPlanChangesQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantPlanChanges>>>
+export type PlatformTenantPlanChangesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function usePlatformTenantPlanChanges<TData = Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTenantPlanChanges>>,
+          TError,
+          Awaited<ReturnType<typeof platformTenantPlanChanges>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTenantPlanChanges<TData = Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTenantPlanChanges>>,
+          TError,
+          Awaited<ReturnType<typeof platformTenantPlanChanges>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTenantPlanChanges<TData = Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformTenantPlanChanges<TData = Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError = ErrorType<ApiResponseVoid>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformTenantPlanChangesQueryOptions(tenantId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

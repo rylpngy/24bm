@@ -6745,6 +6745,56 @@
         }
       }
     },
+    "/api/v1/platform/tenants/{tenantId}/plan-changes": {
+      "get": {
+        "tags": [
+          "platform-tenant-controller"
+        ],
+        "operationId": "PlatformTenant_planChanges",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListTenantPlanChangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/platform/overview": {
       "get": {
         "tags": [
@@ -12373,6 +12423,55 @@
           },
           "totalBill": {
             "type": "number"
+          }
+        }
+      },
+      "ApiResponseListTenantPlanChangeResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantPlanChangeResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "TenantPlanChangeResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fromPlan": {
+            "type": "string"
+          },
+          "toPlan": {
+            "type": "string"
+          },
+          "fromUserLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toUserLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "changedBy": {
+            "type": "string"
+          },
+          "changedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

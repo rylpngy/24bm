@@ -5,6 +5,7 @@ import {
   usePlatformBillingPayStatement,
   usePlatformBillingStatements,
   usePlatformBillingUsage,
+  usePlatformTenantPlanChanges,
 } from '@24bid/api-client';
 
 const currency = (v?: number) =>
@@ -24,8 +25,10 @@ export function TenantUsagePanel({ tenantId }: { tenantId: string }) {
   const generate = usePlatformBillingGenerateStatement();
   const issue = usePlatformBillingIssueStatement();
   const pay = usePlatformBillingPayStatement();
+  const planChanges = usePlatformTenantPlanChanges(tenantId);
   const usage = query.data?.data;
   const stmtList = statements.data?.data ?? [];
+  const changeList = planChanges.data?.data ?? [];
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -148,6 +151,28 @@ export function TenantUsagePanel({ tenantId }: { tenantId: string }) {
           </div>
         )}
       </div>
+
+      {changeList.length > 0 && (
+        <div className="mt-3 border-t border-indigo-100 pt-3">
+          <p className="text-xs font-black text-indigo-700">套餐变更记录</p>
+          <div className="mt-2 space-y-1.5">
+            {changeList.map((c) => (
+              <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-slate-600">
+                <span>
+                  <span className="font-mono">{c.fromPlan}</span> → <span className="font-mono">{c.toPlan}</span>
+                  <span className="ml-1 text-slate-400">(上限 {c.fromUserLimit}→{c.toUserLimit})</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className={`inline-block rounded px-1.5 py-0.5 font-black ${c.direction === '升级' ? 'bg-emerald-100 text-emerald-700' : c.direction === '降级' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'}`}>
+                    {c.direction}
+                  </span>
+                  <span className="text-slate-400">{c.changedAt?.slice(0, 10)}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
