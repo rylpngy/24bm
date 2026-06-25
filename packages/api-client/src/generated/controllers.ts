@@ -3,6 +3,7 @@ export * from './approval-inbox-controller/approval-inbox-controller';
 export * from './attachment-controller/attachment-controller';
 export * from './audit-log-controller/audit-log-controller';
 export * from './auth-controller/auth-controller';
+export * from './buyer-analytics-controller/buyer-analytics-controller';
 export * from './buyer-announcement-controller/buyer-announcement-controller';
 export * from './buyer-contract-controller/buyer-contract-controller';
 export * from './buyer-delivery-controller/buyer-delivery-controller';

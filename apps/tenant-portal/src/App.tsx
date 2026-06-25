@@ -14,6 +14,7 @@ import { InvoicesPage } from './features/finance/invoices-page';
 import { PaymentBatchesPage } from './features/finance/payment-batches-page';
 import { ContractsPage } from './features/contracts/contracts-page';
 import { DashboardPage } from './features/dashboard/dashboard-page';
+import { AnalyticsPage } from './features/analytics/analytics-page';
 import { AuditPage } from './features/audit/audit-page';
 import { QuoteComparisonPage } from './features/quotes/quote-comparison-page';
 import { TeamPage } from './features/team/team-page';
@@ -39,6 +40,8 @@ export function App() {
     >
       {activeModuleId === 'dashboard' ? (
         <DashboardPage />
+      ) : activeModuleId === 'analytics' ? (
+        <AnalyticsPage />
       ) : activeModuleId === 'demands' ? (
         <DemandsPage />
       ) : activeModuleId === 'approvals' ? (

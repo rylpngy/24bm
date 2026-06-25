@@ -8318,6 +8318,46 @@
           }
         }
       }
+    },
+    "/api/v1/buyer/analytics/procurement": {
+      "get": {
+        "tags": [
+          "buyer-analytics-controller"
+        ],
+        "operationId": "BuyerAnalytics_procurement",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseProcurementAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13330,6 +13370,113 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseProcurementAnalyticsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProcurementAnalyticsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MonthlySpendResponse": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "orderCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProcurementAnalyticsResponse": {
+        "type": "object",
+        "properties": {
+          "totalSpend": {
+            "type": "number"
+          },
+          "orderCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "supplierCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "biddingSavings": {
+            "type": "number"
+          },
+          "topSupplierSharePercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthlySpend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthlySpendResponse"
+            }
+          },
+          "supplierSpend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierSpendResponse"
+            }
+          },
+          "statusDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusSliceResponse"
+            }
+          }
+        }
+      },
+      "StatusSliceResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "orderCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalAmount": {
+            "type": "number"
+          }
+        }
+      },
+      "SupplierSpendResponse": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "orderCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sharePercent": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }

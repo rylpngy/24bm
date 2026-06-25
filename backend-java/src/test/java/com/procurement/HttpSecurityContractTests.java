@@ -23,6 +23,7 @@ import com.procurement.contract.api.ContractResponse;
 import com.procurement.contract.api.UpdateContractArchiveStatusRequest;
 import com.procurement.contract.api.UpdateContractStatusRequest;
 import com.procurement.contract.application.ContractApplicationService;
+import com.procurement.buyer.api.BuyerAnalyticsController;
 import com.procurement.buyer.api.BuyerWorkspaceController;
 import com.procurement.buyer.api.BuyerWorkspaceResponse;
 import com.procurement.buyer.api.BuyerTodoSummaryResponse;
@@ -229,6 +230,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierReceivableController.class,
     AuditLogController.class,
     BuyerWorkspaceController.class,
+    BuyerAnalyticsController.class,
     SupplierWorkspaceController.class,
     AttachmentController.class,
     BuyerNotificationController.class,
@@ -348,6 +350,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private BuyerWorkspaceApplicationService buyerWorkspaceApplicationService;
+
+  @MockBean
+  private com.procurement.buyer.application.BuyerAnalyticsApplicationService buyerAnalyticsApplicationService;
 
   @MockBean
   private SupplierWorkspaceApplicationService supplierWorkspaceApplicationService;

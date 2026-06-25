@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   SquareStack,
+  TrendingUp,
   Users,
 } from 'lucide-react';
 import type { AdminNavigationModule } from '@24bid/shared';
@@ -25,6 +26,7 @@ import { cn } from '../lib/cn';
 const MODULE_ICONS: Record<string, ElementType> = {
   dashboard: LayoutGrid,
   overview: LayoutGrid,
+  analytics: TrendingUp,
   demands: FileText,
   approvals: ShieldCheck,
   reviews: ShieldCheck,
