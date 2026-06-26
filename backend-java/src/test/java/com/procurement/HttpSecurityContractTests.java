@@ -25,6 +25,8 @@ import com.procurement.contract.api.UpdateContractArchiveStatusRequest;
 import com.procurement.contract.api.UpdateContractStatusRequest;
 import com.procurement.contract.application.ContractApplicationService;
 import com.procurement.buyer.api.BuyerAnalyticsController;
+import com.procurement.buyer.api.BuyerBudgetController;
+import com.procurement.buyer.api.DepartmentBudgetResponse;
 import com.procurement.buyer.api.BuyerWorkspaceController;
 import com.procurement.buyer.api.BuyerWorkspaceResponse;
 import com.procurement.buyer.api.BuyerTodoSummaryResponse;
@@ -234,6 +236,7 @@ import org.springframework.test.web.servlet.MvcResult;
     AuditLogController.class,
     BuyerWorkspaceController.class,
     BuyerAnalyticsController.class,
+    BuyerBudgetController.class,
     SupplierWorkspaceController.class,
     AttachmentController.class,
     BuyerNotificationController.class,
@@ -360,6 +363,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.buyer.application.BuyerAnalyticsApplicationService buyerAnalyticsApplicationService;
+
+  @MockBean
+  private com.procurement.buyer.application.BudgetApplicationService budgetApplicationService;
 
   @MockBean
   private SupplierWorkspaceApplicationService supplierWorkspaceApplicationService;
@@ -981,6 +987,92 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.id").value("dept-old"))
         .andExpect(jsonPath("$.data.status").value("inactive"));
+  }
+
+  @Test
+  void buyerCanListAndUpsertDepartmentBudgetsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/budgets")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(budgetApplicationService.listBudgets()).thenReturn(List.of(
+        new DepartmentBudgetResponse(
+            "budget-it-2026",
+            "dept-it",
+            "信息化部",
+            "2026",
+            BigDecimal.valueOf(480000),
+            BigDecimal.valueOf(458000),
+            BigDecimal.valueOf(36000),
+            BigDecimal.valueOf(-14000),
+            103,
+            true)));
+
+    mockMvc.perform(get("/api/v1/buyer/budgets")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data[0].departmentId").value("dept-it"))
+        .andExpect(jsonPath("$.data[0].occupancyPercent").value(103))
+        .andExpect(jsonPath("$.data[0].overBudget").value(true));
+
+    mockMvc.perform(post("/api/v1/buyer/budgets")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "departmentId": "dept-finance",
+                  "period": "2026",
+                  "totalAmount": 200000
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(budgetApplicationService.upsertBudget(org.mockito.ArgumentMatchers.any())).thenReturn(
+        new DepartmentBudgetResponse(
+            "budget-fin-2026",
+            "dept-finance",
+            "财务部",
+            "2026",
+            BigDecimal.valueOf(200000),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.valueOf(200000),
+            0,
+            false));
+
+    mockMvc.perform(post("/api/v1/buyer/budgets")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "departmentId": "dept-finance",
+                  "period": "2026",
+                  "totalAmount": 200000
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.departmentId").value("dept-finance"))
+        .andExpect(jsonPath("$.data.remaining").value(200000))
+        .andExpect(jsonPath("$.data.overBudget").value(false));
   }
 
   @Test

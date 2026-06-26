@@ -19,6 +19,7 @@ export interface AdminRoleNavigation {
 export const buyerAdminModules: AdminNavigationModule[] = [
   { id: 'dashboard', label: '首页看板', desc: '采购金额、待办、履约进度' },
   { id: 'analytics', label: '采购分析', desc: '支出趋势、集中度、节支洞察' },
+  { id: 'budgets', label: '预算管理', desc: '部门预算池、占用、超预算预警' },
   { id: 'demands', label: '采购需求', desc: '需求列表、审批提交、转询价' },
   { id: 'approvals', label: '审批中心', desc: '待审批与最近审批记录' },
   { id: 'suppliers', label: '供应商库', desc: '私域关系、准入、分级、绩效' },

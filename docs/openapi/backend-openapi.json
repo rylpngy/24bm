@@ -5926,6 +5926,94 @@
         }
       }
     },
+    "/api/v1/buyer/budgets": {
+      "get": {
+        "tags": [
+          "buyer-budget-controller"
+        ],
+        "operationId": "BuyerBudget_budgets",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListDepartmentBudgetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer-budget-controller"
+        ],
+        "operationId": "BuyerBudget_upsert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertDepartmentBudgetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDepartmentBudgetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/attachments": {
       "get": {
         "tags": [
@@ -12175,6 +12263,75 @@
           }
         }
       },
+      "UpsertDepartmentBudgetRequest": {
+        "required": [
+          "departmentId",
+          "period",
+          "totalAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "departmentId": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          }
+        }
+      },
+      "ApiResponseDepartmentBudgetResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DepartmentBudgetResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "DepartmentBudgetResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "committed": {
+            "type": "number"
+          },
+          "pending": {
+            "type": "number"
+          },
+          "remaining": {
+            "type": "number"
+          },
+          "occupancyPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overBudget": {
+            "type": "boolean"
+          }
+        }
+      },
       "CreateAttachmentRequest": {
         "required": [
           "fileName",
@@ -13865,6 +14022,23 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ContractFulfillmentEventResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListDepartmentBudgetResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DepartmentBudgetResponse"
             }
           },
           "message": {
