@@ -8,6 +8,7 @@ import {
   useBuyerUserList,
 } from '@24bid/api-client';
 import { FeedbackNotice, ListToolbar, Panel, StatusPill } from '@24bid/ui';
+import { NotificationChannelPanel } from './notification-channel-panel';
 
 // 团队与权限:角色权限矩阵 + 团队成员(改角色 / 启停)。
 export function TeamPage() {
@@ -121,6 +122,7 @@ export function TeamPage() {
           </div>
         )}
       </Panel>
+      <NotificationChannelPanel />
     </div>
   );
 }

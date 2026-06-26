@@ -612,6 +612,94 @@
         }
       }
     },
+    "/api/v1/buyer/notification-channels/settings": {
+      "get": {
+        "tags": [
+          "buyer-notification-channel-controller"
+        ],
+        "operationId": "BuyerNotificationChannel_settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseNotificationSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "buyer-notification-channel-controller"
+        ],
+        "operationId": "BuyerNotificationChannel_updateSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseNotificationSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/invoices/{invoiceId}": {
       "put": {
         "tags": [
@@ -4830,6 +4918,46 @@
         }
       }
     },
+    "/api/v1/buyer/notification-channels/test": {
+      "post": {
+        "tags": [
+          "buyer-notification-channel-controller"
+        ],
+        "operationId": "BuyerNotificationChannel_test",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListNotificationDeliveryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/materials": {
       "get": {
         "tags": [
@@ -7865,6 +7993,46 @@
         }
       }
     },
+    "/api/v1/buyer/notification-channels/deliveries": {
+      "get": {
+        "tags": [
+          "buyer-notification-channel-controller"
+        ],
+        "operationId": "BuyerNotificationChannel_deliveries",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListNotificationDeliveryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/invoices": {
       "get": {
         "tags": [
@@ -9548,6 +9716,54 @@
             "items": {
               "$ref": "#/components/schemas/OrderLineItemResponse"
             }
+          }
+        }
+      },
+      "UpdateNotificationSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "emailEnabled": {
+            "type": "boolean"
+          },
+          "emailRecipient": {
+            "type": "string"
+          },
+          "webhookEnabled": {
+            "type": "boolean"
+          },
+          "webhookUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseNotificationSettingsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/NotificationSettingsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "NotificationSettingsResponse": {
+        "type": "object",
+        "properties": {
+          "emailEnabled": {
+            "type": "boolean"
+          },
+          "emailRecipient": {
+            "type": "string"
+          },
+          "webhookEnabled": {
+            "type": "boolean"
+          },
+          "webhookUrl": {
+            "type": "string"
           }
         }
       },
@@ -11553,6 +11769,50 @@
             "items": {
               "$ref": "#/components/schemas/ReceiptLineItemResponse"
             }
+          }
+        }
+      },
+      "ApiResponseListNotificationDeliveryResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationDeliveryResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "NotificationDeliveryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "dispatchedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

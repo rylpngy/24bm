@@ -84,6 +84,7 @@ import com.procurement.finance.application.FinanceActionApplicationService;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.api.UpdateSupplierReceivableRequest;
+import com.procurement.notification.api.BuyerNotificationChannelController;
 import com.procurement.notification.api.BuyerNotificationController;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.api.SupplierNotificationController;
@@ -236,6 +237,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierWorkspaceController.class,
     AttachmentController.class,
     BuyerNotificationController.class,
+    BuyerNotificationChannelController.class,
     SupplierNotificationController.class,
     DepartmentController.class
 })
@@ -367,6 +369,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private NotificationApplicationService notificationApplicationService;
+
+  @MockBean
+  private com.procurement.notification.application.NotificationChannelService notificationChannelService;
 
   @MockBean
   private DepartmentApplicationService departmentApplicationService;
