@@ -68,6 +68,24 @@ services:
     volumes:
       - ./keycloak/realm:/opt/keycloak/data/import:ro
 
+  # 后端应用(可选,profile=app 时启用):docker compose --profile app up -d --build
+  app:
+    build:
+      context: ../backend-java
+    container_name: 24bid-app
+    profiles: ["app"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/procurement_saas
+      DB_USERNAME: procurement
+      DB_PASSWORD: procurement
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8081/realms/24bid/protocol/openid-connect/certs
+      MINIO_ENDPOINT: http://minio:9000
+    ports:
+      - "8080:8080"
+
 volumes:
   24bid-postgres-data:
   24bid-redis-data:

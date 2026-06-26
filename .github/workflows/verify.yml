@@ -1,4 +1,4 @@
-name: Verify
+name: CI
 
 on:
   pull_request:
@@ -8,27 +8,38 @@ on:
       - master
 
 jobs:
-  verify:
+  backend:
+    name: Backend (Java 21)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
+      - uses: actions/checkout@v4
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
           cache: maven
+      # 单测均以 mock 隔离,无需数据库;集成测试(*IT)由 Testcontainers 自起容器。
+      - name: Backend tests (unit + integration)
+        working-directory: backend-java
+        run: mvn -B -ntp verify
 
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Run verification baseline
-        run: npm run verify
+  frontend:
+    name: Frontend (pnpm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck (all packages + apps)
+        run: pnpm typecheck:all
+      - name: Unit tests (Vitest)
+        run: pnpm test

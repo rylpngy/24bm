@@ -98,6 +98,15 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
     </dependency>
+    <!-- 可观测性:Actuator 健康/指标 + Prometheus 抓取端点 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
     <!-- 报表导出:Excel(POI)+ PDF(OpenPDF,含 CJK 字体) -->
     <dependency>
       <groupId>org.apache.poi</groupId>
