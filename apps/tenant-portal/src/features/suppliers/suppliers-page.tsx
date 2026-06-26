@@ -1,38 +1,55 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Boxes } from 'lucide-react';
-import {
-  type BuyerSupplierResponse,
-  useBuyerSupplierChangeStatus,
-  useBuyerSupplierList,
-  useBuyerSupplierReviewAdmission,
-  useBuyerSupplierSubmitAdmission,
-} from '@24bid/api-client';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Boxes, ChevronRight, Plus } from 'lucide-react';
+import { useBuyerSupplierCreate, useBuyerSupplierList } from '@24bid/api-client';
 import {
   FeedbackNotice,
   ListToolbar,
   MiniFact,
   Panel,
+  PrimaryActionButton,
   ResponsiveTableFrame,
   StatusPill,
   cn,
 } from '@24bid/ui';
-import { SupplierEvaluationPanel } from './supplier-evaluation-panel';
-import { OwnerAttachments } from '../attachments/owner-attachments';
+import { SupplierDetailPage } from './supplier-detail-page';
 
 const STATUS_FILTERS = ['全部', '待准入', '准入审批中', '已准入', '已驳回', '黑名单'] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
+const schema = z.object({
+  supplierId: z.string().min(2, '请填写供应商企业 ID'),
+  level: z.string().min(1, '请填写合作等级'),
+  categories: z.string().min(1, '请填写授权品类'),
+});
+type FormValues = z.infer<typeof schema>;
+
+const inputCls =
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
 
 export function SuppliersPage() {
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>('全部');
-  const [evalOpenId, setEvalOpenId] = useState<string | null>(null);
-  const [profileOpenId, setProfileOpenId] = useState<string | null>(null);
+  const [status, setStatus] = useState<StatusFilter>('全部');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
-  const query = useBuyerSupplierList(status === '全部' ? undefined : { status });
-  const submit = useBuyerSupplierSubmitAdmission();
-  const review = useBuyerSupplierReviewAdmission();
-  const changeStatus = useBuyerSupplierChangeStatus();
-  const suppliers = query.data?.data ?? [];
+  const query = useBuyerSupplierList();
+  const create = useBuyerSupplierCreate();
+  const all = query.data?.data ?? [];
+  const suppliers = status === '全部' ? all : all.filter((s) => s.status === status);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { supplierId: '', level: '普通', categories: '' },
+  });
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -40,54 +57,50 @@ export function SuppliersPage() {
         typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/suppliers'),
     });
 
-  const busyId =
-    (submit.isPending && submit.variables?.relationId) ||
-    (review.isPending && review.variables?.relationId) ||
-    (changeStatus.isPending && changeStatus.variables?.relationId) ||
-    null;
-
-  const actionsFor = (s: (typeof suppliers)[number]) => {
-    const id = s.id;
-    if (!id) return null;
-    const busy = busyId === id;
-    const btn = (label: string, onClick: () => void, tone: 'blue' | 'emerald' | 'red') => (
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={busy}
-        className={cn(
-          'inline-flex h-8 items-center rounded-md px-3 text-xs font-black text-white transition disabled:bg-slate-400',
-          tone === 'emerald' && 'bg-emerald-600 hover:bg-emerald-700',
-          tone === 'blue' && 'bg-blue-600 hover:bg-blue-700',
-          tone === 'red' && 'bg-red-600 hover:bg-red-700',
-        )}
-      >
-        {busy ? '处理中' : label}
-      </button>
+  const onSubmit = (values: FormValues) =>
+    create.mutate(
+      {
+        data: {
+          supplierId: values.supplierId,
+          status: '待准入',
+          level: values.level,
+          categories: values.categories.split(/[,，、\s]+/).filter(Boolean),
+        },
+      },
+      {
+        onSuccess: () => {
+          reset();
+          setShowForm(false);
+          refresh();
+        },
+      },
     );
 
-    switch (s.status) {
-      case '待准入':
-      case '已驳回':
-        return btn('提交准入', () => submit.mutate({ relationId: id }, { onSuccess: refresh }), 'blue');
-      case '准入审批中':
-        return (
-          <div className="flex gap-2">
-            {btn('通过', () => review.mutate({ relationId: id, data: { approved: true } }, { onSuccess: refresh }), 'emerald')}
-            {btn('驳回', () => review.mutate({ relationId: id, data: { approved: false } }, { onSuccess: refresh }), 'red')}
-          </div>
-        );
-      case '已准入':
-        return btn('加入黑名单', () => changeStatus.mutate({ relationId: id, data: { status: '黑名单' } }, { onSuccess: refresh }), 'red');
-      case '黑名单':
-        return btn('恢复待准入', () => changeStatus.mutate({ relationId: id, data: { status: '待准入' } }, { onSuccess: refresh }), 'blue');
-      default:
-        return null;
+  // 钻取详情:用最新列表数据回灌(动作后状态会刷新)。
+  if (selectedId) {
+    const fresh = all.find((s) => s.id === selectedId);
+    if (fresh) {
+      return <SupplierDetailPage supplier={fresh} onBack={() => setSelectedId(null)} />;
     }
-  };
+  }
+
+  const count = (s: StatusFilter) => (s === '全部' ? all.length : all.filter((x) => x.status === s).length);
+  const scored = all.filter((s) => s.performanceScore != null);
+  const avgScore =
+    scored.length > 0
+      ? Math.round((scored.reduce((sum, s) => sum + (s.performanceScore ?? 0), 0) / scored.length) * 10) / 10
+      : null;
 
   return (
     <Panel title="供应商库" icon={Boxes} subtitle="私域关系 · 准入 · 分级 · 绩效">
+      <div className="mb-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <MiniFact label="供应商总数" value={String(all.length)} />
+        <MiniFact label="待准入" value={String(count('待准入'))} />
+        <MiniFact label="准入审批中" value={String(count('准入审批中'))} />
+        <MiniFact label="已准入" value={String(count('已准入'))} />
+        <MiniFact label="平均绩效" value={avgScore == null ? '—' : String(avgScore)} />
+      </div>
+
       <ListToolbar
         title="私域供应商"
         recordCount={suppliers.length}
@@ -95,23 +108,74 @@ export function SuppliersPage() {
         actionLabel="新增供应商"
       />
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {STATUS_FILTERS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setStatus(s)}
-            className={cn(
-              'h-8 rounded-md border px-3 text-xs font-black transition',
-              s === status
-                ? 'border-blue-200 bg-blue-50 text-blue-700'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
-            )}
-          >
-            {s}
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatus(s)}
+              className={cn(
+                'h-8 rounded-md border px-3 text-xs font-black transition',
+                s === status
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+              )}
+            >
+              {s}
+              {count(s) > 0 && <span className="ml-1 text-slate-400">{count(s)}</span>}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowForm((v) => !v)}
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+        >
+          <Plus size={14} /> {showForm ? '收起' : '新增供应商'}
+        </button>
       </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="mb-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4"
+        >
+          <p className="text-sm font-black text-blue-800">登记私域供应商</p>
+          <p className="mt-0.5 text-xs font-bold text-blue-600">登记后状态为「待准入」,在详情页提交准入。</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="text-xs font-black text-slate-500">供应商企业 ID</label>
+              <input className={inputCls} placeholder="如 ent-supplier-sunrise" {...register('supplierId')} />
+              {errors.supplierId && (
+                <p className="mt-1 text-xs font-bold text-red-600">{errors.supplierId.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-black text-slate-500">合作等级</label>
+              <input className={inputCls} placeholder="战略 / 重要 / 普通" {...register('level')} />
+              {errors.level && (
+                <p className="mt-1 text-xs font-bold text-red-600">{errors.level.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-black text-slate-500">授权品类(逗号分隔)</label>
+              <input className={inputCls} placeholder="办公设备, 办公耗材" {...register('categories')} />
+              {errors.categories && (
+                <p className="mt-1 text-xs font-bold text-red-600">{errors.categories.message}</p>
+              )}
+            </div>
+          </div>
+          {create.isError && (
+            <div className="mt-3">
+              <FeedbackNotice tone="error" message="登记失败:供应商可能已在库中。" />
+            </div>
+          )}
+          <PrimaryActionButton onClick={handleSubmit(onSubmit)} busy={create.isPending} pendingLabel="登记中">
+            登记供应商
+          </PrimaryActionButton>
+        </form>
+      )}
 
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载供应商库…" />
@@ -120,9 +184,11 @@ export function SuppliersPage() {
       ) : (
         <ResponsiveTableFrame
           mobileCards={suppliers.map((s) => (
-            <div
+            <button
               key={s.id}
-              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50"
+              type="button"
+              onClick={() => s.id && setSelectedId(s.id)}
+              className="w-full rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm shadow-slate-200/50 transition hover:border-blue-200 hover:bg-blue-50/30"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -140,32 +206,10 @@ export function SuppliersPage() {
                 <MiniFact label="授权品类" value={(s.categories ?? []).join('、') || '—'} />
                 <MiniFact label="绩效评分" value={String(s.performanceScore ?? '—')} />
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                {actionsFor(s)}
-                {s.id && (
-                  <button
-                    type="button"
-                    onClick={() => setProfileOpenId(profileOpenId === s.id ? null : s.id!)}
-                    className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
-                  >
-                    {profileOpenId === s.id ? '收起档案' : '供应商档案'}
-                  </button>
-                )}
-                {s.id && (
-                  <button
-                    type="button"
-                    onClick={() => setEvalOpenId(evalOpenId === s.id ? null : s.id!)}
-                    className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
-                  >
-                    {evalOpenId === s.id ? '收起考核' : '绩效考核'}
-                  </button>
-                )}
-              </div>
-              {profileOpenId === s.id && <SupplierProfileBlock s={s} />}
-              {evalOpenId === s.id && s.id && (
-                <SupplierEvaluationPanel relationId={s.id} supplierId={s.supplierId} />
-              )}
-            </div>
+              <p className="mt-3 inline-flex items-center gap-1 text-xs font-black text-blue-600">
+                查看供应商 360 <ChevronRight size={13} />
+              </p>
+            </button>
           ))}
         >
           <table className="min-w-[820px] w-full text-left text-sm">
@@ -182,7 +226,11 @@ export function SuppliersPage() {
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {suppliers.map((s) => (
-                <tr key={s.id}>
+                <tr
+                  key={s.id}
+                  onClick={() => s.id && setSelectedId(s.id)}
+                  className="cursor-pointer transition hover:bg-blue-50/40"
+                >
                   <td className="px-4 py-4 font-bold text-slate-900">{s.supplierName}</td>
                   <td className="px-4 py-4">{s.status && <StatusPill label={s.status} />}</td>
                   <td className="px-4 py-4 font-black text-slate-700">{s.level}</td>
@@ -192,27 +240,9 @@ export function SuppliersPage() {
                     {s.performanceScore}
                   </td>
                   <td className="px-4 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      {actionsFor(s)}
-                      {s.id && (
-                        <button
-                          type="button"
-                          onClick={() => setProfileOpenId(profileOpenId === s.id ? null : s.id!)}
-                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
-                        >
-                          {profileOpenId === s.id ? '收起' : '档案'}
-                        </button>
-                      )}
-                      {s.id && (
-                        <button
-                          type="button"
-                          onClick={() => setEvalOpenId(evalOpenId === s.id ? null : s.id!)}
-                          className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
-                        >
-                          {evalOpenId === s.id ? '收起' : '考核'}
-                        </button>
-                      )}
-                    </div>
+                    <span className="inline-flex items-center gap-1 text-xs font-black text-blue-600">
+                      查看 <ChevronRight size={13} />
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -220,58 +250,6 @@ export function SuppliersPage() {
           </table>
         </ResponsiveTableFrame>
       )}
-
-      {profileOpenId && (
-        <div className="hidden lg:block">
-          {(() => {
-            const s = suppliers.find((x) => x.id === profileOpenId);
-            return s ? <SupplierProfileBlock s={s} /> : null;
-          })()}
-        </div>
-      )}
-
-      {evalOpenId && (
-        <div className="hidden lg:block">
-          <SupplierEvaluationPanel
-            relationId={evalOpenId}
-            supplierId={suppliers.find((x) => x.id === evalOpenId)?.supplierId}
-          />
-        </div>
-      )}
     </Panel>
-  );
-}
-
-// 供应商档案：采购方视角的供应商主数据（信用代码/法人/联系人/银行/经营范围）。
-function SupplierProfileBlock({ s }: { s: BuyerSupplierResponse }) {
-  return (
-    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs font-black text-slate-600">供应商档案 · {s.supplierName}</p>
-      <div className="mt-2 grid gap-2 sm:grid-cols-4">
-        <MiniFact label="统一社会信用代码" value={s.creditCode || '—'} />
-        <MiniFact label="法定代表人" value={s.legalPerson || '—'} />
-        <MiniFact label="联系人" value={s.contactName || '—'} />
-        <MiniFact label="联系电话" value={s.contactPhone || '—'} />
-      </div>
-      <div className="mt-2 grid gap-2 sm:grid-cols-3">
-        <MiniFact label="联系邮箱" value={s.contactEmail || '—'} />
-        <MiniFact label="开户银行" value={s.bankName || '—'} />
-        <MiniFact label="银行账号" value={s.bankAccount || '—'} />
-      </div>
-      <div className="mt-2 rounded-lg border border-slate-100 bg-white p-3">
-        <p className="text-[11px] font-black text-slate-400">经营范围</p>
-        <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">
-          {s.businessScope || '未填写经营范围。'}
-        </p>
-      </div>
-      {s.supplierId && (
-        <OwnerAttachments
-          ownerType="supplier"
-          ownerId={s.supplierId}
-          title="资质附件"
-          emptyHint="暂无资质附件，点击右上角上传营业执照、资质证书、开户许可证等。"
-        />
-      )}
-    </div>
   );
 }

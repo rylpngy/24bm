@@ -44,3 +44,6 @@ export { WorkflowRail } from './components/workflow-rail';
 export type { WorkflowStep } from './components/workflow-rail';
 
 export { ShellState } from './components/shell-state';
+
+export { Tabs } from './components/tabs';
+export type { TabsProps, TabItem } from './components/tabs';

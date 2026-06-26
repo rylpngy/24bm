@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  useBuyerSupplierListRelationQualifications,
   useSupplierEvaluationConfirmTier,
   useSupplierEvaluationCreateEvaluation,
   useSupplierEvaluationListEvaluations,
@@ -9,15 +8,6 @@ import {
 } from '@24bid/api-client';
 import { suggestTier } from '@24bid/shared';
 import { FeedbackNotice, MiniFact, PrimaryActionButton, StatusPill } from '@24bid/ui';
-
-// 资质到期状态：已过期 / 即将到期(30天内) / 正常。
-function qualificationAlert(expiresAt?: string): { label: string; tone: string } {
-  if (!expiresAt) return { label: '无到期', tone: 'bg-slate-100 text-slate-600 border-slate-200' };
-  const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000);
-  if (days < 0) return { label: '已过期', tone: 'bg-red-50 text-red-700 border-red-100' };
-  if (days <= 30) return { label: `${days}天后到期`, tone: 'bg-amber-50 text-amber-700 border-amber-100' };
-  return { label: '正常', tone: 'bg-emerald-50 text-emerald-700 border-emerald-100' };
-}
 
 const DIMENSIONS = [
   { key: 'qualityScore', label: '质量', weight: 0.35 },
@@ -45,15 +35,12 @@ export function SupplierEvaluationPanel({
   const [period, setPeriod] = useState('2026-Q3');
 
   const history = useSupplierEvaluationListEvaluations(relationId);
-  const qualifications = useBuyerSupplierListRelationQualifications(relationId);
   const metrics = useSupplierFulfillmentFulfillmentMetrics(supplierId ?? '', {
     query: { enabled: !!supplierId },
   });
   const fulfillment = metrics.data?.data;
   const create = useSupplierEvaluationCreateEvaluation();
   const confirm = useSupplierEvaluationConfirmTier();
-
-  const quals = qualifications.data?.data ?? [];
 
   const total = Math.round(
     DIMENSIONS.reduce((sum, d) => sum + scores[d.key] * d.weight, 0) * 100,
@@ -75,37 +62,11 @@ export function SupplierEvaluationPanel({
   const evaluations = history.data?.data ?? [];
 
   return (
-    <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/40 p-4">
+    <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-4">
       <p className="text-sm font-black text-indigo-900">绩效考核</p>
       <p className="mt-0.5 text-xs font-bold text-indigo-600">
         四维加权 → 综合分 → 建议生命周期标记 → 采购方确认调级
       </p>
-
-      {quals.length > 0 && (
-        <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs font-black text-slate-500">资质证照 · 到期预警</p>
-          <div className="mt-2 space-y-2">
-            {quals.map((q) => {
-              const alert = qualificationAlert(q.expiresAt);
-              return (
-                <div key={q.id} className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="break-words text-sm font-black text-slate-900">{q.qualificationType}</p>
-                    <p className="mt-0.5 text-xs font-bold text-slate-500">
-                      {q.certificateNo} · 到期 {q.expiresAt ?? '—'}
-                    </p>
-                  </div>
-                  <span
-                    className={`inline-flex shrink-0 items-center rounded-lg border px-2 py-1 text-xs font-black leading-4 ${alert.tone}`}
-                  >
-                    {alert.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {fulfillment && (fulfillment.receiptCount ?? 0) > 0 && (
         <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
