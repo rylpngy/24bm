@@ -149,6 +149,8 @@ import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.api.UpdateQuoteRequest;
 import com.procurement.supplier.api.BuyerSupplierController;
+import com.procurement.supplier.api.BuyerSupplierDiscoveryController;
+import com.procurement.supplier.api.DiscoverableSupplierResponse;
 import com.procurement.supplier.api.SupplierEvaluationController;
 import com.procurement.supplier.api.SupplierFulfillmentController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
@@ -209,6 +211,7 @@ import org.springframework.test.web.servlet.MvcResult;
     PlatformWorkspaceController.class,
     SupplierAnnouncementController.class,
     BuyerSupplierController.class,
+    BuyerSupplierDiscoveryController.class,
     SupplierEvaluationController.class,
     SupplierFulfillmentController.class,
     MaterialController.class,
@@ -330,6 +333,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private BuyerSupplierApplicationService buyerSupplierApplicationService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierDiscoveryApplicationService supplierDiscoveryApplicationService;
 
   @MockBean
   private SupplierEvaluationApplicationService supplierEvaluationApplicationService;
@@ -987,6 +993,49 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.id").value("dept-old"))
         .andExpect(jsonPath("$.data.status").value("inactive"));
+  }
+
+  @Test
+  void buyerCanDiscoverPlatformSuppliersButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/suppliers/discover")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(supplierDiscoveryApplicationService.discover(org.mockito.ArgumentMatchers.eq("智能")))
+        .thenReturn(List.of(new DiscoverableSupplierResponse(
+            "ent-supplier-newapply",
+            "远景智能装备有限公司",
+            "智能制造",
+            "91310000MA1KNEWAPP",
+            "pending",
+            "submitted")));
+
+    mockMvc.perform(get("/api/v1/buyer/suppliers/discover")
+            .queryParam("keyword", "智能")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data[0].supplierId").value("ent-supplier-newapply"))
+        .andExpect(jsonPath("$.data[0].name").value("远景智能装备有限公司"))
+        .andExpect(jsonPath("$.data[0].industry").value("智能制造"))
+        .andExpect(jsonPath("$.data[0].profileStatus").value("submitted"));
   }
 
   @Test

@@ -16,6 +16,7 @@ export * from './buyer-payment-controller/buyer-payment-controller';
 export * from './buyer-receipt-controller/buyer-receipt-controller';
 export * from './buyer-role-controller/buyer-role-controller';
 export * from './buyer-supplier-controller/buyer-supplier-controller';
+export * from './buyer-supplier-discovery-controller/buyer-supplier-discovery-controller';
 export * from './buyer-user-controller/buyer-user-controller';
 export * from './buyer-workspace-controller/buyer-workspace-controller';
 export * from './contract-schedule-controller/contract-schedule-controller';

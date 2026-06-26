@@ -414,3 +414,5 @@ Method <com.procurement.buyer.api.BuyerBudgetController.budgets()> calls method 
 Method <com.procurement.buyer.api.BuyerBudgetController.budgets()> has return type <com.procurement.common.api.ApiResponse> in (BuyerBudgetController.java:0)
 Method <com.procurement.buyer.api.BuyerBudgetController.upsert(com.procurement.buyer.api.UpsertDepartmentBudgetRequest)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (BuyerBudgetController.java:30)
 Method <com.procurement.buyer.api.BuyerBudgetController.upsert(com.procurement.buyer.api.UpsertDepartmentBudgetRequest)> has return type <com.procurement.common.api.ApiResponse> in (BuyerBudgetController.java:0)
+Method <com.procurement.supplier.api.BuyerSupplierDiscoveryController.discover(java.lang.String)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (BuyerSupplierDiscoveryController.java:25)
+Method <com.procurement.supplier.api.BuyerSupplierDiscoveryController.discover(java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (BuyerSupplierDiscoveryController.java:0)

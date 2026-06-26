@@ -7643,6 +7643,56 @@
         }
       }
     },
+    "/api/v1/buyer/suppliers/discover": {
+      "get": {
+        "tags": [
+          "buyer-supplier-discovery-controller"
+        ],
+        "operationId": "BuyerSupplierDiscovery_discover",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListDiscoverableSupplierResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/roles": {
       "get": {
         "tags": [
@@ -13761,6 +13811,46 @@
             }
           },
           "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListDiscoverableSupplierResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoverableSupplierResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "DiscoverableSupplierResponse": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "industry": {
+            "type": "string"
+          },
+          "creditCode": {
+            "type": "string"
+          },
+          "verifiedStatus": {
+            "type": "string"
+          },
+          "profileStatus": {
             "type": "string"
           }
         }

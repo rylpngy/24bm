@@ -3,6 +3,7 @@ import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck } from 'lucide-reac
 import { useBuyerSupplierList } from '@24bid/api-client';
 import { FeedbackNotice, Panel, Tabs } from '@24bid/ui';
 import { SupplierListView } from './supplier-list-view';
+import { SupplierSourcingView } from './supplier-sourcing-view';
 import { SupplierAdmissionQueue } from './supplier-admission-queue';
 import { SupplierPerformanceBoard } from './supplier-performance-board';
 import { SupplierQualificationsBoard } from './supplier-qualifications-board';
@@ -53,14 +54,7 @@ export function SuppliersPage() {
       {sub === 'admission' && <SupplierAdmissionQueue onOpen={setSelectedId} />}
       {sub === 'performance' && <SupplierPerformanceBoard onOpen={setSelectedId} />}
       {sub === 'qualifications' && <SupplierQualificationsBoard onOpen={setSelectedId} />}
-      {sub === 'sourcing' && (
-        <Panel title="寻源发现" icon={Search} subtitle="搜索平台供应商 · 一键加入私域">
-          <FeedbackNotice
-            tone="info"
-            message="寻源发现将接通「平台供应商目录搜索」后端(搜全平台已入驻、尚未加入私域的供应商,一键加入待准入),下一切片上线。"
-          />
-        </Panel>
-      )}
+      {sub === 'sourcing' && <SupplierSourcingView />}
       {sub === 'invitation' && (
         <Panel title="邀请管理" icon={Mail} subtitle="邀请供应商注册 / 补资料 · 跟踪邀请状态">
           <FeedbackNotice
