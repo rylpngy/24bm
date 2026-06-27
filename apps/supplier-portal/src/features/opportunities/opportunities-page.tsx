@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Send, Trash2 } from 'lucide-react';
 import { useSupplierQuoteListRfqs, useSupplierQuoteSubmit } from '@24bid/api-client';
-import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Pagination, Panel, PrimaryActionButton, SearchInput, StatusPill, cn } from '@24bid/ui';
 
 interface LineRow {
   description: string;
@@ -32,8 +32,23 @@ export function OpportunitiesPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [forms, setForms] = useState<Record<string, QuoteForm>>({});
+  const [keyword, setKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState('全部');
+  const [page, setPage] = useState(1);
 
-  const list = rfqs.data?.data ?? [];
+  const all = rfqs.data?.data ?? [];
+  const statuses = ['全部', ...Array.from(new Set(all.map((r) => r.status).filter(Boolean) as string[]))];
+  const kw = keyword.toLowerCase();
+  const list = all.filter((r) => {
+    if (statusFilter !== '全部' && r.status !== statusFilter) return false;
+    if (!kw) return true;
+    return [r.title, r.id].filter(Boolean).join(' ').toLowerCase().includes(kw);
+  });
+  const statusCount = (s: string) => (s === '全部' ? all.length : all.filter((r) => r.status === s).length);
+  const PAGE_SIZE = 8;
+  const pageCount = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = list.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const formFor = (id: string) => forms[id] ?? defaultForm();
   const setForm = (id: string, patch: Partial<QuoteForm>) =>
     setForms((f) => ({ ...f, [id]: { ...formFor(id), ...patch } }));
@@ -93,8 +108,36 @@ export function OpportunitiesPage() {
 
   return (
     <Panel title="询价邀请" icon={Send} subtitle="可报价商机 · 按行报价">
-      <div className="mb-4">
-        <CountTag>共 {list.length} 条</CountTag>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2">
+          {statuses.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setStatusFilter(s);
+                setPage(1);
+              }}
+              className={cn(
+                'h-8 rounded-md border px-3 text-xs font-black transition',
+                s === statusFilter
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+              )}
+            >
+              {s}
+              {s !== '全部' && statusCount(s) > 0 && <span className="ml-1 text-slate-400">{statusCount(s)}</span>}
+            </button>
+          ))}
+        </div>
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按询价标题 / 编号搜索"
+          onSearch={(k) => {
+            setKeyword(k);
+            setPage(1);
+          }}
+        />
       </div>
       {feedback && (
         <div className="mb-4">
@@ -110,10 +153,18 @@ export function OpportunitiesPage() {
       {rfqs.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载询价邀请…" />
       ) : list.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无询价邀请。被采购方邀请后出现在此。" />
+        <FeedbackNotice
+          tone="info"
+          message={
+            keyword || statusFilter !== '全部'
+              ? '没有符合条件的询价。'
+              : '暂无询价邀请。被采购方邀请后出现在此。'
+          }
+        />
       ) : (
+        <>
         <div className="space-y-3">
-          {list.map((r) => {
+          {pageItems.map((r, i) => {
             const f = formFor(r.id ?? '');
             const quoting = r.status === '报价中';
             const busy = submit.isPending && submit.variables?.rfqId === r.id;
@@ -122,7 +173,12 @@ export function OpportunitiesPage() {
               <div key={r.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="break-words font-black text-slate-950">{r.title}</p>
+                    <p className="break-words font-black text-slate-950">
+                      <span className="mr-1.5 font-mono text-slate-400">
+                        {(safePage - 1) * PAGE_SIZE + i + 1}.
+                      </span>
+                      {r.title}
+                    </p>
                     <p className="mt-1 font-mono text-xs font-bold text-slate-500">{r.id}</p>
                   </div>
                   {r.status && <StatusPill label={r.status} />}
@@ -231,6 +287,8 @@ export function OpportunitiesPage() {
             );
           })}
         </div>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={list.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );

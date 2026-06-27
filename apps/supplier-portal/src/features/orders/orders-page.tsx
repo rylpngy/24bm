@@ -7,10 +7,12 @@ import {
   useSupplierOrderConfirm,
   useSupplierOrderList,
 } from '@24bid/api-client';
-import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Pagination, Panel, PrimaryActionButton, SearchInput, StatusPill, cn } from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
+
+const PAGE_SIZE = 8;
 
 // 销售订单:供应商确认订单(待确认→待发货),并登记发货(承运商/运单/数量)。
 export function OrdersPage() {
@@ -27,8 +29,22 @@ export function OrdersPage() {
     invoiceCode: string;
     taxRate: string;
   } | null>(null);
+  const [keyword, setKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState('全部');
+  const [page, setPage] = useState(1);
 
-  const list = orders.data?.data ?? [];
+  const all = orders.data?.data ?? [];
+  const statuses = ['全部', ...Array.from(new Set(all.map((o) => o.status).filter(Boolean) as string[]))];
+  const kw = keyword.toLowerCase();
+  const list = all.filter((o) => {
+    if (statusFilter !== '全部' && o.status !== statusFilter) return false;
+    if (!kw) return true;
+    return [o.id, o.rfqId].filter(Boolean).join(' ').toLowerCase().includes(kw);
+  });
+  const statusCount = (s: string) => (s === '全部' ? all.length : all.filter((o) => o.status === s).length);
+  const pageCount = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = list.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -83,8 +99,36 @@ export function OrdersPage() {
 
   return (
     <Panel title="销售订单" icon={ShoppingCart} subtitle="订单确认 · 发货登记">
-      <div className="mb-4">
-        <CountTag>共 {list.length} 条</CountTag>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2">
+          {statuses.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setStatusFilter(s);
+                setPage(1);
+              }}
+              className={cn(
+                'h-8 rounded-md border px-3 text-xs font-black transition',
+                s === statusFilter
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+              )}
+            >
+              {s}
+              {s !== '全部' && statusCount(s) > 0 && <span className="ml-1 text-slate-400">{statusCount(s)}</span>}
+            </button>
+          ))}
+        </div>
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按订单号 / 询价号搜索"
+          onSearch={(k) => {
+            setKeyword(k);
+            setPage(1);
+          }}
+        />
       </div>
       {feedback && (
         <div className="mb-4">
@@ -95,10 +139,18 @@ export function OrdersPage() {
       {orders.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载销售订单…" />
       ) : list.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无销售订单。采购方定标生成订单后出现在此。" />
+        <FeedbackNotice
+          tone="info"
+          message={
+            keyword || statusFilter !== '全部'
+              ? '没有符合条件的订单。'
+              : '暂无销售订单。采购方定标生成订单后出现在此。'
+          }
+        />
       ) : (
+        <>
         <div className="space-y-3">
-          {list.map((o) => {
+          {pageItems.map((o, i) => {
             const busyC = confirm.isPending && confirm.variables?.orderId === o.id;
             const busyS = ship.isPending && ship.variables?.orderId === o.id;
             const busyI = issue.isPending && issue.variables?.orderId === o.id;
@@ -108,7 +160,10 @@ export function OrdersPage() {
               <div key={o.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="break-words font-mono font-black text-slate-950">{o.id}</p>
+                    <p className="break-words font-mono font-black text-slate-950">
+                      <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
+                      {o.id}
+                    </p>
                     <p className="mt-1 text-xs font-bold text-slate-500">询价 {o.rfqId ?? '—'}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
@@ -224,6 +279,8 @@ export function OrdersPage() {
             );
           })}
         </div>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={list.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );
