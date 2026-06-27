@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { BadgeCheck, ChevronRight } from 'lucide-react';
 import {
   type BuyerSupplierResponse,
   useBuyerSupplierList,
   useBuyerSupplierListRelationQualifications,
 } from '@24bid/api-client';
-import { FeedbackNotice, Panel, ShellState } from '@24bid/ui';
+import { FeedbackNotice, Pagination, Panel, SearchInput, ShellState } from '@24bid/ui';
 import { qualificationAlert } from './supplier-qualifications-tab';
+
+const PAGE_SIZE = 8;
 
 // 单个供应商的资质行:自取该供应商证照,展示到期预警。
 function SupplierQualRow({
@@ -62,23 +65,42 @@ function SupplierQualRow({
 
 // 资质管理:跨供应商的证照台账 + 到期预警(逐供应商自取证照)。
 export function SupplierQualificationsBoard({ onOpen }: { onOpen: (id: string) => void }) {
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
   const query = useBuyerSupplierList();
   const all = query.data?.data ?? [];
+  const kw = keyword.toLowerCase();
   // 只对已准入/审批中的供应商看资质(待准入往往尚未提交证照)。
-  const tracked = all.filter((s) => s.status === '已准入' || s.status === '准入审批中');
+  const tracked = all
+    .filter((s) => s.status === '已准入' || s.status === '准入审批中')
+    .filter((s) => !kw || (s.supplierName ?? '').toLowerCase().includes(kw));
+  const pageCount = Math.max(1, Math.ceil(tracked.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = tracked.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <Panel title="资质管理" icon={BadgeCheck} subtitle="跨供应商证照台账 · 到期预警">
+      <SearchInput
+        placeholder="按供应商名称搜索"
+        onSearch={(k) => {
+          setKeyword(k);
+          setPage(1);
+        }}
+      />
+
       {query.isLoading ? (
         <ShellState variant="loading" title="加载供应商" desc="拉取供应商及其证照…" />
       ) : tracked.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无可展示资质的供应商。" />
+        <FeedbackNotice tone="info" message={keyword ? '没有符合条件的供应商。' : '暂无可展示资质的供应商。'} />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {tracked.map((s) => (
-            <SupplierQualRow key={s.id} supplier={s} onOpen={onOpen} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {pageItems.map((s) => (
+              <SupplierQualRow key={s.id} supplier={s} onOpen={onOpen} />
+            ))}
+          </div>
+          <Pagination page={safePage} pageSize={PAGE_SIZE} total={tracked.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );

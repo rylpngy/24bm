@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { ChevronRight, Gauge } from 'lucide-react';
 import { useBuyerSupplierList } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill } from '@24bid/ui';
 
 const RANK_COLORS = ['text-amber-500', 'text-slate-400', 'text-orange-400'];
+const PAGE_SIZE = 8;
 
 function scoreTone(score: number) {
   if (score >= 90) return 'bg-emerald-500';
@@ -13,15 +15,22 @@ function scoreTone(score: number) {
 
 // 绩效看板:跨供应商绩效排名(评分降序)+ 生命周期标记 + 最近考核分。
 export function SupplierPerformanceBoard({ onOpen }: { onOpen: (id: string) => void }) {
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
   const query = useBuyerSupplierList();
   const all = query.data?.data ?? [];
+  const kw = keyword.toLowerCase();
   const scored = all
     .filter((s) => s.performanceScore != null)
+    .filter((s) => !kw || (s.supplierName ?? '').toLowerCase().includes(kw))
     .sort((a, b) => (b.performanceScore ?? 0) - (a.performanceScore ?? 0));
 
   const scores = scored.map((s) => s.performanceScore ?? 0);
   const avg =
     scores.length > 0 ? Math.round((scores.reduce((x, y) => x + y, 0) / scores.length) * 10) / 10 : null;
+  const pageCount = Math.max(1, Math.ceil(scored.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = scored.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <Panel title="绩效看板" icon={Gauge} subtitle="跨供应商绩效排名 · 分级 · 最近考核">
@@ -31,13 +40,23 @@ export function SupplierPerformanceBoard({ onOpen }: { onOpen: (id: string) => v
         <MiniFact label="最高绩效" value={scores.length ? String(Math.max(...scores)) : '—'} />
       </div>
 
+      <SearchInput
+        placeholder="按供应商名称搜索"
+        onSearch={(k) => {
+          setKeyword(k);
+          setPage(1);
+        }}
+      />
+
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载绩效数据…" />
       ) : scored.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无已评分供应商。" />
+        <FeedbackNotice tone="info" message={keyword ? '没有符合条件的供应商。' : '暂无已评分供应商。'} />
       ) : (
+        <>
         <div className="space-y-2">
-          {scored.map((s, i) => {
+          {pageItems.map((s, i) => {
+            const rank = (safePage - 1) * PAGE_SIZE + i;
             const score = s.performanceScore ?? 0;
             return (
               <div
@@ -47,10 +66,10 @@ export function SupplierPerformanceBoard({ onOpen }: { onOpen: (id: string) => v
               >
                 <span
                   className={`w-7 shrink-0 text-center font-mono text-lg font-black ${
-                    RANK_COLORS[i] ?? 'text-slate-300'
+                    RANK_COLORS[rank] ?? 'text-slate-300'
                   }`}
                 >
-                  {i + 1}
+                  {rank + 1}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -75,6 +94,8 @@ export function SupplierPerformanceBoard({ onOpen }: { onOpen: (id: string) => v
             );
           })}
         </div>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={scored.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );

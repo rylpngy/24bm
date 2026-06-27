@@ -6,8 +6,9 @@ import {
   useBuyerSupplierCreate,
   useBuyerSupplierDiscoveryDiscover,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, ShellState } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Pagination, Panel, ShellState } from '@24bid/ui';
 
+const PAGE_SIZE = 8;
 const VERIFIED_LABEL: Record<string, string> = { approved: '已认证', pending: '待认证', rejected: '已驳回' };
 const PROFILE_LABEL: Record<string, string> = {
   complete: '资料完整',
@@ -34,10 +35,14 @@ export function SupplierSourcingView() {
   const queryClient = useQueryClient();
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
 
   const query = useBuyerSupplierDiscoveryDiscover(keyword ? { keyword } : undefined);
   const create = useBuyerSupplierCreate();
   const results = query.data?.data ?? [];
+  const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = results.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -71,6 +76,7 @@ export function SupplierSourcingView() {
         onSubmit={(e) => {
           e.preventDefault();
           setKeyword(input.trim());
+          setPage(1);
         }}
         className="mb-4 flex flex-wrap items-center gap-2"
       >
@@ -117,8 +123,9 @@ export function SupplierSourcingView() {
           message={keyword ? `没有匹配「${keyword}」的可纳入供应商。` : '平台暂无可纳入的新供应商(其余均已在私域库)。'}
         />
       ) : (
+        <>
         <div className="space-y-2">
-          {results.map((s) => (
+          {pageItems.map((s) => (
             <div
               key={s.supplierId}
               className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
@@ -150,6 +157,8 @@ export function SupplierSourcingView() {
             </div>
           ))}
         </div>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={results.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );

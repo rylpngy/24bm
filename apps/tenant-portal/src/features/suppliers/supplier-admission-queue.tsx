@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, ShieldCheck } from 'lucide-react';
 import {
@@ -5,18 +6,35 @@ import {
   useBuyerSupplierReviewAdmission,
   useBuyerSupplierSubmitAdmission,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, StatusPill, cn } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
 
 const ADMISSION_STATUSES = ['待准入', '准入审批中', '已驳回'];
+const PAGE_SIZE = 8;
 
 // 准入审批台:把准入流程中的供应商聚成工作队列,行内直接提交/过/驳。
 export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => void }) {
   const queryClient = useQueryClient();
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
   const query = useBuyerSupplierList();
   const submit = useBuyerSupplierSubmitAdmission();
   const review = useBuyerSupplierReviewAdmission();
   const all = query.data?.data ?? [];
-  const queue = all.filter((s) => ADMISSION_STATUSES.includes(s.status ?? ''));
+  const kw = keyword.toLowerCase();
+  const queue = all
+    .filter((s) => ADMISSION_STATUSES.includes(s.status ?? ''))
+    .filter(
+      (s) =>
+        !kw ||
+        [s.supplierName, s.level, ...(s.categories ?? [])]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(kw),
+    );
+  const pageCount = Math.max(1, Math.ceil(queue.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = queue.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -68,13 +86,25 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
         <MiniFact label="已驳回待整改" value={String(count('已驳回'))} />
       </div>
 
+      <SearchInput
+        placeholder="按供应商名称 / 等级 / 品类搜索"
+        onSearch={(k) => {
+          setKeyword(k);
+          setPage(1);
+        }}
+      />
+
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载准入队列…" />
       ) : queue.length === 0 ? (
-        <FeedbackNotice tone="info" message="当前没有处于准入流程中的供应商。" />
+        <FeedbackNotice
+          tone="info"
+          message={keyword ? '没有符合条件的供应商。' : '当前没有处于准入流程中的供应商。'}
+        />
       ) : (
+        <>
         <div className="space-y-2">
-          {queue.map((s) => (
+          {pageItems.map((s) => (
             <div
               key={s.id}
               className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
@@ -103,6 +133,8 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
             </div>
           ))}
         </div>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={queue.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );

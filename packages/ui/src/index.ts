@@ -50,3 +50,6 @@ export type { TabsProps, TabItem } from './components/tabs';
 
 export { Pagination } from './components/pagination';
 export type { PaginationProps } from './components/pagination';
+
+export { SearchInput } from './components/search-input';
+export type { SearchInputProps } from './components/search-input';

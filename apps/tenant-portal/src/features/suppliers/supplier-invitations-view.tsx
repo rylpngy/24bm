@@ -10,7 +10,18 @@ import {
   useBuyerSupplierInvitationList,
   useBuyerSupplierInvitationRespond,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
+import {
+  FeedbackNotice,
+  MiniFact,
+  Pagination,
+  Panel,
+  PrimaryActionButton,
+  SearchInput,
+  StatusPill,
+  cn,
+} from '@24bid/ui';
+
+const PAGE_SIZE = 8;
 
 const schema = z.object({
   supplierName: z.string().min(2, '请填写供应商名称'),
@@ -29,15 +40,26 @@ export function SupplierInvitationsView() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState('全部');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
 
   const query = useBuyerSupplierInvitationList();
   const create = useBuyerSupplierInvitationCreate();
   const respond = useBuyerSupplierInvitationRespond();
   const allInvitations = query.data?.data ?? [];
-  const invitations =
-    statusFilter === '全部'
-      ? allInvitations
-      : allInvitations.filter((i) => i.status === statusFilter);
+  const kw = keyword.toLowerCase();
+  const filtered = allInvitations.filter((i) => {
+    if (statusFilter !== '全部' && i.status !== statusFilter) return false;
+    if (!kw) return true;
+    return [i.supplierName, i.contact, i.category, i.note]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(kw);
+  });
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const invitations = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const {
     register,
@@ -91,13 +113,24 @@ export function SupplierInvitationsView() {
         <MiniFact label="已撤回" value={String(count('已撤回'))} />
       </div>
 
+      <SearchInput
+        placeholder="按供应商名称 / 联系方式 / 品类搜索"
+        onSearch={(k) => {
+          setKeyword(k);
+          setPage(1);
+        }}
+      />
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2">
           {STATUS_CHIPS.map((s) => (
             <button
               key={s}
               type="button"
-              onClick={() => setStatusFilter(s)}
+              onClick={() => {
+                setStatusFilter(s);
+                setPage(1);
+              }}
               className={cn(
                 'h-8 rounded-md border px-3 text-xs font-black transition',
                 s === statusFilter
@@ -163,22 +196,29 @@ export function SupplierInvitationsView() {
 
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载邀请单…" />
-      ) : invitations.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <FeedbackNotice
           tone="info"
-          message={statusFilter === '全部' ? '暂无邀请单,点击「发起邀请」。' : `没有「${statusFilter}」的邀请单。`}
+          message={
+            statusFilter === '全部' && !keyword
+              ? '暂无邀请单,点击「发起邀请」。'
+              : '没有符合条件的邀请单。'
+          }
         />
       ) : (
-        <div className="space-y-2">
-          {invitations.map((i) => (
-            <InvitationCard
-              key={i.id}
-              invitation={i}
-              busy={respondingId === i.id}
-              onAct={(action) => i.id && act(i.id, action)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-2">
+            {invitations.map((i) => (
+              <InvitationCard
+                key={i.id}
+                invitation={i}
+                busy={respondingId === i.id}
+                onAct={(action) => i.id && act(i.id, action)}
+              />
+            ))}
+          </div>
+          <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );
