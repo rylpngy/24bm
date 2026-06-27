@@ -150,7 +150,9 @@ import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.api.UpdateQuoteRequest;
 import com.procurement.supplier.api.BuyerSupplierController;
 import com.procurement.supplier.api.BuyerSupplierDiscoveryController;
+import com.procurement.supplier.api.BuyerSupplierInvitationController;
 import com.procurement.supplier.api.DiscoverableSupplierResponse;
+import com.procurement.supplier.api.SupplierInvitationResponse;
 import com.procurement.supplier.api.SupplierEvaluationController;
 import com.procurement.supplier.api.SupplierFulfillmentController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
@@ -212,6 +214,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierAnnouncementController.class,
     BuyerSupplierController.class,
     BuyerSupplierDiscoveryController.class,
+    BuyerSupplierInvitationController.class,
     SupplierEvaluationController.class,
     SupplierFulfillmentController.class,
     MaterialController.class,
@@ -336,6 +339,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.supplier.application.SupplierDiscoveryApplicationService supplierDiscoveryApplicationService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierInvitationApplicationService supplierInvitationApplicationService;
 
   @MockBean
   private SupplierEvaluationApplicationService supplierEvaluationApplicationService;
@@ -993,6 +999,83 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.id").value("dept-old"))
         .andExpect(jsonPath("$.data.status").value("inactive"));
+  }
+
+  @Test
+  void buyerCanManageSupplierInvitationsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/supplier-invitations")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(supplierInvitationApplicationService.listInvitations()).thenReturn(List.of(
+        new SupplierInvitationResponse(
+            "inv-demo",
+            "ent-supplier-newapply",
+            "远景智能装备有限公司",
+            "zhang@yuanjing.com",
+            "智能制造",
+            "邀请补资料",
+            "待回复",
+            true,
+            OffsetDateTime.parse("2026-06-20T10:00:00+08:00"),
+            null)));
+
+    mockMvc.perform(get("/api/v1/buyer/supplier-invitations")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data[0].supplierName").value("远景智能装备有限公司"))
+        .andExpect(jsonPath("$.data[0].status").value("待回复"))
+        .andExpect(jsonPath("$.data[0].linkedToKnownSupplier").value(true));
+
+    mockMvc.perform(post("/api/v1/buyer/supplier-invitations")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"supplierName": "蓝海办公"}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(supplierInvitationApplicationService.respond(
+        org.mockito.ArgumentMatchers.eq("inv-demo"),
+        org.mockito.ArgumentMatchers.any())).thenReturn(new SupplierInvitationResponse(
+            "inv-demo",
+            "ent-supplier-newapply",
+            "远景智能装备有限公司",
+            "zhang@yuanjing.com",
+            "智能制造",
+            "邀请补资料",
+            "已接受",
+            true,
+            OffsetDateTime.parse("2026-06-20T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-21T10:00:00+08:00")));
+
+    mockMvc.perform(post("/api/v1/buyer/supplier-invitations/inv-demo/respond")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"action": "accept"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("已接受"))
+        .andExpect(jsonPath("$.data.respondedAt").value("2026-06-21T10:00:00+08:00"));
   }
 
   @Test

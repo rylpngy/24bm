@@ -85,6 +85,15 @@ public interface BuyerSupplierRelationMapper {
       @Param("supplierId") String supplierId,
       @Param("status") String status);
 
+  @Select("""
+      select count(1)
+      from buyer_supplier_relations
+      where tenant_id = #{tenantId}
+        and supplier_id = #{supplierId}
+      """)
+  int countByTenantSupplier(
+      @Param("tenantId") String tenantId, @Param("supplierId") String supplierId);
+
   @Update("""
       update buyer_supplier_relations
       set status = #{status},

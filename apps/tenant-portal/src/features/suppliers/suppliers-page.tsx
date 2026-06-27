@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck } from 'lucide-react';
 import { useBuyerSupplierList } from '@24bid/api-client';
-import { FeedbackNotice, Panel, Tabs } from '@24bid/ui';
+import { Tabs } from '@24bid/ui';
 import { SupplierListView } from './supplier-list-view';
 import { SupplierSourcingView } from './supplier-sourcing-view';
+import { SupplierInvitationsView } from './supplier-invitations-view';
 import { SupplierAdmissionQueue } from './supplier-admission-queue';
 import { SupplierPerformanceBoard } from './supplier-performance-board';
 import { SupplierQualificationsBoard } from './supplier-qualifications-board';
@@ -55,14 +56,7 @@ export function SuppliersPage() {
       {sub === 'performance' && <SupplierPerformanceBoard onOpen={setSelectedId} />}
       {sub === 'qualifications' && <SupplierQualificationsBoard onOpen={setSelectedId} />}
       {sub === 'sourcing' && <SupplierSourcingView />}
-      {sub === 'invitation' && (
-        <Panel title="邀请管理" icon={Mail} subtitle="邀请供应商注册 / 补资料 · 跟踪邀请状态">
-          <FeedbackNotice
-            tone="info"
-            message="邀请管理将接通「独立邀请单」后端(向寻源到的供应商发邀请并跟踪状态),下一切片上线。"
-          />
-        </Panel>
-      )}
+      {sub === 'invitation' && <SupplierInvitationsView />}
     </div>
   );
 }
