@@ -47,3 +47,6 @@ export { ShellState } from './components/shell-state';
 
 export { Tabs } from './components/tabs';
 export type { TabsProps, TabItem } from './components/tabs';
+
+export { Pagination } from './components/pagination';
+export type { PaginationProps } from './components/pagination';

@@ -7,14 +7,16 @@ import { Boxes, ChevronRight, Plus } from 'lucide-react';
 import { useBuyerSupplierCreate, useBuyerSupplierList } from '@24bid/api-client';
 import {
   FeedbackNotice,
-  ListToolbar,
   MiniFact,
+  Pagination,
   Panel,
   PrimaryActionButton,
   ResponsiveTableFrame,
   StatusPill,
   cn,
 } from '@24bid/ui';
+
+const PAGE_SIZE = 8;
 
 const STATUS_FILTERS = ['全部', '待准入', '准入审批中', '已准入', '已驳回', '黑名单'] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
@@ -34,11 +36,20 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>('全部');
   const [showForm, setShowForm] = useState(false);
+  const [page, setPage] = useState(1);
 
   const query = useBuyerSupplierList();
   const create = useBuyerSupplierCreate();
   const all = query.data?.data ?? [];
   const suppliers = status === '全部' ? all : all.filter((s) => s.status === status);
+  const pageCount = Math.max(1, Math.ceil(suppliers.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = suppliers.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const selectStatus = (s: StatusFilter) => {
+    setStatus(s);
+    setPage(1);
+  };
 
   const {
     register,
@@ -92,20 +103,13 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
         <MiniFact label="平均绩效" value={avgScore == null ? '—' : String(avgScore)} />
       </div>
 
-      <ListToolbar
-        title="私域供应商"
-        recordCount={suppliers.length}
-        filterLabel={status}
-        actionLabel="新增供应商"
-      />
-
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((s) => (
             <button
               key={s}
               type="button"
-              onClick={() => setStatus(s)}
+              onClick={() => selectStatus(s)}
               className={cn(
                 'h-8 rounded-md border px-3 text-xs font-black transition',
                 s === status
@@ -174,7 +178,7 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
         <FeedbackNotice tone="info" message="当前筛选下暂无供应商。" />
       ) : (
         <ResponsiveTableFrame
-          mobileCards={suppliers.map((s) => (
+          mobileCards={pageItems.map((s) => (
             <button
               key={s.id}
               type="button"
@@ -216,7 +220,7 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {suppliers.map((s) => (
+              {pageItems.map((s) => (
                 <tr
                   key={s.id}
                   onClick={() => s.id && onOpen(s.id)}
@@ -240,6 +244,10 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
             </tbody>
           </table>
         </ResponsiveTableFrame>
+      )}
+
+      {!query.isLoading && suppliers.length > 0 && (
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={suppliers.length} onPageChange={setPage} />
       )}
     </Panel>
   );
