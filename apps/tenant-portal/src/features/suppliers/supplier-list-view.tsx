@@ -178,7 +178,7 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
         <FeedbackNotice tone="info" message="当前筛选下暂无供应商。" />
       ) : (
         <ResponsiveTableFrame
-          mobileCards={pageItems.map((s) => (
+          mobileCards={pageItems.map((s, i) => (
             <button
               key={s.id}
               type="button"
@@ -187,7 +187,12 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="break-words font-black text-slate-950">{s.supplierName}</p>
+                  <p className="break-words font-black text-slate-950">
+                    <span className="mr-1.5 font-mono text-slate-400">
+                      {(safePage - 1) * PAGE_SIZE + i + 1}.
+                    </span>
+                    {s.supplierName}
+                  </p>
                   <p className="mt-1 text-xs font-bold text-slate-500">
                     等级 {s.level} · 最近评分 {s.lastEvaluationScore ?? '—'}
                   </p>
@@ -210,6 +215,7 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
           <table className="min-w-[820px] w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
               <tr>
+                <th className="px-4 py-3 w-14">序号</th>
                 <th className="px-4 py-3">供应商</th>
                 <th className="px-4 py-3">准入状态</th>
                 <th className="px-4 py-3">等级</th>
@@ -220,12 +226,15 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {pageItems.map((s) => (
+              {pageItems.map((s, i) => (
                 <tr
                   key={s.id}
                   onClick={() => s.id && onOpen(s.id)}
                   className="cursor-pointer transition hover:bg-blue-50/40"
                 >
+                  <td className="px-4 py-4 font-mono font-black text-slate-400">
+                    {(safePage - 1) * PAGE_SIZE + i + 1}
+                  </td>
                   <td className="px-4 py-4 font-bold text-slate-900">{s.supplierName}</td>
                   <td className="px-4 py-4">{s.status && <StatusPill label={s.status} />}</td>
                   <td className="px-4 py-4 font-black text-slate-700">{s.level}</td>
