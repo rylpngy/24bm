@@ -10,7 +10,7 @@ import {
   useBuyerSupplierInvitationList,
   useBuyerSupplierInvitationRespond,
 } from '@24bid/api-client';
-import { FeedbackNotice, ListToolbar, MiniFact, Panel, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
 
 const schema = z.object({
   supplierName: z.string().min(2, '请填写供应商名称'),
@@ -28,11 +28,16 @@ const inputCls =
 export function SupplierInvitationsView() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('全部');
 
   const query = useBuyerSupplierInvitationList();
   const create = useBuyerSupplierInvitationCreate();
   const respond = useBuyerSupplierInvitationRespond();
-  const invitations = query.data?.data ?? [];
+  const allInvitations = query.data?.data ?? [];
+  const invitations =
+    statusFilter === '全部'
+      ? allInvitations
+      : allInvitations.filter((i) => i.status === statusFilter);
 
   const {
     register,
@@ -73,8 +78,9 @@ export function SupplierInvitationsView() {
   const act = (id: string, action: 'accept' | 'decline' | 'withdraw') =>
     respond.mutate({ id, data: { action } }, { onSuccess: refresh });
 
-  const count = (st: string) => invitations.filter((i) => i.status === st).length;
+  const count = (st: string) => allInvitations.filter((i) => i.status === st).length;
   const respondingId = respond.isPending ? respond.variables?.id : null;
+  const STATUS_CHIPS = ['全部', '待回复', '已接受', '已拒绝', '已撤回'];
 
   return (
     <Panel title="邀请管理" icon={Mail} subtitle="邀请供应商注册 / 补资料 · 接受可转私域待准入">
@@ -85,14 +91,25 @@ export function SupplierInvitationsView() {
         <MiniFact label="已撤回" value={String(count('已撤回'))} />
       </div>
 
-      <ListToolbar
-        title="邀请单"
-        recordCount={invitations.length}
-        filterLabel="全部"
-        actionLabel="发起邀请"
-      />
-
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_CHIPS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatusFilter(s)}
+              className={cn(
+                'h-8 rounded-md border px-3 text-xs font-black transition',
+                s === statusFilter
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+              )}
+            >
+              {s}
+              {s !== '全部' && count(s) > 0 && <span className="ml-1 text-slate-400">{count(s)}</span>}
+            </button>
+          ))}
+        </div>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
@@ -147,7 +164,10 @@ export function SupplierInvitationsView() {
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载邀请单…" />
       ) : invitations.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无邀请单,点击「发起邀请」。" />
+        <FeedbackNotice
+          tone="info"
+          message={statusFilter === '全部' ? '暂无邀请单,点击「发起邀请」。' : `没有「${statusFilter}」的邀请单。`}
+        />
       ) : (
         <div className="space-y-2">
           {invitations.map((i) => (
