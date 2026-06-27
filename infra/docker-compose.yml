@@ -86,7 +86,38 @@ services:
     ports:
       - "8080:8080"
 
+  # 可观测性(可选,profile=observability):Prometheus 抓 /actuator/prometheus + Grafana 看板。
+  #   docker compose --profile observability up -d
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: 24bid-prometheus
+    profiles: ["observability"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - 24bid-prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: 24bid-grafana
+    profiles: ["observability"]
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - 24bid-grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+
 volumes:
   24bid-postgres-data:
   24bid-redis-data:
   24bid-minio-data:
+  24bid-prometheus-data:
+  24bid-grafana-data:

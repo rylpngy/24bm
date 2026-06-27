@@ -43,3 +43,47 @@ jobs:
         run: pnpm typecheck:all
       - name: Unit tests (Vitest)
         run: pnpm test
+
+  e2e:
+    name: E2E (Playwright, 三端)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: procurement_saas
+          POSTGRES_USER: procurement
+          POSTGRES_PASSWORD: procurement
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U procurement -d procurement_saas"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21, cache: maven }
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Start backend (demo 种子) in background
+        working-directory: backend-java
+        env:
+          SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/demo
+        run: |
+          nohup mvn -B -ntp spring-boot:run -Dspring-boot.run.profiles=local > /tmp/backend.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/api/v1/health && break || sleep 3
+          done
+      - name: Run E2E (webServer 自起三端 dev)
+        run: pnpm exec playwright test
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: playwright-report, path: playwright-report/, retention-days: 7 }
