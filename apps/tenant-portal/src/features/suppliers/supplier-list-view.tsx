@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Boxes, ChevronRight, Plus } from 'lucide-react';
+import { Boxes, ChevronRight, Plus, Search } from 'lucide-react';
 import { useBuyerSupplierCreate, useBuyerSupplierList } from '@24bid/api-client';
 import {
   FeedbackNotice,
@@ -35,13 +35,27 @@ const inputCls =
 export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>('全部');
+  const [keyword, setKeyword] = useState('');
+  const [level, setLevel] = useState('全部');
   const [showForm, setShowForm] = useState(false);
   const [page, setPage] = useState(1);
 
   const query = useBuyerSupplierList();
   const create = useBuyerSupplierCreate();
   const all = query.data?.data ?? [];
-  const suppliers = status === '全部' ? all : all.filter((s) => s.status === status);
+
+  const levels = ['全部', ...Array.from(new Set(all.map((s) => s.level).filter(Boolean) as string[]))];
+  const kw = keyword.trim().toLowerCase();
+  const suppliers = all.filter((s) => {
+    if (status !== '全部' && s.status !== status) return false;
+    if (level !== '全部' && s.level !== level) return false;
+    if (!kw) return true;
+    const haystack = [s.supplierName, s.creditCode, ...(s.categories ?? [])]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(kw);
+  });
   const pageCount = Math.max(1, Math.ceil(suppliers.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
   const pageItems = suppliers.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
@@ -101,6 +115,48 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
         <MiniFact label="准入审批中" value={String(count('准入审批中'))} />
         <MiniFact label="已准入" value={String(count('已准入'))} />
         <MiniFact label="平均绩效" value={avgScore == null ? '—' : String(avgScore)} />
+      </div>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[200px] flex-1">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={keyword}
+            onChange={(e) => {
+              setKeyword(e.target.value);
+              setPage(1);
+            }}
+            placeholder="按名称 / 信用代码 / 品类搜索"
+            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
+        <select
+          value={level}
+          onChange={(e) => {
+            setLevel(e.target.value);
+            setPage(1);
+          }}
+          className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+        >
+          {levels.map((lv) => (
+            <option key={lv} value={lv}>
+              {lv === '全部' ? '全部等级' : `等级 ${lv}`}
+            </option>
+          ))}
+        </select>
+        {(keyword || level !== '全部') && (
+          <button
+            type="button"
+            onClick={() => {
+              setKeyword('');
+              setLevel('全部');
+              setPage(1);
+            }}
+            className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+          >
+            清除
+          </button>
+        )}
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
