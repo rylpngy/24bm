@@ -1,6 +1,6 @@
 import { Receipt } from 'lucide-react';
 import { useSupplierReceivableList } from '@24bid/api-client';
-import { FeedbackNotice, ListToolbar, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -12,7 +12,11 @@ export function ReceivablesPage() {
 
   return (
     <Panel title="发票应收" icon={Receipt} subtitle="发票 · 回款状态">
-      <ListToolbar title="发票应收" recordCount={list.length} filterLabel="全部" actionLabel="我的应收" />
+      <div className="mb-4">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+          共 {list.length} 条
+        </span>
+      </div>
       {recv.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载发票应收…" />
       ) : list.length === 0 ? (

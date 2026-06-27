@@ -15,9 +15,6 @@ export type { PanelProps } from './components/panel';
 export { PrimaryActionButton } from './components/primary-action-button';
 export type { PrimaryActionButtonProps } from './components/primary-action-button';
 
-export { ListToolbar } from './components/list-toolbar';
-export type { ListToolbarProps } from './components/list-toolbar';
-
 export { ResponsiveTableFrame } from './components/responsive-table-frame';
 export type { ResponsiveTableFrameProps } from './components/responsive-table-frame';
 
