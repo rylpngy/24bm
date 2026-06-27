@@ -189,7 +189,31 @@ export function InvoicesPage() {
                     </p>
                     <p className="mt-1 text-xs font-bold text-slate-500">订单 {inv.orderId}</p>
                   </div>
-                  {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
+                    {(inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款') && inv.id && (
+                      <>
+                        {inv.paymentStatus === '待付款' && (
+                          <button
+                            type="button"
+                            onClick={() => register(inv.id!, '部分付款')}
+                            disabled={busy}
+                            className="inline-flex h-8 items-center rounded-md border border-amber-200 bg-white px-3 text-xs font-black text-amber-700 transition hover:bg-amber-50 disabled:opacity-50"
+                          >
+                            登记部分付款
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => register(inv.id!, '已付款')}
+                          disabled={busy}
+                          className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-400"
+                        >
+                          {busy ? '登记中' : '登记已付款'}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
@@ -275,29 +299,6 @@ export function InvoicesPage() {
                     </div>
                   )}
                 </div>
-
-                {(inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款') && inv.id && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {inv.paymentStatus === '待付款' && (
-                      <button
-                        type="button"
-                        onClick={() => register(inv.id!, '部分付款')}
-                        disabled={busy}
-                        className="inline-flex h-9 items-center rounded-lg border border-amber-200 bg-white px-4 text-xs font-black text-amber-700 transition hover:bg-amber-50 disabled:opacity-50"
-                      >
-                        登记部分付款
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => register(inv.id!, '已付款')}
-                      disabled={busy}
-                      className="inline-flex h-9 items-center rounded-lg bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-400"
-                    >
-                      {busy ? '登记中' : '登记已付款'}
-                    </button>
-                  </div>
-                )}
 
                 {inv.id && (
                   <button

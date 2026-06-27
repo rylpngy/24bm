@@ -8,7 +8,7 @@ import {
   useBuyerFinanceActionUpdateVarianceHandlingStatus,
   useBuyerFinanceActionVarianceHandlings,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -67,7 +67,8 @@ export function ReconciliationVariancePanel() {
       },
     );
 
-  // 渲染某条差异处理的操作区:按状态显示 标记已处理 / 财务经理签核(通过·驳回) / 已完成。
+  // 行操作(放在标题行状态徽标之后):按状态显示 标记已处理 / 财务经理签核(通过·驳回) / 已完成提示。
+  // 头部已展示状态徽标,此处不再重复 StatusPill。
   const renderActions = (h?: { id?: string; status?: string }) => {
     if (!h?.id) return null;
     if (h.status === '已处理') {
@@ -76,23 +77,22 @@ export function ReconciliationVariancePanel() {
     if (h.status === '待财务经理签核') {
       const busy = approve.isPending && approve.variables?.varianceHandlingId === h.id;
       return (
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusPill label="待财务经理签核" />
+        <>
           <button type="button" onClick={() => onApprove(h.id!, true)} disabled={busy}
-            className="inline-flex h-9 items-center rounded-lg bg-emerald-600 px-4 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-400">
+            className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-400">
             {busy ? '签核中' : '财务经理签核通过'}
           </button>
           <button type="button" onClick={() => onApprove(h.id!, false)} disabled={busy}
-            className="inline-flex h-9 items-center rounded-lg border border-red-200 bg-white px-4 text-xs font-black text-red-700 hover:bg-red-50 disabled:opacity-50">
+            className="inline-flex h-8 items-center rounded-md border border-red-200 bg-white px-3 text-xs font-black text-red-700 hover:bg-red-50 disabled:opacity-50">
             驳回
           </button>
-        </div>
+        </>
       );
     }
     const busyR = resolve.isPending && resolve.variables?.varianceHandlingId === h.id;
     return (
       <button type="button" onClick={() => onResolve(h.id!)} disabled={busyR}
-        className="inline-flex h-9 items-center rounded-lg bg-emerald-600 px-4 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-400">
+        className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-400">
         {busyR ? '处理中' : '标记已处理(超 ¥1万转签核)'}
       </button>
     );
@@ -123,22 +123,23 @@ export function ReconciliationVariancePanel() {
                     <p className="break-words font-mono font-black text-slate-950">{m.invoiceId}</p>
                     <p className="mt-1 text-xs font-bold text-slate-500">订单 {m.orderId}</p>
                   </div>
-                  <StatusPill label={handled ? '已处理' : h?.status ?? '待处理'} />
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    <StatusPill label={handled ? '已处理' : h?.status ?? '待处理'} />
+                    {!h && m.id ? (
+                      <button type="button" onClick={() => onCreate(m.id!)} disabled={busyC}
+                        className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-400">
+                        {busyC ? '登记中' : '登记差异处理'}
+                      </button>
+                    ) : (
+                      renderActions(h)
+                    )}
+                  </div>
                 </div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-4">
                   <MiniFact label="订单金额" value={currency(m.orderAmount)} />
                   <MiniFact label="发票金额" value={currency(m.invoiceAmount)} />
                   <MiniFact label="差异金额" value={currency(m.varianceAmount)} />
                   <MiniFact label="阻断原因" value={m.blockingReason ?? '—'} />
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {!h && m.id ? (
-                    <PrimaryActionButton onClick={() => onCreate(m.id!)} busy={busyC} pendingLabel="登记中" flushTop>
-                      登记差异处理
-                    </PrimaryActionButton>
-                  ) : (
-                    renderActions(h)
-                  )}
                 </div>
               </div>
             );
@@ -161,14 +162,16 @@ export function ReconciliationVariancePanel() {
                         {h.invoiceId} · 订单 {h.orderId}
                       </p>
                     </div>
-                    <StatusPill label={handled ? '已处理' : h.status ?? '待处理'} />
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                      <StatusPill label={handled ? '已处理' : h.status ?? '待处理'} />
+                      {renderActions(h)}
+                    </div>
                   </div>
                   <div className="mt-3 grid gap-2 sm:grid-cols-3">
                     <MiniFact label="触发行" value={h.lineDescription ?? '—'} />
                     <MiniFact label="差异结论" value={h.reason ?? '—'} />
                     <MiniFact label="行差异金额" value={currency(h.varianceAmount)} />
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">{renderActions(h)}</div>
                 </div>
               );
             })}
