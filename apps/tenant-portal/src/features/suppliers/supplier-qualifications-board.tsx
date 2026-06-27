@@ -5,7 +5,7 @@ import {
   useBuyerSupplierList,
   useBuyerSupplierListRelationQualifications,
 } from '@24bid/api-client';
-import { FeedbackNotice, Pagination, Panel, SearchInput, ShellState } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, ShellState } from '@24bid/ui';
 import { qualificationAlert } from './supplier-qualifications-tab';
 
 const PAGE_SIZE = 8;
@@ -80,6 +80,15 @@ export function SupplierQualificationsBoard({ onOpen }: { onOpen: (id: string) =
 
   return (
     <Panel title="资质管理" icon={BadgeCheck} subtitle="跨供应商证照台账 · 到期预警">
+      <div className="mb-4 grid gap-2 sm:grid-cols-3">
+        <MiniFact
+          label="跟踪供应商"
+          value={String(all.filter((s) => s.status === '已准入' || s.status === '准入审批中').length)}
+        />
+        <MiniFact label="已准入" value={String(all.filter((s) => s.status === '已准入').length)} />
+        <MiniFact label="准入审批中" value={String(all.filter((s) => s.status === '准入审批中').length)} />
+      </div>
+
       <SearchInput
         placeholder="按供应商名称搜索"
         onSearch={(k) => {
