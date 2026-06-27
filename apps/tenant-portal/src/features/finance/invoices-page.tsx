@@ -6,13 +6,15 @@ import {
   useBuyerPaymentPaymentAuditLogs,
   useBuyerPaymentUpdate,
 } from '@24bid/api-client';
-import { FeedbackNotice, ListToolbar, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
 import { ReportExportBar } from './report-export-bar';
 import { InvoiceLineMatchPanel } from './invoice-line-match-panel';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
+
+const PAGE_SIZE = 8;
 
 const PAYMENT_ACTION_LABELS: Record<string, string> = {
   'invoice.paid': '登记已付款',
@@ -57,10 +59,33 @@ export function InvoicesPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [lineMatchId, setLineMatchId] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState('全部');
+  const [page, setPage] = useState(1);
 
   const query = useBuyerPaymentList();
   const pay = useBuyerPaymentUpdate();
-  const invoices = query.data?.data ?? [];
+  const allInvoices = query.data?.data ?? [];
+  const statuses = [
+    '全部',
+    ...Array.from(new Set(allInvoices.map((inv) => inv.paymentStatus).filter(Boolean) as string[])),
+  ];
+  const kw = keyword.toLowerCase();
+  const invoices = allInvoices.filter((inv) => {
+    if (statusFilter !== '全部' && inv.paymentStatus !== statusFilter) return false;
+    if (!kw) return true;
+    return [inv.invoiceNo, inv.invoiceCode, inv.orderId, inv.id]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(kw);
+  });
+  const statusCount = (s: string) =>
+    s === '全部' ? allInvoices.length : allInvoices.filter((inv) => inv.paymentStatus === s).length;
+  const totalAmount = allInvoices.reduce((sum, inv) => sum + (inv.amount ?? 0), 0);
+  const pageCount = Math.max(1, Math.ceil(invoices.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = invoices.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -86,12 +111,43 @@ export function InvoicesPage() {
       <ReportExportBar />
       <ReconciliationVariancePanel />
     <Panel title="发票付款" icon={Receipt} subtitle="发票 · 三单匹配 · 付款登记">
-      <ListToolbar
-        title="发票"
-        recordCount={invoices.length}
-        filterLabel="全部"
-        actionLabel="供应商开票"
+      <div className="mb-4 grid gap-2 sm:grid-cols-4">
+        <MiniFact label="发票总数" value={String(allInvoices.length)} />
+        <MiniFact label="待付款" value={String(statusCount('待付款'))} />
+        <MiniFact label="已付款" value={String(statusCount('已付款'))} />
+        <MiniFact label="发票总额" value={currency(totalAmount)} />
+      </div>
+
+      <SearchInput
+        placeholder="按发票号 / 发票代码 / 订单号搜索"
+        onSearch={(k) => {
+          setKeyword(k);
+          setPage(1);
+        }}
       />
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {statuses.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => {
+              setStatusFilter(s);
+              setPage(1);
+            }}
+            className={cn(
+              'h-8 rounded-md border px-3 text-xs font-black transition',
+              s === statusFilter
+                ? 'border-blue-200 bg-blue-50 text-blue-700'
+                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+            )}
+          >
+            {s}
+            {s !== '全部' && statusCount(s) > 0 && <span className="ml-1 text-slate-400">{statusCount(s)}</span>}
+          </button>
+        ))}
+      </div>
+
       {feedback && (
         <div className="mb-4">
           <FeedbackNotice tone="success" message={feedback} />
@@ -101,10 +157,18 @@ export function InvoicesPage() {
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载发票…" />
       ) : invoices.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无发票。供应商对已收货订单开票后出现。" />
+        <FeedbackNotice
+          tone="info"
+          message={
+            keyword || statusFilter !== '全部'
+              ? '没有符合条件的发票。'
+              : '暂无发票。供应商对已收货订单开票后出现。'
+          }
+        />
       ) : (
+        <>
         <div className="space-y-3">
-          {invoices.map((inv) => {
+          {pageItems.map((inv, i) => {
             const variance = inv.varianceAmount ?? 0;
             const matched = variance === 0;
             const busy = pay.isPending && pay.variables?.invoiceId === inv.id;
@@ -115,7 +179,12 @@ export function InvoicesPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="break-words font-black text-slate-950">{inv.invoiceNo ?? inv.id}</p>
+                    <p className="break-words font-black text-slate-950">
+                      <span className="mr-1.5 font-mono text-slate-400">
+                        {(safePage - 1) * PAGE_SIZE + i + 1}.
+                      </span>
+                      {inv.invoiceNo ?? inv.id}
+                    </p>
                     <p className="mt-1 text-xs font-bold text-slate-500">订单 {inv.orderId}</p>
                   </div>
                   {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
@@ -242,6 +311,8 @@ export function InvoicesPage() {
             );
           })}
         </div>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={invoices.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
     </div>

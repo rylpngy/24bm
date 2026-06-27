@@ -10,26 +10,33 @@ import {
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
-  ListToolbar,
   MiniFact,
+  Pagination,
   Panel,
+  SearchInput,
   StatusPill,
+  cn,
 } from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
 
+const PAGE_SIZE = 8;
+
 // S5b：采购订单履约。订单列表 + 抬头信息(收货地址/联系人/付款方式) + 已发货收货验收。
 export function OrdersPage() {
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState('全部');
+  const [page, setPage] = useState(1);
 
   const query = usePurchaseOrderList();
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
   const receiptsQuery = useBuyerReceiptList();
   const deliveriesQuery = useBuyerDeliveryList();
   const receipt = useBuyerReceiptCreate();
-  const orders = query.data?.data ?? [];
+  const allOrders = query.data?.data ?? [];
 
   // 收货验收的录入表单（每次只展开一个订单）。lines 非空时按行验收,否则退化为抬头数量。
   const [receiveForm, setReceiveForm] = useState<{
@@ -72,6 +79,21 @@ export function OrdersPage() {
     });
     return map;
   }, [deliveriesQuery.data]);
+
+  const statuses = ['全部', ...Array.from(new Set(allOrders.map((o) => o.status).filter(Boolean) as string[]))];
+  const kw = keyword.toLowerCase();
+  const orders = allOrders.filter((o) => {
+    if (statusFilter !== '全部' && o.status !== statusFilter) return false;
+    if (!kw) return true;
+    const supplierName = o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '';
+    return [o.id, o.rfqId, supplierName].filter(Boolean).join(' ').toLowerCase().includes(kw);
+  });
+  const statusCount = (s: string) =>
+    s === '全部' ? allOrders.length : allOrders.filter((o) => o.status === s).length;
+  const totalAmount = allOrders.reduce((sum, o) => sum + (o.amount ?? 0), 0);
+  const pageCount = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = orders.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -123,12 +145,43 @@ export function OrdersPage() {
 
   return (
     <Panel title="采购订单" icon={Truck} subtitle="订单履约 · 抬头信息 · 收货验收">
-      <ListToolbar
-        title="采购订单"
-        recordCount={orders.length}
-        filterLabel="全部"
-        actionLabel="由定标生成"
+      <div className="mb-4 grid gap-2 sm:grid-cols-4">
+        <MiniFact label="订单总数" value={String(allOrders.length)} />
+        <MiniFact label="已发货待收" value={String(statusCount('已发货'))} />
+        <MiniFact label="已收货" value={String(statusCount('已收货'))} />
+        <MiniFact label="订单总金额" value={currency(totalAmount)} />
+      </div>
+
+      <SearchInput
+        placeholder="按订单号 / 询价号 / 供应商搜索"
+        onSearch={(k) => {
+          setKeyword(k);
+          setPage(1);
+        }}
       />
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {statuses.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => {
+              setStatusFilter(s);
+              setPage(1);
+            }}
+            className={cn(
+              'h-8 rounded-md border px-3 text-xs font-black transition',
+              s === statusFilter
+                ? 'border-blue-200 bg-blue-50 text-blue-700'
+                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+            )}
+          >
+            {s}
+            {s !== '全部' && statusCount(s) > 0 && <span className="ml-1 text-slate-400">{statusCount(s)}</span>}
+          </button>
+        ))}
+      </div>
+
       {feedback && (
         <div className="mb-4">
           <FeedbackNotice tone="success" message={feedback} />
@@ -138,17 +191,28 @@ export function OrdersPage() {
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载采购订单…" />
       ) : orders.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无采购订单。定标审批通过后由系统生成。" />
+        <FeedbackNotice
+          tone="info"
+          message={
+            keyword || statusFilter !== '全部'
+              ? '没有符合条件的订单。'
+              : '暂无采购订单。定标审批通过后由系统生成。'
+          }
+        />
       ) : (
+        <>
         <div className="space-y-3">
-          {orders.map((o) => (
+          {pageItems.map((o, i) => (
             <div
               key={o.id}
               className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="break-words font-mono font-black text-slate-950">{o.id}</p>
+                  <p className="break-words font-mono font-black text-slate-950">
+                    <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
+                    {o.id}
+                  </p>
                   <p className="mt-1 text-xs font-bold text-slate-500">
                     供应商 {o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}
                   </p>
@@ -443,6 +507,8 @@ export function OrdersPage() {
             </div>
           ))}
         </div>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={orders.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );
