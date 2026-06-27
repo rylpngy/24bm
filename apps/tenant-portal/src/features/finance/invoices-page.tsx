@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Receipt } from 'lucide-react';
+import { ChevronDown, Receipt } from 'lucide-react';
 import {
   useBuyerPaymentList,
   useBuyerPaymentPaymentAuditLogs,
@@ -213,6 +213,19 @@ export function InvoicesPage() {
                         </button>
                       </>
                     )}
+                    {inv.id && (
+                      <button
+                        type="button"
+                        onClick={() => setOpenId(openId === inv.id ? null : inv.id!)}
+                        className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50"
+                      >
+                        付款执行记录
+                        <ChevronDown
+                          size={13}
+                          className={`transition-transform ${openId === inv.id ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -300,15 +313,6 @@ export function InvoicesPage() {
                   )}
                 </div>
 
-                {inv.id && (
-                  <button
-                    type="button"
-                    onClick={() => setOpenId(openId === inv.id ? null : inv.id!)}
-                    className="mt-3 inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
-                  >
-                    {openId === inv.id ? '收起付款记录' : '付款执行记录'}
-                  </button>
-                )}
                 {openId === inv.id && inv.id && <PaymentExecutionTimeline invoiceId={inv.id} />}
               </div>
             );
