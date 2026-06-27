@@ -7,7 +7,7 @@ import {
   useSupplierOrderConfirm,
   useSupplierOrderList,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -84,9 +84,7 @@ export function OrdersPage() {
   return (
     <Panel title="销售订单" icon={ShoppingCart} subtitle="订单确认 · 发货登记">
       <div className="mb-4">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {list.length} 条
-        </span>
+        <CountTag>共 {list.length} 条</CountTag>
       </div>
       {feedback && (
         <div className="mb-4">

@@ -6,7 +6,7 @@ import {
   useBuyerSupplierCreate,
   useBuyerSupplierDiscoveryDiscover,
 } from '@24bid/api-client';
-import { FeedbackNotice, Pagination, Panel, ShellState } from '@24bid/ui';
+import { CountTag, FeedbackNotice, Pagination, Panel, ShellState } from '@24bid/ui';
 
 const PAGE_SIZE = 8;
 const VERIFIED_LABEL: Record<string, string> = { approved: '已认证', pending: '待认证', rejected: '已驳回' };
@@ -75,9 +75,7 @@ export function SupplierSourcingView() {
         }}
         className="mb-4 flex flex-wrap items-center gap-2"
       >
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          可纳入供应商 {results.length} 家{keyword ? ` · 搜索「${keyword}」` : ''}
-        </span>
+        <CountTag>可纳入供应商 {results.length} 家{keyword ? ` · 搜索「${keyword}」` : ''}</CountTag>
         <div className="relative ml-auto w-64 sm:w-80">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input

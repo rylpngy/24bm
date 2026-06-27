@@ -6,7 +6,7 @@ import {
   useBuyerSupplierReviewAdmission,
   useBuyerSupplierSubmitAdmission,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
 
 const ADMISSION_STATUSES = ['待准入', '准入审批中', '已驳回'];
 const PAGE_SIZE = 8;
@@ -87,9 +87,7 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          队列 {queue.length} 家
-        </span>
+        <CountTag>队列 {queue.length} 家</CountTag>
         <SearchInput
           className="mb-0 ml-auto"
           placeholder="按供应商名称 / 等级 / 品类搜索"

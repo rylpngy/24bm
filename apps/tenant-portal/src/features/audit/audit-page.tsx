@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { History } from 'lucide-react';
 import { useAuditLogList } from '@24bid/api-client';
-import { FeedbackNotice, Panel, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, Panel, StatusPill } from '@24bid/ui';
 
 // 操作动作前缀 → 中文标签(目标类型),覆盖主流程审计动作;未命中回退原值。
 const TARGET_LABELS: Record<string, string> = {
@@ -54,9 +54,7 @@ export function AuditPage() {
   return (
     <Panel title="审计日志" icon={History} subtitle="租户内最近操作留痕">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="mr-1 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {logs.length} 条
-        </span>
+        <CountTag className="mr-1">共 {logs.length} 条</CountTag>
         {[50, 100, 200].map((n) => (
           <button key={n} type="button" onClick={() => setLimit(n)}
             className={

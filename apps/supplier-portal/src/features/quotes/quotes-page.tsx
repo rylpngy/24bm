@@ -1,6 +1,6 @@
 import { BarChart3 } from 'lucide-react';
 import { useSupplierQuoteListList } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -13,9 +13,7 @@ export function QuotesPage() {
   return (
     <Panel title="报价记录" icon={BarChart3} subtitle="已提交报价 · 状态跟踪">
       <div className="mb-4">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {list.length} 条
-        </span>
+        <CountTag>共 {list.length} 条</CountTag>
       </div>
       {quotes.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载报价记录…" />

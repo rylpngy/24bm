@@ -9,13 +9,7 @@ import {
   useBuyerContractUpdateStatus,
   usePurchaseOrderList,
 } from '@24bid/api-client';
-import {
-  FeedbackNotice,
-  MiniFact,
-  Panel,
-  PrimaryActionButton,
-  StatusPill,
-} from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
 import { OwnerAttachments } from '../attachments/owner-attachments';
 import { ContractFulfillmentEvents } from './contract-fulfillment-events';
 import { ContractScheduleSection } from './contract-schedule-section';
@@ -105,13 +99,11 @@ export function ContractsPage() {
   return (
     <Panel title="合同管理" icon={FileSignature} subtitle="合同台账 · 审批 · 履约 · 归档">
       <div className="mb-4 flex items-center justify-between gap-2">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {contracts.length} 条
-        </span>
+        <CountTag>共 {contracts.length} 条</CountTag>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700"
         >
           <Plus size={14} /> {showForm ? '收起' : '创建合同'}
         </button>

@@ -8,7 +8,7 @@ import {
   usePlatformTenantUpdateFeatures,
   usePlatformTenantUpdatePlan,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
 import { TenantUsagePanel } from './tenant-usage-panel';
 
 const PLAN_OPTIONS = ['MVP', '标准版', '企业版'];
@@ -84,9 +84,7 @@ export function TenantsPage() {
   return (
     <Panel title="租户列表" icon={Building2} subtitle="采购企业 · 套餐 · 启停">
       <div className="mb-4">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {list.length} 家
-        </span>
+        <CountTag>共 {list.length} 家</CountTag>
       </div>
       {feedback && (
         <div className="mb-4">

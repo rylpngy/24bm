@@ -5,13 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Package, Plus, Search } from 'lucide-react';
 import { type MaterialResponse, useMaterialCreate, useMaterialList } from '@24bid/api-client';
-import {
-  FeedbackNotice,
-  MiniFact,
-  Panel,
-  PrimaryActionButton,
-  ResponsiveTableFrame,
-} from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, ResponsiveTableFrame } from '@24bid/ui';
 import { MaterialDetail } from './material-detail';
 
 const currency = (value?: number) =>
@@ -89,9 +83,7 @@ export function MaterialsPage() {
   return (
     <Panel title="物料目录" icon={Package} subtitle="物料与服务主数据">
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {materials.length} 条
-        </span>
+        <CountTag>共 {materials.length} 条</CountTag>
         <div className="relative ml-auto w-48 sm:w-56">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input

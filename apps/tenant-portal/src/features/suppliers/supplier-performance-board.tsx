@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronRight, Gauge } from 'lucide-react';
 import { useBuyerSupplierList } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill } from '@24bid/ui';
 
 const RANK_COLORS = ['text-amber-500', 'text-slate-400', 'text-orange-400'];
 const PAGE_SIZE = 8;
@@ -41,9 +41,7 @@ export function SupplierPerformanceBoard({ onOpen }: { onOpen: (id: string) => v
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          已评分 {scored.length} 家
-        </span>
+        <CountTag>已评分 {scored.length} 家</CountTag>
         <SearchInput
           className="mb-0 ml-auto"
           placeholder="按供应商名称搜索"

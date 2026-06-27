@@ -5,7 +5,7 @@ import {
   useBuyerSupplierList,
   useBuyerSupplierListRelationQualifications,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, ShellState } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, ShellState } from '@24bid/ui';
 import { qualificationAlert } from './supplier-qualifications-tab';
 
 const PAGE_SIZE = 8;
@@ -90,9 +90,7 @@ export function SupplierQualificationsBoard({ onOpen }: { onOpen: (id: string) =
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          跟踪 {tracked.length} 家
-        </span>
+        <CountTag>跟踪 {tracked.length} 家</CountTag>
         <SearchInput
           className="mb-0 ml-auto"
           placeholder="按供应商名称搜索"

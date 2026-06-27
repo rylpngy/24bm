@@ -1,6 +1,6 @@
 import { Banknote } from 'lucide-react';
 import { useBuyerFinanceActionPaymentBatches } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -13,9 +13,7 @@ export function PaymentBatchesPage() {
   return (
     <Panel title="付款批次" icon={Banknote} subtitle="批量付款计划 · 执行登记 · 阻断汇总">
       <div className="mb-4">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {batches.length} 条
-        </span>
+        <CountTag>共 {batches.length} 条</CountTag>
       </div>
 
       {query.isLoading ? (

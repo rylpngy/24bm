@@ -8,14 +8,7 @@ import {
   useRfqCreate,
   useRfqList,
 } from '@24bid/api-client';
-import {
-  FeedbackNotice,
-  MiniFact,
-  Panel,
-  PrimaryActionButton,
-  StatusPill,
-  cn,
-} from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
 
 const inputCls =
@@ -101,13 +94,11 @@ export function RfqsPage() {
   return (
     <Panel title="询价项目" icon={FileText} subtitle="RFQ 列表 · 邀请 · 比价定标">
       <div className="mb-4 flex items-center justify-between gap-2">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {list.length} 条
-        </span>
+        <CountTag>共 {list.length} 条</CountTag>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700"
         >
           <Plus size={14} /> {showForm ? '收起' : '创建询价'}
         </button>

@@ -5,7 +5,7 @@ import {
   usePlatformEnterpriseListPendingReviews,
   usePlatformEnterpriseReview,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
 
 // 企业审核:平台对入驻企业(verified=false)做资料确认/风险确认后通过或驳回。
 export function EnterpriseReviewsPage() {
@@ -57,9 +57,7 @@ export function EnterpriseReviewsPage() {
   return (
     <Panel title="企业审核" icon={ShieldCheck} subtitle="入驻审核 · 资料确认 · 风险确认">
       <div className="mb-4">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {reviews.length} 家待审核
-        </span>
+        <CountTag>共 {reviews.length} 家待审核</CountTag>
       </div>
       {feedback && (
         <div className="mb-4">

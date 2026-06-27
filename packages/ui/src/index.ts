@@ -50,3 +50,6 @@ export type { PaginationProps } from './components/pagination';
 
 export { SearchInput } from './components/search-input';
 export type { SearchInputProps } from './components/search-input';
+
+export { CountTag } from './components/count-tag';
+export type { CountTagProps } from './components/count-tag';

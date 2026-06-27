@@ -7,7 +7,7 @@ import {
   useBuyerUserChangeStatus,
   useBuyerUserList,
 } from '@24bid/api-client';
-import { FeedbackNotice, Panel, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, Panel, StatusPill } from '@24bid/ui';
 import { NotificationChannelPanel } from './notification-channel-panel';
 
 // 团队与权限:角色权限矩阵 + 团队成员(改角色 / 启停)。
@@ -71,9 +71,7 @@ export function TeamPage() {
 
       <Panel title="团队成员" icon={Users} subtitle="角色分配 · 启停">
         <div className="mb-4">
-          <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-            共 {userList.length} 名成员
-          </span>
+          <CountTag>共 {userList.length} 名成员</CountTag>
         </div>
         {feedback && (
           <div className="mb-3">

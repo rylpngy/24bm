@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Send, Trash2 } from 'lucide-react';
 import { useSupplierQuoteListRfqs, useSupplierQuoteSubmit } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
 
 interface LineRow {
   description: string;
@@ -94,9 +94,7 @@ export function OpportunitiesPage() {
   return (
     <Panel title="询价邀请" icon={Send} subtitle="可报价商机 · 按行报价">
       <div className="mb-4">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {list.length} 条
-        </span>
+        <CountTag>共 {list.length} 条</CountTag>
       </div>
       {feedback && (
         <div className="mb-4">

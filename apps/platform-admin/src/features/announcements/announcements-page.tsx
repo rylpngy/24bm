@@ -6,7 +6,7 @@ import {
   usePlatformAnnouncementPublish,
   usePlatformAnnouncementWithdraw,
 } from '@24bid/api-client';
-import { FeedbackNotice, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
 
 const AUDIENCE_LABELS: Record<string, string> = { all: '全部', buyer: '采购方', supplier: '供应商' };
 
@@ -53,11 +53,9 @@ export function AnnouncementsPage() {
   return (
     <Panel title="平台公告" icon={Megaphone} subtitle="发布 · 撤回 · 受众">
       <div className="mb-4 flex items-center justify-between gap-2">
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
-          共 {items.length} 条
-        </span>
+        <CountTag>共 {items.length} 条</CountTag>
         <button type="button" onClick={() => setShowForm((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700">
+          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700">
           <Plus size={14} /> {showForm ? '收起' : '发布公告'}
         </button>
       </div>
