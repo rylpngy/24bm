@@ -113,15 +113,7 @@ export function SupplierInvitationsView() {
         <MiniFact label="已撤回" value={String(count('已撤回'))} />
       </div>
 
-      <SearchInput
-        placeholder="按供应商名称 / 联系方式 / 品类搜索"
-        onSearch={(k) => {
-          setKeyword(k);
-          setPage(1);
-        }}
-      />
-
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2">
           {STATUS_CHIPS.map((s) => (
             <button
@@ -143,10 +135,18 @@ export function SupplierInvitationsView() {
             </button>
           ))}
         </div>
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按名称 / 联系 / 品类搜索"
+          onSearch={(k) => {
+            setKeyword(k);
+            setPage(1);
+          }}
+        />
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
         >
           <Plus size={14} /> {showForm ? '收起' : '发起邀请'}
         </button>

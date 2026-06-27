@@ -17,22 +17,23 @@ export function SearchInput({ onSearch, placeholder = '搜索', className }: Sea
         e.preventDefault();
         onSearch(text.trim());
       }}
-      className={cn('mb-3 flex flex-wrap items-center gap-2', className)}
+      className={cn('mb-3 flex items-center gap-1.5', className)}
     >
-      <div className="relative min-w-[200px] flex-1">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <div className="relative w-48 sm:w-56">
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={placeholder}
-          className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          className="h-8 w-full rounded-md border border-slate-200 bg-slate-50 pl-8 pr-2.5 text-xs font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
         />
       </div>
       <button
         type="submit"
-        className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700"
+        aria-label="搜索"
+        className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md bg-blue-600 px-2.5 text-xs font-black text-white transition hover:bg-blue-700"
       >
-        <Search size={14} /> 搜索
+        <Search size={13} /> 搜索
       </button>
       {text && (
         <button
@@ -41,7 +42,7 @@ export function SearchInput({ onSearch, placeholder = '搜索', className }: Sea
             setText('');
             onSearch('');
           }}
-          className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+          className="inline-flex h-8 shrink-0 items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-600 hover:bg-slate-50"
         >
           清除
         </button>

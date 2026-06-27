@@ -152,34 +152,36 @@ export function OrdersPage() {
         <MiniFact label="订单总金额" value={currency(totalAmount)} />
       </div>
 
-      <SearchInput
-        placeholder="按订单号 / 询价号 / 供应商搜索"
-        onSearch={(k) => {
-          setKeyword(k);
-          setPage(1);
-        }}
-      />
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        {statuses.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => {
-              setStatusFilter(s);
-              setPage(1);
-            }}
-            className={cn(
-              'h-8 rounded-md border px-3 text-xs font-black transition',
-              s === statusFilter
-                ? 'border-blue-200 bg-blue-50 text-blue-700'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
-            )}
-          >
-            {s}
-            {s !== '全部' && statusCount(s) > 0 && <span className="ml-1 text-slate-400">{statusCount(s)}</span>}
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2">
+          {statuses.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setStatusFilter(s);
+                setPage(1);
+              }}
+              className={cn(
+                'h-8 rounded-md border px-3 text-xs font-black transition',
+                s === statusFilter
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+              )}
+            >
+              {s}
+              {s !== '全部' && statusCount(s) > 0 && <span className="ml-1 text-slate-400">{statusCount(s)}</span>}
+            </button>
+          ))}
+        </div>
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按订单号 / 询价号 / 供应商搜索"
+          onSearch={(k) => {
+            setKeyword(k);
+            setPage(1);
+          }}
+        />
       </div>
 
       {feedback && (

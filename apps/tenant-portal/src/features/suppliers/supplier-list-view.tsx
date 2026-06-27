@@ -118,60 +118,7 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
         <MiniFact label="平均绩效" value={avgScore == null ? '—' : String(avgScore)} />
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          setKeyword(input.trim());
-          setPage(1);
-        }}
-        className="mb-3 flex flex-wrap items-center gap-2"
-      >
-        <div className="relative min-w-[200px] flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="按名称 / 信用代码 / 品类搜索"
-            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-          />
-        </div>
-        <select
-          value={level}
-          onChange={(e) => {
-            setLevel(e.target.value);
-            setPage(1);
-          }}
-          className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-        >
-          {levels.map((lv) => (
-            <option key={lv} value={lv}>
-              {lv === '全部' ? '全部等级' : `等级 ${lv}`}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700"
-        >
-          <Search size={14} /> 搜索
-        </button>
-        {(keyword || input || level !== '全部') && (
-          <button
-            type="button"
-            onClick={() => {
-              setInput('');
-              setKeyword('');
-              setLevel('全部');
-              setPage(1);
-            }}
-            className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
-          >
-            清除
-          </button>
-        )}
-      </form>
-
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((s) => (
             <button
@@ -190,10 +137,62 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
             </button>
           ))}
         </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setKeyword(input.trim());
+            setPage(1);
+          }}
+          className="ml-auto flex items-center gap-1.5"
+        >
+          <div className="relative w-40 sm:w-48">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="按名称 / 信用代码搜索"
+              className="h-8 w-full rounded-md border border-slate-200 bg-slate-50 pl-8 pr-2.5 text-xs font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <select
+            value={level}
+            onChange={(e) => {
+              setLevel(e.target.value);
+              setPage(1);
+            }}
+            className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-black text-slate-600 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          >
+            {levels.map((lv) => (
+              <option key={lv} value={lv}>
+                {lv === '全部' ? '全部等级' : `等级 ${lv}`}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md bg-blue-600 px-2.5 text-xs font-black text-white transition hover:bg-blue-700"
+          >
+            <Search size={13} /> 搜索
+          </button>
+          {(keyword || input || level !== '全部') && (
+            <button
+              type="button"
+              onClick={() => {
+                setInput('');
+                setKeyword('');
+                setLevel('全部');
+                setPage(1);
+              }}
+              className="inline-flex h-8 shrink-0 items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-600 hover:bg-slate-50"
+            >
+              清除
+            </button>
+          )}
+        </form>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
         >
           <Plus size={14} /> {showForm ? '收起' : '新增供应商'}
         </button>
