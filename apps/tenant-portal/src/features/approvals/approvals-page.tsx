@@ -9,7 +9,7 @@ import {
   usePurchaseOrderCreate,
   useRfqAwardReviewApproval,
 } from '@24bid/api-client';
-import { FeedbackNotice, ListToolbar, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
 import { FlowableWorkflowPanel } from './flowable-workflow-panel';
 
 const currency = (value?: number) =>
@@ -96,12 +96,11 @@ export function ApprovalsPage() {
     <div className="space-y-5">
       <FlowableWorkflowPanel />
       <Panel title="审批中心" icon={CheckSquare} subtitle="待办审批 · 通过 / 驳回">
-        <ListToolbar
-          title="待办审批"
-          recordCount={tasks.length}
-          filterLabel="全部待办"
-          actionLabel="固定模板"
-        />
+        <div className="mb-4">
+          <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+            共 {tasks.length} 条待办
+          </span>
+        </div>
         {feedback && (
           <div className="mb-4">
             <FeedbackNotice tone="success" message={feedback} />

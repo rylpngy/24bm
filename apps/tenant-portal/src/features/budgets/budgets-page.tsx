@@ -10,7 +10,7 @@ import {
   useBuyerBudgetUpsert,
   useDepartmentList,
 } from '@24bid/api-client';
-import { FeedbackNotice, ListToolbar, MiniFact, Panel, PrimaryActionButton } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Panel, PrimaryActionButton } from '@24bid/ui';
 
 const currency = (value?: number) =>
   value == null ? '—' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`;
@@ -116,13 +116,6 @@ export function BudgetsPage() {
 
   return (
     <Panel title="预算管理" icon={Wallet} subtitle="部门预算池 · 占用 · 超预算预警">
-      <ListToolbar
-        title="部门预算"
-        recordCount={budgets.length}
-        filterLabel={overCount > 0 ? `${overCount} 个超预算` : '全部健康'}
-        actionLabel="设置预算"
-      />
-
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
         <MiniFact label="预算总额" value={currency(totalBudget)} />
         <MiniFact label="累计占用" value={currency(totalOccupied)} />

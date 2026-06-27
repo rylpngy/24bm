@@ -10,7 +10,6 @@ import {
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
-  ListToolbar,
   MiniFact,
   Panel,
   PrimaryActionButton,
@@ -101,14 +100,10 @@ export function RfqsPage() {
 
   return (
     <Panel title="询价项目" icon={FileText} subtitle="RFQ 列表 · 邀请 · 比价定标">
-      <ListToolbar
-        title="询价项目"
-        recordCount={list.length}
-        filterLabel="全部"
-        actionLabel="创建询价"
-      />
-
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+          共 {list.length} 条
+        </span>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}

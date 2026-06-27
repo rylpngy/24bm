@@ -3,11 +3,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Package, Plus } from 'lucide-react';
+import { Package, Plus, Search } from 'lucide-react';
 import { type MaterialResponse, useMaterialCreate, useMaterialList } from '@24bid/api-client';
 import {
   FeedbackNotice,
-  ListToolbar,
   MiniFact,
   Panel,
   PrimaryActionButton,
@@ -89,24 +88,23 @@ export function MaterialsPage() {
 
   return (
     <Panel title="物料目录" icon={Package} subtitle="物料与服务主数据">
-      <ListToolbar
-        title="物料/服务"
-        recordCount={materials.length}
-        filterLabel={keyword ? `关键词「${keyword}」` : '全部'}
-        actionLabel="新增物料"
-      />
-
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <input
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="按编码/名称搜索"
-          className="h-9 w-56 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-        />
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+          共 {materials.length} 条
+        </span>
+        <div className="relative ml-auto w-48 sm:w-56">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="按编码 / 名称搜索"
+            className="h-8 w-full rounded-md border border-slate-200 bg-slate-50 pl-8 pr-2.5 text-xs font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
         >
           <Plus size={14} /> {showForm ? '收起' : '新增物料'}
         </button>

@@ -8,11 +8,12 @@ import {
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
-  ListToolbar,
   MiniFact,
+  Pagination,
   Panel,
   PrimaryActionButton,
   ResponsiveTableFrame,
+  SearchInput,
   StatusPill,
   cn,
 } from '@24bid/ui';
@@ -27,12 +28,23 @@ const STATUS_FILTERS = ['全部', '草稿', '审批中', '已通过', '已驳回
 export function DemandsPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>('全部');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<PurchaseDemandResponse | null>(null);
 
   const query = usePurchaseDemandList(status === '全部' ? undefined : { status });
   const submit = usePurchaseDemandSubmit();
   const demands = query.data?.data ?? [];
+  const kw = keyword.toLowerCase();
+  const filtered = demands.filter(
+    (d) =>
+      !kw || [d.title, d.id, d.departmentId].filter(Boolean).join(' ').toLowerCase().includes(kw),
+  );
+  const PAGE_SIZE = 8;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   if (selected) {
     const fresh = demands.find((d) => d.id === selected.id) ?? selected;
@@ -51,20 +63,16 @@ export function DemandsPage() {
 
   return (
     <Panel title="采购需求" icon={ClipboardList} subtitle="需求列表 · 审批提交 · 转询价">
-      <ListToolbar
-        title="采购需求"
-        recordCount={demands.length}
-        filterLabel={status}
-        actionLabel="新建需求"
-      />
-
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((s) => (
             <button
               key={s}
               type="button"
-              onClick={() => setStatus(s)}
+              onClick={() => {
+                setStatus(s);
+                setPage(1);
+              }}
               className={cn(
                 'h-8 rounded-md border px-3 text-xs font-black transition',
                 s === status
@@ -76,10 +84,18 @@ export function DemandsPage() {
             </button>
           ))}
         </div>
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按标题 / 编号 / 部门搜索"
+          onSearch={(k) => {
+            setKeyword(k);
+            setPage(1);
+          }}
+        />
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
         >
           <Plus size={14} /> {showForm ? '收起' : '新建需求'}
         </button>
@@ -96,11 +112,12 @@ export function DemandsPage() {
 
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载需求列表…" />
-      ) : demands.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <FeedbackNotice tone="info" message="当前筛选下暂无采购需求。" />
       ) : (
+        <>
         <ResponsiveTableFrame
-          mobileCards={demands.map((d) => (
+          mobileCards={pageItems.map((d) => (
             <div
               key={d.id}
               className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50"
@@ -139,6 +156,7 @@ export function DemandsPage() {
           <table className="min-w-[760px] w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
               <tr>
+                <th className="px-4 py-3 w-14">序号</th>
                 <th className="px-4 py-3">需求编号</th>
                 <th className="px-4 py-3">标题</th>
                 <th className="px-4 py-3">申请部门</th>
@@ -148,8 +166,11 @@ export function DemandsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {demands.map((d) => (
+              {pageItems.map((d, i) => (
                 <tr key={d.id}>
+                  <td className="px-4 py-4 font-mono font-black text-slate-400">
+                    {(safePage - 1) * PAGE_SIZE + i + 1}
+                  </td>
                   <td className="px-4 py-4 font-mono font-black text-slate-700">{d.id}</td>
                   <td className="px-4 py-4 font-bold text-slate-900">{d.title}</td>
                   <td className="px-4 py-4 text-slate-600">{d.departmentId}</td>
@@ -183,6 +204,8 @@ export function DemandsPage() {
             </tbody>
           </table>
         </ResponsiveTableFrame>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );

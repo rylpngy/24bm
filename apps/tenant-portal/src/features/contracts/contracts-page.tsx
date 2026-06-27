@@ -11,7 +11,6 @@ import {
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
-  ListToolbar,
   MiniFact,
   Panel,
   PrimaryActionButton,
@@ -105,13 +104,10 @@ export function ContractsPage() {
 
   return (
     <Panel title="合同管理" icon={FileSignature} subtitle="合同台账 · 审批 · 履约 · 归档">
-      <ListToolbar
-        title="合同台账"
-        recordCount={contracts.length}
-        filterLabel="全部"
-        actionLabel="由订单生成"
-      />
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+          共 {contracts.length} 条
+        </span>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
