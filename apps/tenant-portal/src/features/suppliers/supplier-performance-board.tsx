@@ -40,13 +40,19 @@ export function SupplierPerformanceBoard({ onOpen }: { onOpen: (id: string) => v
         <MiniFact label="最高绩效" value={scores.length ? String(Math.max(...scores)) : '—'} />
       </div>
 
-      <SearchInput
-        placeholder="按供应商名称搜索"
-        onSearch={(k) => {
-          setKeyword(k);
-          setPage(1);
-        }}
-      />
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+          已评分 {scored.length} 家
+        </span>
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按供应商名称搜索"
+          onSearch={(k) => {
+            setKeyword(k);
+            setPage(1);
+          }}
+        />
+      </div>
 
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载绩效数据…" />

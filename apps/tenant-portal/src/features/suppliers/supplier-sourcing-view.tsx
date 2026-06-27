@@ -6,7 +6,7 @@ import {
   useBuyerSupplierCreate,
   useBuyerSupplierDiscoveryDiscover,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Pagination, Panel, ShellState } from '@24bid/ui';
+import { FeedbackNotice, Pagination, Panel, ShellState } from '@24bid/ui';
 
 const PAGE_SIZE = 8;
 const VERIFIED_LABEL: Record<string, string> = { approved: '已认证', pending: '待认证', rejected: '已驳回' };
@@ -67,20 +67,18 @@ export function SupplierSourcingView() {
 
   return (
     <Panel title="寻源发现" icon={Search} subtitle="搜索平台供应商 · 一键加入私域待准入">
-      <div className="mb-4 grid gap-2 sm:grid-cols-2">
-        <MiniFact label="可纳入供应商" value={String(results.length)} />
-        <MiniFact label="当前搜索" value={keyword || '全部'} />
-      </div>
-
       <form
         onSubmit={(e) => {
           e.preventDefault();
           setKeyword(input.trim());
           setPage(1);
         }}
-        className="mb-4 flex flex-wrap items-center gap-1.5"
+        className="mb-4 flex flex-wrap items-center gap-2"
       >
-        <div className="relative w-64 sm:w-80">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+          可纳入供应商 {results.length} 家{keyword ? ` · 搜索「${keyword}」` : ''}
+        </span>
+        <div className="relative ml-auto w-64 sm:w-80">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             value={input}

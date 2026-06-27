@@ -89,13 +89,19 @@ export function SupplierQualificationsBoard({ onOpen }: { onOpen: (id: string) =
         <MiniFact label="准入审批中" value={String(all.filter((s) => s.status === '准入审批中').length)} />
       </div>
 
-      <SearchInput
-        placeholder="按供应商名称搜索"
-        onSearch={(k) => {
-          setKeyword(k);
-          setPage(1);
-        }}
-      />
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+          跟踪 {tracked.length} 家
+        </span>
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按供应商名称搜索"
+          onSearch={(k) => {
+            setKeyword(k);
+            setPage(1);
+          }}
+        />
+      </div>
 
       {query.isLoading ? (
         <ShellState variant="loading" title="加载供应商" desc="拉取供应商及其证照…" />

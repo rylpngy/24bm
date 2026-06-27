@@ -86,13 +86,19 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
         <MiniFact label="已驳回待整改" value={String(count('已驳回'))} />
       </div>
 
-      <SearchInput
-        placeholder="按供应商名称 / 等级 / 品类搜索"
-        onSearch={(k) => {
-          setKeyword(k);
-          setPage(1);
-        }}
-      />
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+          队列 {queue.length} 家
+        </span>
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按供应商名称 / 等级 / 品类搜索"
+          onSearch={(k) => {
+            setKeyword(k);
+            setPage(1);
+          }}
+        />
+      </div>
 
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载准入队列…" />
