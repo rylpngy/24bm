@@ -2410,6 +2410,66 @@
         }
       }
     },
+    "/api/v1/platform/enterprise-reviews/{enterpriseId}/advance": {
+      "post": {
+        "tags": [
+          "platform-enterprise-controller"
+        ],
+        "operationId": "PlatformEnterprise_advance",
+        "parameters": [
+          {
+            "name": "enterpriseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceEnterpriseReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseEnterpriseReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/platform/announcements": {
       "get": {
         "tags": [
@@ -7467,6 +7527,56 @@
         }
       }
     },
+    "/api/v1/platform/enterprise-reviews/{enterpriseId}/events": {
+      "get": {
+        "tags": [
+          "platform-enterprise-controller"
+        ],
+        "operationId": "PlatformEnterprise_events",
+        "parameters": [
+          {
+            "name": "enterpriseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListEnterpriseReviewEventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -11200,6 +11310,26 @@
           }
         }
       },
+      "AdvanceEnterpriseReviewRequest": {
+        "required": [
+          "action"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "profileConfirmed": {
+            "type": "boolean"
+          },
+          "riskConfirmed": {
+            "type": "boolean"
+          }
+        }
+      },
       "CreatePlatformAnnouncementRequest": {
         "required": [
           "audience",
@@ -13775,6 +13905,56 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseListEnterpriseReviewEventResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnterpriseReviewEventResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "EnterpriseReviewEventResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "fromStatus": {
+            "type": "string"
+          },
+          "fromStatusLabel": {
+            "type": "string"
+          },
+          "toStatus": {
+            "type": "string"
+          },
+          "toStatusLabel": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

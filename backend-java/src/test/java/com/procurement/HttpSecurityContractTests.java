@@ -2713,6 +2713,45 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.reviewComment").value("资料齐全，准入通过。"))
         .andExpect(jsonPath("$.data.profileConfirmed").value(true))
         .andExpect(jsonPath("$.data.riskConfirmed").value(true));
+
+    // 多步审核工作流:推进端点 + 时间线端点。采购方越权 403;平台 200。
+    mockMvc.perform(post("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise/advance")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"action": "preliminary_pass"}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(platformEnterpriseApplicationService.advanceReview(
+        org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
+        org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new EnterpriseReviewResponse(
+            "ent-supplier-sunrise", "晨光供应商", "supplier", false, "preliminary", null, false, false));
+
+    mockMvc.perform(post("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise/advance")
+            .header("Authorization", "Bearer " + platformToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"action": "preliminary_pass"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.reviewStatus").value("preliminary"));
+
+    mockMvc.perform(get("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise/events")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
+    when(platformEnterpriseApplicationService.listReviewEvents("ent-supplier-sunrise"))
+        .thenReturn(List.of(new com.procurement.platform.api.EnterpriseReviewEventResponse(
+            "erv-1", "preliminary_pass", "pending", "待初审", "preliminary", "初审通过",
+            null, "user-platform-admin", java.time.OffsetDateTime.parse("2026-06-29T10:00:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise/events")
+            .header("Authorization", "Bearer " + platformToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].action").value("preliminary_pass"))
+        .andExpect(jsonPath("$.data[0].toStatusLabel").value("初审通过"));
   }
 
   @Test

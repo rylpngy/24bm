@@ -166,7 +166,8 @@ class PlatformAuditLogTests {
     PlatformEnterpriseApplicationService platformEnterpriseApplicationService =
         new PlatformEnterpriseApplicationService(
             platformEnterpriseMapper,
-            auditLogApplicationService);
+            auditLogApplicationService,
+            new com.procurement.platform.domain.EnterpriseReviewStageTransition());
     when(platformEnterpriseMapper.updateEnterpriseVerified("ent-supplier-1", true)).thenReturn(1);
     when(platformEnterpriseMapper.findById("ent-supplier-1"))
         .thenReturn(new EnterpriseReview(
