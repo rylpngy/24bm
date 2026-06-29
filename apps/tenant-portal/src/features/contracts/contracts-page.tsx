@@ -165,9 +165,39 @@ export function ContractsPage() {
                   <p className="break-words font-black text-slate-950">{c.contractName}</p>
                   <p className="mt-1 font-mono text-xs font-bold text-slate-500">{c.contractNo}</p>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                   {c.status && <StatusPill label={c.status} />}
                   {c.archiveStatus && <StatusPill label={c.archiveStatus} />}
+                  {c.status === '草案' && (
+                    <button
+                      type="button"
+                      onClick={() => onSubmitApproval(c)}
+                      disabled={submit.isPending}
+                      className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:bg-slate-400"
+                    >
+                      提交审批
+                    </button>
+                  )}
+                  {c.status === '已生效' && FULFILLMENT_NEXT[c.fulfillmentProgress ?? ''] && (
+                    <button
+                      type="button"
+                      onClick={() => onAdvance(c)}
+                      disabled={updateStatus.isPending}
+                      className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+                    >
+                      推进履约至「{FULFILLMENT_NEXT[c.fulfillmentProgress ?? '']}」
+                    </button>
+                  )}
+                  {c.archiveStatus !== '已归档' && (
+                    <button
+                      type="button"
+                      onClick={() => onArchive(c)}
+                      disabled={archive.isPending}
+                      className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      归档
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="mt-3 grid gap-2 sm:grid-cols-4">
@@ -207,36 +237,6 @@ export function ContractsPage() {
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {c.status === '草案' && (
-                  <button
-                    type="button"
-                    onClick={() => onSubmitApproval(c)}
-                    disabled={submit.isPending}
-                    className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:bg-slate-400"
-                  >
-                    提交审批
-                  </button>
-                )}
-                {c.status === '已生效' && FULFILLMENT_NEXT[c.fulfillmentProgress ?? ''] && (
-                  <button
-                    type="button"
-                    onClick={() => onAdvance(c)}
-                    disabled={updateStatus.isPending}
-                    className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
-                  >
-                    推进履约至「{FULFILLMENT_NEXT[c.fulfillmentProgress ?? '']}」
-                  </button>
-                )}
-                {c.archiveStatus !== '已归档' && (
-                  <button
-                    type="button"
-                    onClick={() => onArchive(c)}
-                    disabled={archive.isPending}
-                    className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    归档
-                  </button>
-                )}
                 {c.id && (
                   <button
                     type="button"
