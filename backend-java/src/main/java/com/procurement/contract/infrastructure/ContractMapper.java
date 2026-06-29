@@ -1,5 +1,6 @@
 package com.procurement.contract.infrastructure;
 
+import com.procurement.contract.domain.ContractAmendment;
 import com.procurement.contract.domain.ContractLedger;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -158,4 +159,59 @@ public interface ContractMapper {
       @Param("contractId") String contractId,
       @Param("currentArchiveStatus") String currentArchiveStatus,
       @Param("archiveStatus") String archiveStatus);
+
+  // 合同变更/补充协议:留痕 + 列表 + 下一序号 + 应用金额/工期到主合同。
+  @Select("""
+      select coalesce(max(seq), 0)
+      from contract_amendments
+      where tenant_id = #{tenantId} and contract_id = #{contractId}
+      """)
+  int maxAmendmentSeq(
+      @Param("tenantId") String tenantId,
+      @Param("contractId") String contractId);
+
+  @Insert("""
+      insert into contract_amendments
+        (id, tenant_id, contract_id, seq, change_type, old_amount, new_amount,
+         old_expiry_date, new_expiry_date, reason, actor_id)
+      values
+        (#{id}, #{tenantId}, #{contractId}, #{seq}, #{changeType}, #{oldAmount}, #{newAmount},
+         #{oldExpiryDate}, #{newExpiryDate}, #{reason}, #{actorId})
+      """)
+  void insertAmendment(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId,
+      @Param("contractId") String contractId,
+      @Param("seq") int seq,
+      @Param("changeType") String changeType,
+      @Param("oldAmount") BigDecimal oldAmount,
+      @Param("newAmount") BigDecimal newAmount,
+      @Param("oldExpiryDate") LocalDate oldExpiryDate,
+      @Param("newExpiryDate") LocalDate newExpiryDate,
+      @Param("reason") String reason,
+      @Param("actorId") String actorId);
+
+  @Select("""
+      select id, tenant_id, contract_id, seq, change_type, old_amount, new_amount,
+             old_expiry_date, new_expiry_date, reason, actor_id, created_at
+      from contract_amendments
+      where tenant_id = #{tenantId} and contract_id = #{contractId}
+      order by seq desc
+      """)
+  List<ContractAmendment> listAmendments(
+      @Param("tenantId") String tenantId,
+      @Param("contractId") String contractId);
+
+  @Update("""
+      update contracts
+      set amount = #{amount},
+          expiry_date = #{expiryDate},
+          updated_at = now()
+      where tenant_id = #{tenantId} and id = #{contractId}
+      """)
+  int updateAmountAndExpiry(
+      @Param("tenantId") String tenantId,
+      @Param("contractId") String contractId,
+      @Param("amount") BigDecimal amount,
+      @Param("expiryDate") LocalDate expiryDate);
 }

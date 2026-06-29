@@ -94,4 +94,18 @@ public class BuyerContractController {
         contractId,
         request));
   }
+
+  // 合同变更/补充协议:时间线 + 登记变更(金额/工期变更应用到主合同)。
+  @GetMapping("/{contractId}/amendments")
+  public ApiResponse<List<ContractAmendmentResponse>> listAmendments(@PathVariable String contractId) {
+    return ApiResponse.ok(contractApplicationService.listCurrentTenantContractAmendments(contractId));
+  }
+
+  @PostMapping("/{contractId}/amendments")
+  public ApiResponse<ContractAmendmentResponse> createAmendment(
+      @PathVariable String contractId,
+      @Valid @RequestBody CreateContractAmendmentRequest request) {
+    return ApiResponse.ok(
+        contractApplicationService.addCurrentTenantContractAmendment(contractId, request));
+  }
 }

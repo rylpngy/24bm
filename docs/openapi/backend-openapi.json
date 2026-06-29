@@ -6254,6 +6254,114 @@
         }
       }
     },
+    "/api/v1/buyer/contracts/{contractId}/amendments": {
+      "get": {
+        "tags": [
+          "buyer-contract-controller"
+        ],
+        "operationId": "BuyerContract_listAmendments",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListContractAmendmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer-contract-controller"
+        ],
+        "operationId": "BuyerContract_createAmendment",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContractAmendmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseContractAmendmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/budgets": {
       "get": {
         "tags": [
@@ -13008,6 +13116,84 @@
           }
         }
       },
+      "CreateContractAmendmentRequest": {
+        "required": [
+          "changeType",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "changeType": {
+            "type": "string"
+          },
+          "newAmount": {
+            "type": "number"
+          },
+          "newExpiryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseContractAmendmentResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ContractAmendmentResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ContractAmendmentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "contractId": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "changeType": {
+            "type": "string"
+          },
+          "oldAmount": {
+            "type": "number"
+          },
+          "newAmount": {
+            "type": "number"
+          },
+          "oldExpiryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "newExpiryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "UpsertDepartmentBudgetRequest": {
         "required": [
           "departmentId",
@@ -14992,6 +15178,23 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ContractFulfillmentEventResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListContractAmendmentResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContractAmendmentResponse"
             }
           },
           "message": {

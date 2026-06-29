@@ -3597,6 +3597,16 @@ class HttpSecurityContractTests {
             .contentType(MediaType.APPLICATION_JSON)
             .content(validCreateOrderPayload()))
         .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/contracts/contract-demo/amendments")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/buyer/contracts/contract-demo/amendments")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"changeType": "金额变更", "newAmount": 130000, "reason": "新增范围"}
+                """))
+        .andExpect(status().isForbidden());
     mockMvc.perform(put("/api/v1/buyer/contracts/contract-demo/status")
             .header("Authorization", "Bearer " + supplierToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -3930,6 +3940,35 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.id").value("contract-demo"))
         .andExpect(jsonPath("$.data.archiveStatus").value("已归档"));
+
+    when(contractApplicationService.addCurrentTenantContractAmendment(
+        org.mockito.ArgumentMatchers.eq("contract-demo"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.contract.api.ContractAmendmentResponse(
+            "contract-amd-1", "contract-demo", 1, "金额变更",
+            java.math.BigDecimal.valueOf(120000), java.math.BigDecimal.valueOf(130000),
+            null, null, "新增实施范围", "user-buyer-owner",
+            OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
+    mockMvc.perform(post("/api/v1/buyer/contracts/contract-demo/amendments")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"changeType": "金额变更", "newAmount": 130000, "reason": "新增实施范围"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.seq").value(1))
+        .andExpect(jsonPath("$.data.changeType").value("金额变更"))
+        .andExpect(jsonPath("$.data.newAmount").value(130000));
+
+    when(contractApplicationService.listCurrentTenantContractAmendments("contract-demo"))
+        .thenReturn(List.of(new com.procurement.contract.api.ContractAmendmentResponse(
+            "contract-amd-1", "contract-demo", 1, "金额变更",
+            java.math.BigDecimal.valueOf(120000), java.math.BigDecimal.valueOf(130000),
+            null, null, "新增实施范围", "user-buyer-owner",
+            OffsetDateTime.parse("2026-06-29T10:00:00+08:00"))));
+    mockMvc.perform(get("/api/v1/buyer/contracts/contract-demo/amendments")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].changeType").value("金额变更"));
     mockMvc.perform(post("/api/v1/buyer/payment-execution-records/payexec-demo/registration")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())

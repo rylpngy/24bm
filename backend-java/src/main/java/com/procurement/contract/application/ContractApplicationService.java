@@ -8,14 +8,17 @@ import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.contract.api.ContractAmendmentResponse;
 import com.procurement.contract.api.ContractFulfillmentEventResponse;
 import com.procurement.contract.api.ContractResponse;
+import com.procurement.contract.api.CreateContractAmendmentRequest;
 import com.procurement.contract.api.CreateContractFulfillmentEventRequest;
 import com.procurement.contract.api.CreateContractRequest;
 import com.procurement.contract.api.ReviewContractApprovalRequest;
 import com.procurement.contract.api.UpdateContractArchiveStatusRequest;
 import com.procurement.contract.api.UpdateContractRequest;
 import com.procurement.contract.api.UpdateContractStatusRequest;
+import com.procurement.contract.domain.ContractAmendment;
 import com.procurement.contract.domain.ContractFulfillmentEvent;
 import com.procurement.contract.domain.ContractLedger;
 import com.procurement.contract.infrastructure.ContractFulfillmentEventMapper;
@@ -306,6 +309,88 @@ public class ContractApplicationService {
         .stream()
         .map(this::toFulfillmentEventResponse)
         .toList();
+  }
+
+  public List<ContractAmendmentResponse> listCurrentTenantContractAmendments(String contractId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    requireContract(tenantId, contractId);
+    return contractMapper.listAmendments(tenantId, contractId).stream()
+        .map(this::toAmendmentResponse)
+        .toList();
+  }
+
+  // 登记合同变更/补充协议:留痕(按序号)+ 金额/工期变更应用到主合同 + 审计(带「从→到」明细)。
+  @Transactional
+  public ContractAmendmentResponse addCurrentTenantContractAmendment(
+      String contractId, CreateContractAmendmentRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    String userId = TenantAccessGuard.requireUserId("buyer contract APIs");
+    ContractLedger contract = requireContract(tenantId, contractId);
+    requireEditable(contract, contractId);
+    if (!ContractAmendment.isValidType(request.changeType())) {
+      throw new IllegalArgumentException("非法变更类型: " + request.changeType());
+    }
+    boolean amountChange = ContractAmendment.AMOUNT.equals(request.changeType());
+    boolean scheduleChange = ContractAmendment.SCHEDULE.equals(request.changeType());
+    if (amountChange && request.newAmount() == null) {
+      throw new IllegalArgumentException("金额变更需填写新金额");
+    }
+    if (scheduleChange && request.newExpiryDate() == null) {
+      throw new IllegalArgumentException("工期变更需填写新到期日");
+    }
+
+    int seq = contractMapper.maxAmendmentSeq(tenantId, contractId) + 1;
+    java.math.BigDecimal oldAmount = contract.amount();
+    java.time.LocalDate oldExpiry = contract.expiryDate();
+    String amendmentId = "contract-amd-" + UUID.randomUUID();
+    contractMapper.insertAmendment(
+        amendmentId,
+        tenantId,
+        contractId,
+        seq,
+        request.changeType(),
+        amountChange ? oldAmount : null,
+        amountChange ? request.newAmount() : null,
+        scheduleChange ? oldExpiry : null,
+        scheduleChange ? request.newExpiryDate() : null,
+        request.reason(),
+        userId);
+
+    if (amountChange || scheduleChange) {
+      contractMapper.updateAmountAndExpiry(
+          tenantId,
+          contractId,
+          amountChange ? request.newAmount() : contract.amount(),
+          scheduleChange ? request.newExpiryDate() : contract.expiryDate());
+    }
+
+    String detail = "合同变更#" + seq + " " + request.changeType()
+        + (amountChange ? ": ¥" + oldAmount + " → ¥" + request.newAmount() : "")
+        + (scheduleChange ? ": " + oldExpiry + " → " + request.newExpiryDate() : "");
+    if (auditLogApplicationService != null) {
+      auditLogApplicationService.recordTenantAction(
+          tenantId, "contract_amendment.created", AuditTargetType.CONTRACT, contractId, detail);
+    }
+    // 列表按 seq 倒序,刚插入的(最大 seq)即首条。
+    return contractMapper.listAmendments(tenantId, contractId).stream()
+        .findFirst()
+        .map(this::toAmendmentResponse)
+        .orElseThrow();
+  }
+
+  private ContractAmendmentResponse toAmendmentResponse(ContractAmendment a) {
+    return new ContractAmendmentResponse(
+        a.id(),
+        a.contractId(),
+        a.seq(),
+        a.changeType(),
+        a.oldAmount(),
+        a.newAmount(),
+        a.oldExpiryDate(),
+        a.newExpiryDate(),
+        a.reason(),
+        a.actorId(),
+        a.createdAt());
   }
 
   @Transactional

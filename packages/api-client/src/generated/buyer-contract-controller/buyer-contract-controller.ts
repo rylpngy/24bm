@@ -25,12 +25,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseContractAmendmentResponse,
   ApiResponseContractFulfillmentEventResponse,
   ApiResponseContractResponse,
+  ApiResponseListContractAmendmentResponse,
   ApiResponseListContractFulfillmentEventResponse,
   ApiResponseListContractResponse,
   ApiResponseVoid,
   BuyerContractListParams,
+  CreateContractAmendmentRequest,
   CreateContractFulfillmentEventRequest,
   CreateContractRequest,
   ReviewContractApprovalRequest,
@@ -620,6 +623,151 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerContractSubmitApprovalMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerContractListAmendments = (
+    contractId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListContractAmendmentResponse>(
+      {url: `/api/v1/buyer/contracts/${contractId}/amendments`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerContractListAmendmentsQueryKey = (contractId?: string,) => {
+    return [
+    `/api/v1/buyer/contracts/${contractId}/amendments`
+    ] as const;
+    }
+
+    
+export const getBuyerContractListAmendmentsQueryOptions = <TData = Awaited<ReturnType<typeof buyerContractListAmendments>>, TError = ErrorType<ApiResponseVoid>>(contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractListAmendments>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerContractListAmendmentsQueryKey(contractId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerContractListAmendments>>> = ({ signal }) => buyerContractListAmendments(contractId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(contractId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerContractListAmendments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerContractListAmendmentsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerContractListAmendments>>>
+export type BuyerContractListAmendmentsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerContractListAmendments<TData = Awaited<ReturnType<typeof buyerContractListAmendments>>, TError = ErrorType<ApiResponseVoid>>(
+ contractId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractListAmendments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerContractListAmendments>>,
+          TError,
+          Awaited<ReturnType<typeof buyerContractListAmendments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerContractListAmendments<TData = Awaited<ReturnType<typeof buyerContractListAmendments>>, TError = ErrorType<ApiResponseVoid>>(
+ contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractListAmendments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerContractListAmendments>>,
+          TError,
+          Awaited<ReturnType<typeof buyerContractListAmendments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerContractListAmendments<TData = Awaited<ReturnType<typeof buyerContractListAmendments>>, TError = ErrorType<ApiResponseVoid>>(
+ contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractListAmendments>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerContractListAmendments<TData = Awaited<ReturnType<typeof buyerContractListAmendments>>, TError = ErrorType<ApiResponseVoid>>(
+ contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractListAmendments>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerContractListAmendmentsQueryOptions(contractId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerContractCreateAmendment = (
+    contractId: string,
+    createContractAmendmentRequest: BodyType<CreateContractAmendmentRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseContractAmendmentResponse>(
+      {url: `/api/v1/buyer/contracts/${contractId}/amendments`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createContractAmendmentRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerContractCreateAmendmentMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractCreateAmendment>>, TError,{contractId: string;data: BodyType<CreateContractAmendmentRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerContractCreateAmendment>>, TError,{contractId: string;data: BodyType<CreateContractAmendmentRequest>}, TContext> => {
+
+const mutationKey = ['buyerContractCreateAmendment'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractCreateAmendment>>, {contractId: string;data: BodyType<CreateContractAmendmentRequest>}> = (props) => {
+          const {contractId,data} = props ?? {};
+
+          return  buyerContractCreateAmendment(contractId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerContractCreateAmendmentMutationResult = NonNullable<Awaited<ReturnType<typeof buyerContractCreateAmendment>>>
+    export type BuyerContractCreateAmendmentMutationBody = BodyType<CreateContractAmendmentRequest>
+    export type BuyerContractCreateAmendmentMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerContractCreateAmendment = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractCreateAmendment>>, TError,{contractId: string;data: BodyType<CreateContractAmendmentRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerContractCreateAmendment>>,
+        TError,
+        {contractId: string;data: BodyType<CreateContractAmendmentRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerContractCreateAmendmentMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
