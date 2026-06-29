@@ -250,7 +250,8 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerNotificationController.class,
     BuyerNotificationChannelController.class,
     SupplierNotificationController.class,
-    DepartmentController.class
+    DepartmentController.class,
+    com.procurement.process.api.ProcessDefinitionController.class
 })
 @Import({
     SecurityConfig.class,
@@ -371,6 +372,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.identity.application.BuyerUserImportApplicationService buyerUserImportApplicationService;
+
+  @MockBean
+  private com.procurement.process.application.ProcessDefinitionApplicationService processDefinitionApplicationService;
 
   @MockBean
   private AuditLogApplicationService auditLogApplicationService;
@@ -575,6 +579,47 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].title").value("办公电脑 RFQ"));
+  }
+
+  @Test
+  void buyerCanManageProcessDefinitionsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account": "supplier", "password": "demo123456", "scope": "SUPPLIER", "supplierId": "ent-supplier-sunrise"}
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {"account": "buyer", "password": "demo123456", "scope": "BUYER", "tenantId": "tenant-acme"}
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/process-definitions")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(processDefinitionApplicationService.listCurrentTenantProcesses())
+        .thenReturn(List.of(new com.procurement.process.api.ProcessDefinitionResponse(
+            "proc-1", "采购立项审批", "适用于非生产性物资采购申请", "box", "enabled",
+            "{\"fields\":[]}", "{\"steps\":[]}",
+            OffsetDateTime.parse("2026-06-29T10:00:00+08:00"))));
+    mockMvc.perform(get("/api/v1/buyer/process-definitions")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].name").value("采购立项审批"))
+        .andExpect(jsonPath("$.data[0].status").value("enabled"));
+
+    when(processDefinitionApplicationService.updateProcess(
+        org.mockito.ArgumentMatchers.eq("proc-1"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.process.api.ProcessDefinitionResponse(
+            "proc-1", "采购立项审批", "x", "box", "enabled",
+            "{\"fields\":[]}", "{\"steps\":[]}",
+            OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
+    mockMvc.perform(put("/api/v1/buyer/process-definitions/proc-1")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"name": "采购立项审批", "description": "x", "status": "enabled",
+                 "formSchema": "{\\"fields\\":[]}", "flowSchema": "{\\"steps\\":[]}"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("enabled"));
   }
 
   @Test
