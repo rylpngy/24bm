@@ -95,8 +95,11 @@ public class BuyerUserApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
     requireBuyerUser(tenantId, userId);
     requireBuyerRole(tenantId, request.roleId());
+    BuyerUser current = buyerUserMapper.findByTenantAndId(tenantId, userId);
+    String detail = "角色: " + roleLabel(tenantId, current.roleId()) + " → " + roleLabel(tenantId, request.roleId());
     buyerUserMapper.replaceRole(tenantId, userId, request.roleId());
-    auditLogApplicationService.recordTenantAction(BuyerUserAuditAction.ROLE_CHANGED, AuditTargetType.BUYER_USER, userId);
+    auditLogApplicationService.recordTenantAction(
+        tenantId, BuyerUserAuditAction.ROLE_CHANGED, AuditTargetType.BUYER_USER, userId, detail);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 
@@ -105,9 +108,18 @@ public class BuyerUserApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
     requireBuyerUser(tenantId, userId);
     buyerUserStatusTransition.requireSupportedTarget(request.status());
+    BuyerUser current = buyerUserMapper.findByTenantAndId(tenantId, userId);
+    String detail = "状态: " + current.status() + " → " + request.status();
     buyerUserMapper.updateStatus(tenantId, userId, request.status());
-    auditLogApplicationService.recordTenantAction(BuyerUserAuditAction.STATUS_CHANGED, AuditTargetType.BUYER_USER, userId);
+    auditLogApplicationService.recordTenantAction(
+        tenantId, BuyerUserAuditAction.STATUS_CHANGED, AuditTargetType.BUYER_USER, userId, detail);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
+  }
+
+  // 角色 id → 名称(便于审计可读);名称缺失时回落到 id。
+  private String roleLabel(String tenantId, String roleId) {
+    String name = buyerUserMapper.findBuyerRoleNameByTenantAndId(tenantId, roleId);
+    return name == null || name.isBlank() ? roleId : name;
   }
 
   private void requireActiveDepartment(String tenantId, String departmentId) {

@@ -766,6 +766,7 @@ class HttpSecurityContractTests {
             "purchase_order.created",
             "purchase_order",
             "po-demo",
+            null,
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
 
     mockMvc.perform(get("/api/v1/buyer/audit-logs")
@@ -814,6 +815,7 @@ class HttpSecurityContractTests {
                 "contract_fulfillment_event.created",
                 "contract",
                 "contract-demo",
+                null,
                 OffsetDateTime.parse("2026-06-21T12:00:00+08:00"))));
 
     mockMvc.perform(get("/api/v1/buyer/audit-logs/target")
@@ -1745,6 +1747,7 @@ class HttpSecurityContractTests {
             "invoice.paid",
             "invoice",
             "invoice-demo",
+            null,
             OffsetDateTime.parse("2026-06-15T15:00:00+08:00"))));
     when(invoiceApplicationService.updateReceivable(
         org.mockito.ArgumentMatchers.eq("invoice-demo"),
@@ -3700,6 +3703,7 @@ class HttpSecurityContractTests {
             "invoice.paid",
             "invoice",
             "invoice-demo",
+            null,
             OffsetDateTime.parse("2026-06-15T12:30:00+08:00"))));
 
     mockMvc.perform(get("/api/v1/buyer/orders")

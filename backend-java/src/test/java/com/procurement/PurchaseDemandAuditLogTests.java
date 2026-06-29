@@ -82,7 +82,8 @@ class PurchaseDemandAuditLogTests {
         org.mockito.ArgumentMatchers.eq("buyer-user-1"),
         org.mockito.ArgumentMatchers.eq("purchase_demand.created"),
         org.mockito.ArgumentMatchers.eq("purchase_demand"),
-        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("dem-")));
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("dem-")),
+        org.mockito.ArgumentMatchers.isNull());
   }
 
   @Test
@@ -107,7 +108,8 @@ class PurchaseDemandAuditLogTests {
         org.mockito.ArgumentMatchers.eq("buyer-user-1"),
         org.mockito.ArgumentMatchers.eq("purchase_demand.submitted"),
         org.mockito.ArgumentMatchers.eq("purchase_demand"),
-        org.mockito.ArgumentMatchers.eq("demand-1"));
+        org.mockito.ArgumentMatchers.eq("demand-1"),
+        org.mockito.ArgumentMatchers.isNull());
   }
 
   private PurchaseDemand demand(String id) {

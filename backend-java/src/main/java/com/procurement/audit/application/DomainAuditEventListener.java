@@ -16,6 +16,7 @@ public class DomainAuditEventListener {
 
   @EventListener
   public void onDomainAudit(DomainAuditEvent event) {
-    auditLogApplicationService.recordTenantAction(event.action(), event.targetType(), event.targetId());
+    auditLogApplicationService.recordCurrentTenantAction(
+        event.action(), event.targetType(), event.targetId(), event.detail());
   }
 }

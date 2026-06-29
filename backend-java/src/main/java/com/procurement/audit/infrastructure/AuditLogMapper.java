@@ -11,8 +11,8 @@ import org.apache.ibatis.annotations.Select;
 public interface AuditLogMapper {
 
   @Insert("""
-      insert into audit_logs (id, tenant_id, actor_id, action, target_type, target_id)
-      values (#{id}, #{tenantId}, #{actorId}, #{action}, #{targetType}, #{targetId})
+      insert into audit_logs (id, tenant_id, actor_id, action, target_type, target_id, detail)
+      values (#{id}, #{tenantId}, #{actorId}, #{action}, #{targetType}, #{targetId}, #{detail})
       """)
   void insert(
       @Param("id") String id,
@@ -20,10 +20,11 @@ public interface AuditLogMapper {
       @Param("actorId") String actorId,
       @Param("action") String action,
       @Param("targetType") String targetType,
-      @Param("targetId") String targetId);
+      @Param("targetId") String targetId,
+      @Param("detail") String detail);
 
   @Select("""
-      select id, tenant_id, actor_id, action, target_type, target_id, created_at
+      select id, tenant_id, actor_id, action, target_type, target_id, detail, created_at
       from audit_logs
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -33,7 +34,7 @@ public interface AuditLogMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, actor_id, action, target_type, target_id, created_at
+      select id, tenant_id, actor_id, action, target_type, target_id, detail, created_at
       from audit_logs
       where tenant_id = #{tenantId}
         and target_type = #{targetType}

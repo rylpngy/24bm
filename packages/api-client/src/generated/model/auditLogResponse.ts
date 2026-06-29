@@ -13,5 +13,6 @@ export interface AuditLogResponse {
   action?: string;
   targetType?: string;
   targetId?: string;
+  detail?: string;
   createdAt?: string;
 }

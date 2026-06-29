@@ -16,6 +16,8 @@ const TARGET_LABELS: Record<string, string> = {
   receipt: '收货',
   buyer_supplier_relation: '供应商',
   supplier_enterprise: '供应商企业',
+  buyer_user: '成员',
+  buyer_role: '角色',
 };
 
 const ACTION_VERB: Record<string, string> = {
@@ -25,6 +27,10 @@ const ACTION_VERB: Record<string, string> = {
   approved: '通过',
   rejected: '驳回',
   awarded: '定标',
+  role_changed: '改角色',
+  status_changed: '改状态',
+  permissions_updated: '改权限',
+  password_reset: '重置密码',
   confirmed: '确认',
   shipped: '发货',
   received: '收货',
@@ -82,6 +88,11 @@ export function AuditPage() {
                   <p className="break-words font-mono text-xs font-black text-slate-700">{l.targetId}</p>
                   <p className="mt-0.5 text-[11px] font-bold text-slate-400">
                     {TARGET_LABELS[l.targetType ?? ''] ?? l.targetType}
+                    {l.detail ? (
+                      <span className="ml-1.5 rounded bg-emerald-50 px-1.5 py-0.5 font-black text-emerald-700">
+                        {l.detail}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
               </div>

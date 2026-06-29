@@ -33,6 +33,7 @@ class AuditLogQueryTests {
             "purchase_order.created",
             "purchase_order",
             "po-1",
+            null,
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"))));
 
     var logs = auditLogApplicationService.listCurrentTenantAuditLogs(50);

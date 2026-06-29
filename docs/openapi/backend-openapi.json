@@ -13354,6 +13354,9 @@
           "targetId": {
             "type": "string"
           },
+          "detail": {
+            "type": "string"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"

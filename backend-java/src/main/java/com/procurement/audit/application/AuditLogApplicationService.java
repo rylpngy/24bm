@@ -18,12 +18,25 @@ public class AuditLogApplicationService {
 
   public void recordTenantAction(String action, String targetType, String targetId) {
     String tenantId = TenantAccessGuard.requireTenantId("audit log APIs");
-    recordTenantAction(tenantId, action, targetType, targetId);
+    recordTenantAction(tenantId, action, targetType, targetId, null);
+  }
+
+  // 当前租户上下文 + 明细:detail 记录「改了什么」(如 角色: 财务专员 → 采购管理员)。
+  // 独立命名以避免与 (tenantId, action, type, id) 的四参重载擦除冲突。
+  public void recordCurrentTenantAction(
+      String action, String targetType, String targetId, String detail) {
+    String tenantId = TenantAccessGuard.requireTenantId("audit log APIs");
+    recordTenantAction(tenantId, action, targetType, targetId, detail);
   }
 
   public void recordTenantAction(String tenantId, String action, String targetType, String targetId) {
+    recordTenantAction(tenantId, action, targetType, targetId, null);
+  }
+
+  public void recordTenantAction(
+      String tenantId, String action, String targetType, String targetId, String detail) {
     String actorId = TenantAccessGuard.requireUserId("audit log APIs");
-    auditLogMapper.insert(newId(), tenantId, actorId, action, targetType, targetId);
+    auditLogMapper.insert(newId(), tenantId, actorId, action, targetType, targetId, detail);
   }
 
   public List<AuditLogResponse> listCurrentTenantAuditLogs(int limit) {
@@ -63,6 +76,7 @@ public class AuditLogApplicationService {
         auditLog.action(),
         auditLog.targetType(),
         auditLog.targetId(),
+        auditLog.detail(),
         auditLog.createdAt());
   }
 

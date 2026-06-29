@@ -100,9 +100,11 @@ class BuyerUserStatusChangeTests {
     assertThat(response.status()).isEqualTo("inactive");
     verify(buyerUserMapper).updateStatus("tenant-1", "user-1", "inactive");
     verify(auditLogApplicationService).recordTenantAction(
+        "tenant-1",
         "buyer_user.status_changed",
         "buyer_user",
-        "user-1");
+        "user-1",
+        "状态: inactive → inactive");
   }
 
   @Test

@@ -114,7 +114,8 @@ public class AttachmentApplicationService {
         userId,
         "attachment.created",
         request.ownerType(),
-        request.ownerId());
+        request.ownerId(),
+        null);
     return toResponse(attachmentMapper.findByTenantAndId(tenantId, attachmentId));
   }
 
