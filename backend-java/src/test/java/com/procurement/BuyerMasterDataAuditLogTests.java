@@ -89,8 +89,10 @@ class BuyerMasterDataAuditLogTests {
   void materialCreationRecordsAuditLog() {
     TenantContext.set("tenant-1", null, "buyer-admin");
     MaterialMapper materialMapper = org.mockito.Mockito.mock(MaterialMapper.class);
+    org.springframework.context.ApplicationEventPublisher eventPublisher =
+        org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
     MaterialApplicationService materialApplicationService =
-        new MaterialApplicationService(materialMapper, auditLogApplicationService);
+        new MaterialApplicationService(materialMapper, eventPublisher);
     when(materialMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -103,18 +105,23 @@ class BuyerMasterDataAuditLogTests {
         "把",
         BigDecimal.valueOf(300), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述"));
 
-    verify(auditLogApplicationService).recordTenantAction(
-        org.mockito.ArgumentMatchers.eq("material.created"),
-        org.mockito.ArgumentMatchers.eq("material"),
-        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("mat-")));
+    verify(eventPublisher).publishEvent(
+        org.mockito.ArgumentMatchers.<Object>argThat(ev ->
+            ev instanceof com.procurement.common.event.DomainAuditEvent e
+                && e.action().equals("material.created")
+                && e.targetType().equals("material")
+                && e.targetId() != null
+                && e.targetId().startsWith("mat-")));
   }
 
   @Test
   void materialUpdateRecordsAuditLogAndUsesCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-admin");
     MaterialMapper materialMapper = org.mockito.Mockito.mock(MaterialMapper.class);
+    org.springframework.context.ApplicationEventPublisher eventPublisher =
+        org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
     MaterialApplicationService materialApplicationService =
-        new MaterialApplicationService(materialMapper, auditLogApplicationService);
+        new MaterialApplicationService(materialMapper, eventPublisher);
     when(materialMapper.findByTenantAndId("tenant-1", "mat-1"))
         .thenReturn(material("mat-1"));
 
@@ -139,18 +146,18 @@ class BuyerMasterDataAuditLogTests {
         "演示品牌",
         java.math.BigDecimal.valueOf(13.00),
         "演示物料描述");
-    verify(auditLogApplicationService).recordTenantAction(
-        "material.updated",
-        "material",
-        "mat-1");
+    verify(eventPublisher).publishEvent(
+        new com.procurement.common.event.DomainAuditEvent("material.updated", "material", "mat-1"));
   }
 
   @Test
   void listMaterialsAppliesFiltersInsideCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-admin");
     MaterialMapper materialMapper = org.mockito.Mockito.mock(MaterialMapper.class);
+    org.springframework.context.ApplicationEventPublisher eventPublisher =
+        org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
     MaterialApplicationService materialApplicationService =
-        new MaterialApplicationService(materialMapper, auditLogApplicationService);
+        new MaterialApplicationService(materialMapper, eventPublisher);
 
     materialApplicationService.listCurrentTenantMaterials("办公家具", "椅");
 
