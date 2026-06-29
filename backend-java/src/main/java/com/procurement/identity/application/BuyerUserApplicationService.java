@@ -75,7 +75,9 @@ public class BuyerUserApplicationService {
         request.email(),
         request.status(),
         request.departmentId(),
-        passwordEncoder.encode(request.initialPassword()));
+        passwordEncoder.encode(request.initialPassword()),
+        request.employeeNo(),
+        request.jobTitle() == null ? "" : request.jobTitle());
     buyerUserMapper.assignRole(userId, request.roleId());
     auditLogApplicationService.recordTenantAction(BuyerUserAuditAction.CREATED, AuditTargetType.BUYER_USER, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));

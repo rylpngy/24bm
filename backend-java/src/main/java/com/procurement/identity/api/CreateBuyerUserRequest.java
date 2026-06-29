@@ -10,5 +10,19 @@ public record CreateBuyerUserRequest(
     @NotBlank String status,
     @NotBlank String departmentId,
     @NotBlank String roleId,
-    @NotBlank String initialPassword) {
+    @NotBlank String initialPassword,
+    String employeeNo,
+    String jobTitle) {
+
+  // 兼容旧调用(无工号/职位)。
+  public CreateBuyerUserRequest(
+      String name,
+      String mobile,
+      String email,
+      String status,
+      String departmentId,
+      String roleId,
+      String initialPassword) {
+    this(name, mobile, email, status, departmentId, roleId, initialPassword, null, "");
+  }
 }

@@ -17,7 +17,11 @@ import {
   Users,
 } from 'lucide-react';
 import {
+  type BuyerRoleResponse,
+  type BuyerUserResponse,
   type DepartmentResponse,
+  useBuyerRoleList,
+  useBuyerUserCreate,
   useBuyerUserList,
   useDepartmentCreate,
   useDepartmentDisable,
@@ -50,9 +54,11 @@ function buildTree(list: DepartmentResponse[]): TreeNode[] {
 export function OrgStructurePage() {
   const queryClient = useQueryClient();
   const departments = useDepartmentList();
+  const roles = useBuyerRoleList();
   const create = useDepartmentCreate();
   const update = useDepartmentUpdate();
   const disable = useDepartmentDisable();
+  const createMember = useBuyerUserCreate();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [treeSearch, setTreeSearch] = useState('');
@@ -61,6 +67,8 @@ export function OrgStructurePage() {
   const [mode, setMode] = useState<'view' | 'edit' | 'add-child' | 'add-root'>('view');
   const [draftName, setDraftName] = useState('');
   const [draftDesc, setDraftDesc] = useState('');
+  const [draftManager, setDraftManager] = useState('');
+  const [showAddMember, setShowAddMember] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const list = departments.data?.data ?? [];
@@ -104,6 +112,7 @@ export function OrgStructurePage() {
     if (!selected) return;
     setDraftName(selected.name ?? '');
     setDraftDesc(selected.description ?? '');
+    setDraftManager(selected.managerId ?? '');
     setMode('edit');
   };
   const startAddChild = () => {
@@ -115,7 +124,7 @@ export function OrgStructurePage() {
   const submitEdit = () => {
     if (!selected?.id || !draftName.trim()) return;
     update.mutate(
-      { departmentId: selected.id, data: { name: draftName.trim(), description: draftDesc, managerId: selected.managerId ?? undefined } },
+      { departmentId: selected.id, data: { name: draftName.trim(), description: draftDesc, managerId: draftManager || undefined } },
       { onSuccess: () => { setFeedback(`部门「${draftName}」已更新`); setMode('view'); refresh(); } },
     );
   };
@@ -248,6 +257,9 @@ export function OrgStructurePage() {
                     onName={setDraftName}
                     desc={mode === 'edit' ? draftDesc : undefined}
                     onDesc={mode === 'edit' ? setDraftDesc : undefined}
+                    managerOptions={mode === 'edit' ? memberList : undefined}
+                    managerId={mode === 'edit' ? draftManager : undefined}
+                    onManager={mode === 'edit' ? setDraftManager : undefined}
                     busy={update.isPending || create.isPending}
                     onCancel={() => setMode('view')}
                     onSubmit={mode === 'edit' ? submitEdit : submitAddChild}
@@ -314,13 +326,33 @@ export function OrgStructurePage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFeedback('成员新增将在后续切片接入(可在「团队与权限」分配角色)。')}
+                      onClick={() => setShowAddMember((v) => !v)}
                       className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white hover:bg-slate-800"
                     >
-                      <UserPlus size={14} /> 添加成员
+                      <UserPlus size={14} /> {showAddMember ? '收起' : '添加成员'}
                     </button>
                   </div>
                 </div>
+                {showAddMember && selected?.id && (
+                  <AddMemberForm
+                    departmentId={selected.id}
+                    roles={roles.data?.data ?? []}
+                    busy={createMember.isPending}
+                    error={createMember.isError}
+                    onSubmit={(data) =>
+                      createMember.mutate(
+                        { data: { ...data, departmentId: selected.id!, status: 'active' } },
+                        {
+                          onSuccess: () => {
+                            setFeedback(`成员「${data.name}」已添加到「${selected.name}」`);
+                            setShowAddMember(false);
+                            refresh();
+                          },
+                        },
+                      )
+                    }
+                  />
+                )}
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead>
@@ -402,6 +434,9 @@ function InlineDeptForm({
   onName,
   desc,
   onDesc,
+  managerOptions,
+  managerId,
+  onManager,
   busy,
   onCancel,
   onSubmit,
@@ -411,6 +446,9 @@ function InlineDeptForm({
   onName: (v: string) => void;
   desc?: string;
   onDesc?: (v: string) => void;
+  managerOptions?: BuyerUserResponse[];
+  managerId?: string;
+  onManager?: (v: string) => void;
   busy: boolean;
   onCancel: () => void;
   onSubmit: () => void;
@@ -424,6 +462,14 @@ function InlineDeptForm({
         <input className={inputCls} placeholder="部门名称" value={name} onChange={(e) => onName(e.target.value)} />
         {onDesc && (
           <input className={inputCls} placeholder="部门描述(选填)" value={desc ?? ''} onChange={(e) => onDesc(e.target.value)} />
+        )}
+        {managerOptions && onManager && (
+          <select className={inputCls} value={managerId ?? ''} onChange={(e) => onManager(e.target.value)}>
+            <option value="">未指定负责人</option>
+            {managerOptions.map((m) => (
+              <option key={m.id} value={m.id}>{m.name}（{m.jobTitle || '成员'}）</option>
+            ))}
+          </select>
         )}
       </div>
       <div className="mt-2 flex items-center gap-2">
@@ -442,6 +488,79 @@ function InlineDeptForm({
         >
           取消
         </button>
+      </div>
+    </div>
+  );
+}
+
+interface NewMember {
+  name: string;
+  employeeNo: string;
+  jobTitle: string;
+  mobile: string;
+  email: string;
+  roleId: string;
+  initialPassword: string;
+}
+
+// 添加成员表单:在选中部门下创建成员(复用 createUser,含工号/职位/角色/初始密码)。
+function AddMemberForm({
+  departmentId: _departmentId,
+  roles,
+  busy,
+  error,
+  onSubmit,
+}: {
+  departmentId: string;
+  roles: BuyerRoleResponse[];
+  busy: boolean;
+  error: boolean;
+  onSubmit: (data: NewMember) => void;
+}) {
+  const [f, setF] = useState<NewMember>({
+    name: '',
+    employeeNo: '',
+    jobTitle: '',
+    mobile: '',
+    email: '',
+    roleId: roles[0]?.id ?? '',
+    initialPassword: '',
+  });
+  const set = (patch: Partial<NewMember>) => setF((s) => ({ ...s, ...patch }));
+  const inputCls =
+    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+  const canSubmit = f.name.trim() && f.roleId && f.initialPassword.trim();
+  return (
+    <div className="border-b border-slate-100 bg-slate-50/60 px-4 py-3">
+      <div className="grid gap-2 sm:grid-cols-3">
+        <input className={inputCls} placeholder="姓名 *" value={f.name} onChange={(e) => set({ name: e.target.value })} />
+        <input className={inputCls} placeholder="工号" value={f.employeeNo} onChange={(e) => set({ employeeNo: e.target.value })} />
+        <input className={inputCls} placeholder="职位" value={f.jobTitle} onChange={(e) => set({ jobTitle: e.target.value })} />
+        <input className={inputCls} placeholder="手机号" value={f.mobile} onChange={(e) => set({ mobile: e.target.value })} />
+        <input className={inputCls} placeholder="邮箱" value={f.email} onChange={(e) => set({ email: e.target.value })} />
+        <select className={inputCls} value={f.roleId} onChange={(e) => set({ roleId: e.target.value })}>
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>{r.name}</option>
+          ))}
+        </select>
+        <input
+          className={inputCls}
+          type="password"
+          placeholder="初始密码 *"
+          value={f.initialPassword}
+          onChange={(e) => set({ initialPassword: e.target.value })}
+        />
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onSubmit(f)}
+          disabled={busy || !canSubmit}
+          className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-300"
+        >
+          {busy ? '添加中' : '确认添加'}
+        </button>
+        {error && <span className="text-xs font-bold text-red-600">添加失败:邮箱格式 / 名额上限 / 权限不足。</span>}
       </div>
     </div>
   );

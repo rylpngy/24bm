@@ -14,4 +14,6 @@ export interface CreateBuyerUserRequest {
   departmentId: string;
   roleId: string;
   initialPassword: string;
+  employeeNo?: string;
+  jobTitle?: string;
 }
