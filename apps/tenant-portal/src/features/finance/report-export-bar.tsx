@@ -17,7 +17,8 @@ const REPORTS: ReportDef[] = [
 ];
 
 // 报表导出:发票/对账/采购分析 → Excel(.xlsx)/ PDF。复用注入 JWT 的下载通道。
-export function ReportExportBar() {
+// compact:内联紧凑模式(放工具条/Tab 条右侧),非 compact:独立 Panel 卡片。
+export function ReportExportBar({ compact = false }: { compact?: boolean }) {
   const [busy, setBusy] = useState<string | null>(null);
 
   const onDownload = async (r: ReportDef, format: 'xlsx' | 'pdf') => {
@@ -29,6 +30,40 @@ export function ReportExportBar() {
       setBusy(null);
     }
   };
+
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1 text-xs font-black text-slate-400">
+          <Download size={13} /> 报表导出
+        </span>
+        {REPORTS.map((r) => (
+          <div
+            key={r.base}
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1"
+          >
+            <span className="text-[11px] font-black text-slate-600">{r.label}</span>
+            {r.formats.map((format) => {
+              const key = `${r.base}-${format}`;
+              const Icon = format === 'pdf' ? FileText : FileSpreadsheet;
+              return (
+                <button
+                  key={format}
+                  type="button"
+                  onClick={() => onDownload(r, format)}
+                  disabled={busy === key}
+                  className="inline-flex h-6 items-center gap-1 rounded border border-slate-200 bg-white px-1.5 text-[11px] font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  <Icon size={12} className={format === 'pdf' ? 'text-red-600' : 'text-emerald-600'} />
+                  {busy === key ? '…' : format === 'pdf' ? 'PDF' : 'Excel'}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <Panel title="报表导出" icon={Download} subtitle="发票 / 对账 / 采购分析 · Excel / PDF">

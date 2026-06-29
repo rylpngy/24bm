@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Receipt } from 'lucide-react';
+import { ChevronDown, Receipt, Scale } from 'lucide-react';
 import {
   useBuyerPaymentList,
   useBuyerPaymentPaymentAuditLogs,
   useBuyerPaymentUpdate,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, Tabs, cn } from '@24bid/ui';
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
 import { ReportExportBar } from './report-export-bar';
 import { InvoiceLineMatchPanel } from './invoice-line-match-panel';
@@ -56,6 +56,7 @@ function PaymentExecutionTimeline({ invoiceId }: { invoiceId: string }) {
 // S6：发票付款 + 三单匹配。发票列表 + 付款登记(待付款→部分付款→已付款)。
 export function InvoicesPage() {
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<'invoices' | 'variance'>('invoices');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [lineMatchId, setLineMatchId] = useState<string | null>(null);
@@ -107,9 +108,26 @@ export function InvoicesPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <ReportExportBar />
-      <ReconciliationVariancePanel />
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="rounded-lg border border-slate-200 bg-white px-2 shadow-sm shadow-slate-200/50">
+          <Tabs
+            items={[
+              { id: 'invoices', label: '发票付款管理', icon: Receipt },
+              { id: 'variance', label: '对账差异处理', icon: Scale },
+            ]}
+            value={tab}
+            onChange={(t) => setTab(t as 'invoices' | 'variance')}
+          />
+        </div>
+        <div className="ml-auto">
+          <ReportExportBar compact />
+        </div>
+      </div>
+
+      {tab === 'variance' ? (
+        <ReconciliationVariancePanel />
+      ) : (
     <Panel title="发票付款" icon={Receipt} subtitle="发票 · 三单匹配 · 付款登记">
       <div className="mb-4 grid gap-2 sm:grid-cols-4">
         <MiniFact label="发票总数" value={String(allInvoices.length)} />
@@ -322,6 +340,7 @@ export function InvoicesPage() {
         </>
       )}
     </Panel>
+      )}
     </div>
   );
 }
