@@ -72,20 +72,28 @@ public class PurchaseDemandApplicationService {
       String departmentId,
       String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
-    // 行级权限:数据范围为「仅本部门」时,强制按用户所属部门收窄(覆盖 UI 部门筛选)。
+    // 行级权限:按有效数据范围收窄——部门集合(本部门 / 本部门及下级)IN,或仅本人(requester_id)。
     DataScope dataScope = dataScopeService.currentUserDataScope();
-    String effectiveDepartmentId = blankToNull(departmentId);
-    if (dataScope.departmentRestricted()) {
-      if (dataScope.departmentId() == null) {
-        return List.of();
-      }
-      effectiveDepartmentId = dataScope.departmentId();
+    if (dataScope.blocksAll()) {
+      return List.of();
     }
+    String uiDepartmentId = blankToNull(departmentId);
+    List<String> scopeDepartmentIds = dataScope.restricted() && dataScope.requesterId() == null
+        ? dataScope.departmentIds()
+        : null;
+    // 数据范围限定部门集合时,UI 部门筛选只能在范围内收窄。
+    if (scopeDepartmentIds != null && uiDepartmentId != null
+        && !scopeDepartmentIds.contains(uiDepartmentId)) {
+      return List.of();
+    }
+    String requesterId = dataScope.restricted() ? dataScope.requesterId() : null;
     return purchaseDemandMapper.listByTenantFiltered(
             tenantId,
             blankToNull(status),
-            effectiveDepartmentId,
-            blankToNull(keyword))
+            uiDepartmentId,
+            blankToNull(keyword),
+            scopeDepartmentIds,
+            requesterId)
         .stream()
         .map(this::toResponse)
         .toList();

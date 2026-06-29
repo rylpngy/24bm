@@ -23,9 +23,9 @@ const ROLE_DESC: Record<string, string> = {
 // 数据权限范围卡片。后端 data_scope 仅支持 all / department;另两档为规划项(暂未开放)。
 const SCOPES = [
   { value: 'all', title: '全部数据权限', desc: '可查看所有部门数据', enabled: true },
-  { value: '__dept_below', title: '本部门及下级', desc: '可查看所属部门及下级部门', enabled: false },
+  { value: 'department_and_below', title: '本部门及下级', desc: '可查看所属部门及下级部门', enabled: true },
   { value: 'department', title: '仅本部门', desc: '仅可查看所属部门数据', enabled: true },
-  { value: '__self', title: '仅本人', desc: '只能查看自己创建的数据', enabled: false },
+  { value: 'self', title: '仅本人', desc: '只能查看自己创建的数据', enabled: true },
 ];
 
 function pointTag(point: string): string {

@@ -104,7 +104,12 @@ public class BuyerRoleApplicationService {
   }
 
   private String dataScopeLabel(String dataScope) {
-    return DataScope.DEPARTMENT.equals(dataScope) ? "仅本部门" : "全部数据";
+    return switch (dataScope == null ? "" : dataScope) {
+      case DataScope.DEPARTMENT -> "仅本部门";
+      case DataScope.DEPARTMENT_AND_BELOW -> "本部门及下级";
+      case DataScope.SELF -> "仅本人";
+      default -> "全部数据";
+    };
   }
 
   private String writePermissions(List<String> permissions) {

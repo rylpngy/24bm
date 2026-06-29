@@ -36,6 +36,15 @@ public interface PurchaseDemandMapper {
         <if test="keyword != null and keyword != ''">
         and title ilike concat('%', #{keyword}, '%')
         </if>
+        <if test="departmentIds != null and !departmentIds.isEmpty()">
+        and department_id in
+        <foreach collection="departmentIds" item="d" open="(" separator="," close=")">
+          #{d}
+        </foreach>
+        </if>
+        <if test="requesterId != null and requesterId != ''">
+        and requester_id = #{requesterId}
+        </if>
       order by created_at desc
       </script>
       """)
@@ -43,7 +52,9 @@ public interface PurchaseDemandMapper {
       @Param("tenantId") String tenantId,
       @Param("status") String status,
       @Param("departmentId") String departmentId,
-      @Param("keyword") String keyword);
+      @Param("keyword") String keyword,
+      @Param("departmentIds") List<String> departmentIds,
+      @Param("requesterId") String requesterId);
 
   @Select("""
       select id, tenant_id, title, department_id, requester_id, budget, status, created_at, updated_at,

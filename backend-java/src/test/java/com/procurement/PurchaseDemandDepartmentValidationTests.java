@@ -119,26 +119,45 @@ class PurchaseDemandDepartmentValidationTests {
     TenantContext.set("tenant-1", null, "buyer-user-1");
     when(dataScopeService.currentUserDataScope())
         .thenReturn(com.procurement.identity.domain.DataScope.unrestricted());
-    when(purchaseDemandMapper.listByTenantFiltered("tenant-1", "已通过", "dept-it", "电脑"))
+    when(purchaseDemandMapper.listByTenantFiltered("tenant-1", "已通过", "dept-it", "电脑", null, null))
         .thenReturn(List.of());
 
     purchaseDemandApplicationService.listCurrentTenantDemands("已通过", "dept-it", "电脑");
 
-    verify(purchaseDemandMapper).listByTenantFiltered("tenant-1", "已通过", "dept-it", "电脑");
+    verify(purchaseDemandMapper).listByTenantFiltered("tenant-1", "已通过", "dept-it", "电脑", null, null);
   }
 
   @Test
   void listDemandsRestrictsToUserDepartmentWhenScopeIsDepartment() {
     TenantContext.set("tenant-1", null, "buyer-user-1");
     when(dataScopeService.currentUserDataScope())
-        .thenReturn(com.procurement.identity.domain.DataScope.department("dept-it"));
-    when(purchaseDemandMapper.listByTenantFiltered("tenant-1", null, "dept-it", null))
+        .thenReturn(com.procurement.identity.domain.DataScope.departments(List.of("dept-it")));
+
+    // 数据范围限定 dept-it;UI 请求 dept-finance(不在范围内)→ 返回空,不下发查询。
+    var blocked = purchaseDemandApplicationService.listCurrentTenantDemands(null, "dept-finance", null);
+    assertThat(blocked).isEmpty();
+
+    when(purchaseDemandMapper.listByTenantFiltered(
+            "tenant-1", null, null, null, List.of("dept-it"), null))
+        .thenReturn(List.of());
+    purchaseDemandApplicationService.listCurrentTenantDemands(null, null, null);
+    verify(purchaseDemandMapper).listByTenantFiltered(
+        "tenant-1", null, null, null, List.of("dept-it"), null);
+  }
+
+  @Test
+  void listDemandsRestrictsToSelfWhenScopeIsSelf() {
+    TenantContext.set("tenant-1", null, "buyer-user-1");
+    when(dataScopeService.currentUserDataScope())
+        .thenReturn(com.procurement.identity.domain.DataScope.self("buyer-user-1"));
+    when(purchaseDemandMapper.listByTenantFiltered(
+            "tenant-1", null, null, null, null, "buyer-user-1"))
         .thenReturn(List.of());
 
-    // 即便 UI 请求 dept-finance,数据范围为「仅本部门」时强制收窄为 dept-it。
-    purchaseDemandApplicationService.listCurrentTenantDemands(null, "dept-finance", null);
+    purchaseDemandApplicationService.listCurrentTenantDemands(null, null, null);
 
-    verify(purchaseDemandMapper).listByTenantFiltered("tenant-1", null, "dept-it", null);
+    verify(purchaseDemandMapper).listByTenantFiltered(
+        "tenant-1", null, null, null, null, "buyer-user-1");
   }
 
   private PurchaseDemand demand(String id) {

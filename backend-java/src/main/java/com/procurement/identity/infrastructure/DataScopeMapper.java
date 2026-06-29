@@ -23,4 +23,20 @@ public interface DataScopeMapper {
       where id = #{userId}
       """)
   String findUserDepartmentId(@Param("userId") String userId);
+
+  // 部门子树:给定部门 + 其全部下级部门 id(递归)。用于「本部门及下级」数据范围。
+  @Select("""
+      with recursive subtree as (
+        select id from departments
+          where tenant_id = #{tenantId} and id = #{rootId} and status = 'active'
+        union all
+        select d.id from departments d
+          join subtree s on d.parent_id = s.id
+          where d.tenant_id = #{tenantId} and d.status = 'active'
+      )
+      select id from subtree
+      """)
+  List<String> listDepartmentSubtree(
+      @Param("tenantId") String tenantId,
+      @Param("rootId") String rootId);
 }
