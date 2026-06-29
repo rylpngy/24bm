@@ -3272,6 +3272,56 @@
         }
       }
     },
+    "/api/v1/buyer/users/import": {
+      "post": {
+        "tags": [
+          "buyer-user-controller"
+        ],
+        "operationId": "BuyerUser_importUsers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportBuyerUsersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseImportBuyerUsersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/three-way-matches/{matchId}/variance-handling": {
       "post": {
         "tags": [
@@ -11859,6 +11909,99 @@
         "properties": {
           "newPassword": {
             "type": "string"
+          }
+        }
+      },
+      "ImportBuyerUserRow": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "employeeNo": {
+            "type": "string"
+          },
+          "jobTitle": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          }
+        }
+      },
+      "ImportBuyerUsersRequest": {
+        "required": [
+          "defaultPassword",
+          "departmentId",
+          "members"
+        ],
+        "type": "object",
+        "properties": {
+          "departmentId": {
+            "type": "string"
+          },
+          "defaultPassword": {
+            "type": "string"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportBuyerUserRow"
+            }
+          }
+        }
+      },
+      "ApiResponseImportBuyerUsersResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ImportBuyerUsersResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Failure": {
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "ImportBuyerUsersResponse": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Failure"
+            }
           }
         }
       },

@@ -18,9 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/buyer/users")
 public class BuyerUserController {
   private final BuyerUserApplicationService buyerUserApplicationService;
+  private final com.procurement.identity.application.BuyerUserImportApplicationService importApplicationService;
 
-  public BuyerUserController(BuyerUserApplicationService buyerUserApplicationService) {
+  public BuyerUserController(
+      BuyerUserApplicationService buyerUserApplicationService,
+      com.procurement.identity.application.BuyerUserImportApplicationService importApplicationService) {
     this.buyerUserApplicationService = buyerUserApplicationService;
+    this.importApplicationService = importApplicationService;
   }
 
   @GetMapping
@@ -35,6 +39,13 @@ public class BuyerUserController {
   @ResponseStatus(HttpStatus.CREATED)
   public ApiResponse<BuyerUserResponse> create(@Valid @RequestBody CreateBuyerUserRequest request) {
     return ApiResponse.ok(buyerUserApplicationService.createUser(request));
+  }
+
+  // 批量导入部门成员(CSV 解析后提交);逐行尽力创建,返回成功/失败明细。
+  @PostMapping("/import")
+  public ApiResponse<ImportBuyerUsersResponse> importUsers(
+      @Valid @RequestBody ImportBuyerUsersRequest request) {
+    return ApiResponse.ok(importApplicationService.importUsers(request));
   }
 
   @PostMapping("/{userId}/role")

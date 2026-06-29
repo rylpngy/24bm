@@ -370,6 +370,9 @@ class HttpSecurityContractTests {
   private BuyerUserApplicationService buyerUserApplicationService;
 
   @MockBean
+  private com.procurement.identity.application.BuyerUserImportApplicationService buyerUserImportApplicationService;
+
+  @MockBean
   private AuditLogApplicationService auditLogApplicationService;
 
   @MockBean
@@ -3473,6 +3476,34 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.id").value("user-buyer-new"))
         .andExpect(jsonPath("$.data.departmentId").value("dept-it"))
         .andExpect(jsonPath("$.data.roleId").value("role-buyer-requester"));
+
+    // 批量导入:供应商越权 403;采购方 200,返回成功/失败明细。
+    mockMvc.perform(post("/api/v1/buyer/users/import")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"departmentId": "dept-it", "defaultPassword": "demo123456",
+                 "members": [{"name": "王五", "roleName": "采购申请员"}]}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(buyerUserImportApplicationService.importUsers(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.identity.api.ImportBuyerUsersResponse(
+            1, 1, List.of(new com.procurement.identity.api.ImportBuyerUsersResponse.Failure(
+                2, "李四", "角色不存在: 不存在角色"))));
+
+    mockMvc.perform(post("/api/v1/buyer/users/import")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"departmentId": "dept-it", "defaultPassword": "demo123456",
+                 "members": [{"name": "王五", "roleName": "采购申请员"},
+                             {"name": "李四", "roleName": "不存在角色"}]}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.created").value(1))
+        .andExpect(jsonPath("$.data.failed").value(1))
+        .andExpect(jsonPath("$.data.failures[0].row").value(2));
 
     mockMvc.perform(post("/api/v1/buyer/users/user-buyer-new/role")
             .header("Authorization", "Bearer " + supplierToken)

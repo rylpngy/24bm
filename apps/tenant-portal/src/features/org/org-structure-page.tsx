@@ -20,8 +20,11 @@ import {
   type BuyerRoleResponse,
   type BuyerUserResponse,
   type DepartmentResponse,
+  type ImportBuyerUserRow,
+  type ImportBuyerUsersResponse,
   useBuyerRoleList,
   useBuyerUserCreate,
+  useBuyerUserImportUsers,
   useBuyerUserList,
   useDepartmentCreate,
   useDepartmentDisable,
@@ -59,6 +62,7 @@ export function OrgStructurePage() {
   const update = useDepartmentUpdate();
   const disable = useDepartmentDisable();
   const createMember = useBuyerUserCreate();
+  const importMembers = useBuyerUserImportUsers();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [treeSearch, setTreeSearch] = useState('');
@@ -69,6 +73,7 @@ export function OrgStructurePage() {
   const [draftDesc, setDraftDesc] = useState('');
   const [draftManager, setDraftManager] = useState('');
   const [showAddMember, setShowAddMember] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const list = departments.data?.data ?? [];
@@ -319,20 +324,33 @@ export function OrgStructurePage() {
                   <div className="ml-auto flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setFeedback('成员导入将在后续切片接入。')}
+                      onClick={() => { setShowImport((v) => !v); setShowAddMember(false); }}
                       className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
                     >
-                      <Upload size={14} /> 导入
+                      <Upload size={14} /> {showImport ? '收起导入' : '导入'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowAddMember((v) => !v)}
+                      onClick={() => { setShowAddMember((v) => !v); setShowImport(false); }}
                       className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white hover:bg-slate-800"
                     >
                       <UserPlus size={14} /> {showAddMember ? '收起' : '添加成员'}
                     </button>
                   </div>
                 </div>
+                {showImport && selected?.id && (
+                  <ImportMembersForm
+                    departmentName={selected.name ?? ''}
+                    busy={importMembers.isPending}
+                    result={importMembers.data?.data}
+                    onSubmit={(defaultPassword, members) =>
+                      importMembers.mutate(
+                        { data: { departmentId: selected.id!, defaultPassword, members } },
+                        { onSuccess: (res) => { setFeedback(`导入完成:成功 ${res.data?.created ?? 0} 条、失败 ${res.data?.failed ?? 0} 条`); refresh(); } },
+                      )
+                    }
+                  />
+                )}
                 {showAddMember && selected?.id && (
                   <AddMemberForm
                     departmentId={selected.id}
@@ -562,6 +580,106 @@ function AddMemberForm({
         </button>
         {error && <span className="text-xs font-bold text-red-600">添加失败:邮箱格式 / 名额上限 / 权限不足。</span>}
       </div>
+    </div>
+  );
+}
+
+// CSV 文本解析:列序 姓名,工号,职位,手机号,邮箱,角色;首行若含表头关键字则跳过。
+function parseCsv(text: string): ImportBuyerUserRow[] {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return [];
+  const start = /姓名|name|角色|role/i.test(lines[0]) ? 1 : 0;
+  return lines.slice(start).map((line) => {
+    const c = line.split(',').map((x) => x.trim());
+    return {
+      name: c[0] ?? '',
+      employeeNo: c[1] ?? '',
+      jobTitle: c[2] ?? '',
+      mobile: c[3] ?? '',
+      email: c[4] ?? '',
+      roleName: c[5] ?? '',
+    };
+  });
+}
+
+// CSV 批量导入成员:粘贴/上传 CSV → 解析预览 → 提交,展示成功/失败明细。
+function ImportMembersForm({
+  departmentName,
+  busy,
+  result,
+  onSubmit,
+}: {
+  departmentName: string;
+  busy: boolean;
+  result?: ImportBuyerUsersResponse;
+  onSubmit: (defaultPassword: string, members: ImportBuyerUserRow[]) => void;
+}) {
+  const [text, setText] = useState('');
+  const [password, setPassword] = useState('');
+  const parsed = parseCsv(text);
+  const inputCls =
+    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+  return (
+    <div className="border-b border-slate-100 bg-slate-50/60 px-4 py-3">
+      <p className="mb-2 text-xs font-black text-slate-600">
+        批量导入成员到「{departmentName}」 · 列序:姓名,工号,职位,手机号,邮箱,角色
+      </p>
+      <div className="grid gap-2 sm:grid-cols-[1fr_220px]">
+        <textarea
+          className={`${inputCls} min-h-[88px] font-mono`}
+          placeholder={'张三,ZC101,采购专员,13800000001,zhang3@x.com,采购申请员\n李四,ZC102,出纳,13800000002,li4@x.com,财务专员'}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <div className="space-y-2">
+          <input
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            className="block w-full text-xs font-bold text-slate-500 file:mr-2 file:rounded-md file:border-0 file:bg-slate-200 file:px-2 file:py-1 file:text-xs file:font-black"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) file.text().then(setText);
+            }}
+          />
+          <input
+            className={inputCls}
+            type="password"
+            placeholder="统一初始密码 *"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onSubmit(password, parsed)}
+          disabled={busy || parsed.length === 0 || !password.trim()}
+          className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-300"
+        >
+          {busy ? '导入中' : `解析并导入(${parsed.length} 行)`}
+        </button>
+        {parsed.length > 0 && (
+          <span className="text-[11px] font-bold text-slate-400">已解析 {parsed.length} 行</span>
+        )}
+      </div>
+      {result && (
+        <div className="mt-2 rounded-lg border border-slate-200 bg-white p-2.5">
+          <p className="text-xs font-black text-slate-700">
+            导入结果:成功 <span className="text-emerald-600">{result.created}</span> 条、失败{' '}
+            <span className="text-red-600">{result.failed}</span> 条
+          </p>
+          {(result.failures ?? []).length > 0 && (
+            <ul className="mt-1 space-y-0.5">
+              {(result.failures ?? []).map((f) => (
+                <li key={f.row} className="text-[11px] font-bold text-red-500">
+                  第 {f.row} 行「{f.name || '—'}」:{f.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

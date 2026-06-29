@@ -26,12 +26,14 @@ import type {
 
 import type {
   ApiResponseBuyerUserResponse,
+  ApiResponseImportBuyerUsersResponse,
   ApiResponseListBuyerUserResponse,
   ApiResponseVoid,
   BuyerUserListParams,
   ChangeBuyerUserRoleRequest,
   ChangeBuyerUserStatusRequest,
   CreateBuyerUserRequest,
+  ImportBuyerUsersRequest,
   ResetBuyerUserPasswordRequest
 } from '.././model';
 
@@ -360,6 +362,64 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerUserResetPasswordMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerUserImportUsers = (
+    importBuyerUsersRequest: BodyType<ImportBuyerUsersRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseImportBuyerUsersResponse>(
+      {url: `/api/v1/buyer/users/import`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: importBuyerUsersRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerUserImportUsersMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerUserImportUsers>>, TError,{data: BodyType<ImportBuyerUsersRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerUserImportUsers>>, TError,{data: BodyType<ImportBuyerUsersRequest>}, TContext> => {
+
+const mutationKey = ['buyerUserImportUsers'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerUserImportUsers>>, {data: BodyType<ImportBuyerUsersRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerUserImportUsers(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerUserImportUsersMutationResult = NonNullable<Awaited<ReturnType<typeof buyerUserImportUsers>>>
+    export type BuyerUserImportUsersMutationBody = BodyType<ImportBuyerUsersRequest>
+    export type BuyerUserImportUsersMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerUserImportUsers = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerUserImportUsers>>, TError,{data: BodyType<ImportBuyerUsersRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerUserImportUsers>>,
+        TError,
+        {data: BodyType<ImportBuyerUsersRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerUserImportUsersMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

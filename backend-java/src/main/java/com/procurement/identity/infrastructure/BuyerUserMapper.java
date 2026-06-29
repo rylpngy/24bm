@@ -121,6 +121,18 @@ public interface BuyerUserMapper {
       @Param("tenantId") String tenantId,
       @Param("roleId") String roleId);
 
+  @Select("""
+      select id
+      from roles
+      where tenant_id = #{tenantId}
+        and name = #{name}
+        and scope = 'buyer'
+      limit 1
+      """)
+  String findBuyerRoleIdByName(
+      @Param("tenantId") String tenantId,
+      @Param("name") String name);
+
   @Insert("""
       insert into users
         (id, tenant_id, name, mobile, email, status, department_id, password_hash, employee_no, job_title)
