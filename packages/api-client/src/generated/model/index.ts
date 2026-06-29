@@ -284,6 +284,7 @@ export * from './updatePurchaseDemandRequest';
 export * from './updatePurchaseOrderRequest';
 export * from './updateQuoteRequest';
 export * from './updateRfqRequest';
+export * from './updateRoleDataScopeRequest';
 export * from './updateRolePermissionsRequest';
 export * from './updateSupplierProfileRequest';
 export * from './updateSupplierReceivableRequest';

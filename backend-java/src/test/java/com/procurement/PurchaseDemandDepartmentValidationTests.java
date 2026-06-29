@@ -41,6 +41,8 @@ class PurchaseDemandDepartmentValidationTests {
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
+  private final com.procurement.identity.application.DataScopeService dataScopeService =
+      org.mockito.Mockito.mock(com.procurement.identity.application.DataScopeService.class);
   private final PurchaseDemandApplicationService purchaseDemandApplicationService =
       new PurchaseDemandApplicationService(
           purchaseDemandMapper,
@@ -50,7 +52,8 @@ class PurchaseDemandDepartmentValidationTests {
           departmentMapper,
           auditLogApplicationService,
           notificationApplicationService,
-          new PurchaseDemandApprovalStatusTransition());
+          new PurchaseDemandApprovalStatusTransition(),
+          dataScopeService);
 
   @AfterEach
   void clearTenantContext() {
@@ -114,12 +117,28 @@ class PurchaseDemandDepartmentValidationTests {
   @Test
   void listDemandsAppliesFiltersInsideCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-user-1");
+    when(dataScopeService.currentUserDataScope())
+        .thenReturn(com.procurement.identity.domain.DataScope.unrestricted());
     when(purchaseDemandMapper.listByTenantFiltered("tenant-1", "已通过", "dept-it", "电脑"))
         .thenReturn(List.of());
 
     purchaseDemandApplicationService.listCurrentTenantDemands("已通过", "dept-it", "电脑");
 
     verify(purchaseDemandMapper).listByTenantFiltered("tenant-1", "已通过", "dept-it", "电脑");
+  }
+
+  @Test
+  void listDemandsRestrictsToUserDepartmentWhenScopeIsDepartment() {
+    TenantContext.set("tenant-1", null, "buyer-user-1");
+    when(dataScopeService.currentUserDataScope())
+        .thenReturn(com.procurement.identity.domain.DataScope.department("dept-it"));
+    when(purchaseDemandMapper.listByTenantFiltered("tenant-1", null, "dept-it", null))
+        .thenReturn(List.of());
+
+    // 即便 UI 请求 dept-finance,数据范围为「仅本部门」时强制收窄为 dept-it。
+    purchaseDemandApplicationService.listCurrentTenantDemands(null, "dept-finance", null);
+
+    verify(purchaseDemandMapper).listByTenantFiltered("tenant-1", null, "dept-it", null);
   }
 
   private PurchaseDemand demand(String id) {

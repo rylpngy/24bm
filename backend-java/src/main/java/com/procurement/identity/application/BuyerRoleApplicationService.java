@@ -5,9 +5,11 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.identity.api.BuyerRoleResponse;
 import com.procurement.identity.api.MyPermissionsResponse;
 import com.procurement.identity.api.PermissionPointResponse;
+import com.procurement.identity.api.UpdateRoleDataScopeRequest;
 import com.procurement.identity.api.UpdateRolePermissionsRequest;
 import com.procurement.identity.domain.BuyerPermissionCatalog;
 import com.procurement.identity.domain.BuyerRole;
+import com.procurement.identity.domain.DataScope;
 import com.procurement.identity.infrastructure.BuyerRoleMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,6 +83,30 @@ public class BuyerRoleApplicationService {
     return toResponse(buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId));
   }
 
+  // 设置角色数据范围(行级权限)。需「管理角色与权限」;审计走领域事件并带「从→到」明细。
+  @Transactional
+  public BuyerRoleResponse updateRoleDataScope(String roleId, UpdateRoleDataScopeRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
+    permissionService.require("buyer:role:manage");
+    if (!DataScope.isValid(request.dataScope())) {
+      throw new IllegalArgumentException("非法数据范围: " + request.dataScope());
+    }
+    BuyerRole role = buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId);
+    if (role == null) {
+      throw new IllegalArgumentException("角色不存在: " + roleId);
+    }
+    String detail =
+        "数据范围: " + dataScopeLabel(role.dataScope()) + " → " + dataScopeLabel(request.dataScope());
+    buyerRoleMapper.updateDataScope(tenantId, roleId, request.dataScope());
+    eventPublisher.publishEvent(
+        new DomainAuditEvent("buyer_role.data_scope_updated", "buyer_role", roleId, detail));
+    return toResponse(buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId));
+  }
+
+  private String dataScopeLabel(String dataScope) {
+    return DataScope.DEPARTMENT.equals(dataScope) ? "仅本部门" : "全部数据";
+  }
+
   private String writePermissions(List<String> permissions) {
     try {
       return OBJECT_MAPPER.writeValueAsString(permissions);
@@ -94,7 +120,8 @@ public class BuyerRoleApplicationService {
         role.id(),
         role.tenantId(),
         role.name(),
-        parsePermissions(role.permissionsJson()));
+        parsePermissions(role.permissionsJson()),
+        role.dataScope());
   }
 
   private List<String> parsePermissions(String permissionsJson) {

@@ -11,7 +11,7 @@ import org.apache.ibatis.annotations.Update;
 public interface BuyerRoleMapper {
 
   @Select("""
-      select id, tenant_id, name, permissions::text as permissions_json
+      select id, tenant_id, name, permissions::text as permissions_json, data_scope
       from roles
       where tenant_id = #{tenantId}
         and scope = 'buyer'
@@ -20,7 +20,7 @@ public interface BuyerRoleMapper {
   List<BuyerRole> listBuyerRolesByTenant(@Param("tenantId") String tenantId);
 
   @Select("""
-      select id, tenant_id, name, permissions::text as permissions_json
+      select id, tenant_id, name, permissions::text as permissions_json, data_scope
       from roles
       where tenant_id = #{tenantId} and scope = 'buyer' and id = #{id}
       """)
@@ -34,4 +34,13 @@ public interface BuyerRoleMapper {
       @Param("tenantId") String tenantId,
       @Param("id") String id,
       @Param("permissionsJson") String permissionsJson);
+
+  @Update("""
+      update roles set data_scope = #{dataScope}
+      where tenant_id = #{tenantId} and scope = 'buyer' and id = #{id}
+      """)
+  int updateDataScope(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("dataScope") String dataScope);
 }

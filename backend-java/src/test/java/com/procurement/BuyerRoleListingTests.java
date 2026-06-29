@@ -44,7 +44,8 @@ class BuyerRoleListingTests {
             "role-buyer-requester",
             "tenant-1",
             "需求申请人",
-            "[\"buyer:demand:create\",\"buyer:demand:read\"]")));
+            "[\"buyer:demand:create\",\"buyer:demand:read\"]",
+            "all")));
 
     var roles = buyerRoleApplicationService.listCurrentTenantRoles();
 
@@ -76,7 +77,7 @@ class BuyerRoleListingTests {
   void updateRolePermissionsPersistsAndAuditsWhenAuthorized() {
     TenantContext.set("tenant-1", null, "buyer-owner");
     when(buyerRoleMapper.findBuyerRoleByTenantAndId("tenant-1", "role-fin"))
-        .thenReturn(new BuyerRole("role-fin", "tenant-1", "财务", "[]"));
+        .thenReturn(new BuyerRole("role-fin", "tenant-1", "财务", "[]", "all"));
 
     buyerRoleApplicationService.updateRolePermissions(
         "role-fin",
@@ -97,7 +98,7 @@ class BuyerRoleListingTests {
   void updateRolePermissionsRejectsPointOutsideCatalog() {
     TenantContext.set("tenant-1", null, "buyer-owner");
     when(buyerRoleMapper.findBuyerRoleByTenantAndId("tenant-1", "role-fin"))
-        .thenReturn(new BuyerRole("role-fin", "tenant-1", "财务", "[]"));
+        .thenReturn(new BuyerRole("role-fin", "tenant-1", "财务", "[]", "all"));
 
     assertThatThrownBy(() ->
         buyerRoleApplicationService.updateRolePermissions(
@@ -119,5 +120,35 @@ class BuyerRoleListingTests {
         .isInstanceOf(PermissionDeniedException.class);
 
     verify(buyerRoleMapper, never()).updatePermissions(any(), any(), any());
+  }
+
+  @Test
+  void updateRoleDataScopePersistsAndAuditsWithDetail() {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    when(buyerRoleMapper.findBuyerRoleByTenantAndId("tenant-1", "role-req"))
+        .thenReturn(new BuyerRole("role-req", "tenant-1", "申请员", "[]", "all"));
+
+    buyerRoleApplicationService.updateRoleDataScope(
+        "role-req", new com.procurement.identity.api.UpdateRoleDataScopeRequest("department"));
+
+    verify(permissionService).require("buyer:role:manage");
+    verify(buyerRoleMapper).updateDataScope("tenant-1", "role-req", "department");
+    verify(eventPublisher).publishEvent(
+        org.mockito.ArgumentMatchers.<Object>argThat(ev ->
+            ev instanceof DomainAuditEvent e
+                && e.action().equals("buyer_role.data_scope_updated")
+                && "数据范围: 全部数据 → 仅本部门".equals(e.detail())));
+  }
+
+  @Test
+  void updateRoleDataScopeRejectsInvalidValue() {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+
+    assertThatThrownBy(() ->
+        buyerRoleApplicationService.updateRoleDataScope(
+            "role-req", new com.procurement.identity.api.UpdateRoleDataScopeRequest("global")))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    verify(buyerRoleMapper, never()).updateDataScope(any(), any(), any());
   }
 }

@@ -4088,6 +4088,66 @@
         }
       }
     },
+    "/api/v1/buyer/roles/{roleId}/data-scope": {
+      "post": {
+        "tags": [
+          "buyer-role-controller"
+        ],
+        "operationId": "BuyerRole_updateDataScope",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoleDataScopeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBuyerRoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/rfqs": {
       "get": {
         "tags": [
@@ -11814,6 +11874,20 @@
             "items": {
               "type": "string"
             }
+          },
+          "dataScope": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateRoleDataScopeRequest": {
+        "required": [
+          "dataScope"
+        ],
+        "type": "object",
+        "properties": {
+          "dataScope": {
+            "type": "string"
           }
         }
       },

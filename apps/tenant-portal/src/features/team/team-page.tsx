@@ -6,6 +6,7 @@ import {
   type PermissionPointResponse,
   useBuyerRoleList,
   useBuyerRolePermissionCatalog,
+  useBuyerRoleUpdateDataScope,
   useBuyerRoleUpdatePermissions,
   useBuyerUserChangeRole,
   useBuyerUserChangeStatus,
@@ -143,6 +144,12 @@ function RolePermissionCard({
   onSaved: () => void;
 }) {
   const update = useBuyerRoleUpdatePermissions();
+  const updateScope = useBuyerRoleUpdateDataScope();
+  const scope = role.dataScope ?? 'all';
+  const setScope = (dataScope: string) => {
+    if (!role.id || dataScope === scope) return;
+    updateScope.mutate({ roleId: role.id, data: { dataScope } }, { onSuccess: onSaved });
+  };
   const points = catalog.map((c) => ({
     point: c.point ?? '',
     label: c.label ?? '',
@@ -223,6 +230,43 @@ function RolePermissionCard({
           </div>
         ))}
       </div>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
+        <span className="w-12 shrink-0 text-[11px] font-black text-slate-400">数据范围</span>
+        {[
+          { value: 'all', label: '全部数据' },
+          { value: 'department', label: '仅本部门' },
+        ].map((opt) => {
+          const on = scope === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setScope(opt.value)}
+              disabled={updateScope.isPending}
+              className={cn(
+                'inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-[11px] font-black transition disabled:opacity-50',
+                on
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
+              )}
+            >
+              <span
+                className={cn(
+                  'inline-block h-3 w-3 rounded-full border',
+                  on ? 'border-blue-500 bg-blue-500' : 'border-slate-300',
+                )}
+              />
+              {opt.label}
+            </button>
+          );
+        })}
+        <span className="ml-1 text-[11px] font-bold text-slate-400">
+          仅本部门：成员只可见本部门的采购需求
+        </span>
+      </div>
+      {updateScope.isError && (
+        <p className="mt-2 text-xs font-bold text-red-600">数据范围保存失败:需「管理角色与权限」权限。</p>
+      )}
     </div>
   );
 }

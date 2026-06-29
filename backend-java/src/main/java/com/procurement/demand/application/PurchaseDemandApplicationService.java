@@ -20,6 +20,8 @@ import com.procurement.demand.domain.PurchaseDemandItem;
 import com.procurement.demand.domain.PurchaseDemandStatus;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.application.DataScopeService;
+import com.procurement.identity.domain.DataScope;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.organization.infrastructure.DepartmentMapper;
@@ -38,6 +40,7 @@ public class PurchaseDemandApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition;
+  private final DataScopeService dataScopeService;
 
   public PurchaseDemandApplicationService(
       PurchaseDemandMapper purchaseDemandMapper,
@@ -47,7 +50,8 @@ public class PurchaseDemandApplicationService {
       DepartmentMapper departmentMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
-      PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition) {
+      PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition,
+      DataScopeService dataScopeService) {
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
@@ -56,13 +60,11 @@ public class PurchaseDemandApplicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.purchaseDemandApprovalStatusTransition = purchaseDemandApprovalStatusTransition;
+    this.dataScopeService = dataScopeService;
   }
 
   public List<PurchaseDemandResponse> listCurrentTenantDemands() {
-    String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
-    return purchaseDemandMapper.listByTenant(tenantId).stream()
-        .map(this::toResponse)
-        .toList();
+    return listCurrentTenantDemands(null, null, null);
   }
 
   public List<PurchaseDemandResponse> listCurrentTenantDemands(
@@ -70,10 +72,19 @@ public class PurchaseDemandApplicationService {
       String departmentId,
       String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
+    // 行级权限:数据范围为「仅本部门」时,强制按用户所属部门收窄(覆盖 UI 部门筛选)。
+    DataScope dataScope = dataScopeService.currentUserDataScope();
+    String effectiveDepartmentId = blankToNull(departmentId);
+    if (dataScope.departmentRestricted()) {
+      if (dataScope.departmentId() == null) {
+        return List.of();
+      }
+      effectiveDepartmentId = dataScope.departmentId();
+    }
     return purchaseDemandMapper.listByTenantFiltered(
             tenantId,
             blankToNull(status),
-            blankToNull(departmentId),
+            effectiveDepartmentId,
             blankToNull(keyword))
         .stream()
         .map(this::toResponse)

@@ -30,6 +30,7 @@ import type {
   ApiResponseListPermissionPointResponse,
   ApiResponseMyPermissionsResponse,
   ApiResponseVoid,
+  UpdateRoleDataScopeRequest,
   UpdateRolePermissionsRequest
 } from '.././model';
 
@@ -95,6 +96,65 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerRoleUpdatePermissionsMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerRoleUpdateDataScope = (
+    roleId: string,
+    updateRoleDataScopeRequest: BodyType<UpdateRoleDataScopeRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseBuyerRoleResponse>(
+      {url: `/api/v1/buyer/roles/${roleId}/data-scope`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: updateRoleDataScopeRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerRoleUpdateDataScopeMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerRoleUpdateDataScope>>, TError,{roleId: string;data: BodyType<UpdateRoleDataScopeRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerRoleUpdateDataScope>>, TError,{roleId: string;data: BodyType<UpdateRoleDataScopeRequest>}, TContext> => {
+
+const mutationKey = ['buyerRoleUpdateDataScope'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerRoleUpdateDataScope>>, {roleId: string;data: BodyType<UpdateRoleDataScopeRequest>}> = (props) => {
+          const {roleId,data} = props ?? {};
+
+          return  buyerRoleUpdateDataScope(roleId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerRoleUpdateDataScopeMutationResult = NonNullable<Awaited<ReturnType<typeof buyerRoleUpdateDataScope>>>
+    export type BuyerRoleUpdateDataScopeMutationBody = BodyType<UpdateRoleDataScopeRequest>
+    export type BuyerRoleUpdateDataScopeMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerRoleUpdateDataScope = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerRoleUpdateDataScope>>, TError,{roleId: string;data: BodyType<UpdateRoleDataScopeRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerRoleUpdateDataScope>>,
+        TError,
+        {roleId: string;data: BodyType<UpdateRoleDataScopeRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerRoleUpdateDataScopeMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

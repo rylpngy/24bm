@@ -47,7 +47,8 @@ class PurchaseDemandApprovalStateTransitionTests {
       departmentMapper,
       auditLogApplicationService,
       notificationApplicationService,
-      new PurchaseDemandApprovalStatusTransition());
+      new PurchaseDemandApprovalStatusTransition(),
+      org.mockito.Mockito.mock(com.procurement.identity.application.DataScopeService.class));
 
   @AfterEach
   void clearTenantContext() {

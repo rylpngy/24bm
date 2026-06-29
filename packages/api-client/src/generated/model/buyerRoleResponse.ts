@@ -11,4 +11,5 @@ export interface BuyerRoleResponse {
   tenantId?: string;
   name?: string;
   permissions?: string[];
+  dataScope?: string;
 }

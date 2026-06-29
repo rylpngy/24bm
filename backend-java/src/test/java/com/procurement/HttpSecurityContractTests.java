@@ -1049,7 +1049,7 @@ class HttpSecurityContractTests {
     when(buyerRoleApplicationService.updateRolePermissions(
         org.mockito.ArgumentMatchers.eq("role-fin"), org.mockito.ArgumentMatchers.any()))
         .thenReturn(new BuyerRoleResponse(
-            "role-fin", "tenant-acme", "财务", List.of("buyer:report:export")));
+            "role-fin", "tenant-acme", "财务", List.of("buyer:report:export"), "all"));
 
     mockMvc.perform(post("/api/v1/buyer/roles/role-fin/permissions")
             .header("Authorization", "Bearer " + buyerToken)
@@ -1073,6 +1073,29 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.permissions[0]").value("buyer:demand:read"));
+
+    // 数据范围(行级权限)端点:供应商越权 403;采购方 200,透出 dataScope。
+    mockMvc.perform(post("/api/v1/buyer/roles/role-req/data-scope")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"dataScope": "department"}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(buyerRoleApplicationService.updateRoleDataScope(
+        org.mockito.ArgumentMatchers.eq("role-req"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new BuyerRoleResponse(
+            "role-req", "tenant-acme", "申请员", List.of("buyer:demand:read"), "department"));
+
+    mockMvc.perform(post("/api/v1/buyer/roles/role-req/data-scope")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"dataScope": "department"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.dataScope").value("department"));
   }
 
   @Test
@@ -3458,13 +3481,14 @@ class HttpSecurityContractTests {
         "role-buyer-requester",
         "tenant-acme",
         "需求申请人",
-        List.of("buyer:demand:create", "buyer:demand:read"))));
+        List.of("buyer:demand:create", "buyer:demand:read"), "department")));
 
     mockMvc.perform(get("/api/v1/buyer/roles")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("role-buyer-requester"))
-        .andExpect(jsonPath("$.data[0].permissions[0]").value("buyer:demand:create"));
+        .andExpect(jsonPath("$.data[0].permissions[0]").value("buyer:demand:create"))
+        .andExpect(jsonPath("$.data[0].dataScope").value("department"));
   }
 
   @Test

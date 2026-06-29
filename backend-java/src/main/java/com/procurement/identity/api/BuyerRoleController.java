@@ -40,4 +40,10 @@ public class BuyerRoleController {
       @PathVariable String roleId, @Valid @RequestBody UpdateRolePermissionsRequest request) {
     return ApiResponse.ok(buyerRoleApplicationService.updateRolePermissions(roleId, request));
   }
+
+  @PostMapping("/{roleId}/data-scope")
+  public ApiResponse<BuyerRoleResponse> updateDataScope(
+      @PathVariable String roleId, @Valid @RequestBody UpdateRoleDataScopeRequest request) {
+    return ApiResponse.ok(buyerRoleApplicationService.updateRoleDataScope(roleId, request));
+  }
 }
