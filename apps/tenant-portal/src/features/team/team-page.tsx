@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Users } from 'lucide-react';
+import { Bell, ShieldCheck, Users } from 'lucide-react';
 import {
   type BuyerRoleResponse,
   type PermissionPointResponse,
@@ -12,7 +12,7 @@ import {
   useBuyerUserChangeStatus,
   useBuyerUserList,
 } from '@24bid/api-client';
-import { CountTag, FeedbackNotice, Panel, StatusPill, cn } from '@24bid/ui';
+import { CountTag, FeedbackNotice, Panel, StatusPill, Tabs, cn } from '@24bid/ui';
 import { NotificationChannelPanel } from './notification-channel-panel';
 
 // 团队与权限:角色权限矩阵 + 团队成员(改角色 / 启停)。
@@ -24,6 +24,7 @@ export function TeamPage() {
   const changeRole = useBuyerUserChangeRole();
   const changeStatus = useBuyerUserChangeStatus();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [tab, setTab] = useState<'roles' | 'members' | 'notify'>('roles');
 
   const roleList = roles.data?.data ?? [];
   const userList = users.data?.data ?? [];
@@ -52,7 +53,24 @@ export function TeamPage() {
     );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="rounded-lg border border-slate-200 bg-white px-2 shadow-sm shadow-slate-200/50">
+          <Tabs
+            items={[
+              { id: 'roles', label: '角色权限', icon: ShieldCheck, badge: roleList.length },
+              { id: 'members', label: '团队成员', icon: Users, badge: userList.length },
+              { id: 'notify', label: '通知渠道', icon: Bell },
+            ]}
+            value={tab}
+            onChange={(t) => setTab(t as 'roles' | 'members' | 'notify')}
+          />
+        </div>
+      </div>
+
+      {feedback && <FeedbackNotice tone="success" message={feedback} />}
+
+      {tab === 'roles' && (
       <Panel title="角色权限矩阵" icon={ShieldCheck} subtitle="勾选权限点 · 保存即生效(需管理角色权限)">
         {roles.isLoading || catalog.isLoading ? (
           <FeedbackNotice tone="info" message="正在加载角色与权限目录…" />
@@ -72,16 +90,13 @@ export function TeamPage() {
           </div>
         )}
       </Panel>
+      )}
 
+      {tab === 'members' && (
       <Panel title="团队成员" icon={Users} subtitle="角色分配 · 启停">
         <div className="mb-4">
           <CountTag>共 {userList.length} 名成员</CountTag>
         </div>
-        {feedback && (
-          <div className="mb-3">
-            <FeedbackNotice tone="success" message={feedback} />
-          </div>
-        )}
         {users.isLoading ? (
           <FeedbackNotice tone="info" message="正在加载成员…" />
         ) : (
@@ -128,7 +143,9 @@ export function TeamPage() {
           </div>
         )}
       </Panel>
-      <NotificationChannelPanel />
+      )}
+
+      {tab === 'notify' && <NotificationChannelPanel />}
     </div>
   );
 }
