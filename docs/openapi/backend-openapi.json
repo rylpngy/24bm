@@ -8191,6 +8191,76 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/evaluation": {
+      "get": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_evaluation",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priceWeight",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 70
+            }
+          },
+          {
+            "name": "deliveryWeight",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBidEvaluationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/reports/reconciliation": {
       "get": {
         "tags": [
@@ -14620,6 +14690,85 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ApiResponseBidEvaluationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BidEvaluationResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BidEvaluationResponse": {
+        "type": "object",
+        "properties": {
+          "rfqId": {
+            "type": "string"
+          },
+          "priceWeight": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deliveryWeight": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "recommendedQuoteId": {
+            "type": "string"
+          },
+          "recommendedSupplierId": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BidEvaluationRowResponse"
+            }
+          }
+        }
+      },
+      "BidEvaluationRowResponse": {
+        "type": "object",
+        "properties": {
+          "quoteId": {
+            "type": "string"
+          },
+          "supplierId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "deliveryDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "taxRate": {
+            "type": "number"
+          },
+          "priceScore": {
+            "type": "number"
+          },
+          "deliveryScore": {
+            "type": "number"
+          },
+          "weightedScore": {
+            "type": "number"
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "recommended": {
+            "type": "boolean"
           }
         }
       },

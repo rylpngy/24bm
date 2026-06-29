@@ -7,11 +7,14 @@ import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
+import com.procurement.sourcing.api.BidEvaluationResponse;
+import com.procurement.sourcing.api.BidEvaluationRowResponse;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.api.QuoteLineItemResponse;
 import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.api.UpdateRfqRequest;
+import com.procurement.sourcing.domain.BidEvaluator;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteLineItem;
 import com.procurement.sourcing.domain.Rfq;
@@ -84,6 +87,39 @@ public class RfqApplicationService {
     return rfqMapper.listByTenant(tenantId).stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  // 加权评标:按价格/交期权重对该 RFQ 的报价打分排名,推荐总分最高者(定标参考)。
+  public BidEvaluationResponse evaluateRfq(String rfqId, int priceWeight, int deliveryWeight) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    if (rfq == null) {
+      throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
+    }
+    List<Quote> quotes = quoteMapper.listByTenantAndRfq(tenantId, rfqId);
+    List<BidEvaluator.ScoredQuote> scored =
+        BidEvaluator.evaluate(quotes, priceWeight, deliveryWeight);
+    List<BidEvaluationRowResponse> rows = scored.stream()
+        .map(s -> new BidEvaluationRowResponse(
+            s.quote().id(),
+            s.quote().supplierId(),
+            s.quote().amount(),
+            s.quote().deliveryDays(),
+            s.quote().taxRate(),
+            s.priceScore(),
+            s.deliveryScore(),
+            s.weightedScore(),
+            s.rank(),
+            s.rank() == 1))
+        .toList();
+    BidEvaluator.ScoredQuote top = scored.isEmpty() ? null : scored.get(0);
+    return new BidEvaluationResponse(
+        rfqId,
+        priceWeight,
+        deliveryWeight,
+        top == null ? null : top.quote().id(),
+        top == null ? null : top.quote().supplierId(),
+        rows);
   }
 
   public List<RfqResponse> listCurrentTenantRfqs(String status, String keyword) {

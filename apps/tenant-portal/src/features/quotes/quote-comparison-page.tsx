@@ -4,6 +4,7 @@ import { BarChart3 } from 'lucide-react';
 import { useBuyerSupplierList, useRfqAwardAward, useRfqList } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from '../rfqs/quote-comparison-table';
+import { BidEvaluationPanel } from './bid-evaluation-panel';
 
 const PAGE_SIZE = 5;
 
@@ -54,6 +55,9 @@ export function QuoteComparisonPage() {
       { rfqId, data: { quoteId, reason: '含税总价与交期综合最优' } },
       { onSuccess: () => refresh() },
     );
+
+  const submitAwardWithReason = (rfqId: string, quoteId: string, reason: string) =>
+    award.mutate({ rfqId, data: { quoteId, reason } }, { onSuccess: () => refresh() });
 
   return (
     <Panel title="报价对比" icon={BarChart3} subtitle="跨询价比价 · 定标入口">
@@ -128,6 +132,17 @@ export function QuoteComparisonPage() {
                   <MiniFact label="评选方式" value={r.evaluationMethod ?? '最低价'} />
                   <MiniFact label="报价截止" value={r.deadlineAt?.slice(0, 10) ?? '—'} />
                 </div>
+                {r.id && (
+                  <div className="mt-3">
+                    <BidEvaluationPanel
+                      rfqId={r.id}
+                      supplierNames={supplierNames}
+                      canAward={r.status === '报价中'}
+                      awarding={award.isPending && award.variables?.rfqId === r.id}
+                      onAward={(quoteId, reason) => r.id && submitAwardWithReason(r.id, quoteId, reason)}
+                    />
+                  </div>
+                )}
                 <div className="mt-3">
                   <QuoteComparisonTable
                     quotes={r.quotes ?? []}

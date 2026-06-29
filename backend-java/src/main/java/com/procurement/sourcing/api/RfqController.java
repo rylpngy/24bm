@@ -43,4 +43,13 @@ public class RfqController {
       @Valid @RequestBody UpdateRfqRequest request) {
     return ApiResponse.ok(rfqApplicationService.update(rfqId, request));
   }
+
+  // 加权评标:按价格/交期权重打分排名,推荐总分最高者(默认价格70/交期30)。
+  @GetMapping("/{rfqId}/evaluation")
+  public ApiResponse<BidEvaluationResponse> evaluation(
+      @PathVariable String rfqId,
+      @RequestParam(defaultValue = "70") int priceWeight,
+      @RequestParam(defaultValue = "30") int deliveryWeight) {
+    return ApiResponse.ok(rfqApplicationService.evaluateRfq(rfqId, priceWeight, deliveryWeight));
+  }
 }

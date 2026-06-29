@@ -575,6 +575,46 @@ class HttpSecurityContractTests {
   }
 
   @Test
+  void buyerCanEvaluateRfqBidsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/rfqs/rfq-demo/evaluation")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(rfqApplicationService.evaluateRfq("rfq-demo", 70, 30))
+        .thenReturn(new com.procurement.sourcing.api.BidEvaluationResponse(
+            "rfq-demo", 70, 30, "quote-a", "ent-supplier-sunrise",
+            List.of(new com.procurement.sourcing.api.BidEvaluationRowResponse(
+                "quote-a", "ent-supplier-sunrise",
+                java.math.BigDecimal.valueOf(118000), 7, java.math.BigDecimal.valueOf(13),
+                java.math.BigDecimal.valueOf(100), java.math.BigDecimal.valueOf(100),
+                java.math.BigDecimal.valueOf(100), 1, true))));
+
+    mockMvc.perform(get("/api/v1/buyer/rfqs/rfq-demo/evaluation")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.recommendedQuoteId").value("quote-a"))
+        .andExpect(jsonPath("$.data.rows[0].rank").value(1))
+        .andExpect(jsonPath("$.data.rows[0].recommended").value(true));
+  }
+
+  @Test
   void buyerCanListPendingApprovalTasksButSupplierCannot() throws Exception {
     String supplierToken = loginAndExtractToken("""
         {
