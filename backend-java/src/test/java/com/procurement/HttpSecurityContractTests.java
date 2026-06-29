@@ -1043,6 +1043,32 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.id").value("dept-old"))
         .andExpect(jsonPath("$.data.status").value("inactive"));
+
+    // 编辑部门:供应商越权 403;采购方 200,透出负责人/成员数等组织架构字段。
+    mockMvc.perform(put("/api/v1/buyer/departments/dept-it")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"name": "信息化部", "description": "负责信息系统建设与运维"}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(departmentApplicationService.updateDepartment(
+        org.mockito.ArgumentMatchers.eq("dept-it"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new DepartmentResponse(
+            "dept-it", "tenant-acme", "信息化部", "dept-hq", "active",
+            "负责信息系统建设与运维", "user-buyer-zhang", "张申请", 1,
+            java.time.LocalDate.parse("2017-06-15")));
+
+    mockMvc.perform(put("/api/v1/buyer/departments/dept-it")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"name": "信息化部", "description": "负责信息系统建设与运维"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.managerName").value("张申请"))
+        .andExpect(jsonPath("$.data.memberCount").value(1));
   }
 
   @Test

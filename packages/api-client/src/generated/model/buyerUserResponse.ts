@@ -15,4 +15,6 @@ export interface BuyerUserResponse {
   status?: string;
   departmentId?: string;
   roleId?: string;
+  employeeNo?: string;
+  jobTitle?: string;
 }

@@ -12,11 +12,17 @@ import org.apache.ibatis.annotations.Update;
 public interface DepartmentMapper {
 
   @Select("""
-      select id, tenant_id, name, parent_id, status
-      from departments
-      where tenant_id = #{tenantId}
-        and status = 'active'
-      order by created_at asc
+      select d.id, d.tenant_id, d.name, d.parent_id, d.status, d.description,
+             d.manager_id, u.name as manager_name,
+             (select count(*) from users mu
+                where mu.department_id = d.id and mu.tenant_id = d.tenant_id
+                  and mu.status = 'active') as member_count,
+             d.established_on
+      from departments d
+      left join users u on u.id = d.manager_id
+      where d.tenant_id = #{tenantId}
+        and d.status = 'active'
+      order by d.created_at asc
       """)
   List<Department> listActiveByTenant(@Param("tenantId") String tenantId);
 
@@ -34,10 +40,16 @@ public interface DepartmentMapper {
       @Param("departmentId") String departmentId);
 
   @Select("""
-      select id, tenant_id, name, parent_id, status
-      from departments
-      where tenant_id = #{tenantId}
-        and id = #{id}
+      select d.id, d.tenant_id, d.name, d.parent_id, d.status, d.description,
+             d.manager_id, u.name as manager_name,
+             (select count(*) from users mu
+                where mu.department_id = d.id and mu.tenant_id = d.tenant_id
+                  and mu.status = 'active') as member_count,
+             d.established_on
+      from departments d
+      left join users u on u.id = d.manager_id
+      where d.tenant_id = #{tenantId}
+        and d.id = #{id}
       """)
   Department findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
@@ -51,6 +63,23 @@ public interface DepartmentMapper {
       @Param("name") String name,
       @Param("parentId") String parentId,
       @Param("status") String status);
+
+  @Update("""
+      update departments
+      set name = #{name},
+          description = #{description},
+          manager_id = #{managerId,jdbcType=VARCHAR},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = 'active'
+      """)
+  int updateDetails(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("name") String name,
+      @Param("description") String description,
+      @Param("managerId") String managerId);
 
   @Update("""
       update departments

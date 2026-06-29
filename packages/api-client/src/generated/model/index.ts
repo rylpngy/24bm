@@ -285,6 +285,7 @@ export * from './updateContractArchiveStatusRequest';
 export * from './updateContractRequest';
 export * from './updateContractStatusRequest';
 export * from './updateDeliveryRequest';
+export * from './updateDepartmentRequest';
 export * from './updateInvoicePaymentRequest';
 export * from './updateNotificationSettingsRequest';
 export * from './updatePaymentBatchStatusRequest';

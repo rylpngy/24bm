@@ -28,7 +28,8 @@ import type {
   ApiResponseDepartmentResponse,
   ApiResponseListDepartmentResponse,
   ApiResponseVoid,
-  CreateDepartmentRequest
+  CreateDepartmentRequest,
+  UpdateDepartmentRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -37,7 +38,65 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const departmentList = (
+export const departmentUpdate = (
+    departmentId: string,
+    updateDepartmentRequest: BodyType<UpdateDepartmentRequest>,
+ ) => {
+      
+      
+      return customInstance<ApiResponseDepartmentResponse>(
+      {url: `/api/v1/buyer/departments/${departmentId}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: updateDepartmentRequest
+    },
+      );
+    }
+  
+
+
+export const getDepartmentUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof departmentUpdate>>, TError,{departmentId: string;data: BodyType<UpdateDepartmentRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof departmentUpdate>>, TError,{departmentId: string;data: BodyType<UpdateDepartmentRequest>}, TContext> => {
+
+const mutationKey = ['departmentUpdate'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof departmentUpdate>>, {departmentId: string;data: BodyType<UpdateDepartmentRequest>}> = (props) => {
+          const {departmentId,data} = props ?? {};
+
+          return  departmentUpdate(departmentId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DepartmentUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof departmentUpdate>>>
+    export type DepartmentUpdateMutationBody = BodyType<UpdateDepartmentRequest>
+    export type DepartmentUpdateMutationError = ErrorType<ApiResponseVoid>
+
+    export const useDepartmentUpdate = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof departmentUpdate>>, TError,{departmentId: string;data: BodyType<UpdateDepartmentRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof departmentUpdate>>,
+        TError,
+        {departmentId: string;data: BodyType<UpdateDepartmentRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getDepartmentUpdateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const departmentList = (
     
  signal?: AbortSignal
 ) => {

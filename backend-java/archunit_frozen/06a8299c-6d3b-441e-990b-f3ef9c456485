@@ -251,6 +251,8 @@ Method <com.procurement.organization.api.DepartmentController.create(com.procure
 Method <com.procurement.organization.api.DepartmentController.create(com.procurement.organization.api.CreateDepartmentRequest)> has return type <com.procurement.common.api.ApiResponse> in (DepartmentController.java:0)
 Method <com.procurement.organization.api.DepartmentController.disable(java.lang.String)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (DepartmentController.java:38)
 Method <com.procurement.organization.api.DepartmentController.disable(java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (DepartmentController.java:0)
+Method <com.procurement.organization.api.DepartmentController.update(java.lang.String, com.procurement.organization.api.UpdateDepartmentRequest)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (DepartmentController.java:41)
+Method <com.procurement.organization.api.DepartmentController.update(java.lang.String, com.procurement.organization.api.UpdateDepartmentRequest)> has return type <com.procurement.common.api.ApiResponse> in (DepartmentController.java:0)
 Method <com.procurement.organization.api.DepartmentController.list()> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (DepartmentController.java:27)
 Method <com.procurement.organization.api.DepartmentController.list()> has return type <com.procurement.common.api.ApiResponse> in (DepartmentController.java:0)
 Method <com.procurement.platform.api.BuyerAnnouncementController.list()> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (BuyerAnnouncementController.java:22)

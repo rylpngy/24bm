@@ -760,6 +760,66 @@
         }
       }
     },
+    "/api/v1/buyer/departments/{departmentId}": {
+      "put": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "Department_update",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDepartmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDepartmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/demands/{demandId}": {
       "put": {
         "tags": [
@@ -10552,6 +10612,74 @@
           }
         }
       },
+      "UpdateDepartmentRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "managerId": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DepartmentResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "DepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "managerId": {
+            "type": "string"
+          },
+          "managerName": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "establishedOn": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "PurchaseDemandLineItemRequest": {
         "required": [
           "materialId"
@@ -11685,6 +11813,12 @@
             "type": "string"
           },
           "roleId": {
+            "type": "string"
+          },
+          "employeeNo": {
+            "type": "string"
+          },
+          "jobTitle": {
             "type": "string"
           }
         }
@@ -12868,40 +13002,6 @@
             "type": "string"
           },
           "parentId": {
-            "type": "string"
-          }
-        }
-      },
-      "ApiResponseDepartmentResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "$ref": "#/components/schemas/DepartmentResponse"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "DepartmentResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "tenantId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "parentId": {
-            "type": "string"
-          },
-          "status": {
             "type": "string"
           }
         }

@@ -12,4 +12,9 @@ export interface DepartmentResponse {
   name?: string;
   parentId?: string;
   status?: string;
+  description?: string;
+  managerId?: string;
+  managerName?: string;
+  memberCount?: number;
+  establishedOn?: string;
 }

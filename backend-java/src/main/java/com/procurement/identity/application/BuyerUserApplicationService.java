@@ -149,7 +149,9 @@ public class BuyerUserApplicationService {
         user.email(),
         user.status(),
         user.departmentId(),
-        user.roleId());
+        user.roleId(),
+        user.employeeNo(),
+        user.jobTitle());
   }
 
   private String blankToNull(String value) {

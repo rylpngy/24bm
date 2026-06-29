@@ -12,19 +12,19 @@ import org.apache.ibatis.annotations.Update;
 public interface BuyerUserMapper {
 
   @Select("""
-      select u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, min(r.id) as role_id
+      select u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, min(r.id) as role_id, u.employee_no, u.job_title
       from users u
       left join user_roles ur on ur.user_id = u.id
       left join roles r on r.id = ur.role_id and r.scope = 'buyer'
       where u.tenant_id = #{tenantId}
-      group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, u.created_at
+      group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, u.created_at, u.employee_no, u.job_title
       order by u.created_at desc
       """)
   List<BuyerUser> listByTenant(@Param("tenantId") String tenantId);
 
   @Select("""
       <script>
-      select u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, min(r.id) as role_id
+      select u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, min(r.id) as role_id, u.employee_no, u.job_title
       from users u
       left join user_roles ur on ur.user_id = u.id
       left join roles r on r.id = ur.role_id and r.scope = 'buyer'
@@ -42,7 +42,7 @@ public interface BuyerUserMapper {
           or u.email ilike concat('%', #{keyword}, '%')
         )
         </if>
-      group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, u.created_at
+      group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, u.created_at, u.employee_no, u.job_title
       order by u.created_at desc
       </script>
       """)
@@ -53,12 +53,12 @@ public interface BuyerUserMapper {
       @Param("keyword") String keyword);
 
   @Select("""
-      select u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, min(r.id) as role_id
+      select u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, min(r.id) as role_id, u.employee_no, u.job_title
       from users u
       left join user_roles ur on ur.user_id = u.id
       left join roles r on r.id = ur.role_id and r.scope = 'buyer'
       where u.tenant_id = #{tenantId} and u.id = #{id}
-      group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id
+      group by u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, u.employee_no, u.job_title
       """)
   BuyerUser findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 

@@ -6,6 +6,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.organization.api.CreateDepartmentRequest;
 import com.procurement.organization.api.DepartmentResponse;
+import com.procurement.organization.api.UpdateDepartmentRequest;
 import com.procurement.organization.domain.Department;
 import com.procurement.organization.domain.DepartmentAuditAction;
 import com.procurement.organization.domain.DepartmentStatus;
@@ -55,6 +56,28 @@ public class DepartmentApplicationService {
     return toResponse(departmentMapper.findByTenantAndId(tenantId, departmentId));
   }
 
+  // 编辑部门:名称/描述/负责人。审计带「部门: 旧名 → 新名」明细。
+  @Transactional
+  public DepartmentResponse updateDepartment(String departmentId, UpdateDepartmentRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    Department current = departmentMapper.findByTenantAndId(tenantId, departmentId);
+    if (current == null || !DepartmentStatus.ACTIVE.equals(current.status())) {
+      throw new IllegalArgumentException("Department not found in tenant scope: " + departmentId);
+    }
+    departmentMapper.updateDetails(
+        tenantId,
+        departmentId,
+        request.name(),
+        request.description() == null ? "" : request.description(),
+        request.managerId());
+    String detail = current.name().equals(request.name())
+        ? "部门资料更新: " + request.name()
+        : "部门: " + current.name() + " → " + request.name();
+    auditLogApplicationService.recordTenantAction(
+        tenantId, DepartmentAuditAction.UPDATED, AuditTargetType.DEPARTMENT, departmentId, detail);
+    return toResponse(departmentMapper.findByTenantAndId(tenantId, departmentId));
+  }
+
   @Transactional
   public DepartmentResponse disableDepartment(String departmentId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
@@ -95,6 +118,11 @@ public class DepartmentApplicationService {
         department.tenantId(),
         department.name(),
         department.parentId(),
-        department.status());
+        department.status(),
+        department.description(),
+        department.managerId(),
+        department.managerName(),
+        department.memberCount(),
+        department.establishedOn());
   }
 }

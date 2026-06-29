@@ -20,6 +20,7 @@ import { BudgetsPage } from './features/budgets/budgets-page';
 import { AuditPage } from './features/audit/audit-page';
 import { QuoteComparisonPage } from './features/quotes/quote-comparison-page';
 import { TeamPage } from './features/team/team-page';
+import { OrgStructurePage } from './features/org/org-structure-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
@@ -90,6 +91,8 @@ export function App() {
         <PaymentBatchesPage />
       ) : activeModuleId === 'quotes' ? (
         <QuoteComparisonPage />
+      ) : activeModuleId === 'org' ? (
+        <OrgStructurePage />
       ) : activeModuleId === 'team' ? (
         <TeamPage />
       ) : activeModuleId === 'audit' ? (

@@ -44,6 +44,7 @@ export const buyerAdminModules: AdminNavigationModule[] = [
   { id: 'receipts', label: '收货验收', desc: '待收货与验收登记' },
   { id: 'invoices', label: '发票付款', desc: '发票列表与付款状态', requiredPermission: 'buyer:invoice:read' },
   { id: 'payment-batches', label: '付款批次', desc: '批量付款计划与执行', requiredPermission: 'buyer:payment:register' },
+  { id: 'org', label: '组织架构', desc: '部门树、负责人、成员', requiredPermission: 'buyer:role:manage' },
   { id: 'team', label: '团队与权限', desc: '角色权限矩阵与成员', requiredPermission: 'buyer:role:manage' },
   { id: 'audit', label: '审计日志', desc: '最近操作留痕' },
 ];

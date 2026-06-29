@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -31,6 +32,13 @@ public class DepartmentController {
   @ResponseStatus(HttpStatus.CREATED)
   public ApiResponse<DepartmentResponse> create(@Valid @RequestBody CreateDepartmentRequest request) {
     return ApiResponse.ok(departmentApplicationService.createDepartment(request));
+  }
+
+  @PutMapping("/{departmentId}")
+  public ApiResponse<DepartmentResponse> update(
+      @PathVariable String departmentId,
+      @Valid @RequestBody UpdateDepartmentRequest request) {
+    return ApiResponse.ok(departmentApplicationService.updateDepartment(departmentId, request));
   }
 
   @PostMapping("/{departmentId}/disable")
