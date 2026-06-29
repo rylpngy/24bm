@@ -109,7 +109,17 @@ export function TenantsPage() {
                     <p className="break-words font-black text-slate-950">{t.name}</p>
                     <p className="mt-1 font-mono text-xs font-bold text-slate-500">{t.id}</p>
                   </div>
-                  <StatusPill label={active ? '已启用' : '已停用'} />
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    <StatusPill label={active ? '已启用' : '已停用'} />
+                    <button type="button" onClick={() => t.id && toggle(t.id, t.name ?? '', active)} disabled={busy}
+                      className={
+                        active
+                          ? 'inline-flex h-8 items-center rounded-md border border-red-200 bg-white px-3 text-xs font-black text-red-700 hover:bg-red-50 disabled:opacity-50'
+                          : 'inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-300'
+                      }>
+                      {busy ? '处理中' : active ? '停用租户' : '启用租户'}
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
                   <MiniFact label="套餐" value={t.plan ?? '—'} />
@@ -125,20 +135,12 @@ export function TenantsPage() {
                   </div>
                 )}
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => t.id && toggle(t.id, t.name ?? '', active)} disabled={busy}
-                    className={
-                      active
-                        ? 'inline-flex h-9 items-center rounded-lg border border-red-200 bg-white px-4 text-xs font-black text-red-700 hover:bg-red-50 disabled:opacity-50'
-                        : 'inline-flex h-9 items-center rounded-lg bg-emerald-600 px-4 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-300'
-                    }>
-                    {busy ? '处理中' : active ? '停用租户' : '启用租户'}
-                  </button>
                   <button type="button" onClick={() => (editId === t.id ? setEditId(null) : startEdit(t))}
-                    className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-700 hover:bg-slate-50">
+                    className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50">
                     {editId === t.id ? '收起编辑' : '编辑套餐/功能'}
                   </button>
                   <button type="button" onClick={() => setUsageId((cur) => (cur === t.id ? null : t.id ?? null))}
-                    className="inline-flex h-9 items-center rounded-lg border border-indigo-200 bg-white px-4 text-xs font-black text-indigo-700 hover:bg-indigo-50">
+                    className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50">
                     {usageId === t.id ? '收起用量计费' : '用量与计费'}
                   </button>
                 </div>
