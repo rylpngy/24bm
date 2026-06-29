@@ -6,6 +6,19 @@ export interface AdminNavigationModule {
   id: string;
   label: string;
   desc: string;
+  // 可选:进入该模块所需的权限点。缺省=基础模块,所有成员可见。
+  // 命中规则同后端 RBAC:授予 "buyer:*" 覆盖一切;授予 "x:y:*" 覆盖 "x:y:z"。
+  requiredPermission?: string;
+}
+
+// 前端门禁:已授予的权限点集合 granted 是否覆盖 required(精确或前缀通配 "...:*")。
+// 与后端 PermissionService.matches 保持一致。
+export function hasPermission(granted: string[], required: string): boolean {
+  return granted.some((g) => {
+    if (g === required) return true;
+    if (g.endsWith(':*')) return required.startsWith(g.slice(0, -1));
+    return false;
+  });
 }
 
 export interface AdminRoleNavigation {
@@ -20,18 +33,18 @@ export const buyerAdminModules: AdminNavigationModule[] = [
   { id: 'dashboard', label: '首页看板', desc: '采购金额、待办、履约进度' },
   { id: 'analytics', label: '采购分析', desc: '支出趋势、集中度、节支洞察' },
   { id: 'budgets', label: '预算管理', desc: '部门预算池、占用、超预算预警' },
-  { id: 'demands', label: '采购需求', desc: '需求列表、审批提交、转询价' },
+  { id: 'demands', label: '采购需求', desc: '需求列表、审批提交、转询价', requiredPermission: 'buyer:demand:read' },
   { id: 'approvals', label: '审批中心', desc: '待审批与最近审批记录' },
   { id: 'suppliers', label: '供应商库', desc: '私域关系、准入、分级、绩效' },
-  { id: 'materials', label: '物料目录', desc: '物料与服务主数据' },
-  { id: 'rfqs', label: '询价项目', desc: 'RFQ 列表、邀请与状态' },
-  { id: 'quotes', label: '报价对比', desc: '报价比较、定标入口' },
+  { id: 'materials', label: '物料目录', desc: '物料与服务主数据', requiredPermission: 'buyer:material:read' },
+  { id: 'rfqs', label: '询价项目', desc: 'RFQ 列表、邀请与状态', requiredPermission: 'buyer:rfq:read' },
+  { id: 'quotes', label: '报价对比', desc: '报价比较、定标入口', requiredPermission: 'buyer:rfq:read' },
   { id: 'orders', label: '采购订单', desc: '订单列表与生成订单' },
-  { id: 'contracts', label: '合同管理', desc: '合同台账、审批与履约' },
+  { id: 'contracts', label: '合同管理', desc: '合同台账、审批与履约', requiredPermission: 'buyer:contract:read' },
   { id: 'receipts', label: '收货验收', desc: '待收货与验收登记' },
-  { id: 'invoices', label: '发票付款', desc: '发票列表与付款状态' },
-  { id: 'payment-batches', label: '付款批次', desc: '批量付款计划与执行' },
-  { id: 'team', label: '团队与权限', desc: '角色权限矩阵与成员' },
+  { id: 'invoices', label: '发票付款', desc: '发票列表与付款状态', requiredPermission: 'buyer:invoice:read' },
+  { id: 'payment-batches', label: '付款批次', desc: '批量付款计划与执行', requiredPermission: 'buyer:payment:register' },
+  { id: 'team', label: '团队与权限', desc: '角色权限矩阵与成员', requiredPermission: 'buyer:role:manage' },
   { id: 'audit', label: '审计日志', desc: '最近操作留痕' },
 ];
 

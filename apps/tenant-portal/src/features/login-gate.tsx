@@ -62,11 +62,11 @@ export function LoginGate() {
     }
   };
 
-  const handleLogin = () => {
+  const handleLogin = (account = 'buyer.owner@example.com', fallbackName = '采购负责人') => {
     login.mutate(
       {
         data: {
-          account: 'buyer.owner@example.com',
+          account,
           password: 'demo123456',
           scope: LoginRequestScope.BUYER,
           tenantId: 'tenant-acme',
@@ -79,7 +79,7 @@ export function LoginGate() {
           signIn({
             token: data.accessToken,
             userId: data.userId ?? '',
-            displayName: data.displayName ?? '采购负责人',
+            displayName: data.displayName ?? fallbackName,
             tenantId: data.tenantId,
           });
           queryClient.clear();
@@ -87,6 +87,13 @@ export function LoginGate() {
       },
     );
   };
+
+  // 演示账号:不同角色的有效权限点不同,用于直观验证菜单/路由门禁。
+  const demoAccounts = [
+    { account: 'buyer.owner@example.com', name: '采购管理员', hint: '全部权限' },
+    { account: 'zhang.req@example.com', name: '采购申请员', hint: '需求/物料/询价' },
+    { account: 'li.fin@example.com', name: '财务专员', hint: '付款/对账' },
+  ];
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-slate-100/70 p-6">
@@ -122,16 +129,23 @@ export function LoginGate() {
           {SELF_LOGIN_FALLBACK && (
             <div className="mt-4 border-t border-slate-100 pt-4">
               <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
-                自研 JWT（已退役 · 仅 CI/开发后备）
+                自研 JWT（已退役 · 仅 CI/开发后备）· 演示角色
               </p>
-              <button
-                type="button"
-                onClick={handleLogin}
-                disabled={login.isPending}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-              >
-                <LogIn size={16} /> {login.isPending ? '登录中…' : '以采购负责人登录（自研 JWT）'}
-              </button>
+              <div className="space-y-2">
+                {demoAccounts.map((acc) => (
+                  <button
+                    key={acc.account}
+                    type="button"
+                    onClick={() => handleLogin(acc.account, acc.name)}
+                    disabled={login.isPending}
+                    className="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <LogIn size={16} className="shrink-0 text-slate-400" />
+                    <span>{login.isPending ? '登录中…' : `以${acc.name}登录`}</span>
+                    <span className="ml-auto text-[11px] font-bold text-slate-400">{acc.hint}</span>
+                  </button>
+                ))}
+              </div>
               {login.isError && (
                 <div className="mt-3">
                   <FeedbackNotice tone="error" message="登录失败：自研登录可能已在后端关闭（SELF_LOGIN_ENABLED=false）。" />

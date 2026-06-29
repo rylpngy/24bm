@@ -25,6 +25,11 @@ public class BuyerRoleController {
     return ApiResponse.ok(buyerRoleApplicationService.listCurrentTenantRoles());
   }
 
+  @GetMapping("/my-permissions")
+  public ApiResponse<MyPermissionsResponse> myPermissions() {
+    return ApiResponse.ok(buyerRoleApplicationService.myPermissions());
+  }
+
   @GetMapping("/permission-catalog")
   public ApiResponse<List<PermissionPointResponse>> permissionCatalog() {
     return ApiResponse.ok(buyerRoleApplicationService.permissionCatalog());

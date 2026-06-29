@@ -3,6 +3,7 @@ package com.procurement.identity.application;
 import com.procurement.common.event.DomainAuditEvent;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.identity.api.BuyerRoleResponse;
+import com.procurement.identity.api.MyPermissionsResponse;
 import com.procurement.identity.api.PermissionPointResponse;
 import com.procurement.identity.api.UpdateRolePermissionsRequest;
 import com.procurement.identity.domain.BuyerPermissionCatalog;
@@ -38,6 +39,12 @@ public class BuyerRoleApplicationService {
     return buyerRoleMapper.listBuyerRolesByTenant(tenantId).stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  // 当前登录用户的有效权限点(展平其激活角色)。前端据此做菜单/路由门禁。
+  public MyPermissionsResponse myPermissions() {
+    TenantAccessGuard.requireTenantId("buyer role APIs");
+    return new MyPermissionsResponse(permissionService.currentUserPermissions());
   }
 
   // 角色权限矩阵的列定义(可分配权限点目录)。

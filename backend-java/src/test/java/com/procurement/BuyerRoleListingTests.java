@@ -55,6 +55,17 @@ class BuyerRoleListingTests {
   }
 
   @Test
+  void myPermissionsReturnsFlattenedEffectivePoints() {
+    TenantContext.set("tenant-1", null, "buyer-staff");
+    when(permissionService.currentUserPermissions())
+        .thenReturn(List.of("buyer:demand:read", "buyer:demand:create"));
+
+    var response = buyerRoleApplicationService.myPermissions();
+
+    assertThat(response.permissions()).containsExactly("buyer:demand:read", "buyer:demand:create");
+  }
+
+  @Test
   void permissionCatalogExposesAssignablePoints() {
     var catalog = buyerRoleApplicationService.permissionCatalog();
     assertThat(catalog).extracting("point")

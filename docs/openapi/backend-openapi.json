@@ -7981,6 +7981,46 @@
         }
       }
     },
+    "/api/v1/buyer/roles/my-permissions": {
+      "get": {
+        "tags": [
+          "buyer-role-controller"
+        ],
+        "operationId": "BuyerRole_myPermissions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMyPermissionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/reports/reconciliation": {
       "get": {
         "tags": [
@@ -14298,6 +14338,31 @@
           },
           "group": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseMyPermissionsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MyPermissionsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MyPermissionsResponse": {
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

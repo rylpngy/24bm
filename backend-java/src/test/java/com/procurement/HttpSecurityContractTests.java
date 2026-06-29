@@ -59,6 +59,7 @@ import com.procurement.identity.api.ResetBuyerUserPasswordRequest;
 import com.procurement.identity.api.BuyerUserController;
 import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.application.AuthenticationApplicationService;
+import com.procurement.identity.api.MyPermissionsResponse;
 import com.procurement.identity.application.BuyerRoleApplicationService;
 import com.procurement.identity.application.BuyerUserApplicationService;
 import com.procurement.identity.domain.AuthenticatedUser;
@@ -1057,6 +1058,19 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.id").value("role-fin"))
         .andExpect(jsonPath("$.data.permissions[0]").value("buyer:report:export"));
+
+    // 有效权限点端点:供应商越权 403;采购方返回展平后的权限点(供前端门禁)。
+    mockMvc.perform(get("/api/v1/buyer/roles/my-permissions")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(buyerRoleApplicationService.myPermissions())
+        .thenReturn(new MyPermissionsResponse(List.of("buyer:demand:read", "buyer:demand:create")));
+
+    mockMvc.perform(get("/api/v1/buyer/roles/my-permissions")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.permissions[0]").value("buyer:demand:read"));
   }
 
   @Test

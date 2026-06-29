@@ -25,6 +25,16 @@ public class PermissionService {
     return granted != null && granted.stream().anyMatch(g -> matches(g, required));
   }
 
+  // 当前用户的有效权限点(展平所有激活角色,去重)。供前端菜单/路由门禁。
+  public List<String> currentUserPermissions() {
+    String userId = TenantContext.userId();
+    if (userId == null) {
+      return List.of();
+    }
+    List<String> granted = permissionMapper.listUserPermissions(userId);
+    return granted == null ? List.of() : granted;
+  }
+
   // 在敏感操作入口调用:权限不足抛 403。
   public void require(String required) {
     if (!currentUserHas(required)) {

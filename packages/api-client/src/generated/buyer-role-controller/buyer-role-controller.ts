@@ -28,6 +28,7 @@ import type {
   ApiResponseBuyerRoleResponse,
   ApiResponseListBuyerRoleResponse,
   ApiResponseListPermissionPointResponse,
+  ApiResponseMyPermissionsResponse,
   ApiResponseVoid,
   UpdateRolePermissionsRequest
 } from '.././model';
@@ -258,6 +259,92 @@ export function useBuyerRolePermissionCatalog<TData = Awaited<ReturnType<typeof 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerRolePermissionCatalogQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerRoleMyPermissions = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseMyPermissionsResponse>(
+      {url: `/api/v1/buyer/roles/my-permissions`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerRoleMyPermissionsQueryKey = () => {
+    return [
+    `/api/v1/buyer/roles/my-permissions`
+    ] as const;
+    }
+
+    
+export const getBuyerRoleMyPermissionsQueryOptions = <TData = Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerRoleMyPermissionsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerRoleMyPermissions>>> = ({ signal }) => buyerRoleMyPermissions(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerRoleMyPermissionsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerRoleMyPermissions>>>
+export type BuyerRoleMyPermissionsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerRoleMyPermissions<TData = Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerRoleMyPermissions>>,
+          TError,
+          Awaited<ReturnType<typeof buyerRoleMyPermissions>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerRoleMyPermissions<TData = Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerRoleMyPermissions>>,
+          TError,
+          Awaited<ReturnType<typeof buyerRoleMyPermissions>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerRoleMyPermissions<TData = Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerRoleMyPermissions<TData = Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRoleMyPermissions>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerRoleMyPermissionsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
