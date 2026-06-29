@@ -4028,6 +4028,66 @@
         }
       }
     },
+    "/api/v1/buyer/roles/{roleId}/permissions": {
+      "post": {
+        "tags": [
+          "buyer-role-controller"
+        ],
+        "operationId": "BuyerRole_updatePermissions",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRolePermissionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBuyerRoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/rfqs": {
       "get": {
         "tags": [
@@ -7881,6 +7941,46 @@
         }
       }
     },
+    "/api/v1/buyer/roles/permission-catalog": {
+      "get": {
+        "tags": [
+          "buyer-role-controller"
+        ],
+        "operationId": "BuyerRole_permissionCatalog",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListPermissionPointResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/reports/reconciliation": {
       "get": {
         "tags": [
@@ -11629,6 +11729,54 @@
           }
         }
       },
+      "UpdateRolePermissionsRequest": {
+        "required": [
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ApiResponseBuyerRoleResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BuyerRoleResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BuyerRoleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "CreateRfqRequest": {
         "required": [
           "demandIds",
@@ -14122,23 +14270,34 @@
           }
         }
       },
-      "BuyerRoleResponse": {
+      "ApiResponseListPermissionPointResponse": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
+          "success": {
+            "type": "boolean"
           },
-          "tenantId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "permissions": {
+          "data": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/PermissionPointResponse"
             }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PermissionPointResponse": {
+        "type": "object",
+        "properties": {
+          "point": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
           }
         }
       },

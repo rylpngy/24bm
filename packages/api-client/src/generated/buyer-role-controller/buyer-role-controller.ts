@@ -6,32 +6,98 @@
  * OpenAPI spec version: v1
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseBuyerRoleResponse,
   ApiResponseListBuyerRoleResponse,
-  ApiResponseVoid
+  ApiResponseListPermissionPointResponse,
+  ApiResponseVoid,
+  UpdateRolePermissionsRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
-import type { ErrorType } from '../../http-client';
+import type { ErrorType , BodyType } from '../../http-client';
 
 
 
 
-export const buyerRoleList = (
+export const buyerRoleUpdatePermissions = (
+    roleId: string,
+    updateRolePermissionsRequest: BodyType<UpdateRolePermissionsRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseBuyerRoleResponse>(
+      {url: `/api/v1/buyer/roles/${roleId}/permissions`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: updateRolePermissionsRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerRoleUpdatePermissionsMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerRoleUpdatePermissions>>, TError,{roleId: string;data: BodyType<UpdateRolePermissionsRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerRoleUpdatePermissions>>, TError,{roleId: string;data: BodyType<UpdateRolePermissionsRequest>}, TContext> => {
+
+const mutationKey = ['buyerRoleUpdatePermissions'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerRoleUpdatePermissions>>, {roleId: string;data: BodyType<UpdateRolePermissionsRequest>}> = (props) => {
+          const {roleId,data} = props ?? {};
+
+          return  buyerRoleUpdatePermissions(roleId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerRoleUpdatePermissionsMutationResult = NonNullable<Awaited<ReturnType<typeof buyerRoleUpdatePermissions>>>
+    export type BuyerRoleUpdatePermissionsMutationBody = BodyType<UpdateRolePermissionsRequest>
+    export type BuyerRoleUpdatePermissionsMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerRoleUpdatePermissions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerRoleUpdatePermissions>>, TError,{roleId: string;data: BodyType<UpdateRolePermissionsRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerRoleUpdatePermissions>>,
+        TError,
+        {roleId: string;data: BodyType<UpdateRolePermissionsRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerRoleUpdatePermissionsMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerRoleList = (
     
  signal?: AbortSignal
 ) => {
@@ -106,6 +172,92 @@ export function useBuyerRoleList<TData = Awaited<ReturnType<typeof buyerRoleList
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerRoleListQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerRolePermissionCatalog = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListPermissionPointResponse>(
+      {url: `/api/v1/buyer/roles/permission-catalog`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerRolePermissionCatalogQueryKey = () => {
+    return [
+    `/api/v1/buyer/roles/permission-catalog`
+    ] as const;
+    }
+
+    
+export const getBuyerRolePermissionCatalogQueryOptions = <TData = Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerRolePermissionCatalogQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerRolePermissionCatalog>>> = ({ signal }) => buyerRolePermissionCatalog(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerRolePermissionCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof buyerRolePermissionCatalog>>>
+export type BuyerRolePermissionCatalogQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerRolePermissionCatalog<TData = Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerRolePermissionCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof buyerRolePermissionCatalog>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerRolePermissionCatalog<TData = Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerRolePermissionCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof buyerRolePermissionCatalog>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerRolePermissionCatalog<TData = Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerRolePermissionCatalog<TData = Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerRolePermissionCatalog>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerRolePermissionCatalogQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

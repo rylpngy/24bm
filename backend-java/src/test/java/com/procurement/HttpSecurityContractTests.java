@@ -52,6 +52,7 @@ import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.api.AuthController;
 import com.procurement.identity.api.BuyerRoleController;
 import com.procurement.identity.api.BuyerRoleResponse;
+import com.procurement.identity.api.PermissionPointResponse;
 import com.procurement.identity.api.ChangeBuyerUserRoleRequest;
 import com.procurement.identity.api.ChangeBuyerUserStatusRequest;
 import com.procurement.identity.api.ResetBuyerUserPasswordRequest;
@@ -999,6 +1000,63 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.id").value("dept-old"))
         .andExpect(jsonPath("$.data.status").value("inactive"));
+  }
+
+  @Test
+  void buyerCanManageRolePermissionsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/roles/permission-catalog")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(buyerRoleApplicationService.permissionCatalog()).thenReturn(List.of(
+        new PermissionPointResponse("buyer:role:manage", "管理角色与权限", "管理"),
+        new PermissionPointResponse("buyer:report:export", "导出报表", "报表")));
+
+    mockMvc.perform(get("/api/v1/buyer/roles/permission-catalog")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].point").value("buyer:role:manage"))
+        .andExpect(jsonPath("$.data[1].label").value("导出报表"));
+
+    mockMvc.perform(post("/api/v1/buyer/roles/role-fin/permissions")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"permissions": ["buyer:report:export"]}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(buyerRoleApplicationService.updateRolePermissions(
+        org.mockito.ArgumentMatchers.eq("role-fin"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new BuyerRoleResponse(
+            "role-fin", "tenant-acme", "财务", List.of("buyer:report:export")));
+
+    mockMvc.perform(post("/api/v1/buyer/roles/role-fin/permissions")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"permissions": ["buyer:report:export"]}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("role-fin"))
+        .andExpect(jsonPath("$.data.permissions[0]").value("buyer:report:export"));
   }
 
   @Test
