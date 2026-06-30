@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseAutoScoreSuggestionResponse,
   ApiResponseListSupplierEvaluationResponse,
   ApiResponseSupplierEvaluationResponse,
   ApiResponseVoid,
@@ -242,4 +243,89 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const supplierEvaluationAutoScore = (
+    relationId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseAutoScoreSuggestionResponse>(
+      {url: `/api/v1/buyer/suppliers/${relationId}/auto-score`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getSupplierEvaluationAutoScoreQueryKey = (relationId?: string,) => {
+    return [
+    `/api/v1/buyer/suppliers/${relationId}/auto-score`
+    ] as const;
+    }
+
     
+export const getSupplierEvaluationAutoScoreQueryOptions = <TData = Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError = ErrorType<ApiResponseVoid>>(relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierEvaluationAutoScoreQueryKey(relationId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>> = ({ signal }) => supplierEvaluationAutoScore(relationId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(relationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierEvaluationAutoScoreQueryResult = NonNullable<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>>
+export type SupplierEvaluationAutoScoreQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierEvaluationAutoScore<TData = Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierEvaluationAutoScore>>,
+          TError,
+          Awaited<ReturnType<typeof supplierEvaluationAutoScore>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierEvaluationAutoScore<TData = Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierEvaluationAutoScore>>,
+          TError,
+          Awaited<ReturnType<typeof supplierEvaluationAutoScore>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierEvaluationAutoScore<TData = Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierEvaluationAutoScore<TData = Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierEvaluationAutoScoreQueryOptions(relationId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+

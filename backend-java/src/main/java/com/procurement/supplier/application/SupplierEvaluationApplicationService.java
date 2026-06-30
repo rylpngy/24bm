@@ -1,15 +1,18 @@
 package com.procurement.supplier.application;
 
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.supplier.api.AutoScoreSuggestionResponse;
 import com.procurement.supplier.api.ConfirmCooperationTierRequest;
 import com.procurement.supplier.api.CreateSupplierEvaluationRequest;
 import com.procurement.supplier.api.SupplierEvaluationResponse;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.domain.SupplierCooperationTier;
 import com.procurement.supplier.domain.SupplierEvaluation;
+import com.procurement.supplier.domain.SupplierFulfillmentMetrics;
 import com.procurement.supplier.domain.SupplierPerformanceScoring;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.supplier.infrastructure.SupplierEvaluationMapper;
+import com.procurement.supplier.infrastructure.SupplierFulfillmentMetricsMapper;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -19,13 +22,43 @@ import org.springframework.transaction.annotation.Transactional;
 /** SRM 绩效考核：多维周期评估 + 综合分驱动的生命周期标记建议与调级。 */
 @Service
 public class SupplierEvaluationApplicationService {
+  private static final BigDecimal DEFAULT_DIMENSION = new BigDecimal("80");
+
   private final SupplierEvaluationMapper evaluationMapper;
   private final BuyerSupplierRelationMapper relationMapper;
+  private final SupplierFulfillmentMetricsMapper metricsMapper;
 
   public SupplierEvaluationApplicationService(
-      SupplierEvaluationMapper evaluationMapper, BuyerSupplierRelationMapper relationMapper) {
+      SupplierEvaluationMapper evaluationMapper,
+      BuyerSupplierRelationMapper relationMapper,
+      SupplierFulfillmentMetricsMapper metricsMapper) {
     this.evaluationMapper = evaluationMapper;
     this.relationMapper = relationMapper;
+    this.metricsMapper = metricsMapper;
+  }
+
+  // 按实测履约自动评分:质量=合格率、交付=准时率;价格/服务无客观数据,取默认基准 80。
+  public AutoScoreSuggestionResponse autoScore(String relationId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer supplier evaluation APIs");
+    BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
+    SupplierFulfillmentMetrics m = metricsMapper.aggregate(tenantId, relation.supplierId());
+    int receiptCount = m == null ? 0 : m.receiptCount();
+    if (receiptCount == 0) {
+      return new AutoScoreSuggestionResponse(
+          null, null, null, null, null, null, 0, false,
+          "暂无收货验收数据,无法按实测履约自动评分。");
+    }
+    BigDecimal quality = m.totalReceived() > 0
+        ? BigDecimal.valueOf(Math.round(m.totalQualified() * 100f / m.totalReceived()))
+        : DEFAULT_DIMENSION;
+    BigDecimal delivery = BigDecimal.valueOf(Math.round(m.onTimeCount() * 100f / receiptCount));
+    BigDecimal total =
+        SupplierPerformanceScoring.totalScore(quality, delivery, DEFAULT_DIMENSION, DEFAULT_DIMENSION);
+    String tier = SupplierPerformanceScoring.suggestTier(total);
+    return new AutoScoreSuggestionResponse(
+        quality, delivery, DEFAULT_DIMENSION, DEFAULT_DIMENSION, total, tier, receiptCount, true,
+        "基于 " + receiptCount + " 次收货验收:质量=合格率 " + quality + "、交付=准时率 " + delivery
+            + ";价格/服务取默认基准 80。");
   }
 
   public List<SupplierEvaluationResponse> listEvaluations(String relationId) {

@@ -9107,6 +9107,56 @@
         }
       }
     },
+    "/api/v1/buyer/suppliers/{relationId}/auto-score": {
+      "get": {
+        "tags": [
+          "supplier-evaluation-controller"
+        ],
+        "operationId": "SupplierEvaluation_autoScore",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAutoScoreSuggestionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/suppliers/discover": {
       "get": {
         "tags": [
@@ -16568,6 +16618,53 @@
             }
           },
           "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAutoScoreSuggestionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AutoScoreSuggestionResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "AutoScoreSuggestionResponse": {
+        "type": "object",
+        "properties": {
+          "qualityScore": {
+            "type": "number"
+          },
+          "deliveryScore": {
+            "type": "number"
+          },
+          "priceScore": {
+            "type": "number"
+          },
+          "serviceScore": {
+            "type": "number"
+          },
+          "totalScore": {
+            "type": "number"
+          },
+          "suggestedTier": {
+            "type": "string"
+          },
+          "receiptCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasData": {
+            "type": "boolean"
+          },
+          "basis": {
             "type": "string"
           }
         }

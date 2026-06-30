@@ -29,6 +29,12 @@ public class SupplierEvaluationController {
     return ApiResponse.ok(evaluationApplicationService.listEvaluations(relationId));
   }
 
+  // 按实测履约(收货验收/准时率)自动生成绩效评分建议。
+  @GetMapping("/{relationId}/auto-score")
+  public ApiResponse<AutoScoreSuggestionResponse> autoScore(@PathVariable String relationId) {
+    return ApiResponse.ok(evaluationApplicationService.autoScore(relationId));
+  }
+
   @PostMapping("/{relationId}/evaluations")
   @ResponseStatus(HttpStatus.CREATED)
   public ApiResponse<SupplierEvaluationResponse> createEvaluation(

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  useSupplierEvaluationAutoScore,
   useSupplierEvaluationConfirmTier,
   useSupplierEvaluationCreateEvaluation,
   useSupplierEvaluationListEvaluations,
@@ -39,6 +40,8 @@ export function SupplierEvaluationPanel({
     query: { enabled: !!supplierId },
   });
   const fulfillment = metrics.data?.data;
+  const autoScore = useSupplierEvaluationAutoScore(relationId);
+  const auto = autoScore.data?.data;
   const create = useSupplierEvaluationCreateEvaluation();
   const confirm = useSupplierEvaluationConfirmTier();
 
@@ -72,19 +75,39 @@ export function SupplierEvaluationPanel({
         <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="text-xs font-black text-emerald-800">实测绩效（源自真实收货验收）</p>
-            <button
-              type="button"
-              onClick={() =>
-                setScores((s) => ({
-                  ...s,
-                  qualityScore: fulfillment.derivedQualityScore ?? s.qualityScore,
-                  deliveryScore: fulfillment.derivedDeliveryScore ?? s.deliveryScore,
-                }))
-              }
-              className="inline-flex h-7 items-center rounded-md bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700"
-            >
-              回填到质量/交付评分
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setScores((s) => ({
+                    ...s,
+                    qualityScore: fulfillment.derivedQualityScore ?? s.qualityScore,
+                    deliveryScore: fulfillment.derivedDeliveryScore ?? s.deliveryScore,
+                  }))
+                }
+                className="inline-flex h-7 items-center rounded-md border border-emerald-300 bg-white px-3 text-[11px] font-black text-emerald-700 hover:bg-emerald-50"
+              >
+                回填质量/交付
+              </button>
+              {auto?.hasData && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setScores((s) => ({
+                      ...s,
+                      qualityScore: auto.qualityScore ?? s.qualityScore,
+                      deliveryScore: auto.deliveryScore ?? s.deliveryScore,
+                      priceScore: auto.priceScore ?? s.priceScore,
+                      serviceScore: auto.serviceScore ?? s.serviceScore,
+                    }))
+                  }
+                  title={auto.basis ?? ''}
+                  className="inline-flex h-7 items-center rounded-md bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700"
+                >
+                  一键自动评分(全维度)
+                </button>
+              )}
+            </div>
           </div>
           <div className="mt-2 grid gap-2 sm:grid-cols-4">
             <MiniFact
