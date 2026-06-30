@@ -39,7 +39,7 @@ on conflict (tenant_id, rfq_id, supplier_id) do update set
 insert into quotes (id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status)
 values
   ('quote-local-laptop-1', 'tenant-acme', 'rfq-local-laptop', 'ent-supplier-sunrise', 60000.00, 13.00, 10, '已提交')
-on conflict (tenant_id, rfq_id, supplier_id) do update set
+on conflict (tenant_id, rfq_id, supplier_id, round) do update set
   amount = excluded.amount,
   tax_rate = excluded.tax_rate,
   delivery_days = excluded.delivery_days,

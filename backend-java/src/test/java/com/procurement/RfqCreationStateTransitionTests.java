@@ -112,11 +112,11 @@ class RfqCreationStateTransitionTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", "", "最低价");
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", "", "最低价", null, 1, false);
     when(rfqMapper.listByTenant("tenant-1")).thenReturn(List.of(rfq));
     when(rfqDemandMapper.listDemandIds("tenant-1", "rfq-1")).thenReturn(List.of("demand-1"));
     when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1")).thenReturn(List.of("supplier-1"));
-    when(quoteMapper.listByTenantAndRfq("tenant-1", "rfq-1"))
+    when(quoteMapper.listByTenantAndRfqAndRound("tenant-1", "rfq-1", 1))
         .thenReturn(List.of(new Quote(
             "quote-1",
             "tenant-1",

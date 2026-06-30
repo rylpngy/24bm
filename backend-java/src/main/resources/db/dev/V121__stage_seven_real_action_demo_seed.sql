@@ -239,7 +239,7 @@ values
   ('quote-stage7-award-ready-1', 'tenant-acme', 'rfq-stage7-award-ready', 'ent-supplier-sunrise', 53600.00, 13.00, 7, '已提交', now() + interval '17 minutes'),
   ('quote-stage7-order-ready-1', 'tenant-acme', 'rfq-stage7-order-ready', 'ent-supplier-sunrise', 52800.00, 13.00, 8, '已提交', now() + interval '16 minutes'),
   ('quote-stage7-receipt-ready-1', 'tenant-acme', 'rfq-stage7-receipt-ready', 'ent-supplier-sunrise', 51800.00, 13.00, 9, '已提交', now() + interval '15 minutes')
-on conflict (tenant_id, rfq_id, supplier_id) do update set
+on conflict (tenant_id, rfq_id, supplier_id, round) do update set
   amount = excluded.amount,
   tax_rate = excluded.tax_rate,
   delivery_days = excluded.delivery_days,
@@ -358,7 +358,7 @@ values
   ('quote-stage7-supplier-delivery-ready-1', 'tenant-acme', 'rfq-stage7-supplier-delivery-ready', 'ent-supplier-sunrise', 44200.00, 13.00, 7, '已提交', now() + interval '28 minutes'),
   ('quote-stage7-supplier-invoice-ready-1', 'tenant-acme', 'rfq-stage7-supplier-invoice-ready', 'ent-supplier-sunrise', 43200.00, 13.00, 6, '已提交', now() + interval '27 minutes'),
   ('quote-stage7-supplier-receivable-ready-1', 'tenant-acme', 'rfq-stage7-supplier-receivable-ready', 'ent-supplier-sunrise', 42200.00, 13.00, 5, '已提交', now() + interval '26 minutes')
-on conflict (tenant_id, rfq_id, supplier_id) do update set
+on conflict (tenant_id, rfq_id, supplier_id, round) do update set
   amount = excluded.amount,
   tax_rate = excluded.tax_rate,
   delivery_days = excluded.delivery_days,

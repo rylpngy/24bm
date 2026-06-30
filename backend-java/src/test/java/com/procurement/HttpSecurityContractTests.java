@@ -751,6 +751,55 @@ class HttpSecurityContractTests {
   }
 
   @Test
+  void buyerCanStartNewRfqRoundButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    String body = "{\"deadlineAt\": \"2026-07-10T18:00:00+08:00\", \"finalRound\": true}";
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/new-round")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isForbidden());
+
+    when(rfqApplicationService.startNewRound(
+        org.mockito.ArgumentMatchers.eq("rfq-demo"),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.eq(true)))
+        .thenReturn(new RfqResponse(
+            "rfq-demo", "tenant-acme", "办公电脑询价", "报价中",
+            OffsetDateTime.parse("2026-07-10T18:00:00+08:00"),
+            "user-buyer-owner", null,
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-21T09:00:00+08:00"),
+            List.of(), List.of(), List.of(), "", "", "最低价", null, 2, true));
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/new-round")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("报价中"))
+        .andExpect(jsonPath("$.data.currentRound").value(2))
+        .andExpect(jsonPath("$.data.finalRound").value(true));
+  }
+
+  @Test
   void buyerAndSupplierCanUseRfqClarificationsWithinTheirScope() throws Exception {
     String supplierToken = loginAndExtractToken("""
         {

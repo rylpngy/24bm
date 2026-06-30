@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FileText, Lock, LockOpen, Plus } from 'lucide-react';
+import { FileText, Lock, LockOpen, Plus, RotateCcw } from 'lucide-react';
 import {
   useBuyerSupplierList,
   usePurchaseDemandList,
@@ -8,6 +8,7 @@ import {
   useRfqCreate,
   useRfqList,
   useRfqOpen,
+  useRfqStartNewRound,
 } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
@@ -30,6 +31,8 @@ export function RfqsPage() {
   const create = useRfqCreate();
   const award = useRfqAwardAward();
   const open = useRfqOpen();
+  const newRound = useRfqStartNewRound();
+  const [roundForm, setRoundForm] = useState<{ rfqId: string; deadline: string; final: boolean } | null>(null);
 
   const [title, setTitle] = useState('');
   const [demandId, setDemandId] = useState('');
@@ -91,6 +94,22 @@ export function RfqsPage() {
     award.mutate(
       { rfqId, data: { quoteId, reason: '含税总价与交期综合最优' } },
       { onSuccess: () => refresh() },
+    );
+  };
+
+  const submitNewRound = () => {
+    if (!roundForm || !roundForm.deadline) return;
+    newRound.mutate(
+      {
+        rfqId: roundForm.rfqId,
+        data: { deadlineAt: `${roundForm.deadline}T18:00:00+08:00`, finalRound: roundForm.final },
+      },
+      {
+        onSuccess: () => {
+          setRoundForm(null);
+          refresh();
+        },
+      },
     );
   };
 
@@ -231,7 +250,14 @@ export function RfqsPage() {
                   <p className="break-words font-black text-slate-950">{r.title}</p>
                   <p className="mt-1 text-xs font-bold text-slate-500">{r.id}</p>
                 </div>
-                {r.status && <StatusPill label={r.status} />}
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {(r.currentRound ?? 1) > 1 && (
+                    <span className="rounded-md bg-violet-100 px-2 py-0.5 text-[11px] font-black text-violet-700">
+                      第{r.currentRound}轮{r.finalRound ? '·最终' : ''}
+                    </span>
+                  )}
+                  {r.status && <StatusPill label={r.status} />}
+                </div>
               </div>
               <div className="mt-3 grid gap-2 sm:grid-cols-4">
                 <MiniFact label="邀请供应商" value={String((r.invitedSupplierIds ?? []).length)} />
@@ -288,16 +314,29 @@ export function RfqsPage() {
                 </div>
               ) : (
                 <>
-                  {(r.quotes ?? []).length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setOpenId(openId === r.id ? null : (r.id ?? null))}
-                      className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
-                    >
-                      <LockOpen size={13} />
-                      {openId === r.id ? '收起比价' : '比价定标'}
-                    </button>
-                  )}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {(r.quotes ?? []).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setOpenId(openId === r.id ? null : (r.id ?? null))}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
+                      >
+                        <LockOpen size={13} />
+                        {openId === r.id ? '收起比价' : '比价定标'}
+                      </button>
+                    )}
+                    {r.status === '已开标' && !r.finalRound && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          r.id && setRoundForm({ rfqId: r.id, deadline: '', final: false })
+                        }
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-violet-200 bg-white px-3 text-xs font-black text-violet-700 hover:bg-violet-50"
+                      >
+                        <RotateCcw size={13} /> 再次报价
+                      </button>
+                    )}
+                  </div>
                   {openId === r.id && (
                     <div className="mt-3">
                       <QuoteComparisonTable
@@ -318,6 +357,51 @@ export function RfqsPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {roundForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-6" onClick={() => setRoundForm(null)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <p className="text-base font-black text-slate-950">发起新一轮报价</p>
+            <p className="mt-0.5 text-xs font-bold text-slate-400">
+              将重新封存,受邀供应商在新一轮重新报价;评标只看最新一轮。
+            </p>
+            <div className="mt-4">
+              <label className="text-xs font-black text-slate-500">新报价截止日期</label>
+              <input
+                type="date"
+                className={inputCls}
+                value={roundForm.deadline}
+                onChange={(e) => setRoundForm({ ...roundForm, deadline: e.target.value })}
+              />
+            </div>
+            <label className="mt-3 flex items-center gap-2 text-sm font-bold text-slate-700">
+              <input
+                type="checkbox"
+                checked={roundForm.final}
+                onChange={(e) => setRoundForm({ ...roundForm, final: e.target.checked })}
+              />
+              最终轮(BAFO · 最后一次报价机会)
+            </label>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRoundForm(null)}
+                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={submitNewRound}
+                disabled={newRound.isPending || !roundForm.deadline}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white hover:bg-slate-800 disabled:bg-slate-400"
+              >
+                <RotateCcw size={14} /> {newRound.isPending ? '发起中…' : '确认发起'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </Panel>

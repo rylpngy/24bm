@@ -157,7 +157,7 @@ class PurchaseOrderNotificationTests {
         "buyer-user",
         awardedSupplierId,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价");
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false);
   }
 
   private SupplierUser supplierUser(String id, String status) {

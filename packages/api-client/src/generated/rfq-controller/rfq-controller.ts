@@ -33,6 +33,7 @@ import type {
   ApiResponseRfqResponse,
   ApiResponseVoid,
   CreateRfqRequest,
+  NewRoundRequest,
   OpenRfqRequest,
   RfqEvaluationParams,
   RfqListParams,
@@ -304,6 +305,65 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getRfqOpenMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const rfqStartNewRound = (
+    rfqId: string,
+    newRoundRequest: BodyType<NewRoundRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseRfqResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/new-round`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: newRoundRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getRfqStartNewRoundMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqStartNewRound>>, TError,{rfqId: string;data: BodyType<NewRoundRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqStartNewRound>>, TError,{rfqId: string;data: BodyType<NewRoundRequest>}, TContext> => {
+
+const mutationKey = ['rfqStartNewRound'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqStartNewRound>>, {rfqId: string;data: BodyType<NewRoundRequest>}> = (props) => {
+          const {rfqId,data} = props ?? {};
+
+          return  rfqStartNewRound(rfqId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RfqStartNewRoundMutationResult = NonNullable<Awaited<ReturnType<typeof rfqStartNewRound>>>
+    export type RfqStartNewRoundMutationBody = BodyType<NewRoundRequest>
+    export type RfqStartNewRoundMutationError = ErrorType<ApiResponseVoid>
+
+    export const useRfqStartNewRound = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqStartNewRound>>, TError,{rfqId: string;data: BodyType<NewRoundRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rfqStartNewRound>>,
+        TError,
+        {rfqId: string;data: BodyType<NewRoundRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getRfqStartNewRoundMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

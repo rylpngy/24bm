@@ -108,7 +108,7 @@ public class QuoteApplicationService {
         rfq.tenantId(),
         rfqId,
         supplierId,
-        QuoteStatus.SUBMITTED);
+        rfq.currentRound());
     RfqQuoteSubmissionPolicy.requireNoSubmittedQuote(submittedCount, rfqId);
 
     String quoteId = newId("quote");
@@ -122,7 +122,8 @@ public class QuoteApplicationService {
           amount,
           request.taxRate(),
           request.deliveryDays(),
-          QuoteStatus.SUBMITTED);
+          QuoteStatus.SUBMITTED,
+          rfq.currentRound());
     } catch (DuplicateKeyException exception) {
       RfqQuoteSubmissionPolicy.requireNoSubmittedQuote(1, rfqId);
       throw exception;
@@ -256,6 +257,7 @@ public class QuoteApplicationService {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
+  // 供应商侧:不回传其它供应商报价明细(封存),但需带上轮次/开标态供前端展示。
   private RfqResponse toRfqResponse(Rfq rfq) {
     return new RfqResponse(
         rfq.id(),
@@ -268,7 +270,14 @@ public class QuoteApplicationService {
         rfq.createdAt(),
         rfq.updatedAt(),
         rfqDemandMapper.listDemandIds(rfq.tenantId(), rfq.id()),
-        rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()));
+        rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()),
+        java.util.List.of(),
+        rfq.quoteRequirement(),
+        rfq.deliveryRequirement(),
+        rfq.evaluationMethod(),
+        rfq.openedAt(),
+        rfq.currentRound(),
+        rfq.finalRound());
   }
 
   private String newId(String prefix) {

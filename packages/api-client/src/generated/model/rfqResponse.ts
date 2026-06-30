@@ -24,4 +24,6 @@ export interface RfqResponse {
   deliveryRequirement?: string;
   evaluationMethod?: string;
   openedAt?: string;
+  currentRound?: number;
+  finalRound?: boolean;
 }

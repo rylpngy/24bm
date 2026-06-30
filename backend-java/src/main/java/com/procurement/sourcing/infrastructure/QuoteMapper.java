@@ -12,23 +12,24 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface QuoteMapper {
 
+  // 当前轮去重:同一供应商在同一轮只能有一份报价(允许跨轮再报)。
   @Select("""
       select count(1)
       from quotes
       where tenant_id = #{tenantId}
         and rfq_id = #{rfqId,jdbcType=VARCHAR}
         and supplier_id = #{supplierId,jdbcType=VARCHAR}
-        and status = #{status,jdbcType=VARCHAR}
+        and round = #{round}
       """)
   int countSubmittedBySupplier(
       @Param("tenantId") String tenantId,
       @Param("rfqId") String rfqId,
       @Param("supplierId") String supplierId,
-      @Param("status") String status);
+      @Param("round") int round);
 
   @Insert("""
-      insert into quotes (id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status)
-      values (#{id}, #{tenantId}, #{rfqId}, #{supplierId}, #{amount}, #{taxRate}, #{deliveryDays}, #{status,jdbcType=VARCHAR})
+      insert into quotes (id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, round)
+      values (#{id}, #{tenantId}, #{rfqId}, #{supplierId}, #{amount}, #{taxRate}, #{deliveryDays}, #{status,jdbcType=VARCHAR}, #{round})
       """)
   void insert(
       @Param("id") String id,
@@ -38,7 +39,20 @@ public interface QuoteMapper {
       @Param("amount") BigDecimal amount,
       @Param("taxRate") BigDecimal taxRate,
       @Param("deliveryDays") Integer deliveryDays,
-      @Param("status") String status);
+      @Param("status") String status,
+      @Param("round") int round);
+
+  // 仅取某一轮的报价(评标/对比只看当前轮)。
+  @Select("""
+      select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
+      from quotes
+      where tenant_id = #{tenantId} and rfq_id = #{rfqId} and round = #{round}
+      order by amount
+      """)
+  List<Quote> listByTenantAndRfqAndRound(
+      @Param("tenantId") String tenantId,
+      @Param("rfqId") String rfqId,
+      @Param("round") int round);
 
   @Select("""
       select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at

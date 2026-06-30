@@ -31,4 +31,4 @@ insert into quotes (id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delive
 values
   ('quote-demo-1', 'tenant-acme', 'rfq-demo', 'ent-supplier-sunrise', 118000.00, 13.00, 7, '已提交'),
   ('quote-demo-2', 'tenant-acme', 'rfq-demo', 'ent-supplier-tech', 125000.00, 13.00, 10, '已提交')
-on conflict (tenant_id, rfq_id, supplier_id) do nothing;
+on conflict (tenant_id, rfq_id, supplier_id, round) do nothing;

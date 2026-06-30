@@ -217,6 +217,45 @@ class RfqUpdateQuotingTests {
     verify(rfqInviteMapper, never()).deleteByRfq("tenant-1", "rfq-1");
   }
 
+  @Test
+  void startsNewRoundFromOpenedRfqBumpingRoundAndReSealing() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    var newDeadline = OffsetDateTime.parse("2026-07-12T18:00:00+08:00");
+    Rfq opened = new Rfq("rfq-1", "tenant-1", "办公电脑询价", "已开标",
+        OffsetDateTime.parse("2026-06-20T18:00:00+08:00"), "buyer-user", null,
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+        OffsetDateTime.parse("2026-06-21T09:00:00+08:00"), "", "", "最低价",
+        OffsetDateTime.parse("2026-06-21T09:00:00+08:00"), 1, false);
+    Rfq round2 = new Rfq("rfq-1", "tenant-1", "办公电脑询价", "报价中", newDeadline, "buyer-user", null,
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), newDeadline, "", "", "最低价", null, 2, true);
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(opened).thenReturn(round2);
+    when(rfqMapper.startNewRound("tenant-1", "rfq-1", newDeadline, true)).thenReturn(1);
+
+    var response = rfqApplicationService.startNewRound("rfq-1", newDeadline, true);
+
+    assertThat(response.status()).isEqualTo("报价中");
+    assertThat(response.currentRound()).isEqualTo(2);
+    assertThat(response.finalRound()).isTrue();
+    verify(rfqMapper).startNewRound("tenant-1", "rfq-1", newDeadline, true);
+  }
+
+  @Test
+  void rejectsNewRoundWhenRfqNotOpened() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
+        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")));
+
+    assertThatThrownBy(() -> rfqApplicationService.startNewRound(
+        "rfq-1", OffsetDateTime.parse("2026-07-12T18:00:00+08:00"), false))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Only opened RFQs can start a new round");
+    verify(rfqMapper, never()).startNewRound(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyBoolean());
+  }
+
   private Rfq rfq(String id, String status, OffsetDateTime deadline) {
     return new Rfq(
         id,
@@ -227,7 +266,7 @@ class RfqUpdateQuotingTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价");
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false);
   }
 
   private SupplierQualification qualification(String id, String supplierId) {

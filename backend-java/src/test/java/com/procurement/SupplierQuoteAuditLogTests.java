@@ -71,7 +71,7 @@ class SupplierQuoteAuditLogTests {
         .thenReturn(rfq("rfq-1", "报价中"));
     when(rfqInviteMapper.isSupplierInvited("tenant-1", "rfq-1", "ent-supplier-sunrise"))
         .thenReturn(1);
-    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", "已提交"))
+    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", 1))
         .thenReturn(0);
     when(quoteMapper.findByTenantAndId(eq("tenant-1"), anyString()))
         .thenAnswer(invocation -> quote(invocation.getArgument(1), BigDecimal.valueOf(116000), BigDecimal.valueOf(13), 6));
@@ -94,7 +94,7 @@ class SupplierQuoteAuditLogTests {
         .thenReturn(rfq("rfq-1", "报价中"));
     when(rfqInviteMapper.isSupplierInvited("tenant-1", "rfq-1", "ent-supplier-sunrise"))
         .thenReturn(1);
-    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", "已提交"))
+    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", 1))
         .thenReturn(0);
     when(quoteMapper.findByTenantAndId(eq("tenant-1"), anyString()))
         .thenAnswer(invocation -> quote(invocation.getArgument(1), BigDecimal.valueOf(118000), BigDecimal.valueOf(13), 7));
@@ -117,7 +117,7 @@ class SupplierQuoteAuditLogTests {
     verify(quoteMapper).insert(
         anyString(), eq("tenant-1"), eq("rfq-1"), eq("ent-supplier-sunrise"),
         org.mockito.ArgumentMatchers.argThat(a -> a.compareTo(BigDecimal.valueOf(118000)) == 0),
-        eq(BigDecimal.valueOf(13)), eq(7), eq("已提交"));
+        eq(BigDecimal.valueOf(13)), eq(7), eq("已提交"), eq(1));
     verify(quoteLineItemMapper).deleteByQuote(eq("tenant-1"), anyString());
     verify(quoteLineItemMapper, org.mockito.Mockito.times(2))
         .insert(anyString(), eq("tenant-1"), anyString(), anyString(), eq("台"),
@@ -134,7 +134,7 @@ class SupplierQuoteAuditLogTests {
         .thenReturn(rfq("rfq-1", "报价中"));
     when(rfqInviteMapper.isSupplierInvited("tenant-1", "rfq-1", "ent-supplier-sunrise"))
         .thenReturn(1);
-    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", "已提交"))
+    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", 1))
         .thenReturn(0);
     when(quoteMapper.findByTenantAndId(eq("tenant-1"), anyString()))
         .thenAnswer(invocation -> quote(invocation.getArgument(1), BigDecimal.valueOf(116000), BigDecimal.valueOf(13), 6));
@@ -261,7 +261,7 @@ class SupplierQuoteAuditLogTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价");
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false);
   }
 
   private BuyerUser buyerUser(String id, String status) {

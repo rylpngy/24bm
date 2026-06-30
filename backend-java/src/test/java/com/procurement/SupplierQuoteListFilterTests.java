@@ -165,7 +165,8 @@ class SupplierQuoteListFilterTests {
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.anyInt(),
-        eq("已提交"));
+        eq("已提交"),
+        org.mockito.ArgumentMatchers.anyInt());
   }
 
   @Test
@@ -175,7 +176,7 @@ class SupplierQuoteListFilterTests {
         .thenReturn(rfq("rfq-1", "报价中"));
     when(rfqInviteMapper.isSupplierInvited("tenant-1", "rfq-1", "ent-supplier-sunrise"))
         .thenReturn(1);
-    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", "已提交"))
+    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", 1))
         .thenReturn(0);
     doThrow(new DuplicateKeyException("duplicate supplier quote"))
         .when(quoteMapper)
@@ -187,7 +188,8 @@ class SupplierQuoteListFilterTests {
             eq(BigDecimal.valueOf(116000)),
             eq(BigDecimal.valueOf(13)),
             eq(6),
-            eq("已提交"));
+            eq("已提交"),
+            eq(1));
 
     assertThatThrownBy(() -> quoteApplicationService.submit("rfq-1", new SubmitQuoteRequest(
         BigDecimal.valueOf(116000),
@@ -229,6 +231,6 @@ class SupplierQuoteListFilterTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价");
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false);
   }
 }

@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Update;
 public interface RfqMapper {
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round
       from rfqs
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -22,7 +22,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round
       from rfqs
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -40,14 +40,14 @@ public interface RfqMapper {
       @Param("keyword") String keyword);
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round
       from rfqs
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Rfq findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where r.id = #{rfqId}
@@ -57,7 +57,7 @@ public interface RfqMapper {
   Rfq findBySupplierInvite(@Param("rfqId") String rfqId, @Param("supplierId") String supplierId);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -68,7 +68,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -171,4 +171,24 @@ public interface RfqMapper {
       @Param("currentStatus") String currentStatus,
       @Param("status") String status,
       @Param("openedBy") String openedBy);
+
+  // 再次报价:已开标 → 报价中,轮次+1、重新封存、设新截止(可标记最终轮 BAFO)。
+  @Update("""
+      update rfqs
+      set status = '报价中',
+          current_round = current_round + 1,
+          final_round = #{finalRound},
+          deadline_at = #{deadlineAt},
+          opened_at = null,
+          opened_by = null,
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = '已开标'
+      """)
+  int startNewRound(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("deadlineAt") OffsetDateTime deadlineAt,
+      @Param("finalRound") boolean finalRound);
 }

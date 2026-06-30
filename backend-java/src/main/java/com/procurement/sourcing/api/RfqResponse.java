@@ -19,7 +19,9 @@ public record RfqResponse(
     String quoteRequirement,
     String deliveryRequirement,
     String evaluationMethod,
-    OffsetDateTime openedAt) {
+    OffsetDateTime openedAt,
+    int currentRound,
+    boolean finalRound) {
 
   public RfqResponse(
       String id,
@@ -49,6 +51,8 @@ public record RfqResponse(
         "",
         "",
         "最低价",
-        null);
+        null,
+        1,
+        false);
   }
 }

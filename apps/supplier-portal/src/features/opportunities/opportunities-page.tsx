@@ -182,7 +182,14 @@ export function OpportunitiesPage() {
                     </p>
                     <p className="mt-1 font-mono text-xs font-bold text-slate-500">{r.id}</p>
                   </div>
-                  {r.status && <StatusPill label={r.status} />}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {(r.currentRound ?? 1) > 1 && (
+                      <span className="rounded-md bg-violet-100 px-2 py-0.5 text-[11px] font-black text-violet-700">
+                        第{r.currentRound}轮{r.finalRound ? '·最终' : ''}
+                      </span>
+                    )}
+                    {r.status && <StatusPill label={r.status} />}
+                  </div>
                 </div>
 
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">

@@ -57,6 +57,15 @@ public class RfqController {
     return ApiResponse.ok(rfqApplicationService.openBids(rfqId, request.force()));
   }
 
+  // 再次报价/BAFO(采购方):已开标 RFQ 发起下一轮报价(重新封存,设新截止)。
+  @PostMapping("/{rfqId}/new-round")
+  public ApiResponse<RfqResponse> startNewRound(
+      @PathVariable String rfqId,
+      @Valid @RequestBody NewRoundRequest request) {
+    return ApiResponse.ok(
+        rfqApplicationService.startNewRound(rfqId, request.deadlineAt(), request.finalRound()));
+  }
+
   // 澄清答疑(采购方):查看该 RFQ 全部澄清。
   @GetMapping("/{rfqId}/clarifications")
   public ApiResponse<List<RfqClarificationResponse>> clarifications(@PathVariable String rfqId) {

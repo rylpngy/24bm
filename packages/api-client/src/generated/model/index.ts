@@ -226,6 +226,7 @@ export * from './materialListParams';
 export * from './materialResponse';
 export * from './monthlySpendResponse';
 export * from './myPermissionsResponse';
+export * from './newRoundRequest';
 export * from './notificationDeliveryResponse';
 export * from './notificationResponse';
 export * from './notificationSettingsResponse';

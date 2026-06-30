@@ -4700,6 +4700,66 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/new-round": {
+      "post": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_startNewRound",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewRoundRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/rfqs/{rfqId}/clarifications/{clarificationId}/answer": {
       "post": {
         "tags": [
@@ -10888,6 +10948,13 @@
           "openedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "currentRound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "finalRound": {
+            "type": "boolean"
           }
         }
       },
@@ -13297,6 +13364,21 @@
         "type": "object",
         "properties": {
           "force": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NewRoundRequest": {
+        "required": [
+          "deadlineAt"
+        ],
+        "type": "object",
+        "properties": {
+          "deadlineAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finalRound": {
             "type": "boolean"
           }
         }

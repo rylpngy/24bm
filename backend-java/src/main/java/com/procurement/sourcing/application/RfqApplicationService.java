@@ -97,7 +97,8 @@ public class RfqApplicationService {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
     rfqSourcingStatusTransition.requireOpenedForEvaluation(rfq.status(), rfqId);
-    List<Quote> quotes = quoteMapper.listByTenantAndRfq(tenantId, rfqId);
+    List<Quote> quotes =
+        quoteMapper.listByTenantAndRfqAndRound(tenantId, rfqId, rfq.currentRound());
     List<BidEvaluator.ScoredQuote> scored =
         BidEvaluator.evaluate(quotes, priceWeight, deliveryWeight);
     List<BidEvaluationRowResponse> rows = scored.stream()
@@ -140,6 +141,34 @@ public class RfqApplicationService {
       throw new IllegalStateException("RFQ status changed before bids could be opened: " + rfqId);
     }
     auditLogApplicationService.recordTenantAction(RfqAuditAction.OPENED, "rfq", rfqId);
+    return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
+  }
+
+  // 再次报价/BAFO:已开标的 RFQ 觉得报价不理想,发起下一轮(重新封存,设新截止)。
+  @Transactional
+  public RfqResponse startNewRound(
+      String rfqId, java.time.OffsetDateTime deadlineAt, boolean finalRound) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    if (rfq == null) {
+      throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
+    }
+    if (!RfqStatus.OPENED.equals(rfq.status())) {
+      throw new IllegalStateException("Only opened RFQs can start a new round: " + rfqId);
+    }
+    rfqSourcingStatusTransition.requireFutureDeadline(deadlineAt, rfqId);
+
+    int updated = rfqMapper.startNewRound(tenantId, rfqId, deadlineAt, finalRound);
+    if (updated == 0) {
+      throw new IllegalStateException("RFQ status changed before a new round could start: " + rfqId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        tenantId, RfqAuditAction.NEW_ROUND, "rfq", rfqId,
+        finalRound ? "发起最终轮报价(BAFO)" : "发起新一轮报价");
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId,
+        "询价进入新一轮报价",
+        rfq.title() + "已发起新一轮报价,请关注受邀供应商的二次报价。");
     return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
   }
 
@@ -293,13 +322,15 @@ public class RfqApplicationService {
         rfq.updatedAt(),
         rfqDemandMapper.listDemandIds(rfq.tenantId(), rfq.id()),
         rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()),
-        quoteMapper.listByTenantAndRfq(rfq.tenantId(), rfq.id()).stream()
+        quoteMapper.listByTenantAndRfqAndRound(rfq.tenantId(), rfq.id(), rfq.currentRound()).stream()
             .map(this::toQuoteResponse)
             .toList(),
         rfq.quoteRequirement(),
         rfq.deliveryRequirement(),
         rfq.evaluationMethod(),
-        rfq.openedAt());
+        rfq.openedAt(),
+        rfq.currentRound(),
+        rfq.finalRound());
   }
 
   private static String orEmpty(String value) {
