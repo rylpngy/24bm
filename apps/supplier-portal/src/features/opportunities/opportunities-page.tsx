@@ -4,6 +4,8 @@ import { Plus, Send, Trash2 } from 'lucide-react';
 import { useSupplierQuoteListRfqs, useSupplierQuoteSubmit } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, Pagination, Panel, PrimaryActionButton, SearchInput, StatusPill, cn } from '@24bid/ui';
 import { RfqClarificationsSupplier } from './rfq-clarifications-supplier';
+import { RfqResultSupplier } from './rfq-result-supplier';
+import { useAuthStore } from '../../lib/auth-store';
 
 interface LineRow {
   description: string;
@@ -28,6 +30,7 @@ const formTotal = (f: QuoteForm) => f.lines.reduce((sum, l) => sum + lineAmount(
 // 询价邀请:供应商在报价中状态按行报价(描述/单位/数量/单价),报价金额按行汇总。
 export function OpportunitiesPage() {
   const queryClient = useQueryClient();
+  const supplierId = useAuthStore((s) => s.session?.supplierId ?? '');
   const rfqs = useSupplierQuoteListRfqs();
   const submit = useSupplierQuoteSubmit();
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -213,6 +216,10 @@ export function OpportunitiesPage() {
                       </p>
                     </div>
                   </div>
+                )}
+
+                {r.status === '已定标' && r.id && supplierId && (
+                  <RfqResultSupplier rfqId={r.id} supplierId={supplierId} />
                 )}
 
                 {r.id && <RfqClarificationsSupplier rfqId={r.id} canAsk={quoting} />}

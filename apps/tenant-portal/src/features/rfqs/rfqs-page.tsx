@@ -14,6 +14,7 @@ import {
 import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
 import { RfqClarificationsBuyer } from './rfq-clarifications';
+import { RfqResultBuyer } from './rfq-result';
 
 const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -321,6 +322,10 @@ export function RfqsPage() {
                     <p className="mt-0.5 text-[11px] font-bold text-red-600/80">理由:{r.closeReason}</p>
                   )}
                 </div>
+              )}
+
+              {r.status === '已定标' && r.id && (
+                <RfqResultBuyer rfqId={r.id} supplierNames={supplierNames} />
               )}
 
               {r.id && <RfqClarificationsBuyer rfqId={r.id} />}

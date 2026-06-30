@@ -29,6 +29,7 @@ import type {
   ApiResponseListRfqResponse,
   ApiResponseQuoteResponse,
   ApiResponseRfqClarificationResponse,
+  ApiResponseRfqResultResponse,
   ApiResponseVoid,
   AskClarificationRequest,
   SubmitQuoteRequest,
@@ -321,6 +322,92 @@ export function useSupplierQuoteListRfqs<TData = Awaited<ReturnType<typeof suppl
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierQuoteListRfqsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierQuoteResult = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseRfqResultResponse>(
+      {url: `/api/v1/supplier/rfqs/${rfqId}/result`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getSupplierQuoteResultQueryKey = (rfqId?: string,) => {
+    return [
+    `/api/v1/supplier/rfqs/${rfqId}/result`
+    ] as const;
+    }
+
+    
+export const getSupplierQuoteResultQueryOptions = <TData = Awaited<ReturnType<typeof supplierQuoteResult>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteResult>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierQuoteResultQueryKey(rfqId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQuoteResult>>> = ({ signal }) => supplierQuoteResult(rfqId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteResult>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierQuoteResultQueryResult = NonNullable<Awaited<ReturnType<typeof supplierQuoteResult>>>
+export type SupplierQuoteResultQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierQuoteResult<TData = Awaited<ReturnType<typeof supplierQuoteResult>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteResult>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierQuoteResult>>,
+          TError,
+          Awaited<ReturnType<typeof supplierQuoteResult>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierQuoteResult<TData = Awaited<ReturnType<typeof supplierQuoteResult>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteResult>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierQuoteResult>>,
+          TError,
+          Awaited<ReturnType<typeof supplierQuoteResult>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierQuoteResult<TData = Awaited<ReturnType<typeof supplierQuoteResult>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteResult>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierQuoteResult<TData = Awaited<ReturnType<typeof supplierQuoteResult>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteResult>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierQuoteResultQueryOptions(rfqId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

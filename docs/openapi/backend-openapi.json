@@ -7753,6 +7753,56 @@
         }
       }
     },
+    "/api/v1/supplier/rfqs/{rfqId}/result": {
+      "get": {
+        "tags": [
+          "supplier-quote-controller"
+        ],
+        "operationId": "SupplierQuote_result",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqResultResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/quotes": {
       "get": {
         "tags": [
@@ -9092,6 +9142,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseMyPermissionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/rfqs/{rfqId}/result": {
+      "get": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_result",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqResultResponse"
                 }
               }
             }
@@ -14997,6 +15097,81 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseRfqResultResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RfqResultResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RfqResultResponse": {
+        "type": "object",
+        "properties": {
+          "rfqId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "winnerSupplierId": {
+            "type": "string"
+          },
+          "winnerAmount": {
+            "type": "number"
+          },
+          "awardReason": {
+            "type": "string"
+          },
+          "awardedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "rankings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RfqResultRowResponse"
+            }
+          }
+        }
+      },
+      "RfqResultRowResponse": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "supplierId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "deliveryDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "awarded": {
+            "type": "boolean"
           }
         }
       },

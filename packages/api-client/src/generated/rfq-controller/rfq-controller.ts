@@ -32,6 +32,7 @@ import type {
   ApiResponseListRfqResponse,
   ApiResponseRfqClarificationResponse,
   ApiResponseRfqResponse,
+  ApiResponseRfqResultResponse,
   ApiResponseVoid,
   CreateRfqRequest,
   NewRoundRequest,
@@ -487,7 +488,93 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const rfqEvaluation = (
+    export const rfqResult = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseRfqResultResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/result`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getRfqResultQueryKey = (rfqId?: string,) => {
+    return [
+    `/api/v1/buyer/rfqs/${rfqId}/result`
+    ] as const;
+    }
+
+    
+export const getRfqResultQueryOptions = <TData = Awaited<ReturnType<typeof rfqResult>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqResult>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRfqResultQueryKey(rfqId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof rfqResult>>> = ({ signal }) => rfqResult(rfqId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rfqResult>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RfqResultQueryResult = NonNullable<Awaited<ReturnType<typeof rfqResult>>>
+export type RfqResultQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useRfqResult<TData = Awaited<ReturnType<typeof rfqResult>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqResult>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqResult>>,
+          TError,
+          Awaited<ReturnType<typeof rfqResult>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqResult<TData = Awaited<ReturnType<typeof rfqResult>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqResult>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqResult>>,
+          TError,
+          Awaited<ReturnType<typeof rfqResult>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqResult<TData = Awaited<ReturnType<typeof rfqResult>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqResult>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRfqResult<TData = Awaited<ReturnType<typeof rfqResult>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqResult>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRfqResultQueryOptions(rfqId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const rfqEvaluation = (
     rfqId: string,
     params?: RfqEvaluationParams,
  signal?: AbortSignal

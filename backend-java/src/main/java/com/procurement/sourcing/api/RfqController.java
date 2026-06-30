@@ -3,6 +3,7 @@ package com.procurement.sourcing.api;
 import com.procurement.common.api.ApiResponse;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.application.RfqClarificationApplicationService;
+import com.procurement.sourcing.application.RfqResultApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -21,12 +22,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class RfqController {
   private final RfqApplicationService rfqApplicationService;
   private final RfqClarificationApplicationService rfqClarificationApplicationService;
+  private final RfqResultApplicationService rfqResultApplicationService;
 
   public RfqController(
       RfqApplicationService rfqApplicationService,
-      RfqClarificationApplicationService rfqClarificationApplicationService) {
+      RfqClarificationApplicationService rfqClarificationApplicationService,
+      RfqResultApplicationService rfqResultApplicationService) {
     this.rfqApplicationService = rfqApplicationService;
     this.rfqClarificationApplicationService = rfqClarificationApplicationService;
+    this.rfqResultApplicationService = rfqResultApplicationService;
   }
 
   @GetMapping
@@ -55,6 +59,12 @@ public class RfqController {
       @PathVariable String rfqId,
       @Valid @RequestBody OpenRfqRequest request) {
     return ApiResponse.ok(rfqApplicationService.openBids(rfqId, request.force()));
+  }
+
+  // 定标结果公示(采购方):中标人 + 中标通知书 + 本轮报价排名。
+  @GetMapping("/{rfqId}/result")
+  public ApiResponse<RfqResultResponse> result(@PathVariable String rfqId) {
+    return ApiResponse.ok(rfqResultApplicationService.resultForBuyer(rfqId));
   }
 
   // 终止(采购方):流标(不足法定家数等)/废标(全部不合格、取消),记录理由。

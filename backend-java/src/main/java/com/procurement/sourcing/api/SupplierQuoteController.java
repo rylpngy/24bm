@@ -3,6 +3,7 @@ package com.procurement.sourcing.api;
 import com.procurement.common.api.ApiResponse;
 import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.application.RfqClarificationApplicationService;
+import com.procurement.sourcing.application.RfqResultApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -20,12 +21,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class SupplierQuoteController {
   private final QuoteApplicationService quoteApplicationService;
   private final RfqClarificationApplicationService rfqClarificationApplicationService;
+  private final RfqResultApplicationService rfqResultApplicationService;
 
   public SupplierQuoteController(
       QuoteApplicationService quoteApplicationService,
-      RfqClarificationApplicationService rfqClarificationApplicationService) {
+      RfqClarificationApplicationService rfqClarificationApplicationService,
+      RfqResultApplicationService rfqResultApplicationService) {
     this.quoteApplicationService = quoteApplicationService;
     this.rfqClarificationApplicationService = rfqClarificationApplicationService;
+    this.rfqResultApplicationService = rfqResultApplicationService;
   }
 
   @GetMapping
@@ -45,6 +49,12 @@ public class SupplierQuoteController {
   @GetMapping("/{rfqId}/clarifications")
   public ApiResponse<List<RfqClarificationResponse>> clarifications(@PathVariable String rfqId) {
     return ApiResponse.ok(rfqClarificationApplicationService.listForSupplier(rfqId));
+  }
+
+  // 定标结果公示(供应商):中标人 + 排名(含本方中标/落标)。
+  @GetMapping("/{rfqId}/result")
+  public ApiResponse<RfqResultResponse> result(@PathVariable String rfqId) {
+    return ApiResponse.ok(rfqResultApplicationService.resultForSupplier(rfqId));
   }
 
   // 澄清答疑(供应商):提问(报价中)。

@@ -44,6 +44,21 @@ public interface AwardDecisionMapper {
       @Param("id") String id,
       @Param("approvedStatus") String approvedStatus);
 
+  // 结果公示:取该 RFQ 已通过的定标决定(中标人)。
+  @Select("""
+      select id, tenant_id, rfq_id, quote_id, supplier_id, amount, reason, approved_status, created_at
+      from award_decisions
+      where tenant_id = #{tenantId}
+        and rfq_id = #{rfqId}
+        and approved_status = #{approvedStatus}
+      order by created_at desc
+      limit 1
+      """)
+  AwardDecision findApprovedByRfq(
+      @Param("tenantId") String tenantId,
+      @Param("rfqId") String rfqId,
+      @Param("approvedStatus") String approvedStatus);
+
   @Update("""
       update award_decisions
       set approved_status = #{approvedStatus}
