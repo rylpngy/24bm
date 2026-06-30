@@ -15,6 +15,7 @@ import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusP
 import { QuoteComparisonTable } from './quote-comparison-table';
 import { RfqClarificationsBuyer } from './rfq-clarifications';
 import { RfqResultBuyer } from './rfq-result';
+import { RfqSupplierPerformance } from './rfq-supplier-performance';
 
 const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -433,6 +434,7 @@ export function RfqsPage() {
                       <div className="mb-2 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2 text-[11px] font-bold text-sky-700">
                         {r.method ?? '采购方式'} · 定标门槛:{awardGateHint(r.method ?? undefined, r.currentRound ?? 1, (r.quotes ?? []).length)}
                       </div>
+                      {r.id && <RfqSupplierPerformance rfqId={r.id} supplierNames={supplierNames} />}
                       <QuoteComparisonTable
                         quotes={r.quotes ?? []}
                         supplierNames={supplierNames}

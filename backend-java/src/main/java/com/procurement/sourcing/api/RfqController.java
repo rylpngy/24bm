@@ -4,6 +4,7 @@ import com.procurement.common.api.ApiResponse;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.application.RfqClarificationApplicationService;
 import com.procurement.sourcing.application.RfqResultApplicationService;
+import com.procurement.sourcing.application.RfqSupplierPerformanceApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -23,14 +24,17 @@ public class RfqController {
   private final RfqApplicationService rfqApplicationService;
   private final RfqClarificationApplicationService rfqClarificationApplicationService;
   private final RfqResultApplicationService rfqResultApplicationService;
+  private final RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService;
 
   public RfqController(
       RfqApplicationService rfqApplicationService,
       RfqClarificationApplicationService rfqClarificationApplicationService,
-      RfqResultApplicationService rfqResultApplicationService) {
+      RfqResultApplicationService rfqResultApplicationService,
+      RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService) {
     this.rfqApplicationService = rfqApplicationService;
     this.rfqClarificationApplicationService = rfqClarificationApplicationService;
     this.rfqResultApplicationService = rfqResultApplicationService;
+    this.rfqSupplierPerformanceApplicationService = rfqSupplierPerformanceApplicationService;
   }
 
   @GetMapping
@@ -59,6 +63,12 @@ public class RfqController {
       @PathVariable String rfqId,
       @Valid @RequestBody OpenRfqRequest request) {
     return ApiResponse.ok(rfqApplicationService.openBids(rfqId, request.force()));
+  }
+
+  // 绩效联动定标(采购方):各报价供应商最新历史绩效(总分+分级),供定标参考。
+  @GetMapping("/{rfqId}/supplier-performance")
+  public ApiResponse<List<RfqSupplierPerformanceResponse>> supplierPerformance(@PathVariable String rfqId) {
+    return ApiResponse.ok(rfqSupplierPerformanceApplicationService.listForRfq(rfqId));
   }
 
   // 定标结果公示(采购方):中标人 + 中标通知书 + 本轮报价排名。

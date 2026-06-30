@@ -9169,6 +9169,56 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/supplier-performance": {
+      "get": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_supplierPerformance",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListRfqSupplierPerformanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/rfqs/{rfqId}/result": {
       "get": {
         "tags": [
@@ -16380,6 +16430,43 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ApiResponseListRfqSupplierPerformanceResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RfqSupplierPerformanceResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RfqSupplierPerformanceResponse": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string"
+          },
+          "totalScore": {
+            "type": "number"
+          },
+          "tier": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "hasHistory": {
+            "type": "boolean"
           }
         }
       },
