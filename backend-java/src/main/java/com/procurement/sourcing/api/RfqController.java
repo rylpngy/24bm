@@ -2,6 +2,7 @@ package com.procurement.sourcing.api;
 
 import com.procurement.common.api.ApiResponse;
 import com.procurement.sourcing.application.RfqApplicationService;
+import com.procurement.sourcing.application.RfqClarificationApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -19,9 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/buyer/rfqs")
 public class RfqController {
   private final RfqApplicationService rfqApplicationService;
+  private final RfqClarificationApplicationService rfqClarificationApplicationService;
 
-  public RfqController(RfqApplicationService rfqApplicationService) {
+  public RfqController(
+      RfqApplicationService rfqApplicationService,
+      RfqClarificationApplicationService rfqClarificationApplicationService) {
     this.rfqApplicationService = rfqApplicationService;
+    this.rfqClarificationApplicationService = rfqClarificationApplicationService;
   }
 
   @GetMapping
@@ -50,6 +55,22 @@ public class RfqController {
       @PathVariable String rfqId,
       @Valid @RequestBody OpenRfqRequest request) {
     return ApiResponse.ok(rfqApplicationService.openBids(rfqId, request.force()));
+  }
+
+  // 澄清答疑(采购方):查看该 RFQ 全部澄清。
+  @GetMapping("/{rfqId}/clarifications")
+  public ApiResponse<List<RfqClarificationResponse>> clarifications(@PathVariable String rfqId) {
+    return ApiResponse.ok(rfqClarificationApplicationService.listForBuyer(rfqId));
+  }
+
+  // 澄清答疑(采购方):答复,可选广播给全部受邀供应商。
+  @PostMapping("/{rfqId}/clarifications/{clarificationId}/answer")
+  public ApiResponse<RfqClarificationResponse> answerClarification(
+      @PathVariable String rfqId,
+      @PathVariable String clarificationId,
+      @Valid @RequestBody AnswerClarificationRequest request) {
+    return ApiResponse.ok(
+        rfqClarificationApplicationService.answer(rfqId, clarificationId, request));
   }
 
   // 加权评标:按价格/交期权重打分排名,推荐总分最高者(默认价格70/交期30)。

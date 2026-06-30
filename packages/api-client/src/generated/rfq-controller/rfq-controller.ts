@@ -25,8 +25,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AnswerClarificationRequest,
   ApiResponseBidEvaluationResponse,
+  ApiResponseListRfqClarificationResponse,
   ApiResponseListRfqResponse,
+  ApiResponseRfqClarificationResponse,
   ApiResponseRfqResponse,
   ApiResponseVoid,
   CreateRfqRequest,
@@ -304,6 +307,66 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const rfqAnswerClarification = (
+    rfqId: string,
+    clarificationId: string,
+    answerClarificationRequest: BodyType<AnswerClarificationRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseRfqClarificationResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/clarifications/${clarificationId}/answer`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: answerClarificationRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getRfqAnswerClarificationMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAnswerClarification>>, TError,{rfqId: string;clarificationId: string;data: BodyType<AnswerClarificationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqAnswerClarification>>, TError,{rfqId: string;clarificationId: string;data: BodyType<AnswerClarificationRequest>}, TContext> => {
+
+const mutationKey = ['rfqAnswerClarification'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqAnswerClarification>>, {rfqId: string;clarificationId: string;data: BodyType<AnswerClarificationRequest>}> = (props) => {
+          const {rfqId,clarificationId,data} = props ?? {};
+
+          return  rfqAnswerClarification(rfqId,clarificationId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RfqAnswerClarificationMutationResult = NonNullable<Awaited<ReturnType<typeof rfqAnswerClarification>>>
+    export type RfqAnswerClarificationMutationBody = BodyType<AnswerClarificationRequest>
+    export type RfqAnswerClarificationMutationError = ErrorType<ApiResponseVoid>
+
+    export const useRfqAnswerClarification = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAnswerClarification>>, TError,{rfqId: string;clarificationId: string;data: BodyType<AnswerClarificationRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rfqAnswerClarification>>,
+        TError,
+        {rfqId: string;clarificationId: string;data: BodyType<AnswerClarificationRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getRfqAnswerClarificationMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const rfqEvaluation = (
     rfqId: string,
     params?: RfqEvaluationParams,
@@ -387,6 +450,92 @@ export function useRfqEvaluation<TData = Awaited<ReturnType<typeof rfqEvaluation
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getRfqEvaluationQueryOptions(rfqId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const rfqClarifications = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListRfqClarificationResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/clarifications`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getRfqClarificationsQueryKey = (rfqId?: string,) => {
+    return [
+    `/api/v1/buyer/rfqs/${rfqId}/clarifications`
+    ] as const;
+    }
+
+    
+export const getRfqClarificationsQueryOptions = <TData = Awaited<ReturnType<typeof rfqClarifications>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqClarifications>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRfqClarificationsQueryKey(rfqId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof rfqClarifications>>> = ({ signal }) => rfqClarifications(rfqId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rfqClarifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RfqClarificationsQueryResult = NonNullable<Awaited<ReturnType<typeof rfqClarifications>>>
+export type RfqClarificationsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useRfqClarifications<TData = Awaited<ReturnType<typeof rfqClarifications>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqClarifications>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqClarifications>>,
+          TError,
+          Awaited<ReturnType<typeof rfqClarifications>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqClarifications<TData = Awaited<ReturnType<typeof rfqClarifications>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqClarifications>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqClarifications>>,
+          TError,
+          Awaited<ReturnType<typeof rfqClarifications>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqClarifications<TData = Awaited<ReturnType<typeof rfqClarifications>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqClarifications>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRfqClarifications<TData = Awaited<ReturnType<typeof rfqClarifications>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqClarifications>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRfqClarificationsQueryOptions(rfqId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

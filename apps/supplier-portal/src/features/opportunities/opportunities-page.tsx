@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Send, Trash2 } from 'lucide-react';
 import { useSupplierQuoteListRfqs, useSupplierQuoteSubmit } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, Pagination, Panel, PrimaryActionButton, SearchInput, StatusPill, cn } from '@24bid/ui';
+import { RfqClarificationsSupplier } from './rfq-clarifications-supplier';
 
 interface LineRow {
   description: string;
@@ -206,6 +207,8 @@ export function OpportunitiesPage() {
                     </div>
                   </div>
                 )}
+
+                {r.id && <RfqClarificationsSupplier rfqId={r.id} canAsk={quoting} />}
 
                 {quoting ? (
                   <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/40 p-3">

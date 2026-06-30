@@ -142,6 +142,9 @@ import com.procurement.sourcing.api.AwardDecisionResponse;
 import com.procurement.sourcing.api.AwardRfqRequest;
 import com.procurement.sourcing.api.RfqAwardController;
 import com.procurement.sourcing.api.SubmitQuoteRequest;
+import com.procurement.sourcing.api.AnswerClarificationRequest;
+import com.procurement.sourcing.api.AskClarificationRequest;
+import com.procurement.sourcing.api.RfqClarificationResponse;
 import com.procurement.sourcing.api.RfqController;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.api.SupplierQuoteListController;
@@ -292,6 +295,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private RfqApplicationService rfqApplicationService;
+
+  @MockBean
+  private com.procurement.sourcing.application.RfqClarificationApplicationService rfqClarificationApplicationService;
 
   @MockBean
   private AwardApplicationService awardApplicationService;
@@ -742,6 +748,75 @@ class HttpSecurityContractTests {
             .content("{\"force\": true}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.status").value("已开标"));
+  }
+
+  @Test
+  void buyerAndSupplierCanUseRfqClarificationsWithinTheirScope() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    RfqClarificationResponse asked = new RfqClarificationResponse(
+        "clar-1", "rfq-demo", "ent-supplier-sunrise", "是否接受分批交货?",
+        null, false, false,
+        OffsetDateTime.parse("2026-06-18T10:00:00+08:00"), null);
+
+    // 供应商提问:采购方禁止走供应商提问端点。
+    mockMvc.perform(post("/api/v1/supplier/rfqs/rfq-demo/clarifications")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"question\": \"是否接受分批交货?\"}"))
+        .andExpect(status().isForbidden());
+
+    when(rfqClarificationApplicationService.ask(
+        org.mockito.ArgumentMatchers.eq("rfq-demo"),
+        org.mockito.ArgumentMatchers.any(AskClarificationRequest.class)))
+        .thenReturn(asked);
+
+    mockMvc.perform(post("/api/v1/supplier/rfqs/rfq-demo/clarifications")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"question\": \"是否接受分批交货?\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.question").value("是否接受分批交货?"));
+
+    // 采购方答复:供应商禁止走采购方答复端点。
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/clarifications/clar-1/answer")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"answer\": \"接受分批\", \"published\": true}"))
+        .andExpect(status().isForbidden());
+
+    when(rfqClarificationApplicationService.answer(
+        org.mockito.ArgumentMatchers.eq("rfq-demo"),
+        org.mockito.ArgumentMatchers.eq("clar-1"),
+        org.mockito.ArgumentMatchers.any(AnswerClarificationRequest.class)))
+        .thenReturn(new RfqClarificationResponse(
+            "clar-1", "rfq-demo", "ent-supplier-sunrise", "是否接受分批交货?",
+            "接受分批", true, true,
+            OffsetDateTime.parse("2026-06-18T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-18T15:00:00+08:00")));
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/clarifications/clar-1/answer")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"answer\": \"接受分批\", \"published\": true}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.answered").value(true))
+        .andExpect(jsonPath("$.data.published").value(true));
   }
 
   @Test

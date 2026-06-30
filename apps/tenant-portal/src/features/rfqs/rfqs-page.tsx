@@ -11,6 +11,7 @@ import {
 } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
+import { RfqClarificationsBuyer } from './rfq-clarifications';
 
 const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -254,6 +255,8 @@ export function RfqsPage() {
                   </div>
                 </div>
               )}
+              {r.id && <RfqClarificationsBuyer rfqId={r.id} />}
+
               {r.status === '报价中' ? (
                 // 封存:报价明细对采购方不可见,需开标后方可比价定标。
                 <div className="mt-3 flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 sm:flex-row sm:items-center sm:justify-between">

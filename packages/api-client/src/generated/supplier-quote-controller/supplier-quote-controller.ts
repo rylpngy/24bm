@@ -25,9 +25,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseListRfqClarificationResponse,
   ApiResponseListRfqResponse,
   ApiResponseQuoteResponse,
+  ApiResponseRfqClarificationResponse,
   ApiResponseVoid,
+  AskClarificationRequest,
   SubmitQuoteRequest,
   SupplierQuoteListRfqsParams
 } from '.././model';
@@ -94,6 +97,151 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getSupplierQuoteSubmitMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierQuoteClarifications = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListRfqClarificationResponse>(
+      {url: `/api/v1/supplier/rfqs/${rfqId}/clarifications`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getSupplierQuoteClarificationsQueryKey = (rfqId?: string,) => {
+    return [
+    `/api/v1/supplier/rfqs/${rfqId}/clarifications`
+    ] as const;
+    }
+
+    
+export const getSupplierQuoteClarificationsQueryOptions = <TData = Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierQuoteClarificationsQueryKey(rfqId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQuoteClarifications>>> = ({ signal }) => supplierQuoteClarifications(rfqId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierQuoteClarificationsQueryResult = NonNullable<Awaited<ReturnType<typeof supplierQuoteClarifications>>>
+export type SupplierQuoteClarificationsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierQuoteClarifications<TData = Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierQuoteClarifications>>,
+          TError,
+          Awaited<ReturnType<typeof supplierQuoteClarifications>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierQuoteClarifications<TData = Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierQuoteClarifications>>,
+          TError,
+          Awaited<ReturnType<typeof supplierQuoteClarifications>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierQuoteClarifications<TData = Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierQuoteClarifications<TData = Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierQuoteClarificationsQueryOptions(rfqId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierQuoteAsk = (
+    rfqId: string,
+    askClarificationRequest: BodyType<AskClarificationRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseRfqClarificationResponse>(
+      {url: `/api/v1/supplier/rfqs/${rfqId}/clarifications`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: askClarificationRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierQuoteAskMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteAsk>>, TError,{rfqId: string;data: BodyType<AskClarificationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteAsk>>, TError,{rfqId: string;data: BodyType<AskClarificationRequest>}, TContext> => {
+
+const mutationKey = ['supplierQuoteAsk'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQuoteAsk>>, {rfqId: string;data: BodyType<AskClarificationRequest>}> = (props) => {
+          const {rfqId,data} = props ?? {};
+
+          return  supplierQuoteAsk(rfqId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierQuoteAskMutationResult = NonNullable<Awaited<ReturnType<typeof supplierQuoteAsk>>>
+    export type SupplierQuoteAskMutationBody = BodyType<AskClarificationRequest>
+    export type SupplierQuoteAskMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierQuoteAsk = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteAsk>>, TError,{rfqId: string;data: BodyType<AskClarificationRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierQuoteAsk>>,
+        TError,
+        {rfqId: string;data: BodyType<AskClarificationRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierQuoteAskMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
