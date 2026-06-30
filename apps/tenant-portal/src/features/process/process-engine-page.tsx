@@ -26,6 +26,7 @@ import {
 import { FeedbackNotice, Tabs, cn } from '@24bid/ui';
 import { FormDesigner } from './form-designer';
 import { FlowDesigner } from './flow-designer';
+import { InstancesView } from './instances';
 import {
   type FlowStep,
   type FormField,
@@ -57,6 +58,7 @@ function ProcessList({ onConfigure }: { onConfigure: (id: string) => void }) {
   const list = useProcessDefinitionList();
   const create = useProcessDefinitionCreate();
   const processes = list.data?.data ?? [];
+  const [view, setView] = useState<'config' | 'instances'>('config');
 
   const onNew = () =>
     create.mutate(
@@ -80,18 +82,34 @@ function ProcessList({ onConfigure }: { onConfigure: (id: string) => void }) {
           </p>
           <p className="mt-0.5 text-xs font-bold text-slate-400">可视化配置业务审批流与表单</p>
         </div>
-        <button
-          type="button"
-          onClick={onNew}
-          disabled={create.isPending}
-          className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-sm font-black text-white transition hover:bg-slate-800 disabled:bg-slate-400"
-        >
-          <Plus size={16} /> 新建流程
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg border border-slate-200 bg-white px-1.5">
+            <Tabs
+              items={[
+                { id: 'config', label: '流程配置' },
+                { id: 'instances', label: '运行实例' },
+              ]}
+              value={view}
+              onChange={(v) => setView(v as 'config' | 'instances')}
+            />
+          </div>
+          {view === 'config' && (
+            <button
+              type="button"
+              onClick={onNew}
+              disabled={create.isPending}
+              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-sm font-black text-white transition hover:bg-slate-800 disabled:bg-slate-400"
+            >
+              <Plus size={16} /> 新建流程
+            </button>
+          )}
+        </div>
       </div>
 
       {list.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载流程…" />
+      ) : view === 'instances' ? (
+        <InstancesView processes={processes} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {processes.map((p) => (

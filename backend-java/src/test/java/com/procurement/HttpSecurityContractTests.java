@@ -251,7 +251,8 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerNotificationChannelController.class,
     SupplierNotificationController.class,
     DepartmentController.class,
-    com.procurement.process.api.ProcessDefinitionController.class
+    com.procurement.process.api.ProcessDefinitionController.class,
+    com.procurement.process.api.ProcessInstanceController.class
 })
 @Import({
     SecurityConfig.class,
@@ -375,6 +376,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.process.application.ProcessDefinitionApplicationService processDefinitionApplicationService;
+
+  @MockBean
+  private com.procurement.process.application.ProcessInstanceApplicationService processInstanceApplicationService;
 
   @MockBean
   private AuditLogApplicationService auditLogApplicationService;
@@ -620,6 +624,42 @@ class HttpSecurityContractTests {
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.status").value("enabled"));
+
+    // 流程实例:发起 / 审批。供应商越权 403;采购方 200。
+    mockMvc.perform(post("/api/v1/buyer/process-instances")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"processId": "proc-1", "formData": "{}", "amount": 8000}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(processInstanceApplicationService.start(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.process.api.ProcessInstanceResponse(
+            "pi-1", "proc-1", "采购立项审批", new java.math.BigDecimal("8000"), "processing", 0,
+            "[]", "{}", "user-buyer-owner", OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
+    mockMvc.perform(post("/api/v1/buyer/process-instances")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"processId": "proc-1", "formData": "{}", "amount": 8000}
+                """))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.status").value("processing"));
+
+    when(processInstanceApplicationService.review(
+        org.mockito.ArgumentMatchers.eq("pi-1"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.process.api.ProcessInstanceResponse(
+            "pi-1", "proc-1", "采购立项审批", new java.math.BigDecimal("8000"), "approved", 0,
+            "[]", "{}", "user-buyer-owner", OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
+    mockMvc.perform(post("/api/v1/buyer/process-instances/pi-1/review")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"decision": "approve", "comment": "同意"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("approved"));
   }
 
   @Test

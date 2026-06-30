@@ -33,6 +33,7 @@ export * from './platform-overview-controller/platform-overview-controller';
 export * from './platform-tenant-controller/platform-tenant-controller';
 export * from './platform-workspace-controller/platform-workspace-controller';
 export * from './process-definition-controller/process-definition-controller';
+export * from './process-instance-controller/process-instance-controller';
 export * from './purchase-demand-controller/purchase-demand-controller';
 export * from './purchase-order-controller/purchase-order-controller';
 export * from './rfq-award-controller/rfq-award-controller';

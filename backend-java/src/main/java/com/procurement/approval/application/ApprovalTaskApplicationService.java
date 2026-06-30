@@ -45,6 +45,29 @@ public class ApprovalTaskApplicationService {
     return approvalTaskMapper.findByTenantAndId(tenantId, approvalTaskId);
   }
 
+  // 通用审批任务(无模板,如流程引擎实例):直接建 pending 任务,进 审批中心 统一收件箱。
+  public ApprovalTask createGenericPendingTask(
+      String tenantId, String bizType, String bizId, String assigneeId) {
+    String approvalTaskId = "approval-" + UUID.randomUUID();
+    approvalTaskMapper.insert(approvalTaskId, tenantId, bizType, bizId, assigneeId, ApprovalStatus.PENDING);
+    return approvalTaskMapper.findByTenantAndId(tenantId, approvalTaskId);
+  }
+
+  // 取某业务对象当前待审批任务(无则 null)。
+  public ApprovalTask findPendingTask(String tenantId, String bizType, String bizId) {
+    return approvalTaskMapper.findPendingByBiz(tenantId, bizType, bizId, ApprovalStatus.PENDING);
+  }
+
+  // 完成审批任务(通过/驳回),写审批意见。
+  public void completeTask(String tenantId, String taskId, String newStatus, String comment) {
+    ApprovalTask task = approvalTaskMapper.findByTenantAndId(tenantId, taskId);
+    if (task == null) {
+      throw new IllegalArgumentException("Approval task not found: " + taskId);
+    }
+    approvalTaskMapper.updateStatus(
+        tenantId, taskId, ApprovalStatus.PENDING, newStatus, task.assigneeId(), comment);
+  }
+
   public ApprovalTemplate resolveTemplate(String tenantId, String bizType) {
     String expectedTemplateCode = ApprovalTemplateCode.requireByBusinessType(bizType);
     ApprovalTemplate template = approvalTemplateMapper.findActiveByTenantAndBizType(tenantId, bizType);

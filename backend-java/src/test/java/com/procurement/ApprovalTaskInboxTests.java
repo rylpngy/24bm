@@ -47,6 +47,8 @@ class ApprovalTaskInboxTests {
       org.mockito.Mockito.mock(PaymentArchiveExceptionRequestMapper.class);
   private final ContractMapper contractMapper = org.mockito.Mockito.mock(ContractMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
+  private final com.procurement.process.infrastructure.ProcessInstanceMapper processInstanceMapper =
+      org.mockito.Mockito.mock(com.procurement.process.infrastructure.ProcessInstanceMapper.class);
   private final ApprovalInboxApplicationService approvalInboxApplicationService =
       new ApprovalInboxApplicationService(
           approvalTaskMapper,
@@ -58,7 +60,8 @@ class ApprovalTaskInboxTests {
           paymentBatchMapper,
           paymentArchiveExceptionRequestMapper,
           contractMapper,
-          buyerUserMapper);
+          buyerUserMapper,
+          processInstanceMapper);
 
   @AfterEach
   void clearTenantContext() {

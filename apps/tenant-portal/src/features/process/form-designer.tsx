@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlignLeft, Calendar, ChevronDown, Hash, Trash2, Type, Wallet } from 'lucide-react';
+import { AlignLeft, Calendar, ChevronDown, GripVertical, Hash, Trash2, Type, Wallet } from 'lucide-react';
 import { cn } from '@24bid/ui';
 import { FIELD_PALETTE, type FieldType, type FormField, uid } from './types';
 
@@ -21,7 +21,20 @@ export function FormDesigner({
   onChange: (fields: FormField[]) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(fields[0]?.id ?? null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
   const selected = fields.find((f) => f.id === selectedId) ?? null;
+
+  const reorder = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const from = fields.findIndex((f) => f.id === fromId);
+    const to = fields.findIndex((f) => f.id === toId);
+    if (from < 0 || to < 0) return;
+    const next = [...fields];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    onChange(next);
+  };
 
   const addField = (type: FieldType) => {
     const label = FIELD_PALETTE.find((p) => p.type === type)?.label ?? '字段';
@@ -76,18 +89,27 @@ export function FormDesigner({
           <div className="space-y-3">
             {fields.map((f) => {
               const on = f.id === selectedId;
+              const isOver = overId === f.id && dragId !== f.id;
               return (
                 <button
                   key={f.id}
                   type="button"
+                  draggable
+                  onDragStart={(e) => { setDragId(f.id); e.dataTransfer.effectAllowed = 'move'; }}
+                  onDragOver={(e) => { e.preventDefault(); if (overId !== f.id) setOverId(f.id); }}
+                  onDrop={(e) => { e.preventDefault(); if (dragId) reorder(dragId, f.id); setDragId(null); setOverId(null); }}
+                  onDragEnd={() => { setDragId(null); setOverId(null); }}
                   onClick={() => setSelectedId(f.id)}
                   className={cn(
                     'block w-full rounded-lg border bg-white p-3 text-left transition',
-                    on ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200 hover:border-slate-300',
+                    dragId === f.id && 'opacity-40',
+                    isOver && 'border-blue-400 ring-2 ring-blue-100',
+                    on && !isOver ? 'border-blue-500 ring-2 ring-blue-100' : !isOver && 'border-slate-200 hover:border-slate-300',
                   )}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-black text-slate-800">
+                    <p className="flex items-center gap-1.5 text-sm font-black text-slate-800">
+                      <GripVertical size={15} className="cursor-grab text-slate-300" />
                       {f.label}
                       {f.required && <span className="ml-1 text-red-500">*</span>}
                     </p>
