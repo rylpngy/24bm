@@ -27,6 +27,7 @@ import type {
 import type {
   AbortRfqRequest,
   AnswerClarificationRequest,
+  ApiResponseAwardNoticeResponse,
   ApiResponseBidEvaluationResponse,
   ApiResponseListRfqClarificationResponse,
   ApiResponseListRfqResponse,
@@ -308,6 +309,62 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getRfqOpenMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const rfqIssueNotice = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseAwardNoticeResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/notice/issue`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getRfqIssueNoticeMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqIssueNotice>>, TError,{rfqId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqIssueNotice>>, TError,{rfqId: string}, TContext> => {
+
+const mutationKey = ['rfqIssueNotice'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqIssueNotice>>, {rfqId: string}> = (props) => {
+          const {rfqId} = props ?? {};
+
+          return  rfqIssueNotice(rfqId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RfqIssueNoticeMutationResult = NonNullable<Awaited<ReturnType<typeof rfqIssueNotice>>>
+    
+    export type RfqIssueNoticeMutationError = ErrorType<ApiResponseVoid>
+
+    export const useRfqIssueNotice = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqIssueNotice>>, TError,{rfqId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rfqIssueNotice>>,
+        TError,
+        {rfqId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getRfqIssueNoticeMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -650,6 +707,178 @@ export function useRfqResult<TData = Awaited<ReturnType<typeof rfqResult>>, TErr
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getRfqResultQueryOptions(rfqId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const rfqNotice = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseAwardNoticeResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/notice`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getRfqNoticeQueryKey = (rfqId?: string,) => {
+    return [
+    `/api/v1/buyer/rfqs/${rfqId}/notice`
+    ] as const;
+    }
+
+    
+export const getRfqNoticeQueryOptions = <TData = Awaited<ReturnType<typeof rfqNotice>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNotice>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRfqNoticeQueryKey(rfqId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof rfqNotice>>> = ({ signal }) => rfqNotice(rfqId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rfqNotice>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RfqNoticeQueryResult = NonNullable<Awaited<ReturnType<typeof rfqNotice>>>
+export type RfqNoticeQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useRfqNotice<TData = Awaited<ReturnType<typeof rfqNotice>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNotice>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqNotice>>,
+          TError,
+          Awaited<ReturnType<typeof rfqNotice>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqNotice<TData = Awaited<ReturnType<typeof rfqNotice>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNotice>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqNotice>>,
+          TError,
+          Awaited<ReturnType<typeof rfqNotice>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqNotice<TData = Awaited<ReturnType<typeof rfqNotice>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNotice>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRfqNotice<TData = Awaited<ReturnType<typeof rfqNotice>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNotice>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRfqNoticeQueryOptions(rfqId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const rfqNoticePdf = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<string>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/notice.pdf`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getRfqNoticePdfQueryKey = (rfqId?: string,) => {
+    return [
+    `/api/v1/buyer/rfqs/${rfqId}/notice.pdf`
+    ] as const;
+    }
+
+    
+export const getRfqNoticePdfQueryOptions = <TData = Awaited<ReturnType<typeof rfqNoticePdf>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNoticePdf>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRfqNoticePdfQueryKey(rfqId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof rfqNoticePdf>>> = ({ signal }) => rfqNoticePdf(rfqId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rfqNoticePdf>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RfqNoticePdfQueryResult = NonNullable<Awaited<ReturnType<typeof rfqNoticePdf>>>
+export type RfqNoticePdfQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useRfqNoticePdf<TData = Awaited<ReturnType<typeof rfqNoticePdf>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNoticePdf>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqNoticePdf>>,
+          TError,
+          Awaited<ReturnType<typeof rfqNoticePdf>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqNoticePdf<TData = Awaited<ReturnType<typeof rfqNoticePdf>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNoticePdf>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqNoticePdf>>,
+          TError,
+          Awaited<ReturnType<typeof rfqNoticePdf>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqNoticePdf<TData = Awaited<ReturnType<typeof rfqNoticePdf>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNoticePdf>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRfqNoticePdf<TData = Awaited<ReturnType<typeof rfqNoticePdf>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqNoticePdf>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRfqNoticePdfQueryOptions(rfqId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

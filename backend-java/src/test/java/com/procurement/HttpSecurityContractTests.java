@@ -306,6 +306,9 @@ class HttpSecurityContractTests {
   private com.procurement.sourcing.application.RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService;
 
   @MockBean
+  private com.procurement.sourcing.application.AwardNoticeApplicationService awardNoticeApplicationService;
+
+  @MockBean
   private AwardApplicationService awardApplicationService;
 
   @MockBean

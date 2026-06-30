@@ -1,13 +1,17 @@
 package com.procurement.sourcing.api;
 
 import com.procurement.common.api.ApiResponse;
+import com.procurement.sourcing.application.AwardNoticeApplicationService;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.application.RfqClarificationApplicationService;
 import com.procurement.sourcing.application.RfqResultApplicationService;
 import com.procurement.sourcing.application.RfqSupplierPerformanceApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,16 +29,19 @@ public class RfqController {
   private final RfqClarificationApplicationService rfqClarificationApplicationService;
   private final RfqResultApplicationService rfqResultApplicationService;
   private final RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService;
+  private final AwardNoticeApplicationService awardNoticeApplicationService;
 
   public RfqController(
       RfqApplicationService rfqApplicationService,
       RfqClarificationApplicationService rfqClarificationApplicationService,
       RfqResultApplicationService rfqResultApplicationService,
-      RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService) {
+      RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService,
+      AwardNoticeApplicationService awardNoticeApplicationService) {
     this.rfqApplicationService = rfqApplicationService;
     this.rfqClarificationApplicationService = rfqClarificationApplicationService;
     this.rfqResultApplicationService = rfqResultApplicationService;
     this.rfqSupplierPerformanceApplicationService = rfqSupplierPerformanceApplicationService;
+    this.awardNoticeApplicationService = awardNoticeApplicationService;
   }
 
   @GetMapping
@@ -69,6 +76,28 @@ public class RfqController {
   @GetMapping("/{rfqId}/supplier-performance")
   public ApiResponse<List<RfqSupplierPerformanceResponse>> supplierPerformance(@PathVariable String rfqId) {
     return ApiResponse.ok(rfqSupplierPerformanceApplicationService.listForRfq(rfqId));
+  }
+
+  // 中标通知书签发(电子签章):已定标可签发,幂等。
+  @PostMapping("/{rfqId}/notice/issue")
+  public ApiResponse<AwardNoticeResponse> issueNotice(@PathVariable String rfqId) {
+    return ApiResponse.ok(awardNoticeApplicationService.issue(rfqId));
+  }
+
+  // 中标通知书签发状态。
+  @GetMapping("/{rfqId}/notice")
+  public ApiResponse<AwardNoticeResponse> notice(@PathVariable String rfqId) {
+    return ApiResponse.ok(awardNoticeApplicationService.get(rfqId));
+  }
+
+  // 中标通知书 PDF(已签发,含电子签章)。
+  @GetMapping("/{rfqId}/notice.pdf")
+  public ResponseEntity<byte[]> noticePdf(@PathVariable String rfqId) {
+    byte[] pdf = awardNoticeApplicationService.renderPdf(rfqId);
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_PDF)
+        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"award-notice-" + rfqId + ".pdf\"")
+        .body(pdf);
   }
 
   // 定标结果公示(采购方):中标人 + 中标通知书 + 本轮报价排名。
