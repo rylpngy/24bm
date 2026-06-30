@@ -21,7 +21,9 @@ public record RfqResponse(
     String evaluationMethod,
     OffsetDateTime openedAt,
     int currentRound,
-    boolean finalRound) {
+    boolean finalRound,
+    String method,
+    String closeReason) {
 
   public RfqResponse(
       String id,
@@ -53,6 +55,8 @@ public record RfqResponse(
         "最低价",
         null,
         1,
-        false);
+        false,
+        "询价",
+        null);
   }
 }

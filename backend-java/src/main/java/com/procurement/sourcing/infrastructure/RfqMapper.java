@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Update;
 public interface RfqMapper {
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason
       from rfqs
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -22,7 +22,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason
       from rfqs
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -40,14 +40,14 @@ public interface RfqMapper {
       @Param("keyword") String keyword);
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason
       from rfqs
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Rfq findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where r.id = #{rfqId}
@@ -57,7 +57,7 @@ public interface RfqMapper {
   Rfq findBySupplierInvite(@Param("rfqId") String rfqId, @Param("supplierId") String supplierId);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -68,7 +68,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -89,9 +89,9 @@ public interface RfqMapper {
 
   @Insert("""
       insert into rfqs (id, tenant_id, title, status, deadline_at, owner_id,
-                        quote_requirement, delivery_requirement, evaluation_method)
+                        quote_requirement, delivery_requirement, evaluation_method, method)
       values (#{id}, #{tenantId}, #{title}, #{status}, #{deadlineAt}, #{ownerId},
-              #{quoteRequirement}, #{deliveryRequirement}, #{evaluationMethod})
+              #{quoteRequirement}, #{deliveryRequirement}, #{evaluationMethod}, #{method})
       """)
   void insert(
       @Param("id") String id,
@@ -102,7 +102,8 @@ public interface RfqMapper {
       @Param("ownerId") String ownerId,
       @Param("quoteRequirement") String quoteRequirement,
       @Param("deliveryRequirement") String deliveryRequirement,
-      @Param("evaluationMethod") String evaluationMethod);
+      @Param("evaluationMethod") String evaluationMethod,
+      @Param("method") String method);
 
   @Update("""
       update rfqs
@@ -191,4 +192,20 @@ public interface RfqMapper {
       @Param("id") String id,
       @Param("deadlineAt") OffsetDateTime deadlineAt,
       @Param("finalRound") boolean finalRound);
+
+  // 终止(流标/废标):置终态 + 记录理由(仅在进行中的状态可终止)。
+  @Update("""
+      update rfqs
+      set status = #{status},
+          close_reason = #{closeReason},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status in ('报价中', '已开标')
+      """)
+  int abort(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("status") String status,
+      @Param("closeReason") String closeReason);
 }

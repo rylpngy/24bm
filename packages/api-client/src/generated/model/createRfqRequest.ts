@@ -14,4 +14,5 @@ export interface CreateRfqRequest {
   quoteRequirement?: string;
   deliveryRequirement?: string;
   evaluationMethod?: string;
+  method?: string;
 }

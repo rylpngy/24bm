@@ -4948,6 +4948,66 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/abort": {
+      "post": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_abort",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbortRfqRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/process-instances": {
       "get": {
         "tags": [
@@ -10955,6 +11015,12 @@
           },
           "finalRound": {
             "type": "boolean"
+          },
+          "method": {
+            "type": "string"
+          },
+          "closeReason": {
+            "type": "string"
           }
         }
       },
@@ -13357,6 +13423,9 @@
           },
           "evaluationMethod": {
             "type": "string"
+          },
+          "method": {
+            "type": "string"
           }
         }
       },
@@ -13473,6 +13542,20 @@
             "type": "boolean"
           },
           "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "AbortRfqRequest": {
+        "required": [
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "reason": {
             "type": "string"
           }
         }

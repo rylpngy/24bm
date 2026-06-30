@@ -21,6 +21,7 @@ import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqAuditAction;
 import com.procurement.sourcing.domain.RfqDemandLinkPolicy;
 import com.procurement.sourcing.domain.RfqInviteStatus;
+import com.procurement.sourcing.domain.RfqMethod;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.domain.RfqSupplierInvitationPolicy;
@@ -172,6 +173,29 @@ public class RfqApplicationService {
     return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
   }
 
+  // 终止询价:流标(不足法定家数等)/废标(全部不合格、取消)。置终态 + 记录理由。
+  @Transactional
+  public RfqResponse abortRfq(String rfqId, String kind, String reason) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    if (rfq == null) {
+      throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
+    }
+    String target = switch (kind) {
+      case "流标" -> RfqStatus.NO_BID;
+      case "废标" -> RfqStatus.ABORTED;
+      default -> throw new IllegalArgumentException("Unknown abort kind: " + kind);
+    };
+    int updated = rfqMapper.abort(tenantId, rfqId, target, orEmpty(reason));
+    if (updated == 0) {
+      throw new IllegalStateException("Only ongoing RFQs can be aborted: " + rfqId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        tenantId, "rfq." + ("流标".equals(kind) ? "no_bid" : "aborted"), "rfq", rfqId,
+        kind + (reason == null || reason.isBlank() ? "" : " · " + reason));
+    return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
+  }
+
   public List<RfqResponse> listCurrentTenantRfqs(String status, String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
     return rfqMapper.listByTenantFiltered(
@@ -191,6 +215,8 @@ public class RfqApplicationService {
     rfqSourcingStatusTransition.requireFutureDeadline(request.deadlineAt(), "new RFQ");
     validateDemands(tenantId, request.demandIds());
     validateSuppliers(tenantId, request.invitedSupplierIds());
+    String method = RfqMethod.orDefault(request.method());
+    RfqMethod.requireSupplierCount(method, request.invitedSupplierIds().size());
 
     String rfqId = newId("rfq");
     rfqMapper.insert(
@@ -202,7 +228,8 @@ public class RfqApplicationService {
         userId,
         orEmpty(request.quoteRequirement()),
         orEmpty(request.deliveryRequirement()),
-        orDefaultEvaluation(request.evaluationMethod()));
+        orDefaultEvaluation(request.evaluationMethod()),
+        method);
 
     insertRfqDemandLinks(tenantId, rfqId, request.demandIds());
 
@@ -330,7 +357,9 @@ public class RfqApplicationService {
         rfq.evaluationMethod(),
         rfq.openedAt(),
         rfq.currentRound(),
-        rfq.finalRound());
+        rfq.finalRound(),
+        rfq.method(),
+        rfq.closeReason());
   }
 
   private static String orEmpty(String value) {

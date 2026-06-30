@@ -82,7 +82,7 @@ class RfqCreationStateTransitionTests {
         "办公电脑询价",
         List.of("demand-1"),
         List.of("supplier-1"),
-        OffsetDateTime.now().plusDays(7), "", "", "最低价");
+        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源");
 
     assertThatThrownBy(() -> rfqApplicationService.create(request))
         .isInstanceOf(IllegalStateException.class)
@@ -112,7 +112,7 @@ class RfqCreationStateTransitionTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", "", "最低价", null, 1, false);
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
     when(rfqMapper.listByTenant("tenant-1")).thenReturn(List.of(rfq));
     when(rfqDemandMapper.listDemandIds("tenant-1", "rfq-1")).thenReturn(List.of("demand-1"));
     when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1")).thenReturn(List.of("supplier-1"));
@@ -156,7 +156,7 @@ class RfqCreationStateTransitionTests {
         "办公电脑询价",
         List.of("demand-1"),
         List.of("supplier-1"),
-        OffsetDateTime.now().plusDays(7), "", "", "最低价");
+        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源");
 
     assertThatThrownBy(() -> rfqApplicationService.create(request))
         .isInstanceOf(IllegalStateException.class)

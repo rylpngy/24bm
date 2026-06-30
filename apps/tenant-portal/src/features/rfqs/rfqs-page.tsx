@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FileText, Lock, LockOpen, Plus, RotateCcw } from 'lucide-react';
+import { Ban, FileText, Lock, LockOpen, Plus, RotateCcw } from 'lucide-react';
 import {
   useBuyerSupplierList,
   usePurchaseDemandList,
   useRfqAwardAward,
   useRfqCreate,
+  useRfqAbort,
   useRfqList,
   useRfqOpen,
   useRfqStartNewRound,
@@ -20,6 +21,10 @@ const inputCls =
 const deadlinePassed = (deadlineAt?: string | null) =>
   deadlineAt ? new Date(deadlineAt).getTime() <= Date.now() : false;
 
+const METHODS = ['公开招标', '邀请招标', '竞争性谈判', '询价', '单一来源'];
+// 进行中可终止;终态显示终止类型。
+const ABORTED_STATUS: Record<string, string> = { 已流标: '流标', 已废标: '废标' };
+
 export function RfqsPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -32,6 +37,7 @@ export function RfqsPage() {
   const award = useRfqAwardAward();
   const open = useRfqOpen();
   const newRound = useRfqStartNewRound();
+  const abort = useRfqAbort();
   const [roundForm, setRoundForm] = useState<{ rfqId: string; deadline: string; final: boolean } | null>(null);
 
   const [title, setTitle] = useState('');
@@ -39,6 +45,7 @@ export function RfqsPage() {
   const [supplierIds, setSupplierIds] = useState<string[]>([]);
   const [deadline, setDeadline] = useState('');
   const [evaluationMethod, setEvaluationMethod] = useState('最低价');
+  const [method, setMethod] = useState('询价');
   const [quoteRequirement, setQuoteRequirement] = useState('');
   const [deliveryRequirement, setDeliveryRequirement] = useState('');
 
@@ -70,6 +77,7 @@ export function RfqsPage() {
           invitedSupplierIds: supplierIds,
           deadlineAt: deadline ? `${deadline}T18:00:00+08:00` : undefined,
           evaluationMethod,
+          method,
           quoteRequirement: quoteRequirement || undefined,
           deliveryRequirement: deliveryRequirement || undefined,
         },
@@ -81,6 +89,7 @@ export function RfqsPage() {
           setSupplierIds([]);
           setDeadline('');
           setEvaluationMethod('最低价');
+          setMethod('询价');
           setQuoteRequirement('');
           setDeliveryRequirement('');
           setShowForm(false);
@@ -111,6 +120,12 @@ export function RfqsPage() {
         },
       },
     );
+  };
+
+  const submitAbort = (rfqId: string, kind: '流标' | '废标') => {
+    const reason = window.prompt(`请输入${kind}理由(将记录在案):`, '');
+    if (reason === null) return;
+    abort.mutate({ rfqId, data: { kind, reason } }, { onSuccess: () => refresh() });
   };
 
   const submitOpen = (rfqId: string, deadlineAt?: string) => {
@@ -176,6 +191,17 @@ export function RfqsPage() {
                 <option value="最低价">最低价</option>
                 <option value="综合评分">综合评分</option>
               </select>
+            </div>
+            <div>
+              <label className="text-xs font-black text-slate-500">采购方式</label>
+              <select className={inputCls} value={method} onChange={(e) => setMethod(e.target.value)}>
+                {METHODS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <p className="mt-1 text-[11px] font-bold text-slate-400">
+                {method === '单一来源' ? '需且仅邀请 1 家供应商。' : '须邀请不少于 3 家供应商。'}
+              </p>
             </div>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -251,6 +277,11 @@ export function RfqsPage() {
                   <p className="mt-1 text-xs font-bold text-slate-500">{r.id}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
+                  {r.method && (
+                    <span className="rounded-md bg-sky-100 px-2 py-0.5 text-[11px] font-black text-sky-700">
+                      {r.method}
+                    </span>
+                  )}
                   {(r.currentRound ?? 1) > 1 && (
                     <span className="rounded-md bg-violet-100 px-2 py-0.5 text-[11px] font-black text-violet-700">
                       第{r.currentRound}轮{r.finalRound ? '·最终' : ''}
@@ -281,6 +312,17 @@ export function RfqsPage() {
                   </div>
                 </div>
               )}
+              {ABORTED_STATUS[r.status ?? ''] && (
+                <div className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-3">
+                  <p className="text-xs font-black text-red-700">
+                    本询价已{ABORTED_STATUS[r.status ?? '']}
+                  </p>
+                  {r.closeReason && (
+                    <p className="mt-0.5 text-[11px] font-bold text-red-600/80">理由:{r.closeReason}</p>
+                  )}
+                </div>
+              )}
+
               {r.id && <RfqClarificationsBuyer rfqId={r.id} />}
 
               {r.status === '报价中' ? (
@@ -311,6 +353,13 @@ export function RfqsPage() {
                         ? '开标'
                         : '强制开标'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => r.id && submitAbort(r.id, '流标')}
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 self-start rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 hover:bg-red-50 sm:self-auto"
+                  >
+                    <Ban size={14} /> 流标
+                  </button>
                 </div>
               ) : (
                 <>
@@ -335,6 +384,24 @@ export function RfqsPage() {
                       >
                         <RotateCcw size={13} /> 再次报价
                       </button>
+                    )}
+                    {r.status === '已开标' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => r.id && submitAbort(r.id, '流标')}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-red-200 bg-white px-3 text-xs font-black text-red-600 hover:bg-red-50"
+                        >
+                          <Ban size={13} /> 流标
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => r.id && submitAbort(r.id, '废标')}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-red-200 bg-white px-3 text-xs font-black text-red-600 hover:bg-red-50"
+                        >
+                          <Ban size={13} /> 废标
+                        </button>
+                      </>
                     )}
                   </div>
                   {openId === r.id && (

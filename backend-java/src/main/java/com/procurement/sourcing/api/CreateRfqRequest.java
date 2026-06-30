@@ -13,5 +13,6 @@ public record CreateRfqRequest(
     @Future OffsetDateTime deadlineAt,
     String quoteRequirement,
     String deliveryRequirement,
-    String evaluationMethod) {
+    String evaluationMethod,
+    String method) {
 }

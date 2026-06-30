@@ -277,7 +277,9 @@ public class QuoteApplicationService {
         rfq.evaluationMethod(),
         rfq.openedAt(),
         rfq.currentRound(),
-        rfq.finalRound());
+        rfq.finalRound(),
+        rfq.method(),
+        rfq.closeReason());
   }
 
   private String newId(String prefix) {

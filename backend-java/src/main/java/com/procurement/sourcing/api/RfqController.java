@@ -57,6 +57,14 @@ public class RfqController {
     return ApiResponse.ok(rfqApplicationService.openBids(rfqId, request.force()));
   }
 
+  // 终止(采购方):流标(不足法定家数等)/废标(全部不合格、取消),记录理由。
+  @PostMapping("/{rfqId}/abort")
+  public ApiResponse<RfqResponse> abort(
+      @PathVariable String rfqId,
+      @Valid @RequestBody AbortRfqRequest request) {
+    return ApiResponse.ok(rfqApplicationService.abortRfq(rfqId, request.kind(), request.reason()));
+  }
+
   // 再次报价/BAFO(采购方):已开标 RFQ 发起下一轮报价(重新封存,设新截止)。
   @PostMapping("/{rfqId}/new-round")
   public ApiResponse<RfqResponse> startNewRound(

@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AbortRfqRequest,
   AnswerClarificationRequest,
   ApiResponseBidEvaluationResponse,
   ApiResponseListRfqClarificationResponse,
@@ -424,6 +425,65 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getRfqAnswerClarificationMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const rfqAbort = (
+    rfqId: string,
+    abortRfqRequest: BodyType<AbortRfqRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseRfqResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/abort`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: abortRfqRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getRfqAbortMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAbort>>, TError,{rfqId: string;data: BodyType<AbortRfqRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqAbort>>, TError,{rfqId: string;data: BodyType<AbortRfqRequest>}, TContext> => {
+
+const mutationKey = ['rfqAbort'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqAbort>>, {rfqId: string;data: BodyType<AbortRfqRequest>}> = (props) => {
+          const {rfqId,data} = props ?? {};
+
+          return  rfqAbort(rfqId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RfqAbortMutationResult = NonNullable<Awaited<ReturnType<typeof rfqAbort>>>
+    export type RfqAbortMutationBody = BodyType<AbortRfqRequest>
+    export type RfqAbortMutationError = ErrorType<ApiResponseVoid>
+
+    export const useRfqAbort = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAbort>>, TError,{rfqId: string;data: BodyType<AbortRfqRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rfqAbort>>,
+        TError,
+        {rfqId: string;data: BodyType<AbortRfqRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getRfqAbortMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

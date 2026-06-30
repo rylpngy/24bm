@@ -26,4 +26,6 @@ export interface RfqResponse {
   openedAt?: string;
   currentRound?: number;
   finalRound?: boolean;
+  method?: string;
+  closeReason?: string;
 }
