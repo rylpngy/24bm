@@ -29,7 +29,7 @@ public interface ContractPaymentMilestoneMapper {
       @Param("sortNo") int sortNo);
 
   @Select("""
-      select id, tenant_id, contract_id, name, percent, amount, status, sort_no, paid_at
+      select id, tenant_id, contract_id, name, percent, amount, status, sort_no, paid_at, reached, reached_at
       from contract_payment_milestones
       where tenant_id = #{tenantId} and contract_id = #{contractId}
       order by sort_no asc
@@ -43,14 +43,23 @@ public interface ContractPaymentMilestoneMapper {
       """)
   int countByContract(@Param("tenantId") String tenantId, @Param("contractId") String contractId);
 
+  // 付款须先达成:reached=true 才允许 待付 → 已付。
   @Update("""
       update contract_payment_milestones
       set status = #{toStatus}, paid_at = now()
-      where tenant_id = #{tenantId} and id = #{id} and status = #{fromStatus}
+      where tenant_id = #{tenantId} and id = #{id} and status = #{fromStatus} and reached = true
       """)
   int markPaid(
       @Param("tenantId") String tenantId,
       @Param("id") String id,
       @Param("fromStatus") String fromStatus,
       @Param("toStatus") String toStatus);
+
+  // 达成确认:未达成 → 达成。
+  @Update("""
+      update contract_payment_milestones
+      set reached = true, reached_at = now()
+      where tenant_id = #{tenantId} and id = #{id} and reached = false
+      """)
+  int markReached(@Param("tenantId") String tenantId, @Param("id") String id);
 }

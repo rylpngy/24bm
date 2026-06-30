@@ -9,5 +9,7 @@ public record ContractPaymentMilestoneResponse(
     int percent,
     BigDecimal amount,
     String status,
-    OffsetDateTime paidAt) {
+    OffsetDateTime paidAt,
+    boolean reached,
+    OffsetDateTime reachedAt) {
 }

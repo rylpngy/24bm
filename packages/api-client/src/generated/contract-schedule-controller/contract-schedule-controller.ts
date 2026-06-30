@@ -36,7 +36,64 @@ import type { ErrorType } from '../../http-client';
 
 
 
-export const contractSchedulePay = (
+export const contractScheduleReach = (
+    contractId: string,
+    milestoneId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListContractPaymentMilestoneResponse>(
+      {url: `/api/v1/buyer/contracts/${contractId}/payment-milestones/${milestoneId}/reach`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getContractScheduleReachMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof contractScheduleReach>>, TError,{contractId: string;milestoneId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof contractScheduleReach>>, TError,{contractId: string;milestoneId: string}, TContext> => {
+
+const mutationKey = ['contractScheduleReach'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof contractScheduleReach>>, {contractId: string;milestoneId: string}> = (props) => {
+          const {contractId,milestoneId} = props ?? {};
+
+          return  contractScheduleReach(contractId,milestoneId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ContractScheduleReachMutationResult = NonNullable<Awaited<ReturnType<typeof contractScheduleReach>>>
+    
+    export type ContractScheduleReachMutationError = ErrorType<ApiResponseVoid>
+
+    export const useContractScheduleReach = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof contractScheduleReach>>, TError,{contractId: string;milestoneId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof contractScheduleReach>>,
+        TError,
+        {contractId: string;milestoneId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getContractScheduleReachMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const contractSchedulePay = (
     contractId: string,
     milestoneId: string,
  signal?: AbortSignal

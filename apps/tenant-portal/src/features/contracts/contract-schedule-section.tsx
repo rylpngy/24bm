@@ -4,6 +4,7 @@ import {
   useContractScheduleLineItems,
   useContractScheduleMilestones,
   useContractSchedulePay,
+  useContractScheduleReach,
 } from '@24bid/api-client';
 
 const currency = (v?: number) =>
@@ -14,6 +15,7 @@ export function ContractScheduleSection({ contractId }: { contractId: string }) 
   const queryClient = useQueryClient();
   const lineItems = useContractScheduleLineItems(contractId);
   const milestones = useContractScheduleMilestones(contractId);
+  const reach = useContractScheduleReach();
   const generate = useContractScheduleGenerate();
   const pay = useContractSchedulePay();
 
@@ -77,22 +79,40 @@ export function ContractScheduleSection({ contractId }: { contractId: string }) 
         <p className="mt-1 text-[11px] font-bold text-slate-400">尚未生成付款计划。</p>
       ) : (
         <div className="mt-2 space-y-2">
-          {ms.map((m) => {
+          {ms.map((m, i) => {
             const paid = m.status === '已付';
             const busy = pay.isPending && pay.variables?.milestoneId === m.id;
+            const reachBusy = reach.isPending && reach.variables?.milestoneId === m.id;
+            // 按序达成:仅前序均已达成的下一个里程碑可确认达成。
+            const canReach = !m.reached && ms.slice(0, i).every((p) => p.reached);
             return (
               <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-violet-100 bg-white px-3 py-2">
                 <div className="min-w-0">
                   <p className="text-xs font-black text-slate-900">
                     {m.name} · {m.percent}% · {currency(m.amount)}
                   </p>
+                  {m.reachedAt && !paid && (
+                    <p className="text-[11px] font-bold text-slate-400">达成 {m.reachedAt.slice(0, 10)}</p>
+                  )}
                   {m.paidAt && <p className="text-[11px] font-bold text-slate-400">付款 {m.paidAt.slice(0, 10)}</p>}
                 </div>
                 <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-block rounded-md px-2 py-0.5 text-[11px] font-black ${m.reached ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}
+                  >
+                    {m.reached ? '已达成' : '未达成'}
+                  </span>
                   <span className={`inline-block rounded-md px-2 py-0.5 text-[11px] font-black ${paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                     {m.status}
                   </span>
-                  {!paid && m.id && (
+                  {canReach && m.id && (
+                    <button type="button" onClick={() => reach.mutate({ contractId, milestoneId: m.id! }, { onSuccess: refresh })}
+                      disabled={reachBusy}
+                      className="inline-flex h-7 items-center rounded-md border border-blue-200 bg-white px-3 text-[11px] font-black text-blue-700 hover:bg-blue-50 disabled:opacity-50">
+                      {reachBusy ? '确认中' : '确认达成'}
+                    </button>
+                  )}
+                  {!paid && m.reached && m.id && (
                     <button type="button" onClick={() => pay.mutate({ contractId, milestoneId: m.id! }, { onSuccess: refresh })}
                       disabled={busy}
                       className="inline-flex h-7 items-center rounded-md bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 disabled:opacity-50">

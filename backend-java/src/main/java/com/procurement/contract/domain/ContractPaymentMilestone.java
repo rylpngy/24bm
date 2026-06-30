@@ -12,5 +12,7 @@ public record ContractPaymentMilestone(
     BigDecimal amount,
     String status,
     int sortNo,
-    OffsetDateTime paidAt) {
+    OffsetDateTime paidAt,
+    boolean reached,
+    OffsetDateTime reachedAt) {
 }

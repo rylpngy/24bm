@@ -40,4 +40,11 @@ public class ContractScheduleController {
       @PathVariable String contractId, @PathVariable String milestoneId) {
     return ApiResponse.ok(contractScheduleService.payMilestone(contractId, milestoneId));
   }
+
+  // 确认里程碑达成(按序解锁,达成后方可付款)。
+  @PostMapping("/{contractId}/payment-milestones/{milestoneId}/reach")
+  public ApiResponse<List<ContractPaymentMilestoneResponse>> reach(
+      @PathVariable String contractId, @PathVariable String milestoneId) {
+    return ApiResponse.ok(contractScheduleService.reachMilestone(contractId, milestoneId));
+  }
 }

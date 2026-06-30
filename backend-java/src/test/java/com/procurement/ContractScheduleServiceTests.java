@@ -89,6 +89,43 @@ class ContractScheduleServiceTests {
   }
 
   @Test
+  void reachRequiresPriorMilestonesReachedInOrder() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(contractMapper.findByTenantAndId("tenant-1", "ctr-1"))
+        .thenReturn(contract(new BigDecimal("88000.00")));
+    // m-2(sortNo 1)未达成,前序 m-1(sortNo 0)也未达成 → 拦截。
+    when(milestoneMapper.listByContract("tenant-1", "ctr-1")).thenReturn(java.util.List.of(
+        milestone("m-1", "预付款", 0, false),
+        milestone("m-2", "验收款", 1, false)));
+
+    assertThatThrownBy(() -> service.reachMilestone("ctr-1", "m-2"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("须先按序达成前序里程碑");
+    verify(milestoneMapper, org.mockito.Mockito.never()).markReached("tenant-1", "m-2");
+  }
+
+  @Test
+  void reachMarksWhenPriorMilestonesAlreadyReached() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(contractMapper.findByTenantAndId("tenant-1", "ctr-1"))
+        .thenReturn(contract(new BigDecimal("88000.00")));
+    when(milestoneMapper.listByContract("tenant-1", "ctr-1")).thenReturn(java.util.List.of(
+        milestone("m-1", "预付款", 0, true),
+        milestone("m-2", "验收款", 1, false)));
+    when(milestoneMapper.markReached("tenant-1", "m-2")).thenReturn(1);
+
+    service.reachMilestone("ctr-1", "m-2");
+
+    verify(milestoneMapper).markReached("tenant-1", "m-2");
+  }
+
+  private com.procurement.contract.domain.ContractPaymentMilestone milestone(
+      String id, String name, int sortNo, boolean reached) {
+    return new com.procurement.contract.domain.ContractPaymentMilestone(
+        id, "tenant-1", "ctr-1", name, 30, new BigDecimal("26400"), "待付", sortNo, null, reached, null);
+  }
+
+  @Test
   void lineItemsDeriveFromRelatedOrder() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(contractMapper.findByTenantAndId("tenant-1", "ctr-1"))

@@ -13,4 +13,6 @@ export interface ContractPaymentMilestoneResponse {
   amount?: number;
   status?: string;
   paidAt?: string;
+  reached?: boolean;
+  reachedAt?: string;
 }

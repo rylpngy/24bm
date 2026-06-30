@@ -96,20 +96,46 @@ public class ContractScheduleService {
     return milestones(contractId);
   }
 
-  // 登记里程碑付款:待付 → 已付。
+  // 登记里程碑付款:须已达成的「待付」里程碑 → 已付。
   @Transactional
   public List<ContractPaymentMilestoneResponse> payMilestone(String contractId, String milestoneId) {
     String tenantId = TenantAccessGuard.requireTenantId("contract APIs");
     requireContract(tenantId, contractId);
     int updated = milestoneMapper.markPaid(tenantId, milestoneId, "待付", "已付");
     if (updated == 0) {
-      throw new IllegalStateException("只有待付里程碑可以登记付款:" + milestoneId);
+      throw new IllegalStateException("只有「已达成」的待付里程碑可以登记付款:" + milestoneId);
+    }
+    return milestones(contractId);
+  }
+
+  // 确认里程碑达成:须按序达成(前序里程碑均已达成),达成后方可付款。
+  @Transactional
+  public List<ContractPaymentMilestoneResponse> reachMilestone(String contractId, String milestoneId) {
+    String tenantId = TenantAccessGuard.requireTenantId("contract APIs");
+    requireContract(tenantId, contractId);
+    List<ContractPaymentMilestone> all = milestoneMapper.listByContract(tenantId, contractId);
+    ContractPaymentMilestone target = all.stream()
+        .filter(m -> m.id().equals(milestoneId))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("里程碑不存在:" + milestoneId));
+    if (target.reached()) {
+      throw new IllegalStateException("里程碑已达成:" + milestoneId);
+    }
+    boolean priorAllReached = all.stream()
+        .filter(m -> m.sortNo() < target.sortNo())
+        .allMatch(ContractPaymentMilestone::reached);
+    if (!priorAllReached) {
+      throw new IllegalStateException("须先按序达成前序里程碑:" + target.name());
+    }
+    int updated = milestoneMapper.markReached(tenantId, milestoneId);
+    if (updated == 0) {
+      throw new IllegalStateException("里程碑达成状态已变更:" + milestoneId);
     }
     return milestones(contractId);
   }
 
   private ContractPaymentMilestoneResponse toMilestoneResponse(ContractPaymentMilestone m) {
     return new ContractPaymentMilestoneResponse(
-        m.id(), m.name(), m.percent(), m.amount(), m.status(), m.paidAt());
+        m.id(), m.name(), m.percent(), m.amount(), m.status(), m.paidAt(), m.reached(), m.reachedAt());
   }
 }
