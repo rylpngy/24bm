@@ -148,7 +148,7 @@ public class RfqApplicationService {
   // 再次报价/BAFO:已开标的 RFQ 觉得报价不理想,发起下一轮(重新封存,设新截止)。
   @Transactional
   public RfqResponse startNewRound(
-      String rfqId, java.time.OffsetDateTime deadlineAt, boolean finalRound) {
+      String rfqId, java.time.OffsetDateTime deadlineAt, boolean finalRound, String note) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
@@ -163,9 +163,10 @@ public class RfqApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("RFQ status changed before a new round could start: " + rfqId);
     }
+    String roundLabel = finalRound ? "发起最终轮报价(BAFO)" : "发起新一轮报价";
     auditLogApplicationService.recordTenantAction(
         tenantId, RfqAuditAction.NEW_ROUND, "rfq", rfqId,
-        finalRound ? "发起最终轮报价(BAFO)" : "发起新一轮报价");
+        note == null || note.isBlank() ? roundLabel : roundLabel + " · 谈判说明:" + note);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         "询价进入新一轮报价",

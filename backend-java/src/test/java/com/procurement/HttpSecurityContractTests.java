@@ -783,7 +783,8 @@ class HttpSecurityContractTests {
     when(rfqApplicationService.startNewRound(
         org.mockito.ArgumentMatchers.eq("rfq-demo"),
         org.mockito.ArgumentMatchers.any(),
-        org.mockito.ArgumentMatchers.eq(true)))
+        org.mockito.ArgumentMatchers.eq(true),
+        org.mockito.ArgumentMatchers.any()))
         .thenReturn(new RfqResponse(
             "rfq-demo", "tenant-acme", "办公电脑询价", "报价中",
             OffsetDateTime.parse("2026-07-10T18:00:00+08:00"),

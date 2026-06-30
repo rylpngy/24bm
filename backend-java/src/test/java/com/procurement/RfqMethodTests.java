@@ -29,6 +29,33 @@ class RfqMethodTests {
   }
 
   @Test
+  void negotiationRequiresAtLeastTwoRoundsToAward() {
+    assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.NEGOTIATION, 1, 3, "rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("竞争性谈判须经至少一轮谈判");
+    assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.NEGOTIATION, 2, 1, "rfq-1"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void competitiveMethodsRequireThreeBiddersToAward() {
+    assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.PUBLIC_TENDER, 1, 2, "rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("不少于3家有效报价");
+    assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.INQUIRY, 1, 3, "rfq-1"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void singleSourceAwardsWithOneBidder() {
+    assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.SINGLE_SOURCE, 1, 1, "rfq-1"))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.SINGLE_SOURCE, 1, 0, "rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("单一来源须有 1 家报价");
+  }
+
+  @Test
   void defaultsToInquiryAndValidatesKnownMethods() {
     assertThat(RfqMethod.orDefault(null)).isEqualTo(RfqMethod.INQUIRY);
     assertThat(RfqMethod.orDefault("")).isEqualTo(RfqMethod.INQUIRY);

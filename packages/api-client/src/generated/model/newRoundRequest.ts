@@ -9,4 +9,5 @@
 export interface NewRoundRequest {
   deadlineAt: string;
   finalRound?: boolean;
+  note?: string;
 }

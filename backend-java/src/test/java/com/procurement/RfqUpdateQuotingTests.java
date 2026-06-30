@@ -231,7 +231,7 @@ class RfqUpdateQuotingTests {
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(opened).thenReturn(round2);
     when(rfqMapper.startNewRound("tenant-1", "rfq-1", newDeadline, true)).thenReturn(1);
 
-    var response = rfqApplicationService.startNewRound("rfq-1", newDeadline, true);
+    var response = rfqApplicationService.startNewRound("rfq-1", newDeadline, true, "谈判说明");
 
     assertThat(response.status()).isEqualTo("报价中");
     assertThat(response.currentRound()).isEqualTo(2);
@@ -246,7 +246,7 @@ class RfqUpdateQuotingTests {
         .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")));
 
     assertThatThrownBy(() -> rfqApplicationService.startNewRound(
-        "rfq-1", OffsetDateTime.parse("2026-07-12T18:00:00+08:00"), false))
+        "rfq-1", OffsetDateTime.parse("2026-07-12T18:00:00+08:00"), false, null))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Only opened RFQs can start a new round");
     verify(rfqMapper, never()).startNewRound(

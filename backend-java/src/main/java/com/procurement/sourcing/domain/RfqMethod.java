@@ -28,6 +28,35 @@ public final class RfqMethod {
     return SINGLE_SOURCE.equals(method) ? 1 : 3;
   }
 
+  // 竞争性谈判须经至少一轮谈判(即当前轮 ≥2)。
+  public static final int NEGOTIATION_MIN_ROUND = 2;
+  // 招标/询价定标须有不少于 3 家有效报价(法定家数);单一来源 1 家即可。
+  public static final int AWARD_MIN_BIDDERS_COMPETITIVE = 3;
+
+  // 定标资格:按采购方式校验「能否定标」。
+  public static void requireAwardEligible(String method, int currentRound, int bidderCount, String rfqId) {
+    String m = orDefault(method);
+    if (NEGOTIATION.equals(m)) {
+      if (currentRound < NEGOTIATION_MIN_ROUND) {
+        throw new IllegalStateException(
+            "竞争性谈判须经至少一轮谈判后方可定标(当前第" + currentRound + "轮): " + rfqId);
+      }
+      return;
+    }
+    if (SINGLE_SOURCE.equals(m)) {
+      if (bidderCount < 1) {
+        throw new IllegalStateException("单一来源须有 1 家报价方可定标: " + rfqId);
+      }
+      return;
+    }
+    // 公开招标 / 邀请招标 / 询价:不少于法定家数。
+    if (bidderCount < AWARD_MIN_BIDDERS_COMPETITIVE) {
+      throw new IllegalStateException(
+          m + "定标须有不少于" + AWARD_MIN_BIDDERS_COMPETITIVE + "家有效报价(当前"
+              + bidderCount + "家),否则应予流标: " + rfqId);
+    }
+  }
+
   // 单一来源:有且仅有 1 家;其余:不少于下限。
   public static void requireSupplierCount(String method, int count) {
     String m = orDefault(method);

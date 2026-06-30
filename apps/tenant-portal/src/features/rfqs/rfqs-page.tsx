@@ -23,6 +23,18 @@ const deadlinePassed = (deadlineAt?: string | null) =>
   deadlineAt ? new Date(deadlineAt).getTime() <= Date.now() : false;
 
 const METHODS = ['公开招标', '邀请招标', '竞争性谈判', '询价', '单一来源'];
+// 各采购方式定标门槛提示。
+const awardGateHint = (method?: string, currentRound = 1, bidders = 0): string => {
+  if (method === '竞争性谈判') {
+    return currentRound >= 2
+      ? '竞争性谈判已满足多轮要求,可定标。'
+      : '竞争性谈判须经至少一轮谈判(再次报价)后方可定标。';
+  }
+  if (method === '单一来源') return '单一来源 1 家报价即可定标。';
+  return bidders >= 3
+    ? `已收到 ${bidders} 家有效报价,满足法定家数。`
+    : `${method ?? '招标/询价'}定标须不少于 3 家有效报价(当前 ${bidders} 家),否则应予流标。`;
+};
 // 进行中可终止;终态显示终止类型。
 const ABORTED_STATUS: Record<string, string> = { 已流标: '流标', 已废标: '废标' };
 
@@ -39,7 +51,9 @@ export function RfqsPage() {
   const open = useRfqOpen();
   const newRound = useRfqStartNewRound();
   const abort = useRfqAbort();
-  const [roundForm, setRoundForm] = useState<{ rfqId: string; deadline: string; final: boolean } | null>(null);
+  const [roundForm, setRoundForm] = useState<
+    { rfqId: string; deadline: string; final: boolean; note: string; method?: string } | null
+  >(null);
 
   const [title, setTitle] = useState('');
   const [demandId, setDemandId] = useState('');
@@ -112,7 +126,11 @@ export function RfqsPage() {
     newRound.mutate(
       {
         rfqId: roundForm.rfqId,
-        data: { deadlineAt: `${roundForm.deadline}T18:00:00+08:00`, finalRound: roundForm.final },
+        data: {
+          deadlineAt: `${roundForm.deadline}T18:00:00+08:00`,
+          finalRound: roundForm.final,
+          note: roundForm.note || undefined,
+        },
       },
       {
         onSuccess: () => {
@@ -383,11 +401,12 @@ export function RfqsPage() {
                       <button
                         type="button"
                         onClick={() =>
-                          r.id && setRoundForm({ rfqId: r.id, deadline: '', final: false })
+                          r.id &&
+                          setRoundForm({ rfqId: r.id, deadline: '', final: false, note: '', method: r.method ?? undefined })
                         }
                         className="inline-flex h-8 items-center gap-1.5 rounded-md border border-violet-200 bg-white px-3 text-xs font-black text-violet-700 hover:bg-violet-50"
                       >
-                        <RotateCcw size={13} /> 再次报价
+                        <RotateCcw size={13} /> {r.method === '竞争性谈判' ? '发起谈判轮' : '再次报价'}
                       </button>
                     )}
                     {r.status === '已开标' && (
@@ -411,6 +430,9 @@ export function RfqsPage() {
                   </div>
                   {openId === r.id && (
                     <div className="mt-3">
+                      <div className="mb-2 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2 text-[11px] font-bold text-sky-700">
+                        {r.method ?? '采购方式'} · 定标门槛:{awardGateHint(r.method ?? undefined, r.currentRound ?? 1, (r.quotes ?? []).length)}
+                      </div>
                       <QuoteComparisonTable
                         quotes={r.quotes ?? []}
                         supplierNames={supplierNames}
@@ -456,6 +478,17 @@ export function RfqsPage() {
               />
               最终轮(BAFO · 最后一次报价机会)
             </label>
+            <div className="mt-3">
+              <label className="text-xs font-black text-slate-500">
+                谈判说明{roundForm.method === '竞争性谈判' ? '(竞争性谈判须留痕)' : '(可选)'}
+              </label>
+              <textarea
+                className={cn(inputCls, 'min-h-[56px] resize-y')}
+                placeholder="本轮谈判要点、让价要求等,记入审计留痕。"
+                value={roundForm.note}
+                onChange={(e) => setRoundForm({ ...roundForm, note: e.target.value })}
+              />
+            </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"

@@ -80,8 +80,8 @@ public class RfqController {
   public ApiResponse<RfqResponse> startNewRound(
       @PathVariable String rfqId,
       @Valid @RequestBody NewRoundRequest request) {
-    return ApiResponse.ok(
-        rfqApplicationService.startNewRound(rfqId, request.deadlineAt(), request.finalRound()));
+    return ApiResponse.ok(rfqApplicationService.startNewRound(
+        rfqId, request.deadlineAt(), request.finalRound(), request.note()));
   }
 
   // 澄清答疑(采购方):查看该 RFQ 全部澄清。

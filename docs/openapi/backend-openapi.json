@@ -13549,6 +13549,9 @@
           },
           "finalRound": {
             "type": "boolean"
+          },
+          "note": {
+            "type": "string"
           }
         }
       },

@@ -76,6 +76,10 @@ class SourcingAwardStateTransitionTests {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
         .thenReturn(rfq("rfq-1", "tenant-1", "已开标"));
+    when(quoteMapper.listByTenantAndRfqAndRound("tenant-1", "rfq-1", 1)).thenReturn(java.util.List.of(
+        quote("quote-1", "tenant-1", "rfq-1", "supplier-1"),
+        quote("quote-2", "tenant-1", "rfq-1", "supplier-2"),
+        quote("quote-3", "tenant-1", "rfq-1", "supplier-3")));
     when(quoteMapper.findSubmittedQuoteForAward("tenant-1", "rfq-1", "quote-1", "已提交"))
         .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
     when(rfqMapper.updateStatus("tenant-1", "rfq-1", "已开标", "定标审批中"))
@@ -101,6 +105,10 @@ class SourcingAwardStateTransitionTests {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
         .thenReturn(rfq("rfq-1", "tenant-1", "已开标"));
+    when(quoteMapper.listByTenantAndRfqAndRound("tenant-1", "rfq-1", 1)).thenReturn(java.util.List.of(
+        quote("quote-1", "tenant-1", "rfq-1", "supplier-1"),
+        quote("quote-2", "tenant-1", "rfq-1", "supplier-2"),
+        quote("quote-3", "tenant-1", "rfq-1", "supplier-3")));
     when(quoteMapper.findSubmittedQuoteForAward("tenant-1", "rfq-1", "quote-1", "已提交"))
         .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
     when(rfqMapper.updateStatus("tenant-1", "rfq-1", "已开标", "定标审批中"))
@@ -148,6 +156,10 @@ class SourcingAwardStateTransitionTests {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
         .thenReturn(rfq("rfq-1", "tenant-1", "已开标"));
+    when(quoteMapper.listByTenantAndRfqAndRound("tenant-1", "rfq-1", 1)).thenReturn(java.util.List.of(
+        quote("quote-1", "tenant-1", "rfq-1", "supplier-1"),
+        quote("quote-2", "tenant-1", "rfq-1", "supplier-2"),
+        quote("quote-3", "tenant-1", "rfq-1", "supplier-3")));
     when(quoteMapper.findSubmittedQuoteForAward("tenant-1", "rfq-1", "quote-1", "已提交"))
         .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
     when(rfqMapper.updateStatus("tenant-1", "rfq-1", "已开标", "定标审批中"))
