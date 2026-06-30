@@ -225,6 +225,7 @@ export * from './myPermissionsResponse';
 export * from './notificationDeliveryResponse';
 export * from './notificationResponse';
 export * from './notificationSettingsResponse';
+export * from './openRfqRequest';
 export * from './orderLineItemResponse';
 export * from './paymentArchiveExceptionRequestResponse';
 export * from './paymentBatchResponse';

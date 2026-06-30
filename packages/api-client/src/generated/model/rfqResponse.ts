@@ -23,4 +23,5 @@ export interface RfqResponse {
   quoteRequirement?: string;
   deliveryRequirement?: string;
   evaluationMethod?: string;
+  openedAt?: string;
 }

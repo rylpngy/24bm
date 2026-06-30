@@ -4532,6 +4532,66 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/open": {
+      "post": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_open",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenRfqRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/rfqs/{rfqId}/award": {
       "post": {
         "tags": [
@@ -10598,6 +10658,10 @@
           },
           "evaluationMethod": {
             "type": "string"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -12941,6 +13005,14 @@
           },
           "evaluationMethod": {
             "type": "string"
+          }
+        }
+      },
+      "OpenRfqRequest": {
+        "type": "object",
+        "properties": {
+          "force": {
+            "type": "boolean"
           }
         }
       },

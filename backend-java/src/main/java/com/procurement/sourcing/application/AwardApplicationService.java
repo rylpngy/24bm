@@ -73,7 +73,7 @@ public class AwardApplicationService {
     int updated = rfqMapper.updateStatus(
         tenantId,
         rfqId,
-        RfqStatus.QUOTING,
+        RfqStatus.OPENED,
         RfqStatus.AWARD_APPROVAL);
     if (updated == 0) {
       throw new IllegalStateException("RFQ status changed before award approval could be submitted: " + rfqId);

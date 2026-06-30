@@ -703,6 +703,48 @@ class HttpSecurityContractTests {
   }
 
   @Test
+  void buyerCanOpenRfqBidsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/open")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"force\": true}"))
+        .andExpect(status().isForbidden());
+
+    when(rfqApplicationService.openBids("rfq-demo", true))
+        .thenReturn(new RfqResponse(
+            "rfq-demo", "tenant-acme", "办公电脑询价", "已开标",
+            OffsetDateTime.parse("2026-06-20T18:00:00+08:00"),
+            "user-buyer-owner", null,
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-21T09:00:00+08:00"),
+            List.of(), List.of()));
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/open")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"force\": true}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("已开标"));
+  }
+
+  @Test
   void buyerCanListPendingApprovalTasksButSupplierCannot() throws Exception {
     String supplierToken = loginAndExtractToken("""
         {

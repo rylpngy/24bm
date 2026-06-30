@@ -61,24 +61,24 @@ class SourcingAwardStateTransitionTests {
   }
 
   @Test
-  void awardRejectsRfqThatIsNoLongerQuoting() {
+  void awardRejectsRfqThatIsNotOpened() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "tenant-1", "已定标"));
+        .thenReturn(rfq("rfq-1", "tenant-1", "报价中"));
 
     assertThatThrownBy(() -> awardApplicationService.award("rfq-1", new AwardRfqRequest("quote-1", "最低价")))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Only quoting RFQs can be awarded");
+        .hasMessageContaining("Only opened RFQs can be awarded");
   }
 
   @Test
   void awardFailsWhenRfqStatusChangesBeforeAtomicUpdate() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "tenant-1", "报价中"));
+        .thenReturn(rfq("rfq-1", "tenant-1", "已开标"));
     when(quoteMapper.findSubmittedQuoteForAward("tenant-1", "rfq-1", "quote-1", "已提交"))
         .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
-    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "报价中", "定标审批中"))
+    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "已开标", "定标审批中"))
         .thenReturn(0);
 
     assertThatThrownBy(() -> awardApplicationService.award("rfq-1", new AwardRfqRequest("quote-1", "最低价")))
@@ -100,10 +100,10 @@ class SourcingAwardStateTransitionTests {
   void awardSubmitsPendingApprovalBeforeFinalAward() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "tenant-1", "报价中"));
+        .thenReturn(rfq("rfq-1", "tenant-1", "已开标"));
     when(quoteMapper.findSubmittedQuoteForAward("tenant-1", "rfq-1", "quote-1", "已提交"))
         .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
-    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "报价中", "定标审批中"))
+    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "已开标", "定标审批中"))
         .thenReturn(1);
     when(quoteMapper.lockSubmittedQuoteForAward("tenant-1", "quote-1", "已提交", "已锁定"))
         .thenReturn(1);
@@ -147,10 +147,10 @@ class SourcingAwardStateTransitionTests {
   void awardFailsWhenSelectedQuoteCannotBeLocked() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "tenant-1", "报价中"));
+        .thenReturn(rfq("rfq-1", "tenant-1", "已开标"));
     when(quoteMapper.findSubmittedQuoteForAward("tenant-1", "rfq-1", "quote-1", "已提交"))
         .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
-    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "报价中", "定标审批中"))
+    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "已开标", "定标审批中"))
         .thenReturn(1);
     when(quoteMapper.lockSubmittedQuoteForAward("tenant-1", "quote-1", "已提交", "已锁定"))
         .thenReturn(0);
@@ -226,7 +226,7 @@ class SourcingAwardStateTransitionTests {
         .thenReturn(1);
     when(awardDecisionMapper.updateApprovedStatus("tenant-1", "award-1", "待审批", "已驳回"))
         .thenReturn(1);
-    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "定标审批中", "报价中"))
+    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "定标审批中", "已开标"))
         .thenReturn(1);
     when(quoteMapper.unlockAwardQuote("tenant-1", "quote-1", "已锁定", "已提交"))
         .thenReturn(1);

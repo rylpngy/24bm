@@ -636,7 +636,7 @@ class BackendModuleArchitectureTests {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("sourcing/application/AwardApplicationService.java"),
         List.of(
-            "RfqStatus.QUOTING",
+            "RfqStatus.OPENED",
             "RfqStatus.AWARD_APPROVAL",
             "RfqAwardStatusTransition",
             "QuoteStatus.SUBMITTED",
@@ -806,7 +806,7 @@ class BackendModuleArchitectureTests {
         .contains("void requireAwardSubmission")
         .contains("void requireAwardReview")
         .contains("String reviewTargetStatus")
-        .contains("RfqStatus.QUOTING")
+        .contains("RfqStatus.OPENED")
         .contains("RfqStatus.AWARD_APPROVAL")
         .contains("RfqStatus.AWARDED");
 

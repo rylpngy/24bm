@@ -18,7 +18,8 @@ public record RfqResponse(
     List<QuoteResponse> quotes,
     String quoteRequirement,
     String deliveryRequirement,
-    String evaluationMethod) {
+    String evaluationMethod,
+    OffsetDateTime openedAt) {
 
   public RfqResponse(
       String id,
@@ -47,6 +48,7 @@ public record RfqResponse(
         List.of(),
         "",
         "",
-        "最低价");
+        "最低价",
+        null);
   }
 }

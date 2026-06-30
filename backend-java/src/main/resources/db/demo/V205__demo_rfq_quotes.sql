@@ -10,7 +10,7 @@ values
   ('dem-demo-server', 'tenant-acme', '机房服务器采购', 'dept-it', 'user-buyer-owner', 200000.00, '已通过')
 on conflict (id) do nothing;
 
--- demo RFQ：报价中，截止已过(允许定标)，链 dem-demo-laptop，邀 sunrise + tech。
+-- demo RFQ：报价中(封存),截止已过 → 可直接开标(无需强制),开标后方可评标定标。链 dem-demo-laptop,邀 sunrise + tech。
 insert into rfqs (id, tenant_id, title, status, deadline_at, owner_id)
 values
   ('rfq-demo', 'tenant-acme', '办公电脑询价(演示)', '报价中', timestamptz '2026-06-20 18:00:00+08', 'user-buyer-owner')

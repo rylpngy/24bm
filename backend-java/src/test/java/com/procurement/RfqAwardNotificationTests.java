@@ -67,10 +67,10 @@ class RfqAwardNotificationTests {
   void submittingRfqAwardCreatesInAppNotificationsForActiveTenantUsers() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "办公电脑询价", "报价中"));
+        .thenReturn(rfq("rfq-1", "办公电脑询价", "已开标"));
     when(quoteMapper.findSubmittedQuoteForAward("tenant-1", "rfq-1", "quote-1", "已提交"))
         .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
-    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "报价中", "定标审批中"))
+    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "已开标", "定标审批中"))
         .thenReturn(1);
     when(quoteMapper.lockSubmittedQuoteForAward("tenant-1", "quote-1", "已提交", "已锁定"))
         .thenReturn(1);

@@ -1,18 +1,22 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Lock, LockOpen, Plus } from 'lucide-react';
 import {
   useBuyerSupplierList,
   usePurchaseDemandList,
   useRfqAwardAward,
   useRfqCreate,
   useRfqList,
+  useRfqOpen,
 } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
 
 const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+
+const deadlinePassed = (deadlineAt?: string | null) =>
+  deadlineAt ? new Date(deadlineAt).getTime() <= Date.now() : false;
 
 export function RfqsPage() {
   const queryClient = useQueryClient();
@@ -24,6 +28,7 @@ export function RfqsPage() {
   const admittedSuppliers = useBuyerSupplierList({ status: '已准入' });
   const create = useRfqCreate();
   const award = useRfqAwardAward();
+  const open = useRfqOpen();
 
   const [title, setTitle] = useState('');
   const [demandId, setDemandId] = useState('');
@@ -86,6 +91,15 @@ export function RfqsPage() {
       { rfqId, data: { quoteId, reason: '含税总价与交期综合最优' } },
       { onSuccess: () => refresh() },
     );
+  };
+
+  const submitOpen = (rfqId: string, deadlineAt?: string) => {
+    const passed = deadlinePassed(deadlineAt);
+    if (!passed) {
+      const ok = window.confirm('报价截止时间尚未到达。强制开标将提前结束报价收集，确认继续？');
+      if (!ok) return;
+    }
+    open.mutate({ rfqId, data: { force: !passed } }, { onSuccess: () => refresh() });
   };
 
   const toggleSupplier = (id: string) =>
@@ -240,30 +254,64 @@ export function RfqsPage() {
                   </div>
                 </div>
               )}
-              {(r.quotes ?? []).length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setOpenId(openId === r.id ? null : (r.id ?? null))}
-                  className="mt-3 inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
-                >
-                  {openId === r.id ? '收起比价' : '比价定标'}
-                </button>
-              )}
-              {openId === r.id && (
-                <div className="mt-3">
-                  <QuoteComparisonTable
-                    quotes={r.quotes ?? []}
-                    supplierNames={supplierNames}
-                    canAward={r.status === '报价中'}
-                    awardingQuoteId={award.isPending ? (award.variables?.data.quoteId ?? null) : null}
-                    onAward={(quoteId) => r.id && submitAward(r.id, quoteId)}
-                  />
-                  {r.status !== '报价中' && (
-                    <p className="mt-2 text-xs font-bold text-slate-400">
-                      当前状态「{r.status}」，定标入口仅在报价中开放。
-                    </p>
-                  )}
+              {r.status === '报价中' ? (
+                // 封存:报价明细对采购方不可见,需开标后方可比价定标。
+                <div className="mt-3 flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-2">
+                    <Lock size={15} className="mt-0.5 shrink-0 text-amber-600" />
+                    <div>
+                      <p className="text-xs font-black text-amber-800">报价封存中</p>
+                      <p className="mt-0.5 text-[11px] font-bold text-amber-700/80">
+                        已收到 {(r.quotes ?? []).length} 家报价,报价明细在开标后可见。
+                        {deadlinePassed(r.deadlineAt)
+                          ? ' 截止已过,可直接开标。'
+                          : ' 未到截止,可强制开标。'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => r.id && submitOpen(r.id, r.deadlineAt ?? undefined)}
+                    disabled={open.isPending && open.variables?.rfqId === r.id}
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 self-start rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800 disabled:bg-slate-400 sm:self-auto"
+                  >
+                    <LockOpen size={14} />
+                    {open.isPending && open.variables?.rfqId === r.id
+                      ? '开标中…'
+                      : deadlinePassed(r.deadlineAt)
+                        ? '开标'
+                        : '强制开标'}
+                  </button>
                 </div>
+              ) : (
+                <>
+                  {(r.quotes ?? []).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setOpenId(openId === r.id ? null : (r.id ?? null))}
+                      className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-md border border-indigo-200 bg-white px-3 text-xs font-black text-indigo-700 hover:bg-indigo-50"
+                    >
+                      <LockOpen size={13} />
+                      {openId === r.id ? '收起比价' : '比价定标'}
+                    </button>
+                  )}
+                  {openId === r.id && (
+                    <div className="mt-3">
+                      <QuoteComparisonTable
+                        quotes={r.quotes ?? []}
+                        supplierNames={supplierNames}
+                        canAward={r.status === '已开标'}
+                        awardingQuoteId={award.isPending ? (award.variables?.data.quoteId ?? null) : null}
+                        onAward={(quoteId) => r.id && submitAward(r.id, quoteId)}
+                      />
+                      {r.status !== '已开标' && (
+                        <p className="mt-2 text-xs font-bold text-slate-400">
+                          当前状态「{r.status}」，定标入口仅在已开标时开放。
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ))}

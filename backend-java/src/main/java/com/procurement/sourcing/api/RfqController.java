@@ -44,6 +44,14 @@ public class RfqController {
     return ApiResponse.ok(rfqApplicationService.update(rfqId, request));
   }
 
+  // 开标:封存的「报价中」RFQ → 「已开标」(到点开标 / 未到点 force=true 强制),开标后方可评标。
+  @PostMapping("/{rfqId}/open")
+  public ApiResponse<RfqResponse> open(
+      @PathVariable String rfqId,
+      @Valid @RequestBody OpenRfqRequest request) {
+    return ApiResponse.ok(rfqApplicationService.openBids(rfqId, request.force()));
+  }
+
   // 加权评标:按价格/交期权重打分排名,推荐总分最高者(默认价格70/交期30)。
   @GetMapping("/{rfqId}/evaluation")
   public ApiResponse<BidEvaluationResponse> evaluation(

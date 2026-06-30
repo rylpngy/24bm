@@ -96,6 +96,7 @@ public class RfqApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
+    rfqSourcingStatusTransition.requireOpenedForEvaluation(rfq.status(), rfqId);
     List<Quote> quotes = quoteMapper.listByTenantAndRfq(tenantId, rfqId);
     List<BidEvaluator.ScoredQuote> scored =
         BidEvaluator.evaluate(quotes, priceWeight, deliveryWeight);
@@ -120,6 +121,26 @@ public class RfqApplicationService {
         top == null ? null : top.quote().id(),
         top == null ? null : top.quote().supplierId(),
         rows);
+  }
+
+  // 开标:把封存的「报价中」RFQ 转为「已开标」(到点开标 / 未到点需强制),开标后方可评标定标。
+  @Transactional
+  public RfqResponse openBids(String rfqId, boolean force) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    String userId = TenantAccessGuard.requireUserId("buyer RFQ APIs");
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    if (rfq == null) {
+      throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
+    }
+    rfqSourcingStatusTransition.requireQuotingForOpen(rfq.status(), rfqId);
+    rfqSourcingStatusTransition.requireDeadlinePassedOrForce(rfq.deadlineAt(), force, rfqId);
+
+    int opened = rfqMapper.openBids(tenantId, rfqId, RfqStatus.QUOTING, RfqStatus.OPENED, userId);
+    if (opened == 0) {
+      throw new IllegalStateException("RFQ status changed before bids could be opened: " + rfqId);
+    }
+    auditLogApplicationService.recordTenantAction(RfqAuditAction.OPENED, "rfq", rfqId);
+    return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
   }
 
   public List<RfqResponse> listCurrentTenantRfqs(String status, String keyword) {
@@ -277,7 +298,8 @@ public class RfqApplicationService {
             .toList(),
         rfq.quoteRequirement(),
         rfq.deliveryRequirement(),
-        rfq.evaluationMethod());
+        rfq.evaluationMethod(),
+        rfq.openedAt());
   }
 
   private static String orEmpty(String value) {

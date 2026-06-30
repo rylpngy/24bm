@@ -68,4 +68,43 @@ class RfqSourcingStatusTransitionTests {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("RFQ quote deadline has passed: rfq-1");
   }
+
+  @Test
+  void allowsBidOpeningOnlyFromSealedQuotingRfq() {
+    assertThatCode(() -> transition.requireQuotingForOpen(RfqStatus.QUOTING, "rfq-1"))
+        .doesNotThrowAnyException();
+
+    assertThatThrownBy(() -> transition.requireQuotingForOpen(RfqStatus.OPENED, "rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Only sealed (quoting) RFQs can be opened: rfq-1");
+  }
+
+  @Test
+  void requiresDeadlinePassedUnlessForceOpen() {
+    // 已过截止:正常开标,无需强制。
+    assertThatCode(() -> transition.requireDeadlinePassedOrForce(
+        OffsetDateTime.now().minusMinutes(1), false, "rfq-1"))
+        .doesNotThrowAnyException();
+    // 未过截止 + 未强制:拦截。
+    assertThatThrownBy(() -> transition.requireDeadlinePassedOrForce(
+        OffsetDateTime.now().plusDays(1), false, "rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("force open required: rfq-1");
+    // 未过截止 + 强制:放行。
+    assertThatCode(() -> transition.requireDeadlinePassedOrForce(
+        OffsetDateTime.now().plusDays(1), true, "rfq-1"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void sealsEvaluationUntilBidsAreOpened() {
+    assertThatThrownBy(() -> transition.requireOpenedForEvaluation(RfqStatus.QUOTING, "rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("sealed until bids are opened: rfq-1");
+
+    assertThatCode(() -> transition.requireOpenedForEvaluation(RfqStatus.OPENED, "rfq-1"))
+        .doesNotThrowAnyException();
+    assertThatCode(() -> transition.requireOpenedForEvaluation(RfqStatus.AWARDED, "rfq-1"))
+        .doesNotThrowAnyException();
+  }
 }

@@ -13,13 +13,13 @@ class RfqAwardStatusTransitionTests {
   private final RfqAwardStatusTransition transition = new RfqAwardStatusTransition();
 
   @Test
-  void allowsAwardSubmissionOnlyFromQuotingRfq() {
-    assertThatCode(() -> transition.requireAwardSubmission(RfqStatus.QUOTING, "rfq-1"))
+  void allowsAwardSubmissionOnlyFromOpenedRfq() {
+    assertThatCode(() -> transition.requireAwardSubmission(RfqStatus.OPENED, "rfq-1"))
         .doesNotThrowAnyException();
 
-    assertThatThrownBy(() -> transition.requireAwardSubmission(RfqStatus.AWARDED, "rfq-1"))
+    assertThatThrownBy(() -> transition.requireAwardSubmission(RfqStatus.QUOTING, "rfq-1"))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Only quoting RFQs can be awarded: rfq-1");
+        .hasMessageContaining("Only opened RFQs can be awarded: rfq-1");
   }
 
   @Test
@@ -35,6 +35,6 @@ class RfqAwardStatusTransitionTests {
   @Test
   void resolvesTargetStatusFromApprovalResult() {
     assertThat(transition.reviewTargetStatus(true)).isEqualTo(RfqStatus.AWARDED);
-    assertThat(transition.reviewTargetStatus(false)).isEqualTo(RfqStatus.QUOTING);
+    assertThat(transition.reviewTargetStatus(false)).isEqualTo(RfqStatus.OPENED);
   }
 }
