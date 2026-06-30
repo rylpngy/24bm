@@ -3,13 +3,18 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft,
   CreditCard,
+  Eye,
   FileText,
   Package,
   Plane,
+  Play,
   Plus,
   Save,
+  UserCheck,
   UserPlus,
   Workflow,
+  X,
+  Zap,
 } from 'lucide-react';
 import {
   type ProcessDefinitionResponse,
@@ -21,7 +26,14 @@ import {
 import { FeedbackNotice, Tabs, cn } from '@24bid/ui';
 import { FormDesigner } from './form-designer';
 import { FlowDesigner } from './flow-designer';
-import { type FlowStep, type FormField, parseFlow, parseForm } from './types';
+import {
+  type FlowStep,
+  type FormField,
+  type ResolvedStep,
+  evaluateFlow,
+  parseFlow,
+  parseForm,
+} from './types';
 
 const ICONS: Record<string, React.ElementType> = {
   box: Package,
@@ -129,6 +141,7 @@ function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
   const [fields, setFields] = useState<FormField[]>([]);
   const [steps, setSteps] = useState<FlowStep[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const p = detail.data?.data;
 
   useEffect(() => {
@@ -181,6 +194,14 @@ function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
         </div>
         <button
           type="button"
+          onClick={() => setShowPreview(true)}
+          disabled={!p}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        >
+          <Eye size={14} /> 预览
+        </button>
+        <button
+          type="button"
           onClick={() => save(p?.status ?? 'draft', '已保存')}
           disabled={update.isPending || !p}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
@@ -204,8 +225,107 @@ function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
       ) : tab === 'form' ? (
         <FormDesigner fields={fields} onChange={setFields} />
       ) : (
-        <FlowDesigner steps={steps} onChange={setSteps} />
+        <FlowDesigner steps={steps} fields={fields} onChange={setSteps} />
       )}
+
+      {showPreview && (
+        <PreviewModal fields={fields} steps={steps} onClose={() => setShowPreview(false)} />
+      )}
+    </div>
+  );
+}
+
+// 预览/试运行:按表单 schema 渲染可填表单,试运行后按取值求解审批路径。
+function PreviewModal({
+  fields,
+  steps,
+  onClose,
+}: {
+  fields: FormField[];
+  steps: FlowStep[];
+  onClose: () => void;
+}) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [result, setResult] = useState<ResolvedStep[] | null>(null);
+  const set = (id: string, v: string) => setValues((s) => ({ ...s, [id]: v }));
+  const inputCls =
+    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-6" onClick={onClose}>
+      <div className="max-h-[85vh] w-full max-w-lg overflow-auto rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-base font-black text-slate-950">预览 · 试运行</p>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+        </div>
+
+        <p className="mb-2 text-xs font-black text-slate-400">填写表单</p>
+        <div className="space-y-3">
+          {fields.length === 0 ? (
+            <p className="text-xs font-bold text-slate-400">表单暂无字段。</p>
+          ) : (
+            fields.map((f) => (
+              <div key={f.id}>
+                <p className="mb-1 text-xs font-black text-slate-600">
+                  {f.label}{f.required && <span className="ml-1 text-red-500">*</span>}
+                </p>
+                {f.type === 'textarea' ? (
+                  <textarea className={`${inputCls} min-h-[60px]`} placeholder={f.placeholder} value={values[f.id] ?? ''} onChange={(e) => set(f.id, e.target.value)} />
+                ) : f.type === 'select' ? (
+                  <select className={inputCls} value={values[f.id] ?? ''} onChange={(e) => set(f.id, e.target.value)}>
+                    <option value="">{f.placeholder || '请选择'}</option>
+                    {(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    className={inputCls}
+                    type={f.type === 'number' || f.type === 'money' ? 'number' : f.type === 'date' ? 'date' : 'text'}
+                    placeholder={f.placeholder}
+                    value={values[f.id] ?? ''}
+                    onChange={(e) => set(f.id, e.target.value)}
+                  />
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setResult(evaluateFlow(steps, values).path)}
+          className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-black text-white hover:bg-blue-700"
+        >
+          <Play size={14} /> 试运行,计算审批路径
+        </button>
+
+        {result && (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+            <p className="mb-2 text-xs font-black text-slate-500">解析出的审批路径</p>
+            <ol className="space-y-2">
+              <li className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[11px] font-black text-white">起</span>
+                发起人
+              </li>
+              {result.length === 0 ? (
+                <li className="pl-8 text-[11px] font-bold text-slate-400">无审批节点,直接结束。</li>
+              ) : (
+                result.map((r, i) => (
+                  <li key={i} className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full ${r.type === 'auto' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                      {r.type === 'auto' ? <Zap size={12} /> : <UserCheck size={12} />}
+                    </span>
+                    {r.title}{r.assignee ? ` · ${r.assignee}` : ''}
+                  </li>
+                ))
+              )}
+              <li className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[11px] font-black text-slate-500">终</span>
+                流程结束
+              </li>
+            </ol>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

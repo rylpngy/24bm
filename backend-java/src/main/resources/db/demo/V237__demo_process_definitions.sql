@@ -10,8 +10,8 @@ values
    '{"steps":[
        {"id":"s1","type":"approver","title":"部门主管","assignee":"直接主管"},
        {"id":"s2","type":"condition","branches":[
-         {"label":"金额 < 5000","steps":[{"id":"b1","type":"auto","title":"系统自动通过"}]},
-         {"label":"金额 ≥ 5000","steps":[{"id":"b2","type":"approver","title":"财务总监","assignee":"王总"}]}
+         {"label":"金额 < 5000","condition":{"field":"f2","op":"<","value":5000},"steps":[{"id":"b1","type":"auto","title":"系统自动通过"}]},
+         {"label":"金额 ≥ 5000","condition":{"field":"f2","op":">=","value":5000},"steps":[{"id":"b2","type":"approver","title":"财务总监","assignee":"王总"}]}
        ]}
      ]}'::jsonb,
    timestamptz '2023-10-25 10:00:00+08'),

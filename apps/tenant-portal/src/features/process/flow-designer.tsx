@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { GitBranch, Plus, Trash2, UserCheck, Zap } from 'lucide-react';
 import { cn } from '@24bid/ui';
-import { type FlowStep, uid } from './types';
+import { OPERATORS, type FlowStep, type FormField, type Operator, conditionText, uid } from './types';
 
 // 流程设计:从 steps 渲染审批流(发起人 → 审批节点 / 条件分支),支持插入/编辑/删除节点。
 export function FlowDesigner({
   steps,
+  fields,
   onChange,
 }: {
   steps: FlowStep[];
+  fields: FormField[];
   onChange: (steps: FlowStep[]) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -53,6 +55,7 @@ export function FlowDesigner({
           <div key={step.id} className="flex w-full flex-col items-center">
             <StepNode
               step={step}
+              fields={fields}
               selected={selectedId === step.id}
               onSelect={() => setSelectedId(selectedId === step.id ? null : step.id)}
               onUpdate={(p) => updateStep(step.id, p)}
@@ -99,6 +102,7 @@ function condition(): FlowStep {
 
 function StepNode({
   step,
+  fields = [],
   selected,
   onSelect,
   onUpdate,
@@ -107,6 +111,7 @@ function StepNode({
   onAddBranchStep,
 }: {
   step: FlowStep;
+  fields?: FormField[];
   selected: boolean;
   onSelect: () => void;
   onUpdate: (p: Partial<FlowStep>) => void;
@@ -126,16 +131,37 @@ function StepNode({
               <div className="w-full overflow-hidden rounded-lg border border-emerald-200 bg-white">
                 <div className="flex items-center gap-1.5 border-l-4 border-emerald-500 bg-emerald-50/60 px-3 py-2">
                   <GitBranch size={13} className="text-emerald-600" />
+                  <span className="flex-1 text-xs font-black text-slate-700">
+                    {conditionText(b.condition, fields)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1.5">
+                  <select
+                    className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-1 py-1 text-[11px] font-bold text-slate-600 outline-none"
+                    value={b.condition?.field ?? ''}
+                    onChange={(e) => patchBranch(step, bi, onUpdate, { field: e.target.value })}
+                  >
+                    <option value="">其他情况</option>
+                    {fields.map((f) => (
+                      <option key={f.id} value={f.id}>{f.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="rounded border border-slate-200 bg-white px-1 py-1 text-[11px] font-bold text-slate-600 outline-none disabled:opacity-40"
+                    value={b.condition?.op ?? '>='}
+                    disabled={!b.condition?.field}
+                    onChange={(e) => patchBranch(step, bi, onUpdate, { op: e.target.value as Operator })}
+                  >
+                    {OPERATORS.map((o) => (
+                      <option key={o.op} value={o.op}>{o.label}</option>
+                    ))}
+                  </select>
                   <input
-                    className="flex-1 bg-transparent text-xs font-black text-slate-700 outline-none"
-                    value={b.label}
-                    onChange={(e) =>
-                      onUpdate({
-                        branches: (step.branches ?? []).map((x, i) =>
-                          i === bi ? { ...x, label: e.target.value } : x,
-                        ),
-                      })
-                    }
+                    type="number"
+                    className="w-16 rounded border border-slate-200 bg-white px-1 py-1 text-[11px] font-bold text-slate-600 outline-none disabled:opacity-40"
+                    value={b.condition?.value ?? ''}
+                    disabled={!b.condition?.field}
+                    onChange={(e) => patchBranch(step, bi, onUpdate, { value: Number(e.target.value) })}
                   />
                 </div>
               </div>
@@ -236,6 +262,25 @@ function AddButton({ onApprover, onCondition }: { onApprover: () => void; onCond
       )}
     </div>
   );
+}
+
+// 更新某条件分支的条件(字段置空=删除条件,变为「其他情况」默认分支)。
+function patchBranch(
+  step: FlowStep,
+  bi: number,
+  onUpdate: (p: Partial<FlowStep>) => void,
+  patch: { field?: string; op?: Operator; value?: number },
+) {
+  const branches = (step.branches ?? []).map((x, i) => {
+    if (i !== bi) return x;
+    if (patch.field === '') {
+      const { condition: _omit, ...rest } = x;
+      return { ...rest, label: '其他情况' };
+    }
+    const base = x.condition ?? { field: '', op: '>=' as Operator, value: 0 };
+    return { ...x, condition: { ...base, ...patch } };
+  });
+  onUpdate({ branches });
 }
 
 // 递归更新/删除(支持分支内步骤)。
