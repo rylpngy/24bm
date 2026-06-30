@@ -13,4 +13,5 @@ export interface AwardNoticeResponse {
   issuedBy?: string;
   issuedAt?: string;
   winnerSupplierId?: string;
+  signature?: string;
 }

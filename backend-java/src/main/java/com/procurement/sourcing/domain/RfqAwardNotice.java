@@ -9,5 +9,6 @@ public record RfqAwardNotice(
     String awardId,
     String sealNo,
     String issuedBy,
-    OffsetDateTime issuedAt) {
+    OffsetDateTime issuedAt,
+    String signature) {
 }

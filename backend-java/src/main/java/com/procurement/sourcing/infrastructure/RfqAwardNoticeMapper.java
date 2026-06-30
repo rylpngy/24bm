@@ -10,12 +10,21 @@ import org.apache.ibatis.annotations.Select;
 public interface RfqAwardNoticeMapper {
 
   @Select("""
-      select rfq_id, tenant_id, award_id, seal_no, issued_by, issued_at
+      select rfq_id, tenant_id, award_id, seal_no, issued_by, issued_at, signature
       from rfq_award_notices
       where tenant_id = #{tenantId} and rfq_id = #{rfqId}
       """)
   RfqAwardNotice findByTenantAndRfq(
       @Param("tenantId") String tenantId, @Param("rfqId") String rfqId);
+
+  @org.apache.ibatis.annotations.Update("""
+      update rfq_award_notices set signature = #{signature}
+      where tenant_id = #{tenantId} and rfq_id = #{rfqId}
+      """)
+  void updateSignature(
+      @Param("tenantId") String tenantId,
+      @Param("rfqId") String rfqId,
+      @Param("signature") String signature);
 
   @Insert("""
       insert into rfq_award_notices (rfq_id, tenant_id, award_id, seal_no, issued_by)

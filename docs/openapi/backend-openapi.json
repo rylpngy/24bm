@@ -9477,6 +9477,56 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/notice/verify": {
+      "get": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_verifyNotice",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAwardNoticeVerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/rfqs/{rfqId}/notice.pdf": {
       "get": {
         "tags": [
@@ -13881,6 +13931,9 @@
           },
           "winnerSupplierId": {
             "type": "string"
+          },
+          "signature": {
+            "type": "string"
           }
         }
       },
@@ -16833,6 +16886,40 @@
           },
           "hasHistory": {
             "type": "boolean"
+          }
+        }
+      },
+      "ApiResponseAwardNoticeVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AwardNoticeVerifyResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "AwardNoticeVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "rfqId": {
+            "type": "string"
+          },
+          "issued": {
+            "type": "boolean"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "algorithm": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
           }
         }
       },

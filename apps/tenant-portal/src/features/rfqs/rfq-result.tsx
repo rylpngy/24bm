@@ -5,7 +5,9 @@ import {
   useRfqIssueNotice,
   useRfqNotice,
   useRfqResult,
+  useRfqVerifyNotice,
 } from '@24bid/api-client';
+import { ShieldCheck } from 'lucide-react';
 import { FeedbackNotice, cn } from '@24bid/ui';
 
 const currency = (v?: number) =>
@@ -87,6 +89,8 @@ function AwardNotice({ rfqId }: { rfqId: string }) {
   const notice = useRfqNotice(rfqId);
   const issue = useRfqIssueNotice();
   const n = notice.data?.data;
+  const verify = useRfqVerifyNotice(rfqId, { query: { enabled: !!n?.issued } });
+  const v = verify.data?.data;
 
   const onIssue = () =>
     issue.mutate(
@@ -102,17 +106,32 @@ function AwardNotice({ rfqId }: { rfqId: string }) {
 
   if (n?.issued) {
     return (
-      <div className="mt-2 flex flex-col gap-2 rounded-lg border border-red-100 bg-red-50/40 p-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-center gap-1.5 text-[11px] font-bold text-red-700">
-          <Stamp size={13} /> 已签发(电子签章)· 印章号 {n.sealNo} · 签发人 {n.issuedBy}
-        </p>
-        <button
-          type="button"
-          onClick={() => downloadReport(`/api/v1/buyer/rfqs/${rfqId}/notice.pdf`, `中标通知书-${rfqId}.pdf`)}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
-        >
-          <Download size={13} /> 下载 PDF
-        </button>
+      <div className="mt-2 rounded-lg border border-red-100 bg-red-50/40 p-2.5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-center gap-1.5 text-[11px] font-bold text-red-700">
+            <Stamp size={13} /> 已签发(电子签章)· 印章号 {n.sealNo} · 签发人 {n.issuedBy}
+          </p>
+          <button
+            type="button"
+            onClick={() => downloadReport(`/api/v1/buyer/rfqs/${rfqId}/notice.pdf`, `中标通知书-${rfqId}.pdf`)}
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
+          >
+            <Download size={13} /> 下载 PDF
+          </button>
+        </div>
+        {v && (
+          <p
+            className={cn(
+              'mt-1.5 flex items-center gap-1.5 text-[11px] font-bold',
+              v.valid ? 'text-emerald-700' : 'text-red-700',
+            )}
+            title={v.signature ?? ''}
+          >
+            <ShieldCheck size={12} />
+            防伪验签:{v.valid ? '✓ 有效(未被篡改)' : '✗ 失效(内容已变更)'} · {v.algorithm}
+            {v.signature && <span className="font-mono text-slate-400"> · {v.signature.slice(0, 16)}…</span>}
+          </p>
+        )}
       </div>
     );
   }

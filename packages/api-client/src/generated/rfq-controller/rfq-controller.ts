@@ -28,6 +28,7 @@ import type {
   AbortRfqRequest,
   AnswerClarificationRequest,
   ApiResponseAwardNoticeResponse,
+  ApiResponseAwardNoticeVerifyResponse,
   ApiResponseBidEvaluationResponse,
   ApiResponseListRfqClarificationResponse,
   ApiResponseListRfqResponse,
@@ -793,6 +794,92 @@ export function useRfqNotice<TData = Awaited<ReturnType<typeof rfqNotice>>, TErr
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getRfqNoticeQueryOptions(rfqId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const rfqVerifyNotice = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseAwardNoticeVerifyResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/notice/verify`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getRfqVerifyNoticeQueryKey = (rfqId?: string,) => {
+    return [
+    `/api/v1/buyer/rfqs/${rfqId}/notice/verify`
+    ] as const;
+    }
+
+    
+export const getRfqVerifyNoticeQueryOptions = <TData = Awaited<ReturnType<typeof rfqVerifyNotice>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqVerifyNotice>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRfqVerifyNoticeQueryKey(rfqId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof rfqVerifyNotice>>> = ({ signal }) => rfqVerifyNotice(rfqId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rfqVerifyNotice>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RfqVerifyNoticeQueryResult = NonNullable<Awaited<ReturnType<typeof rfqVerifyNotice>>>
+export type RfqVerifyNoticeQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useRfqVerifyNotice<TData = Awaited<ReturnType<typeof rfqVerifyNotice>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqVerifyNotice>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqVerifyNotice>>,
+          TError,
+          Awaited<ReturnType<typeof rfqVerifyNotice>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqVerifyNotice<TData = Awaited<ReturnType<typeof rfqVerifyNotice>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqVerifyNotice>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqVerifyNotice>>,
+          TError,
+          Awaited<ReturnType<typeof rfqVerifyNotice>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqVerifyNotice<TData = Awaited<ReturnType<typeof rfqVerifyNotice>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqVerifyNotice>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRfqVerifyNotice<TData = Awaited<ReturnType<typeof rfqVerifyNotice>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqVerifyNotice>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRfqVerifyNoticeQueryOptions(rfqId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

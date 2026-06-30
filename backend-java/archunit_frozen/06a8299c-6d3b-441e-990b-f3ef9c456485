@@ -486,3 +486,5 @@ Method <com.procurement.contract.api.ContractScheduleController.reach(java.lang.
 Method <com.procurement.contract.api.ContractScheduleController.reach(java.lang.String, java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (ContractScheduleController.java:0)
 Method <com.procurement.supplier.api.SupplierEvaluationController.autoScore(java.lang.String)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (SupplierEvaluationController.java:35)
 Method <com.procurement.supplier.api.SupplierEvaluationController.autoScore(java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (SupplierEvaluationController.java:0)
+Method <com.procurement.sourcing.api.RfqController.verifyNotice(java.lang.String)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (RfqController.java:96)
+Method <com.procurement.sourcing.api.RfqController.verifyNotice(java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (RfqController.java:0)

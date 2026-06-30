@@ -9,5 +9,6 @@ public record AwardNoticeResponse(
     String sealNo,
     String issuedBy,
     OffsetDateTime issuedAt,
-    String winnerSupplierId) {
+    String winnerSupplierId,
+    String signature) {
 }

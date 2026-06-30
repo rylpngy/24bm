@@ -90,6 +90,12 @@ public class RfqController {
     return ApiResponse.ok(awardNoticeApplicationService.get(rfqId));
   }
 
+  // 中标通知书验签(防伪):重算数字签名与落库比对,检测是否被篡改。
+  @GetMapping("/{rfqId}/notice/verify")
+  public ApiResponse<AwardNoticeVerifyResponse> verifyNotice(@PathVariable String rfqId) {
+    return ApiResponse.ok(awardNoticeApplicationService.verify(rfqId));
+  }
+
   // 中标通知书 PDF(已签发,含电子签章)。
   @GetMapping("/{rfqId}/notice.pdf")
   public ResponseEntity<byte[]> noticePdf(@PathVariable String rfqId) {

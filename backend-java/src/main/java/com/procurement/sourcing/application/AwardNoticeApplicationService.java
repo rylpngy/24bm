@@ -4,7 +4,9 @@ import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.sourcing.api.AwardNoticeResponse;
+import com.procurement.sourcing.api.AwardNoticeVerifyResponse;
 import com.procurement.sourcing.domain.AwardDecision;
+import com.procurement.sourcing.domain.AwardNoticeSignature;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqAwardNotice;
 import com.procurement.sourcing.domain.RfqStatus;
@@ -59,8 +61,13 @@ public class AwardNoticeApplicationService {
     if (existing == null) {
       String sealNo = "ZB-" + Integer.toHexString(rfqId.hashCode()).toUpperCase();
       rfqAwardNoticeMapper.insert(rfqId, tenantId, award.id(), sealNo, userId);
+      existing = rfqAwardNoticeMapper.findByTenantAndRfq(tenantId, rfqId);
+      // 数字签名:对规范化通知内容签名(含签发时间),落库供验签防伪。
+      String signature = AwardNoticeSignature.sign(canonicalFor(rfq, award, existing));
+      rfqAwardNoticeMapper.updateSignature(tenantId, rfqId, signature);
       auditLogApplicationService.recordTenantAction(
-          tenantId, "rfq.notice_issued", "rfq", rfqId, "签发中标通知书 · 印章 " + sealNo);
+          tenantId, "rfq.notice_issued", "rfq", rfqId,
+          "签发中标通知书 · 印章 " + sealNo + " · 数字签名 " + signature.substring(0, 12) + "…");
       existing = rfqAwardNoticeMapper.findByTenantAndRfq(tenantId, rfqId);
     }
     return toResponse(existing, award.supplierId());
@@ -72,9 +79,32 @@ public class AwardNoticeApplicationService {
     AwardDecision award = awardDecisionMapper.findApprovedByRfq(tenantId, rfqId, ApprovalStatus.APPROVED);
     if (notice == null) {
       return new AwardNoticeResponse(
-          rfqId, false, null, null, null, award == null ? null : award.supplierId());
+          rfqId, false, null, null, null, award == null ? null : award.supplierId(), null);
     }
     return toResponse(notice, award == null ? null : award.supplierId());
+  }
+
+  // 验签:重算规范化内容的签名与落库签名比对,不一致即视为被篡改。
+  public AwardNoticeVerifyResponse verify(String rfqId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    RfqAwardNotice notice = rfqAwardNoticeMapper.findByTenantAndRfq(tenantId, rfqId);
+    if (notice == null) {
+      return new AwardNoticeVerifyResponse(rfqId, false, false, AwardNoticeSignature.ALGORITHM, null);
+    }
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    AwardDecision award = awardDecisionMapper.findApprovedByRfq(tenantId, rfqId, ApprovalStatus.APPROVED);
+    boolean valid = rfq != null && award != null
+        && AwardNoticeSignature.verify(canonicalFor(rfq, award, notice), notice.signature());
+    return new AwardNoticeVerifyResponse(
+        rfqId, true, valid, AwardNoticeSignature.ALGORITHM, notice.signature());
+  }
+
+  private String canonicalFor(Rfq rfq, AwardDecision award, RfqAwardNotice notice) {
+    return AwardNoticeSignature.canonical(
+        rfq.id(), rfq.title(), rfq.method(),
+        award.supplierId(), award.amount() == null ? "" : award.amount().toPlainString(),
+        notice.sealNo(), notice.issuedBy(),
+        notice.issuedAt() == null ? "" : notice.issuedAt().toString());
   }
 
   // 生成中标通知书 PDF(需已签发,含电子签章)。
@@ -122,6 +152,15 @@ public class AwardNoticeApplicationService {
       seal.setLeading(20);
       document.add(seal);
 
+      // 防伪数字签名(HMAC-SHA256),可在线验签。
+      Font signFont = new Font(cjk, 8, Font.NORMAL, new Color(120, 120, 120));
+      String sig = notice.signature() == null ? "" : notice.signature();
+      Paragraph signPara = new Paragraph(
+          "防伪数字签名(" + AwardNoticeSignature.ALGORITHM + "):" + sig, signFont);
+      signPara.setAlignment(Element.ALIGN_RIGHT);
+      signPara.setSpacingBefore(16);
+      document.add(signPara);
+
       document.close();
       return out.toByteArray();
     } catch (Exception exception) {
@@ -150,6 +189,7 @@ public class AwardNoticeApplicationService {
 
   private AwardNoticeResponse toResponse(RfqAwardNotice notice, String winnerSupplierId) {
     return new AwardNoticeResponse(
-        notice.rfqId(), true, notice.sealNo(), notice.issuedBy(), notice.issuedAt(), winnerSupplierId);
+        notice.rfqId(), true, notice.sealNo(), notice.issuedBy(), notice.issuedAt(),
+        winnerSupplierId, notice.signature());
   }
 }
