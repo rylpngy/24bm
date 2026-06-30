@@ -11,5 +11,8 @@ public record Receipt(
     OffsetDateTime receivedAt,
     Integer receivedQuantity,
     Integer qualifiedQuantity,
-    String qualityNote) {
+    String qualityNote,
+    String inspectionConclusion,
+    String disposition,
+    String dispositionNote) {
 }

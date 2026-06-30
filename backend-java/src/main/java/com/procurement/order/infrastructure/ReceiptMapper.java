@@ -12,9 +12,11 @@ public interface ReceiptMapper {
 
   @Insert("""
       insert into receipts (id, tenant_id, order_id, receiver_id, result,
-                            received_quantity, qualified_quantity, quality_note)
+                            received_quantity, qualified_quantity, quality_note,
+                            inspection_conclusion, disposition, disposition_note)
       values (#{id}, #{tenantId}, #{orderId}, #{receiverId}, #{result},
-              #{receivedQuantity}, #{qualifiedQuantity}, #{qualityNote})
+              #{receivedQuantity}, #{qualifiedQuantity}, #{qualityNote},
+              #{inspectionConclusion}, #{disposition}, #{dispositionNote})
       """)
   void insert(
       @Param("id") String id,
@@ -24,17 +26,20 @@ public interface ReceiptMapper {
       @Param("result") String result,
       @Param("receivedQuantity") Integer receivedQuantity,
       @Param("qualifiedQuantity") Integer qualifiedQuantity,
-      @Param("qualityNote") String qualityNote);
+      @Param("qualityNote") String qualityNote,
+      @Param("inspectionConclusion") String inspectionConclusion,
+      @Param("disposition") String disposition,
+      @Param("dispositionNote") String dispositionNote);
 
   @Select("""
-      select id, tenant_id, order_id, receiver_id, result, received_at, received_quantity, qualified_quantity, quality_note
+      select id, tenant_id, order_id, receiver_id, result, received_at, received_quantity, qualified_quantity, quality_note, inspection_conclusion, disposition, disposition_note
       from receipts
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Receipt findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select id, tenant_id, order_id, receiver_id, result, received_at, received_quantity, qualified_quantity, quality_note
+      select id, tenant_id, order_id, receiver_id, result, received_at, received_quantity, qualified_quantity, quality_note, inspection_conclusion, disposition, disposition_note
       from receipts
       where tenant_id = #{tenantId}
         and order_id = #{orderId,jdbcType=VARCHAR}
@@ -53,7 +58,7 @@ public interface ReceiptMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, order_id, receiver_id, result, received_at, received_quantity, qualified_quantity, quality_note
+      select id, tenant_id, order_id, receiver_id, result, received_at, received_quantity, qualified_quantity, quality_note, inspection_conclusion, disposition, disposition_note
       from receipts
       where tenant_id = #{tenantId}
         <if test="orderId != null and orderId != ''">

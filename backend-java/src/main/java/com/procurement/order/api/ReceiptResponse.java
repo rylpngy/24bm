@@ -13,5 +13,8 @@ public record ReceiptResponse(
     Integer receivedQuantity,
     Integer qualifiedQuantity,
     String qualityNote,
-    List<ReceiptLineItemResponse> lineItems) {
+    List<ReceiptLineItemResponse> lineItems,
+    String inspectionConclusion,
+    String disposition,
+    String dispositionNote) {
 }

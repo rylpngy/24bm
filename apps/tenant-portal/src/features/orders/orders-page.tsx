@@ -23,6 +23,27 @@ const currency = (v?: number) =>
 
 const PAGE_SIZE = 8;
 
+// 验收表单是否存在不合格(行项任一合格<收货,或抬头合格<收货)。
+type ReceiveFormState = {
+  received: string;
+  qualified: string;
+  lines: { received: string; qualified: string }[];
+};
+const receiveHasUnqualified = (f: ReceiveFormState): boolean => {
+  if ((f.lines ?? []).length > 0) {
+    return f.lines.some((l) => (Number(l.qualified) || 0) < (Number(l.received) || 0));
+  }
+  return (Number(f.qualified) || 0) < (Number(f.received) || 0);
+};
+
+// 验收结论配色。
+const conclusionCls = (c?: string | null) => {
+  if (c === '全部合格') return 'bg-emerald-100 text-emerald-700';
+  if (c === '部分合格') return 'bg-amber-100 text-amber-700';
+  if (c === '全部不合格') return 'bg-red-100 text-red-700';
+  return 'bg-slate-100 text-slate-500';
+};
+
 // S5b：采购订单履约。订单列表 + 抬头信息(收货地址/联系人/付款方式) + 已发货收货验收。
 export function OrdersPage() {
   const queryClient = useQueryClient();
@@ -44,6 +65,7 @@ export function OrdersPage() {
     received: string;
     qualified: string;
     note: string;
+    disposition: string;
     lines: {
       orderLineId: string;
       description: string;
@@ -106,27 +128,38 @@ export function OrdersPage() {
     const form = receiveForm?.orderId === orderId ? receiveForm : null;
     const hasLines = (form?.lines ?? []).length > 0;
     let data;
+    let unqualified = false;
     if (hasLines && form) {
       const lineItems = form.lines.map((r) => ({
         orderLineId: r.orderLineId,
         receivedQuantity: Number(r.received) || 0,
         qualifiedQuantity: Number(r.qualified) || 0,
       }));
-      const anyPartial = lineItems.some((li) => li.qualifiedQuantity < li.receivedQuantity);
+      unqualified = lineItems.some((li) => li.qualifiedQuantity < li.receivedQuantity);
+      // 抬头数量取行项汇总,供后端判定结论与处置门槛。
+      const totalReceived = lineItems.reduce((s, li) => s + li.receivedQuantity, 0);
+      const totalQualified = lineItems.reduce((s, li) => s + li.qualifiedQuantity, 0);
       data = {
-        result: anyPartial ? '部分合格' : '验收合格',
+        result: unqualified ? '部分合格' : '验收合格',
+        receivedQuantity: totalReceived,
+        qualifiedQuantity: totalQualified,
         qualityNote: form.note || '',
         lineItems,
       };
     } else {
       const received = form ? Number(form.received) || 0 : 0;
       const qualified = form ? Number(form.qualified) || 0 : 0;
+      unqualified = qualified < received;
       data = {
-        result: qualified > 0 && qualified < received ? '部分合格' : '验收合格',
+        result: unqualified ? '部分合格' : '验收合格',
         receivedQuantity: received,
         qualifiedQuantity: qualified,
         qualityNote: form?.note || '',
       };
+    }
+    if (unqualified) {
+      (data as Record<string, unknown>).disposition = form?.disposition ?? '退货换货';
+      (data as Record<string, unknown>).dispositionNote = form?.note ?? '';
     }
     receipt.mutate(
       { orderId, data },
@@ -314,7 +347,24 @@ export function OrdersPage() {
 
               {o.status === '已收货' && o.id && receiptByOrder[o.id] && (
                 <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/50 p-3">
-                  <p className="text-xs font-black text-emerald-700">收货验收明细</p>
+                  <p className="flex flex-wrap items-center gap-2 text-xs font-black text-emerald-700">
+                    收货验收明细
+                    {receiptByOrder[o.id]!.inspectionConclusion && (
+                      <span
+                        className={cn(
+                          'rounded px-1.5 py-0.5 text-[10px] font-black',
+                          conclusionCls(receiptByOrder[o.id]!.inspectionConclusion),
+                        )}
+                      >
+                        {receiptByOrder[o.id]!.inspectionConclusion}
+                      </span>
+                    )}
+                    {receiptByOrder[o.id]!.disposition && (
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-black text-amber-700">
+                        处置:{receiptByOrder[o.id]!.disposition}
+                      </span>
+                    )}
+                  </p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-4">
                     <MiniFact label="验收结论" value={receiptByOrder[o.id]!.result ?? '—'} />
                     <MiniFact
@@ -462,6 +512,29 @@ export function OrdersPage() {
                           }
                         />
                       </div>
+                      {receiveHasUnqualified(receiveForm) && (
+                        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/60 p-2.5">
+                          <label className="text-[11px] font-black text-amber-700">
+                            存在不合格,须选择处置方式
+                          </label>
+                          <div className="mt-1.5 flex gap-2">
+                            {['退货换货', '让步接收'].map((d) => (
+                              <button
+                                key={d}
+                                type="button"
+                                onClick={() => setReceiveForm((f) => f && { ...f, disposition: d })}
+                                className={
+                                  receiveForm.disposition === d
+                                    ? 'h-8 rounded-md border border-amber-400 bg-amber-100 px-3 text-xs font-black text-amber-800'
+                                    : 'h-8 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50'
+                                }
+                              >
+                                {d}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div className="mt-2 flex gap-2">
                         <button
                           type="button"
@@ -489,6 +562,7 @@ export function OrdersPage() {
                           received: '',
                           qualified: '',
                           note: '',
+                          disposition: '退货换货',
                           lines: (o.lineItems ?? []).map((l) => ({
                             orderLineId: l.id!,
                             description: l.description ?? '',

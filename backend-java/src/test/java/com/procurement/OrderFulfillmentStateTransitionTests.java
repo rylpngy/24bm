@@ -488,7 +488,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null)))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("status changed before receipt");
 
@@ -514,7 +514,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null)))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Shipped delivery not found for receipt");
 
@@ -526,6 +526,9 @@ class OrderFulfillmentStateTransitionTests {
         anyString(),
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.any(),
+        anyString(),
+        anyString(),
+        anyString(),
         anyString());
   }
 
@@ -550,7 +553,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null)))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Purchase order already has a receipt");
 
@@ -562,6 +565,9 @@ class OrderFulfillmentStateTransitionTests {
         anyString(),
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.any(),
+        anyString(),
+        anyString(),
+        anyString(),
         anyString());
   }
 
@@ -583,7 +589,7 @@ class OrderFulfillmentStateTransitionTests {
             "po-1",
             "user-buyer",
             "验收通过",
-            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 100, 98, "外观完好，抽检合格"));
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 100, 98, "外观完好，抽检合格", null, null, null));
 
     ReceiptApplicationService service = new ReceiptApplicationService(
         purchaseOrderMapper,
@@ -596,7 +602,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null));
+    service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null));
 
     verify(auditLogApplicationService).recordTenantAction(
         "purchase_order.received",
@@ -614,7 +620,7 @@ class OrderFulfillmentStateTransitionTests {
     when(receiptMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> new Receipt(invocation.getArgument(1), "tenant-1", "po-1",
-            "user-buyer", "部分合格", OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 0, 0, ""));
+            "user-buyer", "部分合格", OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 0, 0, "", null, null, null));
 
     var orderLineItemMapper =
         org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class);
@@ -633,7 +639,7 @@ class OrderFulfillmentStateTransitionTests {
 
     service.create("po-1", new CreateReceiptRequest("部分合格", null, null, null,
         List.of(new com.procurement.order.api.ReceiptLineItemRequest(
-            "oli-1", BigDecimal.valueOf(4), BigDecimal.valueOf(3)))));
+            "oli-1", BigDecimal.valueOf(4), BigDecimal.valueOf(3))), null, null));
 
     // 冗余订单行项的 品名/单位/订购数量,并记录收货 4 / 合格 3。
     verify(receiptLineItemMapper).insert(anyString(), org.mockito.ArgumentMatchers.eq("tenant-1"),

@@ -14,6 +14,7 @@ import com.procurement.order.domain.PurchaseOrderDocumentUniquenessPolicy;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.domain.Receipt;
+import com.procurement.order.domain.ReceiptInspection;
 import com.procurement.order.domain.ReceiptLineItem;
 import com.procurement.order.infrastructure.DeliveryMapper;
 import com.procurement.order.infrastructure.OrderLineItemMapper;
@@ -94,6 +95,11 @@ public class ReceiptApplicationService {
         receiptMapper.countByTenantAndOrder(tenantId, orderId),
         orderId);
 
+    int received = request.receivedQuantity() == null ? 0 : request.receivedQuantity();
+    int qualified = request.qualifiedQuantity() == null ? 0 : request.qualifiedQuantity();
+    String conclusion = ReceiptInspection.conclude(received, qualified);
+    ReceiptInspection.requireDisposition(conclusion, request.disposition());
+
     String receiptId = newId("receipt");
     receiptMapper.insert(
         receiptId,
@@ -101,9 +107,12 @@ public class ReceiptApplicationService {
         orderId,
         userId,
         request.result(),
-        request.receivedQuantity() == null ? 0 : request.receivedQuantity(),
-        request.qualifiedQuantity() == null ? 0 : request.qualifiedQuantity(),
-        request.qualityNote() == null ? "" : request.qualityNote());
+        received,
+        qualified,
+        request.qualityNote() == null ? "" : request.qualityNote(),
+        conclusion,
+        ReceiptInspection.ALL_QUALIFIED.equals(conclusion) ? null : request.disposition(),
+        request.dispositionNote() == null ? "" : request.dispositionNote());
     persistLineItems(tenantId, orderId, receiptId, request.lineItems());
     int updated = purchaseOrderMapper.updateStatus(
         tenantId,
@@ -173,7 +182,10 @@ public class ReceiptApplicationService {
         receipt.receivedQuantity(),
         receipt.qualifiedQuantity(),
         receipt.qualityNote(),
-        lineItemResponses(receipt.tenantId(), receipt.id()));
+        lineItemResponses(receipt.tenantId(), receipt.id()),
+        receipt.inspectionConclusion(),
+        receipt.disposition(),
+        receipt.dispositionNote());
   }
 
   private List<ReceiptLineItemResponse> lineItemResponses(String tenantId, String receiptId) {

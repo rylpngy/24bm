@@ -18,4 +18,7 @@ export interface ReceiptResponse {
   qualifiedQuantity?: number;
   qualityNote?: string;
   lineItems?: ReceiptLineItemResponse[];
+  inspectionConclusion?: string;
+  disposition?: string;
+  dispositionNote?: string;
 }

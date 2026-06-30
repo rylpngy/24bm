@@ -10,5 +10,7 @@ public record CreateReceiptRequest(
     Integer receivedQuantity,
     Integer qualifiedQuantity,
     String qualityNote,
-    @Valid List<ReceiptLineItemRequest> lineItems) {
+    @Valid List<ReceiptLineItemRequest> lineItems,
+    String disposition,
+    String dispositionNote) {
 }

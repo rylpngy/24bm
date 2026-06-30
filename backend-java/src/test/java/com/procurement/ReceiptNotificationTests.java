@@ -75,7 +75,7 @@ class ReceiptNotificationTests {
         new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester"),
         new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it", "role-buyer-requester")));
 
-    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null));
+    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null));
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
@@ -108,7 +108,7 @@ class ReceiptNotificationTests {
         supplierUser("supplier-user-active", "启用"),
         supplierUser("supplier-user-disabled", "停用")));
 
-    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null));
+    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null));
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
@@ -144,7 +144,7 @@ class ReceiptNotificationTests {
         "po-1",
         "user-buyer",
         "验收通过",
-        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 100, 98, "外观完好，抽检合格");
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 100, 98, "外观完好，抽检合格", null, null, null);
   }
 
   private SupplierUser supplierUser(String id, String status) {

@@ -13,4 +13,6 @@ export interface CreateReceiptRequest {
   qualifiedQuantity?: number;
   qualityNote?: string;
   lineItems?: ReceiptLineItemRequest[];
+  disposition?: string;
+  dispositionNote?: string;
 }

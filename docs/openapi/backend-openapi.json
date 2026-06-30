@@ -14297,6 +14297,12 @@
             "items": {
               "$ref": "#/components/schemas/ReceiptLineItemRequest"
             }
+          },
+          "disposition": {
+            "type": "string"
+          },
+          "dispositionNote": {
+            "type": "string"
           }
         }
       },
@@ -14395,6 +14401,15 @@
             "items": {
               "$ref": "#/components/schemas/ReceiptLineItemResponse"
             }
+          },
+          "inspectionConclusion": {
+            "type": "string"
+          },
+          "disposition": {
+            "type": "string"
+          },
+          "dispositionNote": {
+            "type": "string"
           }
         }
       },
