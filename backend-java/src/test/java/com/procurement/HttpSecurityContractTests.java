@@ -1630,7 +1630,7 @@ class HttpSecurityContractTests {
             BigDecimal.valueOf(36000),
             BigDecimal.valueOf(-14000),
             103,
-            true)));
+            true, new java.math.BigDecimal("0"))));
 
     mockMvc.perform(get("/api/v1/buyer/budgets")
             .header("Authorization", "Bearer " + buyerToken))
@@ -1663,7 +1663,7 @@ class HttpSecurityContractTests {
             BigDecimal.ZERO,
             BigDecimal.valueOf(200000),
             0,
-            false));
+            false, new java.math.BigDecimal("0")));
 
     mockMvc.perform(post("/api/v1/buyer/budgets")
             .header("Authorization", "Bearer " + buyerToken)

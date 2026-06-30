@@ -26,7 +26,16 @@ public interface DepartmentBudgetMapper {
              coalesce((select sum(pd.budget) from purchase_demands pd
                        where pd.tenant_id = b.tenant_id and pd.department_id = b.department_id
                          and pd.status = '审批中' and to_char(pd.created_at, 'YYYY') = b.period), 0)
-               as pending
+               as pending,
+             coalesce((select sum(m.amount) from contract_payment_milestones m
+                       join contracts c on c.id = m.contract_id and c.tenant_id = m.tenant_id
+                       join purchase_orders po on po.id = c.related_order_id and po.tenant_id = c.tenant_id
+                       join rfq_demands rd on rd.rfq_id = po.rfq_id and rd.tenant_id = po.tenant_id
+                       join purchase_demands pd on pd.id = rd.demand_id and pd.tenant_id = rd.tenant_id
+                       where m.tenant_id = b.tenant_id and m.status = '已付'
+                         and pd.department_id = b.department_id
+                         and to_char(pd.created_at, 'YYYY') = b.period), 0)
+               as disbursed
       from department_budgets b
       left join departments d on d.id = b.department_id
       """;

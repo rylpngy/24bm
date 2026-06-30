@@ -13,5 +13,6 @@ public record DepartmentBudgetResponse(
     BigDecimal pending,
     BigDecimal remaining,
     Integer occupancyPercent,
-    boolean overBudget) {
+    boolean overBudget,
+    BigDecimal disbursed) {
 }

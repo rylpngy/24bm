@@ -15147,6 +15147,9 @@
           },
           "overBudget": {
             "type": "boolean"
+          },
+          "disbursed": {
+            "type": "number"
           }
         }
       },

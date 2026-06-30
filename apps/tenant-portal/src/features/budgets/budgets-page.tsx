@@ -66,8 +66,14 @@ function BudgetCard({ b }: { b: DepartmentBudgetResponse }) {
         <MiniFact label="剩余" value={currency(b.remaining)} />
         <MiniFact label="已用(已通过)" value={currency(b.committed)} />
         <MiniFact label="在途(审批中)" value={currency(b.pending)} />
+        <MiniFact label="实付(已付里程碑)" value={currency(b.disbursed)} />
       </div>
       <OccupancyMeter percent={b.occupancyPercent} over={b.overBudget ?? false} />
+      {(b.disbursed ?? 0) > 0 && (
+        <p className="mt-1 text-[11px] font-bold text-emerald-600">
+          其中已实际支付 {currency(b.disbursed)}(由合同已付里程碑联动)
+        </p>
+      )}
     </div>
   );
 }

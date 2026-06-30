@@ -35,10 +35,10 @@ class BudgetApplicationServiceTests {
     when(mapper.listByTenant("tenant-1")).thenReturn(List.of(
         new DepartmentBudget(
             "budget-it-2026", "dept-it", "信息化部", "2026",
-            new BigDecimal("480000"), new BigDecimal("458000"), new BigDecimal("36000")),
+            new BigDecimal("480000"), new BigDecimal("458000"), new BigDecimal("36000"), new java.math.BigDecimal("0")),
         new DepartmentBudget(
             "budget-fin-2026", "dept-finance", "财务部", "2026",
-            new BigDecimal("200000"), BigDecimal.ZERO, BigDecimal.ZERO)));
+            new BigDecimal("200000"), BigDecimal.ZERO, BigDecimal.ZERO, new java.math.BigDecimal("0"))));
 
     List<DepartmentBudgetResponse> budgets = service.listBudgets();
 
@@ -60,7 +60,7 @@ class BudgetApplicationServiceTests {
     when(mapper.listByTenant("tenant-1")).thenReturn(List.of(
         new DepartmentBudget(
             "budget-zero", "dept-x", "X部", "2026",
-            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO)));
+            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new java.math.BigDecimal("0"))));
 
     DepartmentBudgetResponse r = service.listBudgets().get(0);
 
@@ -75,7 +75,7 @@ class BudgetApplicationServiceTests {
     when(mapper.findByTenantAndId("tenant-1", "budget-it-2026")).thenReturn(
         new DepartmentBudget(
             "budget-it-2026", "dept-it", "信息化部", "2026",
-            new BigDecimal("500000"), BigDecimal.ZERO, BigDecimal.ZERO));
+            new BigDecimal("500000"), BigDecimal.ZERO, BigDecimal.ZERO, new java.math.BigDecimal("0")));
 
     DepartmentBudgetResponse r = service.upsertBudget(
         new UpsertDepartmentBudgetRequest("dept-it", "2026", new BigDecimal("500000")));
@@ -93,7 +93,7 @@ class BudgetApplicationServiceTests {
     when(mapper.findByTenantAndId(eq("tenant-1"), any())).thenReturn(
         new DepartmentBudget(
             "budget-generated", "dept-new", "新部门", "2026",
-            new BigDecimal("100000"), BigDecimal.ZERO, BigDecimal.ZERO));
+            new BigDecimal("100000"), BigDecimal.ZERO, BigDecimal.ZERO, new java.math.BigDecimal("0")));
 
     service.upsertBudget(
         new UpsertDepartmentBudgetRequest("dept-new", "2026", new BigDecimal("100000")));
