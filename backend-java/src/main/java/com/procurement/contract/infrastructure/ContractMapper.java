@@ -18,7 +18,7 @@ public interface ContractMapper {
       <script>
       select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
              amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at,
-             sign_date, expiry_date, payment_terms, warranty_terms
+             sign_date, expiry_date, payment_terms, warranty_terms, renewal_status
       from contracts
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -42,7 +42,7 @@ public interface ContractMapper {
   @Select("""
       select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
              amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at,
-             sign_date, expiry_date, payment_terms, warranty_terms
+             sign_date, expiry_date, payment_terms, warranty_terms, renewal_status
       from contracts
       where tenant_id = #{tenantId}
         and id = #{contractId}
@@ -145,6 +145,18 @@ public interface ContractMapper {
       @Param("currentStatus") String currentStatus,
       @Param("status") String status,
       @Param("fulfillmentProgress") String fulfillmentProgress);
+
+  // 续签:置续签状态(幂等,未续签 → 已发起续签)。
+  @Update("""
+      update contracts
+      set renewal_status = #{renewalStatus}, updated_at = now()
+      where tenant_id = #{tenantId} and id = #{contractId}
+        and (renewal_status is null or renewal_status = '')
+      """)
+  int markRenewal(
+      @Param("tenantId") String tenantId,
+      @Param("contractId") String contractId,
+      @Param("renewalStatus") String renewalStatus);
 
   @Update("""
       update contracts

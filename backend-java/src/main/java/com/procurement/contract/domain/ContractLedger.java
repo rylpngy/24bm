@@ -21,5 +21,6 @@ public record ContractLedger(
     LocalDate signDate,
     LocalDate expiryDate,
     String paymentTerms,
-    String warrantyTerms) {
+    String warrantyTerms,
+    String renewalStatus) {
 }

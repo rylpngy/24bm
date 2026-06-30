@@ -209,6 +209,19 @@ public class ContractApplicationService {
     return toResponse(requireContract(tenantId, contractId));
   }
 
+  // 发起续签:置「已发起续签」(到期提醒驱动),幂等;审计留痕。
+  @Transactional
+  public ContractResponse initiateRenewal(String contractId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    ContractLedger contract = requireContract(tenantId, contractId);
+    if (!"已发起续签".equals(contract.renewalStatus())) {
+      contractMapper.markRenewal(tenantId, contractId, "已发起续签");
+      auditLogApplicationService.recordTenantAction(
+          "contract.renewal_initiated", "contract", contractId);
+    }
+    return toResponse(requireContract(tenantId, contractId));
+  }
+
   @Transactional
   public ContractResponse submitCurrentTenantContractApproval(String contractId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
@@ -453,7 +466,8 @@ public class ContractApplicationService {
         contract.signDate(),
         contract.expiryDate(),
         contract.paymentTerms(),
-        contract.warrantyTerms());
+        contract.warrantyTerms(),
+        contract.renewalStatus());
   }
 
   private static String orEmpty(String value) {

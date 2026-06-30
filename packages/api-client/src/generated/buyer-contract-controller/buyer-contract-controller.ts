@@ -425,6 +425,62 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerContractRenew = (
+    contractId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseContractResponse>(
+      {url: `/api/v1/buyer/contracts/${contractId}/renew`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerContractRenewMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractRenew>>, TError,{contractId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerContractRenew>>, TError,{contractId: string}, TContext> => {
+
+const mutationKey = ['buyerContractRenew'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractRenew>>, {contractId: string}> = (props) => {
+          const {contractId} = props ?? {};
+
+          return  buyerContractRenew(contractId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerContractRenewMutationResult = NonNullable<Awaited<ReturnType<typeof buyerContractRenew>>>
+    
+    export type BuyerContractRenewMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerContractRenew = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractRenew>>, TError,{contractId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerContractRenew>>,
+        TError,
+        {contractId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerContractRenewMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const buyerContractListFulfillmentEvents = (
     contractId: string,
  signal?: AbortSignal

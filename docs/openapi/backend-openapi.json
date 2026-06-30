@@ -6858,6 +6858,56 @@
         }
       }
     },
+    "/api/v1/buyer/contracts/{contractId}/renew": {
+      "post": {
+        "tags": [
+          "buyer-contract-controller"
+        ],
+        "operationId": "BuyerContract_renew",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseContractResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/contracts/{contractId}/payment-milestones/{milestoneId}/reach": {
       "post": {
         "tags": [
@@ -12279,6 +12329,9 @@
             "type": "string"
           },
           "warrantyTerms": {
+            "type": "string"
+          },
+          "renewalStatus": {
             "type": "string"
           }
         }

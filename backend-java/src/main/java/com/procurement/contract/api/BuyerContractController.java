@@ -71,6 +71,12 @@ public class BuyerContractController {
     return ApiResponse.ok(contractApplicationService.submitCurrentTenantContractApproval(contractId));
   }
 
+  // 发起续签(到期提醒驱动)。
+  @PostMapping("/{contractId}/renew")
+  public ApiResponse<ContractResponse> renew(@PathVariable String contractId) {
+    return ApiResponse.ok(contractApplicationService.initiateRenewal(contractId));
+  }
+
   @PutMapping("/{contractId}/approval-review")
   public ApiResponse<ContractResponse> reviewApproval(
       @PathVariable String contractId,

@@ -24,4 +24,5 @@ export interface ContractResponse {
   expiryDate?: string;
   paymentTerms?: string;
   warrantyTerms?: string;
+  renewalStatus?: string;
 }

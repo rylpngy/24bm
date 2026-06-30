@@ -34,7 +34,7 @@ class ContractScheduleServiceTests {
 
   private ContractLedger contract(BigDecimal amount) {
     return new ContractLedger("ctr-1", "tenant-1", "C-001", "演示合同", "po-1", "sup-1", amount,
-        "已生效", "未归档", "履约中", null, null, null, null, null, null, null);
+        "已生效", "未归档", "履约中", null, null, null, null, null, null, null, null);
   }
 
   @Test

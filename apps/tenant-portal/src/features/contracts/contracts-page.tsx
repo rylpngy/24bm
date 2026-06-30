@@ -4,11 +4,13 @@ import { FileSignature, Plus } from 'lucide-react';
 import {
   useBuyerContractCreate,
   useBuyerContractList,
+  useBuyerContractRenew,
   useBuyerContractSubmitApproval,
   useBuyerContractUpdateArchiveStatus,
   useBuyerContractUpdateStatus,
   usePurchaseOrderList,
 } from '@24bid/api-client';
+import { CalendarClock } from 'lucide-react';
 import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
 import { OwnerAttachments } from '../attachments/owner-attachments';
 import { ContractFulfillmentEvents } from './contract-fulfillment-events';
@@ -17,6 +19,14 @@ import { ContractScheduleSection } from './contract-schedule-section';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
+
+// 到期提醒:距到期天数(已过期为负);60 天内视为「即将到期」。
+const RENEWAL_WINDOW_DAYS = 60;
+const daysToExpiry = (expiryDate?: string | null): number | null => {
+  if (!expiryDate) return null;
+  const ms = new Date(`${expiryDate}T00:00:00`).getTime() - Date.now();
+  return Math.ceil(ms / 86400000);
+};
 
 const FULFILLMENT_NEXT: Record<string, string> = {
   待同步: '同步中',
@@ -38,6 +48,7 @@ export function ContractsPage() {
   const orders = usePurchaseOrderList();
   const create = useBuyerContractCreate();
   const submit = useBuyerContractSubmitApproval();
+  const renew = useBuyerContractRenew();
   const updateStatus = useBuyerContractUpdateStatus();
   const archive = useBuyerContractUpdateArchiveStatus();
 
@@ -81,6 +92,12 @@ export function ContractsPage() {
     submit.mutate(
       { contractId: c.id! },
       { onSuccess: () => { setFeedback('合同已提交审批'); refresh(); } },
+    );
+
+  const onRenew = (c: (typeof contracts)[number]) =>
+    renew.mutate(
+      { contractId: c.id! },
+      { onSuccess: () => { setFeedback('已发起续签,可在到期前完成续签流程'); refresh(); } },
     );
 
   const onAdvance = (c: (typeof contracts)[number]) => {
@@ -170,6 +187,43 @@ export function ContractsPage() {
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                   {c.status && <StatusPill label={c.status} />}
                   {c.archiveStatus && <StatusPill label={c.archiveStatus} />}
+                  {(() => {
+                    const d = daysToExpiry(c.expiryDate);
+                    if (c.archiveStatus === '已归档' || d == null || d > RENEWAL_WINDOW_DAYS) return null;
+                    return (
+                      <span
+                        className={
+                          d < 0
+                            ? 'inline-flex items-center gap-1 rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-black text-red-700'
+                            : 'inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-700'
+                        }
+                      >
+                        <CalendarClock size={11} />
+                        {d < 0 ? `已过期 ${-d} 天` : `${d} 天后到期`}
+                      </span>
+                    );
+                  })()}
+                  {c.renewalStatus === '已发起续签' ? (
+                    <span className="inline-flex items-center rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-black text-blue-700">
+                      已发起续签
+                    </span>
+                  ) : (
+                    c.archiveStatus !== '已归档' &&
+                    (() => {
+                      const d = daysToExpiry(c.expiryDate);
+                      if (d == null || d > RENEWAL_WINDOW_DAYS) return null;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => onRenew(c)}
+                          disabled={renew.isPending}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-blue-200 bg-white px-3 text-xs font-black text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                        >
+                          发起续签
+                        </button>
+                      );
+                    })()
+                  )}
                   {c.status === '草案' && (
                     <button
                       type="button"

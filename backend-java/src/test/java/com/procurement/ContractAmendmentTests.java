@@ -61,7 +61,7 @@ class ContractAmendmentTests {
         LocalDate.parse("2026-06-21"),
         OffsetDateTime.parse("2026-06-21T08:00:00+08:00"),
         OffsetDateTime.parse("2026-06-21T08:00:00+08:00"),
-        LocalDate.parse("2026-06-01"), LocalDate.parse("2027-06-01"), "电汇", "质保2年");
+        LocalDate.parse("2026-06-01"), LocalDate.parse("2027-06-01"), "电汇", "质保2年", null);
   }
 
   private ContractAmendment amendment(BigDecimal oldAmt, BigDecimal newAmt) {
