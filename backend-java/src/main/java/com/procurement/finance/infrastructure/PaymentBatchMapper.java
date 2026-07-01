@@ -52,6 +52,45 @@ public interface PaymentBatchMapper {
       <if test="supplierId != null">
         and pb.supplier_id = #{supplierId}
       </if>
+      <if test="scopeDepartmentIds != null">
+        and exists (
+          select 1
+          from payment_requests scope_pr
+          join purchase_orders po
+            on po.tenant_id = scope_pr.tenant_id
+           and po.id = scope_pr.order_id
+          join rfqs rfq
+            on rfq.tenant_id = po.tenant_id
+           and rfq.id = po.rfq_id
+          join rfq_demands rd
+            on rd.tenant_id = rfq.tenant_id
+           and rd.rfq_id = rfq.id
+          join purchase_demands pd
+            on pd.tenant_id = rd.tenant_id
+           and pd.id = rd.demand_id
+          where scope_pr.tenant_id = pb.tenant_id
+            and scope_pr.payment_batch_no = pb.payment_batch_no
+            and pd.department_id in
+            <foreach collection="scopeDepartmentIds" item="departmentId" open="(" separator="," close=")">
+              #{departmentId}
+            </foreach>
+        )
+      </if>
+      <if test="requesterId != null">
+        and exists (
+          select 1
+          from payment_requests scope_pr
+          join purchase_orders po
+            on po.tenant_id = scope_pr.tenant_id
+           and po.id = scope_pr.order_id
+          join rfqs rfq
+            on rfq.tenant_id = po.tenant_id
+           and rfq.id = po.rfq_id
+          where scope_pr.tenant_id = pb.tenant_id
+            and scope_pr.payment_batch_no = pb.payment_batch_no
+            and rfq.owner_id = #{requesterId}
+        )
+      </if>
       group by pb.id, pb.tenant_id, pb.payment_batch_no, pb.supplier_id, pb.request_count,
                pb.total_amount, pb.approved_amount, pb.batch_status, pb.planned_payment_date,
                pb.created_at, pb.updated_at
@@ -61,7 +100,9 @@ public interface PaymentBatchMapper {
   List<PaymentBatch> listByTenantFiltered(
       @Param("tenantId") String tenantId,
       @Param("batchStatus") String batchStatus,
-      @Param("supplierId") String supplierId);
+      @Param("supplierId") String supplierId,
+      @Param("scopeDepartmentIds") List<String> scopeDepartmentIds,
+      @Param("requesterId") String requesterId);
 
   @Select("""
       select pb.id, pb.tenant_id, pb.payment_batch_no, pb.supplier_id, pb.request_count, pb.total_amount,

@@ -1,7 +1,9 @@
 package com.procurement.finance.application;
 
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.identity.application.DataScopeService;
 import com.procurement.identity.application.PermissionService;
+import com.procurement.identity.domain.DataScope;
 import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.domain.ApprovalTask;
@@ -62,6 +64,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,6 +90,7 @@ public class FinanceActionApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final PermissionService permissionService;
+  private final DataScopeService dataScopeService;
 
   public FinanceActionApplicationService(
       InvoiceMapper invoiceMapper,
@@ -104,6 +108,43 @@ public class FinanceActionApplicationService {
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       PermissionService permissionService) {
+    this(
+        invoiceMapper,
+        purchaseOrderMapper,
+        paymentBatchMapper,
+        paymentArchiveExceptionRequestMapper,
+        paymentBlockResolutionMapper,
+        paymentExecutionRecordMapper,
+        paymentRequestMapper,
+        threeWayMatchMapper,
+        varianceHandlingMapper,
+        paymentApplicationService,
+        approvalTaskApplicationService,
+        approvalTaskMapper,
+        auditLogApplicationService,
+        tenantFeatureApplicationService,
+        permissionService,
+        null);
+  }
+
+  @Autowired
+  public FinanceActionApplicationService(
+      InvoiceMapper invoiceMapper,
+      PurchaseOrderMapper purchaseOrderMapper,
+      PaymentBatchMapper paymentBatchMapper,
+      PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper,
+      PaymentBlockResolutionMapper paymentBlockResolutionMapper,
+      PaymentExecutionRecordMapper paymentExecutionRecordMapper,
+      PaymentRequestMapper paymentRequestMapper,
+      ThreeWayMatchMapper threeWayMatchMapper,
+      VarianceHandlingMapper varianceHandlingMapper,
+      PaymentApplicationService paymentApplicationService,
+      ApprovalTaskApplicationService approvalTaskApplicationService,
+      ApprovalTaskMapper approvalTaskMapper,
+      AuditLogApplicationService auditLogApplicationService,
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      PermissionService permissionService,
+      DataScopeService dataScopeService) {
     this.invoiceMapper = invoiceMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.paymentBatchMapper = paymentBatchMapper;
@@ -119,6 +160,7 @@ public class FinanceActionApplicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.permissionService = permissionService;
+    this.dataScopeService = dataScopeService;
   }
 
   public List<PaymentBatchResponse> listCurrentTenantPaymentBatches(
@@ -126,10 +168,22 @@ public class FinanceActionApplicationService {
       String supplierId) {
     String tenantId = TenantAccessGuard.requireTenantId("payment batch APIs");
     paymentExecutionRecordMapper.refreshTenantFromPaymentRequests(tenantId);
+    DataScope dataScope = dataScopeService == null
+        ? DataScope.unrestricted()
+        : dataScopeService.currentUserDataScope();
+    if (dataScope.blocksAll()) {
+      return List.of();
+    }
+    List<String> scopeDepartmentIds = dataScope.restricted() && dataScope.requesterId() == null
+        ? dataScope.departmentIds()
+        : null;
+    String requesterId = dataScope.restricted() ? dataScope.requesterId() : null;
     return paymentBatchMapper.listByTenantFiltered(
             tenantId,
             blankToNull(batchStatus),
-            blankToNull(supplierId))
+            blankToNull(supplierId),
+            scopeDepartmentIds,
+            requesterId)
         .stream()
         .map(this::toPaymentBatchResponse)
         .toList();

@@ -7,7 +7,7 @@
 
 24Bid is ready to continue as a Java-backed customer-demo and pilot-preparation baseline. It should not be represented as a fully production-ready procurement SaaS until the production blockers in section 4 are closed.
 
-The next engineering direction remains Track A closeout: expand permission/data-scope enforcement across more list APIs, keep `npm run verify` green, and preserve clear evidence for pilot handoff.
+The next engineering direction is Track A closeout beyond data scope: keep `npm run verify` green, bind real operational receivers and backup rehearsals, and preserve clear evidence for pilot handoff.
 
 ## 2. Demo-Ready
 
@@ -32,7 +32,7 @@ These capabilities can be used in a controlled pilot if the listed controls are 
 | Authentication | Use Keycloak/OIDC as primary login; keep self-issued login as a controlled fallback only if explicitly allowed. |
 | Secrets | Set `JWT_SECRET`, MinIO credentials, Grafana password, and `AWARD_NOTICE_SIGNATURE_SECRET`; start production-like services with `-Dprocurement.award-notice.allow-demo-secret=false`. |
 | Permissions | Menu permission and role data-scope behavior are covered by tests; before pilot, confirm pilot roles and data-scope assignments against real org structure. |
-| Data scope | Purchase-demand, RFQ, and contract lists have representative data-scope enforcement; payment-batch list coverage should be expanded before broad pilot access. |
+| Data scope | Purchase-demand, RFQ, contract, and payment-batch lists have representative data-scope enforcement; confirm pilot role assignments against the real org chart before broad pilot access. |
 | Deployment | Follow `docs/production-readiness.md` release, rollback, backup, and smoke-check sequence. |
 | Load testing | Use `npm run loadtest` for read paths and `npm run loadtest:write` against an isolated test database before pilot signoff. |
 | Backups | Rehearse PostgreSQL, MinIO, and Keycloak realm restore before loading pilot data. |
@@ -41,12 +41,11 @@ These capabilities can be used in a controlled pilot if the listed controls are 
 
 Do not claim production readiness until these are closed:
 
-1. Data-scope enforcement must be expanded and verified for payment-batch and other sensitive buyer list APIs.
-2. Alertmanager receivers must be wired to real email, DingTalk, WeCom, or an internal incident platform with named owners.
-3. Backup and restore rehearsal must be completed in a temporary environment.
-4. Production Keycloak realm, MinIO bucket policy, PostgreSQL backup policy, and secret rotation policy must be documented.
-5. Real payment, tax invoicing, ERP/OA/finance integration, and legally binding e-signature are not implemented.
-6. Complex public tendering, auction, expert evaluation, bid bond, and formal bid-opening compliance remain future business tracks.
+1. Alertmanager receivers must be wired to real email, DingTalk, WeCom, or an internal incident platform with named owners.
+2. Backup and restore rehearsal must be completed in a temporary environment.
+3. Production Keycloak realm, MinIO bucket policy, PostgreSQL backup policy, and secret rotation policy must be documented.
+4. Real payment, tax invoicing, ERP/OA/finance integration, and legally binding e-signature are not implemented.
+5. Complex public tendering, auction, expert evaluation, bid bond, and formal bid-opening compliance remain future business tracks.
 
 ## 5. Acceptance Checklist
 
