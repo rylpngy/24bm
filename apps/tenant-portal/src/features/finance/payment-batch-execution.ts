@@ -1,4 +1,4 @@
-import type { PaymentExecutionRecordResponse } from '@24bid/api-client';
+import type { PaymentBlockResolutionResponse, PaymentExecutionRecordResponse } from '@24bid/api-client';
 
 export interface PaymentBatchExecutionRecordView {
   id: string;
@@ -10,6 +10,8 @@ export interface PaymentBatchExecutionRecordView {
   evidence?: string;
   explanation?: string;
   nextAction?: string;
+  resolutionId?: string;
+  resolutionStatus?: string;
 }
 
 export interface PaymentBatchExecutionSummary {
@@ -31,7 +33,23 @@ function statusRank(status?: string) {
   return 3;
 }
 
-function toRecordView(record: PaymentExecutionRecordResponse): PaymentBatchExecutionRecordView {
+function sameOptionalValue(left?: string, right?: string) {
+  return !left || !right || left === right;
+}
+
+function matchesResolution(record: PaymentExecutionRecordResponse, resolution: PaymentBlockResolutionResponse) {
+  return (
+    sameOptionalValue(record.paymentBatchNo, resolution.paymentBatchNo) &&
+    sameOptionalValue(record.paymentRequestId, resolution.paymentRequestId) &&
+    sameOptionalValue(record.invoiceId, resolution.invoiceId) &&
+    sameOptionalValue(record.executionBlockReason, resolution.blockReason)
+  );
+}
+
+function toRecordView(
+  record: PaymentExecutionRecordResponse,
+  blockResolution?: PaymentBlockResolutionResponse,
+): PaymentBatchExecutionRecordView {
   return {
     id: record.id ?? `${record.paymentBatchNo}:${record.paymentRequestId ?? record.invoiceId ?? 'unknown'}`,
     status: record.executionStatus,
@@ -40,13 +58,16 @@ function toRecordView(record: PaymentExecutionRecordResponse): PaymentBatchExecu
     amount: record.registeredAmount,
     plannedPaymentDate: record.plannedPaymentDate,
     evidence: record.releaseEvidenceNo,
-    explanation: record.releaseRemark ?? record.executionBlockReason ?? record.executionTrace,
-    nextAction: record.executionNextAction,
+    explanation: record.releaseRemark ?? record.executionBlockReason ?? blockResolution?.blockReason ?? record.executionTrace,
+    nextAction: blockResolution?.nextStep ?? record.executionNextAction,
+    resolutionId: blockResolution?.id,
+    resolutionStatus: blockResolution?.resolutionStatus,
   };
 }
 
 export function buildPaymentBatchExecutionSummaries(
   executionRecords: PaymentExecutionRecordResponse[],
+  blockResolutions: PaymentBlockResolutionResponse[] = [],
 ): Map<string, PaymentBatchExecutionSummary> {
   const summaries = new Map<string, PaymentBatchExecutionSummary>();
 
@@ -64,7 +85,8 @@ export function buildPaymentBatchExecutionSummaries(
     if (record.executionStatus === '已登记付款') summary.registeredAmount += n(record.registeredAmount);
     if (record.executionStatus === '暂不可登记') summary.blockedAmount += n(record.registeredAmount);
     if (record.executionStatus === '待登记付款') summary.pendingAmount += n(record.registeredAmount);
-    summary.records.push(toRecordView(record));
+    const blockResolution = blockResolutions.find((resolution) => matchesResolution(record, resolution));
+    summary.records.push(toRecordView(record, blockResolution));
     summaries.set(record.paymentBatchNo, summary);
   }
 

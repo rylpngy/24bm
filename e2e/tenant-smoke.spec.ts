@@ -59,6 +59,7 @@ test('付款批次页显示财务异常看板', async ({ page }) => {
   await expect(page.getByRole('button', { name: /^付款阻断 \d+/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^差异待处理 \d+/ })).toBeVisible();
   await expect(page.getByText('执行记录明细').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /登记付款/ }).first()).toBeVisible();
 });
 
 test('采购申请员仅显示需求与寻源相关菜单', async ({ page }) => {

@@ -56,4 +56,38 @@ describe('buildPaymentBatchExecutionSummaries', () => {
       pendingAmount: 500,
     });
   });
+
+  it('attaches matching block resolution actions to blocked records', () => {
+    const summaries = buildPaymentBatchExecutionSummaries(
+      [
+        {
+          id: 'exec-blocked',
+          paymentBatchNo: 'PB-001',
+          paymentRequestId: 'pay-2',
+          invoiceId: 'inv-2',
+          registeredAmount: 700,
+          executionStatus: '暂不可登记',
+          executionBlockReason: '前序里程碑未付款',
+        },
+      ],
+      [
+        {
+          id: 'res-1',
+          paymentBatchNo: 'PB-001',
+          paymentRequestId: 'pay-2',
+          invoiceId: 'inv-2',
+          blockReason: '前序里程碑未付款',
+          resolutionStatus: '待处理',
+          nextStep: '补齐前序里程碑',
+        },
+      ],
+    );
+
+    expect(summaries.get('PB-001')?.records[0]).toMatchObject({
+      id: 'exec-blocked',
+      resolutionId: 'res-1',
+      resolutionStatus: '待处理',
+      nextAction: '补齐前序里程碑',
+    });
+  });
 });

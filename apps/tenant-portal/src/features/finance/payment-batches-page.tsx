@@ -1,7 +1,11 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Banknote } from 'lucide-react';
 import {
   useBuyerFinanceActionPaymentBatches,
+  useBuyerFinanceActionPaymentBlockResolutions,
   useBuyerFinanceActionPaymentExecutionRecords,
+  useBuyerFinanceActionRegisterPaymentExecutionRecord,
+  useBuyerFinanceActionUpdatePaymentBlockResolutionStatus,
 } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
 import { FinanceExceptionDashboardPanel } from './finance-exception-dashboard-panel';
@@ -15,8 +19,14 @@ const currency = (v?: number) =>
 
 function PaymentBatchExecutionDetails({
   summary,
+  onRegister,
+  onResolveBlock,
+  busy,
 }: {
   summary?: PaymentBatchExecutionSummary;
+  onRegister: (executionRecordId: string) => void;
+  onResolveBlock: (resolutionId: string) => void;
+  busy: boolean;
 }) {
   if (!summary || summary.totalCount === 0) {
     return (
@@ -48,7 +58,29 @@ function PaymentBatchExecutionDetails({
                   {record.invoiceId ? `发票 ${record.invoiceId}` : `申请 ${record.paymentRequestId ?? '—'}`}
                 </span>
               </div>
-              <span className="text-xs font-black text-slate-700">{currency(record.amount)}</span>
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                <span className="text-xs font-black text-slate-700">{currency(record.amount)}</span>
+                {record.status === '待登记付款' && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onRegister(record.id)}
+                    className="rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    登记付款
+                  </button>
+                )}
+                {record.status === '暂不可登记' && record.resolutionId && record.resolutionStatus !== '已处理' && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onResolveBlock(record.resolutionId!)}
+                    className="rounded-md bg-blue-600 px-2 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    标记已处理
+                  </button>
+                )}
+              </div>
             </div>
             <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-600">
               {record.evidence
@@ -74,10 +106,24 @@ function PaymentBatchExecutionDetails({
 
 // 付款批次:把已通过的付款申请按批次汇总,展示批次财务口径与执行登记进度。
 export function PaymentBatchesPage() {
+  const queryClient = useQueryClient();
   const query = useBuyerFinanceActionPaymentBatches();
   const executions = useBuyerFinanceActionPaymentExecutionRecords();
+  const blockResolutions = useBuyerFinanceActionPaymentBlockResolutions();
+  const registerPayment = useBuyerFinanceActionRegisterPaymentExecutionRecord();
+  const resolveBlock = useBuyerFinanceActionUpdatePaymentBlockResolutionStatus();
   const batches = query.data?.data ?? [];
-  const executionSummaries = buildPaymentBatchExecutionSummaries(executions.data?.data ?? []);
+  const executionSummaries = buildPaymentBatchExecutionSummaries(
+    executions.data?.data ?? [],
+    blockResolutions.data?.data ?? [],
+  );
+  const refreshFinanceQueries = () => {
+    queryClient.invalidateQueries({
+      predicate: (cachedQuery) =>
+        String(cachedQuery.queryKey[0] ?? '').includes('/api/v1/buyer/payment'),
+    });
+  };
+  const busy = registerPayment.isPending || resolveBlock.isPending;
 
   return (
     <Panel title="付款批次" icon={Banknote} subtitle="批量付款计划 · 执行登记 · 阻断汇总">
@@ -159,6 +205,23 @@ export function PaymentBatchesPage() {
 
                 <PaymentBatchExecutionDetails
                   summary={b.paymentBatchNo ? executionSummaries.get(b.paymentBatchNo) : undefined}
+                  busy={busy}
+                  onRegister={(executionRecordId) =>
+                    registerPayment.mutate({ executionRecordId }, { onSuccess: refreshFinanceQueries })
+                  }
+                  onResolveBlock={(resolutionId) =>
+                    resolveBlock.mutate(
+                      {
+                        resolutionId,
+                        data: {
+                          resolutionStatus: '已处理',
+                          resolutionAction: '已完成阻断处理',
+                          nextStep: '可继续登记付款',
+                        },
+                      },
+                      { onSuccess: refreshFinanceQueries },
+                    )
+                  }
                 />
               </div>
             );
