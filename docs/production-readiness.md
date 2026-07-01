@@ -2,6 +2,8 @@
 
 方向 A(质量与生产化收口)产出。配套:E2E(`e2e/`)、可观测性(`infra/observability/`)、压测(`scripts/loadtest.mjs`)。
 
+Pilot 前的真实接收人、备份恢复演练和生产策略签核记录统一填写到 `docs/pilot-operations-handoff-2026-07.md`。该文件只保留非密模板和证据链接,真实 webhook、密钥、账号、值班联系人必须存放在客户侧受控系统。
+
 ## 1. 配置与密钥外置
 
 后端 `application.yml` 全部敏感项走 `${ENV:default}`,生产以环境变量覆盖,样例见根 `.env.example`:
@@ -28,6 +30,13 @@ cd infra && docker compose --profile observability up -d
 - `alert-rules.yml` —— 实例宕机 / 5xx>5% / P95>1.5s / 堆>90% 四条告警。
 - `alertmanager.yml` —— 本地默认投递到 `host.docker.internal:9094`;生产替换为邮件、钉钉/企微 adapter 或内部值班平台,不要提交真实 webhook 密钥。
 - Grafana 自动 provision 数据源 + 看板「24Bid 后端可观测性」(吞吐 / 错误率 / P95·P99 延迟 / JVM 堆)。
+
+生产接收人绑定要求:
+
+1. 在生产环境通过 overlay 或部署侧配置替换 Alertmanager receiver,不要修改并提交真实 webhook。
+2. `critical` 至少绑定一线值班角色和二线升级角色;`warning` 至少绑定后端负责人或平台负责人。
+3. 用一条合成告警验证发送和恢复通知,证据链接记录到 `docs/pilot-operations-handoff-2026-07.md`。
+4. 告警无人确认或接收渠道无法回放时,不得进入 pilot 数据导入。
 
 ## 3. 压测基线
 
@@ -92,6 +101,18 @@ pnpm e2e   # 复用本地三端 dev + 后端 :8080
 2. MinIO:每日对象与元数据备份;抽样验证合同附件、发票附件、中标通知书 PDF 可恢复。
 3. Keycloak:发布前导出 realm 配置;权限/角色调整后补充导出。
 4. 演练通过标准:临时环境可登录、可读取采购主链路列表、可打开至少一个附件。
+5. 每次演练必须记录 operator、backup id、restore target、start/end time、smoke result 和 rollback notes,并把证据链接写入 `docs/pilot-operations-handoff-2026-07.md`。
+
+### 6.5 生产策略签核
+
+Pilot 数据导入前,以下策略必须有客户侧或部署侧证据链接:
+
+| 策略 | 最低要求 |
+|---|---|
+| Keycloak realm | realm/client/redirect URI/token TTL/管理员 owner 明确;保留紧急访问路径 |
+| MinIO bucket | bucket/访问策略/加密/生命周期/保留周期明确 |
+| PostgreSQL backup | 备份频率、保留周期、加密、异地副本、RTO/RPO 明确 |
+| Secret rotation | JWT、数据库、MinIO、Grafana、Keycloak client secret、中标通知书签章密钥都有轮换周期和 owner |
 
 ## 7. 待办(后续)
 

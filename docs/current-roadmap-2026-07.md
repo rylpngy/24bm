@@ -159,16 +159,18 @@ Expected outcome:
 
 1. Deployment checklist
    - Completed: extended `docs/production-readiness.md` with image build, environment variables, database migration, rollback, backup, and restore rehearsal steps.
+   - Completed: added `docs/pilot-operations-handoff-2026-07.md` as the non-secret ledger for Alertmanager receiver tests, backup restore rehearsal evidence, and production policy signoff links.
 
 2. Alert routing
    - Completed: added Alertmanager compose service and sample webhook routing.
-   - Remaining: bind production webhook/email receiver and owner escalation outside the repository.
+   - Completed: documented production receiver binding, owner escalation, and synthetic alert evidence requirements.
+   - External environment action: bind real webhook/email/incident receivers outside the repository and record evidence in the handoff ledger.
 
 3. Write-path load testing
    - Completed: added `scripts/loadtest-write-paths.mjs`, covering demand creation, RFQ creation, quote submission, order fulfillment, receipt, invoice, and payment-request creation in a controlled local profile.
 
 4. Demo-to-pilot acceptance package
-   - Produce a concise acceptance package that separates demo-ready, pilot-ready, and production-blocked capabilities.
+   - Completed: produced and updated a concise acceptance package that separates demo-ready, pilot-ready, and production-blocked capabilities.
 
 ## 7. Business Tracks To Defer Until Track A Is Done
 
