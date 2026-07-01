@@ -23,6 +23,8 @@ import com.procurement.contract.domain.ContractFulfillmentEvent;
 import com.procurement.contract.domain.ContractLedger;
 import com.procurement.contract.infrastructure.ContractFulfillmentEventMapper;
 import com.procurement.contract.infrastructure.ContractMapper;
+import com.procurement.identity.application.DataScopeService;
+import com.procurement.identity.domain.DataScope;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
@@ -38,6 +40,7 @@ public class ContractApplicationService {
   private final ContractMapper contractMapper;
   private final ContractFulfillmentEventMapper fulfillmentEventMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
+  private final DataScopeService dataScopeService;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -46,14 +49,14 @@ public class ContractApplicationService {
   public ContractApplicationService(
       ContractMapper contractMapper,
       PurchaseOrderMapper purchaseOrderMapper) {
-    this(contractMapper, null, purchaseOrderMapper, null, null, null, null);
+    this(contractMapper, null, purchaseOrderMapper, null, null, null, null, null);
   }
 
   public ContractApplicationService(
       ContractMapper contractMapper,
       ContractFulfillmentEventMapper fulfillmentEventMapper,
       PurchaseOrderMapper purchaseOrderMapper) {
-    this(contractMapper, fulfillmentEventMapper, purchaseOrderMapper, null, null, null, null);
+    this(contractMapper, fulfillmentEventMapper, purchaseOrderMapper, null, null, null, null, null);
   }
 
   public ContractApplicationService(
@@ -67,6 +70,26 @@ public class ContractApplicationService {
         contractMapper,
         null,
         purchaseOrderMapper,
+        null,
+        approvalTaskMapper,
+        approvalTaskApplicationService,
+        auditLogApplicationService,
+        notificationApplicationService);
+  }
+
+  public ContractApplicationService(
+      ContractMapper contractMapper,
+      ContractFulfillmentEventMapper fulfillmentEventMapper,
+      PurchaseOrderMapper purchaseOrderMapper,
+      ApprovalTaskMapper approvalTaskMapper,
+      ApprovalTaskApplicationService approvalTaskApplicationService,
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
+    this(
+        contractMapper,
+        fulfillmentEventMapper,
+        purchaseOrderMapper,
+        null,
         approvalTaskMapper,
         approvalTaskApplicationService,
         auditLogApplicationService,
@@ -78,6 +101,7 @@ public class ContractApplicationService {
       ContractMapper contractMapper,
       ContractFulfillmentEventMapper fulfillmentEventMapper,
       PurchaseOrderMapper purchaseOrderMapper,
+      DataScopeService dataScopeService,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
       AuditLogApplicationService auditLogApplicationService,
@@ -85,6 +109,7 @@ public class ContractApplicationService {
     this.contractMapper = contractMapper;
     this.fulfillmentEventMapper = fulfillmentEventMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
+    this.dataScopeService = dataScopeService;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -96,11 +121,23 @@ public class ContractApplicationService {
       String archiveStatus,
       String supplierId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    DataScope dataScope = dataScopeService == null
+        ? DataScope.unrestricted()
+        : dataScopeService.currentUserDataScope();
+    if (dataScope.blocksAll()) {
+      return List.of();
+    }
+    List<String> scopeDepartmentIds = dataScope.restricted() && dataScope.requesterId() == null
+        ? dataScope.departmentIds()
+        : null;
+    String requesterId = dataScope.restricted() ? dataScope.requesterId() : null;
     return contractMapper.listByTenantFiltered(
             tenantId,
             blankToNull(status),
             blankToNull(archiveStatus),
-            blankToNull(supplierId))
+            blankToNull(supplierId),
+            scopeDepartmentIds,
+            requesterId)
         .stream()
         .map(this::toResponse)
         .toList();

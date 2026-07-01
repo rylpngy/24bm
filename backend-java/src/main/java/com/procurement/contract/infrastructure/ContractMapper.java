@@ -30,6 +30,31 @@ public interface ContractMapper {
         <if test="supplierId != null and supplierId != ''">
         and supplier_id = #{supplierId}
         </if>
+        <if test="scopeDepartmentIds != null">
+        and exists (
+          select 1
+          from purchase_orders po
+          join rfqs rfq on rfq.tenant_id = po.tenant_id and rfq.id = po.rfq_id
+          join rfq_demands rd on rd.tenant_id = rfq.tenant_id and rd.rfq_id = rfq.id
+          join purchase_demands pd on pd.tenant_id = rd.tenant_id and pd.id = rd.demand_id
+          where po.tenant_id = contracts.tenant_id
+            and po.id = contracts.related_order_id
+            and pd.department_id in
+            <foreach collection="scopeDepartmentIds" item="departmentId" open="(" separator="," close=")">
+              #{departmentId}
+            </foreach>
+        )
+        </if>
+        <if test="requesterId != null and requesterId != ''">
+        and exists (
+          select 1
+          from purchase_orders po
+          join rfqs rfq on rfq.tenant_id = po.tenant_id and rfq.id = po.rfq_id
+          where po.tenant_id = contracts.tenant_id
+            and po.id = contracts.related_order_id
+            and rfq.owner_id = #{requesterId}
+        )
+        </if>
       order by updated_at desc, created_at desc
       </script>
       """)
@@ -37,7 +62,9 @@ public interface ContractMapper {
       @Param("tenantId") String tenantId,
       @Param("status") String status,
       @Param("archiveStatus") String archiveStatus,
-      @Param("supplierId") String supplierId);
+      @Param("supplierId") String supplierId,
+      @Param("scopeDepartmentIds") List<String> scopeDepartmentIds,
+      @Param("requesterId") String requesterId);
 
   @Select("""
       select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,

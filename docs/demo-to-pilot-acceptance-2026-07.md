@@ -32,7 +32,7 @@ These capabilities can be used in a controlled pilot if the listed controls are 
 | Authentication | Use Keycloak/OIDC as primary login; keep self-issued login as a controlled fallback only if explicitly allowed. |
 | Secrets | Set `JWT_SECRET`, MinIO credentials, Grafana password, and `AWARD_NOTICE_SIGNATURE_SECRET`; start production-like services with `-Dprocurement.award-notice.allow-demo-secret=false`. |
 | Permissions | Menu permission and role data-scope behavior are covered by tests; before pilot, confirm pilot roles and data-scope assignments against real org structure. |
-| Data scope | Purchase-demand and RFQ lists have representative data-scope enforcement; contract and payment-batch list coverage should be expanded before broad pilot access. |
+| Data scope | Purchase-demand, RFQ, and contract lists have representative data-scope enforcement; payment-batch list coverage should be expanded before broad pilot access. |
 | Deployment | Follow `docs/production-readiness.md` release, rollback, backup, and smoke-check sequence. |
 | Load testing | Use `npm run loadtest` for read paths and `npm run loadtest:write` against an isolated test database before pilot signoff. |
 | Backups | Rehearse PostgreSQL, MinIO, and Keycloak realm restore before loading pilot data. |
@@ -41,7 +41,7 @@ These capabilities can be used in a controlled pilot if the listed controls are 
 
 Do not claim production readiness until these are closed:
 
-1. Data-scope enforcement must be expanded and verified for contract, payment-batch, and other sensitive buyer list APIs.
+1. Data-scope enforcement must be expanded and verified for payment-batch and other sensitive buyer list APIs.
 2. Alertmanager receivers must be wired to real email, DingTalk, WeCom, or an internal incident platform with named owners.
 3. Backup and restore rehearsal must be completed in a temporary environment.
 4. Production Keycloak realm, MinIO bucket policy, PostgreSQL backup policy, and secret rotation policy must be documented.
