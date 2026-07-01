@@ -16,6 +16,7 @@ import { OwnerAttachments } from '../attachments/owner-attachments';
 import { ContractFulfillmentEvents } from './contract-fulfillment-events';
 import { ContractAmendments } from './contract-amendments';
 import { ContractScheduleSection } from './contract-schedule-section';
+import { ContractPaymentReconciliationPanel } from './contract-payment-reconciliation-panel';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -174,6 +175,7 @@ export function ContractsPage() {
         <FeedbackNotice tone="info" message="暂无合同。可由采购订单生成。" />
       ) : (
         <div className="space-y-3">
+          <ContractPaymentReconciliationPanel contracts={contracts} />
           {contracts.map((c) => (
             <div
               key={c.id}

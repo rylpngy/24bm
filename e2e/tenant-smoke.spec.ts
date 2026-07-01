@@ -36,3 +36,12 @@ test('采购需求列表:序号列 + 搜索', async ({ page }) => {
   await expect(page.getByRole('columnheader', { name: '标题' })).toBeVisible();
   await expect(page.getByPlaceholder(/搜索/).first()).toBeVisible();
 });
+
+test('合同页显示合同-付款对账视图', async ({ page }) => {
+  await page.goto('/?module=contracts');
+  await page.getByRole('button', { name: /Keycloak 登录/ }).click();
+
+  await expect(page.getByText('合同-付款对账视图')).toBeVisible();
+  await expect(page.getByText(/合同付款登记覆盖/).first()).toBeVisible();
+  await expect(page.getByText(/付款链路/).first()).toBeVisible();
+});

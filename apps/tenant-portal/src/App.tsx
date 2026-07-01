@@ -23,9 +23,14 @@ import { TeamPage } from './features/team/team-page';
 import { OrgStructurePage } from './features/org/org-structure-page';
 import { ProcessEnginePage } from './features/process/process-engine-page';
 
+const initialModuleId = () => {
+  if (typeof window === 'undefined') return 'dashboard';
+  return new URLSearchParams(window.location.search).get('module') ?? 'dashboard';
+};
+
 export function App() {
   const session = useAuthStore((s) => s.session);
-  const [activeModuleId, setActiveModuleId] = useState('dashboard');
+  const [activeModuleId, setActiveModuleId] = useState(initialModuleId);
 
   // 当前用户的有效权限点 → 菜单/路由门禁。仅登录后查询。
   const permsQuery = useBuyerRoleMyPermissions({ query: { enabled: !!session } });
@@ -39,10 +44,18 @@ export function App() {
 
   // 当前模块若因权限收紧而不可见,回落到首页看板。
   useEffect(() => {
+    if (!session || permsQuery.isLoading) return;
     if (activeModuleId !== 'dashboard' && !visibleModules.some((m) => m.id === activeModuleId)) {
       setActiveModuleId('dashboard');
     }
-  }, [visibleModules, activeModuleId]);
+  }, [visibleModules, activeModuleId, session, permsQuery.isLoading]);
+
+  const selectModule = (moduleId: string) => {
+    setActiveModuleId(moduleId);
+    const url = new URL(window.location.href);
+    url.searchParams.set('module', moduleId);
+    window.history.replaceState(null, '', url.toString());
+  };
 
   const activeModule = buyerNavigation.modules.find((m) => m.id === activeModuleId);
   const permitted = visibleModules.some((m) => m.id === activeModuleId);
@@ -57,7 +70,7 @@ export function App() {
       mainlineHint="需求申请 - 询价比价 - 订单履约 - 发票付款"
       modules={visibleModules}
       activeModuleId={activeModuleId}
-      onSelectModule={setActiveModuleId}
+      onSelectModule={selectModule}
       title={activeModule?.label ?? '企业工作台'}
       accountLabel={`${session.displayName} · ${session.tenantId}`}
     >
