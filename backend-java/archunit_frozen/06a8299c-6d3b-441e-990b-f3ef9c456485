@@ -490,3 +490,5 @@ Method <com.procurement.sourcing.api.RfqController.verifyNotice(java.lang.String
 Method <com.procurement.sourcing.api.RfqController.verifyNotice(java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (RfqController.java:0)
 Method <com.procurement.contract.api.BuyerContractController.renew(java.lang.String)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (BuyerContractController.java:77)
 Method <com.procurement.contract.api.BuyerContractController.renew(java.lang.String)> has return type <com.procurement.common.api.ApiResponse> in (BuyerContractController.java:0)
+Method <com.procurement.contract.api.BuyerContractController.scanExpiry(int)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (BuyerContractController.java:84)
+Method <com.procurement.contract.api.BuyerContractController.scanExpiry(int)> has return type <com.procurement.common.api.ApiResponse> in (BuyerContractController.java:0)

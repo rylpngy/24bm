@@ -69,8 +69,8 @@ class FinanceInvoiceNotificationTests {
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> invoice(invocation.getArgument(1)));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester"),
-        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it", "role-buyer-requester")));
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "active", "dept-it", "role-buyer-requester"),
+        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "inactive", "dept-it", "role-buyer-requester")));
 
     invoiceApplicationService.create("po-1", new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001", null, null, null));
 
@@ -103,7 +103,7 @@ class FinanceInvoiceNotificationTests {
     when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
         .thenReturn(order());
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester")));
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "active", "dept-it", "role-buyer-requester")));
 
     invoiceApplicationService.updateReceivable(
         "invoice-1",

@@ -68,8 +68,8 @@ class PurchaseOrderNotificationTests {
     when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
         .thenReturn(order("po-1", "tenant-1", "supplier-1", "待发货"));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester"),
-        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it", "role-buyer-requester")));
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "active", "dept-it", "role-buyer-requester"),
+        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "inactive", "dept-it", "role-buyer-requester")));
 
     purchaseOrderApplicationService.confirmCurrentSupplierOrder("po-1");
 
@@ -101,8 +101,8 @@ class PurchaseOrderNotificationTests {
             org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> order(invocation.getArgument(1), "tenant-1", "supplier-1", "待供应商确认"));
     when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
-        supplierUser("supplier-user-active", "启用"),
-        supplierUser("supplier-user-disabled", "停用")));
+        supplierUser("supplier-user-active", "active"),
+        supplierUser("supplier-user-disabled", "inactive")));
 
     var response = purchaseOrderApplicationService.createFromAward(
         new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));

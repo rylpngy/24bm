@@ -72,8 +72,8 @@ class ReceiptNotificationTests {
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> receipt(invocation.getArgument(1)));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester"),
-        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it", "role-buyer-requester")));
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "active", "dept-it", "role-buyer-requester"),
+        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "inactive", "dept-it", "role-buyer-requester")));
 
     receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null));
 
@@ -105,8 +105,8 @@ class ReceiptNotificationTests {
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> receipt(invocation.getArgument(1)));
     when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
-        supplierUser("supplier-user-active", "启用"),
-        supplierUser("supplier-user-disabled", "停用")));
+        supplierUser("supplier-user-active", "active"),
+        supplierUser("supplier-user-disabled", "inactive")));
 
     receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null));
 

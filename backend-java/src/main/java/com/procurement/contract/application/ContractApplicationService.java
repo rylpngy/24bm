@@ -209,6 +209,31 @@ public class ContractApplicationService {
     return toResponse(requireContract(tenantId, contractId));
   }
 
+  // 到期提醒扫描:为 withinDays 内临近到期、未归档、未续签的合同各生成一条提醒通知。
+  // 可由定时任务(每日)或人工触发;返回扫描数与提醒数。
+  @Transactional
+  public com.procurement.contract.api.ScanExpiryResponse scanExpiringContracts(int withinDays) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    int days = withinDays <= 0 ? 60 : withinDays;
+    java.time.LocalDate threshold = java.time.LocalDate.now().plusDays(days);
+    List<ContractLedger> expiring = contractMapper.listExpiringWithin(tenantId, threshold);
+    int notified = 0;
+    for (ContractLedger c : expiring) {
+      String when = c.expiryDate() == null ? "" : c.expiryDate().toString();
+      notificationApplicationService.notifyActiveTenantUsers(
+          tenantId,
+          "合同到期提醒",
+          "合同「" + c.contractName() + "」将于 " + when + " 到期,请及时安排续签或归档。");
+      notified++;
+    }
+    if (notified > 0) {
+      auditLogApplicationService.recordTenantAction(
+          tenantId, "contract.expiry_scanned", "contract", "batch",
+          "扫描到 " + notified + " 份临近到期合同并生成提醒");
+    }
+    return new com.procurement.contract.api.ScanExpiryResponse(days, expiring.size(), notified);
+  }
+
   // 发起续签:置「已发起续签」(到期提醒驱动),幂等;审计留痕。
   @Transactional
   public ContractResponse initiateRenewal(String contractId) {

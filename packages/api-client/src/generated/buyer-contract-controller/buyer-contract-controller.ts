@@ -31,8 +31,10 @@ import type {
   ApiResponseListContractAmendmentResponse,
   ApiResponseListContractFulfillmentEventResponse,
   ApiResponseListContractResponse,
+  ApiResponseScanExpiryResponse,
   ApiResponseVoid,
   BuyerContractListParams,
+  BuyerContractScanExpiryParams,
   CreateContractAmendmentRequest,
   CreateContractFulfillmentEventRequest,
   CreateContractRequest,
@@ -478,6 +480,63 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerContractRenewMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerContractScanExpiry = (
+    params?: BuyerContractScanExpiryParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseScanExpiryResponse>(
+      {url: `/api/v1/buyer/contracts/scan-expiry`, method: 'POST',
+        params, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerContractScanExpiryMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractScanExpiry>>, TError,{params?: BuyerContractScanExpiryParams}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerContractScanExpiry>>, TError,{params?: BuyerContractScanExpiryParams}, TContext> => {
+
+const mutationKey = ['buyerContractScanExpiry'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractScanExpiry>>, {params?: BuyerContractScanExpiryParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  buyerContractScanExpiry(params,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerContractScanExpiryMutationResult = NonNullable<Awaited<ReturnType<typeof buyerContractScanExpiry>>>
+    
+    export type BuyerContractScanExpiryMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerContractScanExpiry = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractScanExpiry>>, TError,{params?: BuyerContractScanExpiryParams}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerContractScanExpiry>>,
+        TError,
+        {params?: BuyerContractScanExpiryParams},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerContractScanExpiryMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

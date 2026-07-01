@@ -9,6 +9,7 @@ class NotificationRecipientStatusTests {
 
   @Test
   void definesEnabledRecipientStatus() {
-    assertThat(NotificationRecipientStatus.ENABLED).isEqualTo("启用");
+    // 与买/供用户账号在用态对齐,确保通知确实投递。
+    assertThat(NotificationRecipientStatus.ENABLED).isEqualTo("active");
   }
 }

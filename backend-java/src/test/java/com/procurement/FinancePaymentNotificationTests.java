@@ -77,8 +77,8 @@ class FinancePaymentNotificationTests {
     when(invoiceMapper.updatePaymentStatus("tenant-1", "invoice-1", "待付款", "已付款"))
         .thenReturn(1);
     when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
-        new SupplierUser("supplier-user-1", "supplier-1", "供应商管理员", "13900000001", "supplier@example.com", "启用", "role-supplier-admin"),
-        new SupplierUser("disabled-supplier-user", "supplier-1", "停用用户", "13900000002", "disabled@example.com", "停用", "role-supplier-admin")));
+        new SupplierUser("supplier-user-1", "supplier-1", "供应商管理员", "13900000001", "supplier@example.com", "active", "role-supplier-admin"),
+        new SupplierUser("disabled-supplier-user", "supplier-1", "停用用户", "13900000002", "disabled@example.com", "inactive", "role-supplier-admin")));
 
     paymentApplicationService.register("invoice-1", new RegisterPaymentRequest("已付款"));
 

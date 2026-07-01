@@ -51,6 +51,23 @@ public interface ContractMapper {
       @Param("tenantId") String tenantId,
       @Param("contractId") String contractId);
 
+  // 到期提醒:截止日 ≤ 阈值、未归档、尚未发起续签的在册合同。
+  @Select("""
+      select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
+             amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at,
+             sign_date, expiry_date, payment_terms, warranty_terms, renewal_status
+      from contracts
+      where tenant_id = #{tenantId}
+        and expiry_date is not null
+        and expiry_date <= #{withinDate}
+        and archive_status <> '已归档'
+        and (renewal_status is null or renewal_status = '')
+      order by expiry_date asc
+      """)
+  List<ContractLedger> listExpiringWithin(
+      @Param("tenantId") String tenantId,
+      @Param("withinDate") java.time.LocalDate withinDate);
+
   @Select("""
       select count(*)
       from contracts contract

@@ -20,7 +20,7 @@ const ROLE_DESC: Record<string, string> = {
   'role-buyer-finance': '负责付款登记与对账差异审批',
 };
 
-// 数据权限范围卡片。后端 data_scope 仅支持 all / department;另两档为规划项(暂未开放)。
+// 数据权限范围卡片。与后端 DataScope 保持一致:全部 / 本部门及下级 / 本部门 / 本人。
 const SCOPES = [
   { value: 'all', title: '全部数据权限', desc: '可查看所有部门数据', enabled: true },
   { value: 'department_and_below', title: '本部门及下级', desc: '可查看所属部门及下级部门', enabled: true },

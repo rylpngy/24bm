@@ -91,8 +91,8 @@ class RfqCreationCollaborationTests {
     when(rfqInviteMapper.listSupplierIds(eq("tenant-1"), anyString())).thenReturn(List.of("supplier-1"));
     when(quoteMapper.listByTenantAndRfq(eq("tenant-1"), anyString())).thenReturn(List.of());
     when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
-        supplierUser("supplier-user-active", "启用"),
-        supplierUser("supplier-user-disabled", "停用")));
+        supplierUser("supplier-user-active", "active"),
+        supplierUser("supplier-user-disabled", "inactive")));
 
     var response = rfqApplicationService.create(new CreateRfqRequest(
         "办公电脑询价",

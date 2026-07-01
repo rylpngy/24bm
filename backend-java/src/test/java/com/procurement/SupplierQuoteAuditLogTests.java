@@ -139,8 +139,8 @@ class SupplierQuoteAuditLogTests {
     when(quoteMapper.findByTenantAndId(eq("tenant-1"), anyString()))
         .thenAnswer(invocation -> quote(invocation.getArgument(1), BigDecimal.valueOf(116000), BigDecimal.valueOf(13), 6));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        buyerUser("buyer-user-active", "启用"),
-        buyerUser("buyer-user-disabled", "停用")));
+        buyerUser("buyer-user-active", "active"),
+        buyerUser("buyer-user-disabled", "inactive")));
 
     quoteApplicationService.submit("rfq-1", new SubmitQuoteRequest(
         BigDecimal.valueOf(116000),
@@ -215,8 +215,8 @@ class SupplierQuoteAuditLogTests {
     when(quoteMapper.findByTenantAndId("tenant-1", "quote-1"))
         .thenReturn(quote("quote-1", BigDecimal.valueOf(116000), BigDecimal.valueOf(13), 6));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        buyerUser("buyer-user-active", "启用"),
-        buyerUser("buyer-user-disabled", "停用")));
+        buyerUser("buyer-user-active", "active"),
+        buyerUser("buyer-user-disabled", "inactive")));
 
     quoteApplicationService.update("quote-1", new UpdateQuoteRequest(
         BigDecimal.valueOf(116000),

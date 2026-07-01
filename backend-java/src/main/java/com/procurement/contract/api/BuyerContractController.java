@@ -77,6 +77,13 @@ public class BuyerContractController {
     return ApiResponse.ok(contractApplicationService.initiateRenewal(contractId));
   }
 
+  // 扫描临近到期合同并为每份生成到期提醒通知(可人工或定时触发)。
+  @PostMapping("/scan-expiry")
+  public ApiResponse<ScanExpiryResponse> scanExpiry(
+      @RequestParam(name = "withinDays", defaultValue = "60") int withinDays) {
+    return ApiResponse.ok(contractApplicationService.scanExpiringContracts(withinDays));
+  }
+
   @PutMapping("/{contractId}/approval-review")
   public ApiResponse<ContractResponse> reviewApproval(
       @PathVariable String contractId,

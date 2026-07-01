@@ -6908,6 +6908,58 @@
         }
       }
     },
+    "/api/v1/buyer/contracts/scan-expiry": {
+      "post": {
+        "tags": [
+          "buyer-contract-controller"
+        ],
+        "operationId": "BuyerContract_scanExpiry",
+        "parameters": [
+          {
+            "name": "withinDays",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 60
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseScanExpiryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/contracts/{contractId}/payment-milestones/{milestoneId}/reach": {
       "post": {
         "tags": [
@@ -12269,6 +12321,37 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseScanExpiryResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ScanExpiryResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ScanExpiryResponse": {
+        "type": "object",
+        "properties": {
+          "withinDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scanned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "notified": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

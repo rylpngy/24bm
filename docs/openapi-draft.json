@@ -1491,65 +1491,6 @@
         }
       }
     },
-    "/buyer/audit-logs/target": {
-      "get": {
-        "tags": [
-          "buyer"
-        ],
-        "summary": "加载采购方目标对象审计日志",
-        "parameters": [
-          {
-            "name": "targetType",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "targetId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "actions",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 50
-            }
-          }
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "AuditLogList"
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "403": {
-            "description": "Permission or tenant isolation violation"
-          }
-        }
-      }
-    },
     "/buyer/attachments": {
       "get": {
         "tags": [
@@ -2722,72 +2663,6 @@
         "responses": {
           "200": {
             "description": "ContractLedger"
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "403": {
-            "description": "Permission or tenant isolation violation"
-          }
-        }
-      }
-    },
-    "/buyer/contracts/{contractId}/fulfillment-events": {
-      "get": {
-        "tags": [
-          "buyer"
-        ],
-        "summary": "读取采购方合同履约事件台账，按当前租户和合同隔离",
-        "parameters": [
-          {
-            "name": "contractId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "ContractFulfillmentEventList"
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "403": {
-            "description": "Permission or tenant isolation violation"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "buyer"
-        ],
-        "summary": "登记采购方合同履约事件，记录联动动作、目标单据和来源上下文",
-        "parameters": [
-          {
-            "name": "contractId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "ContractFulfillmentEvent"
           },
           "400": {
             "description": "Validation error"
@@ -4621,18 +4496,6 @@
         "type": "object",
         "additionalProperties": true
       },
-      "CreateContractFulfillmentEventRequest": {
-        "type": "object",
-        "additionalProperties": true
-      },
-      "ContractFulfillmentEventList": {
-        "type": "object",
-        "additionalProperties": true
-      },
-      "ContractFulfillmentEvent": {
-        "type": "object",
-        "additionalProperties": true
-      },
       "SupplierOrderListRequest": {
         "type": "object",
         "additionalProperties": true
@@ -4764,7 +4627,6 @@
     "GET /buyer/approvals/templates",
     "POST /buyer/approvals/templates/{templateCode}/config",
     "GET /buyer/audit-logs",
-    "GET /buyer/audit-logs/target",
     "GET /buyer/attachments",
     "POST /buyer/attachments",
     "POST /buyer/attachments/upload-ticket",
@@ -4802,8 +4664,6 @@
     "PUT /buyer/contracts/{contractId}/archive-status",
     "POST /buyer/contracts/{contractId}/approval",
     "PUT /buyer/contracts/{contractId}/approval-review",
-    "GET /buyer/contracts/{contractId}/fulfillment-events",
-    "POST /buyer/contracts/{contractId}/fulfillment-events",
     "GET /supplier/orders",
     "POST /supplier/orders/{orderId}/confirm",
     "POST /supplier/orders/{orderId}/deliveries",
