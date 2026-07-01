@@ -1,6 +1,7 @@
 import { Banknote } from 'lucide-react';
 import { useBuyerFinanceActionPaymentBatches } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { FinanceExceptionDashboardPanel } from './finance-exception-dashboard-panel';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -22,6 +23,7 @@ export function PaymentBatchesPage() {
         <FeedbackNotice tone="info" message="暂无付款批次。付款申请通过后按批次汇总于此。" />
       ) : (
         <div className="space-y-3">
+          <FinanceExceptionDashboardPanel paymentBatches={batches} />
           {batches.map((b) => {
             const blocked = (b.blockedRegistrationCount ?? 0) > 0;
             const allRegistered =

@@ -47,3 +47,12 @@ test('合同页显示合同-付款对账视图', async ({ page }) => {
   await expect(page.getByText(/合同付款登记覆盖/).first()).toBeVisible();
   await expect(page.getByText(/付款链路/).first()).toBeVisible();
 });
+
+test('付款批次页显示财务异常看板', async ({ page }) => {
+  await page.goto('/?module=payment-batches');
+  await page.getByRole('button', { name: /Keycloak 登录/ }).click();
+
+  await expect(page.getByText('财务异常看板')).toBeVisible();
+  await expect(page.getByText('待处理异常')).toBeVisible();
+  await expect(page.getByText('阻断金额')).toBeVisible();
+});
