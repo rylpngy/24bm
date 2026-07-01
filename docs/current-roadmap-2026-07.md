@@ -78,6 +78,7 @@ Examples:
 - Menu-level permission is now represented through navigation `requiredPermission` and frontend permission filtering.
 - Data scopes support `all`, `department_and_below`, `department`, and `self` in backend domain code.
 - The buyer team permission workbench exposes role permissions and data-scope editing.
+- Permission/data-scope regression coverage now includes frontend menu matching, role data-scope parsing, active buyer-role SQL filtering, and purchase-demand list blocking when the effective data scope has no visible departments.
 - Some 2026-06-24 roadmap sections still describe monolith/frontend-app issues that have already been resolved.
 
 Action: keep the historical documents, but mark the refreshed/current sections clearly and avoid using old gap lists as active backlogs.
@@ -122,10 +123,10 @@ Expected outcome:
 
 - A clean current roadmap.
 - Updated standard-gap assessment.
-- Permission/data-scope behavior aligned across backend, frontend, and docs.
-- Production checklist expanded from "baseline" to "pilot handoff".
-- Security-sensitive demo shortcuts identified and removed or explicitly profile-gated.
-- Regression evidence captured in tests and smoke scripts.
+- Permission/data-scope behavior aligned across backend, frontend, and docs. Current evidence covers menu matching, role data-scope parsing, active buyer-role filtering, and purchase-demand list enforcement; remaining work is expanding the same pattern to RFQ, contract, and payment-batch lists.
+- Production checklist expanded from "baseline" to "pilot handoff", including Alertmanager routing, deployment order, rollback, backup rehearsal, and write-path load testing.
+- Security-sensitive demo shortcuts identified and removed or explicitly profile-gated. Award-notice signing now supports injected secrets and a production flag to disable demo-secret fallback.
+- Regression evidence captured in tests and smoke scripts. `npm run verify` is the local gate.
 
 ## 6. Next Two-Week Execution Plan
 
@@ -137,15 +138,16 @@ Expected outcome:
    - Add a short "do not use old sections as active backlog" note where needed.
 
 2. Permission and data-scope consistency
-   - Fix stale comments in the role permission workbench.
-   - Verify menu-level filtering across buyer routes.
-   - Verify backend data-scope enforcement for representative buyer list APIs.
-   - Add focused tests for role data-scope update and permission catalog behavior if missing.
+   - Completed: fixed stale role-permission workbench comments.
+   - Completed: verified menu-level permission matching through `packages/shared/src/navigation-permissions.test.ts`.
+   - Completed: verified backend data-scope parsing and active buyer-role SQL filtering through `DataScopeServiceTests` and `DataScopeMapperSqlTests`.
+   - Completed: verified representative purchase-demand list blocking for an empty effective department scope.
+   - Remaining: expand representative data-scope enforcement to RFQ, contract, and payment-batch list APIs.
 
 3. Security configuration hardening
-   - Externalize award notice signing secret.
-   - Keep a local/demo default only for local development.
-   - Add a test proving production-like configuration does not silently use the demo secret.
+   - Completed: externalized award notice signing secret through JVM property / `AWARD_NOTICE_SIGNATURE_SECRET`.
+   - Completed: kept demo fallback for local/CI and added `procurement.award-notice.allow-demo-secret=false` for production hardening.
+   - Completed: added tests proving configured secrets change signatures and disabled demo fallback fails fast.
 
 4. Verification baseline
    - Keep `npm run verify` green.
@@ -154,15 +156,14 @@ Expected outcome:
 ### Week 2: Pilot Readiness
 
 1. Deployment checklist
-   - Extend `docs/production-readiness.md` with image build, environment variables, database migration, rollback, backup, and restore rehearsal steps.
+   - Completed: extended `docs/production-readiness.md` with image build, environment variables, database migration, rollback, backup, and restore rehearsal steps.
 
 2. Alert routing
-   - Add Alertmanager or documented equivalent for email, DingTalk, or WeCom routing.
-   - Document minimum alert rules and owner handoff.
+   - Completed: added Alertmanager compose service and sample webhook routing.
+   - Remaining: bind production webhook/email receiver and owner escalation outside the repository.
 
 3. Write-path load testing
-   - Extend the load-test script or add a companion script for representative write paths.
-   - Cover at least demand creation, RFQ creation, quote submission, receipt registration, and payment registration in a controlled local profile.
+   - Completed: added `scripts/loadtest-write-paths.mjs`, covering demand creation, RFQ creation, quote submission, order fulfillment, receipt, invoice, and payment-request creation in a controlled local profile.
 
 4. Demo-to-pilot acceptance package
    - Produce a concise acceptance package that separates demo-ready, pilot-ready, and production-blocked capabilities.

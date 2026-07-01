@@ -146,6 +146,24 @@ class PurchaseDemandDepartmentValidationTests {
   }
 
   @Test
+  void listDemandsReturnsEmptyWithoutQueryWhenDepartmentScopeBlocksAll() {
+    TenantContext.set("tenant-1", null, "buyer-user-1");
+    when(dataScopeService.currentUserDataScope())
+        .thenReturn(com.procurement.identity.domain.DataScope.departments(List.of()));
+
+    var demands = purchaseDemandApplicationService.listCurrentTenantDemands(null, null, null);
+
+    assertThat(demands).isEmpty();
+    verify(purchaseDemandMapper, never()).listByTenantFiltered(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
   void listDemandsRestrictsToSelfWhenScopeIsSelf() {
     TenantContext.set("tenant-1", null, "buyer-user-1");
     when(dataScopeService.currentUserDataScope())
