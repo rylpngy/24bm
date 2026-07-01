@@ -181,10 +181,10 @@ Current active business track. It builds on existing payment batches, archive ex
 Started:
 
 - Contract milestone settlement rules: milestone payment now enforces prior milestones already paid before later milestones can be registered as paid.
+- Payment batch approval and release evidence: payment execution registration now requires the batch to be approved for payment, accepts release evidence fields, and exposes that evidence on execution records.
 
 Candidate scope:
 
-- Payment batch approval and release evidence.
 - Finance exception dashboard.
 - Contract-to-payment reconciliation view.
 
@@ -223,10 +223,9 @@ Candidate scope:
 
 Recommended next implementation order:
 
-1. Commit or otherwise preserve the current verified contract-expiry and notification-status work.
-2. Update stale roadmap and standard-gap docs to reference this baseline.
-3. Fix the role-permission workbench data-scope comment mismatch.
-4. Externalize the award notice signing secret.
-5. Extend production-readiness with deployment, alert routing, and write-path load testing.
+1. Build the contract-to-payment reconciliation view so contract milestones, payment batches, execution evidence, and archive status can be reviewed together.
+2. Add a finance exception dashboard for blocked payment execution, variance handling, archive exception requests, and overdue payment evidence.
+3. Continue production-readiness external work: bind real alert receivers, rehearse restore evidence, and record links in the pilot operations handoff ledger.
+4. Keep `npm run verify` green after each small slice and preserve the result in commit history.
 
-The highest-confidence next engineering task is item 2 plus item 3 because they are low risk and remove handoff ambiguity. The highest-value hardening task is item 4 because it removes a known demo-grade security shortcut.
+The highest-confidence next engineering task is item 1 because the required domain objects already exist and the latest Track B slices have tightened milestone order and payment execution evidence.

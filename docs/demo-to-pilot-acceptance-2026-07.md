@@ -61,10 +61,10 @@ Before a pilot handoff:
 
 ## 6. Recommended Next Track
 
-Track B has started with contract milestone settlement hardening. Continue finance and contract deepening in small audited slices.
+Track B has started with contract milestone settlement hardening and payment execution release evidence. Continue finance and contract deepening in small audited slices.
 
 Recommended first slices:
 
-1. Payment batch approval/release evidence.
-2. Contract-to-payment reconciliation view.
-3. Finance exception dashboard.
+1. Contract-to-payment reconciliation view.
+2. Finance exception dashboard.
+3. Payment evidence attachment workflow, if pilot users need files beyond release evidence numbers and remarks.

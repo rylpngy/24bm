@@ -4339,7 +4339,9 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.id").value("payexec-demo"))
-        .andExpect(jsonPath("$.data.executionStatus").value("已登记付款"));
+        .andExpect(jsonPath("$.data.executionStatus").value("已登记付款"))
+        .andExpect(jsonPath("$.data.releaseEvidenceNo").value("BANK-20260701-001"))
+        .andExpect(jsonPath("$.data.releaseRemark").value("招商银行付款流水"));
     mockMvc.perform(get("/api/v1/buyer/variance-handlings")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
@@ -4764,6 +4766,8 @@ class HttpSecurityContractTests {
         executionStatus,
         "付款申请已通过，可进入线下付款登记",
         "付款申请已通过",
+        "BANK-20260701-001",
+        "招商银行付款流水",
         "可登记付款",
         "登记付款状态，真实支付仍不接入",
         "user-buyer-owner",

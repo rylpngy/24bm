@@ -16,7 +16,7 @@ public interface PaymentExecutionRecordMapper {
       <script>
       select id, tenant_id, payment_batch_no, payment_request_id, invoice_id, supplier_id,
              registered_amount, planned_payment_date, execution_status, execution_trace,
-             execution_block_reason,
+             execution_block_reason, release_evidence_no, release_remark,
              created_by, created_at, updated_at
       from payment_execution_records
       where tenant_id = #{tenantId}
@@ -45,7 +45,7 @@ public interface PaymentExecutionRecordMapper {
   @Select("""
       select id, tenant_id, payment_batch_no, payment_request_id, invoice_id, supplier_id,
              registered_amount, planned_payment_date, execution_status, execution_trace,
-             execution_block_reason,
+             execution_block_reason, release_evidence_no, release_remark,
              created_by, created_at, updated_at
       from payment_execution_records
       where tenant_id = #{tenantId}
@@ -201,6 +201,20 @@ public interface PaymentExecutionRecordMapper {
   int refreshByTenantAndId(
       @Param("tenantId") String tenantId,
       @Param("executionRecordId") String executionRecordId);
+
+  @Update("""
+      update payment_execution_records
+      set release_evidence_no = #{releaseEvidenceNo},
+          release_remark = #{releaseRemark},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{executionRecordId}
+      """)
+  int markReleaseEvidence(
+      @Param("tenantId") String tenantId,
+      @Param("executionRecordId") String executionRecordId,
+      @Param("releaseEvidenceNo") String releaseEvidenceNo,
+      @Param("releaseRemark") String releaseRemark);
 
   @Insert("""
       insert into payment_execution_records (

@@ -580,20 +580,51 @@ public class FinanceActionApplicationService {
 
   @Transactional
   public PaymentExecutionRecordResponse registerCurrentTenantPaymentExecutionRecord(String executionRecordId) {
+    return registerCurrentTenantPaymentExecutionRecord(
+        executionRecordId,
+        new RegisterPaymentRequest("已付款"));
+  }
+
+  @Transactional
+  public PaymentExecutionRecordResponse registerCurrentTenantPaymentExecutionRecord(
+      String executionRecordId,
+      RegisterPaymentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment execution record APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    RegisterPaymentRequest effectiveRequest =
+        request == null ? new RegisterPaymentRequest("已付款") : request;
     PaymentExecutionRecord record = paymentExecutionRecordMapper.findByTenantAndId(tenantId, executionRecordId);
     if (record == null) {
       throw new IllegalArgumentException("Payment execution record not found in tenant scope: " + executionRecordId);
     }
     requirePaymentBatchNotArchived(tenantId, record.paymentBatchNo());
+    requirePaymentBatchReadyForExecution(tenantId, record.paymentBatchNo());
     if (!record.executionStatus().equals("待登记付款")) {
       throw new IllegalStateException("Payment execution record is not ready for registration: " + executionRecordId);
     }
-    paymentApplicationService.register(record.invoiceId(), new RegisterPaymentRequest("已付款"));
+    paymentApplicationService.register(record.invoiceId(), new RegisterPaymentRequest(effectiveRequest.paymentStatus()));
     paymentExecutionRecordMapper.refreshByTenantAndId(tenantId, executionRecordId);
+    if (blankToNull(effectiveRequest.releaseEvidenceNo()) != null
+        || blankToNull(effectiveRequest.releaseRemark()) != null) {
+      paymentExecutionRecordMapper.markReleaseEvidence(
+          tenantId,
+          executionRecordId,
+          blankToNull(effectiveRequest.releaseEvidenceNo()),
+          blankToNull(effectiveRequest.releaseRemark()));
+    }
     PaymentExecutionRecord refreshed = paymentExecutionRecordMapper.findByTenantAndId(tenantId, executionRecordId);
     return toPaymentExecutionRecordResponse(refreshed);
+  }
+
+  private void requirePaymentBatchReadyForExecution(String tenantId, String paymentBatchNo) {
+    PaymentBatch paymentBatch = paymentBatchMapper.findByTenantAndPaymentBatchNo(tenantId, paymentBatchNo);
+    if (paymentBatch == null) {
+      throw new IllegalArgumentException("Payment batch not found in tenant scope: " + paymentBatchNo);
+    }
+    if (!"可安排付款".equals(paymentBatch.batchStatus())) {
+      throw new IllegalStateException(
+          "Payment batch must be approved before payment execution registration: " + paymentBatchNo);
+    }
   }
 
   public List<ThreeWayMatchResponse> listCurrentTenantThreeWayMatches(
@@ -1256,6 +1287,8 @@ public class FinanceActionApplicationService {
         record.executionStatus(),
         record.executionTrace(),
         record.executionBlockReason(),
+        record.releaseEvidenceNo(),
+        record.releaseRemark(),
         derivePaymentExecutionStage(record),
         derivePaymentExecutionNextAction(record),
         record.createdBy(),

@@ -18,6 +18,7 @@ import com.procurement.finance.api.CreatePaymentRequestRequest;
 import com.procurement.finance.api.CompletePaymentArchiveExceptionActionRequest;
 import com.procurement.finance.api.ClosePaymentArchiveExceptionRequestRequest;
 import com.procurement.finance.api.ReviewPaymentArchiveExceptionRequest;
+import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.UpdatePaymentBatchStatusRequest;
 import com.procurement.finance.api.UpdatePaymentRequestStatusRequest;
 import com.procurement.finance.api.UpdateVarianceHandlingStatusRequest;
@@ -279,6 +280,50 @@ class FinanceActionPaymentBlockingTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void registeringPaymentExecutionRequiresApprovedPaymentBatch() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(paymentExecutionRecordMapper.findByTenantAndId("tenant-1", "payexec-1"))
+        .thenReturn(paymentExecutionRecord("待登记付款"));
+    when(paymentBatchMapper.findByTenantAndPaymentBatchNo("tenant-1", "PAY-202606"))
+        .thenReturn(paymentBatch("审批中"));
+
+    assertThatThrownBy(() -> financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord(
+        "payexec-1",
+        new RegisterPaymentRequest("已付款", "BANK-20260701-001", "招商银行付款流水")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Payment batch must be approved before payment execution registration");
+
+    verify(paymentApplicationService, never()).register(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
+  void registeringPaymentExecutionPersistsReleaseEvidence() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(paymentExecutionRecordMapper.findByTenantAndId("tenant-1", "payexec-1"))
+        .thenReturn(
+            paymentExecutionRecord("待登记付款"),
+            paymentExecutionRecord("已登记付款", "BANK-20260701-001", "招商银行付款流水"));
+    when(paymentBatchMapper.findByTenantAndPaymentBatchNo("tenant-1", "PAY-202606"))
+        .thenReturn(paymentBatch("可安排付款"));
+
+    var response = financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord(
+        "payexec-1",
+        new RegisterPaymentRequest("已付款", "BANK-20260701-001", "招商银行付款流水"));
+
+    assertThat(response.executionStatus()).isEqualTo("已登记付款");
+    assertThat(response.releaseEvidenceNo()).isEqualTo("BANK-20260701-001");
+    assertThat(response.releaseRemark()).isEqualTo("招商银行付款流水");
+    verify(paymentApplicationService).register("invoice-1", new RegisterPaymentRequest("已付款"));
+    verify(paymentExecutionRecordMapper).markReleaseEvidence(
+        "tenant-1",
+        "payexec-1",
+        "BANK-20260701-001",
+        "招商银行付款流水");
   }
 
   @Test
@@ -873,6 +918,13 @@ class FinanceActionPaymentBlockingTests {
   }
 
   private PaymentExecutionRecord paymentExecutionRecord(String executionStatus) {
+    return paymentExecutionRecord(executionStatus, null, null);
+  }
+
+  private PaymentExecutionRecord paymentExecutionRecord(
+      String executionStatus,
+      String releaseEvidenceNo,
+      String releaseRemark) {
     return new PaymentExecutionRecord(
         "payexec-1",
         "tenant-1",
@@ -885,6 +937,8 @@ class FinanceActionPaymentBlockingTests {
         executionStatus,
         "等待付款登记",
         null,
+        releaseEvidenceNo,
+        releaseRemark,
         "buyer-user",
         OffsetDateTime.now(),
         OffsetDateTime.now());
