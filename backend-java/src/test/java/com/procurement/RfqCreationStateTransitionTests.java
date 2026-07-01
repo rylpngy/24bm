@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,6 +12,8 @@ import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.identity.application.DataScopeService;
+import com.procurement.identity.domain.DataScope;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.api.CreateRfqRequest;
 import com.procurement.sourcing.application.RfqApplicationService;
@@ -43,6 +46,7 @@ class RfqCreationStateTransitionTests {
   private final RfqDemandMapper rfqDemandMapper = org.mockito.Mockito.mock(RfqDemandMapper.class);
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
+  private final DataScopeService dataScopeService = org.mockito.Mockito.mock(DataScopeService.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper = org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final SupplierQualificationMapper supplierQualificationMapper = org.mockito.Mockito.mock(SupplierQualificationMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
@@ -58,6 +62,7 @@ class RfqCreationStateTransitionTests {
       rfqDemandMapper,
       rfqInviteMapper,
       purchaseDemandMapper,
+      dataScopeService,
       buyerSupplierRelationMapper,
       supplierQualificationMapper,
       tenantFeatureApplicationService,
@@ -92,17 +97,48 @@ class RfqCreationStateTransitionTests {
   @Test
   void listRfqsAppliesFiltersInsideCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(rfqMapper.listByTenantFiltered("tenant-1", "报价中", "电脑"))
+    when(dataScopeService.currentUserDataScope()).thenReturn(DataScope.unrestricted());
+    when(rfqMapper.listByTenantFiltered("tenant-1", "报价中", "电脑", null, null))
         .thenReturn(List.of());
 
     rfqApplicationService.listCurrentTenantRfqs("报价中", "电脑");
 
-    verify(rfqMapper).listByTenantFiltered("tenant-1", "报价中", "电脑");
+    verify(rfqMapper).listByTenantFiltered("tenant-1", "报价中", "电脑", null, null);
+  }
+
+  @Test
+  void listRfqsReturnsEmptyWithoutQueryWhenDepartmentScopeBlocksAll() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(dataScopeService.currentUserDataScope()).thenReturn(DataScope.departments(List.of()));
+
+    var responses = rfqApplicationService.listCurrentTenantRfqs("报价中", "电脑");
+
+    org.assertj.core.api.Assertions.assertThat(responses).isEmpty();
+    verify(rfqMapper, never()).listByTenantFiltered(
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
+  void listRfqsRestrictsToVisibleDepartments() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(dataScopeService.currentUserDataScope())
+        .thenReturn(DataScope.departments(List.of("dept-it", "dept-devops")));
+    when(rfqMapper.listByTenantFiltered("tenant-1", null, null, List.of("dept-it", "dept-devops"), null))
+        .thenReturn(List.of());
+
+    rfqApplicationService.listCurrentTenantRfqs(null, null);
+
+    verify(rfqMapper).listByTenantFiltered("tenant-1", null, null, List.of("dept-it", "dept-devops"), null);
   }
 
   @Test
   void listRfqsIncludesSubmittedQuotesForBuyerComparison() {
     TenantContext.set("tenant-1", null, "buyer-user");
+    when(dataScopeService.currentUserDataScope()).thenReturn(DataScope.unrestricted());
     Rfq rfq = new Rfq(
         "rfq-1",
         "tenant-1",
@@ -113,7 +149,7 @@ class RfqCreationStateTransitionTests {
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
-    when(rfqMapper.listByTenant("tenant-1")).thenReturn(List.of(rfq));
+    when(rfqMapper.listByTenantFiltered("tenant-1", null, null, null, null)).thenReturn(List.of(rfq));
     when(rfqDemandMapper.listDemandIds("tenant-1", "rfq-1")).thenReturn(List.of("demand-1"));
     when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1")).thenReturn(List.of("supplier-1"));
     when(quoteMapper.listByTenantAndRfqAndRound("tenant-1", "rfq-1", 1))

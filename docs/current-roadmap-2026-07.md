@@ -123,7 +123,7 @@ Expected outcome:
 
 - A clean current roadmap.
 - Updated standard-gap assessment.
-- Permission/data-scope behavior aligned across backend, frontend, and docs. Current evidence covers menu matching, role data-scope parsing, active buyer-role filtering, and purchase-demand list enforcement; remaining work is expanding the same pattern to RFQ, contract, and payment-batch lists.
+- Permission/data-scope behavior aligned across backend, frontend, and docs. Current evidence covers menu matching, role data-scope parsing, active buyer-role filtering, purchase-demand list enforcement, and RFQ list enforcement through linked demand departments; remaining work is expanding the same pattern to contract and payment-batch lists.
 - Production checklist expanded from "baseline" to "pilot handoff", including Alertmanager routing, deployment order, rollback, backup rehearsal, and write-path load testing.
 - Security-sensitive demo shortcuts identified and removed or explicitly profile-gated. Award-notice signing now supports injected secrets and a production flag to disable demo-secret fallback.
 - Regression evidence captured in tests and smoke scripts. `npm run verify` is the local gate.
@@ -142,7 +142,8 @@ Expected outcome:
    - Completed: verified menu-level permission matching through `packages/shared/src/navigation-permissions.test.ts`.
    - Completed: verified backend data-scope parsing and active buyer-role SQL filtering through `DataScopeServiceTests` and `DataScopeMapperSqlTests`.
    - Completed: verified representative purchase-demand list blocking for an empty effective department scope.
-   - Remaining: expand representative data-scope enforcement to RFQ, contract, and payment-batch list APIs.
+   - Completed: expanded RFQ list data-scope enforcement through linked purchase-demand departments and owner self-scope.
+   - Remaining: expand representative data-scope enforcement to contract and payment-batch list APIs.
 
 3. Security configuration hardening
    - Completed: externalized award notice signing secret through JVM property / `AWARD_NOTICE_SIGNATURE_SECRET`.

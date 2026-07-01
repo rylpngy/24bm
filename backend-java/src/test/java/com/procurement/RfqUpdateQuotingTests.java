@@ -10,6 +10,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.application.DataScopeService;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.api.UpdateRfqRequest;
 import com.procurement.sourcing.application.RfqApplicationService;
@@ -38,6 +39,7 @@ class RfqUpdateQuotingTests {
   private final RfqDemandMapper rfqDemandMapper = org.mockito.Mockito.mock(RfqDemandMapper.class);
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
+  private final DataScopeService dataScopeService = org.mockito.Mockito.mock(DataScopeService.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper = org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final SupplierQualificationMapper supplierQualificationMapper = org.mockito.Mockito.mock(SupplierQualificationMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
@@ -53,6 +55,7 @@ class RfqUpdateQuotingTests {
       rfqDemandMapper,
       rfqInviteMapper,
       purchaseDemandMapper,
+      dataScopeService,
       buyerSupplierRelationMapper,
       supplierQualificationMapper,
       tenantFeatureApplicationService,

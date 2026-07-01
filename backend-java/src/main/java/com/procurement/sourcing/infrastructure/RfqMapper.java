@@ -31,13 +31,31 @@ public interface RfqMapper {
         <if test="keyword != null and keyword != ''">
         and title ilike concat('%', #{keyword}, '%')
         </if>
+        <if test="scopeDepartmentIds != null">
+        and exists (
+          select 1
+          from rfq_demands rd
+          join purchase_demands pd on pd.tenant_id = rd.tenant_id and pd.id = rd.demand_id
+          where rd.tenant_id = rfqs.tenant_id
+            and rd.rfq_id = rfqs.id
+            and pd.department_id in
+            <foreach collection="scopeDepartmentIds" item="departmentId" open="(" separator="," close=")">
+              #{departmentId}
+            </foreach>
+        )
+        </if>
+        <if test="requesterId != null and requesterId != ''">
+        and owner_id = #{requesterId}
+        </if>
       order by created_at desc
       </script>
       """)
   List<Rfq> listByTenantFiltered(
       @Param("tenantId") String tenantId,
       @Param("status") String status,
-      @Param("keyword") String keyword);
+      @Param("keyword") String keyword,
+      @Param("scopeDepartmentIds") List<String> scopeDepartmentIds,
+      @Param("requesterId") String requesterId);
 
   @Select("""
       select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason

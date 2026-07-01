@@ -5,6 +5,8 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.application.DataScopeService;
+import com.procurement.identity.domain.DataScope;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.sourcing.api.BidEvaluationResponse;
@@ -49,6 +51,7 @@ public class RfqApplicationService {
   private final RfqDemandMapper rfqDemandMapper;
   private final RfqInviteMapper rfqInviteMapper;
   private final PurchaseDemandMapper purchaseDemandMapper;
+  private final DataScopeService dataScopeService;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final SupplierQualificationMapper supplierQualificationMapper;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
@@ -63,6 +66,7 @@ public class RfqApplicationService {
       RfqDemandMapper rfqDemandMapper,
       RfqInviteMapper rfqInviteMapper,
       PurchaseDemandMapper purchaseDemandMapper,
+      DataScopeService dataScopeService,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       SupplierQualificationMapper supplierQualificationMapper,
       TenantFeatureApplicationService tenantFeatureApplicationService,
@@ -75,6 +79,7 @@ public class RfqApplicationService {
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
+    this.dataScopeService = dataScopeService;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.supplierQualificationMapper = supplierQualificationMapper;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
@@ -84,10 +89,7 @@ public class RfqApplicationService {
   }
 
   public List<RfqResponse> listCurrentTenantRfqs() {
-    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
-    return rfqMapper.listByTenant(tenantId).stream()
-        .map(this::toResponse)
-        .toList();
+    return listCurrentTenantRfqs(null, null);
   }
 
   // 加权评标:按价格/交期权重对该 RFQ 的报价打分排名,推荐总分最高者(定标参考)。
@@ -199,10 +201,20 @@ public class RfqApplicationService {
 
   public List<RfqResponse> listCurrentTenantRfqs(String status, String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    DataScope dataScope = dataScopeService.currentUserDataScope();
+    if (dataScope.blocksAll()) {
+      return List.of();
+    }
+    List<String> scopeDepartmentIds = dataScope.restricted() && dataScope.requesterId() == null
+        ? dataScope.departmentIds()
+        : null;
+    String requesterId = dataScope.restricted() ? dataScope.requesterId() : null;
     return rfqMapper.listByTenantFiltered(
             tenantId,
             blankToNull(status),
-            blankToNull(keyword))
+            blankToNull(keyword),
+            scopeDepartmentIds,
+            requesterId)
         .stream()
         .map(this::toResponse)
         .toList();
