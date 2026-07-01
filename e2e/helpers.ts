@@ -7,7 +7,7 @@ export async function loginViaKeycloak(page: Page) {
   if (await portalLogin.isVisible({ timeout: 2_000 }).catch(() => false)) {
     await portalLogin.click();
   }
-  await page.getByRole('button', { name: /Keycloak 登录/ }).click();
+  await page.getByRole('button', { name: /登录系统|Keycloak 登录/ }).click();
 }
 
 // 通用:走各端登录门的"自研 JWT(开发后备)"按钮(打到后端 /auth/login)。

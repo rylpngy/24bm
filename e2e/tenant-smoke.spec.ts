@@ -22,6 +22,19 @@ test('未登录访问采购方端展示公开门户首页', async ({ page }) => 
   await expect(page.getByRole('button', { name: /登录 \/ 注册/ })).toBeVisible();
 });
 
+test('门户登录入口展示分栏登录页面', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
+
+  await expect(page.getByRole('heading', { name: /连接企业采购的\s*数字化未来/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '欢迎回来' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '账号密码登录' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '手机验证码' })).toBeVisible();
+  await expect(page.getByPlaceholder('请输入用户名或企业邮箱')).toBeVisible();
+  await expect(page.getByPlaceholder('请输入密码')).toBeVisible();
+  await expect(page.getByRole('button', { name: /登录系统/ })).toBeVisible();
+});
+
 test('采购方登录后可进入工作台', async ({ page }) => {
   await loginAsBuyer(page);
   await expect(page.getByRole('button', { name: /首页看板/ })).toBeVisible();
@@ -52,7 +65,7 @@ test('采购需求列表:序号列 + 搜索', async ({ page }) => {
 test('合同页显示合同-付款对账视图', async ({ page }) => {
   await page.goto('/?module=contracts');
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
-  await page.getByRole('button', { name: /Keycloak 登录/ }).click();
+  await page.getByRole('button', { name: /登录系统/ }).click();
 
   await expect(page.getByText('合同-付款对账视图')).toBeVisible();
   await expect(page.getByText('待核差额')).toBeVisible();
@@ -64,7 +77,7 @@ test('合同页显示合同-付款对账视图', async ({ page }) => {
 test('付款批次页显示财务异常看板', async ({ page }) => {
   await page.goto('/?module=payment-batches');
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
-  await page.getByRole('button', { name: /Keycloak 登录/ }).click();
+  await page.getByRole('button', { name: /登录系统/ }).click();
 
   await expect(page.getByText('财务异常看板')).toBeVisible();
   await expect(page.getByText('待处理异常')).toBeVisible();

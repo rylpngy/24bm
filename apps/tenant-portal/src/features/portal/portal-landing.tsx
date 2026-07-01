@@ -8,15 +8,18 @@ import {
   Database,
   Globe2,
   KeyRound,
+  Lock,
   LogIn,
   Megaphone,
   PackageSearch,
   Search,
   ShieldCheck,
   Store,
-  X,
+  User,
+  Eye,
+  QrCode,
 } from 'lucide-react';
-import { FeedbackNotice, PrimaryActionButton } from '@24bid/ui';
+import { FeedbackNotice } from '@24bid/ui';
 import { SELF_LOGIN_FALLBACK, useBuyerLogin } from '../auth/use-buyer-login';
 
 const ecosystem = [
@@ -118,73 +121,186 @@ function SectionHeader({
   );
 }
 
-function LoginDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function BuyerLoginPage({ onBack }: { onBack: () => void }) {
   const { demoAccounts, handleKeycloakLogin, handleLogin, kcBusy, kcError, login } = useBuyerLogin();
-
-  if (!open) return null;
+  const [activeTab, setActiveTab] = useState<'password' | 'sms'>('password');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-8 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-2xl shadow-slate-950/30">
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-lg font-black text-slate-950">登录 / 注册</p>
-            <p className="mt-1 text-sm font-bold text-slate-500">进入采购方企业工作台</p>
+    <div className="grid min-h-dvh bg-slate-50 lg:grid-cols-[42%_58%]">
+      <aside className="relative hidden overflow-hidden bg-slate-950 px-10 py-12 text-white lg:flex lg:flex-col">
+        <div className="relative z-10">
+          <LogoMark dark />
+        </div>
+        <div className="relative z-10 mt-28 max-w-lg">
+          <h1 className="text-5xl font-black leading-tight">
+            连接企业采购的
+            <span className="block text-blue-400">数字化未来</span>
+          </h1>
+          <p className="mt-7 text-xl font-bold leading-9 text-slate-400">
+            一站式 SRM 供应商管理与电子招投标平台。让寻源更智能，让交易更透明，让决策更科学。
+          </p>
+        </div>
+        <div className="relative z-10 mt-auto flex items-center gap-5">
+          <div className="flex -space-x-3">
+            {['bg-blue-200', 'bg-amber-200', 'bg-slate-200', 'bg-emerald-200'].map((tone, index) => (
+              <span key={tone} className={`h-11 w-11 rounded-full border-2 border-slate-950 ${tone}`} aria-hidden="true">
+                <span className="sr-only">trusted enterprise {index + 1}</span>
+              </span>
+            ))}
           </div>
+          <div>
+            <p className="text-lg font-black">10,000+ 家企业信赖</p>
+            <p className="mt-1 text-sm font-bold text-slate-500">加入行业领先的采购生态网络</p>
+          </div>
+        </div>
+        <p className="relative z-10 mt-8 text-sm font-bold text-slate-700">© 2026 24Bid Cloud Inc.</p>
+        <div className="absolute -bottom-28 left-10 h-[660px] w-[520px] rotate-[-8deg] rounded-[55%] bg-blue-500/10" />
+        <div className="absolute bottom-0 right-[-220px] h-[560px] w-[560px] rounded-full bg-indigo-500/10 blur-2xl" />
+      </aside>
+
+      <main className="flex min-h-dvh items-center justify-center px-5 py-8">
+        <div className="w-full max-w-[430px] rounded-[1.5rem] border border-slate-200 bg-white p-8 shadow-2xl shadow-slate-200/80 sm:p-10">
+          <div className="mb-8 text-center">
+            <div className="mb-7 flex justify-center lg:hidden">
+              <LogoMark />
+            </div>
+            <h2 className="text-3xl font-black text-slate-950">欢迎回来</h2>
+            <p className="mt-3 text-sm font-bold text-slate-500">请登录您的账号以继续管理业务</p>
+          </div>
+
+          <div className="mb-7 grid grid-cols-2 rounded-lg bg-slate-50 p-1.5">
+            <button
+              type="button"
+              onClick={() => setActiveTab('password')}
+              className={`h-11 rounded-md text-sm font-black transition ${
+                activeTab === 'password' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-400'
+              }`}
+            >
+              账号密码登录
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('sms')}
+              className={`h-11 rounded-md text-sm font-black transition ${
+                activeTab === 'sms' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-400'
+              }`}
+            >
+              手机验证码
+            </button>
+          </div>
+
+          <div className="space-y-5">
+            <label className="block">
+              <span className="text-sm font-black text-slate-500">{activeTab === 'password' ? '账号 / 邮箱' : '手机号'}</span>
+              <span className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100">
+                <User size={19} className="text-slate-400" />
+                <input
+                  placeholder={activeTab === 'password' ? '请输入用户名或企业邮箱' : '请输入手机号'}
+                  className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-700 outline-none placeholder:text-slate-400"
+                />
+              </span>
+            </label>
+
+            <label className="block">
+              <span className="flex items-center justify-between text-sm font-black text-slate-500">
+                <span>{activeTab === 'password' ? '密码' : '验证码'}</span>
+                {activeTab === 'password' && (
+                  <button type="button" className="text-xs font-black text-blue-600 hover:text-blue-700">忘记密码?</button>
+                )}
+              </span>
+              <span className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100">
+                <Lock size={19} className="text-slate-400" />
+                <input
+                  type={activeTab === 'password' ? 'password' : 'text'}
+                  placeholder={activeTab === 'password' ? '请输入密码' : '请输入验证码'}
+                  className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-700 outline-none placeholder:text-slate-400"
+                />
+                {activeTab === 'password' && <Eye size={18} className="text-slate-400" />}
+              </span>
+            </label>
+          </div>
+
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={handleKeycloakLogin}
+              disabled={kcBusy}
+              className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 text-sm font-black text-white shadow-lg shadow-slate-950/20 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              <KeyRound size={17} />
+              {kcBusy ? '登录中' : '登录系统'}
+              <ArrowRight size={17} />
+            </button>
+          </div>
+          {kcError && (
+            <div className="mt-3">
+              <FeedbackNotice tone="error" message="Keycloak 登录失败：请确认 Keycloak 已在 8081 运行。" />
+            </div>
+          )}
+
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-slate-100" />
+            <span className="text-xs font-black text-slate-400">其他登录方式</span>
+            <span className="h-px flex-1 bg-slate-100" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-600 hover:bg-slate-50"
+            >
+              <QrCode size={18} className="text-emerald-500" />
+              微信扫码
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-600 hover:bg-slate-50"
+            >
+              <Globe2 size={18} className="text-blue-500" />
+              钉钉登录
+            </button>
+          </div>
+
+          {SELF_LOGIN_FALLBACK && (
+            <div className="mt-5 rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">演示角色</p>
+              <div className="grid gap-2">
+                {demoAccounts.map((acc) => (
+                  <button
+                    key={acc.account}
+                    type="button"
+                    onClick={() => handleLogin(acc.account, acc.name)}
+                    disabled={login.isPending}
+                    className="flex h-9 w-full items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <LogIn size={14} className="shrink-0 text-slate-400" />
+                    <span>{login.isPending ? '登录中...' : `以${acc.name}登录`}</span>
+                    <span className="ml-auto text-[10px] font-bold text-slate-400">{acc.hint}</span>
+                  </button>
+                ))}
+              </div>
+              {login.isError && (
+                <div className="mt-3">
+                  <FeedbackNotice tone="error" message="登录失败：自研登录可能已在后端关闭。" />
+                </div>
+              )}
+            </div>
+          )}
+
+          <p className="mt-6 text-center text-sm font-bold text-slate-500">
+            还没有账号?
+            <button type="button" className="ml-1 font-black text-blue-600 hover:text-blue-700">立即注册企业</button>
+          </p>
+
           <button
             type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-            aria-label="关闭登录弹层"
+            onClick={onBack}
+            className="mt-4 w-full text-center text-xs font-black text-slate-400 hover:text-slate-600"
           >
-            <X size={18} />
+            返回门户首页
           </button>
         </div>
-        <FeedbackNotice tone="info" message="生产登录走 Keycloak（OIDC 统一身份）。演示账号：采购负责人。" />
-        <div className="mt-4">
-          <PrimaryActionButton
-            onClick={handleKeycloakLogin}
-            busy={kcBusy}
-            pendingLabel="登录中"
-            icon={KeyRound}
-            fullWidth
-          >
-            Keycloak 登录
-          </PrimaryActionButton>
-        </div>
-        {kcError && (
-          <div className="mt-3">
-            <FeedbackNotice tone="error" message="Keycloak 登录失败：请确认 Keycloak 已在 8081 运行。" />
-          </div>
-        )}
-        {SELF_LOGIN_FALLBACK && (
-          <div className="mt-4 border-t border-slate-100 pt-4">
-            <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
-              演示角色
-            </p>
-            <div className="space-y-2">
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.account}
-                  type="button"
-                  onClick={() => handleLogin(acc.account, acc.name)}
-                  disabled={login.isPending}
-                  className="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                >
-                  <LogIn size={16} className="shrink-0 text-slate-400" />
-                  <span>{login.isPending ? '登录中...' : `以${acc.name}登录`}</span>
-                  <span className="ml-auto text-[11px] font-bold text-slate-400">{acc.hint}</span>
-                </button>
-              ))}
-            </div>
-            {login.isError && (
-              <div className="mt-3">
-                <FeedbackNotice tone="error" message="登录失败：自研登录可能已在后端关闭。" />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      </main>
     </div>
   );
 }
@@ -197,6 +313,10 @@ export function PortalLanding() {
     if (!keyword) return opportunities;
     return opportunities.filter((item) => item.join('').includes(keyword));
   }, [query]);
+
+  if (loginOpen) {
+    return <BuyerLoginPage onBack={() => setLoginOpen(false)} />;
+  }
 
   return (
     <div className="min-h-dvh bg-slate-50 text-slate-900">
@@ -402,7 +522,6 @@ export function PortalLanding() {
         </div>
       </footer>
 
-      <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
   );
 }
