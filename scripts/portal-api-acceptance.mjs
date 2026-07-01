@@ -6,15 +6,19 @@ const PASSWORD = process.env.ACCEPTANCE_DEMO_PASSWORD ?? 'demo123456';
 
 const users = {
   buyer: 'buyer.owner@example.com',
+  requester: 'zhang.req@example.com',
+  finance: 'li.fin@example.com',
   platform: 'platform.admin@example.com',
   supplier: 'supplier.sales@example.com',
 };
 
 const suites = [
   {
-    actor: 'buyer',
+    actor: 'buyer-owner',
     username: users.buyer,
     claims: { authScope: 'BUYER', tenantId: 'tenant-acme', role: 'BUYER_OWNER' },
+    expectedPermissions: ['buyer:*'],
+    forbiddenPermissions: [],
     endpoints: [
       ['/api/v1/buyer/workspace', 'buyer workspace'],
       ['/api/v1/buyer/roles/my-permissions', 'buyer permissions'],
@@ -25,6 +29,38 @@ const suites = [
       ['/api/v1/buyer/contracts', 'buyer contracts'],
       ['/api/v1/buyer/payment-batches', 'buyer payment batches'],
       ['/api/v1/buyer/payment-execution-records', 'buyer payment execution records'],
+    ],
+  },
+  {
+    actor: 'buyer-requester',
+    username: users.requester,
+    claims: { authScope: 'BUYER', tenantId: 'tenant-acme', role: 'BUYER_REQUESTER' },
+    expectedPermissions: ['buyer:demand:read', 'buyer:rfq:read', 'buyer:material:read'],
+    forbiddenPermissions: ['buyer:contract:read', 'buyer:payment:register'],
+    endpoints: [
+      ['/api/v1/buyer/workspace', 'requester workspace'],
+      ['/api/v1/buyer/roles/my-permissions', 'requester permissions'],
+      ['/api/v1/buyer/demands', 'requester scoped demands'],
+      ['/api/v1/buyer/rfqs', 'requester scoped RFQs'],
+      ['/api/v1/buyer/materials', 'requester materials'],
+    ],
+  },
+  {
+    actor: 'buyer-finance',
+    username: users.finance,
+    claims: { authScope: 'BUYER', tenantId: 'tenant-acme', role: 'BUYER_FINANCE' },
+    expectedPermissions: ['buyer:invoice:read', 'buyer:payment:register', 'buyer:contract:read'],
+    forbiddenPermissions: ['buyer:demand:create', 'buyer:role:manage'],
+    endpoints: [
+      ['/api/v1/buyer/workspace', 'finance workspace'],
+      ['/api/v1/buyer/roles/my-permissions', 'finance permissions'],
+      ['/api/v1/buyer/invoices', 'finance invoices'],
+      ['/api/v1/buyer/contracts', 'finance contracts'],
+      ['/api/v1/buyer/payment-batches', 'finance payment batches'],
+      ['/api/v1/buyer/payment-execution-records', 'finance payment execution records'],
+      ['/api/v1/buyer/payment-block-resolutions', 'finance block resolutions'],
+      ['/api/v1/buyer/variance-handlings', 'finance variance handlings'],
+      ['/api/v1/buyer/payment-archive-exception-requests', 'finance archive exceptions'],
     ],
   },
   {
@@ -147,11 +183,29 @@ async function run() {
       });
     }
 
-    if (suite.actor === 'buyer') {
+    if (suite.actor.startsWith('buyer-')) {
       const permissions = await getApi('/api/v1/buyer/roles/my-permissions', token);
+      const granted = permissions?.permissions ?? [];
+      assert(Array.isArray(granted), `${suite.actor} permissions is not an array`);
+      for (const required of suite.expectedPermissions ?? []) {
+        assert(granted.includes(required), `${suite.actor} permissions missing ${required}`);
+      }
+      for (const forbidden of suite.forbiddenPermissions ?? []) {
+        assert(!granted.includes(forbidden), `${suite.actor} permissions unexpectedly include ${forbidden}`);
+      }
+    }
+
+    if (suite.actor === 'buyer-requester') {
+      const demands = await getApi('/api/v1/buyer/demands', token);
+      assert(Array.isArray(demands), 'buyer-requester demands is not an array');
+      assert(demands.length > 0, 'buyer-requester scoped demands should not be empty');
       assert(
-        Array.isArray(permissions?.permissions) && permissions.permissions.includes('buyer:*'),
-        'buyer permissions do not include buyer:*',
+        demands.every((demand) => demand.departmentId === 'dept-it'),
+        'buyer-requester should only see dept-it demands',
+      );
+      assert(
+        demands.every((demand) => demand.departmentId !== 'dept-finance'),
+        'buyer-requester should not see finance department demands',
       );
     }
 

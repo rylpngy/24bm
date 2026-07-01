@@ -40,7 +40,7 @@ public class SecurityConfig {
             .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
             .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
             .requestMatchers("/api/v1/platform/**").hasRole("PLATFORM_ADMIN")
-            .requestMatchers("/api/v1/buyer/**").hasRole("BUYER_OWNER")
+            .requestMatchers("/api/v1/buyer/**").hasAnyRole("BUYER_OWNER", "BUYER_REQUESTER", "BUYER_FINANCE")
             .requestMatchers("/api/v1/supplier/**").hasRole("SUPPLIER_SALES")
             .anyRequest().authenticated())
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

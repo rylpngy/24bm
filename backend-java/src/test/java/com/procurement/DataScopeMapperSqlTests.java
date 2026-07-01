@@ -12,13 +12,13 @@ class DataScopeMapperSqlTests {
       "src/main/java/com/procurement/identity/infrastructure/DataScopeMapper.java");
 
   @Test
-  void userRoleDataScopeOnlyReadsActiveBuyerRoles() throws IOException {
+  void userRoleDataScopeOnlyReadsBuyerRoles() throws IOException {
     String source = Files.readString(MAPPER_SOURCE);
 
     assertThat(source)
         .contains("from user_roles ur")
         .contains("join roles r on r.id = ur.role_id")
         .contains("r.scope = 'buyer'")
-        .contains("r.status = 'active'");
+        .doesNotContain("r.status");
   }
 }

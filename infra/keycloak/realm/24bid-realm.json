@@ -155,7 +155,7 @@
         { "type": "password", "value": "demo123456", "temporary": false }
       ],
       "attributes": {
-        "userId": ["user-buyer-requester"],
+        "userId": ["user-buyer-zhang"],
         "displayName": ["采购申请员"],
         "authScope": ["BUYER"],
         "tenantId": ["tenant-acme"]
@@ -173,7 +173,7 @@
         { "type": "password", "value": "demo123456", "temporary": false }
       ],
       "attributes": {
-        "userId": ["user-buyer-finance"],
+        "userId": ["user-buyer-li"],
         "displayName": ["财务专员"],
         "authScope": ["BUYER"],
         "tenantId": ["tenant-acme"]

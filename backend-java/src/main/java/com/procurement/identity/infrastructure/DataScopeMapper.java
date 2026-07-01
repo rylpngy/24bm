@@ -15,7 +15,6 @@ public interface DataScopeMapper {
       join roles r on r.id = ur.role_id
       where ur.user_id = #{userId}
         and r.scope = 'buyer'
-        and r.status = 'active'
       """)
   List<String> listUserRoleDataScopes(@Param("userId") String userId);
 

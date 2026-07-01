@@ -56,3 +56,25 @@ test('付款批次页显示财务异常看板', async ({ page }) => {
   await expect(page.getByText('待处理异常')).toBeVisible();
   await expect(page.getByText('阻断金额')).toBeVisible();
 });
+
+test('采购申请员仅显示需求与寻源相关菜单', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /以采购申请员登录/ }).click();
+
+  await expect(page.getByRole('button', { name: /采购需求/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /询价项目/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /物料目录/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /合同管理/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /付款批次/ })).toHaveCount(0);
+});
+
+test('财务专员显示合同与付款菜单但不显示采购需求', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /以财务专员登录/ }).click();
+
+  await expect(page.getByRole('button', { name: /合同管理/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /发票付款/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /付款批次/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /采购需求/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /团队与权限/ })).toHaveCount(0);
+});
