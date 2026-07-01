@@ -1,99 +1,11 @@
-import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { KeyRound, LogIn } from 'lucide-react';
-import { LoginRequestScope, useAuthLogin } from '@24bid/api-client';
 import { FeedbackNotice, Panel, PrimaryActionButton } from '@24bid/ui';
-import { useAuthStore } from '../lib/auth-store';
+import { SELF_LOGIN_FALLBACK, useBuyerLogin } from './auth/use-buyer-login';
 
 // 自研 JWT 已退役为 CI/开发后备;生产登录走 Keycloak(OIDC)。
-const SELF_LOGIN_FALLBACK = (import.meta.env.VITE_SELF_LOGIN ?? 'true') !== 'false';
-
-const KEYCLOAK_TOKEN_URL =
-  (import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081') +
-  '/realms/24bid/protocol/openid-connect/token';
-
-// 解码 JWT payload(仅取展示用 claim,不验签)。
-function decodeJwt(token: string): Record<string, unknown> {
-  try {
-    const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(decodeURIComponent(escape(atob(part))));
-  } catch {
-    return {};
-  }
-}
-
 // S1：采购方登录门。自研 JWT(/auth/login)与 Keycloak(OIDC direct-grant)双路径。
 export function LoginGate() {
-  const signIn = useAuthStore((s) => s.signIn);
-  const queryClient = useQueryClient();
-  const login = useAuthLogin();
-  const [kcBusy, setKcBusy] = useState(false);
-  const [kcError, setKcError] = useState(false);
-
-  const handleKeycloakLogin = async () => {
-    setKcBusy(true);
-    setKcError(false);
-    try {
-      const res = await fetch(KEYCLOAK_TOKEN_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'password',
-          client_id: '24bid-portal',
-          username: 'buyer.owner@example.com',
-          password: 'demo123456',
-        }),
-      });
-      if (!res.ok) throw new Error('keycloak login failed');
-      const data = await res.json();
-      const token = data.access_token as string;
-      const claims = decodeJwt(token);
-      signIn({
-        token,
-        userId: (claims.userId as string) ?? '',
-        displayName: `${(claims.displayName as string) ?? '采购负责人'}（Keycloak）`,
-        tenantId: (claims.tenantId as string) ?? 'tenant-acme',
-      });
-      queryClient.clear();
-    } catch {
-      setKcError(true);
-    } finally {
-      setKcBusy(false);
-    }
-  };
-
-  const handleLogin = (account = 'buyer.owner@example.com', fallbackName = '采购负责人') => {
-    login.mutate(
-      {
-        data: {
-          account,
-          password: 'demo123456',
-          scope: LoginRequestScope.BUYER,
-          tenantId: 'tenant-acme',
-        },
-      },
-      {
-        onSuccess: (res) => {
-          const data = res.data;
-          if (!data?.accessToken || !data.tenantId) return;
-          signIn({
-            token: data.accessToken,
-            userId: data.userId ?? '',
-            displayName: data.displayName ?? fallbackName,
-            tenantId: data.tenantId,
-          });
-          queryClient.clear();
-        },
-      },
-    );
-  };
-
-  // 演示账号:不同角色的有效权限点不同,用于直观验证菜单/路由门禁。
-  const demoAccounts = [
-    { account: 'buyer.owner@example.com', name: '采购管理员', hint: '全部权限' },
-    { account: 'zhang.req@example.com', name: '采购申请员', hint: '需求/物料/询价' },
-    { account: 'li.fin@example.com', name: '财务专员', hint: '付款/对账' },
-  ];
+  const { demoAccounts, handleKeycloakLogin, handleLogin, kcBusy, kcError, login } = useBuyerLogin();
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-slate-100/70 p-6">

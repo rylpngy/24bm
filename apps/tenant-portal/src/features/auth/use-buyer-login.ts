@@ -1,0 +1,100 @@
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { LoginRequestScope, useAuthLogin } from '@24bid/api-client';
+import { useAuthStore } from '../../lib/auth-store';
+
+export const SELF_LOGIN_FALLBACK = (import.meta.env.VITE_SELF_LOGIN ?? 'true') !== 'false';
+
+const KEYCLOAK_TOKEN_URL =
+  (import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081') +
+  '/realms/24bid/protocol/openid-connect/token';
+
+function decodeJwt(token: string): Record<string, unknown> {
+  try {
+    const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(decodeURIComponent(escape(atob(part))));
+  } catch {
+    return {};
+  }
+}
+
+export const demoAccounts = [
+  { account: 'buyer.owner@example.com', name: '采购管理员', hint: '全部权限' },
+  { account: 'zhang.req@example.com', name: '采购申请员', hint: '需求/物料/询价' },
+  { account: 'li.fin@example.com', name: '财务专员', hint: '付款/对账' },
+];
+
+export function useBuyerLogin() {
+  const signIn = useAuthStore((s) => s.signIn);
+  const queryClient = useQueryClient();
+  const login = useAuthLogin();
+  const [kcBusy, setKcBusy] = useState(false);
+  const [kcError, setKcError] = useState(false);
+
+  const handleKeycloakLogin = async () => {
+    setKcBusy(true);
+    setKcError(false);
+    try {
+      const res = await fetch(KEYCLOAK_TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'password',
+          client_id: '24bid-portal',
+          username: 'buyer.owner@example.com',
+          password: 'demo123456',
+        }),
+      });
+      if (!res.ok) throw new Error('keycloak login failed');
+      const data = await res.json();
+      const token = data.access_token as string;
+      const claims = decodeJwt(token);
+      signIn({
+        token,
+        userId: (claims.userId as string) ?? '',
+        displayName: `${(claims.displayName as string) ?? '采购负责人'}（Keycloak）`,
+        tenantId: (claims.tenantId as string) ?? 'tenant-acme',
+      });
+      queryClient.clear();
+    } catch {
+      setKcError(true);
+    } finally {
+      setKcBusy(false);
+    }
+  };
+
+  const handleLogin = (account = 'buyer.owner@example.com', fallbackName = '采购负责人') => {
+    login.mutate(
+      {
+        data: {
+          account,
+          password: 'demo123456',
+          scope: LoginRequestScope.BUYER,
+          tenantId: 'tenant-acme',
+        },
+      },
+      {
+        onSuccess: (res) => {
+          const data = res.data;
+          if (!data?.accessToken || !data.tenantId) return;
+          signIn({
+            token: data.accessToken,
+            userId: data.userId ?? '',
+            displayName: data.displayName ?? fallbackName,
+            tenantId: data.tenantId,
+          });
+          queryClient.clear();
+        },
+      },
+    );
+  };
+
+  return {
+    demoAccounts,
+    handleKeycloakLogin,
+    handleLogin,
+    kcBusy,
+    kcError,
+    login,
+  };
+}

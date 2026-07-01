@@ -4,7 +4,7 @@ import { buyerNavigation, hasPermission } from '@24bid/shared';
 import { useBuyerRoleMyPermissions } from '@24bid/api-client';
 import { AppShell, FeedbackNotice, Panel } from '@24bid/ui';
 import { useAuthStore } from './lib/auth-store';
-import { LoginGate } from './features/login-gate';
+import { PortalLanding } from './features/portal/portal-landing';
 import { DemandsPage } from './features/demands/demands-page';
 import { ApprovalsPage } from './features/approvals/approvals-page';
 import { SuppliersPage } from './features/suppliers/suppliers-page';
@@ -61,7 +61,7 @@ export function App() {
   const permitted = visibleModules.some((m) => m.id === activeModuleId);
 
   if (!session) {
-    return <LoginGate />;
+    return <PortalLanding />;
   }
 
   return (
