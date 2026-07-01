@@ -469,25 +469,25 @@ class HttpSecurityContractTests {
   }
 
   @Test
-  void vitePort3000PreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
+  void platformAdminPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
     mockMvc.perform(options("/api/v1/buyer/suppliers")
-            .header("Origin", "http://localhost:3000")
+            .header("Origin", "http://localhost:5174")
             .header("Access-Control-Request-Method", "GET")
             .header("Access-Control-Request-Headers", "authorization"))
         .andExpect(status().isOk())
-        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5174"))
         .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
         .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
   }
 
   @Test
-  void vitePort3001PreflightCanUseAuthorizationHeaderForJavaVisualChecks() throws Exception {
+  void supplierPortalPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
     mockMvc.perform(options("/api/v1/buyer/workspace")
-            .header("Origin", "http://127.0.0.1:3001")
+            .header("Origin", "http://127.0.0.1:5175")
             .header("Access-Control-Request-Method", "GET")
             .header("Access-Control-Request-Headers", "authorization"))
         .andExpect(status().isOk())
-        .andExpect(header().string("Access-Control-Allow-Origin", "http://127.0.0.1:3001"))
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://127.0.0.1:5175"))
         .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
         .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
   }
@@ -495,11 +495,11 @@ class HttpSecurityContractTests {
   @Test
   void vitePreflightCanUsePutForJavaStatusActions() throws Exception {
     mockMvc.perform(options("/api/v1/buyer/payment-block-resolutions/resolution-demo/status")
-            .header("Origin", "http://localhost:3000")
+            .header("Origin", "http://localhost:5173")
             .header("Access-Control-Request-Method", "PUT")
             .header("Access-Control-Request-Headers", "authorization,content-type"))
         .andExpect(status().isOk())
-        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
         .andExpect(header().string("Access-Control-Allow-Methods", org.hamcrest.Matchers.containsString("PUT")))
         .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
   }

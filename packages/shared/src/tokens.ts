@@ -1,5 +1,4 @@
-// 设计 token — 逐像素复刻现有 App.tsx 的视觉语言。
-// 换底层用料（shadcn/Radix），不换观感。
+// 设计 token — 三端后台共享视觉语言。
 
 /** 品牌与语义色（Tailwind 工具类，沿用现状）。 */
 export const brand = {
@@ -9,7 +8,7 @@ export const brand = {
   appBg: 'slate-100/70',
 } as const;
 
-/** StatusPill 的中文状态 → 配色映射，原样搬自现有实现。 */
+/** StatusPill 的中文状态 → 配色映射。 */
 export const statusPositiveLabels = [
   '已启用', '已通过', '已准入', '已定标', '已完成',
   '已付款', '已提交', '已签收',
@@ -44,7 +43,7 @@ export const moduleAccent = {
   invoice: 'fuchsia',
 } as const;
 
-/** 操作反馈色调，原样搬自现有实现。 */
+/** 操作反馈色调。 */
 export type FeedbackTone = 'success' | 'error' | 'info';
 
 export const feedbackToneClasses: Record<FeedbackTone, string> = {

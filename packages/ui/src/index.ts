@@ -1,5 +1,5 @@
 // @24bid/ui — shadcn/ui + Radix 复刻的组件库
-// 视觉逐像素对齐现有 App.tsx；逐切片补齐 Detail* / *ListRowCard 等其余组件。
+// 三端后台共享组件从这里导出。
 
 export { cn } from './lib/cn';
 

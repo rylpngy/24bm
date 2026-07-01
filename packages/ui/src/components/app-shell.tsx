@@ -62,7 +62,7 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
-/** 三端后台布局壳——深色侧栏 + 顶栏 + max-w-7xl 主区。逐像素复刻现有 App.tsx 布局。 */
+/** 三端后台布局壳——深色侧栏 + 顶栏 + max-w-7xl 主区。 */
 export function AppShell({
   brandSubtitle,
   mainlineHint,

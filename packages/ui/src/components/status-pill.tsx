@@ -8,7 +8,6 @@ export interface StatusPillProps {
 
 /**
  * 状态标签——按中文状态文本自动配色（绿/黄/灰）。
- * 逐像素复刻现有 App.tsx 的 StatusPill 实现。
  */
 export function StatusPill({ label, className }: StatusPillProps) {
   const tone = resolveStatusTone(label);

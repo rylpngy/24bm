@@ -79,13 +79,13 @@ backend-java/src/main/resources/db/migration/V1__initial_schema.sql
 
 ## 与前端对接
 
-前端保留 `services/procurementApiClient.ts` 作为 API adapter。Java 后端实现 `/api/v1` REST API 后，前端通过：
+前端通过 `packages/api-client` 生成的 API client 调用 Java `/api/v1` REST API。三端本地入口为：
 
 ```bash
-npm run dev:java
+pnpm dev:portal   # http://localhost:5173
+pnpm dev:admin    # http://localhost:5174
+pnpm dev:supplier # http://localhost:5175
 ```
-
-切换到 Java 后端。
 
 ## 认证与身份上下文
 

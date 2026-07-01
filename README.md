@@ -1,6 +1,12 @@
 # 24Bid Procurement SaaS
 
-24Bid is being refactored from a frontend prototype into a Java-backed multi-enterprise procurement SaaS. The existing React UI remains the visual shell; new backend business work belongs in `backend-java/`.
+24Bid is a Java-backed multi-enterprise procurement SaaS with three refactored React workspaces:
+
+- Buyer tenant portal: `apps/tenant-portal` on `http://localhost:5173`
+- Platform admin: `apps/platform-admin` on `http://localhost:5174`
+- Supplier portal: `apps/supplier-portal` on `http://localhost:5175`
+
+The old root Vite prototype has been retired. New backend business work belongs in `backend-java/`; new frontend work belongs in the matching `apps/*` workspace or shared `packages/*` library.
 
 ## Local Development
 
@@ -13,7 +19,7 @@ Prerequisites:
 Install frontend dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 Start the Java backend:
@@ -26,24 +32,24 @@ docker compose up -d
 mvn clean spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-Start the frontend against Java:
+Start a frontend workspace against Java:
 
 ```bash
-npm run dev:java
+pnpm dev:portal
+pnpm dev:admin
+pnpm dev:supplier
 ```
 
-Use mock mode only for local visual checks without Java:
+The default API base URL for the refactored apps is `http://localhost:8080`. Override it per command when needed:
 
 ```bash
-npm run dev:mock
+VITE_JAVA_API_BASE_URL=http://localhost:8080 pnpm dev:portal
 ```
-
-Legacy Node demo commands are intentionally kept under `legacy:*` names and should not receive new backend business features.
 
 ## Verification
 
 ```bash
-npm run verify
+pnpm verify
 ```
 
 For the full local Java workflow, see [docs/local-java-integration.md](docs/local-java-integration.md).

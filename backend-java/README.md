@@ -17,9 +17,7 @@ This module is the official backend direction for the multi-tenant procurement S
 
 The frontend should call this service through `VITE_JAVA_API_BASE_URL`.
 
-The existing TypeScript backend under `server/` is retained only as a prototype and business-flow reference. New backend work should be implemented here.
-
-The frontend has a Java-oriented API adapter in `services/procurementApiClient.ts` via `createJavaProcurementApiClient`. It logs in through `POST /api/v1/auth/login` and calls Java endpoints with `Authorization: Bearer <accessToken>`. The older `createHttpApiClient` still targets the Node prototype headers and should be treated as temporary.
+The refactored frontend workspaces use the generated client in `packages/api-client`. They log in through `POST /api/v1/auth/login` and call Java endpoints with `Authorization: Bearer <accessToken>`.
 
 ## Authentication Skeleton
 
