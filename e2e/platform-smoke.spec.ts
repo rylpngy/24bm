@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test';
-import { loginViaDevJwt, openModule, expectLoggedIn } from './helpers';
+import { loginViaKeycloak, openModule, expectLoggedIn } from './helpers';
 
 // 平台运营端冒烟:登录 → 租户列表 / 企业审核 / 平台公告,断言统一工具条(计数)与关键操作入口。
 test('平台端登录后可进入运营后台', async ({ page }) => {
-  await loginViaDevJwt(page);
+  await loginViaKeycloak(page);
   await expectLoggedIn(page, /租户列表/);
   await expect(page.getByRole('button', { name: /企业审核/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /平台公告/ })).toBeVisible();
 });
 
 test('租户列表 / 企业审核 / 公告 渲染', async ({ page }) => {
-  await loginViaDevJwt(page);
+  await loginViaKeycloak(page);
 
   await openModule(page, /租户列表/);
   await expect(page.getByRole('heading', { name: '租户列表', level: 3 })).toBeVisible();

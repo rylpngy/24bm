@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+import { loginViaKeycloak } from './helpers';
 
 // 采购方端冒烟:登录 → 工作台 → 供应商库(SRM)→ 供应商列表(表头/序号/分页)→ 采购需求。
-// 覆盖真实链路:Keycloak 退役后的自研 JWT 登录(后端 /auth/login)+ 真数据列表渲染 + 统一工具条。
+// 覆盖真实链路:Keycloak 登录 + 真数据列表渲染 + 统一工具条。
 
 async function loginAsBuyer(page: Page) {
-  await page.goto('/');
-  await page.getByRole('button', { name: /以采购负责人登录/ }).click();
+  await loginViaKeycloak(page);
   // 登录成功后左侧出现全局导航。
   await expect(page.getByRole('button', { name: /供应商库/ })).toBeVisible();
 }

@@ -19,6 +19,8 @@
     "openapi:export": "node scripts/export-openapi.mjs",
     "openapi:check": "node scripts/check-openapi.mjs",
     "verify": "node scripts/verify-local.mjs",
+    "acceptance:api": "node scripts/portal-api-acceptance.mjs",
+    "acceptance:e2e": "playwright test",
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:watch": "vitest",

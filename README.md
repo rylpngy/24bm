@@ -14,12 +14,19 @@ Prerequisites:
 
 - Node.js
 - Java 21
-- PostgreSQL for the Java local profile
+- Docker, for local PostgreSQL and Keycloak
+- PostgreSQL and Keycloak are provided by `infra/docker-compose.yml` for the Java local profile
 
 Install frontend dependencies:
 
 ```bash
 pnpm install
+```
+
+Start local infrastructure:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres keycloak
 ```
 
 Start the Java backend:
@@ -28,8 +35,7 @@ Start the Java backend:
 cd backend-java
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 export PATH=/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:$PATH
-docker compose up -d
-mvn clean spring-boot:run -Dspring-boot.run.profiles=local
+SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev' mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 Start a frontend workspace against Java:
@@ -46,10 +52,30 @@ The default API base URL for the refactored apps is `http://localhost:8080`. Ove
 VITE_JAVA_API_BASE_URL=http://localhost:8080 pnpm dev:portal
 ```
 
+If your global `pnpm` is not the workspace version, run commands through the pinned package manager:
+
+```bash
+npx -y pnpm@9.15.0 --filter @24bid/tenant-portal dev
+```
+
+## Local Demo Accounts
+
+Keycloak runs at `http://localhost:8081/realms/24bid` with client `24bid-portal`.
+
+| Portal | Username | Password |
+| --- | --- | --- |
+| Buyer tenant portal | `buyer.owner@example.com` | `demo123456` |
+| Buyer requester | `zhang.req@example.com` | `demo123456` |
+| Buyer finance | `li.fin@example.com` | `demo123456` |
+| Supplier portal | `supplier.sales@example.com` | `demo123456` |
+| Platform admin | `platform.admin@example.com` | `demo123456` |
+
 ## Verification
 
 ```bash
-pnpm verify
+npx -y pnpm@9.15.0 verify
+npx -y pnpm@9.15.0 acceptance:api
+npx -y pnpm@9.15.0 e2e
 ```
 
 For the full local Java workflow, see [docs/local-java-integration.md](docs/local-java-integration.md).

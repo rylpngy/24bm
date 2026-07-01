@@ -33,8 +33,8 @@ export default defineConfig({
     },
   ],
   webServer: [
-    { command: 'pnpm --filter @24bid/tenant-portal dev', port: 5173, reuseExistingServer: true, timeout: 120_000 },
-    { command: 'pnpm --filter @24bid/platform-admin dev', port: 5174, reuseExistingServer: true, timeout: 120_000 },
-    { command: 'pnpm --filter @24bid/supplier-portal dev', port: 5175, reuseExistingServer: true, timeout: 120_000 },
+    { command: 'npx -y pnpm@9.15.0 --filter @24bid/tenant-portal dev', port: 5173, reuseExistingServer: true, timeout: 120_000 },
+    { command: 'npx -y pnpm@9.15.0 --filter @24bid/platform-admin dev', port: 5174, reuseExistingServer: true, timeout: 120_000 },
+    { command: 'npx -y pnpm@9.15.0 --filter @24bid/supplier-portal dev', port: 5175, reuseExistingServer: true, timeout: 120_000 },
   ],
 });

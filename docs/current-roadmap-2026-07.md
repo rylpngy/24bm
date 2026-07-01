@@ -7,12 +7,14 @@
 
 24Bid has moved past the early "frontend prototype" and "thin Java backend" stages. The current system is a three-portal procurement SaaS prototype with a Spring Boot backend, generated API client, real Java data paths, workflow/auth/storage infrastructure, and substantial procurement business depth.
 
-The next development phase should not begin by opening another large business domain. The recommended path is:
+The repository was cleaned on 2026-07-01 to keep Claude's refactored monorepo as the active codebase. The retired root Vite prototype, Node/Hono prototype backend, stale draft OpenAPI, obsolete stage artifacts, and historical prompt exports are now available only through Git history.
 
-1. Freeze the current capability baseline.
-2. Reconcile stale roadmap and standard-gap documents with the code.
-3. Close production-governance gaps around permissions, deployment readiness, security configuration, and regression evidence.
-4. Then choose one business vertical for the next deepening round.
+The next development phase should continue from the refactored path:
+
+1. Keep the local deployment and Keycloak baseline reproducible.
+2. Maintain phase 1 + phase 2 API/page acceptance as the regression gate.
+3. Continue Track B finance/contract deepening.
+4. Harden pilot operations evidence while business slices are added.
 
 ## 2. Source Hierarchy
 
@@ -20,11 +22,11 @@ Use this priority when older documents conflict:
 
 1. Current code and database migrations.
 2. Recent commits.
-3. Refreshed roadmap notes from 2026-06-29.
-4. Stage closeout packages and presenter runbooks.
-5. Older historical planning sections from 2026-06-24 and earlier.
+3. Current docs in `docs/current-roadmap-2026-07.md`, `docs/demo-to-pilot-acceptance-2026-07.md`, `docs/pilot-operations-handoff-2026-07.md`, and `docs/production-readiness.md`.
+4. Stage closeout packages and presenter runbooks that still exist in the cleaned tree.
+5. Git history for retired legacy files.
 
-Important historical documents remain useful, but many sections are now evidence trails rather than active plans. For example, `docs/后续研发路线.md` and `docs/标准对标差距分析.md` still contain older stage plans after their refreshed sections; those older sections should not be treated as the current backlog.
+Retired legacy files should not be treated as active backlog. Recover them from Git only when an audit trail is needed.
 
 ## 3. Current Capability Baseline
 
@@ -71,7 +73,7 @@ This is a demo-grade and pilot-preparation baseline, not a claim of production c
 
 ### 4.1 Documentation Drift
 
-Several documents still describe gaps that the code has since partially or fully addressed.
+Several older documents described gaps that the code has since partially or fully addressed.
 
 Examples:
 
@@ -79,9 +81,9 @@ Examples:
 - Data scopes support `all`, `department_and_below`, `department`, and `self` in backend domain code.
 - The buyer team permission workbench exposes role permissions and data-scope editing.
 - Permission/data-scope regression coverage now includes frontend menu matching, role data-scope parsing, active buyer-role SQL filtering, and purchase-demand list blocking when the effective data scope has no visible departments.
-- Some 2026-06-24 roadmap sections still describe monolith/frontend-app issues that have already been resolved.
+- Some 2026-06-24 roadmap sections described monolith/frontend-app issues that have already been resolved.
 
-Action: keep the historical documents, but mark the refreshed/current sections clearly and avoid using old gap lists as active backlogs.
+Action: keep this baseline as the active roadmap and avoid reviving retired gap lists without checking current code first.
 
 ### 4.2 Implementation Drift
 
@@ -152,7 +154,9 @@ Expected outcome:
    - Completed: added tests proving configured secrets change signatures and disabled demo fallback fails fast.
 
 4. Verification baseline
-   - Keep `npm run verify` green.
+   - Completed: local Keycloak realm and demo users are reproducible through `infra/keycloak/realm/24bid-realm.json`.
+   - Completed: phase 1 + phase 2 API acceptance is captured in `scripts/portal-api-acceptance.mjs`.
+   - Keep `npx -y pnpm@9.15.0 verify`, `npx -y pnpm@9.15.0 acceptance:api`, and `npx -y pnpm@9.15.0 e2e` green where the required local services are running.
    - Record any required environment assumptions in `docs/production-readiness.md`.
 
 ### Week 2: Pilot Readiness
@@ -223,9 +227,10 @@ Candidate scope:
 
 Recommended next implementation order:
 
-1. Build the contract-to-payment reconciliation view so contract milestones, payment batches, execution evidence, and archive status can be reviewed together.
-2. Add a finance exception dashboard for blocked payment execution, variance handling, archive exception requests, and overdue payment evidence.
-3. Continue production-readiness external work: bind real alert receivers, rehearse restore evidence, and record links in the pilot operations handoff ledger.
-4. Keep `npm run verify` green after each small slice and preserve the result in commit history.
+1. Finish phase 1 + phase 2 page/API acceptance and keep the result in commit history.
+2. Build the contract-to-payment reconciliation view so contract milestones, payment batches, execution evidence, and archive status can be reviewed together.
+3. Add a finance exception dashboard for blocked payment execution, variance handling, archive exception requests, and overdue payment evidence.
+4. Continue production-readiness external work: bind real alert receivers, rehearse restore evidence, and record links in the pilot operations handoff ledger.
+5. Keep `npx -y pnpm@9.15.0 verify` green after each small slice and preserve the result in commit history.
 
-The highest-confidence next engineering task is item 1 because the required domain objects already exist and the latest Track B slices have tightened milestone order and payment execution evidence.
+The highest-confidence next engineering task after acceptance is item 2 because the required domain objects already exist and the latest Track B slices have tightened milestone order and payment execution evidence.
