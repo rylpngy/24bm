@@ -61,11 +61,10 @@ Before a pilot handoff:
 
 ## 6. Recommended Next Track
 
-After the remaining Track A blockers are closed, the next best product track is Track B: finance and contract deepening.
+Track B has started with contract milestone settlement hardening. Continue finance and contract deepening in small audited slices.
 
 Recommended first slices:
 
-1. Contract milestone settlement rules.
-2. Payment batch approval/release evidence.
-3. Contract-to-payment reconciliation view.
-4. Finance exception dashboard.
+1. Payment batch approval/release evidence.
+2. Contract-to-payment reconciliation view.
+3. Finance exception dashboard.

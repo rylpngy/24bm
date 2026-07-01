@@ -81,11 +81,29 @@ class ContractScheduleServiceTests {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(contractMapper.findByTenantAndId("tenant-1", "ctr-1"))
         .thenReturn(contract(new BigDecimal("88000.00")));
+    when(milestoneMapper.listByContract("tenant-1", "ctr-1")).thenReturn(java.util.List.of(
+        milestone("m-1", "预付款", 0, true, "待付")));
     when(milestoneMapper.markPaid("tenant-1", "m-1", "待付", "已付")).thenReturn(0);
 
     assertThatThrownBy(() -> service.payMilestone("ctr-1", "m-1"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("待付");
+  }
+
+  @Test
+  void payRequiresPriorMilestonesAlreadyPaidInOrder() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(contractMapper.findByTenantAndId("tenant-1", "ctr-1"))
+        .thenReturn(contract(new BigDecimal("88000.00")));
+    when(milestoneMapper.listByContract("tenant-1", "ctr-1")).thenReturn(java.util.List.of(
+        milestone("m-1", "预付款", 0, true, "已付"),
+        milestone("m-2", "验收款", 1, true, "待付"),
+        milestone("m-3", "质保金", 2, true, "待付")));
+
+    assertThatThrownBy(() -> service.payMilestone("ctr-1", "m-3"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("须先按序支付前序里程碑");
+    verify(milestoneMapper, org.mockito.Mockito.never()).markPaid("tenant-1", "m-3", "待付", "已付");
   }
 
   @Test
@@ -121,8 +139,13 @@ class ContractScheduleServiceTests {
 
   private com.procurement.contract.domain.ContractPaymentMilestone milestone(
       String id, String name, int sortNo, boolean reached) {
+    return milestone(id, name, sortNo, reached, "待付");
+  }
+
+  private com.procurement.contract.domain.ContractPaymentMilestone milestone(
+      String id, String name, int sortNo, boolean reached, String status) {
     return new com.procurement.contract.domain.ContractPaymentMilestone(
-        id, "tenant-1", "ctr-1", name, 30, new BigDecimal("26400"), "待付", sortNo, null, reached, null);
+        id, "tenant-1", "ctr-1", name, 30, new BigDecimal("26400"), status, sortNo, null, reached, null);
   }
 
   @Test

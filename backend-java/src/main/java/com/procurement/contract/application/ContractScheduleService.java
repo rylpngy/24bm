@@ -101,6 +101,17 @@ public class ContractScheduleService {
   public List<ContractPaymentMilestoneResponse> payMilestone(String contractId, String milestoneId) {
     String tenantId = TenantAccessGuard.requireTenantId("contract APIs");
     requireContract(tenantId, contractId);
+    List<ContractPaymentMilestone> all = milestoneMapper.listByContract(tenantId, contractId);
+    ContractPaymentMilestone target = all.stream()
+        .filter(m -> m.id().equals(milestoneId))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("里程碑不存在:" + milestoneId));
+    boolean priorAllPaid = all.stream()
+        .filter(m -> m.sortNo() < target.sortNo())
+        .allMatch(m -> "已付".equals(m.status()));
+    if (!priorAllPaid) {
+      throw new IllegalStateException("须先按序支付前序里程碑:" + target.name());
+    }
     int updated = milestoneMapper.markPaid(tenantId, milestoneId, "待付", "已付");
     if (updated == 0) {
       throw new IllegalStateException("只有「已达成」的待付里程碑可以登记付款:" + milestoneId);

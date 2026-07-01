@@ -172,15 +172,18 @@ Expected outcome:
 4. Demo-to-pilot acceptance package
    - Completed: produced and updated a concise acceptance package that separates demo-ready, pilot-ready, and production-blocked capabilities.
 
-## 7. Business Tracks To Defer Until Track A Is Done
+## 7. Business Tracks After Track A
 
 ### Track B: Finance And Contract Deepening
 
-Best next business track after Track A. It builds on existing payment batches, archive exceptions, budget actual-paid linkage, contract milestones, and renewal reminders.
+Current active business track. It builds on existing payment batches, archive exceptions, budget actual-paid linkage, contract milestones, and renewal reminders.
+
+Started:
+
+- Contract milestone settlement rules: milestone payment now enforces prior milestones already paid before later milestones can be registered as paid.
 
 Candidate scope:
 
-- Contract milestone settlement rules.
 - Payment batch approval and release evidence.
 - Finance exception dashboard.
 - Contract-to-payment reconciliation view.
