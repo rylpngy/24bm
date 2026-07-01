@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildContractPaymentReconciliation } from './contract-payment-reconciliation';
+import {
+  buildContractPaymentReconciliation,
+  type ContractPaymentReconciliation,
+  type ReconciliationStatus,
+  filterContractReconciliations,
+  summarizeContractReconciliations,
+} from './contract-payment-reconciliation';
 
 describe('buildContractPaymentReconciliation', () => {
   it('links contract, payment requests, batches, executions, and milestones by order/payment batch', () => {
@@ -98,5 +104,88 @@ describe('buildContractPaymentReconciliation', () => {
     expect(result.blockedCount).toBe(1);
     expect(result.blockReasons).toEqual(['前序里程碑未付款']);
     expect(result.status).toBe('存在付款阻断');
+  });
+
+  it('summarizes reconciliation totals for the workbench header', () => {
+    const summary = summarizeContractReconciliations([
+      {
+        contractAmount: 1000,
+        paymentRequestAmount: 600,
+        approvedRequestAmount: 500,
+        registeredAmount: 300,
+        blockedCount: 1,
+        unregisteredContractAmount: 700,
+        reachedUnpaidAmount: 200,
+        paymentRequestCount: 2,
+        paymentBatchNos: ['PB-1'],
+        batchCount: 1,
+        blockReasons: ['前序里程碑未付款'],
+        milestoneAmount: 1000,
+        milestonePaidAmount: 300,
+        unrequestedContractAmount: 400,
+        status: '存在付款阻断',
+      },
+      {
+        contractAmount: 2000,
+        paymentRequestAmount: 2000,
+        approvedRequestAmount: 2000,
+        registeredAmount: 2000,
+        blockedCount: 0,
+        unregisteredContractAmount: 0,
+        reachedUnpaidAmount: 0,
+        paymentRequestCount: 1,
+        paymentBatchNos: ['PB-2'],
+        batchCount: 1,
+        blockReasons: [],
+        milestoneAmount: 2000,
+        milestonePaidAmount: 2000,
+        unrequestedContractAmount: 0,
+        status: '已完成付款登记',
+      },
+    ]);
+
+    expect(summary).toEqual({
+      totalContracts: 2,
+      contractAmount: 3000,
+      paymentRequestAmount: 2600,
+      approvedRequestAmount: 2500,
+      registeredAmount: 2300,
+      blockedCount: 1,
+      unregisteredContractAmount: 700,
+      reachedUnpaidAmount: 200,
+      exceptionCount: 1,
+    });
+  });
+
+  it('filters reconciliation rows by finance review queue', () => {
+    const statuses: ReconciliationStatus[] = [
+      '存在付款阻断',
+      '里程碑达成待付款',
+      '付款申请未覆盖合同',
+      '已完成付款登记',
+    ];
+    const rows: ContractPaymentReconciliation[] = statuses.map((status, index) => ({
+      contractAmount: 100,
+      milestoneAmount: 100,
+      milestonePaidAmount: 0,
+      reachedUnpaidAmount: status === '里程碑达成待付款' ? 50 : 0,
+      paymentRequestCount: 1,
+      paymentRequestAmount: status === '付款申请未覆盖合同' ? 50 : 100,
+      approvedRequestAmount: 50,
+      paymentBatchNos: [`PB-${index}`],
+      batchCount: 1,
+      registeredAmount: status === '已完成付款登记' ? 100 : 0,
+      blockedCount: status === '存在付款阻断' ? 1 : 0,
+      blockReasons: [],
+      unrequestedContractAmount: status === '付款申请未覆盖合同' ? 50 : 0,
+      unregisteredContractAmount: status === '已完成付款登记' ? 0 : 100,
+      status,
+    }));
+
+    expect(filterContractReconciliations(rows, '全部')).toHaveLength(4);
+    expect(filterContractReconciliations(rows, '存在付款阻断')).toHaveLength(1);
+    expect(filterContractReconciliations(rows, '里程碑达成待付款')).toHaveLength(1);
+    expect(filterContractReconciliations(rows, '付款申请未覆盖合同')).toHaveLength(1);
+    expect(filterContractReconciliations(rows, '已完成付款登记')).toHaveLength(1);
   });
 });

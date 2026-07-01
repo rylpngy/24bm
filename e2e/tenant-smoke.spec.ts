@@ -42,6 +42,8 @@ test('合同页显示合同-付款对账视图', async ({ page }) => {
   await page.getByRole('button', { name: /Keycloak 登录/ }).click();
 
   await expect(page.getByText('合同-付款对账视图')).toBeVisible();
+  await expect(page.getByText('待核差额')).toBeVisible();
+  await expect(page.getByRole('button', { name: /存在付款阻断/ })).toBeVisible();
   await expect(page.getByText(/合同付款登记覆盖/).first()).toBeVisible();
   await expect(page.getByText(/付款链路/).first()).toBeVisible();
 });

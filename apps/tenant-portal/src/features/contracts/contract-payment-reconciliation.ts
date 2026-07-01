@@ -40,6 +40,20 @@ export interface ContractPaymentReconciliation {
   status: ReconciliationStatus;
 }
 
+export type ReconciliationFilter = '全部' | ReconciliationStatus;
+
+export interface ContractPaymentReconciliationSummary {
+  totalContracts: number;
+  contractAmount: number;
+  paymentRequestAmount: number;
+  approvedRequestAmount: number;
+  registeredAmount: number;
+  blockedCount: number;
+  unregisteredContractAmount: number;
+  reachedUnpaidAmount: number;
+  exceptionCount: number;
+}
+
 const n = (value?: number) => value ?? 0;
 
 const unique = (values: Array<string | undefined>) =>
@@ -121,4 +135,41 @@ export function buildContractPaymentReconciliation({
     unregisteredContractAmount,
     status,
   };
+}
+
+export function summarizeContractReconciliations(
+  rows: ContractPaymentReconciliation[],
+): ContractPaymentReconciliationSummary {
+  return rows.reduce<ContractPaymentReconciliationSummary>(
+    (summary, row) => ({
+      totalContracts: summary.totalContracts + 1,
+      contractAmount: summary.contractAmount + row.contractAmount,
+      paymentRequestAmount: summary.paymentRequestAmount + row.paymentRequestAmount,
+      approvedRequestAmount: summary.approvedRequestAmount + row.approvedRequestAmount,
+      registeredAmount: summary.registeredAmount + row.registeredAmount,
+      blockedCount: summary.blockedCount + row.blockedCount,
+      unregisteredContractAmount: summary.unregisteredContractAmount + row.unregisteredContractAmount,
+      reachedUnpaidAmount: summary.reachedUnpaidAmount + row.reachedUnpaidAmount,
+      exceptionCount: summary.exceptionCount + (row.status === '已完成付款登记' || row.status === '对账正常' ? 0 : 1),
+    }),
+    {
+      totalContracts: 0,
+      contractAmount: 0,
+      paymentRequestAmount: 0,
+      approvedRequestAmount: 0,
+      registeredAmount: 0,
+      blockedCount: 0,
+      unregisteredContractAmount: 0,
+      reachedUnpaidAmount: 0,
+      exceptionCount: 0,
+    },
+  );
+}
+
+export function filterContractReconciliations(
+  rows: ContractPaymentReconciliation[],
+  filter: ReconciliationFilter,
+) {
+  if (filter === '全部') return rows;
+  return rows.filter((row) => row.status === filter);
 }

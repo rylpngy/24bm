@@ -1,18 +1,22 @@
+import { useMemo, useState } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, Link2, ReceiptText } from 'lucide-react';
 import {
+  getContractScheduleMilestonesQueryOptions,
   useBuyerFinanceActionPaymentBatches,
   useBuyerFinanceActionPaymentExecutionRecords,
   useBuyerFinanceActionPaymentRequests,
-  useContractScheduleMilestones,
   type ContractResponse,
-  type PaymentBatchResponse,
+  type ContractPaymentMilestoneResponse,
   type PaymentExecutionRecordResponse,
-  type PaymentRequestResponse,
 } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
 import {
   buildContractPaymentReconciliation,
+  filterContractReconciliations,
+  summarizeContractReconciliations,
   type ContractPaymentReconciliation,
+  type ReconciliationFilter,
   type ReconciliationStatus,
 } from './contract-payment-reconciliation';
 
@@ -33,6 +37,14 @@ const statusIcon: Partial<Record<ReconciliationStatus, typeof AlertTriangle>> = 
   已完成付款登记: CheckCircle2,
   对账正常: CheckCircle2,
 };
+
+const filters: ReconciliationFilter[] = [
+  '全部',
+  '存在付款阻断',
+  '里程碑达成待付款',
+  '付款申请未覆盖合同',
+  '已完成付款登记',
+];
 
 type ExecutionRecordWithReleaseEvidence = PaymentExecutionRecordResponse & {
   releaseEvidenceNo?: string;
@@ -76,27 +88,65 @@ function ReconciliationProgress({ result }: { result: ContractPaymentReconciliat
   );
 }
 
+function SummaryGrid({ rows }: { rows: ContractPaymentReconciliation[] }) {
+  const summary = summarizeContractReconciliations(rows);
+
+  return (
+    <div className="mt-3 grid gap-2 md:grid-cols-3 xl:grid-cols-6">
+      <MiniFact label="合同总额" value={currency(summary.contractAmount)} />
+      <MiniFact label="已申请" value={currency(summary.paymentRequestAmount)} />
+      <MiniFact label="已审批" value={currency(summary.approvedRequestAmount)} />
+      <MiniFact label="已登记" value={currency(summary.registeredAmount)} />
+      <MiniFact label="阻断笔数" value={`${summary.blockedCount} 笔`} />
+      <MiniFact label="待核差额" value={currency(summary.unregisteredContractAmount)} />
+    </div>
+  );
+}
+
+function FilterBar({
+  active,
+  rows,
+  onChange,
+}: {
+  active: ReconciliationFilter;
+  rows: ContractPaymentReconciliation[];
+  onChange: (filter: ReconciliationFilter) => void;
+}) {
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {filters.map((filter) => {
+        const count = filterContractReconciliations(rows, filter).length;
+        const activeClass =
+          active === filter
+            ? 'border-emerald-600 bg-emerald-700 text-white'
+            : 'border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50';
+        return (
+          <button
+            type="button"
+            key={filter}
+            onClick={() => onChange(filter)}
+            className={`inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs font-black transition ${activeClass}`}
+          >
+            {filter}
+            <span className={active === filter ? 'text-emerald-100' : 'text-emerald-500'}>{count}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function ContractReconciliationCard({
   contract,
-  paymentRequests,
-  paymentBatches,
+  result,
+  milestonesLoading,
   executionRecords,
 }: {
   contract: ContractResponse;
-  paymentRequests: PaymentRequestResponse[];
-  paymentBatches: PaymentBatchResponse[];
+  result: ContractPaymentReconciliation;
+  milestonesLoading: boolean;
   executionRecords: PaymentExecutionRecordResponse[];
 }) {
-  const milestones = useContractScheduleMilestones(contract.id ?? '', {
-    query: { enabled: Boolean(contract.id) },
-  });
-  const result = buildContractPaymentReconciliation({
-    contract,
-    milestones: milestones.data?.data ?? [],
-    paymentRequests,
-    paymentBatches,
-    executionRecords,
-  });
   const relatedExecutions = executionRecords.filter(
     (record) => record.paymentBatchNo && result.paymentBatchNos.includes(record.paymentBatchNo),
   ) as ExecutionRecordWithReleaseEvidence[];
@@ -136,7 +186,7 @@ function ContractReconciliationCard({
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
         <div className="rounded-lg border border-slate-100 bg-white/80 p-3">
           <p className="text-[11px] font-black text-slate-400">里程碑口径</p>
-          {milestones.isLoading ? (
+          {milestonesLoading ? (
             <p className="mt-2 text-xs font-bold text-slate-400">正在加载付款计划…</p>
           ) : (
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
@@ -185,13 +235,47 @@ function ContractReconciliationCard({
 }
 
 export function ContractPaymentReconciliationPanel({ contracts }: { contracts: ContractResponse[] }) {
+  const [activeFilter, setActiveFilter] = useState<ReconciliationFilter>('全部');
   const requests = useBuyerFinanceActionPaymentRequests();
   const batches = useBuyerFinanceActionPaymentBatches();
   const executions = useBuyerFinanceActionPaymentExecutionRecords();
   const paymentRequests = requests.data?.data ?? [];
   const paymentBatches = batches.data?.data ?? [];
   const executionRecords = executions.data?.data ?? [];
-  const loading = requests.isLoading || batches.isLoading || executions.isLoading;
+  const milestoneQueries = useQueries({
+    queries: contracts.map((contract) => ({
+      ...getContractScheduleMilestonesQueryOptions(contract.id ?? ''),
+      enabled: Boolean(contract.id),
+    })),
+  });
+  const milestonesByContractId = useMemo(() => {
+    const entries = contracts.map((contract, index) => [
+      contract.id,
+      (milestoneQueries[index]?.data?.data ?? []) as ContractPaymentMilestoneResponse[],
+    ]);
+    return new Map(entries.filter((entry): entry is [string, ContractPaymentMilestoneResponse[]] => Boolean(entry[0])));
+  }, [contracts, milestoneQueries]);
+  const milestonesLoading = milestoneQueries.some((query) => query.isLoading);
+  const loading = requests.isLoading || batches.isLoading || executions.isLoading || milestonesLoading;
+  const rows = useMemo(
+    () =>
+      contracts.map((contract) => ({
+        contract,
+        result: buildContractPaymentReconciliation({
+          contract,
+          milestones: contract.id ? (milestonesByContractId.get(contract.id) ?? []) : [],
+          paymentRequests,
+          paymentBatches,
+          executionRecords,
+        }),
+      })),
+    [contracts, milestonesByContractId, paymentRequests, paymentBatches, executionRecords],
+  );
+  const filteredRows = filterContractReconciliations(
+    rows.map((row) => row.result),
+    activeFilter,
+  );
+  const visibleRows = rows.filter((row) => filteredRows.includes(row.result));
 
   return (
     <div className="mb-4 rounded-lg border border-emerald-100 bg-emerald-50/30 p-4">
@@ -217,17 +301,25 @@ export function ContractPaymentReconciliationPanel({ contracts }: { contracts: C
           <FeedbackNotice tone="info" message="暂无合同可对账。" />
         </div>
       ) : (
-        <div className="mt-3 space-y-3">
-          {contracts.map((contract) => (
-            <ContractReconciliationCard
-              key={contract.id}
-              contract={contract}
-              paymentRequests={paymentRequests}
-              paymentBatches={paymentBatches}
-              executionRecords={executionRecords}
-            />
-          ))}
-        </div>
+        <>
+          <SummaryGrid rows={rows.map((row) => row.result)} />
+          <FilterBar active={activeFilter} rows={rows.map((row) => row.result)} onChange={setActiveFilter} />
+          <div className="mt-3 space-y-3">
+            {visibleRows.length === 0 ? (
+              <FeedbackNotice tone="info" message="当前筛选下暂无合同。" />
+            ) : (
+              visibleRows.map(({ contract, result }) => (
+                <ContractReconciliationCard
+                  key={contract.id}
+                  contract={contract}
+                  result={result}
+                  milestonesLoading={milestonesLoading}
+                  executionRecords={executionRecords}
+                />
+              ))
+            )}
+          </div>
+        </>
       )}
     </div>
   );
