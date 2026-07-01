@@ -18,6 +18,8 @@ export interface PaymentExecutionRecordResponse {
   executionStatus?: string;
   executionTrace?: string;
   executionBlockReason?: string;
+  releaseEvidenceNo?: string;
+  releaseRemark?: string;
   executionStage?: string;
   executionNextAction?: string;
   createdBy?: string;

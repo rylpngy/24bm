@@ -19,4 +19,14 @@ describe('backend OpenAPI generated client sync', () => {
     expect(modelIndex).toContain("export * from './scanExpiryResponse';");
     expect(modelIndex).toContain("export * from './apiResponseScanExpiryResponse';");
   });
+
+  it('keeps payment execution release evidence fields in the generated model', () => {
+    const backendOpenApi = read('docs/openapi/backend-openapi.json');
+    const paymentExecutionModel = read('packages/api-client/src/generated/model/paymentExecutionRecordResponse.ts');
+
+    expect(backendOpenApi).toContain('releaseEvidenceNo');
+    expect(backendOpenApi).toContain('releaseRemark');
+    expect(paymentExecutionModel).toContain('releaseEvidenceNo?: string;');
+    expect(paymentExecutionModel).toContain('releaseRemark?: string;');
+  });
 });

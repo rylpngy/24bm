@@ -1,10 +1,5 @@
 import type { PaymentExecutionRecordResponse } from '@24bid/api-client';
 
-export type PaymentExecutionRecordWithEvidence = PaymentExecutionRecordResponse & {
-  releaseEvidenceNo?: string;
-  releaseRemark?: string;
-};
-
 export interface PaymentBatchExecutionRecordView {
   id: string;
   status?: string;
@@ -36,7 +31,7 @@ function statusRank(status?: string) {
   return 3;
 }
 
-function toRecordView(record: PaymentExecutionRecordWithEvidence): PaymentBatchExecutionRecordView {
+function toRecordView(record: PaymentExecutionRecordResponse): PaymentBatchExecutionRecordView {
   return {
     id: record.id ?? `${record.paymentBatchNo}:${record.paymentRequestId ?? record.invoiceId ?? 'unknown'}`,
     status: record.executionStatus,
@@ -51,7 +46,7 @@ function toRecordView(record: PaymentExecutionRecordWithEvidence): PaymentBatchE
 }
 
 export function buildPaymentBatchExecutionSummaries(
-  executionRecords: PaymentExecutionRecordWithEvidence[],
+  executionRecords: PaymentExecutionRecordResponse[],
 ): Map<string, PaymentBatchExecutionSummary> {
   const summaries = new Map<string, PaymentBatchExecutionSummary>();
 

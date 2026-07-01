@@ -8,4 +8,6 @@
 
 export interface RegisterPaymentRequest {
   paymentStatus: string;
+  releaseEvidenceNo?: string;
+  releaseRemark?: string;
 }

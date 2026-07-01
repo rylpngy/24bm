@@ -7,5 +7,5 @@
  */
 
 export type BuyerContractScanExpiryParams = {
-  withinDays?: number;
+withinDays?: number;
 };

@@ -46,11 +46,6 @@ const filters: ReconciliationFilter[] = [
   '已完成付款登记',
 ];
 
-type ExecutionRecordWithReleaseEvidence = PaymentExecutionRecordResponse & {
-  releaseEvidenceNo?: string;
-  releaseRemark?: string;
-};
-
 function StatusBadge({ status }: { status: ReconciliationStatus }) {
   const Icon = statusIcon[status] ?? ReceiptText;
   return (
@@ -149,7 +144,7 @@ function ContractReconciliationCard({
 }) {
   const relatedExecutions = executionRecords.filter(
     (record) => record.paymentBatchNo && result.paymentBatchNos.includes(record.paymentBatchNo),
-  ) as ExecutionRecordWithReleaseEvidence[];
+  );
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
