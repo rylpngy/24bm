@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AlertTriangle, ClipboardCheck, FileWarning, Scale, TimerReset } from 'lucide-react';
 import {
   useBuyerFinanceActionPaymentArchiveExceptionRequests,
@@ -9,6 +10,8 @@ import {
 import { FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
 import {
   buildFinanceExceptionDashboard,
+  getFinanceExceptionView,
+  type FinanceExceptionFilter,
   type FinanceExceptionItem,
   type FinanceExceptionType,
 } from './finance-exception-dashboard';
@@ -22,6 +25,8 @@ const typeIcon: Record<FinanceExceptionType, typeof AlertTriangle> = {
   归档异常: FileWarning,
   逾期未登记: TimerReset,
 };
+
+const filters: FinanceExceptionFilter[] = ['全部', '付款阻断', '差异待处理', '归档异常', '逾期未登记'];
 
 const severityTone = {
   high: 'border-red-200 bg-red-50/70 text-red-800',
@@ -59,6 +64,8 @@ function ExceptionCard({ item }: { item: FinanceExceptionItem }) {
 }
 
 export function FinanceExceptionDashboardPanel({ paymentBatches }: { paymentBatches: PaymentBatchResponse[] }) {
+  const [filter, setFilter] = useState<FinanceExceptionFilter>('全部');
+  const [expanded, setExpanded] = useState(false);
   const executions = useBuyerFinanceActionPaymentExecutionRecords();
   const blockResolutions = useBuyerFinanceActionPaymentBlockResolutions();
   const variances = useBuyerFinanceActionVarianceHandlings();
@@ -77,6 +84,17 @@ export function FinanceExceptionDashboardPanel({ paymentBatches }: { paymentBatc
     varianceHandlings: variances.data?.data ?? [],
     archiveExceptionRequests: archiveExceptions.data?.data ?? [],
   });
+  const view = getFinanceExceptionView(dashboard, filter, expanded);
+
+  const filterCount = (itemFilter: FinanceExceptionFilter) =>
+    itemFilter === '全部'
+      ? dashboard.items.length
+      : dashboard.items.filter((item) => item.type === itemFilter).length;
+
+  const chooseFilter = (itemFilter: FinanceExceptionFilter) => {
+    setFilter(itemFilter);
+    setExpanded(false);
+  };
 
   return (
     <div className="mb-4 rounded-lg border border-red-100 bg-red-50/30 p-4">
@@ -108,16 +126,56 @@ export function FinanceExceptionDashboardPanel({ paymentBatches }: { paymentBatc
             <MiniFact label="阻断金额" value={currency(dashboard.summary.blockedAmount)} />
           </div>
 
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {filters.map((itemFilter) => {
+              const active = itemFilter === filter;
+              return (
+                <button
+                  key={itemFilter}
+                  type="button"
+                  onClick={() => chooseFilter(itemFilter)}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-black transition ${
+                    active
+                      ? 'border-red-700 bg-red-700 text-white'
+                      : 'border-red-100 bg-white/80 text-red-800 hover:border-red-300'
+                  }`}
+                >
+                  {itemFilter} {filterCount(itemFilter)}
+                </button>
+              );
+            })}
+          </div>
+
           {dashboard.items.length === 0 ? (
             <div className="mt-3">
               <FeedbackNotice tone="success" message="当前无财务异常，付款批次可按计划推进。" />
             </div>
           ) : (
-            <div className="mt-3 grid gap-3 xl:grid-cols-2">
-              {dashboard.items.slice(0, 6).map((item) => (
-                <ExceptionCard key={item.id} item={item} />
-              ))}
-            </div>
+            <>
+              {view.items.length === 0 ? (
+                <div className="mt-3">
+                  <FeedbackNotice tone="info" message="当前分类暂无待处理异常。" />
+                </div>
+              ) : (
+                <div className="mt-3 grid gap-3 xl:grid-cols-2">
+                  {view.items.map((item) => (
+                    <ExceptionCard key={item.id} item={item} />
+                  ))}
+                </div>
+              )}
+
+              {(view.hiddenCount > 0 || expanded) && view.totalCount > 6 ? (
+                <div className="mt-3 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((value) => !value)}
+                    className="rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-black text-red-800 hover:border-red-300"
+                  >
+                    {expanded ? '收起' : `展开 ${view.hiddenCount} 项`}
+                  </button>
+                </div>
+              ) : null}
+            </>
           )}
         </>
       )}

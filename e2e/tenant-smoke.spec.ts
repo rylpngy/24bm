@@ -55,6 +55,9 @@ test('付款批次页显示财务异常看板', async ({ page }) => {
   await expect(page.getByText('财务异常看板')).toBeVisible();
   await expect(page.getByText('待处理异常')).toBeVisible();
   await expect(page.getByText('阻断金额')).toBeVisible();
+  await expect(page.getByRole('button', { name: /^全部 \d+/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^付款阻断 \d+/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^差异待处理 \d+/ })).toBeVisible();
 });
 
 test('采购申请员仅显示需求与寻源相关菜单', async ({ page }) => {

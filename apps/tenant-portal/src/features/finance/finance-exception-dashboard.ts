@@ -7,6 +7,7 @@ import type {
 } from '@24bid/api-client';
 
 export type FinanceExceptionType = '付款阻断' | '差异待处理' | '归档异常' | '逾期未登记';
+export type FinanceExceptionFilter = FinanceExceptionType | '全部';
 export type FinanceExceptionSeverity = 'high' | 'medium' | 'low';
 
 export interface FinanceExceptionDashboardInput {
@@ -44,7 +45,14 @@ export interface FinanceExceptionDashboard {
   items: FinanceExceptionItem[];
 }
 
+export interface FinanceExceptionView {
+  items: FinanceExceptionItem[];
+  totalCount: number;
+  hiddenCount: number;
+}
+
 const n = (value?: number) => value ?? 0;
+const DEFAULT_VISIBLE_EXCEPTION_COUNT = 6;
 
 const doneStatuses = new Set(['已处理', '已完成', '已关闭', '已登记付款']);
 
@@ -169,5 +177,23 @@ export function buildFinanceExceptionDashboard(
         .reduce((sum, item) => sum + n(item.amount), 0),
     },
     items: sortedItems,
+  };
+}
+
+export function getFinanceExceptionView(
+  dashboard: FinanceExceptionDashboard,
+  filter: FinanceExceptionFilter,
+  expanded: boolean,
+): FinanceExceptionView {
+  const filteredItems =
+    filter === '全部'
+      ? dashboard.items
+      : dashboard.items.filter((item) => item.type === filter);
+  const items = expanded ? filteredItems : filteredItems.slice(0, DEFAULT_VISIBLE_EXCEPTION_COUNT);
+
+  return {
+    items,
+    totalCount: filteredItems.length,
+    hiddenCount: Math.max(filteredItems.length - items.length, 0),
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFinanceExceptionDashboard } from './finance-exception-dashboard';
+import { buildFinanceExceptionDashboard, getFinanceExceptionView } from './finance-exception-dashboard';
 
 describe('buildFinanceExceptionDashboard', () => {
   it('prioritizes blocked payments, variance handling, archive exceptions, and overdue registrations', () => {
@@ -132,5 +132,42 @@ describe('buildFinanceExceptionDashboard', () => {
 
     expect(dashboard.summary.totalExceptions).toBe(0);
     expect(dashboard.items).toEqual([]);
+  });
+
+  it('filters exception items and keeps the default view capped for scanning', () => {
+    const dashboard = buildFinanceExceptionDashboard(
+      {
+        paymentBatches: [],
+        executionRecords: Array.from({ length: 7 }, (_, index) => ({
+          id: `exec-blocked-${index}`,
+          paymentBatchNo: `PB-BLOCKED-${index}`,
+          registeredAmount: 100 + index,
+          executionStatus: '暂不可登记',
+          executionBlockReason: '付款材料未齐',
+        })),
+        blockResolutions: [],
+        varianceHandlings: [
+          { id: 'variance-1', invoiceId: 'inv-1', varianceAmount: 200, status: '待处理' },
+        ],
+        archiveExceptionRequests: [],
+      },
+      '2026-07-01',
+    );
+
+    const defaultView = getFinanceExceptionView(dashboard, '全部', false);
+    expect(defaultView.items).toHaveLength(6);
+    expect(defaultView.hiddenCount).toBe(2);
+    expect(defaultView.totalCount).toBe(8);
+
+    const blockedView = getFinanceExceptionView(dashboard, '付款阻断', false);
+    expect(blockedView.items).toHaveLength(6);
+    expect(blockedView.hiddenCount).toBe(1);
+    expect(blockedView.totalCount).toBe(7);
+    expect(blockedView.items.every((item) => item.type === '付款阻断')).toBe(true);
+
+    const expandedVarianceView = getFinanceExceptionView(dashboard, '差异待处理', true);
+    expect(expandedVarianceView.items).toHaveLength(1);
+    expect(expandedVarianceView.hiddenCount).toBe(0);
+    expect(expandedVarianceView.items[0]?.id).toBe('variance:variance-1');
   });
 });
