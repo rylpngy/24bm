@@ -130,6 +130,16 @@ public interface RfqMapper {
 
   @Update("""
       update rfqs
+      set deadline_at = #{deadlineAt}, updated_at = now()
+      where tenant_id = #{tenantId} and id = #{id}
+      """)
+  int updateDeadline(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("deadlineAt") OffsetDateTime deadlineAt);
+
+  @Update("""
+      update rfqs
       set status = #{status},
           awarded_supplier_id = #{awardedSupplierId},
           updated_at = now()

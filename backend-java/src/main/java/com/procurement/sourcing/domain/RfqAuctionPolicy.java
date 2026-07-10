@@ -1,12 +1,29 @@
 package com.procurement.sourcing.domain;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 
 // 竞价出价规则:首轮出价不得高于起拍价;有在场最低价时,新出价须至少比它低一个降价步长。
 // 竞价时段复用 RFQ 报价截止(deadline_at)守卫,此处只管价格竞争规则。
 public final class RfqAuctionPolicy {
 
+  // 软关闭(防狙击):截止前 5 分钟内的有效出价,自动把截止时间顺延 5 分钟,给对手回应窗口。
+  public static final Duration SOFT_CLOSE_WINDOW = Duration.ofMinutes(5);
+  public static final Duration SOFT_CLOSE_EXTENSION = Duration.ofMinutes(5);
+
   private RfqAuctionPolicy() {}
+
+  /** 软关闭:出价落在截止窗口内时返回顺延后的新截止时间,否则返回 null(不顺延)。 */
+  public static OffsetDateTime extendedDeadline(OffsetDateTime deadlineAt, OffsetDateTime now) {
+    if (deadlineAt == null || now == null || now.isAfter(deadlineAt)) {
+      return null;
+    }
+    if (Duration.between(now, deadlineAt).compareTo(SOFT_CLOSE_WINDOW) > 0) {
+      return null;
+    }
+    return now.plus(SOFT_CLOSE_EXTENSION);
+  }
 
   public static boolean isAuction(String method) {
     return RfqMethod.AUCTION.equals(RfqMethod.orDefault(method));

@@ -210,7 +210,8 @@ Assessment found 竞价/商城/单一来源 all rode the 询比 engine with no m
 - `RfqAuctionPolicy` enforces creation params (positive start price, auction-only fields) and bid rules (first bid ≤ start price, later bids must undercut the current lowest by the decrement) on both quote submit and update.
 - The current-round lowest bid is exposed to invited suppliers on auction RFQs only (`auctionLowestAmount`) — price competition is the point; other methods stay sealed.
 - Tenant portal exposes start-price/decrement inputs when creating a 竞价 RFQ and shows the auction rule line; supplier portal shows start price, current lowest, and the max allowed next bid.
-- Not yet: realtime push (polling only), auction-specific rounds/extension rules.
+- 2026-07-10 follow-up (auction deepening slice 2): soft-close anti-sniping — a valid bid inside the last 5 minutes automatically extends the deadline by 5 minutes (`RfqAuctionPolicy.extendedDeadline`, applied on quote submit and update) and notifies the buyer plus all invited suppliers (竞价截止已顺延). Both portals poll live auctions every 5s (no polling when none is quoting): the supplier opportunities card shows remaining time and a 当前领先/已被超越 badge against the visible lowest bid.
+- Not yet: realtime push (WebSocket; polling covers demo scale), auction-specific multi-round rules.
 
 ### Mall (商城) module — first slice landed 2026-07-10
 

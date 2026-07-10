@@ -9,6 +9,7 @@ public final class NotificationTitle {
   public static final String RFQ_INVITATION_CREATED = "询比邀请待报价";
   public static final String RFQ_INVITATION_UPDATED = "询比邀请已更新";
   public static final String SUPPLIER_QUOTE_SUBMITTED = "供应商已提交报价";
+  public static final String AUCTION_DEADLINE_EXTENDED = "竞价截止已顺延";
   public static final String RFQ_AWARD_PENDING_APPROVAL = "定标结果待审批";
   public static final String RFQ_AWARD_APPROVED = "定标审批已通过";
   public static final String RFQ_AWARD_REJECTED = "定标审批已驳回";
