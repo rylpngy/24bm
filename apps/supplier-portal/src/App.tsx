@@ -8,6 +8,7 @@ import { OverviewPage } from './features/overview/overview-page';
 import { OpportunitiesPage } from './features/opportunities/opportunities-page';
 import { QuotesPage } from './features/quotes/quotes-page';
 import { OrdersPage } from './features/orders/orders-page';
+import { ShelfPage } from './features/shelf/shelf-page';
 import { ReceivablesPage } from './features/receivables/receivables-page';
 import { ProfilePage } from './features/profile/profile-page';
 
@@ -47,6 +48,8 @@ export function App() {
         <QuotesPage />
       ) : activeModuleId === 'orders' ? (
         <OrdersPage />
+      ) : activeModuleId === 'shelf' ? (
+        <ShelfPage />
       ) : activeModuleId === 'invoices' ? (
         <ReceivablesPage />
       ) : activeModuleId === 'profile' ? (

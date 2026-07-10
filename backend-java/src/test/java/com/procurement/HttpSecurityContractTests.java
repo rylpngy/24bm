@@ -256,7 +256,8 @@ import org.springframework.test.web.servlet.MvcResult;
     DepartmentController.class,
     com.procurement.process.api.ProcessDefinitionController.class,
     com.procurement.process.api.ProcessInstanceController.class,
-    com.procurement.mall.api.BuyerMallController.class
+    com.procurement.mall.api.BuyerMallController.class,
+    com.procurement.mall.api.SupplierMallController.class
 })
 @Import({
     SecurityConfig.class,
@@ -4847,6 +4848,28 @@ class HttpSecurityContractTests {
         """);
     mockMvc.perform(get("/api/v1/buyer/mall/listings")
             .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void supplierMallShelfIsSupplierOnly() throws Exception {
+    when(mallApplicationService.listSupplierListings()).thenReturn(java.util.List.of());
+
+    mockMvc.perform(get("/api/v1/supplier/mall/listings"))
+        .andExpect(status().isForbidden());
+
+    String buyerToken = loginAndExtractToken("""
+        {"account": "buyer", "password": "demo123456", "scope": "BUYER", "tenantId": "tenant-acme"}
+        """);
+    mockMvc.perform(get("/api/v1/supplier/mall/listings")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
+    String supplierToken = loginAndExtractToken("""
+        {"account": "supplier", "password": "demo123456", "scope": "SUPPLIER", "supplierId": "ent-supplier-sunrise"}
+        """);
+    mockMvc.perform(get("/api/v1/supplier/mall/listings")
+            .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk());
   }
 }

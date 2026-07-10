@@ -211,6 +211,11 @@ public class PurchaseOrderApplicationService {
     return toResponse(purchaseOrderMapper.findByTenantAndId(tenantId, orderId));
   }
 
+  // 商城直购行(跨模块编排用的简单命令对象,避免暴露 api DTO)。
+  public record DirectOrderLine(
+      String description, String unit, java.math.BigDecimal quantity, java.math.BigDecimal unitPrice) {
+  }
+
   // 商城直购订单:由商城模块编排调用,锚点 RFQ 已就位;返回订单号(避免跨模块暴露 api DTO)。
   @Transactional
   public String createMallOrder(
@@ -222,6 +227,22 @@ public class PurchaseOrderApplicationService {
       String lineUnit,
       java.math.BigDecimal quantity,
       java.math.BigDecimal unitPrice) {
+    return createMallOrder(
+        rfqId,
+        supplierId,
+        amount,
+        expectedReceiptDate,
+        java.util.List.of(new DirectOrderLine(lineDescription, lineUnit, quantity, unitPrice)));
+  }
+
+  // 商城购物车结算:同一供应商的多个商品合并为一张订单(多行明细)。
+  @Transactional
+  public String createMallOrder(
+      String rfqId,
+      String supplierId,
+      java.math.BigDecimal amount,
+      java.time.LocalDate expectedReceiptDate,
+      java.util.List<DirectOrderLine> lines) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
     String orderId = newId("po");
@@ -233,8 +254,10 @@ public class PurchaseOrderApplicationService {
         amount,
         PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
         expectedReceiptDate);
-    orderLineItemApplicationService.addDirectLine(
-        tenantId, orderId, lineDescription, lineUnit, quantity, unitPrice);
+    for (DirectOrderLine line : lines) {
+      orderLineItemApplicationService.addDirectLine(
+          tenantId, orderId, line.description(), line.unit(), line.quantity(), line.unitPrice());
+    }
     auditLogApplicationService.recordTenantAction(
         PurchaseOrderAuditAction.CREATED,
         AuditTargetType.PURCHASE_ORDER,

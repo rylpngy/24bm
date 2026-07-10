@@ -1,6 +1,7 @@
 package com.procurement.mall.api;
 
 import com.procurement.common.api.ApiResponse;
+import com.procurement.mall.api.CreateMallCartRequest;
 import com.procurement.mall.application.MallApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -44,5 +45,11 @@ public class BuyerMallController {
   @PostMapping("/orders")
   public ApiResponse<MallOrderResponse> createOrder(@Valid @RequestBody CreateMallOrderRequest request) {
     return ApiResponse.ok(mallApplicationService.createDirectOrder(request));
+  }
+
+  // 购物车结算:多商品一次下单,按供应商合并成单。
+  @PostMapping("/orders/batch")
+  public ApiResponse<List<MallOrderResponse>> checkoutCart(@Valid @RequestBody CreateMallCartRequest request) {
+    return ApiResponse.ok(mallApplicationService.checkoutCart(request));
   }
 }

@@ -45,6 +45,7 @@ export * from './supplier-evaluation-controller/supplier-evaluation-controller';
 export * from './supplier-fulfillment-controller/supplier-fulfillment-controller';
 export * from './supplier-invoice-controller/supplier-invoice-controller';
 export * from './supplier-invoice-reconciliation-controller/supplier-invoice-reconciliation-controller';
+export * from './supplier-mall-controller/supplier-mall-controller';
 export * from './supplier-notification-controller/supplier-notification-controller';
 export * from './supplier-order-controller/supplier-order-controller';
 export * from './supplier-profile-controller/supplier-profile-controller';
