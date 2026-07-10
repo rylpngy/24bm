@@ -31,3 +31,6 @@ backend-java/target
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Local cleanup archives (contain browser profile data, never commit)
+/cleaned_docs/
