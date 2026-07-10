@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Receipt } from 'lucide-react';
 import { useSupplierReceivableList } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
+import { FilterTabs, FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill} from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -32,27 +32,18 @@ export function ReceivablesPage() {
   return (
     <Panel title="发票应收" icon={Receipt} subtitle="发票 · 回款状态">
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap gap-2">
-          {statuses.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setStatusFilter(s);
-                setPage(1);
-              }}
-              className={cn(
-                'h-8 rounded-md border px-3 text-xs font-black transition',
-                s === statusFilter
-                  ? 'border-blue-200 bg-blue-50 text-blue-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
-              )}
-            >
-              {s}
-              {s !== '全部' && statusCount(s) > 0 && <span className="ml-1 text-slate-400">{statusCount(s)}</span>}
-            </button>
-          ))}
-        </div>
+        <FilterTabs
+          items={statuses.map((s) => ({
+            id: s,
+            label: s,
+            count: s === '全部' ? undefined : statusCount(s),
+          }))}
+          value={statusFilter}
+          onChange={(id) => {
+            setStatusFilter(id);
+            setPage(1);
+          }}
+        />
         <SearchInput
           className="mb-0 ml-auto"
           placeholder="按发票号 / 订单号搜索"
