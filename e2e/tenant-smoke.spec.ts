@@ -7,7 +7,7 @@ import { loginViaKeycloak, navButton } from './helpers';
 async function loginAsBuyer(page: Page) {
   await loginViaKeycloak(page);
   // 登录成功后左侧出现全局导航。
-  await expect(page.getByRole('button', { name: /供应商库/ })).toBeVisible();
+  await expect(navButton(page, /供应商库/)).toBeVisible();
 }
 
 test('未登录访问采购方端展示公开门户首页', async ({ page }) => {
@@ -37,13 +37,13 @@ test('门户登录入口展示分栏登录页面', async ({ page }) => {
 
 test('采购方登录后可进入工作台', async ({ page }) => {
   await loginAsBuyer(page);
-  await expect(page.getByRole('button', { name: /首页看板/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /采购需求/ })).toBeVisible();
+  await expect(navButton(page, /首页看板/)).toBeVisible();
+  await expect(navButton(page, /采购需求/)).toBeVisible();
 });
 
 test('供应商库列表:工具条 + 序号 + 分页', async ({ page }) => {
   await loginAsBuyer(page);
-  await page.getByRole('button', { name: /供应商库/ }).click();
+  await navButton(page, /供应商库/).click();
 
   // SRM 工作台二级导航 + 供应商列表(默认页)表头含序号。
   await expect(page.getByRole('columnheader', { name: '序号' })).toBeVisible();
@@ -55,7 +55,7 @@ test('供应商库列表:工具条 + 序号 + 分页', async ({ page }) => {
 
 test('采购需求列表:序号列 + 搜索', async ({ page }) => {
   await loginAsBuyer(page);
-  await page.getByRole('button', { name: /采购需求/ }).click();
+  await navButton(page, /采购需求/).click();
 
   await expect(page.getByRole('columnheader', { name: '序号' })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: '标题' })).toBeVisible();
