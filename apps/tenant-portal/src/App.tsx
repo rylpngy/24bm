@@ -20,7 +20,6 @@ import { DashboardPage } from './features/dashboard/dashboard-page';
 import { AnalyticsPage } from './features/analytics/analytics-page';
 import { BudgetsPage } from './features/budgets/budgets-page';
 import { AuditPage } from './features/audit/audit-page';
-import { QuoteComparisonPage } from './features/quotes/quote-comparison-page';
 import { TeamPage } from './features/team/team-page';
 import { OrgStructurePage } from './features/org/org-structure-page';
 import { ProcessEnginePage } from './features/process/process-engine-page';
@@ -109,8 +108,6 @@ export function App() {
         <InvoicesPage />
       ) : activeModuleId === 'payment-batches' ? (
         <PaymentBatchesPage />
-      ) : activeModuleId === 'quotes' ? (
-        <QuoteComparisonPage />
       ) : activeModuleId === 'process-engine' ? (
         <ProcessEnginePage />
       ) : activeModuleId === 'org' ? (

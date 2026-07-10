@@ -30,6 +30,7 @@ import type {
   ApiResponseAwardNoticeResponse,
   ApiResponseAwardNoticeVerifyResponse,
   ApiResponseBidEvaluationResponse,
+  ApiResponseInteger,
   ApiResponseListRfqClarificationResponse,
   ApiResponseListRfqResponse,
   ApiResponseListRfqSupplierPerformanceResponse,
@@ -251,6 +252,62 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getRfqCreateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const rfqRemind = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseInteger>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/remind`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getRfqRemindMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqRemind>>, TError,{rfqId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqRemind>>, TError,{rfqId: string}, TContext> => {
+
+const mutationKey = ['rfqRemind'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqRemind>>, {rfqId: string}> = (props) => {
+          const {rfqId} = props ?? {};
+
+          return  rfqRemind(rfqId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RfqRemindMutationResult = NonNullable<Awaited<ReturnType<typeof rfqRemind>>>
+    
+    export type RfqRemindMutationError = ErrorType<ApiResponseVoid>
+
+    export const useRfqRemind = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqRemind>>, TError,{rfqId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rfqRemind>>,
+        TError,
+        {rfqId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getRfqRemindMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

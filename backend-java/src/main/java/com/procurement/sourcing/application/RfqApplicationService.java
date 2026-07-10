@@ -356,6 +356,33 @@ public class RfqApplicationService {
     }
   }
 
+  // 一键催标:向本轮尚未提交报价的受邀供应商发送催报提醒,返回催促家数。
+  @Transactional
+  public int remindPendingSuppliers(String rfqId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    if (rfq == null) {
+      throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
+    }
+    rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfqId);
+    int reminded = 0;
+    for (String supplierId : rfqInviteMapper.listSupplierIds(tenantId, rfqId)) {
+      int submitted = quoteMapper.countSubmittedBySupplier(tenantId, rfqId, supplierId, rfq.currentRound());
+      if (submitted > 0) {
+        continue;
+      }
+      notificationApplicationService.notifyActiveSupplierUsers(
+          tenantId,
+          supplierId,
+          NotificationTitle.RFQ_INVITATION_UPDATED,
+          rfq.title() + " 报价截止 " + (rfq.deadlineAt() == null ? "临近" : rfq.deadlineAt().toLocalDate())
+              + ",请尽快提交报价。");
+      reminded++;
+    }
+    auditLogApplicationService.recordTenantAction(RfqAuditAction.UPDATED, AuditTargetType.RFQ, rfqId);
+    return reminded;
+  }
+
   // 商城直购锚点:方式=商城、直接已定标的 RFQ 记录,作为目录直购订单的来源与数据范围锚点。
   @Transactional
   public String createMallAnchor(String title, String supplierId) {
