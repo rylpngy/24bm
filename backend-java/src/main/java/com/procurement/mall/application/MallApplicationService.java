@@ -6,7 +6,9 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.mall.api.CreateMallCartRequest;
 import com.procurement.mall.api.CreateMallListingRequest;
 import com.procurement.mall.api.CreateMallOrderRequest;
+import com.procurement.mall.api.MallAnalyticsResponse;
 import com.procurement.mall.api.MallListingResponse;
+import com.procurement.mall.api.MallSupplierSpendResponse;
 import com.procurement.mall.api.MallOrderResponse;
 import com.procurement.mall.api.SupplierMallMaterialResponse;
 import com.procurement.mall.api.SupplierPublishMallListingRequest;
@@ -174,6 +176,27 @@ public class MallApplicationService {
   }
 
   private record CartLine(MallListing listing, BigDecimal quantity) {
+  }
+
+  // 商城消费分析:商城渠道订单量/金额与供应商集中度。
+  public MallAnalyticsResponse mallAnalytics() {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
+    java.util.List<com.procurement.mall.domain.MallSupplierSpend> spend =
+        mallListingMapper.mallSpendBySupplier(tenantId);
+    BigDecimal total = spend.stream()
+        .map(com.procurement.mall.domain.MallSupplierSpend::totalAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    int orders = spend.stream()
+        .mapToInt(com.procurement.mall.domain.MallSupplierSpend::orderCount)
+        .sum();
+    return new MallAnalyticsResponse(
+        orders,
+        total,
+        mallListingMapper.countOnShelf(tenantId),
+        spend.stream()
+            .map(sp -> new MallSupplierSpendResponse(
+                sp.supplierId(), sp.supplierName(), sp.orderCount(), sp.totalAmount()))
+            .toList());
   }
 
   // ====== 供应商自助货架 ======

@@ -10761,6 +10761,46 @@
         }
       }
     },
+    "/api/v1/buyer/mall/analytics": {
+      "get": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_analytics",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/invoices": {
       "get": {
         "tags": [
@@ -18150,6 +18190,60 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseMallAnalyticsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MallAnalyticsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MallAnalyticsResponse": {
+        "type": "object",
+        "properties": {
+          "totalOrders": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "onShelfListings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "supplierSpend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MallSupplierSpendResponse"
+            }
+          }
+        }
+      },
+      "MallSupplierSpendResponse": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "orderCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalAmount": {
+            "type": "number"
           }
         }
       },
