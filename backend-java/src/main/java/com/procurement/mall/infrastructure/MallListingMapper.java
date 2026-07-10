@@ -127,4 +127,25 @@ public interface MallListingMapper {
       where tenant_id = #{tenantId} and supplier_id = #{supplierId} and status = '已准入'
       """)
   int countAdmittedRelation(@Param("tenantId") String tenantId, @Param("supplierId") String supplierId);
+
+  // 商城消费:经商城锚点 RFQ(方式=商城)生成的订单,按供应商聚合。
+  @Select("""
+      select o.supplier_id as supplier_id,
+             coalesce(e.name, o.supplier_id) as supplier_name,
+             count(1) as order_count,
+             sum(o.amount) as total_amount
+      from purchase_orders o
+      join rfqs r on r.id = o.rfq_id and r.tenant_id = o.tenant_id
+      left join enterprises e on e.id = o.supplier_id
+      where o.tenant_id = #{tenantId} and r.method = '商城'
+      group by o.supplier_id, coalesce(e.name, o.supplier_id)
+      order by total_amount desc
+      """)
+  List<com.procurement.mall.domain.MallSupplierSpend> mallSpendBySupplier(@Param("tenantId") String tenantId);
+
+  @Select("""
+      select count(1) from mall_listings
+      where tenant_id = #{tenantId} and status = '在架'
+      """)
+  int countOnShelf(@Param("tenantId") String tenantId);
 }

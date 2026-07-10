@@ -23,6 +23,11 @@ public class BuyerMallController {
     this.mallApplicationService = mallApplicationService;
   }
 
+  @GetMapping("/analytics")
+  public ApiResponse<MallAnalyticsResponse> analytics() {
+    return ApiResponse.ok(mallApplicationService.mallAnalytics());
+  }
+
   @GetMapping("/listings")
   public ApiResponse<List<MallListingResponse>> listings(
       @RequestParam(required = false) String status,
