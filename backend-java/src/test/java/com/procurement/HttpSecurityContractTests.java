@@ -255,7 +255,8 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierNotificationController.class,
     DepartmentController.class,
     com.procurement.process.api.ProcessDefinitionController.class,
-    com.procurement.process.api.ProcessInstanceController.class
+    com.procurement.process.api.ProcessInstanceController.class,
+    com.procurement.mall.api.BuyerMallController.class
 })
 @Import({
     SecurityConfig.class,
@@ -295,6 +296,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private RfqApplicationService rfqApplicationService;
+
+  @MockBean
+  private com.procurement.mall.application.MallApplicationService mallApplicationService;
 
   @MockBean
   private com.procurement.sourcing.application.RfqClarificationApplicationService rfqClarificationApplicationService;
@@ -4820,5 +4824,29 @@ class HttpSecurityContractTests {
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
         OffsetDateTime.parse("2026-06-15T12:05:00+08:00"),
         null, null);
+  }
+
+  @Test
+  void mallEndpointsAreBuyerOnly() throws Exception {
+    when(mallApplicationService.listCurrentTenantListings(
+        org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(java.util.List.of());
+
+    mockMvc.perform(get("/api/v1/buyer/mall/listings"))
+        .andExpect(status().isForbidden());
+
+    String supplierToken = loginAndExtractToken("""
+        {"account": "supplier", "password": "demo123456", "scope": "SUPPLIER", "supplierId": "ent-supplier-sunrise"}
+        """);
+    mockMvc.perform(get("/api/v1/buyer/mall/listings")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    String buyerToken = loginAndExtractToken("""
+        {"account": "buyer", "password": "demo123456", "scope": "BUYER", "tenantId": "tenant-acme"}
+        """);
+    mockMvc.perform(get("/api/v1/buyer/mall/listings")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk());
   }
 }

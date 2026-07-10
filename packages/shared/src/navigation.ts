@@ -38,6 +38,7 @@ export const buyerAdminModules: AdminNavigationModule[] = [
   { id: 'approvals', label: '智能审批', desc: '待审批、AI 风险与流转记录' },
   { id: 'suppliers', label: '供应商库', desc: '私域关系、准入、分级、绩效' },
   { id: 'materials', label: '物料目录', desc: '物料与服务主数据', requiredPermission: 'buyer:material:read' },
+  { id: 'mall', label: '企业商城', desc: '协议价货架、目录直购', requiredPermission: 'buyer:material:read' },
   { id: 'rfqs', label: '询比项目', desc: '询比列表、邀请与状态', requiredPermission: 'buyer:rfq:read' },
   { id: 'quotes', label: '报价对比', desc: '报价比较、定标入口', requiredPermission: 'buyer:rfq:read' },
   { id: 'orders', label: '采购订单', desc: '订单列表与生成订单' },

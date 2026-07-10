@@ -211,6 +211,42 @@ public class PurchaseOrderApplicationService {
     return toResponse(purchaseOrderMapper.findByTenantAndId(tenantId, orderId));
   }
 
+  // 商城直购订单:由商城模块编排调用,锚点 RFQ 已就位;返回订单号(避免跨模块暴露 api DTO)。
+  @Transactional
+  public String createMallOrder(
+      String rfqId,
+      String supplierId,
+      java.math.BigDecimal amount,
+      java.time.LocalDate expectedReceiptDate,
+      String lineDescription,
+      String lineUnit,
+      java.math.BigDecimal quantity,
+      java.math.BigDecimal unitPrice) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
+    String orderId = newId("po");
+    purchaseOrderMapper.insert(
+        orderId,
+        tenantId,
+        rfqId,
+        supplierId,
+        amount,
+        PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
+        expectedReceiptDate);
+    orderLineItemApplicationService.addDirectLine(
+        tenantId, orderId, lineDescription, lineUnit, quantity, unitPrice);
+    auditLogApplicationService.recordTenantAction(
+        PurchaseOrderAuditAction.CREATED,
+        AuditTargetType.PURCHASE_ORDER,
+        orderId);
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId,
+        supplierId,
+        NotificationTitle.PURCHASE_ORDER_PENDING_CONFIRMATION,
+        "商城直购订单 " + orderId + " 已生成，请及时确认订单。");
+    return orderId;
+  }
+
   private PurchaseOrderResponse toResponse(PurchaseOrder order) {
     return new PurchaseOrderResponse(
         order.id(),
