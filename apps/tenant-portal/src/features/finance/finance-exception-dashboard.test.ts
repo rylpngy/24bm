@@ -63,7 +63,7 @@ describe('buildFinanceExceptionDashboard', () => {
             id: 'archive-1',
             paymentBatchNo: 'PB-ARCHIVE',
             exceptionType: '凭证缺失',
-            approvalStatus: '审批中',
+            approvalStatus: '待审批',
             actionStatus: '待处理',
             closureStatus: '未关闭',
           },

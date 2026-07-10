@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Banknote } from 'lucide-react';
 import {
@@ -5,6 +6,7 @@ import {
   useBuyerFinanceActionPaymentBlockResolutions,
   useBuyerFinanceActionPaymentExecutionRecords,
   useBuyerFinanceActionRegisterPaymentExecutionRecord,
+  useBuyerFinanceActionUpdatePaymentBatchStatus,
   useBuyerFinanceActionUpdatePaymentBlockResolutionStatus,
 } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
@@ -24,10 +26,28 @@ function PaymentBatchExecutionDetails({
   busy,
 }: {
   summary?: PaymentBatchExecutionSummary;
-  onRegister: (executionRecordId: string) => void;
+  onRegister: (
+    executionRecordId: string,
+    evidence: { releaseEvidenceNo?: string; releaseRemark?: string },
+  ) => void;
   onResolveBlock: (resolutionId: string) => void;
   busy: boolean;
 }) {
+  // 登记付款前先展开放款证据表单;凭证号/备注选填,留空则按无证据登记。
+  const [evidenceRecordId, setEvidenceRecordId] = useState<string | null>(null);
+  const [evidenceNo, setEvidenceNo] = useState('');
+  const [evidenceRemark, setEvidenceRemark] = useState('');
+
+  const submitRegister = (recordId: string) => {
+    onRegister(recordId, {
+      releaseEvidenceNo: evidenceNo.trim() || undefined,
+      releaseRemark: evidenceRemark.trim() || undefined,
+    });
+    setEvidenceRecordId(null);
+    setEvidenceNo('');
+    setEvidenceRemark('');
+  };
+
   if (!summary || summary.totalCount === 0) {
     return (
       <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
@@ -64,10 +84,12 @@ function PaymentBatchExecutionDetails({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => onRegister(record.id)}
+                    onClick={() =>
+                      setEvidenceRecordId((current) => (current === record.id ? null : record.id))
+                    }
                     className="rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
-                    登记付款
+                    {evidenceRecordId === record.id ? '收起' : '登记付款'}
                   </button>
                 )}
                 {record.status === '暂不可登记' && record.resolutionId && record.resolutionStatus !== '已处理' && (
@@ -87,6 +109,33 @@ function PaymentBatchExecutionDetails({
                 ? `放款凭证 ${record.evidence}`
                 : record.explanation || record.nextAction || '暂无执行说明'}
             </p>
+            {evidenceRecordId === record.id && record.status === '待登记付款' && (
+              <div className="mt-2 rounded-md border border-emerald-100 bg-emerald-50/60 p-2">
+                <p className="text-[11px] font-black text-emerald-800">放款证据(选填)</p>
+                <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
+                  <input
+                    value={evidenceNo}
+                    onChange={(e) => setEvidenceNo(e.target.value)}
+                    placeholder="放款凭证号,如 BANK-20260710-001"
+                    className="rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 placeholder:text-slate-300"
+                  />
+                  <input
+                    value={evidenceRemark}
+                    onChange={(e) => setEvidenceRemark(e.target.value)}
+                    placeholder="放款备注,如付款流水说明"
+                    className="rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 placeholder:text-slate-300"
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => submitRegister(record.id)}
+                  className="mt-1.5 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  确认登记付款
+                </button>
+              </div>
+            )}
             {record.nextAction && (
               <p className="mt-1 break-words text-[11px] font-bold text-slate-400">
                 下一步：{record.nextAction}
@@ -112,24 +161,47 @@ export function PaymentBatchesPage() {
   const blockResolutions = useBuyerFinanceActionPaymentBlockResolutions();
   const registerPayment = useBuyerFinanceActionRegisterPaymentExecutionRecord();
   const resolveBlock = useBuyerFinanceActionUpdatePaymentBlockResolutionStatus();
+  const updateBatchStatus = useBuyerFinanceActionUpdatePaymentBatchStatus();
+  const [actionError, setActionError] = useState<string | null>(null);
   const batches = query.data?.data ?? [];
   const executionSummaries = buildPaymentBatchExecutionSummaries(
     executions.data?.data ?? [],
     blockResolutions.data?.data ?? [],
   );
   const refreshFinanceQueries = () => {
+    setActionError(null);
     queryClient.invalidateQueries({
       predicate: (cachedQuery) =>
         String(cachedQuery.queryKey[0] ?? '').includes('/api/v1/buyer/payment'),
     });
   };
-  const busy = registerPayment.isPending || resolveBlock.isPending;
+  const reportActionError = (error: unknown) => {
+    const message =
+      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+      (error as Error)?.message ??
+      '操作失败,请稍后重试';
+    setActionError(message);
+  };
+  const changeBatchStatus = (paymentBatchNo: string | undefined, batchStatus: string) => {
+    if (!paymentBatchNo) return;
+    updateBatchStatus.mutate(
+      { paymentBatchNo, data: { batchStatus } },
+      { onSuccess: refreshFinanceQueries, onError: reportActionError },
+    );
+  };
+  const busy = registerPayment.isPending || resolveBlock.isPending || updateBatchStatus.isPending;
 
   return (
     <Panel title="付款批次" icon={Banknote} subtitle="批量付款计划 · 执行登记 · 阻断汇总">
       <div className="mb-4">
         <CountTag>共 {batches.length} 条</CountTag>
       </div>
+
+      {actionError && (
+        <div className="mb-3">
+          <FeedbackNotice tone="error" message={actionError} />
+        </div>
+      )}
 
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载付款批次…" />
@@ -161,6 +233,38 @@ export function PaymentBatchesPage() {
                     <StatusPill
                       label={allRegistered ? '已全部登记' : blocked ? '存在阻断' : b.executionDecision ?? '—'}
                     />
+                    {b.batchStatus !== '审批中'
+                      && b.batchStatus !== '可安排付款'
+                      && b.batchStatus !== '已付款归档' && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => changeBatchStatus(b.paymentBatchNo, '审批中')}
+                        className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                      >
+                        提交批次审批
+                      </button>
+                    )}
+                    {b.batchStatus === '审批中' && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => changeBatchStatus(b.paymentBatchNo, '可安排付款')}
+                        className="rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                      >
+                        审批通过
+                      </button>
+                    )}
+                    {b.batchStatus === '可安排付款' && allRegistered && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => changeBatchStatus(b.paymentBatchNo, '已付款归档')}
+                        className="rounded-md bg-slate-700 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                      >
+                        归档批次
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -206,8 +310,18 @@ export function PaymentBatchesPage() {
                 <PaymentBatchExecutionDetails
                   summary={b.paymentBatchNo ? executionSummaries.get(b.paymentBatchNo) : undefined}
                   busy={busy}
-                  onRegister={(executionRecordId) =>
-                    registerPayment.mutate({ executionRecordId }, { onSuccess: refreshFinanceQueries })
+                  onRegister={(executionRecordId, evidence) =>
+                    registerPayment.mutate(
+                      {
+                        executionRecordId,
+                        data: {
+                          paymentStatus: '已付款',
+                          releaseEvidenceNo: evidence.releaseEvidenceNo,
+                          releaseRemark: evidence.releaseRemark,
+                        },
+                      },
+                      { onSuccess: refreshFinanceQueries, onError: reportActionError },
+                    )
                   }
                   onResolveBlock={(resolutionId) =>
                     resolveBlock.mutate(
@@ -219,7 +333,7 @@ export function PaymentBatchesPage() {
                           nextStep: '可继续登记付款',
                         },
                       },
-                      { onSuccess: refreshFinanceQueries },
+                      { onSuccess: refreshFinanceQueries, onError: reportActionError },
                     )
                   }
                 />

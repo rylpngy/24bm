@@ -120,12 +120,12 @@ export function buildFinanceExceptionDashboard(
     items.push({
       id: `archive:${request.id}`,
       type: '归档异常',
-      severity: request.approvalStatus === '审批中' ? 'medium' : 'low',
+      severity: request.approvalStatus === '待审批' ? 'medium' : 'low',
       title: request.paymentBatchNo ?? '未归属批次',
       subtitle: request.exceptionType ?? '付款归档异常',
       reason: request.exceptionReason,
       nextAction:
-        request.approvalStatus === '审批中'
+        request.approvalStatus === '待审批'
           ? '完成异常审批'
           : request.actionStatus === '待处理'
             ? '补齐归档动作'

@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ClipboardCheck, FileWarning, Scale, TimerReset } from 'lucide-react';
 import {
+  useBuyerFinanceActionClosePaymentArchiveExceptionRequest,
+  useBuyerFinanceActionCompletePaymentArchiveExceptionAction,
   useBuyerFinanceActionPaymentArchiveExceptionRequests,
   useBuyerFinanceActionPaymentBlockResolutions,
   useBuyerFinanceActionPaymentExecutionRecords,
+  useBuyerFinanceActionReviewPaymentArchiveExceptionRequest,
   useBuyerFinanceActionVarianceHandlings,
+  type PaymentArchiveExceptionRequestResponse,
   type PaymentBatchResponse,
 } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
@@ -34,7 +39,7 @@ const severityTone = {
   low: 'border-slate-200 bg-slate-50 text-slate-700',
 };
 
-function ExceptionCard({ item }: { item: FinanceExceptionItem }) {
+function ExceptionCard({ item, actions }: { item: FinanceExceptionItem; actions?: ReactNode }) {
   const Icon = typeIcon[item.type];
   return (
     <div className={`rounded-lg border p-3 ${severityTone[item.severity]}`}>
@@ -59,17 +64,118 @@ function ExceptionCard({ item }: { item: FinanceExceptionItem }) {
           <p className="mt-1 break-words text-xs font-bold">{item.nextAction ?? '—'}</p>
         </div>
       </div>
+      {actions && <div className="mt-2 flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
+const actionButtonClass =
+  'rounded-md px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300';
+
+// 归档异常处置动作:待审批→通过/驳回;已通过→登记受控处理→关闭申请。
+function ArchiveExceptionActions({
+  request,
+  busy,
+  onReview,
+  onCompleteAction,
+  onClose,
+}: {
+  request: PaymentArchiveExceptionRequestResponse;
+  busy: boolean;
+  onReview: (requestId: string, approved: boolean) => void;
+  onCompleteAction: (requestId: string) => void;
+  onClose: (requestId: string) => void;
+}) {
+  if (!request.id) return null;
+  const requestId = request.id;
+  if (request.approvalStatus === '待审批') {
+    return (
+      <>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onReview(requestId, true)}
+          className={`${actionButtonClass} bg-emerald-600`}
+        >
+          审批通过
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onReview(requestId, false)}
+          className={`${actionButtonClass} bg-red-600`}
+        >
+          驳回
+        </button>
+      </>
+    );
+  }
+  if (request.approvalStatus === '已通过' && request.actionStatus === '待处理') {
+    return (
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => onCompleteAction(requestId)}
+        className={`${actionButtonClass} bg-blue-600`}
+      >
+        登记受控处理
+      </button>
+    );
+  }
+  if (
+    request.approvalStatus === '已通过'
+    && request.actionStatus === '已登记受控处理'
+    && request.closureStatus !== '已关闭'
+  ) {
+    return (
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => onClose(requestId)}
+        className={`${actionButtonClass} bg-slate-700`}
+      >
+        关闭异常申请
+      </button>
+    );
+  }
+  return null;
+}
+
 export function FinanceExceptionDashboardPanel({ paymentBatches }: { paymentBatches: PaymentBatchResponse[] }) {
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FinanceExceptionFilter>('全部');
   const [expanded, setExpanded] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const executions = useBuyerFinanceActionPaymentExecutionRecords();
   const blockResolutions = useBuyerFinanceActionPaymentBlockResolutions();
   const variances = useBuyerFinanceActionVarianceHandlings();
   const archiveExceptions = useBuyerFinanceActionPaymentArchiveExceptionRequests();
+  const reviewArchiveException = useBuyerFinanceActionReviewPaymentArchiveExceptionRequest();
+  const completeArchiveAction = useBuyerFinanceActionCompletePaymentArchiveExceptionAction();
+  const closeArchiveException = useBuyerFinanceActionClosePaymentArchiveExceptionRequest();
+
+  const archiveRequestsById = new Map(
+    (archiveExceptions.data?.data ?? []).map((request) => [`archive:${request.id}`, request]),
+  );
+  const archiveBusy =
+    reviewArchiveException.isPending
+    || completeArchiveAction.isPending
+    || closeArchiveException.isPending;
+  const refreshFinanceQueries = () => {
+    setActionError(null);
+    queryClient.invalidateQueries({
+      predicate: (cachedQuery) =>
+        String(cachedQuery.queryKey[0] ?? '').includes('/api/v1/buyer/payment'),
+    });
+  };
+  const reportActionError = (error: unknown) => {
+    const message =
+      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+      (error as Error)?.message ??
+      '操作失败,请稍后重试';
+    setActionError(message);
+  };
+  const mutationHandlers = { onSuccess: refreshFinanceQueries, onError: reportActionError };
 
   const loading =
     executions.isLoading ||
@@ -110,6 +216,12 @@ export function FinanceExceptionDashboardPanel({ paymentBatches }: { paymentBatc
         </div>
         <StatusPill label={dashboard.summary.totalExceptions > 0 ? `${dashboard.summary.totalExceptions} 项待处理` : '暂无异常'} />
       </div>
+
+      {actionError && (
+        <div className="mt-3">
+          <FeedbackNotice tone="error" message={actionError} />
+        </div>
+      )}
 
       {loading ? (
         <div className="mt-3">
@@ -158,9 +270,42 @@ export function FinanceExceptionDashboardPanel({ paymentBatches }: { paymentBatc
                 </div>
               ) : (
                 <div className="mt-3 grid gap-3 xl:grid-cols-2">
-                  {view.items.map((item) => (
-                    <ExceptionCard key={item.id} item={item} />
-                  ))}
+                  {view.items.map((item) => {
+                    const archiveRequest =
+                      item.type === '归档异常' ? archiveRequestsById.get(item.id) : undefined;
+                    return (
+                      <ExceptionCard
+                        key={item.id}
+                        item={item}
+                        actions={
+                          archiveRequest && (
+                            <ArchiveExceptionActions
+                              request={archiveRequest}
+                              busy={archiveBusy}
+                              onReview={(requestId, approved) =>
+                                reviewArchiveException.mutate(
+                                  { requestId, data: { approved, comment: approved ? '同意归档异常处理' : '驳回归档异常申请' } },
+                                  mutationHandlers,
+                                )
+                              }
+                              onCompleteAction={(requestId) =>
+                                completeArchiveAction.mutate(
+                                  { requestId, data: { actionResult: '已按受控流程补齐归档动作' } },
+                                  mutationHandlers,
+                                )
+                              }
+                              onClose={(requestId) =>
+                                closeArchiveException.mutate(
+                                  { requestId, data: { closureResult: '异常已处置完毕,关闭申请' } },
+                                  mutationHandlers,
+                                )
+                              }
+                            />
+                          )
+                        }
+                      />
+                    );
+                  })}
                 </div>
               )}
 
