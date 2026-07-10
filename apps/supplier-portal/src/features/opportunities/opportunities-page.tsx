@@ -201,6 +201,18 @@ export function OpportunitiesPage() {
                   <MiniFact label="已提交报价" value={String((r.quotes ?? []).length)} />
                 </div>
 
+                {r.method === '竞价' && (
+                  <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2 text-[11px] font-bold text-amber-800">
+                    竞价项目:起拍价 ¥{r.auctionStartPrice?.toLocaleString('zh-CN') ?? '—'}
+                    {' · '}当前最低报价 {r.auctionLowestAmount != null ? `¥${r.auctionLowestAmount.toLocaleString('zh-CN')}` : '暂无出价'}
+                    {' · '}本次出价上限 ¥{(
+                      r.auctionLowestAmount != null
+                        ? r.auctionLowestAmount - (r.auctionMinDecrement ?? 0)
+                        : r.auctionStartPrice ?? 0
+                    ).toLocaleString('zh-CN')}
+                  </div>
+                )}
+
                 {(r.quoteRequirement || r.deliveryRequirement) && (
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">

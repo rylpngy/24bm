@@ -95,6 +95,9 @@ export function RfqsPage() {
   const [collectionMethod, setCollectionMethod] = useState('公开');
   const [quoteRequirement, setQuoteRequirement] = useState('');
   const [deliveryRequirement, setDeliveryRequirement] = useState('');
+  // 竞价专属参数:起拍价(必填)与最小降价步长(选填)。
+  const [auctionStartPrice, setAuctionStartPrice] = useState('');
+  const [auctionMinDecrement, setAuctionMinDecrement] = useState('');
 
   const list = rfqs.data?.data ?? [];
   const demands = approvedDemands.data?.data ?? [];
@@ -129,6 +132,7 @@ export function RfqsPage() {
     method === '单一来源' || (method !== '商城' && collectionMethod === '邀请');
   const supplierRequirementMet =
     !supplierSelectionRequired || (method === '单一来源' ? supplierIds.length === 1 : supplierIds.length >= 3);
+  const auctionParamsMet = method !== '竞价' || Number(auctionStartPrice) > 0;
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -147,6 +151,9 @@ export function RfqsPage() {
           deadlineAt: deadline ? `${deadline}T18:00:00+08:00` : undefined,
           evaluationMethod,
           method,
+          auctionStartPrice: method === '竞价' ? Number(auctionStartPrice) : undefined,
+          auctionMinDecrement:
+            method === '竞价' && auctionMinDecrement ? Number(auctionMinDecrement) : undefined,
           quoteRequirement: quoteRequirement || undefined,
           deliveryRequirement:
             [deliveryRequirement, `供应商征集方式：${supplierCollectionLabel}`].filter(Boolean).join('\n') || undefined,
@@ -163,6 +170,8 @@ export function RfqsPage() {
           setCollectionMethod('公开');
           setQuoteRequirement('');
           setDeliveryRequirement('');
+          setAuctionStartPrice('');
+          setAuctionMinDecrement('');
           setShowForm(false);
           refresh();
         },
@@ -359,6 +368,32 @@ export function RfqsPage() {
               </p>
             </div>
           </div>
+          {method === '竞价' && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-black text-slate-500">起拍价(元,必填)</label>
+                <input
+                  className={inputCls}
+                  type="number"
+                  min="0"
+                  placeholder="如 100000"
+                  value={auctionStartPrice}
+                  onChange={(e) => setAuctionStartPrice(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-black text-slate-500">最小降价步长(元,选填)</label>
+                <input
+                  className={inputCls}
+                  type="number"
+                  min="0"
+                  placeholder="缺省 0,即只须低于当前最低价"
+                  value={auctionMinDecrement}
+                  onChange={(e) => setAuctionMinDecrement(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
               <label className="text-xs font-black text-slate-500">报价要求</label>
@@ -415,7 +450,7 @@ export function RfqsPage() {
             onClick={submitCreate}
             busy={create.isPending}
             pendingLabel="创建中"
-            disabled={!title || !demandId || !supplierRequirementMet}
+            disabled={!title || !demandId || !supplierRequirementMet || !auctionParamsMet}
           >
             创建询比
           </PrimaryActionButton>
@@ -596,6 +631,13 @@ export function RfqsPage() {
                       <div className="mb-2 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2 text-[11px] font-bold text-sky-700">
                         {r.method ?? '采购方式'} · 定标门槛:{awardGateHint(r.method ?? undefined, (r.quotes ?? []).length)}
                       </div>
+                      {r.method === '竞价' && (
+                        <div className="mb-2 rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2 text-[11px] font-bold text-amber-700">
+                          竞价规则:起拍价 ¥{r.auctionStartPrice?.toLocaleString('zh-CN') ?? '—'}
+                          {' · '}最小降价步长 ¥{r.auctionMinDecrement?.toLocaleString('zh-CN') ?? '0'}
+                          {' · '}当前最低报价 {r.auctionLowestAmount != null ? `¥${r.auctionLowestAmount.toLocaleString('zh-CN')}` : '暂无出价'}
+                        </div>
+                      )}
                       {r.id && <RfqSupplierPerformance rfqId={r.id} supplierNames={supplierNames} />}
                       <QuoteComparisonTable
                         quotes={r.quotes ?? []}

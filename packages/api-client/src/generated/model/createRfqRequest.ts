@@ -15,4 +15,6 @@ export interface CreateRfqRequest {
   deliveryRequirement?: string;
   evaluationMethod?: string;
   method?: string;
+  auctionStartPrice?: number;
+  auctionMinDecrement?: number;
 }

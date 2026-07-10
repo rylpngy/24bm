@@ -14,5 +14,8 @@ public record CreateRfqRequest(
     String quoteRequirement,
     String deliveryRequirement,
     String evaluationMethod,
-    String method) {
+    String method,
+    // 竞价专属:起拍价(竞价必填)与最小降价步长(可选,缺省 0)。
+    java.math.BigDecimal auctionStartPrice,
+    java.math.BigDecimal auctionMinDecrement) {
 }

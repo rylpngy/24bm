@@ -16,6 +16,7 @@ import com.procurement.sourcing.domain.QuoteAuditAction;
 import com.procurement.sourcing.domain.QuoteLineItem;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqAuctionPolicy;
 import com.procurement.sourcing.domain.RfqMethod;
 import com.procurement.sourcing.domain.RfqQuoteInvitationPolicy;
 import com.procurement.sourcing.domain.RfqQuoteSubmissionPolicy;
@@ -114,6 +115,13 @@ public class QuoteApplicationService {
 
     String quoteId = newId("quote");
     BigDecimal amount = effectiveAmount(request.amount(), request.lineItems());
+    RfqAuctionPolicy.requireValidBid(
+        rfq.method(),
+        rfq.auctionStartPrice(),
+        rfq.auctionMinDecrement(),
+        quoteMapper.findLowestSubmittedAmount(rfq.tenantId(), rfqId, rfq.currentRound()),
+        amount,
+        rfqId);
     try {
       quoteMapper.insert(
           quoteId,
@@ -160,6 +168,13 @@ public class QuoteApplicationService {
     rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfq.id());
 
     BigDecimal amount = effectiveAmount(request.amount(), request.lineItems());
+    RfqAuctionPolicy.requireValidBid(
+        rfq.method(),
+        rfq.auctionStartPrice(),
+        rfq.auctionMinDecrement(),
+        quoteMapper.findLowestSubmittedAmount(rfq.tenantId(), rfq.id(), rfq.currentRound()),
+        amount,
+        rfq.id());
     int updated = quoteMapper.updateSubmittedQuote(
         quote.tenantId(),
         quoteId,
@@ -280,7 +295,18 @@ public class QuoteApplicationService {
         rfq.currentRound(),
         rfq.finalRound(),
         RfqMethod.orDefault(rfq.method()),
-        rfq.closeReason());
+        rfq.closeReason(),
+        rfq.auctionStartPrice(),
+        rfq.auctionMinDecrement(),
+        auctionLowestAmount(rfq));
+  }
+
+  // 竞价的当前最低价对受邀供应商公开(价格竞争的核心信息);其它方式保持封存返回 null。
+  private BigDecimal auctionLowestAmount(Rfq rfq) {
+    if (!RfqAuctionPolicy.isAuction(rfq.method())) {
+      return null;
+    }
+    return quoteMapper.findLowestSubmittedAmount(rfq.tenantId(), rfq.id(), rfq.currentRound());
   }
 
   private String newId(String prefix) {
