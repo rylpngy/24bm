@@ -239,6 +239,7 @@ export function PaymentBatchesPage() {
                       <button
                         type="button"
                         disabled={busy}
+                        aria-label={`提交批次审批 ${b.paymentBatchNo}`}
                         onClick={() => changeBatchStatus(b.paymentBatchNo, '审批中')}
                         className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                       >
@@ -249,6 +250,7 @@ export function PaymentBatchesPage() {
                       <button
                         type="button"
                         disabled={busy}
+                        aria-label={`批次审批通过 ${b.paymentBatchNo}`}
                         onClick={() => changeBatchStatus(b.paymentBatchNo, '可安排付款')}
                         className="rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                       >
@@ -259,6 +261,7 @@ export function PaymentBatchesPage() {
                       <button
                         type="button"
                         disabled={busy}
+                        aria-label={`归档批次 ${b.paymentBatchNo}`}
                         onClick={() => changeBatchStatus(b.paymentBatchNo, '已付款归档')}
                         className="rounded-md bg-slate-700 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                       >

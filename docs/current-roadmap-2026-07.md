@@ -195,10 +195,12 @@ Completed 2026-07-10 (finance/contract closeout slice):
 - `scripts/portal-api-acceptance.mjs` now runs Track B write-path acceptance: unapproved-batch registration rejection, batch status round-trip, milestone out-of-order pay rejection, and budget `disbursed` exposure. Demo seed `V243` adds the finance approval templates the clean migration+demo path was missing.
 - `DepartmentBudgetMapperSqlTests` guards the paid-milestone → contract → order → RFQ → demand → department budget `disbursed` chain.
 
-Remaining candidates:
+Track B closeout complete (2026-07-10):
 
-- Upgrade tenant-portal E2E from element-visibility smoke to a behavioral finance flow (generate schedule → reach → register → dashboard counts).
-- Contract approval review action (`PUT contracts/{id}/approval-review`) is not yet wired in the frontend.
+- `e2e/tenant-finance-flow.spec.ts` adds behavioral coverage: the release-evidence form is submitted against an unapproved batch and the backend guard error surfaces in the UI (no state change), and batch submit-for-approval advances status while premature approval is rejected. Both are rerun-tolerant.
+- Contract approval review (`PUT contracts/{id}/approval-review`) is wired on the contracts page: contracts in 审批中 expose approve/reject actions (approve → 已生效, reject → back to 草案).
+
+Track B is now closed; the next business track decision (C tender/auction vs D platform ecosystem) should follow pilot feedback.
 
 ### Track C: Tender/Auction Expansion
 
