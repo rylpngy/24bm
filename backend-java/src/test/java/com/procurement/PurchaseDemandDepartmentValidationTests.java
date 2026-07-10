@@ -22,7 +22,9 @@ import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +51,7 @@ class PurchaseDemandDepartmentValidationTests {
           purchaseDemandItemMapper,
           approvalTaskMapper,
           approvalTaskApplicationService,
+          org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class),
           departmentMapper,
           auditLogApplicationService,
           notificationApplicationService,
@@ -112,6 +115,39 @@ class PurchaseDemandDepartmentValidationTests {
         org.mockito.ArgumentMatchers.eq("buyer-user-1"),
         org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(120000)),
         org.mockito.ArgumentMatchers.eq("草稿"), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
+  void createDemandUsesDepartmentDateSequenceAsBusinessNumber() {
+    TenantContext.set("tenant-1", null, "buyer-user-1");
+    String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
+    when(purchaseDemandMapper.countByTenantAndIdPrefix("tenant-1", "IT" + date)).thenReturn(7);
+    when(purchaseDemandMapper.findByTenantAndId("tenant-1", "IT" + date + "008"))
+        .thenReturn(demand("IT" + date + "008"));
+    when(purchaseDemandItemMapper.listByDemand("tenant-1", "IT" + date + "008")).thenReturn(List.of());
+
+    var response = purchaseDemandApplicationService.create(new CreatePurchaseDemandRequest(
+        "服务器扩容采购",
+        "dept-it",
+        BigDecimal.valueOf(240000),
+        List.of(new PurchaseDemandLineItemRequest("mat-server", BigDecimal.valueOf(4))),
+        java.time.LocalDate.parse("2026-07-30"),
+        "高",
+        "生产环境扩容"));
+
+    assertThat(response.id()).isEqualTo("IT" + date + "008");
+    verify(purchaseDemandMapper).insert(
+        org.mockito.ArgumentMatchers.eq("IT" + date + "008"),
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("服务器扩容采购"),
+        org.mockito.ArgumentMatchers.eq("dept-it"),
+        org.mockito.ArgumentMatchers.eq("buyer-user-1"),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(240000)),
+        org.mockito.ArgumentMatchers.eq("草稿"),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
   }
 
   @Test

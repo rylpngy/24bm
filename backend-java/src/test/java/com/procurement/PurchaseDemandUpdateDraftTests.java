@@ -46,6 +46,7 @@ class PurchaseDemandUpdateDraftTests {
           purchaseDemandItemMapper,
           approvalTaskMapper,
           approvalTaskApplicationService,
+          org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class),
           departmentMapper,
           auditLogApplicationService,
           notificationApplicationService,

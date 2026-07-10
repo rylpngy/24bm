@@ -24,6 +24,16 @@ public interface RfqDemandMapper {
       """)
   int countByTenantAndDemand(@Param("tenantId") String tenantId, @Param("demandId") String demandId);
 
+  @Select("""
+      select rd.rfq_id
+      from rfq_demands rd
+      join rfqs r on r.tenant_id = rd.tenant_id and r.id = rd.rfq_id
+      where rd.tenant_id = #{tenantId} and rd.demand_id = #{demandId}
+      order by r.created_at desc
+      limit 1
+      """)
+  String findLatestRfqIdByDemand(@Param("tenantId") String tenantId, @Param("demandId") String demandId);
+
   @Insert("""
       insert into rfq_demands (id, tenant_id, rfq_id, demand_id)
       values (#{id}, #{tenantId}, #{rfqId}, #{demandId})

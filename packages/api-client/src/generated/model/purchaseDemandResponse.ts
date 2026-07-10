@@ -21,4 +21,6 @@ export interface PurchaseDemandResponse {
   expectedDeliveryDate?: string;
   priority?: string;
   purpose?: string;
+  linkedRfqId?: string;
+  linkedRfqStatus?: string;
 }

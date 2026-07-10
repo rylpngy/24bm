@@ -124,4 +124,14 @@ public interface PurchaseDemandMapper {
   int countByTenantAndDepartment(
       @Param("tenantId") String tenantId,
       @Param("departmentId") String departmentId);
+
+  @Select("""
+      select count(*)
+      from purchase_demands
+      where tenant_id = #{tenantId}
+        and id like concat(#{idPrefix}, '%')
+      """)
+  int countByTenantAndIdPrefix(
+      @Param("tenantId") String tenantId,
+      @Param("idPrefix") String idPrefix);
 }

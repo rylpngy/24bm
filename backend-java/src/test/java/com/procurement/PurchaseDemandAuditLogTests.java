@@ -47,6 +47,7 @@ class PurchaseDemandAuditLogTests {
       purchaseDemandItemMapper,
       approvalTaskMapper,
       approvalTaskApplicationService,
+      org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class),
       departmentMapper,
       auditLogApplicationService,
       notificationApplicationService,
@@ -83,7 +84,7 @@ class PurchaseDemandAuditLogTests {
         org.mockito.ArgumentMatchers.eq("buyer-user-1"),
         org.mockito.ArgumentMatchers.eq("purchase_demand.created"),
         org.mockito.ArgumentMatchers.eq("purchase_demand"),
-        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("dem-")),
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && !id.isBlank()),
         org.mockito.ArgumentMatchers.isNull());
   }
 

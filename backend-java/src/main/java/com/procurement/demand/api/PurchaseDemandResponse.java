@@ -18,5 +18,7 @@ public record PurchaseDemandResponse(
     List<PurchaseDemandLineItemResponse> lineItems,
     LocalDate expectedDeliveryDate,
     String priority,
-    String purpose) {
+    String purpose,
+    String linkedRfqId,
+    String linkedRfqStatus) {
 }

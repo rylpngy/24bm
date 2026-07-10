@@ -25,17 +25,23 @@ import com.procurement.identity.domain.DataScope;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.organization.infrastructure.DepartmentMapper;
+import com.procurement.sourcing.application.RfqDemandLinkQueryService;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseDemandApplicationService {
+  private static final DateTimeFormatter DEMAND_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
+  private final RfqDemandLinkQueryService rfqDemandLinkQueryService;
   private final DepartmentMapper departmentMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -47,6 +53,7 @@ public class PurchaseDemandApplicationService {
       PurchaseDemandItemMapper purchaseDemandItemMapper,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
+      RfqDemandLinkQueryService rfqDemandLinkQueryService,
       DepartmentMapper departmentMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
@@ -56,6 +63,7 @@ public class PurchaseDemandApplicationService {
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
+    this.rfqDemandLinkQueryService = rfqDemandLinkQueryService;
     this.departmentMapper = departmentMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -104,7 +112,7 @@ public class PurchaseDemandApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     String userId = TenantAccessGuard.requireUserId("buyer demand APIs");
     requireActiveDepartment(tenantId, request.departmentId());
-    String demandId = newId("dem");
+    String demandId = nextDemandId(tenantId, request.departmentId());
 
     purchaseDemandMapper.insert(
         demandId,
@@ -276,6 +284,8 @@ public class PurchaseDemandApplicationService {
         .stream()
         .map(this::toLineItemResponse)
         .toList();
+    RfqDemandLinkQueryService.RfqDemandLink linkedRfq =
+        rfqDemandLinkQueryService.findLatestLinkForDemand(demand.tenantId(), demand.id());
 
     return new PurchaseDemandResponse(
         demand.id(),
@@ -290,11 +300,34 @@ public class PurchaseDemandApplicationService {
         lineItems,
         demand.expectedDeliveryDate(),
         demand.priority(),
-        demand.purpose());
+        demand.purpose(),
+        linkedRfq == null ? null : linkedRfq.rfqId(),
+        linkedRfq == null ? null : linkedRfq.status());
   }
 
   private PurchaseDemandLineItemResponse toLineItemResponse(PurchaseDemandItem item) {
     return new PurchaseDemandLineItemResponse(item.id(), item.materialId(), item.quantity());
+  }
+
+  private String nextDemandId(String tenantId, String departmentId) {
+    String prefix = departmentAbbreviation(departmentId) + LocalDate.now().format(DEMAND_DATE_FORMAT);
+    int nextSeq = purchaseDemandMapper.countByTenantAndIdPrefix(tenantId, prefix) + 1;
+    return prefix + String.format(Locale.ROOT, "%03d", nextSeq);
+  }
+
+  private static String departmentAbbreviation(String departmentId) {
+    return switch (departmentId) {
+      case "dept-it" -> "IT";
+      case "dept-finance" -> "FIN";
+      case "dept-admin" -> "ADM";
+      case "dept-purchase" -> "PUR";
+      case "dept-hq" -> "HQ";
+      default -> {
+        String normalized = departmentId == null ? "GEN" : departmentId.replace("dept-", "");
+        String letters = normalized.replaceAll("[^A-Za-z0-9]", "").toUpperCase(Locale.ROOT);
+        yield letters.isBlank() ? "GEN" : letters.substring(0, Math.min(3, letters.length()));
+      }
+    };
   }
 
   private String newId(String prefix) {
