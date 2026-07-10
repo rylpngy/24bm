@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Update;
 public interface RfqMapper {
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement, single_source_reason
       from rfqs
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -22,7 +22,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement, single_source_reason
       from rfqs
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -58,14 +58,14 @@ public interface RfqMapper {
       @Param("requesterId") String requesterId);
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement, single_source_reason
       from rfqs
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Rfq findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where r.id = #{rfqId}
@@ -75,7 +75,7 @@ public interface RfqMapper {
   Rfq findBySupplierInvite(@Param("rfqId") String rfqId, @Param("supplierId") String supplierId);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -86,7 +86,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -108,10 +108,10 @@ public interface RfqMapper {
   @Insert("""
       insert into rfqs (id, tenant_id, title, status, deadline_at, owner_id,
                         quote_requirement, delivery_requirement, evaluation_method, method,
-                        auction_start_price, auction_min_decrement)
+                        auction_start_price, auction_min_decrement, single_source_reason)
       values (#{id}, #{tenantId}, #{title}, #{status}, #{deadlineAt}, #{ownerId},
               #{quoteRequirement}, #{deliveryRequirement}, #{evaluationMethod}, #{method},
-              #{auctionStartPrice}, #{auctionMinDecrement})
+              #{auctionStartPrice}, #{auctionMinDecrement}, #{singleSourceReason})
       """)
   void insert(
       @Param("id") String id,
@@ -125,7 +125,8 @@ public interface RfqMapper {
       @Param("evaluationMethod") String evaluationMethod,
       @Param("method") String method,
       @Param("auctionStartPrice") java.math.BigDecimal auctionStartPrice,
-      @Param("auctionMinDecrement") java.math.BigDecimal auctionMinDecrement);
+      @Param("auctionMinDecrement") java.math.BigDecimal auctionMinDecrement,
+      @Param("singleSourceReason") String singleSourceReason);
 
   @Update("""
       update rfqs

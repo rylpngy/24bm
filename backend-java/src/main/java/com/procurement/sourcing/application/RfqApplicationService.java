@@ -233,6 +233,7 @@ public class RfqApplicationService {
     RfqMethod.requireSupplierCount(method, request.invitedSupplierIds().size());
     RfqAuctionPolicy.requireValidParams(
         method, request.auctionStartPrice(), request.auctionMinDecrement());
+    RfqMethod.requireSourceJustification(method, request.singleSourceReason());
 
     String rfqId = newId("rfq");
     rfqMapper.insert(
@@ -247,7 +248,8 @@ public class RfqApplicationService {
         orDefaultEvaluation(request.evaluationMethod()),
         method,
         request.auctionStartPrice(),
-        request.auctionMinDecrement());
+        request.auctionMinDecrement(),
+        blankToNull(request.singleSourceReason()));
 
     insertRfqDemandLinks(tenantId, rfqId, request.demandIds());
 
@@ -380,7 +382,8 @@ public class RfqApplicationService {
         rfq.closeReason(),
         rfq.auctionStartPrice(),
         rfq.auctionMinDecrement(),
-        auctionLowestAmount(rfq));
+        auctionLowestAmount(rfq),
+        rfq.singleSourceReason());
   }
 
   // 仅竞价方式回传当前轮最低已提交报价,供买卖双方观察价格竞争进度。

@@ -210,7 +210,8 @@ Assessment found 竞价/商城/单一来源 all rode the 询比 engine with no m
 - `RfqAuctionPolicy` enforces creation params (positive start price, auction-only fields) and bid rules (first bid ≤ start price, later bids must undercut the current lowest by the decrement) on both quote submit and update.
 - The current-round lowest bid is exposed to invited suppliers on auction RFQs only (`auctionLowestAmount`) — price competition is the point; other methods stay sealed.
 - Tenant portal exposes start-price/decrement inputs when creating a 竞价 RFQ and shows the auction rule line; supplier portal shows start price, current lowest, and the max allowed next bid.
-- Not yet: realtime push (polling only), auction-specific rounds/extension rules, 商城 module, 单一来源 mandatory justification field.
+- Not yet: realtime push (polling only), auction-specific rounds/extension rules, 商城 module.
+- 2026-07-10 follow-up: 单一来源 now requires a source justification (`single_source_reason`, V168) at creation — non-single-source methods reject the field; the reason is echoed on RFQ responses and shown in the tenant portal. This closes the last 单一来源 gap against the 1.0 framework.
 
 ### Track C: Tender/Auction Expansion
 

@@ -61,6 +61,21 @@ public final class RfqMethod {
     }
   }
 
+  // 单一来源须保留来源说明(审批留痕);其他方式不接受该字段,保持数据口径干净。
+  public static void requireSourceJustification(String method, String reason) {
+    String m = orDefault(method);
+    boolean blank = reason == null || reason.isBlank();
+    if (SINGLE_SOURCE.equals(m)) {
+      if (blank) {
+        throw new IllegalArgumentException("单一来源采购必须填写来源说明(选择该供应商的依据)");
+      }
+      return;
+    }
+    if (!blank) {
+      throw new IllegalArgumentException("仅单一来源方式可填写来源说明");
+    }
+  }
+
   // 询比/竞价指定供应商时不少于 3 家;单一来源有且仅有 1 家;商城不强制邀请供应商。
   public static void requireSupplierCount(String method, int count) {
     String m = orDefault(method);
