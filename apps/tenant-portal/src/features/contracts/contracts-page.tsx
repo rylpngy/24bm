@@ -5,6 +5,7 @@ import {
   useBuyerContractCreate,
   useBuyerContractList,
   useBuyerContractRenew,
+  useBuyerContractReviewApproval,
   useBuyerContractSubmitApproval,
   useBuyerContractUpdateArchiveStatus,
   useBuyerContractUpdateStatus,
@@ -49,6 +50,7 @@ export function ContractsPage() {
   const orders = usePurchaseOrderList();
   const create = useBuyerContractCreate();
   const submit = useBuyerContractSubmitApproval();
+  const reviewApproval = useBuyerContractReviewApproval();
   const renew = useBuyerContractRenew();
   const updateStatus = useBuyerContractUpdateStatus();
   const archive = useBuyerContractUpdateArchiveStatus();
@@ -93,6 +95,21 @@ export function ContractsPage() {
     submit.mutate(
       { contractId: c.id! },
       { onSuccess: () => { setFeedback('合同已提交审批'); refresh(); } },
+    );
+
+  const onReviewApproval = (c: (typeof contracts)[number], approved: boolean) =>
+    reviewApproval.mutate(
+      {
+        contractId: c.id!,
+        data: { approved, comment: approved ? '合同条款复核通过' : '合同条款需修订后重新提交' },
+      },
+      {
+        onSuccess: () => {
+          setFeedback(approved ? '合同审批通过,已生效' : '合同审批已驳回,退回草案');
+          refresh();
+        },
+        onError: () => setFeedback('复核失败:合同可能不在审批中或审批任务已被处理。'),
+      },
     );
 
   const onRenew = (c: (typeof contracts)[number]) =>
@@ -235,6 +252,26 @@ export function ContractsPage() {
                     >
                       提交审批
                     </button>
+                  )}
+                  {c.status === '审批中' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onReviewApproval(c, true)}
+                        disabled={reviewApproval.isPending}
+                        className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-400"
+                      >
+                        审批通过
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onReviewApproval(c, false)}
+                        disabled={reviewApproval.isPending}
+                        className="inline-flex h-8 items-center rounded-md bg-red-600 px-3 text-xs font-black text-white hover:bg-red-700 disabled:bg-slate-400"
+                      >
+                        驳回
+                      </button>
+                    </>
                   )}
                   {c.status === '已生效' && FULFILLMENT_NEXT[c.fulfillmentProgress ?? ''] && (
                     <button
