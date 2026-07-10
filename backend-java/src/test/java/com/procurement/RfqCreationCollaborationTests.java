@@ -101,7 +101,7 @@ class RfqCreationCollaborationTests {
         "办公电脑询价",
         List.of("demand-1"),
         List.of("supplier-1"),
-        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, null));
+        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, "原厂唯一授权服务商"));
 
     verify(auditLogApplicationService).recordTenantAction(
         RfqAuditAction.CREATED,
