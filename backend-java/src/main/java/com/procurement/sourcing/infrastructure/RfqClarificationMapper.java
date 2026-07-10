@@ -53,4 +53,16 @@ public interface RfqClarificationMapper {
       @Param("answer") String answer,
       @Param("answeredBy") String answeredBy,
       @Param("published") boolean published);
+
+  // 采购方补遗公告:无提问方,直接以已答复+广播形态入库(全体受邀可见)。
+  @Insert("insert into rfq_clarifications "
+      + "(id, tenant_id, rfq_id, supplier_id, question, answer, answered_by, published, answered_at) "
+      + "values (#{id}, #{tenantId}, #{rfqId}, null, #{question}, #{answer}, #{answeredBy}, true, now())")
+  void insertBulletin(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId,
+      @Param("rfqId") String rfqId,
+      @Param("question") String question,
+      @Param("answer") String answer,
+      @Param("answeredBy") String answeredBy);
 }

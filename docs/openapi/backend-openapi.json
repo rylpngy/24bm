@@ -5077,6 +5077,56 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/result/announce": {
+      "post": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_announceResult",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/rfqs/{rfqId}/remind": {
       "post": {
         "tags": [
@@ -5376,6 +5426,66 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AnswerClarificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqClarificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/rfqs/{rfqId}/clarifications/bulletin": {
+      "post": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_publishBulletin",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishClarificationBulletinRequest"
               }
             }
           },
@@ -12531,6 +12641,10 @@
             "items": {
               "$ref": "#/components/schemas/RfqInvitationResponse"
             }
+          },
+          "resultAnnouncedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -15093,6 +15207,17 @@
           },
           "published": {
             "type": "boolean"
+          }
+        }
+      },
+      "PublishClarificationBulletinRequest": {
+        "required": [
+          "content"
+        ],
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
           }
         }
       },

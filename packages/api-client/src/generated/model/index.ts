@@ -277,6 +277,7 @@ export * from './processDefinitionResponse';
 export * from './processInstanceListParams';
 export * from './processInstanceResponse';
 export * from './procurementAnalyticsResponse';
+export * from './publishClarificationBulletinRequest';
 export * from './purchaseDemandLineItemRequest';
 export * from './purchaseDemandLineItemResponse';
 export * from './purchaseDemandListParams';
