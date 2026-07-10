@@ -8,12 +8,22 @@ import { OverviewPage } from './features/overview/overview-page';
 import { OpportunitiesPage } from './features/opportunities/opportunities-page';
 import { QuotesPage } from './features/quotes/quotes-page';
 import { OrdersPage } from './features/orders/orders-page';
+import { ShelfPage } from './features/shelf/shelf-page';
 import { ReceivablesPage } from './features/receivables/receivables-page';
 import { ProfilePage } from './features/profile/profile-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
-  const [activeModuleId, setActiveModuleId] = useState('overview');
+  const [activeModuleId, setActiveModuleId] = useState(
+    () => new URLSearchParams(window.location.search).get('module') ?? 'overview',
+  );
+  // 深链接:模块选择同步进 ?module=,刷新/分享链接可直达。
+  const selectModule = (moduleId: string) => {
+    setActiveModuleId(moduleId);
+    const url = new URL(window.location.href);
+    url.searchParams.set('module', moduleId);
+    window.history.replaceState(null, '', url.toString());
+  };
   const activeModule = supplierNavigation.modules.find((m) => m.id === activeModuleId);
 
   if (!session) {
@@ -26,7 +36,7 @@ export function App() {
       mainlineHint="询比邀请 - 报价 - 订单履约 - 发票应收"
       modules={supplierNavigation.modules}
       activeModuleId={activeModuleId}
-      onSelectModule={setActiveModuleId}
+      onSelectModule={selectModule}
       title={activeModule?.label ?? '供应商门户'}
       accountLabel={`${session.displayName} · ${session.supplierId}`}
     >
@@ -38,6 +48,8 @@ export function App() {
         <QuotesPage />
       ) : activeModuleId === 'orders' ? (
         <OrdersPage />
+      ) : activeModuleId === 'shelf' ? (
+        <ShelfPage />
       ) : activeModuleId === 'invoices' ? (
         <ReceivablesPage />
       ) : activeModuleId === 'profile' ? (

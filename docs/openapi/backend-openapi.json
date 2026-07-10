@@ -72,6 +72,126 @@
         }
       }
     },
+    "/api/v1/supplier/mall/listings/{listingId}/status": {
+      "put": {
+        "tags": [
+          "supplier-mall-controller"
+        ],
+        "operationId": "SupplierMall_updateStatus",
+        "parameters": [
+          {
+            "name": "listingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMallListingStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallListingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/mall/listings/{listingId}/price": {
+      "put": {
+        "tags": [
+          "supplier-mall-controller"
+        ],
+        "operationId": "SupplierMall_updatePrice",
+        "parameters": [
+          {
+            "name": "listingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMallListingPriceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallListingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/invoices/{invoiceId}/reconciliation": {
       "put": {
         "tags": [
@@ -2129,6 +2249,94 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseNotificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/mall/listings": {
+      "get": {
+        "tags": [
+          "supplier-mall-controller"
+        ],
+        "operationId": "SupplierMall_listings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallListingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "supplier-mall-controller"
+        ],
+        "operationId": "SupplierMall_publish",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplierPublishMallListingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallListingResponse"
                 }
               }
             }
@@ -6441,6 +6649,56 @@
         }
       }
     },
+    "/api/v1/buyer/mall/orders/batch": {
+      "post": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_checkoutCart",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMallCartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallOrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/mall/listings": {
       "get": {
         "tags": [
@@ -8379,6 +8637,46 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListNotificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/mall/materials": {
+      "get": {
+        "tags": [
+          "supplier-mall-controller"
+        ],
+        "operationId": "SupplierMall_materials",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListSupplierMallMaterialResponse"
                 }
               }
             }
@@ -11300,6 +11598,87 @@
           }
         }
       },
+      "UpdateMallListingStatusRequest": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseMallListingResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MallListingResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MallListingResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "supplierId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "materialId": {
+            "type": "string"
+          },
+          "materialName": {
+            "type": "string"
+          },
+          "materialCode": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "tenantName": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateMallListingPriceRequest": {
+        "required": [
+          "price"
+        ],
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": "number"
+          }
+        }
+      },
       "UpdateSupplierReceivableRequest": {
         "required": [
           "reconciliationNote"
@@ -12296,70 +12675,6 @@
           }
         }
       },
-      "UpdateMallListingStatusRequest": {
-        "required": [
-          "status"
-        ],
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string"
-          }
-        }
-      },
-      "ApiResponseMallListingResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "$ref": "#/components/schemas/MallListingResponse"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "MallListingResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "supplierId": {
-            "type": "string"
-          },
-          "supplierName": {
-            "type": "string"
-          },
-          "materialId": {
-            "type": "string"
-          },
-          "materialName": {
-            "type": "string"
-          },
-          "materialCode": {
-            "type": "string"
-          },
-          "category": {
-            "type": "string"
-          },
-          "unit": {
-            "type": "string"
-          },
-          "price": {
-            "type": "number"
-          },
-          "status": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
       "UpdateInvoicePaymentRequest": {
         "required": [
           "paymentStatus"
@@ -13158,6 +13473,28 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "SupplierPublishMallListingRequest": {
+        "required": [
+          "materialId",
+          "price",
+          "tenantId"
+        ],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "materialId": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
           }
         }
       },
@@ -15211,6 +15548,56 @@
           }
         }
       },
+      "CartItem": {
+        "required": [
+          "listingId",
+          "quantity"
+        ],
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        }
+      },
+      "CreateMallCartRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartItem"
+            }
+          },
+          "expectedReceiptDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ApiResponseListMallOrderResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MallOrderResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "CreateMallListingRequest": {
         "required": [
           "materialId",
@@ -16226,6 +16613,69 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NotificationResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListSupplierMallMaterialResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierMallMaterialResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierMallMaterialResponse": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "tenantName": {
+            "type": "string"
+          },
+          "materialId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "referencePrice": {
+            "type": "number"
+          }
+        }
+      },
+      "ApiResponseListMallListingResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MallListingResponse"
             }
           },
           "message": {
@@ -17703,23 +18153,6 @@
           }
         }
       },
-      "ApiResponseListMallListingResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MallListingResponse"
-            }
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
       "ApiResponseListDepartmentResponse": {
         "type": "object",
         "properties": {
@@ -17927,6 +18360,17 @@
           }
         }
       },
+      "CategorySpendResponse": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          }
+        }
+      },
       "MonthlySpendResponse": {
         "type": "object",
         "properties": {
@@ -17979,6 +18423,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StatusSliceResponse"
+            }
+          },
+          "categorySpend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategorySpendResponse"
             }
           }
         }

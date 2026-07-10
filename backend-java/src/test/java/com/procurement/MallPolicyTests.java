@@ -15,7 +15,7 @@ class MallPolicyTests {
   private MallListing listing(String status) {
     return new MallListing(
         "mall-1", "tenant-1", "supplier-1", "旭日办公", "mat-1", "A4 复印纸",
-        "MAT-001", "办公用品", "箱", new BigDecimal("120"), status, null, null);
+        "MAT-001", "办公用品", "箱", new BigDecimal("120"), status, null, null, "宏图制造");
   }
 
   @Test

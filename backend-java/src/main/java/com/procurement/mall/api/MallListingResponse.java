@@ -14,5 +14,7 @@ public record MallListingResponse(
     String unit,
     BigDecimal price,
     String status,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    String tenantId,
+    String tenantName) {
 }

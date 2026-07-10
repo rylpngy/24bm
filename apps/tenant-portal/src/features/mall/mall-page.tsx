@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart, Store } from 'lucide-react';
 import {
+  useBuyerMallCheckoutCart,
   useBuyerMallCreateOrder,
   useBuyerMallListings,
   useBuyerMallPublish,
@@ -22,11 +23,13 @@ function ListingCard({
   listing,
   busy,
   onOrder,
+  onAddToCart,
   onToggleStatus,
 }: {
   listing: MallListingResponse;
   busy: boolean;
   onOrder: (listingId: string, quantity: number) => void;
+  onAddToCart: (listingId: string, quantity: number) => void;
   onToggleStatus: (listingId: string, status: string) => void;
 }) {
   const [quantity, setQuantity] = useState('1');
@@ -65,6 +68,14 @@ function ListingCard({
             >
               <ShoppingCart size={13} /> 直购下单
             </button>
+            <button
+              type="button"
+              disabled={busy || Number(quantity) <= 0}
+              onClick={() => listing.id && onAddToCart(listing.id, Number(quantity))}
+              className="inline-flex h-9 items-center rounded-md border border-blue-200 bg-white px-3 text-xs font-black text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+            >
+              加入购物车
+            </button>
           </>
         )}
         <button
@@ -99,10 +110,13 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
   const publish = useBuyerMallPublish();
   const updateStatus = useBuyerMallUpdateStatus();
   const createOrder = useBuyerMallCreateOrder();
+  const checkoutCart = useBuyerMallCheckoutCart();
+  // 购物车:listingId → 数量;跨供应商结算时后端按供应商合并成单。
+  const [cart, setCart] = useState<Record<string, number>>({});
 
   const items = listings.data?.data ?? [];
   const onShelfCount = items.filter((l) => l.status === '在架').length;
-  const busy = publish.isPending || updateStatus.isPending || createOrder.isPending;
+  const busy = publish.isPending || updateStatus.isPending || createOrder.isPending || checkoutCart.isPending;
 
   const refresh = () => {
     setError(null);
@@ -150,8 +164,32 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
       },
     );
 
+  const cartEntries = Object.entries(cart).filter(([, qty]) => qty > 0);
+  const cartTotal = cartEntries.reduce((sum, [listingId, qty]) => {
+    const listing = items.find((l) => l.id === listingId);
+    return sum + (listing?.price ?? 0) * qty;
+  }, 0);
+
+  const submitCheckout = () =>
+    checkoutCart.mutate(
+      { data: { items: cartEntries.map(([listingId, quantity]) => ({ listingId, quantity })) } },
+      {
+        onSuccess: (res) => {
+          const orders = res.data ?? [];
+          setCart({});
+          setFeedback(
+            `购物车结算完成:生成 ${orders.length} 张订单(按供应商合并),合计 ${currency(
+              orders.reduce((sum, o) => sum + (o.amount ?? 0), 0),
+            )}。`,
+          );
+          refresh();
+        },
+        onError: reportError,
+      },
+    );
+
   return (
-    <Panel title="企业商城" icon={Store} subtitle="协议价货架 · 商品检索 · 目录直购">
+    <Panel title="企业商城" icon={Store} subtitle="协议价货架 · 商品检索 · 购物车 · 目录直购">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <Tabs
           items={[
@@ -232,6 +270,50 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
         </div>
       )}
 
+      {cartEntries.length > 0 && (
+        <div className="mb-3 rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-black text-blue-900">
+              购物车 {cartEntries.length} 项 · 预计合计 {currency(cartTotal)}(跨供应商自动拆单)
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCart({})}
+                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-500 hover:bg-slate-50"
+              >
+                清空
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={submitCheckout}
+                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-700 disabled:bg-slate-300"
+              >
+                结算下单
+              </button>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {cartEntries.map(([listingId, qty]) => {
+              const listing = items.find((l) => l.id === listingId);
+              return (
+                <span key={listingId} className="rounded-md bg-white px-2 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-blue-100">
+                  {listing?.materialName ?? listingId} × {qty}
+                  <button
+                    type="button"
+                    onClick={() => setCart((c) => ({ ...c, [listingId]: 0 }))}
+                    className="ml-1.5 font-black text-slate-400 hover:text-red-500"
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="mb-3">
         <SearchInput onSearch={setKeyword} placeholder="搜索物料名称 / 编码 / 分类 / 供应商" />
       </div>
@@ -250,6 +332,9 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
                 listing={l}
                 busy={busy}
                 onOrder={submitOrder}
+                onAddToCart={(listingId, quantity) =>
+                  setCart((c) => ({ ...c, [listingId]: (c[listingId] ?? 0) + quantity }))
+                }
                 onToggleStatus={(listingId, status) =>
                   updateStatus.mutate(
                     { listingId, data: { status } },

@@ -26,10 +26,12 @@ import type {
 
 import type {
   ApiResponseListMallListingResponse,
+  ApiResponseListMallOrderResponse,
   ApiResponseMallListingResponse,
   ApiResponseMallOrderResponse,
   ApiResponseVoid,
   BuyerMallListingsParams,
+  CreateMallCartRequest,
   CreateMallListingRequest,
   CreateMallOrderRequest,
   UpdateMallListingStatusRequest
@@ -154,6 +156,64 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerMallCreateOrderMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerMallCheckoutCart = (
+    createMallCartRequest: BodyType<CreateMallCartRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallOrderResponse>(
+      {url: `/api/v1/buyer/mall/orders/batch`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createMallCartRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallCheckoutCartMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallCheckoutCart>>, TError,{data: BodyType<CreateMallCartRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallCheckoutCart>>, TError,{data: BodyType<CreateMallCartRequest>}, TContext> => {
+
+const mutationKey = ['buyerMallCheckoutCart'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallCheckoutCart>>, {data: BodyType<CreateMallCartRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerMallCheckoutCart(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallCheckoutCartMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallCheckoutCart>>>
+    export type BuyerMallCheckoutCartMutationBody = BodyType<CreateMallCartRequest>
+    export type BuyerMallCheckoutCartMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallCheckoutCart = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallCheckoutCart>>, TError,{data: BodyType<CreateMallCartRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallCheckoutCart>>,
+        TError,
+        {data: BodyType<CreateMallCartRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallCheckoutCartMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

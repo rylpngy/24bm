@@ -8,6 +8,7 @@
 import type { MonthlySpendResponse } from './monthlySpendResponse';
 import type { SupplierSpendResponse } from './supplierSpendResponse';
 import type { StatusSliceResponse } from './statusSliceResponse';
+import type { CategorySpendResponse } from './categorySpendResponse';
 
 export interface ProcurementAnalyticsResponse {
   totalSpend?: number;
@@ -18,4 +19,5 @@ export interface ProcurementAnalyticsResponse {
   monthlySpend?: MonthlySpendResponse[];
   supplierSpend?: SupplierSpendResponse[];
   statusDistribution?: StatusSliceResponse[];
+  categorySpend?: CategorySpendResponse[];
 }
