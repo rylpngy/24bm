@@ -4154,7 +4154,13 @@ class HttpSecurityContractTests {
         org.mockito.ArgumentMatchers.eq("contract-demo"),
         org.mockito.ArgumentMatchers.any(UpdateContractArchiveStatusRequest.class)))
         .thenReturn(contractResponse("contract-demo", "履约完成", "已归档"));
-    when(financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord("payexec-demo"))
+    when(financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord(
+        org.mockito.ArgumentMatchers.eq("payexec-demo"),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(paymentExecutionRecordResponse("payexec-demo", "PAY-202606", "已登记付款"));
+    when(financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord(
+        org.mockito.ArgumentMatchers.eq("payexec-demo"),
+        org.mockito.ArgumentMatchers.any(RegisterPaymentRequest.class)))
         .thenReturn(paymentExecutionRecordResponse("payexec-demo", "PAY-202606", "已登记付款"));
     when(financeActionApplicationService.listCurrentTenantVarianceHandlings(
         org.mockito.ArgumentMatchers.isNull(),
@@ -4347,6 +4353,24 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.executionStatus").value("已登记付款"))
         .andExpect(jsonPath("$.data.releaseEvidenceNo").value("BANK-20260701-001"))
         .andExpect(jsonPath("$.data.releaseRemark").value("招商银行付款流水"));
+    // 带放款证据 body:controller 必须把 body 透传给 service 的带参重载。
+    mockMvc.perform(post("/api/v1/buyer/payment-execution-records/payexec-demo/registration")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"paymentStatus": "已付款", "releaseEvidenceNo": "BANK-20260701-002", "releaseRemark": "工商银行付款流水"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("payexec-demo"))
+        .andExpect(jsonPath("$.data.executionStatus").value("已登记付款"));
+    org.mockito.Mockito.verify(financeActionApplicationService)
+        .registerCurrentTenantPaymentExecutionRecord(
+            org.mockito.ArgumentMatchers.eq("payexec-demo"),
+            org.mockito.ArgumentMatchers.argThat((RegisterPaymentRequest req) ->
+                req != null
+                    && "已付款".equals(req.paymentStatus())
+                    && "BANK-20260701-002".equals(req.releaseEvidenceNo())
+                    && "工商银行付款流水".equals(req.releaseRemark())));
     mockMvc.perform(get("/api/v1/buyer/variance-handlings")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())

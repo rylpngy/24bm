@@ -134,9 +134,12 @@ public class BuyerFinanceActionController {
 
   @PostMapping("/payment-execution-records/{executionRecordId}/registration")
   public ApiResponse<PaymentExecutionRecordResponse> registerPaymentExecutionRecord(
-      @PathVariable String executionRecordId) {
+      @PathVariable String executionRecordId,
+      // body 可选:不传时按默认"已付款"登记,兼容存量调用方。
+      @RequestBody(required = false) @Valid RegisterPaymentRequest request) {
     return ApiResponse.ok(financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord(
-        executionRecordId));
+        executionRecordId,
+        request));
   }
 
   @GetMapping("/three-way-matches")

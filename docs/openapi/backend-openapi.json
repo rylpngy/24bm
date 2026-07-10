@@ -5442,6 +5442,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterPaymentRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -12262,6 +12271,12 @@
           },
           "purpose": {
             "type": "string"
+          },
+          "linkedRfqId": {
+            "type": "string"
+          },
+          "linkedRfqStatus": {
+            "type": "string"
           }
         }
       },
@@ -14290,6 +14305,23 @@
           }
         }
       },
+      "RegisterPaymentRequest": {
+        "required": [
+          "paymentStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "paymentStatus": {
+            "type": "string"
+          },
+          "releaseEvidenceNo": {
+            "type": "string"
+          },
+          "releaseRemark": {
+            "type": "string"
+          }
+        }
+      },
       "ApiResponsePaymentExecutionRecordResponse": {
         "type": "object",
         "properties": {
@@ -14815,23 +14847,6 @@
             "type": "number"
           },
           "description": {
-            "type": "string"
-          }
-        }
-      },
-      "RegisterPaymentRequest": {
-        "required": [
-          "paymentStatus"
-        ],
-        "type": "object",
-        "properties": {
-          "paymentStatus": {
-            "type": "string"
-          },
-          "releaseEvidenceNo": {
-            "type": "string"
-          },
-          "releaseRemark": {
             "type": "string"
           }
         }

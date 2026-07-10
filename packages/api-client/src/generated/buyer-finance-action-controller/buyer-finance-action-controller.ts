@@ -59,6 +59,7 @@ import type {
   CreatePaymentBlockResolutionRequest,
   CreatePaymentRequestRequest,
   CreateVarianceHandlingRequest,
+  RegisterPaymentRequest,
   ReviewPaymentArchiveExceptionRequest,
   UpdatePaymentBatchStatusRequest,
   UpdatePaymentBlockResolutionStatusRequest,
@@ -824,12 +825,15 @@ const {mutation: mutationOptions} = options ?
     }
     export const buyerFinanceActionRegisterPaymentExecutionRecord = (
     executionRecordId: string,
+    registerPaymentRequest: BodyType<RegisterPaymentRequest>,
  signal?: AbortSignal
 ) => {
       
       
       return customInstance<ApiResponsePaymentExecutionRecordResponse>(
-      {url: `/api/v1/buyer/payment-execution-records/${executionRecordId}/registration`, method: 'POST', signal
+      {url: `/api/v1/buyer/payment-execution-records/${executionRecordId}/registration`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: registerPaymentRequest, signal
     },
       );
     }
@@ -837,8 +841,8 @@ const {mutation: mutationOptions} = options ?
 
 
 export const getBuyerFinanceActionRegisterPaymentExecutionRecordMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, TError,{executionRecordId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, TError,{executionRecordId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, TError,{executionRecordId: string;data: BodyType<RegisterPaymentRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, TError,{executionRecordId: string;data: BodyType<RegisterPaymentRequest>}, TContext> => {
 
 const mutationKey = ['buyerFinanceActionRegisterPaymentExecutionRecord'];
 const {mutation: mutationOptions} = options ?
@@ -850,10 +854,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, {executionRecordId: string}> = (props) => {
-          const {executionRecordId} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, {executionRecordId: string;data: BodyType<RegisterPaymentRequest>}> = (props) => {
+          const {executionRecordId,data} = props ?? {};
 
-          return  buyerFinanceActionRegisterPaymentExecutionRecord(executionRecordId,)
+          return  buyerFinanceActionRegisterPaymentExecutionRecord(executionRecordId,data,)
         }
 
         
@@ -862,15 +866,15 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerFinanceActionRegisterPaymentExecutionRecordMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>>
-    
+    export type BuyerFinanceActionRegisterPaymentExecutionRecordMutationBody = BodyType<RegisterPaymentRequest>
     export type BuyerFinanceActionRegisterPaymentExecutionRecordMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerFinanceActionRegisterPaymentExecutionRecord = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, TError,{executionRecordId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, TError,{executionRecordId: string;data: BodyType<RegisterPaymentRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>,
         TError,
-        {executionRecordId: string},
+        {executionRecordId: string;data: BodyType<RegisterPaymentRequest>},
         TContext
       > => {
 
