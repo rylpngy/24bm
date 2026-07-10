@@ -26,7 +26,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useBuyerWorkspaceLoad } from '@24bid/api-client';
+import { useBuyerAnalyticsProcurement, useBuyerWorkspaceLoad } from '@24bid/api-client';
 import { MiniFact, Panel, ShellState, StatusPill, cn } from '@24bid/ui';
 
 const currency = (v: number, compact = false) =>
@@ -230,6 +230,8 @@ function SpendBar({
 
 export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) => void }) {
   const ws = useBuyerWorkspaceLoad();
+  const analytics = useBuyerAnalyticsProcurement();
+  const categorySpend = analytics.data?.data?.categorySpend;
   const data = ws.data?.data;
 
   const view = useMemo(() => {
@@ -321,12 +323,13 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
       })),
     ].slice(0, 4);
 
-    const spendDistribution = [
-      { label: 'IT设备', value: demands.filter((d) => d.departmentId === 'dept-it').reduce((s, d) => s + (d.budget ?? 0), 0), tone: 'bg-blue-600' },
-      { label: '原材料', value: orders.filter((o) => o.status === '已收货').reduce((s, o) => s + (o.amount ?? 0), 0), tone: 'bg-emerald-500' },
-      { label: 'MRO', value: demands.filter((d) => d.title?.includes('打印')).reduce((s, d) => s + (d.budget ?? 0), 0), tone: 'bg-amber-500' },
-      { label: '服务', value: demands.filter((d) => d.departmentId === 'dept-finance').reduce((s, d) => s + (d.budget ?? 0), 0), tone: 'bg-violet-500' },
-    ];
+    // 品类支出来自后端聚合(需求行项 × 物料参考价,按物料分类),替代此前的前端硬编码启发式。
+    const spendTones = ['bg-blue-600', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500'];
+    const spendDistribution = (categorySpend ?? []).slice(0, 4).map((c, index) => ({
+      label: c.category ?? '其他',
+      value: c.totalAmount ?? 0,
+      tone: spendTones[index % spendTones.length],
+    }));
 
     return {
       totalSpend,
@@ -343,7 +346,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
       pendingCount: data?.todoSummary?.pendingApprovalCount ?? pendingApprovals.length,
       pendingPaymentAmount,
     };
-  }, [data]);
+  }, [data, categorySpend]);
 
   if (ws.isLoading) {
     return <ShellState variant="loading" title="正在加载采购人首页" desc="拉取采购概览、待办与风险预警…" />;

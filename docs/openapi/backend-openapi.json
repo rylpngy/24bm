@@ -17927,6 +17927,17 @@
           }
         }
       },
+      "CategorySpendResponse": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          }
+        }
+      },
       "MonthlySpendResponse": {
         "type": "object",
         "properties": {
@@ -17979,6 +17990,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StatusSliceResponse"
+            }
+          },
+          "categorySpend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategorySpendResponse"
             }
           }
         }

@@ -57,4 +57,19 @@ public interface BuyerAnalyticsMapper {
       where ad.tenant_id = #{tenantId}
       """)
   BigDecimal biddingSavings(@Param("tenantId") String tenantId);
+
+  // 品类支出:已通过需求的行项按物料分类聚合(估算口径:参考价 × 数量)。
+  @org.apache.ibatis.annotations.Select("""
+      select coalesce(m.category, '其他') as category,
+             sum(m.reference_price * pdi.quantity) as total_amount
+      from purchase_demand_items pdi
+      join purchase_demands pd on pd.id = pdi.demand_id and pd.tenant_id = pdi.tenant_id
+      join materials m on m.id = pdi.material_id and m.tenant_id = pdi.tenant_id
+      where pdi.tenant_id = #{tenantId}
+        and pd.status = '已通过'
+      group by coalesce(m.category, '其他')
+      order by total_amount desc
+      """)
+  java.util.List<com.procurement.buyer.domain.CategorySpend> categorySpend(
+      @org.apache.ibatis.annotations.Param("tenantId") String tenantId);
 }

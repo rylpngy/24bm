@@ -2,6 +2,7 @@ package com.procurement.buyer.application;
 
 import com.procurement.buyer.api.MonthlySpendResponse;
 import com.procurement.buyer.api.ProcurementAnalyticsResponse;
+import com.procurement.buyer.api.CategorySpendResponse;
 import com.procurement.buyer.api.StatusSliceResponse;
 import com.procurement.buyer.api.SupplierSpendResponse;
 import com.procurement.buyer.domain.MonthlySpend;
@@ -30,6 +31,7 @@ public class BuyerAnalyticsApplicationService {
     List<SupplierSpend> suppliers = analyticsMapper.supplierSpend(tenantId);
     List<StatusSlice> statuses = analyticsMapper.statusDistribution(tenantId);
     BigDecimal savings = analyticsMapper.biddingSavings(tenantId);
+    List<com.procurement.buyer.domain.CategorySpend> categories = analyticsMapper.categorySpend(tenantId);
 
     BigDecimal totalSpend =
         suppliers.stream().map(SupplierSpend::totalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -73,6 +75,9 @@ public class BuyerAnalyticsApplicationService {
         supplierResponses,
         statuses.stream()
             .map(s -> new StatusSliceResponse(s.status(), s.orderCount(), s.totalAmount()))
+            .toList(),
+        categories.stream()
+            .map(c -> new CategorySpendResponse(c.category(), c.totalAmount()))
             .toList());
   }
 }

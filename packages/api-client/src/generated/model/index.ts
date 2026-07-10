@@ -173,6 +173,7 @@ export * from './buyerTodoSummaryResponse';
 export * from './buyerUserListParams';
 export * from './buyerUserResponse';
 export * from './buyerWorkspaceResponse';
+export * from './categorySpendResponse';
 export * from './changeBuyerSupplierPerformanceRequest';
 export * from './changeBuyerSupplierProfileRequest';
 export * from './changeBuyerSupplierStatusRequest';

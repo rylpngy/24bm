@@ -12,5 +12,6 @@ public record ProcurementAnalyticsResponse(
     Integer topSupplierSharePercent,
     List<MonthlySpendResponse> monthlySpend,
     List<SupplierSpendResponse> supplierSpend,
-    List<StatusSliceResponse> statusDistribution) {
+    List<StatusSliceResponse> statusDistribution,
+    List<CategorySpendResponse> categorySpend) {
 }
