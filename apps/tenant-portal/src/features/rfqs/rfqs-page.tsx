@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ban, FileText, Lock, LockOpen, Plus, RotateCcw } from 'lucide-react';
 import {
+  type RfqResponse,
   useBuyerSupplierList,
   usePurchaseDemandList,
   useRfqAwardAward,
@@ -74,7 +75,17 @@ export function RfqsPage() {
   const [showForm, setShowForm] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const rfqs = useRfqList();
+  // 竞价进行中时自动轮询(5s),竞价动态(最低价/截止顺延)即时可见。
+  const rfqs = useRfqList(undefined, {
+    query: {
+      refetchInterval: (query) =>
+        ((query.state.data?.data ?? []) as RfqResponse[]).some(
+          (r) => r.method === '竞价' && r.status === '报价中',
+        )
+          ? 5_000
+          : false,
+    },
+  });
   const approvedDemands = usePurchaseDemandList({ status: '已通过' });
   const admittedSuppliers = useBuyerSupplierList({ status: '已准入' });
   const create = useRfqCreate();

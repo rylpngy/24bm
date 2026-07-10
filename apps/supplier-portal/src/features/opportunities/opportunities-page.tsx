@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Send, Trash2 } from 'lucide-react';
-import { useSupplierQuoteListRfqs, useSupplierQuoteSubmit } from '@24bid/api-client';
+import { useSupplierQuoteListList, useSupplierQuoteListRfqs, useSupplierQuoteSubmit, type RfqResponse } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, Pagination, Panel, PrimaryActionButton, SearchInput, StatusPill, cn } from '@24bid/ui';
 import { RfqClarificationsSupplier } from './rfq-clarifications-supplier';
 import { RfqResultSupplier } from './rfq-result-supplier';
@@ -31,7 +31,18 @@ const formTotal = (f: QuoteForm) => f.lines.reduce((sum, l) => sum + lineAmount(
 export function OpportunitiesPage() {
   const queryClient = useQueryClient();
   const supplierId = useAuthStore((s) => s.session?.supplierId ?? '');
-  const rfqs = useSupplierQuoteListRfqs();
+  // 竞价进行中时自动轮询(5s),让当前最低价/截止顺延即时可见;无在场竞价则不轮询。
+  const rfqs = useSupplierQuoteListRfqs(undefined, {
+    query: {
+      refetchInterval: (query) =>
+        ((query.state.data?.data ?? []) as RfqResponse[]).some(
+          (r) => r.method === '竞价' && r.status === '报价中',
+        )
+          ? 5_000
+          : false,
+    },
+  });
+  const myQuotes = useSupplierQuoteListList();
   const submit = useSupplierQuoteSubmit();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -201,17 +212,49 @@ export function OpportunitiesPage() {
                   <MiniFact label="已提交报价" value={String((r.quotes ?? []).length)} />
                 </div>
 
-                {r.method === '竞价' && (
-                  <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2 text-[11px] font-bold text-amber-800">
-                    竞价项目:起拍价 ¥{r.auctionStartPrice?.toLocaleString('zh-CN') ?? '—'}
-                    {' · '}当前最低报价 {r.auctionLowestAmount != null ? `¥${r.auctionLowestAmount.toLocaleString('zh-CN')}` : '暂无出价'}
-                    {' · '}本次出价上限 ¥{(
-                      r.auctionLowestAmount != null
-                        ? r.auctionLowestAmount - (r.auctionMinDecrement ?? 0)
-                        : r.auctionStartPrice ?? 0
-                    ).toLocaleString('zh-CN')}
-                  </div>
-                )}
+                {r.method === '竞价' && (() => {
+                  const myBid = (myQuotes.data?.data ?? []).find(
+                    (q) => q.rfqId === r.id && q.amount != null,
+                  );
+                  const leading =
+                    myBid?.amount != null
+                    && r.auctionLowestAmount != null
+                    && myBid.amount <= r.auctionLowestAmount;
+                  const remainingMs = r.deadlineAt ? new Date(r.deadlineAt).getTime() - Date.now() : null;
+                  const remainingText =
+                    remainingMs == null
+                      ? '—'
+                      : remainingMs <= 0
+                        ? '已截止'
+                        : remainingMs < 3_600_000
+                          ? `${Math.ceil(remainingMs / 60_000)} 分钟`
+                          : `${Math.floor(remainingMs / 3_600_000)} 小时`;
+                  return (
+                    <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2 text-[11px] font-bold text-amber-800">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>
+                          竞价项目:起拍价 ¥{r.auctionStartPrice?.toLocaleString('zh-CN') ?? '—'}
+                          {' · '}当前最低报价 {r.auctionLowestAmount != null ? `¥${r.auctionLowestAmount.toLocaleString('zh-CN')}` : '暂无出价'}
+                          {' · '}本次出价上限 ¥{(
+                            r.auctionLowestAmount != null
+                              ? r.auctionLowestAmount - (r.auctionMinDecrement ?? 0)
+                              : r.auctionStartPrice ?? 0
+                          ).toLocaleString('zh-CN')}
+                          {' · '}剩余 {remainingText}(临近截止的出价将自动顺延)
+                        </span>
+                        {myBid?.amount != null && (
+                          <span
+                            className={`rounded-md px-2 py-0.5 font-black ${
+                              leading ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                            }`}
+                          >
+                            {leading ? '当前领先' : '已被超越'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {(r.quoteRequirement || r.deliveryRequirement) && (
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">

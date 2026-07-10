@@ -138,6 +138,7 @@ public class QuoteApplicationService {
       throw exception;
     }
     persistLineItems(rfq.tenantId(), quoteId, request.lineItems());
+    maybeExtendAuctionDeadline(rfq);
 
     // 供应商无租户上下文,审计需显式落到 RFQ 所属租户(否则 requireTenantId 抛错)。
     auditLogApplicationService.recordTenantAction(
@@ -187,6 +188,7 @@ public class QuoteApplicationService {
       throw new IllegalStateException("Only submitted supplier quote can be updated: " + quoteId);
     }
     persistLineItems(quote.tenantId(), quoteId, request.lineItems());
+    maybeExtendAuctionDeadline(rfq);
 
     auditLogApplicationService.recordTenantAction(
         rfq.tenantId(),
@@ -271,6 +273,27 @@ public class QuoteApplicationService {
     return lineItems.stream()
         .map(l -> l.quantity().multiply(l.unitPrice()))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  // 竞价软关闭:临近截止的有效出价自动顺延截止时间,并通知买方与全部受邀供应商。
+  private void maybeExtendAuctionDeadline(Rfq rfq) {
+    if (!RfqAuctionPolicy.isAuction(rfq.method())) {
+      return;
+    }
+    java.time.OffsetDateTime extended =
+        RfqAuctionPolicy.extendedDeadline(rfq.deadlineAt(), java.time.OffsetDateTime.now());
+    if (extended == null) {
+      return;
+    }
+    rfqMapper.updateDeadline(rfq.tenantId(), rfq.id(), extended);
+    String message = rfq.title() + " 收到临近截止的新出价,竞价截止顺延至 "
+        + extended.toLocalDateTime().toLocalTime().withNano(0) + "。";
+    notificationApplicationService.notifyActiveTenantUsers(
+        rfq.tenantId(), NotificationTitle.AUCTION_DEADLINE_EXTENDED, message);
+    for (String invitedSupplierId : rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id())) {
+      notificationApplicationService.notifyActiveSupplierUsers(
+          rfq.tenantId(), invitedSupplierId, NotificationTitle.AUCTION_DEADLINE_EXTENDED, message);
+    }
   }
 
   // 供应商侧:不回传其它供应商报价明细(封存),但需带上轮次/开标态供前端展示。

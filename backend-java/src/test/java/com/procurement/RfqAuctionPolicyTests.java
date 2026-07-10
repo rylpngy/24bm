@@ -78,4 +78,24 @@ class RfqAuctionPolicyTests {
         "竞价", START, STEP, null, null, "rfq-1"))
         .isInstanceOf(IllegalArgumentException.class);
   }
+
+  @Test
+  void bidInsideSoftCloseWindowExtendsDeadline() {
+    java.time.OffsetDateTime deadline = java.time.OffsetDateTime.parse("2026-07-10T18:00:00+08:00");
+    java.time.OffsetDateTime lastMinuteBid = deadline.minusMinutes(2);
+    java.time.OffsetDateTime extended = RfqAuctionPolicy.extendedDeadline(deadline, lastMinuteBid);
+    org.assertj.core.api.Assertions.assertThat(extended)
+        .isEqualTo(lastMinuteBid.plus(RfqAuctionPolicy.SOFT_CLOSE_EXTENSION));
+  }
+
+  @Test
+  void bidOutsideSoftCloseWindowOrAfterDeadlineDoesNotExtend() {
+    java.time.OffsetDateTime deadline = java.time.OffsetDateTime.parse("2026-07-10T18:00:00+08:00");
+    org.assertj.core.api.Assertions.assertThat(
+        RfqAuctionPolicy.extendedDeadline(deadline, deadline.minusMinutes(30))).isNull();
+    org.assertj.core.api.Assertions.assertThat(
+        RfqAuctionPolicy.extendedDeadline(deadline, deadline.plusSeconds(1))).isNull();
+    org.assertj.core.api.Assertions.assertThat(
+        RfqAuctionPolicy.extendedDeadline(null, deadline)).isNull();
+  }
 }
