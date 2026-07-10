@@ -9,7 +9,7 @@
 export interface CreateRfqRequest {
   title: string;
   demandIds: string[];
-  invitedSupplierIds: string[];
+  invitedSupplierIds?: string[];
   deadlineAt?: string;
   quoteRequirement?: string;
   deliveryRequirement?: string;
@@ -18,4 +18,5 @@ export interface CreateRfqRequest {
   auctionStartPrice?: number;
   auctionMinDecrement?: number;
   singleSourceReason?: string;
+  saveAsDraft?: boolean;
 }

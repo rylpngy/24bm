@@ -87,7 +87,7 @@ class RfqCreationStateTransitionTests {
         "办公电脑询价",
         List.of("demand-1"),
         List.of("supplier-1"),
-        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, "原厂唯一授权服务商");
+        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, "原厂唯一授权服务商", null);
 
     assertThatThrownBy(() -> rfqApplicationService.create(request))
         .isInstanceOf(IllegalStateException.class)
@@ -192,7 +192,7 @@ class RfqCreationStateTransitionTests {
         "办公电脑询价",
         List.of("demand-1"),
         List.of("supplier-1"),
-        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, "原厂唯一授权服务商");
+        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, "原厂唯一授权服务商", null);
 
     assertThatThrownBy(() -> rfqApplicationService.create(request))
         .isInstanceOf(IllegalStateException.class)

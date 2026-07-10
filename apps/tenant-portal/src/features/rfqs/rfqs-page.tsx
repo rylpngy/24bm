@@ -5,7 +5,6 @@ import {
   type RfqResponse,
   useBuyerSupplierList,
   usePurchaseDemandList,
-  useRfqCreate,
   useRfqList,
 } from '@24bid/api-client';
 import {
@@ -13,17 +12,12 @@ import {
   FeedbackNotice,
   Pagination,
   Panel,
-  PrimaryActionButton,
   SearchInput,
   cn,
 } from '@24bid/ui';
+import { RfqCreateWizard } from './rfq-create-wizard';
 import { RfqProjectDetail } from './rfq-project-detail';
 
-const inputCls =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
-
-const METHODS = ['询比', '竞价', '商城', '单一来源'];
-const SUPPLIER_COLLECTION_METHODS = ['公开', '邀请'];
 const STATUS_FILTERS = ['全部', '草稿', '报价中', '已开标', '定标审批中', '已定标', '已流标', '已废标'] as const;
 const PAGE_SIZE = 6;
 
@@ -77,22 +71,8 @@ export function RfqsPage() {
   const approvedDemands = usePurchaseDemandList({ status: '已通过' });
   const allDemands = usePurchaseDemandList();
   const admittedSuppliers = useBuyerSupplierList({ status: '已准入' });
-  const create = useRfqCreate();
-
-  const [title, setTitle] = useState('');
-  const [demandId, setDemandId] = useState('');
-  const [supplierIds, setSupplierIds] = useState<string[]>([]);
-  const [deadline, setDeadline] = useState('');
-  const [evaluationMethod, setEvaluationMethod] = useState('最低价');
-  const [method, setMethod] = useState('询比');
-  const [collectionMethod, setCollectionMethod] = useState('公开');
-  const [quoteRequirement, setQuoteRequirement] = useState('');
-  const [deliveryRequirement, setDeliveryRequirement] = useState('');
-  // 竞价专属参数:起拍价(必填)与最小降价步长(选填)。
-  const [auctionStartPrice, setAuctionStartPrice] = useState('');
-  const [auctionMinDecrement, setAuctionMinDecrement] = useState('');
-  // 单一来源专属:来源说明(必填,审批留痕)。
-  const [singleSourceReason, setSingleSourceReason] = useState('');
+  const [resumeDraft, setResumeDraft] = useState<RfqResponse | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const list = rfqs.data?.data ?? [];
   const demands = approvedDemands.data?.data ?? [];
@@ -121,15 +101,6 @@ export function RfqsPage() {
     return map;
   }, [suppliers]);
 
-  const supplierCollectionLabel =
-    method === '商城' ? '目录采购' : method === '单一来源' ? '定向' : collectionMethod;
-  const supplierSelectionRequired =
-    method === '单一来源' || (method !== '商城' && collectionMethod === '邀请');
-  const supplierRequirementMet =
-    !supplierSelectionRequired || (method === '单一来源' ? supplierIds.length === 1 : supplierIds.length >= 3);
-  const auctionParamsMet = method !== '竞价' || Number(auctionStartPrice) > 0;
-  const singleSourceReasonMet = method !== '单一来源' || singleSourceReason.trim().length > 0;
-
   const refresh = () =>
     queryClient.invalidateQueries({
       predicate: (q) =>
@@ -137,71 +108,33 @@ export function RfqsPage() {
         /\/buyer\/(rfqs|demands)/.test(q.queryKey[0] as string),
     });
 
-  const submitCreate = () => {
-    create.mutate(
-      {
-        data: {
-          title,
-          demandIds: demandId ? [demandId] : [],
-          invitedSupplierIds: supplierIds,
-          deadlineAt: deadline ? `${deadline}T18:00:00+08:00` : undefined,
-          evaluationMethod,
-          method,
-          auctionStartPrice: method === '竞价' ? Number(auctionStartPrice) : undefined,
-          auctionMinDecrement:
-            method === '竞价' && auctionMinDecrement ? Number(auctionMinDecrement) : undefined,
-          singleSourceReason: method === '单一来源' ? singleSourceReason.trim() : undefined,
-          quoteRequirement: quoteRequirement || undefined,
-          deliveryRequirement:
-            [deliveryRequirement, `供应商征集方式：${supplierCollectionLabel}`].filter(Boolean).join('\n') || undefined,
-        },
-      },
-      {
-        onSuccess: () => {
-          setTitle('');
-          setDemandId('');
-          setSupplierIds([]);
-          setDeadline('');
-          setEvaluationMethod('最低价');
-          setMethod('询比');
-          setCollectionMethod('公开');
-          setQuoteRequirement('');
-          setDeliveryRequirement('');
-          setAuctionStartPrice('');
-          setAuctionMinDecrement('');
-          setSingleSourceReason('');
-          setShowForm(false);
-          refresh();
-        },
-      },
-    );
-  };
-
-  const toggleSupplier = (id: string) =>
-    setSupplierIds((cur) =>
-      method === '单一来源' ? (cur.includes(id) ? [] : [id]) : cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
-    );
-
-  const handleMethodChange = (value: string) => {
-    setMethod(value);
-    if (value === '商城') {
-      setSupplierIds([]);
-    } else if (value === '单一来源' && supplierIds.length > 1) {
-      setSupplierIds(supplierIds.slice(0, 1));
-    }
-  };
-
-  const handleCollectionMethodChange = (value: string) => {
-    setCollectionMethod(value);
-    if (value === '公开') {
-      setSupplierIds([]);
-    }
-  };
-
   const demandBudgetOf = (rfq: RfqResponse) =>
     (allDemands.data?.data ?? [])
       .filter((demand) => rfq.demandIds?.includes(demand.id ?? ''))
       .reduce((sum, demand) => sum + (demand.budget ?? 0), 0);
+
+  if (showForm) {
+    return (
+      <Panel title="询比项目" icon={FileText} subtitle="发起询价立项:建项需求 → 选择供应商 → 发布询价单">
+        <RfqCreateWizard
+          demands={demands.filter((d) => !d.linkedRfqId)}
+          suppliers={suppliers}
+          resumeDraft={resumeDraft ?? undefined}
+          onDone={(message) => {
+            setShowForm(false);
+            setResumeDraft(null);
+            setFeedback(message);
+            refresh();
+          }}
+          onCancel={() => {
+            setShowForm(false);
+            setResumeDraft(null);
+            refresh();
+          }}
+        />
+      </Panel>
+    );
+  }
 
   if (selectedId) {
     const fresh = list.find((r) => r.id === selectedId);
@@ -213,6 +146,11 @@ export function RfqsPage() {
             budget={demandBudgetOf(fresh)}
             supplierNames={supplierNames}
             onBack={() => setSelectedId(null)}
+            onResumeDraft={() => {
+              setResumeDraft(fresh);
+              setSelectedId(null);
+              setShowForm(true);
+            }}
           />
         </Panel>
       );
@@ -252,198 +190,24 @@ export function RfqsPage() {
         />
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => { setResumeDraft(null); setShowForm(true); }}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
         >
-          <Plus size={14} /> {showForm ? '收起' : '创建询比'}
+          <Plus size={14} /> 发起询价立项
         </button>
       </div>
 
+      {feedback && (
+        <div className="mb-3">
+          <FeedbackNotice tone="success" message={feedback} />
+        </div>
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <CountTag>共 {list.length} 条</CountTag>
         <CountTag>当前展示 {filtered.length} 条</CountTag>
         <CountTag>报价中 {list.filter((r) => r.status === '报价中').length} 条</CountTag>
         <CountTag>待定标 {list.filter((r) => r.status === '已开标').length} 条</CountTag>
       </div>
-
-      {showForm && (
-        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/40 p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
-              <Plus size={18} />
-            </span>
-            <div>
-              <p className="text-sm font-black text-blue-800">创建询比(从已通过需求)</p>
-              <p className="mt-1 text-xs font-bold text-blue-700/70">选择采购需求、供应商与截止时间后发起报价邀请。</p>
-            </div>
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="text-xs font-black text-slate-500">询比标题</label>
-              <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs font-black text-slate-500">关联需求(已通过)</label>
-              <select className={inputCls} value={demandId} onChange={(e) => setDemandId(e.target.value)}>
-                <option value="">选择需求</option>
-                {demands.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-black text-slate-500">报价截止</label>
-              <input
-                className={inputCls}
-                type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-black text-slate-500">评选方式</label>
-              <select
-                className={inputCls}
-                value={evaluationMethod}
-                onChange={(e) => setEvaluationMethod(e.target.value)}
-              >
-                <option value="最低价">最低价</option>
-                <option value="综合评分">综合评分</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-black text-slate-500">采购方式</label>
-              <select className={inputCls} value={method} onChange={(e) => handleMethodChange(e.target.value)}>
-                {METHODS.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-black text-slate-500">供应商征集方式</label>
-              {method === '询比' || method === '竞价' ? (
-                <select className={inputCls} value={collectionMethod} onChange={(e) => handleCollectionMethodChange(e.target.value)}>
-                  {SUPPLIER_COLLECTION_METHODS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              ) : (
-                <div className={cn(inputCls, 'flex items-center text-slate-500')}>
-                  {method === '商城' ? '目录采购' : '定向'}
-                </div>
-              )}
-              <p className="mt-1 text-[11px] font-bold text-slate-400">
-                {method === '商城'
-                  ? '商城采购不按供应商征集方式执行。'
-                  : method === '单一来源'
-                    ? '单一来源须定向选择 1 家供应商。'
-                    : collectionMethod === '公开'
-                      ? `${method}公开征集，不预先限定供应商。`
-                      : `${method}邀请征集，需选择不少于 3 家供应商。`}
-              </p>
-            </div>
-          </div>
-          {method === '竞价' && (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-black text-slate-500">起拍价(元,必填)</label>
-                <input
-                  className={inputCls}
-                  type="number"
-                  min="0"
-                  placeholder="如 100000"
-                  value={auctionStartPrice}
-                  onChange={(e) => setAuctionStartPrice(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-black text-slate-500">最小降价步长(元,选填)</label>
-                <input
-                  className={inputCls}
-                  type="number"
-                  min="0"
-                  placeholder="缺省 0,即只须低于当前最低价"
-                  value={auctionMinDecrement}
-                  onChange={(e) => setAuctionMinDecrement(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-          {method === '单一来源' && (
-            <div className="mt-3">
-              <label className="text-xs font-black text-slate-500">来源说明(必填,审批留痕)</label>
-              <textarea
-                className={cn(inputCls, 'min-h-[64px] resize-y')}
-                placeholder="说明定向选择该供应商的依据,如:原厂唯一授权服务商/专利技术唯一来源。"
-                value={singleSourceReason}
-                onChange={(e) => setSingleSourceReason(e.target.value)}
-              />
-            </div>
-          )}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="text-xs font-black text-slate-500">报价要求</label>
-              <textarea
-                className={cn(inputCls, 'min-h-[64px] resize-y')}
-                placeholder="如：报价含13%增值税专票，单价精确到分，报价有效期不少于30天。"
-                value={quoteRequirement}
-                onChange={(e) => setQuoteRequirement(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-black text-slate-500">交付要求</label>
-              <textarea
-                className={cn(inputCls, 'min-h-[64px] resize-y')}
-                placeholder="如：到货地址、到货时限、质保期限与验收方式。"
-                value={deliveryRequirement}
-                onChange={(e) => setDeliveryRequirement(e.target.value)}
-              />
-            </div>
-          </div>
-          {method !== '商城' && method !== '单一来源' && collectionMethod === '公开' && (
-            <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-bold text-blue-700">
-              当前为公开征集，创建项目时不限定具体供应商。
-            </div>
-          )}
-          {supplierSelectionRequired && (
-          <div className="mt-3">
-            <label className="text-xs font-black text-slate-500">邀请供应商(已准入)</label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {suppliers.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => s.supplierId && toggleSupplier(s.supplierId)}
-                  className={cn(
-                    'h-8 rounded-md border px-3 text-xs font-black transition',
-                    s.supplierId && supplierIds.includes(s.supplierId)
-                      ? 'border-blue-300 bg-blue-100 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
-                  )}
-                >
-                  {s.supplierName}
-                </button>
-              ))}
-            </div>
-          </div>
-          )}
-          {create.isError && (
-            <div className="mt-3">
-              <FeedbackNotice tone="error" message="创建失败：需求需已通过且未关联其它询比项目。" />
-            </div>
-          )}
-          <PrimaryActionButton
-            onClick={submitCreate}
-            busy={create.isPending}
-            pendingLabel="创建中"
-            disabled={!title || !demandId || !supplierRequirementMet || !auctionParamsMet || !singleSourceReasonMet}
-          >
-            创建询比
-          </PrimaryActionButton>
-        </div>
-      )}
 
       {rfqs.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载询比项目…" />

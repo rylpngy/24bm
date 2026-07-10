@@ -46,6 +46,22 @@ public class SupplierQuoteController {
   }
 
   // 澄清答疑(供应商):查看自己的提问 + 已广播答复。
+  // 已读回执:供应商查看询价单。
+  @PostMapping("/{rfqId}/view")
+  public ApiResponse<Void> markViewed(@PathVariable String rfqId) {
+    quoteApplicationService.markInvitationViewed(rfqId);
+    return ApiResponse.ok(null);
+  }
+
+  // 拒绝参与本次询价。
+  @PostMapping("/{rfqId}/decline")
+  public ApiResponse<Void> decline(
+      @PathVariable String rfqId,
+      @RequestBody(required = false) DeclineRfqInvitationRequest request) {
+    quoteApplicationService.declineInvitation(rfqId, request == null ? null : request.reason());
+    return ApiResponse.ok(null);
+  }
+
   @GetMapping("/{rfqId}/clarifications")
   public ApiResponse<List<RfqClarificationResponse>> clarifications(@PathVariable String rfqId) {
     return ApiResponse.ok(rfqClarificationApplicationService.listForSupplier(rfqId));

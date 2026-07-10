@@ -492,6 +492,66 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/invitations": {
+      "put": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_updateInvitations",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRfqInvitationsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/process-definitions/{id}": {
       "get": {
         "tags": [
@@ -1634,6 +1694,56 @@
         }
       }
     },
+    "/api/v1/supplier/rfqs/{rfqId}/view": {
+      "post": {
+        "tags": [
+          "supplier-quote-controller"
+        ],
+        "operationId": "SupplierQuote_markViewed",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/rfqs/{rfqId}/quotes": {
       "post": {
         "tags": [
@@ -1667,6 +1777,65 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseQuoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/rfqs/{rfqId}/decline": {
+      "post": {
+        "tags": [
+          "supplier-quote-controller"
+        ],
+        "operationId": "SupplierQuote_decline",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclineRfqInvitationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
                 }
               }
             }
@@ -4931,6 +5100,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseInteger"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/rfqs/{rfqId}/publish": {
+      "post": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_publish",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqResponse"
                 }
               }
             }
@@ -12200,6 +12419,24 @@
           }
         }
       },
+      "RfqInvitationResponse": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string"
+          },
+          "inviteStatus": {
+            "type": "string"
+          },
+          "viewedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "declineReason": {
+            "type": "string"
+          }
+        }
+      },
       "RfqResponse": {
         "type": "object",
         "properties": {
@@ -12288,6 +12525,23 @@
           },
           "singleSourceReason": {
             "type": "string"
+          },
+          "invitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RfqInvitationResponse"
+            }
+          }
+        }
+      },
+      "UpdateRfqInvitationsRequest": {
+        "type": "object",
+        "properties": {
+          "supplierIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -13245,6 +13499,14 @@
             "items": {
               "$ref": "#/components/schemas/QuoteLineItemRequest"
             }
+          }
+        }
+      },
+      "DeclineRfqInvitationRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
           }
         }
       },
@@ -14689,7 +14951,6 @@
       "CreateRfqRequest": {
         "required": [
           "demandIds",
-          "invitedSupplierIds",
           "title"
         ],
         "type": "object",
@@ -14733,6 +14994,9 @@
           },
           "singleSourceReason": {
             "type": "string"
+          },
+          "saveAsDraft": {
+            "type": "boolean"
           }
         }
       },

@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Send, Trash2 } from 'lucide-react';
-import { useSupplierQuoteListList, useSupplierQuoteListRfqs, useSupplierQuoteSubmit, type RfqResponse } from '@24bid/api-client';
+import {
+  type RfqResponse,
+  useSupplierQuoteDecline,
+  useSupplierQuoteListList,
+  useSupplierQuoteListRfqs,
+  useSupplierQuoteMarkViewed,
+  useSupplierQuoteSubmit,
+} from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, Pagination, Panel, PrimaryActionButton, SearchInput, StatusPill, cn } from '@24bid/ui';
 import { RfqClarificationsSupplier } from './rfq-clarifications-supplier';
 import { RfqResultSupplier } from './rfq-result-supplier';
@@ -44,6 +51,21 @@ export function OpportunitiesPage() {
   });
   const myQuotes = useSupplierQuoteListList();
   const submit = useSupplierQuoteSubmit();
+  const markViewed = useSupplierQuoteMarkViewed();
+  const decline = useSupplierQuoteDecline();
+  // 已读回执:进入商机列表即视为查看,幂等且每个询价只上报一次。
+  const viewedOnce = useRef(new Set<string>());
+  const rfqData = rfqs.data?.data ?? [];
+  useEffect(() => {
+    rfqData.forEach((r) => {
+      const mine = (r.invitations ?? [])[0];
+      if (r.id && r.status === '报价中' && mine && !mine.viewedAt && !viewedOnce.current.has(r.id)) {
+        viewedOnce.current.add(r.id);
+        markViewed.mutate({ rfqId: r.id });
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rfqData.length]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [forms, setForms] = useState<Record<string, QuoteForm>>({});
@@ -181,7 +203,9 @@ export function OpportunitiesPage() {
         <div className="space-y-3">
           {pageItems.map((r, i) => {
             const f = formFor(r.id ?? '');
-            const quoting = r.status === '报价中';
+            const myInvitation = (r.invitations ?? [])[0];
+            const declined = myInvitation?.inviteStatus === '已拒绝';
+            const quoting = r.status === '报价中' && !declined;
             const busy = submit.isPending && submit.variables?.rfqId === r.id;
             const total = formTotal(f);
             return (
@@ -277,6 +301,29 @@ export function OpportunitiesPage() {
                   <RfqResultSupplier rfqId={r.id} supplierId={supplierId} />
                 )}
 
+                {declined && (
+                  <div className="mt-3 rounded-lg border border-red-100 bg-red-50/60 px-3 py-2 text-xs font-black text-red-700">
+                    已拒绝参与本次询价{myInvitation?.declineReason ? `:${myInvitation.declineReason}` : ''}。
+                  </div>
+                )}
+                {r.status === '报价中' && !declined && !(r.quotes ?? []).length && (
+                  <button
+                    type="button"
+                    disabled={decline.isPending}
+                    onClick={() => {
+                      const reason = window.prompt('确认拒绝参与本次询价?可填写原因(选填):');
+                      if (reason === null) return;
+                      r.id &&
+                        decline.mutate(
+                          { rfqId: r.id, data: { reason: reason || undefined } },
+                          { onSuccess: refresh, onError: () => setError('拒绝失败:可能已提交报价。') },
+                        );
+                    }}
+                    className="mt-3 inline-flex h-8 items-center rounded-md border border-red-200 bg-white px-3 text-xs font-black text-red-600 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    拒绝参与
+                  </button>
+                )}
                 {r.id && <RfqClarificationsSupplier rfqId={r.id} canAsk={quoting} />}
 
                 {quoting ? (

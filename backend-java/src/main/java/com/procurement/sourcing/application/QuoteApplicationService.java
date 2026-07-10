@@ -66,7 +66,7 @@ public class QuoteApplicationService {
   public List<RfqResponse> listSupplierRfqs() {
     String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
     return rfqMapper.listBySupplierInvite(supplierId).stream()
-        .map(this::toRfqResponse)
+        .map(rfq -> toRfqResponse(rfq, supplierId))
         .toList();
   }
 
@@ -77,7 +77,7 @@ public class QuoteApplicationService {
             blankToNull(status),
             blankToNull(keyword))
         .stream()
-        .map(this::toRfqResponse)
+        .map(rfq -> toRfqResponse(rfq, supplierId))
         .toList();
   }
 
@@ -103,6 +103,7 @@ public class QuoteApplicationService {
   public QuoteResponse submit(String rfqId, SubmitQuoteRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
     Rfq rfq = findRfqForInvitedSupplier(rfqId, supplierId);
+    requireNotDeclined(rfq, supplierId);
     rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfqId);
     rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfqId);
 
@@ -165,6 +166,7 @@ public class QuoteApplicationService {
     }
 
     Rfq rfq = findRfqForInvitedSupplier(quote.rfqId(), supplierId);
+    requireNotDeclined(rfq, supplierId);
     rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfq.id());
     rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfq.id());
 
@@ -200,6 +202,43 @@ public class QuoteApplicationService {
         NotificationTitle.SUPPLIER_QUOTE_SUBMITTED,
         rfq.title() + "供应商报价已更新，请重新查看报价对比。");
     return toResponse(quoteMapper.findByTenantAndId(quote.tenantId(), quoteId));
+  }
+
+  private void requireNotDeclined(Rfq rfq, String supplierId) {
+    com.procurement.sourcing.domain.RfqInvitation invitation =
+        rfqInviteMapper.findBySupplier(rfq.tenantId(), rfq.id(), supplierId);
+    if (invitation != null && com.procurement.sourcing.domain.RfqInviteStatus.DECLINED.equals(invitation.inviteStatus())) {
+      throw new IllegalStateException("已拒绝参与的询价不能提交报价: " + rfq.id());
+    }
+  }
+
+  // 已读回执:供应商打开询价单时登记首次查看时间(幂等)。
+  @Transactional
+  public void markInvitationViewed(String rfqId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    Rfq rfq = findRfqForInvitedSupplier(rfqId, supplierId);
+    rfqInviteMapper.markViewed(rfq.tenantId(), rfqId, supplierId);
+  }
+
+  // 拒绝参与:报价中且尚未提交报价时可拒绝;通知采购方,拒绝后不可再报价。
+  @Transactional
+  public void declineInvitation(String rfqId, String reason) {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    Rfq rfq = findRfqForInvitedSupplier(rfqId, supplierId);
+    rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfqId);
+    int submitted = quoteMapper.countSubmittedBySupplier(rfq.tenantId(), rfqId, supplierId, rfq.currentRound());
+    if (submitted > 0) {
+      throw new IllegalStateException("已提交报价,不能拒绝参与: " + rfqId);
+    }
+    int updated = rfqInviteMapper.decline(
+        rfq.tenantId(), rfqId, supplierId, reason == null || reason.isBlank() ? "供应商拒绝参与" : reason);
+    if (updated == 0) {
+      throw new IllegalStateException("邀请状态已变化,无法拒绝: " + rfqId);
+    }
+    notificationApplicationService.notifyActiveTenantUsers(
+        rfq.tenantId(),
+        NotificationTitle.RFQ_INVITATION_UPDATED,
+        rfq.title() + " 有受邀供应商拒绝参与" + (reason == null || reason.isBlank() ? "。" : ":" + reason));
   }
 
   private Rfq findRfqForInvitedSupplier(String rfqId, String supplierId) {
@@ -297,7 +336,7 @@ public class QuoteApplicationService {
   }
 
   // 供应商侧:不回传其它供应商报价明细(封存),但需带上轮次/开标态供前端展示。
-  private RfqResponse toRfqResponse(Rfq rfq) {
+  private RfqResponse toRfqResponse(Rfq rfq, String supplierId) {
     return new RfqResponse(
         rfq.id(),
         rfq.tenantId(),
@@ -322,7 +361,19 @@ public class QuoteApplicationService {
         rfq.auctionStartPrice(),
         rfq.auctionMinDecrement(),
         auctionLowestAmount(rfq),
-        rfq.singleSourceReason());
+        rfq.singleSourceReason(),
+        ownInvitation(rfq, supplierId));
+  }
+
+  // 供应商视角仅返回本方邀请记录(已读/拒绝状态),不暴露其他受邀方。
+  private java.util.List<com.procurement.sourcing.api.RfqInvitationResponse> ownInvitation(Rfq rfq, String supplierId) {
+    com.procurement.sourcing.domain.RfqInvitation invitation =
+        rfqInviteMapper.findBySupplier(rfq.tenantId(), rfq.id(), supplierId);
+    if (invitation == null) {
+      return java.util.List.of();
+    }
+    return java.util.List.of(new com.procurement.sourcing.api.RfqInvitationResponse(
+        invitation.supplierId(), invitation.inviteStatus(), invitation.viewedAt(), invitation.declineReason()));
   }
 
   // 竞价的当前最低价对受邀供应商公开(价格竞争的核心信息);其它方式保持封存返回 null。

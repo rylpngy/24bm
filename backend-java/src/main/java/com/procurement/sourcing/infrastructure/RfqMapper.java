@@ -70,7 +70,8 @@ public interface RfqMapper {
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where r.id = #{rfqId}
         and i.supplier_id = #{supplierId}
-        and i.invite_status = '已邀请'
+        and i.invite_status in ('已邀请', '已拒绝')
+        and r.status <> '草稿'
       """)
   Rfq findBySupplierInvite(@Param("rfqId") String rfqId, @Param("supplierId") String supplierId);
 
@@ -79,7 +80,8 @@ public interface RfqMapper {
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
-        and i.invite_status = '已邀请'
+        and i.invite_status in ('已邀请', '已拒绝')
+        and r.status <> '草稿'
       order by r.created_at desc
       """)
   List<Rfq> listBySupplierInvite(@Param("supplierId") String supplierId);
@@ -90,7 +92,8 @@ public interface RfqMapper {
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
-        and i.invite_status = '已邀请'
+        and i.invite_status in ('已邀请', '已拒绝')
+        and r.status &lt;&gt; '草稿'
         <if test="status != null and status != ''">
         and r.status = #{status}
         </if>

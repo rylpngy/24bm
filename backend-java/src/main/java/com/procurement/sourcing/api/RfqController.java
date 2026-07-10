@@ -113,6 +113,20 @@ public class RfqController {
   }
 
   // 终止(采购方):流标(不足法定家数等)/废标(全部不合格、取消),记录理由。
+  // 草稿选商:替换受邀供应商名单(仅草稿)。
+  @PutMapping("/{rfqId}/invitations")
+  public ApiResponse<RfqResponse> updateInvitations(
+      @PathVariable String rfqId,
+      @Valid @RequestBody UpdateRfqInvitationsRequest request) {
+    return ApiResponse.ok(rfqApplicationService.updateDraftInvitations(rfqId, request.supplierIds()));
+  }
+
+  // 正式发布询价单:草稿 → 报价中,并向受邀供应商下发询价函。
+  @PostMapping("/{rfqId}/publish")
+  public ApiResponse<RfqResponse> publish(@PathVariable String rfqId) {
+    return ApiResponse.ok(rfqApplicationService.publish(rfqId));
+  }
+
   // 一键催标:提醒本轮未报价的受邀供应商。
   @PostMapping("/{rfqId}/remind")
   public ApiResponse<Integer> remind(@PathVariable String rfqId) {
