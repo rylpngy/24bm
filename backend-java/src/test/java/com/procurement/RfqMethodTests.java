@@ -7,47 +7,38 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.procurement.sourcing.domain.RfqMethod;
 import org.junit.jupiter.api.Test;
 
-// 采购方式法定家数:单一来源恰好 1 家,其余 ≥3 家。
+// 1.0 采购方式:询比、竞价、商城、单一来源;旧招标类方式仅做兼容映射。
 class RfqMethodTests {
 
   @Test
-  void singleSourceRequiresExactlyOneSupplier() {
-    assertThatCode(() -> RfqMethod.requireSupplierCount(RfqMethod.SINGLE_SOURCE, 1))
+  void compareAndAuctionRequireAtLeastThreeSuppliersWhenSpecified() {
+    assertThatCode(() -> RfqMethod.requireSupplierCount(RfqMethod.COMPARE, 3))
         .doesNotThrowAnyException();
-    assertThatThrownBy(() -> RfqMethod.requireSupplierCount(RfqMethod.SINGLE_SOURCE, 2))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("exactly one supplier");
-  }
-
-  @Test
-  void competitiveMethodsRequireAtLeastThreeSuppliers() {
-    assertThatCode(() -> RfqMethod.requireSupplierCount(RfqMethod.PUBLIC_TENDER, 3))
+    assertThatCode(() -> RfqMethod.requireSupplierCount(RfqMethod.AUCTION, 3))
         .doesNotThrowAnyException();
-    assertThatThrownBy(() -> RfqMethod.requireSupplierCount(RfqMethod.INQUIRY, 2))
+    assertThatThrownBy(() -> RfqMethod.requireSupplierCount(RfqMethod.COMPARE, 2))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("不少于3家");
   }
 
   @Test
-  void negotiationRequiresAtLeastTwoRoundsToAward() {
-    assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.NEGOTIATION, 1, 3, "rfq-1"))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("竞争性谈判须经至少一轮谈判");
-    assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.NEGOTIATION, 2, 1, "rfq-1"))
+  void mallDoesNotRequireInvitedSuppliers() {
+    assertThatCode(() -> RfqMethod.requireSupplierCount(RfqMethod.MALL, 0))
+        .doesNotThrowAnyException();
+    assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.MALL, 1, 0, "rfq-1"))
         .doesNotThrowAnyException();
   }
 
   @Test
-  void competitiveMethodsRequireThreeBiddersToAward() {
-    assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.PUBLIC_TENDER, 1, 2, "rfq-1"))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("不少于3家有效报价");
-    assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.INQUIRY, 1, 3, "rfq-1"))
+  void singleSourceRequiresExactlyOneSupplierAndOneBidder() {
+    assertThatCode(() -> RfqMethod.requireSupplierCount(RfqMethod.SINGLE_SOURCE, 1))
         .doesNotThrowAnyException();
-  }
-
-  @Test
-  void singleSourceAwardsWithOneBidder() {
+    assertThatThrownBy(() -> RfqMethod.requireSupplierCount(RfqMethod.SINGLE_SOURCE, 0))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("仅须邀请 1 家");
+    assertThatThrownBy(() -> RfqMethod.requireSupplierCount(RfqMethod.SINGLE_SOURCE, 2))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("仅须邀请 1 家");
     assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.SINGLE_SOURCE, 1, 1, "rfq-1"))
         .doesNotThrowAnyException();
     assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.SINGLE_SOURCE, 1, 0, "rfq-1"))
@@ -56,12 +47,28 @@ class RfqMethodTests {
   }
 
   @Test
-  void defaultsToInquiryAndValidatesKnownMethods() {
-    assertThat(RfqMethod.orDefault(null)).isEqualTo(RfqMethod.INQUIRY);
-    assertThat(RfqMethod.orDefault("")).isEqualTo(RfqMethod.INQUIRY);
-    assertThat(RfqMethod.isValid(RfqMethod.NEGOTIATION)).isTrue();
+  void compareAndAuctionRequireThreeBiddersToAward() {
+    assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.COMPARE, 1, 2, "rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("不少于3家有效报价");
+    assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.AUCTION, 1, 3, "rfq-1"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void defaultsAndLegacyValuesMapToV1Methods() {
+    assertThat(RfqMethod.orDefault(null)).isEqualTo(RfqMethod.COMPARE);
+    assertThat(RfqMethod.orDefault("")).isEqualTo(RfqMethod.COMPARE);
+    assertThat(RfqMethod.orDefault("询价")).isEqualTo(RfqMethod.COMPARE);
+    assertThat(RfqMethod.orDefault("公开招标")).isEqualTo(RfqMethod.COMPARE);
+    assertThat(RfqMethod.orDefault("邀请招标")).isEqualTo(RfqMethod.COMPARE);
+    assertThat(RfqMethod.orDefault("竞争性谈判")).isEqualTo(RfqMethod.COMPARE);
+    assertThat(RfqMethod.orDefault("单一来源")).isEqualTo(RfqMethod.SINGLE_SOURCE);
+    assertThat(RfqMethod.isValid(RfqMethod.COMPARE)).isTrue();
+    assertThat(RfqMethod.isValid(RfqMethod.SINGLE_SOURCE)).isTrue();
     assertThat(RfqMethod.isValid("拍脑袋")).isFalse();
+    assertThat(RfqMethod.minSuppliers(RfqMethod.MALL)).isEqualTo(0);
     assertThat(RfqMethod.minSuppliers(RfqMethod.SINGLE_SOURCE)).isEqualTo(1);
-    assertThat(RfqMethod.minSuppliers(RfqMethod.INVITED_TENDER)).isEqualTo(3);
+    assertThat(RfqMethod.minSuppliers(RfqMethod.COMPARE)).isEqualTo(3);
   }
 }

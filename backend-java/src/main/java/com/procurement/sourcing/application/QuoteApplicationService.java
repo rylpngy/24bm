@@ -16,6 +16,7 @@ import com.procurement.sourcing.domain.QuoteAuditAction;
 import com.procurement.sourcing.domain.QuoteLineItem;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.RfqMethod;
 import com.procurement.sourcing.domain.RfqQuoteInvitationPolicy;
 import com.procurement.sourcing.domain.RfqQuoteSubmissionPolicy;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
@@ -278,7 +279,7 @@ public class QuoteApplicationService {
         rfq.openedAt(),
         rfq.currentRound(),
         rfq.finalRound(),
-        rfq.method(),
+        RfqMethod.orDefault(rfq.method()),
         rfq.closeReason());
   }
 

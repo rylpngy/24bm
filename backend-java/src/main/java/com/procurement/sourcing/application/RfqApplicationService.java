@@ -171,7 +171,7 @@ public class RfqApplicationService {
         note == null || note.isBlank() ? roundLabel : roundLabel + " · 谈判说明:" + note);
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
-        "询价进入新一轮报价",
+        "询比进入新一轮报价",
         rfq.title() + "已发起新一轮报价,请关注受邀供应商的二次报价。");
     return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
   }
@@ -304,7 +304,7 @@ public class RfqApplicationService {
           tenantId,
           supplierId,
           NotificationTitle.RFQ_INVITATION_UPDATED,
-          request.title() + "已更新询价信息，请按最新要求报价。");
+          request.title() + "已更新询比信息，请按最新要求报价。");
     }
 
     return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
@@ -371,7 +371,7 @@ public class RfqApplicationService {
         rfq.openedAt(),
         rfq.currentRound(),
         rfq.finalRound(),
-        rfq.method(),
+        RfqMethod.orDefault(rfq.method()),
         rfq.closeReason());
   }
 

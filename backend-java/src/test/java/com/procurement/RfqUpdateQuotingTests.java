@@ -71,11 +71,11 @@ class RfqUpdateQuotingTests {
   @Test
   void updatesQuotingRfqProfileAndReplacesInvitedSuppliersInsideTenant() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    var deadline = OffsetDateTime.parse("2026-07-05T18:00:00+08:00");
+    var deadline = OffsetDateTime.parse("2026-08-05T18:00:00+08:00");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")))
+        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-08-01T18:00:00+08:00")))
         .thenReturn(rfq("rfq-1", "报价中", deadline));
-    when(rfqMapper.updateQuotingDetails("tenant-1", "rfq-1", "更新后的询价", deadline, "", "", "最低价"))
+    when(rfqMapper.updateQuotingDetails("tenant-1", "rfq-1", "更新后的询比", deadline, "", "", "最低价"))
         .thenReturn(1);
     when(buyerSupplierRelationMapper.countByTenantSupplierAndStatus("tenant-1", "supplier-1", "已准入"))
         .thenReturn(1);
@@ -90,14 +90,14 @@ class RfqUpdateQuotingTests {
     when(quoteMapper.listByTenantAndRfq("tenant-1", "rfq-1")).thenReturn(List.of());
 
     var response = rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
-        "更新后的询价",
+        "更新后的询比",
         List.of("supplier-1", "supplier-2"),
         deadline, "", "", "最低价"));
 
-    assertThat(response.title()).isEqualTo("更新后的询价");
+    assertThat(response.title()).isEqualTo("更新后的询比");
     assertThat(response.deadlineAt()).isEqualTo(deadline);
     assertThat(response.invitedSupplierIds()).containsExactly("supplier-1", "supplier-2");
-    verify(rfqMapper).updateQuotingDetails("tenant-1", "rfq-1", "更新后的询价", deadline, "", "", "最低价");
+    verify(rfqMapper).updateQuotingDetails("tenant-1", "rfq-1", "更新后的询比", deadline, "", "", "最低价");
     verify(rfqInviteMapper).deleteByRfq("tenant-1", "rfq-1");
     verify(rfqInviteMapper).insert(
         org.mockito.ArgumentMatchers.anyString(),
@@ -116,11 +116,11 @@ class RfqUpdateQuotingTests {
   @Test
   void updatingQuotingRfqAuditsAndNotifiesInvitedSuppliers() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    var deadline = OffsetDateTime.parse("2026-07-05T18:00:00+08:00");
+    var deadline = OffsetDateTime.parse("2026-08-05T18:00:00+08:00");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")))
+        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-08-01T18:00:00+08:00")))
         .thenReturn(rfq("rfq-1", "报价中", deadline));
-    when(rfqMapper.updateQuotingDetails("tenant-1", "rfq-1", "更新后的询价", deadline, "", "", "最低价"))
+    when(rfqMapper.updateQuotingDetails("tenant-1", "rfq-1", "更新后的询比", deadline, "", "", "最低价"))
         .thenReturn(1);
     when(buyerSupplierRelationMapper.countByTenantSupplierAndStatus("tenant-1", "supplier-1", "已准入"))
         .thenReturn(1);
@@ -135,7 +135,7 @@ class RfqUpdateQuotingTests {
     when(quoteMapper.listByTenantAndRfq("tenant-1", "rfq-1")).thenReturn(List.of());
 
     rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
-        "更新后的询价",
+        "更新后的询比",
         List.of("supplier-1", "supplier-2"),
         deadline, "", "", "最低价"));
 
@@ -144,25 +144,25 @@ class RfqUpdateQuotingTests {
     verify(notificationApplicationService).notifyActiveSupplierUsers(
         "tenant-1",
         "supplier-1",
-        "询价邀请已更新",
-        "更新后的询价已更新询价信息，请按最新要求报价。");
+        "询比邀请已更新",
+        "更新后的询比已更新询比信息，请按最新要求报价。");
     verify(notificationApplicationService).notifyActiveSupplierUsers(
         "tenant-1",
         "supplier-2",
-        "询价邀请已更新",
-        "更新后的询价已更新询价信息，请按最新要求报价。");
+        "询比邀请已更新",
+        "更新后的询比已更新询比信息，请按最新要求报价。");
   }
 
   @Test
   void rejectsUpdatingRfqAfterAwardApprovalStarts() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "定标审批中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")));
+        .thenReturn(rfq("rfq-1", "定标审批中", OffsetDateTime.parse("2026-08-01T18:00:00+08:00")));
 
     assertThatThrownBy(() -> rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
-        "审批中的询价",
+        "审批中的询比",
         List.of("supplier-1"),
-        OffsetDateTime.parse("2026-07-05T18:00:00+08:00"), "", "", "最低价")))
+        OffsetDateTime.parse("2026-08-05T18:00:00+08:00"), "", "", "最低价")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Only quoting RFQ can be updated");
 
@@ -180,12 +180,12 @@ class RfqUpdateQuotingTests {
   void rejectsDuplicatedInvitedSuppliersBeforeReplacingExistingInvites() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")));
+        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-08-01T18:00:00+08:00")));
 
     assertThatThrownBy(() -> rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
-        "重复邀请询价",
+        "重复邀请询比",
         List.of("supplier-1", "supplier-1"),
-        OffsetDateTime.parse("2026-07-05T18:00:00+08:00"), "", "", "最低价")))
+        OffsetDateTime.parse("2026-08-05T18:00:00+08:00"), "", "", "最低价")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("RFQ cannot invite the same supplier more than once: supplier-1");
 
@@ -204,16 +204,16 @@ class RfqUpdateQuotingTests {
   void rejectsUpdatingRfqWithSupplierWithoutActiveQualificationBeforeReplacingExistingInvites() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")));
+        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-08-01T18:00:00+08:00")));
     when(buyerSupplierRelationMapper.countByTenantSupplierAndStatus("tenant-1", "supplier-1", "已准入"))
         .thenReturn(1);
     when(supplierQualificationMapper.listActiveBySupplier("supplier-1"))
         .thenReturn(List.of());
 
     assertThatThrownBy(() -> rfqApplicationService.update("rfq-1", new UpdateRfqRequest(
-        "更新后的询价",
+        "更新后的询比",
         List.of("supplier-1"),
-        OffsetDateTime.parse("2026-07-05T18:00:00+08:00"), "", "", "最低价")))
+        OffsetDateTime.parse("2026-08-05T18:00:00+08:00"), "", "", "最低价")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Supplier lacks active qualification for tenant RFQ: supplier-1");
 
@@ -246,7 +246,7 @@ class RfqUpdateQuotingTests {
   void rejectsNewRoundWhenRfqNotOpened() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-07-01T18:00:00+08:00")));
+        .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-08-01T18:00:00+08:00")));
 
     assertThatThrownBy(() -> rfqApplicationService.startNewRound(
         "rfq-1", OffsetDateTime.parse("2026-07-12T18:00:00+08:00"), false, null))
@@ -263,7 +263,7 @@ class RfqUpdateQuotingTests {
     return new Rfq(
         id,
         "tenant-1",
-        status.equals("报价中") ? "更新后的询价" : "审批中的询价",
+        status.equals("报价中") ? "更新后的询比" : "审批中的询比",
         status,
         deadline,
         "buyer-user",

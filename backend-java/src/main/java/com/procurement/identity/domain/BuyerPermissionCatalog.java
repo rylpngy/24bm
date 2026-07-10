@@ -15,7 +15,7 @@ public final class BuyerPermissionCatalog {
       new Point("buyer:role:manage", "管理角色与权限", "管理"),
       new Point("buyer:demand:create", "新建需求", "需求"),
       new Point("buyer:demand:read", "查看需求", "需求"),
-      new Point("buyer:rfq:read", "查看询价", "询价"),
+      new Point("buyer:rfq:read", "查看询比", "询比"),
       new Point("buyer:material:read", "查看物料", "物料"),
       new Point("buyer:contract:read", "查看合同", "合同"),
       new Point("buyer:invoice:read", "查看发票", "财务"),

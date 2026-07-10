@@ -2,45 +2,50 @@ package com.procurement.sourcing.domain;
 
 import java.util.Set;
 
-// 采购方式:不同方式的法定供应商家数下限不同(单一来源 1 家,其余 ≥3 家)。
+// 采购方式:1.0 版本开放询比、竞价、商城、单一来源;旧招标类方式统一兼容映射。
 public final class RfqMethod {
-  public static final String PUBLIC_TENDER = "公开招标";
-  public static final String INVITED_TENDER = "邀请招标";
-  public static final String NEGOTIATION = "竞争性谈判";
-  public static final String INQUIRY = "询价";
+  public static final String COMPARE = "询比";
+  public static final String AUCTION = "竞价";
+  public static final String MALL = "商城";
   public static final String SINGLE_SOURCE = "单一来源";
 
   private static final Set<String> ALL =
-      Set.of(PUBLIC_TENDER, INVITED_TENDER, NEGOTIATION, INQUIRY, SINGLE_SOURCE);
+      Set.of(COMPARE, AUCTION, MALL, SINGLE_SOURCE);
+
+  private static final Set<String> LEGACY_COMPARE =
+      Set.of("询价", "公开招标", "邀请招标", "竞争性谈判");
 
   private RfqMethod() {}
 
   public static String orDefault(String method) {
-    return method == null || method.isBlank() ? INQUIRY : method;
+    if (method == null || method.isBlank()) {
+      return COMPARE;
+    }
+    if (LEGACY_COMPARE.contains(method)) {
+      return COMPARE;
+    }
+    return method;
   }
 
   public static boolean isValid(String method) {
-    return ALL.contains(method);
+    return ALL.contains(orDefault(method));
   }
 
-  // 法定供应商家数下限:单一来源 1 家,其余至少 3 家。
+  // 1.0 供应商家数下限:询比/竞价至少 3 家;单一来源 1 家;商城不强制邀请供应商。
   public static int minSuppliers(String method) {
-    return SINGLE_SOURCE.equals(method) ? 1 : 3;
+    String m = orDefault(method);
+    if (MALL.equals(m)) return 0;
+    if (SINGLE_SOURCE.equals(m)) return 1;
+    return 3;
   }
 
-  // 竞争性谈判须经至少一轮谈判(即当前轮 ≥2)。
-  public static final int NEGOTIATION_MIN_ROUND = 2;
-  // 招标/询价定标须有不少于 3 家有效报价(法定家数);单一来源 1 家即可。
+  // 询比/竞价定标须有不少于 3 家有效报价;单一来源 1 家;商城可由商品/货架路径形成订单。
   public static final int AWARD_MIN_BIDDERS_COMPETITIVE = 3;
 
   // 定标资格:按采购方式校验「能否定标」。
   public static void requireAwardEligible(String method, int currentRound, int bidderCount, String rfqId) {
     String m = orDefault(method);
-    if (NEGOTIATION.equals(m)) {
-      if (currentRound < NEGOTIATION_MIN_ROUND) {
-        throw new IllegalStateException(
-            "竞争性谈判须经至少一轮谈判后方可定标(当前第" + currentRound + "轮): " + rfqId);
-      }
+    if (MALL.equals(m)) {
       return;
     }
     if (SINGLE_SOURCE.equals(m)) {
@@ -49,7 +54,6 @@ public final class RfqMethod {
       }
       return;
     }
-    // 公开招标 / 邀请招标 / 询价:不少于法定家数。
     if (bidderCount < AWARD_MIN_BIDDERS_COMPETITIVE) {
       throw new IllegalStateException(
           m + "定标须有不少于" + AWARD_MIN_BIDDERS_COMPETITIVE + "家有效报价(当前"
@@ -57,16 +61,22 @@ public final class RfqMethod {
     }
   }
 
-  // 单一来源:有且仅有 1 家;其余:不少于下限。
+  // 询比/竞价指定供应商时不少于 3 家;单一来源有且仅有 1 家;商城不强制邀请供应商。
   public static void requireSupplierCount(String method, int count) {
     String m = orDefault(method);
     if (!isValid(m)) {
       throw new IllegalArgumentException("Unknown procurement method: " + method);
     }
+    if (MALL.equals(m)) {
+      return;
+    }
     if (SINGLE_SOURCE.equals(m)) {
       if (count != 1) {
-        throw new IllegalStateException("Single-source RFQ must invite exactly one supplier");
+        throw new IllegalStateException("单一来源须且仅须邀请 1 家供应商(当前" + count + "家)");
       }
+      return;
+    }
+    if (count == 0) {
       return;
     }
     int min = minSuppliers(m);

@@ -56,7 +56,7 @@ public record RfqResponse(
         null,
         1,
         false,
-        "询价",
+        "询比",
         null);
   }
 }

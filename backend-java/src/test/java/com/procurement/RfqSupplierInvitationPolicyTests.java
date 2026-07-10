@@ -35,10 +35,9 @@ class RfqSupplierInvitationPolicyTests {
   }
 
   @Test
-  void rejectsEmptyOrDuplicatedRfqInviteSupplierList() {
-    assertThatThrownBy(() -> RfqSupplierInvitationPolicy.requireValidInviteList(List.of()))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("RFQ requires at least one invited supplier");
+  void allowsEmptyListAndRejectsDuplicatedRfqInviteSupplierList() {
+    assertThatCode(() -> RfqSupplierInvitationPolicy.requireValidInviteList(List.of()))
+        .doesNotThrowAnyException();
 
     assertThatThrownBy(() -> RfqSupplierInvitationPolicy.requireValidInviteList(List.of("supplier-1", "supplier-1")))
         .isInstanceOf(IllegalArgumentException.class)
