@@ -187,10 +187,18 @@ Started:
 - Contract milestone settlement rules: milestone payment now enforces prior milestones already paid before later milestones can be registered as paid.
 - Payment batch approval and release evidence: payment execution registration now requires the batch to be approved for payment, accepts release evidence fields, and exposes that evidence on execution records.
 
-Candidate scope:
+Completed 2026-07-10 (finance/contract closeout slice):
 
-- Finance exception dashboard.
-- Contract-to-payment reconciliation view.
+- Release evidence is now writable end to end: the registration endpoint accepts an optional `RegisterPaymentRequest` body, the generated client carries it, and the payment batch page collects evidence number/remark before registering.
+- Payment batch approval actions (submit for approval, approve, archive) are wired in the tenant portal against the existing status endpoint.
+- Archive exception disposal is a full loop in the finance exception dashboard: review approve/reject, controlled action registration, and closure.
+- `scripts/portal-api-acceptance.mjs` now runs Track B write-path acceptance: unapproved-batch registration rejection, batch status round-trip, milestone out-of-order pay rejection, and budget `disbursed` exposure. Demo seed `V243` adds the finance approval templates the clean migration+demo path was missing.
+- `DepartmentBudgetMapperSqlTests` guards the paid-milestone → contract → order → RFQ → demand → department budget `disbursed` chain.
+
+Remaining candidates:
+
+- Upgrade tenant-portal E2E from element-visibility smoke to a behavioral finance flow (generate schedule → reach → register → dashboard counts).
+- Contract approval review action (`PUT contracts/{id}/approval-review`) is not yet wired in the frontend.
 
 ### Track C: Tender/Auction Expansion
 
