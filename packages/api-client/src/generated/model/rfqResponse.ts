@@ -34,4 +34,5 @@ export interface RfqResponse {
   auctionLowestAmount?: number;
   singleSourceReason?: string;
   invitations?: RfqInvitationResponse[];
+  resultAnnouncedAt?: string;
 }

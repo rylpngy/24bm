@@ -31,7 +31,8 @@ public record RfqResponse(
     BigDecimal auctionLowestAmount,
     String singleSourceReason,
     // 受邀方参与状态:采购方视角全量;供应商视角仅返回本方记录。
-    List<RfqInvitationResponse> invitations) {
+    List<RfqInvitationResponse> invitations,
+    OffsetDateTime resultAnnouncedAt) {
 
   public RfqResponse(
       String id,
@@ -70,6 +71,7 @@ public record RfqResponse(
         null,
         null,
         null,
-        List.of());
+        List.of(),
+        null);
   }
 }

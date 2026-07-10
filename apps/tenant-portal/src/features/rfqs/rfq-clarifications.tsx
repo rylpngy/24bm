@@ -1,3 +1,4 @@
+import { useRfqPublishBulletin } from '@24bid/api-client';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Send } from 'lucide-react';
@@ -12,10 +13,12 @@ const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
 
 // 采购方:某 RFQ 的澄清答疑——列出全部提问,逐条答复并可广播。
-export function RfqClarificationsBuyer({ rfqId }: { rfqId: string }) {
+export function RfqClarificationsBuyer({ rfqId, canBulletin = false }: { rfqId: string; canBulletin?: boolean }) {
   const queryClient = useQueryClient();
   const list = useRfqClarifications(rfqId);
   const items = list.data?.data ?? [];
+  const bulletin = useRfqPublishBulletin();
+  const [bulletinText, setBulletinText] = useState('');
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -35,10 +38,36 @@ export function RfqClarificationsBuyer({ rfqId }: { rfqId: string }) {
           </span>
         )}
       </p>
+      {canBulletin && (
+        <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50/50 p-2.5">
+          <p className="text-[11px] font-black text-blue-800">补遗公告(广播给全体受邀供应商,开标后不可发布)</p>
+          <div className="mt-1.5 flex gap-2">
+            <input
+              className="h-9 flex-1 rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-blue-300"
+              placeholder="如:补充技术参数、顺延说明、修正数量等"
+              value={bulletinText}
+              onChange={(e) => setBulletinText(e.target.value)}
+            />
+            <button
+              type="button"
+              disabled={bulletin.isPending || !bulletinText.trim()}
+              onClick={() =>
+                bulletin.mutate(
+                  { rfqId, data: { content: bulletinText.trim() } },
+                  { onSuccess: () => { setBulletinText(''); refresh(); } },
+                )
+              }
+              className="h-9 shrink-0 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:bg-slate-300"
+            >
+              发布补遗
+            </button>
+          </div>
+        </div>
+      )}
       {list.isLoading ? (
         <p className="mt-2 text-xs font-bold text-slate-400">加载中…</p>
       ) : items.length === 0 ? (
-        <p className="mt-2 text-xs font-bold text-slate-400">暂无供应商提问。</p>
+        <p className="mt-2 text-xs font-bold text-slate-400">暂无供应商提问或补遗公告。</p>
       ) : (
         <div className="mt-2 space-y-2">
           {items.map((c) => (

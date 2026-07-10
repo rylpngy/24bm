@@ -362,7 +362,8 @@ public class QuoteApplicationService {
         rfq.auctionMinDecrement(),
         auctionLowestAmount(rfq),
         rfq.singleSourceReason(),
-        ownInvitation(rfq, supplierId));
+        ownInvitation(rfq, supplierId),
+        rfq.resultAnnouncedAt());
   }
 
   // 供应商视角仅返回本方邀请记录(已读/拒绝状态),不暴露其他受邀方。

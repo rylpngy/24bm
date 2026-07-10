@@ -407,6 +407,40 @@ public class RfqApplicationService {
     return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
   }
 
+  // 结果公告:定标后向全体受邀方公示中标结果(中标人+金额),未中标方致谢;幂等。
+  @Transactional
+  public RfqResponse announceResult(String rfqId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    Rfq rfq = requireRfq(tenantId, rfqId);
+    if (!RfqStatus.AWARDED.equals(rfq.status()) || rfq.awardedSupplierId() == null) {
+      throw new IllegalStateException("仅已定标的项目可发布结果公告: " + rfqId);
+    }
+    int updated = rfqMapper.markResultAnnounced(tenantId, rfqId);
+    if (updated == 0) {
+      throw new IllegalStateException("结果公告已发布过,不能重复发布: " + rfqId);
+    }
+    java.math.BigDecimal awardedAmount = quoteMapper
+        .listByTenantAndRfqAndRound(tenantId, rfqId, rfq.currentRound()).stream()
+        .filter(q -> rfq.awardedSupplierId().equals(q.supplierId()))
+        .map(Quote::amount)
+        .filter(java.util.Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+    String amountText = awardedAmount == null ? "" : ",中标含税总价 ¥" + awardedAmount.toPlainString();
+    for (String supplierId : rfqInviteMapper.listSupplierIds(tenantId, rfqId)) {
+      boolean winner = supplierId.equals(rfq.awardedSupplierId());
+      notificationApplicationService.notifyActiveSupplierUsers(
+          tenantId,
+          supplierId,
+          NotificationTitle.RFQ_RESULT_ANNOUNCED,
+          winner
+              ? rfq.title() + " 结果公告:贵司中标" + amountText + ",请等待中标通知书与订单。"
+              : rfq.title() + " 结果公告:本项目已定标" + amountText + ",感谢贵司参与,期待后续合作。");
+    }
+    auditLogApplicationService.recordTenantAction(RfqAuditAction.UPDATED, AuditTargetType.RFQ, rfqId);
+    return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
+  }
+
   private Rfq requireRfq(String tenantId, String rfqId) {
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
@@ -497,7 +531,8 @@ public class RfqApplicationService {
         rfqInviteMapper.listByRfq(rfq.tenantId(), rfq.id()).stream()
             .map(inv -> new com.procurement.sourcing.api.RfqInvitationResponse(
                 inv.supplierId(), inv.inviteStatus(), inv.viewedAt(), inv.declineReason()))
-            .toList());
+            .toList(),
+        rfq.resultAnnouncedAt());
   }
 
   // 仅竞价方式回传当前轮最低已提交报价,供买卖双方观察价格竞争进度。

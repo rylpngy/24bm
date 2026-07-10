@@ -14,6 +14,7 @@ import {
 import {
   type RfqResponse,
   useRfqAbort,
+  useRfqAnnounceResult,
   useRfqAwardAward,
   useRfqOpen,
   useRfqRemind,
@@ -89,6 +90,7 @@ export function RfqProjectDetail({
   const newRound = useRfqStartNewRound();
   const abort = useRfqAbort();
   const remind = useRfqRemind();
+  const announce = useRfqAnnounceResult();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [roundForm, setRoundForm] = useState<{ deadline: string; final: boolean; note: string } | null>(null);
@@ -175,7 +177,7 @@ export function RfqProjectDetail({
                             ? isDraft ? '草稿 · 待发布' : '待发布'
                             : index === 3
                               ? `${quotes.length}/${invited.length || '不限'} 家已报`
-                              : rfq.status === '定标审批中' ? '定标审批中' : rfq.status === '已定标' ? '已定标' : '比价定标中'
+                              : rfq.status === '定标审批中' ? '定标审批中' : rfq.status === '已定标' ? (rfq.resultAnnouncedAt ? '已定标·已公告' : '已定标·待公告') : '比价定标中'
                         : '待开始'}
                 </p>
               </div>
@@ -408,9 +410,38 @@ export function RfqProjectDetail({
         </div>
       )}
 
+      {rfq.status === '已定标' && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-100 bg-emerald-50/60 px-4 py-3">
+          {rfq.resultAnnouncedAt ? (
+            <p className="text-xs font-black text-emerald-800">
+              结果公告已于 {rfq.resultAnnouncedAt.slice(0, 16).replace('T', ' ')} 发布,全体受邀方已收到公示通知。
+            </p>
+          ) : (
+            <>
+              <p className="text-xs font-black text-emerald-800">
+                已定标:建议发布结果公告,向全体受邀方公示中标结果(未中标方将收到致谢通知)。
+              </p>
+              <button
+                type="button"
+                disabled={announce.isPending}
+                onClick={() =>
+                  rfq.id &&
+                  announce.mutate(
+                    { rfqId: rfq.id },
+                    { onSuccess: () => { setFeedback('结果公告已发布,全体受邀方已收到公示通知。'); refresh(); }, onError: reportError },
+                  )
+                }
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-300"
+              >
+                发布结果公告
+              </button>
+            </>
+          )}
+        </div>
+      )}
       {rfq.status === '已定标' && rfq.id && <RfqResultBuyer rfqId={rfq.id} supplierNames={supplierNames} />}
 
-      {rfq.id && <RfqClarificationsBuyer rfqId={rfq.id} />}
+      {rfq.id && <RfqClarificationsBuyer rfqId={rfq.id} canBulletin={quoting} />}
 
       {roundForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-6" onClick={() => setRoundForm(null)}>

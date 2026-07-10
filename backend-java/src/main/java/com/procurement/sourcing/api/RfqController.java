@@ -127,6 +127,20 @@ public class RfqController {
     return ApiResponse.ok(rfqApplicationService.publish(rfqId));
   }
 
+  // 采购方补遗公告:报价中向全体受邀供应商广播澄清/补遗。
+  @PostMapping("/{rfqId}/clarifications/bulletin")
+  public ApiResponse<RfqClarificationResponse> publishBulletin(
+      @PathVariable String rfqId,
+      @Valid @RequestBody PublishClarificationBulletinRequest request) {
+    return ApiResponse.ok(rfqClarificationApplicationService.publishBulletin(rfqId, request.content()));
+  }
+
+  // 结果公告:定标后向全体受邀方公示中标结果。
+  @PostMapping("/{rfqId}/result/announce")
+  public ApiResponse<RfqResponse> announceResult(@PathVariable String rfqId) {
+    return ApiResponse.ok(rfqApplicationService.announceResult(rfqId));
+  }
+
   // 一键催标:提醒本轮未报价的受邀供应商。
   @PostMapping("/{rfqId}/remind")
   public ApiResponse<Integer> remind(@PathVariable String rfqId) {

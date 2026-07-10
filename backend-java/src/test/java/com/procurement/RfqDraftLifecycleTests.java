@@ -75,7 +75,7 @@ class RfqDraftLifecycleTests {
         "rfq-1", "tenant-1", "行政车辆维保询价", status,
         OffsetDateTime.now().plusDays(3), "buyer-user", null,
         OffsetDateTime.now(), OffsetDateTime.now(), "", "", "最低价",
-        null, 1, false, "询比", null, null, null, null);
+        null, 1, false, "询比", null, null, null, null, null);
   }
 
   @Test
@@ -139,5 +139,38 @@ class RfqDraftLifecycleTests {
     assertThatThrownBy(() -> rfqApplicationService.updateDraftInvitations("rfq-1", List.of("supplier-1")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("仅草稿状态");
+  }
+
+  @Test
+  void resultAnnouncementRequiresAwardAndIsIdempotent() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    // 未定标 → 拒绝
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(rfq("报价中"));
+    assertThatThrownBy(() -> rfqApplicationService.announceResult("rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("仅已定标");
+
+    // 已定标:公告一次,通知全体受邀方(中标/未中标口径不同)
+    Rfq awarded = new Rfq(
+        "rfq-1", "tenant-1", "行政车辆维保询价", "已定标",
+        OffsetDateTime.now(), "buyer-user", "supplier-1",
+        OffsetDateTime.now(), OffsetDateTime.now(), "", "", "最低价",
+        null, 1, false, "询比", null, null, null, null, null);
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(awarded);
+    when(rfqMapper.markResultAnnounced("tenant-1", "rfq-1")).thenReturn(1);
+    when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1"))
+        .thenReturn(List.of("supplier-1", "supplier-2", "supplier-3"));
+    when(quoteMapper.listByTenantAndRfqAndRound("tenant-1", "rfq-1", 1)).thenReturn(List.of());
+    when(rfqInviteMapper.listByRfq("tenant-1", "rfq-1")).thenReturn(List.of());
+
+    rfqApplicationService.announceResult("rfq-1");
+    verify(notificationApplicationService, org.mockito.Mockito.times(3))
+        .notifyActiveSupplierUsers(eq("tenant-1"), anyString(), anyString(), anyString());
+
+    // 重复公告 → 拒绝(幂等守卫)
+    when(rfqMapper.markResultAnnounced("tenant-1", "rfq-1")).thenReturn(0);
+    assertThatThrownBy(() -> rfqApplicationService.announceResult("rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("不能重复发布");
   }
 }
