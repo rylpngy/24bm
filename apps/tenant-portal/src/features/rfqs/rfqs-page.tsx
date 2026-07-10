@@ -98,6 +98,8 @@ export function RfqsPage() {
   // 竞价专属参数:起拍价(必填)与最小降价步长(选填)。
   const [auctionStartPrice, setAuctionStartPrice] = useState('');
   const [auctionMinDecrement, setAuctionMinDecrement] = useState('');
+  // 单一来源专属:来源说明(必填,审批留痕)。
+  const [singleSourceReason, setSingleSourceReason] = useState('');
 
   const list = rfqs.data?.data ?? [];
   const demands = approvedDemands.data?.data ?? [];
@@ -133,6 +135,7 @@ export function RfqsPage() {
   const supplierRequirementMet =
     !supplierSelectionRequired || (method === '单一来源' ? supplierIds.length === 1 : supplierIds.length >= 3);
   const auctionParamsMet = method !== '竞价' || Number(auctionStartPrice) > 0;
+  const singleSourceReasonMet = method !== '单一来源' || singleSourceReason.trim().length > 0;
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -154,6 +157,7 @@ export function RfqsPage() {
           auctionStartPrice: method === '竞价' ? Number(auctionStartPrice) : undefined,
           auctionMinDecrement:
             method === '竞价' && auctionMinDecrement ? Number(auctionMinDecrement) : undefined,
+          singleSourceReason: method === '单一来源' ? singleSourceReason.trim() : undefined,
           quoteRequirement: quoteRequirement || undefined,
           deliveryRequirement:
             [deliveryRequirement, `供应商征集方式：${supplierCollectionLabel}`].filter(Boolean).join('\n') || undefined,
@@ -172,6 +176,7 @@ export function RfqsPage() {
           setDeliveryRequirement('');
           setAuctionStartPrice('');
           setAuctionMinDecrement('');
+          setSingleSourceReason('');
           setShowForm(false);
           refresh();
         },
@@ -394,6 +399,17 @@ export function RfqsPage() {
               </div>
             </div>
           )}
+          {method === '单一来源' && (
+            <div className="mt-3">
+              <label className="text-xs font-black text-slate-500">来源说明(必填,审批留痕)</label>
+              <textarea
+                className={cn(inputCls, 'min-h-[64px] resize-y')}
+                placeholder="说明定向选择该供应商的依据,如:原厂唯一授权服务商/专利技术唯一来源。"
+                value={singleSourceReason}
+                onChange={(e) => setSingleSourceReason(e.target.value)}
+              />
+            </div>
+          )}
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
               <label className="text-xs font-black text-slate-500">报价要求</label>
@@ -450,7 +466,7 @@ export function RfqsPage() {
             onClick={submitCreate}
             busy={create.isPending}
             pendingLabel="创建中"
-            disabled={!title || !demandId || !supplierRequirementMet || !auctionParamsMet}
+            disabled={!title || !demandId || !supplierRequirementMet || !auctionParamsMet || !singleSourceReasonMet}
           >
             创建询比
           </PrimaryActionButton>
@@ -631,6 +647,11 @@ export function RfqsPage() {
                       <div className="mb-2 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2 text-[11px] font-bold text-sky-700">
                         {r.method ?? '采购方式'} · 定标门槛:{awardGateHint(r.method ?? undefined, (r.quotes ?? []).length)}
                       </div>
+                      {r.method === '单一来源' && r.singleSourceReason && (
+                        <div className="mb-2 rounded-lg border border-violet-100 bg-violet-50/60 px-3 py-2 text-[11px] font-bold text-violet-700">
+                          来源说明:{r.singleSourceReason}
+                        </div>
+                      )}
                       {r.method === '竞价' && (
                         <div className="mb-2 rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2 text-[11px] font-bold text-amber-700">
                           竞价规则:起拍价 ¥{r.auctionStartPrice?.toLocaleString('zh-CN') ?? '—'}

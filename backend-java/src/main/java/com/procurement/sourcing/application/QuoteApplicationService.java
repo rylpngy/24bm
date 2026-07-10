@@ -298,7 +298,8 @@ public class QuoteApplicationService {
         rfq.closeReason(),
         rfq.auctionStartPrice(),
         rfq.auctionMinDecrement(),
-        auctionLowestAmount(rfq));
+        auctionLowestAmount(rfq),
+        rfq.singleSourceReason());
   }
 
   // 竞价的当前最低价对受邀供应商公开(价格竞争的核心信息);其它方式保持封存返回 null。

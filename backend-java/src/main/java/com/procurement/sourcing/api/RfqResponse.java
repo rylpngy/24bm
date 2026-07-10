@@ -28,7 +28,8 @@ public record RfqResponse(
     // 竞价专属:起拍价 / 最小降价步长 / 当前轮最低报价(仅竞价方式返回,供出价参考)。
     BigDecimal auctionStartPrice,
     BigDecimal auctionMinDecrement,
-    BigDecimal auctionLowestAmount) {
+    BigDecimal auctionLowestAmount,
+    String singleSourceReason) {
 
   public RfqResponse(
       String id,
@@ -62,6 +63,7 @@ public record RfqResponse(
         1,
         false,
         "询比",
+        null,
         null,
         null,
         null,

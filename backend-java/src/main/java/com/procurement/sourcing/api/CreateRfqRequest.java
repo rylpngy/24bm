@@ -17,5 +17,7 @@ public record CreateRfqRequest(
     String method,
     // 竞价专属:起拍价(竞价必填)与最小降价步长(可选,缺省 0)。
     java.math.BigDecimal auctionStartPrice,
-    java.math.BigDecimal auctionMinDecrement) {
+    java.math.BigDecimal auctionMinDecrement,
+    // 单一来源专属:来源说明(必填,审批留痕)。
+    String singleSourceReason) {
 }

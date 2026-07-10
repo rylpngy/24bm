@@ -22,6 +22,7 @@ public record Rfq(
     String method,
     String closeReason,
     BigDecimal auctionStartPrice,
-    BigDecimal auctionMinDecrement) {
+    BigDecimal auctionMinDecrement,
+    String singleSourceReason) {
   // 单一(规范)构造器:避免 MyBatis 在多构造器间按 join 查询误选,丢失 currentRound 等新列。
 }

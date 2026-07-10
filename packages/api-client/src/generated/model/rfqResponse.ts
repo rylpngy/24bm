@@ -31,4 +31,5 @@ export interface RfqResponse {
   auctionStartPrice?: number;
   auctionMinDecrement?: number;
   auctionLowestAmount?: number;
+  singleSourceReason?: string;
 }

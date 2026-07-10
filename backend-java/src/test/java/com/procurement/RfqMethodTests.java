@@ -71,4 +71,20 @@ class RfqMethodTests {
     assertThat(RfqMethod.minSuppliers(RfqMethod.SINGLE_SOURCE)).isEqualTo(1);
     assertThat(RfqMethod.minSuppliers(RfqMethod.COMPARE)).isEqualTo(3);
   }
+
+  @Test
+  void singleSourceRequiresJustificationAndOthersRejectIt() {
+    assertThatThrownBy(() -> RfqMethod.requireSourceJustification(RfqMethod.SINGLE_SOURCE, null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("来源说明");
+    assertThatThrownBy(() -> RfqMethod.requireSourceJustification(RfqMethod.SINGLE_SOURCE, "  "))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatCode(() -> RfqMethod.requireSourceJustification(RfqMethod.SINGLE_SOURCE, "原厂唯一授权服务商"))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> RfqMethod.requireSourceJustification(RfqMethod.COMPARE, "不该有"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("仅单一来源");
+    assertThatCode(() -> RfqMethod.requireSourceJustification(RfqMethod.COMPARE, null))
+        .doesNotThrowAnyException();
+  }
 }
