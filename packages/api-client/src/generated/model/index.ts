@@ -32,6 +32,7 @@ export * from './apiResponseDepartmentBudgetResponse';
 export * from './apiResponseDepartmentResponse';
 export * from './apiResponseEnterpriseReviewResponse';
 export * from './apiResponseImportBuyerUsersResponse';
+export * from './apiResponseInteger';
 export * from './apiResponseInvoiceResponse';
 export * from './apiResponseListApprovalTemplateResponse';
 export * from './apiResponseListAttachmentResponse';

@@ -113,6 +113,12 @@ public class RfqController {
   }
 
   // 终止(采购方):流标(不足法定家数等)/废标(全部不合格、取消),记录理由。
+  // 一键催标:提醒本轮未报价的受邀供应商。
+  @PostMapping("/{rfqId}/remind")
+  public ApiResponse<Integer> remind(@PathVariable String rfqId) {
+    return ApiResponse.ok(rfqApplicationService.remindPendingSuppliers(rfqId));
+  }
+
   @PostMapping("/{rfqId}/abort")
   public ApiResponse<RfqResponse> abort(
       @PathVariable String rfqId,

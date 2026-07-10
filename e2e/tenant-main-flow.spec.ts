@@ -12,14 +12,15 @@ test('采购主链路逐站渲染(需求→询比→报价对比→订单→发�
   await expect(page.getByRole('columnheader', { name: '序号' })).toBeVisible();
   await expect(page.getByText('已通过').first()).toBeVisible();
 
-  // ② 询比项目:有询比记录(计数胶囊)。
+  // ② 询比项目:项目列表(阶段徽章)→ 进入详情,报价对比是流程中的「定标决策」环节。
   await openModule(page, /询比项目/);
   await expect(page.getByText(/共\s*\d+\s*条/).first()).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '项目阶段' })).toBeVisible();
 
-  // ③ 报价对比:比价矩阵(含税总价列 + 定标入口)。
-  await openModule(page, /报价对比/);
-  await expect(page.getByText('含税总价').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: '定标' }).first()).toBeVisible();
+  // ③ 项目详情:五阶段步进器 + 供应商参与进度;已开标项目内嵌报价对比与定标入口。
+  await page.getByRole('button', { name: '查看详情' }).first().click();
+  await expect(page.getByText('定标决策').first()).toBeVisible();
+  await expect(page.getByText('供应商参与进度')).toBeVisible();
 
   // ④ 采购订单:订单行项明细(源自中标报价)+ KPI。
   await openModule(page, /采购订单/);
