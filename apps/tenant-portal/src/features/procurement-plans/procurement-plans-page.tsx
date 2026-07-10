@@ -10,11 +10,17 @@ import {
   Timer,
 } from 'lucide-react';
 import {
+  type PendingApprovalTaskResponse,
   type PurchaseDemandResponse,
+  type PurchaseOrderResponse,
   type RfqResponse,
+  useApprovalInboxPending,
+  useApprovalInboxRecent,
   useBuyerSupplierList,
+  useDepartmentList,
   useMaterialList,
   usePurchaseDemandList,
+  usePurchaseOrderList,
   useRfqCreate,
   useRfqList,
 } from '@24bid/api-client';
@@ -24,31 +30,36 @@ import { ProcurementPlanMergePage } from '../demands/demands-page';
 const currency = (value?: number) =>
   value == null ? '--' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`;
 
-const stageByStatus: Record<string, string> = {
-  报价中: '方案制定',
-  已开标: '方案审批',
-  已定标: '采购执行',
-  已流标: '已结束',
-  已废标: '已结束',
-};
-
 const stageSteps = ['需求整合', '方案制定', '方案审批', '采购执行', '验收归档'];
+
+// 进度节点由真实单据推导:方案状态(RFQ)决定前三节点,关联采购订单的状态决定执行/验收节点。
+function derivePlanProgress(plan: RfqResponse, order?: PurchaseOrderResponse) {
+  if (plan.status === '已流标' || plan.status === '已废标') {
+    return { currentIndex: -1, terminated: true as const, stageLabel: plan.status };
+  }
+  if (order) {
+    if (order.status === '已收货') {
+      return { currentIndex: 4, terminated: false as const, stageLabel: '验收归档' };
+    }
+    return { currentIndex: 3, terminated: false as const, stageLabel: '采购执行' };
+  }
+  if (plan.status === '已定标') {
+    return { currentIndex: 3, terminated: false as const, stageLabel: '采购执行' };
+  }
+  if (plan.status === '已开标' || plan.status === '定标审批中') {
+    return { currentIndex: 2, terminated: false as const, stageLabel: '方案审批' };
+  }
+  return { currentIndex: 1, terminated: false as const, stageLabel: '方案制定' };
+}
 
 function planNo(plan: RfqResponse, index = 0) {
   const date = plan.createdAt?.slice(0, 10).replaceAll('-', '') ?? '20260707';
   return `PLAN-${date}-${String(index + 1).padStart(3, '0')}`;
 }
 
-function departmentLabel(ids: Array<string | undefined>) {
+function departmentLabel(ids: Array<string | undefined>, departmentNames: Record<string, string>) {
   const unique = Array.from(new Set(ids.filter(Boolean)));
-  const map: Record<string, string> = {
-    'dept-it': '信息化部',
-    'dept-admin': '行政部',
-    'dept-finance': '财务部',
-    'dept-purchase': '采购部',
-    'dept-hq': '集团总部',
-  };
-  return unique.map((id) => map[id!] ?? id).join('、') || '--';
+  return unique.map((id) => departmentNames[id!] ?? id).join('、') || '--';
 }
 
 function methodTone(method?: string) {
@@ -65,11 +76,15 @@ function planBudget(demands: PurchaseDemandResponse[]) {
 function PlanList({
   plans,
   demands,
+  orders,
+  departmentNames,
   onOpen,
   onCreate,
 }: {
   plans: RfqResponse[];
   demands: PurchaseDemandResponse[];
+  orders: PurchaseOrderResponse[];
+  departmentNames: Record<string, string>;
   onOpen: (plan: RfqResponse) => void;
   onCreate: () => void;
 }) {
@@ -135,7 +150,7 @@ function PlanList({
                   <td className="px-5 py-5 font-mono text-xs font-black text-slate-500">{planNo(plan, index)}</td>
                   <td className="px-5 py-5">
                     <p className="font-black text-slate-950">{plan.title}</p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">{departmentLabel(linked.map((d) => d.departmentId))}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-400">{departmentLabel(linked.map((d) => d.departmentId), departmentNames)}</p>
                   </td>
                   <td className="px-5 py-5">
                     <p className="max-w-sm truncate text-sm font-bold text-slate-600">
@@ -149,9 +164,20 @@ function PlanList({
                     <span className={cn('rounded-md px-2 py-1 text-xs font-black', methodTone(plan.method))}>{plan.method ?? '询比'}</span>
                   </td>
                   <td className="px-5 py-5">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
-                      <i className="h-2 w-2 rounded-full bg-blue-600" /> {stageByStatus[plan.status ?? ''] ?? '方案制定'}
-                    </span>
+                    {(() => {
+                      const progress = derivePlanProgress(plan, orders.find((o) => o.rfqId === plan.id));
+                      return (
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black',
+                            progress.terminated ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700',
+                          )}
+                        >
+                          <i className={cn('h-2 w-2 rounded-full', progress.terminated ? 'bg-red-500' : 'bg-blue-600')} />
+                          {progress.stageLabel}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-5 py-5 text-right">
                     <button
@@ -177,21 +203,56 @@ function PlanDetail({
   plan,
   index,
   demands,
+  order,
+  awardApproval,
   supplierNames,
   materialNames,
+  departmentNames,
   onBack,
+  onNavigate,
 }: {
   plan: RfqResponse;
   index: number;
   demands: PurchaseDemandResponse[];
+  order?: PurchaseOrderResponse;
+  awardApproval?: PendingApprovalTaskResponse;
   supplierNames: Record<string, string>;
   materialNames: Record<string, { name: string; unit: string }>;
+  departmentNames: Record<string, string>;
   onBack: () => void;
+  onNavigate?: (moduleId: string) => void;
 }) {
   const linked = demands.filter((demand) => plan.demandIds?.includes(demand.id ?? ''));
   const budget = planBudget(linked);
-  const currentStage = stageByStatus[plan.status ?? ''] ?? '方案制定';
-  const currentIndex = Math.max(0, stageSteps.indexOf(currentStage));
+  const progress = derivePlanProgress(plan, order);
+  const currentIndex = progress.currentIndex;
+  // 方案合规检查:基于当前方案的真实数据逐条核对(非模拟)。
+  const complianceChecks = (() => {
+    const checks: Array<{ ok: boolean; text: string }> = [];
+    const supplierCount = plan.invitedSupplierIds?.length ?? 0;
+    const quoteCount = plan.quotes?.length ?? 0;
+    if (plan.method === '单一来源') {
+      checks.push({ ok: supplierCount === 1, text: `单一来源须定向 1 家供应商(当前 ${supplierCount} 家)` });
+      checks.push({ ok: Boolean(plan.singleSourceReason), text: '来源说明留痕(审批依据)' });
+    } else if (plan.method !== '商城') {
+      checks.push({
+        ok: supplierCount === 0 || supplierCount >= 3,
+        text: `${plan.method ?? '询比'}邀请供应商不少于 3 家(当前 ${supplierCount} 家,公开征集可为 0)`,
+      });
+    }
+    if (plan.method === '竞价') {
+      checks.push({ ok: plan.auctionStartPrice != null, text: '竞价起拍价已设置' });
+    }
+    if (plan.status === '报价中') {
+      const overdue = plan.deadlineAt ? new Date(plan.deadlineAt).getTime() < Date.now() : false;
+      checks.push({ ok: !overdue, text: overdue ? '报价截止已过,应尽快开标或顺延' : '报价截止时间未过' });
+    }
+    if (plan.status === '已开标' && plan.method !== '商城' && plan.method !== '单一来源') {
+      checks.push({ ok: quoteCount >= 3, text: `定标须不少于 3 家有效报价(当前 ${quoteCount} 家)` });
+    }
+    checks.push({ ok: linked.length > 0, text: `已关联 ${linked.length} 条已通过需求` });
+    return checks;
+  })();
   const lineItems = linked.flatMap((demand) =>
     (demand.lineItems ?? []).map((line) => ({
       demand,
@@ -215,17 +276,29 @@ function PlanDetail({
                 <StatusPill label={plan.status ?? '方案制定'} />
               </div>
               <p className="mt-1 text-sm font-bold text-slate-500">
-                方案编号: {planNo(plan, index)} · 创建日期: {plan.createdAt?.slice(0, 10) ?? '--'} · 申请部门: {departmentLabel(linked.map((d) => d.departmentId))}
+                方案编号: {planNo(plan, index)} · 关联询比 {plan.id} · 创建日期: {plan.createdAt?.slice(0, 10) ?? '--'} · 申请部门: {departmentLabel(linked.map((d) => d.departmentId), departmentNames)}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50" type="button">
-              <FileText size={15} /> 查看原件
-            </button>
-            <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700" type="button">
-              <CheckCircle2 size={15} /> 审批通过
-            </button>
+            {(plan.status === '报价中' || plan.status === '已开标' || plan.status === '定标审批中') && onNavigate && (
+              <button
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700"
+                type="button"
+                onClick={() => onNavigate('quotes')}
+              >
+                <CheckCircle2 size={15} /> 前往报价对比{plan.status === '报价中' ? '' : '定标'}
+              </button>
+            )}
+            {(plan.status === '已定标' || order) && onNavigate && (
+              <button
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
+                type="button"
+                onClick={() => onNavigate('orders')}
+              >
+                <FileText size={15} /> 查看采购订单
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -252,10 +325,15 @@ function PlanDetail({
               <Timer size={18} className="text-blue-600" />
               <h3 className="text-base font-black text-slate-950">执行进度跟踪</h3>
             </div>
+            {progress.terminated && (
+              <div className="mb-4 rounded-lg border border-red-100 bg-red-50/60 px-3 py-2 text-xs font-black text-red-700">
+                本方案已{plan.status}{plan.closeReason ? `:${plan.closeReason}` : ''},流程终止。
+              </div>
+            )}
             <div className="grid grid-cols-5 items-start gap-3">
               {stageSteps.map((step, stepIndex) => {
-                const done = stepIndex < currentIndex;
-                const current = stepIndex === currentIndex;
+                const done = !progress.terminated && stepIndex < currentIndex;
+                const current = !progress.terminated && stepIndex === currentIndex;
                 return (
                   <div key={step} className="relative text-center">
                     {stepIndex < stageSteps.length - 1 && <div className="absolute left-1/2 top-5 h-1 w-full bg-slate-100" />}
@@ -268,7 +346,18 @@ function PlanDetail({
                       {done ? <CheckCircle2 size={18} /> : current ? <Timer size={18} /> : <i className="h-2 w-2 rounded-full bg-current" />}
                     </span>
                     <p className={cn('mt-3 text-xs font-black', done || current ? 'text-blue-700' : 'text-slate-500')}>{step}</p>
-                    <p className="mt-1 text-[11px] font-bold text-slate-400">{done ? '已完成' : current ? '处理中' : '待开始'}</p>
+                    <p className="mt-1 text-[11px] font-bold text-slate-400">
+                      {(() => {
+                        if (progress.terminated) return stepIndex === 0 ? '已完成' : '已终止';
+                        if (done) return '已完成';
+                        if (!current) return '待开始';
+                        if (stepIndex === 1) return `报价中 · ${plan.quotes?.length ?? 0} 家已报`;
+                        if (stepIndex === 2) return plan.status === '定标审批中' ? '定标审批中' : '开标评标中';
+                        if (stepIndex === 3) return order ? `订单${order.status ?? ''}` : '待生成订单';
+                        if (stepIndex === 4) return '货物已收,待归档';
+                        return '处理中';
+                      })()}
+                    </p>
                   </div>
                 );
               })}
@@ -282,15 +371,15 @@ function PlanDetail({
               <span className="rounded bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-600">已完成</span>
             </div>
             <p className="border-t border-slate-100 pt-5 text-sm font-bold leading-7 text-slate-600">
-              此阶段系统已自动收集并整合 {linked.length} 条采购需求。通过 AI 语义分析，识别相似物资与相近交期，
-              建议合并采购以提升议价能力，预计可节约采购成本约 5%-8%。
+              本方案整合 {linked.length} 条已通过采购需求,合计预算 {currency(budget)},覆盖部门
+              {departmentLabel(linked.map((d) => d.departmentId), departmentNames)};合并采购统一征集报价。
             </p>
             <div className="mt-5 rounded-lg bg-slate-50 p-4">
               <p className="text-xs font-black text-slate-500">整合需求来源</p>
               <div className="mt-3 space-y-2">
                 {linked.map((demand) => (
                   <p key={demand.id} className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                    <CheckCircle2 size={14} className="text-emerald-500" /> 需求单 {demand.id}（{departmentLabel([demand.departmentId])}）
+                    <CheckCircle2 size={14} className="text-emerald-500" /> 需求单 {demand.id}（{departmentLabel([demand.departmentId], departmentNames)}）
                   </p>
                 ))}
               </div>
@@ -335,14 +424,24 @@ function PlanDetail({
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600"><Bot size={20} /></span>
               <div>
-                <p className="text-lg font-black">AI 风险雷达</p>
-                <p className="font-mono text-xs font-black uppercase text-slate-400">Risk Scanner</p>
+                <p className="text-lg font-black">方案合规检查</p>
+                <p className="font-mono text-xs font-black uppercase text-slate-400">基于方案实际数据核对</p>
               </div>
             </div>
-            <div className="mt-10 text-center text-sm font-bold text-slate-400">点击扫描方案中的潜在合规风险</div>
-            <button className="mt-5 h-11 w-full rounded-lg bg-white text-sm font-black text-slate-950" type="button">
-              开始 AI 扫描
-            </button>
+            <div className="mt-5 space-y-2">
+              {complianceChecks.map((check) => (
+                <div
+                  key={check.text}
+                  className={cn(
+                    'flex items-start gap-2 rounded-lg px-3 py-2 text-xs font-bold',
+                    check.ok ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300',
+                  )}
+                >
+                  <span className="mt-0.5 shrink-0">{check.ok ? '✓' : '✗'}</span>
+                  <span className="leading-5">{check.text}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -351,12 +450,37 @@ function PlanDetail({
               <h3 className="text-base font-black text-slate-950">审批流转</h3>
             </div>
             <div className="space-y-5 border-l border-slate-100 pl-5">
-              {stageSteps.slice(0, 3).map((step, stepIndex) => (
-                <div key={step} className="relative">
-                  <i className={cn('absolute -left-[1.45rem] top-1 h-2 w-2 rounded-full', stepIndex < currentIndex ? 'bg-emerald-500' : 'bg-blue-600')} />
-                  <p className="text-sm font-black text-slate-950">{step}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{stepIndex < currentIndex ? '系统自动 · 已完成' : stepIndex === currentIndex ? '王总监 · 处理中' : '待处理'}</p>
-                  {stepIndex === currentIndex && <span className="mt-2 inline-flex rounded bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">当前节点</span>}
+              {[
+                {
+                  label: '需求整合',
+                  desc: `已整合 ${linked.length} 条已通过需求`,
+                  done: linked.length > 0,
+                  active: false,
+                },
+                {
+                  label: '报价征集',
+                  desc: plan.status === '报价中'
+                    ? `截止 ${plan.deadlineAt?.slice(0, 10) ?? '--'} · ${plan.quotes?.length ?? 0} 家已报价`
+                    : `已收 ${plan.quotes?.length ?? 0} 家报价`,
+                  done: plan.status !== '报价中',
+                  active: plan.status === '报价中',
+                },
+                {
+                  label: '定标审批',
+                  desc: awardApproval
+                    ? `${awardApproval.status ?? '待审批'} · 提交人 ${awardApproval.submittedByName ?? '--'}${awardApproval.actedAt ? ` · ${awardApproval.actedAt.slice(0, 10)}` : ''}${awardApproval.reviewComment ? ` · ${awardApproval.reviewComment}` : ''}`
+                    : plan.status === '已定标'
+                      ? '定标已生效'
+                      : '尚未发起定标审批',
+                  done: plan.status === '已定标' || awardApproval?.status === '已通过',
+                  active: plan.status === '定标审批中' || awardApproval?.status === '待审批',
+                },
+              ].map((node) => (
+                <div key={node.label} className="relative">
+                  <i className={cn('absolute -left-[1.45rem] top-1 h-2 w-2 rounded-full', node.done ? 'bg-emerald-500' : node.active ? 'bg-blue-600' : 'bg-slate-300')} />
+                  <p className="text-sm font-black text-slate-950">{node.label}</p>
+                  <p className="mt-1 break-words text-xs font-bold text-slate-500">{node.desc}</p>
+                  {node.active && <span className="mt-2 inline-flex rounded bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">当前节点</span>}
                 </div>
               ))}
             </div>
@@ -378,11 +502,15 @@ function PlanDetail({
   );
 }
 
-export function ProcurementPlansPage() {
+export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: string) => void }) {
   const rfqs = useRfqList();
   const demandsQuery = usePurchaseDemandList();
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
   const materialsQuery = useMaterialList();
+  const ordersQuery = usePurchaseOrderList();
+  const departmentsQuery = useDepartmentList();
+  const pendingApprovals = useApprovalInboxPending();
+  const recentApprovals = useApprovalInboxRecent();
   const createRfq = useRfqCreate();
   const [selected, setSelected] = useState<RfqResponse | null>(null);
   const [creating, setCreating] = useState(false);
@@ -396,6 +524,22 @@ export function ProcurementPlansPage() {
   const [supplierIds, setSupplierIds] = useState<string[]>([]);
 
   const demands = demandsQuery.data?.data ?? [];
+  const orders = ordersQuery.data?.data ?? [];
+  const departmentNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    (departmentsQuery.data?.data ?? []).forEach((dept) => {
+      if (dept.id) map[dept.id] = dept.name ?? dept.id;
+    });
+    return map;
+  }, [departmentsQuery.data]);
+  // 定标审批任务:待办 + 近期已办中匹配本方案(bizType=rfq_award, bizId=RFQ id)。
+  const awardApprovals = useMemo(
+    () =>
+      [...(pendingApprovals.data?.data ?? []), ...(recentApprovals.data?.data ?? [])].filter(
+        (task) => task.bizType === 'rfq_award',
+      ),
+    [pendingApprovals.data, recentApprovals.data],
+  );
   const mergeDemands = demands.filter((demand) => demand.status === '已通过' && demand.id);
   const selectedBudget = mergeDemands.reduce((sum, demand) => sum + (demand.budget ?? 0), 0);
   const selectedDepartments = Array.from(
@@ -482,9 +626,13 @@ export function ProcurementPlansPage() {
         plan={fresh}
         index={plans.findIndex((plan) => plan.id === fresh.id)}
         demands={demands}
+        order={orders.find((o) => o.rfqId === fresh.id)}
+        awardApproval={awardApprovals.find((task) => task.bizId === fresh.id)}
         supplierNames={supplierNames}
         materialNames={materialNames}
+        departmentNames={departmentNames}
         onBack={() => setSelected(null)}
+        onNavigate={onNavigate}
       />
     );
   }
@@ -525,5 +673,14 @@ export function ProcurementPlansPage() {
     );
   }
 
-  return <PlanList plans={plans} demands={demands} onOpen={setSelected} onCreate={() => setCreating(true)} />;
+  return (
+    <PlanList
+      plans={plans}
+      demands={demands}
+      orders={orders}
+      departmentNames={departmentNames}
+      onOpen={setSelected}
+      onCreate={() => setCreating(true)}
+    />
+  );
 }

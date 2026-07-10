@@ -92,7 +92,7 @@ export function App() {
       ) : activeModuleId === 'demands' ? (
         <DemandsPage onNavigate={selectModule} />
       ) : activeModuleId === 'procurement-plans' ? (
-        <ProcurementPlansPage />
+        <ProcurementPlansPage onNavigate={selectModule} />
       ) : activeModuleId === 'approvals' ? (
         <ApprovalsPage />
       ) : activeModuleId === 'suppliers' ? (
