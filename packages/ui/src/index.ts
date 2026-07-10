@@ -18,6 +18,9 @@ export type { PrimaryActionButtonProps } from './components/primary-action-butto
 export { ResponsiveTableFrame } from './components/responsive-table-frame';
 export type { ResponsiveTableFrameProps } from './components/responsive-table-frame';
 
+export { FilterTabs } from './components/filter-tabs';
+export type { FilterTabItem, FilterTabsProps } from './components/filter-tabs';
+
 export { FeedbackNotice } from './components/feedback-notice';
 export type { FeedbackNoticeProps } from './components/feedback-notice';
 
