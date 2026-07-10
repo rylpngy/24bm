@@ -29,9 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # pnpm 版本以 package.json 的 packageManager 为准,不在此重复指定。
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -64,7 +63,6 @@ jobs:
         uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21, cache: maven }
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
@@ -72,6 +70,13 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Playwright chromium
         run: pnpm exec playwright install --with-deps chromium
+      # 登录链路走 Keycloak(演示 realm),用 docker run 以便挂载仓库内 realm 文件。
+      - name: Start Keycloak (realm import) in background
+        run: |
+          docker run -d --name keycloak -p 8081:8081 \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
+            -v "$PWD/infra/keycloak/realm:/opt/keycloak/data/import:ro" \
+            quay.io/keycloak/keycloak:26.0 start-dev --http-port=8081 --import-realm
       - name: Start backend (demo 种子) in background
         working-directory: backend-java
         env:
@@ -81,8 +86,19 @@ jobs:
           for i in $(seq 1 60); do
             curl -sf http://localhost:8080/api/v1/health && break || sleep 3
           done
+      - name: Wait for Keycloak realm
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8081/realms/24bid/.well-known/openid-configuration >/dev/null && exit 0 || sleep 3
+          done
+          echo "Keycloak realm not ready" >&2
+          docker logs keycloak | tail -50 >&2
+          exit 1
       - name: Run E2E (webServer 自起三端 dev)
         run: pnpm exec playwright test
+      - name: Dump backend log on failure
+        if: failure()
+        run: tail -100 /tmp/backend.log
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
