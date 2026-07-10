@@ -66,7 +66,7 @@ public class QuoteApplicationService {
   public List<RfqResponse> listSupplierRfqs() {
     String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
     return rfqMapper.listBySupplierInvite(supplierId).stream()
-        .map(this::toRfqResponse)
+        .map(rfq -> toRfqResponse(rfq, supplierId))
         .toList();
   }
 
@@ -77,7 +77,7 @@ public class QuoteApplicationService {
             blankToNull(status),
             blankToNull(keyword))
         .stream()
-        .map(this::toRfqResponse)
+        .map(rfq -> toRfqResponse(rfq, supplierId))
         .toList();
   }
 
@@ -336,7 +336,7 @@ public class QuoteApplicationService {
   }
 
   // 供应商侧:不回传其它供应商报价明细(封存),但需带上轮次/开标态供前端展示。
-  private RfqResponse toRfqResponse(Rfq rfq) {
+  private RfqResponse toRfqResponse(Rfq rfq, String supplierId) {
     return new RfqResponse(
         rfq.id(),
         rfq.tenantId(),
@@ -362,17 +362,11 @@ public class QuoteApplicationService {
         rfq.auctionMinDecrement(),
         auctionLowestAmount(rfq),
         rfq.singleSourceReason(),
-        ownInvitation(rfq));
+        ownInvitation(rfq, supplierId));
   }
 
   // 供应商视角仅返回本方邀请记录(已读/拒绝状态),不暴露其他受邀方。
-  private java.util.List<com.procurement.sourcing.api.RfqInvitationResponse> ownInvitation(Rfq rfq) {
-    String supplierId = com.procurement.common.tenant.TenantContext.supplierId() == null
-        ? null
-        : TenantAccessGuard.requireSupplierId("quote APIs");
-    if (supplierId == null) {
-      return java.util.List.of();
-    }
+  private java.util.List<com.procurement.sourcing.api.RfqInvitationResponse> ownInvitation(Rfq rfq, String supplierId) {
     com.procurement.sourcing.domain.RfqInvitation invitation =
         rfqInviteMapper.findBySupplier(rfq.tenantId(), rfq.id(), supplierId);
     if (invitation == null) {

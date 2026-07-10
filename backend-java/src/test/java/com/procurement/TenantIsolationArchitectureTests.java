@@ -108,10 +108,12 @@ class TenantIsolationArchitectureTests {
     Path mapperPath = SOURCE_ROOT.resolve("sourcing/infrastructure/RfqMapper.java");
     String mapperSource = Files.readString(mapperPath);
 
+    // 生命周期语义:供应商可见「已邀请/已拒绝(本方)」的项目,但草稿(未发布)必须不可见。
     assertThat(mapperSource)
         .contains("listBySupplierInvite")
         .contains("i.supplier_id = #{supplierId}")
-        .contains("i.invite_status = '已邀请'");
+        .contains("i.invite_status in ('已邀请', '已拒绝')")
+        .contains("r.status <> '草稿'");
   }
 
   @Test

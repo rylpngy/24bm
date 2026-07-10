@@ -4563,12 +4563,13 @@ class HttpSecurityContractTests {
   }
 
   private String validCreateOrderPayload() {
+    // 动态日期:@FutureOrPresent 校验,写死日期会随时间流逝变成过期用例。
     return """
         {
           "awardId": "award-demo",
-          "expectedReceiptDate": "2026-07-10"
+          "expectedReceiptDate": "%s"
         }
-        """;
+        """.formatted(java.time.LocalDate.now().plusDays(7));
   }
 
   private String validReceiptPayload() {
