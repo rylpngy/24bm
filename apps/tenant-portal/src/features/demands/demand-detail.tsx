@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import {
 import {
   type PurchaseDemandResponse,
   useAuditLogListTargetActions,
+  usePurchaseDemandList,
   useMaterialList,
   usePurchaseDemandSubmit,
 } from '@24bid/api-client';
@@ -192,6 +193,10 @@ export function DemandDetail({
 }) {
   const queryClient = useQueryClient();
   const materials = useMaterialList();
+  const approvedDemands = usePurchaseDemandList({ status: '已通过' });
+  const [mergeCandidates, setMergeCandidates] = useState<
+    Array<{ id: string; title: string; reasons: string[] }> | null
+  >(null);
   const audit = useAuditLogListTargetActions({
     targetType: 'purchase_demand',
     targetId: demand.id ?? '',
@@ -362,8 +367,8 @@ export function DemandDetail({
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600"><Bot size={20} /></span>
               <div>
-                <p className="text-lg font-black">AI 需求助手</p>
-                <p className="font-mono text-xs font-black uppercase text-slate-400">Demand Scanner</p>
+                <p className="text-lg font-black">需求合并助手</p>
+                <p className="font-mono text-xs font-black uppercase text-slate-400">基于真实需求数据扫描</p>
               </div>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-3">
@@ -382,9 +387,53 @@ export function DemandDetail({
                 建议优先匹配同部门、相近交期和相同品类的已通过需求，合并形成采购计划后再进入询比、竞价或商城采购流程。
               </p>
             </div>
-            <button className="mt-5 h-10 w-full rounded-lg bg-white text-xs font-black text-slate-950 hover:bg-slate-100" type="button">
+            <button
+              className="mt-5 h-10 w-full rounded-lg bg-white text-xs font-black text-slate-950 hover:bg-slate-100"
+              type="button"
+              onClick={() => {
+                // 真实扫描:同部门或品类重叠、已通过且未关联询比的其它需求。
+                const materialCategory: Record<string, string> = {};
+                (materials.data?.data ?? []).forEach((m) => {
+                  if (m.id) materialCategory[m.id] = m.category ?? '其他';
+                });
+                const myCategories = new Set(
+                  (demand.lineItems ?? []).map((line) => materialCategory[line.materialId ?? '']).filter(Boolean),
+                );
+                const candidates = (approvedDemands.data?.data ?? [])
+                  .filter((other: PurchaseDemandResponse) => other.id !== demand.id && !other.linkedRfqId)
+                  .map((other: PurchaseDemandResponse) => {
+                    const reasons: string[] = [];
+                    if (other.departmentId && other.departmentId === demand.departmentId) reasons.push('同部门');
+                    const overlap = (other.lineItems ?? [])
+                      .map((line) => materialCategory[line.materialId ?? ''])
+                      .filter((category) => category && myCategories.has(category));
+                    if (overlap.length > 0) reasons.push(`品类相同(${Array.from(new Set(overlap)).join('/')})`);
+                    return { id: other.id ?? '', title: other.title ?? other.id ?? '', reasons };
+                  })
+                  .filter((candidate) => candidate.reasons.length > 0);
+                setMergeCandidates(candidates);
+              }}
+            >
               扫描可合并需求
             </button>
+            {mergeCandidates && (
+              <div className="mt-3 space-y-2">
+                {mergeCandidates.length === 0 ? (
+                  <p className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs font-bold text-slate-300">
+                    未发现可合并的已通过需求(同部门或品类重叠、且未关联询比)。
+                  </p>
+                ) : (
+                  mergeCandidates.map((candidate) => (
+                    <div key={candidate.id} className="rounded-lg border border-emerald-400/20 bg-emerald-500/10 p-3">
+                      <p className="text-xs font-black text-emerald-200">{candidate.title}</p>
+                      <p className="mt-1 text-[11px] font-bold text-slate-300">
+                        {candidate.id} · {candidate.reasons.join(' · ')} · 可在「采购计划」中合并立项
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50">

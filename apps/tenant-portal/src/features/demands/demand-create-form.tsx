@@ -74,6 +74,7 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' });
   const lineItems = useWatch({ control, name: 'lineItems' }) ?? [];
+  const budgetValue = useWatch({ control, name: 'budget' }) ?? 0;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -336,9 +337,25 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
                     <Calculator size={18} />
                   </span>
                   <div>
-                    <p className="text-sm font-black text-blue-900">AI 预算合理性提示</p>
+                    <p className="text-sm font-black text-blue-900">预算合理性核对(基于物料参考价)</p>
                     <p className="mt-1 text-xs font-bold text-blue-700">
-                      当前物料参考预算约 {currency(estimatedTotal)}。如填写预算金额与参考预算差异较大，建议在用途说明中补充原因。
+                      {estimatedTotal > 0 ? (
+                        budgetValue > 0 ? (
+                          <>
+                            填写预算 {currency(budgetValue)},物料参考价合计 {currency(estimatedTotal)}
+                            (偏差 {(((budgetValue - estimatedTotal) / estimatedTotal) * 100).toFixed(1)}%)。
+                            {Math.abs(budgetValue - estimatedTotal) / estimatedTotal <= 0.15 ? (
+                              <span className="text-emerald-600"> 偏差在 15% 以内,合理。</span>
+                            ) : (
+                              <span className="text-red-600"> 偏差超过 15%,建议复核数量/单价或在用途说明中补充原因。</span>
+                            )}
+                          </>
+                        ) : (
+                          <>物料参考价合计 {currency(estimatedTotal)},可作为预算填写参考。</>
+                        )
+                      ) : (
+                        <>所选物料暂无参考价,无法核对;可在物料目录维护参考价后重试。</>
+                      )}
                     </p>
                   </div>
                 </div>

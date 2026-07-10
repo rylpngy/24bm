@@ -134,3 +134,19 @@ test('采购计划详情:进度节点与合规检查由真实数据驱动', asyn
   await expect(page.getByText('王总监')).toHaveCount(0);
   await expect(page.getByText('AI 风险雷达')).toHaveCount(0);
 });
+
+test('需求详情:合并助手真实扫描,预算核对基于参考价', async ({ page }) => {
+  await page.goto('/?module=demands');
+  await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
+  await page.getByRole('button', { name: /登录系统/ }).click();
+
+  await page.getByRole('button', { name: /详情/ }).first().click();
+  await expect(page.getByText('需求合并助手')).toBeVisible();
+  await expect(page.getByText('AI 需求助手')).toHaveCount(0);
+  await page.getByRole('button', { name: '扫描可合并需求' }).click();
+  // 真实扫描:要么给出候选(可在采购计划中合并),要么诚实的空态。
+  await expect(
+    page.getByText(/可在「采购计划」中合并立项|未发现可合并的已通过需求/).first(),
+  ).toBeVisible();
+});
+
