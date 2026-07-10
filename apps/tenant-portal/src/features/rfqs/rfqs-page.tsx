@@ -115,24 +115,22 @@ export function RfqsPage() {
 
   if (showForm) {
     return (
-      <Panel title="询比项目" icon={FileText} subtitle="发起询价立项:建项需求 → 选择供应商 → 发布询价单">
-        <RfqCreateWizard
-          demands={demands.filter((d) => !d.linkedRfqId)}
-          suppliers={suppliers}
-          resumeDraft={resumeDraft ?? undefined}
-          onDone={(message) => {
-            setShowForm(false);
-            setResumeDraft(null);
-            setFeedback(message);
-            refresh();
-          }}
-          onCancel={() => {
-            setShowForm(false);
-            setResumeDraft(null);
-            refresh();
-          }}
-        />
-      </Panel>
+      <RfqCreateWizard
+        demands={demands.filter((d) => !d.linkedRfqId)}
+        suppliers={suppliers}
+        resumeDraft={resumeDraft ?? undefined}
+        onDone={(message) => {
+          setShowForm(false);
+          setResumeDraft(null);
+          setFeedback(message);
+          refresh();
+        }}
+        onCancel={() => {
+          setShowForm(false);
+          setResumeDraft(null);
+          refresh();
+        }}
+      />
     );
   }
 
@@ -140,19 +138,17 @@ export function RfqsPage() {
     const fresh = list.find((r) => r.id === selectedId);
     if (fresh) {
       return (
-        <Panel title="询比项目" icon={FileText} subtitle="项目全流程:立项 · 报价 · 定标决策">
-          <RfqProjectDetail
-            rfq={fresh}
-            budget={demandBudgetOf(fresh)}
-            supplierNames={supplierNames}
-            onBack={() => setSelectedId(null)}
-            onResumeDraft={() => {
-              setResumeDraft(fresh);
-              setSelectedId(null);
-              setShowForm(true);
-            }}
-          />
-        </Panel>
+        <RfqProjectDetail
+          rfq={fresh}
+          budget={demandBudgetOf(fresh)}
+          supplierNames={supplierNames}
+          onBack={() => setSelectedId(null)}
+          onResumeDraft={() => {
+            setResumeDraft(fresh);
+            setSelectedId(null);
+            setShowForm(true);
+          }}
+        />
       );
     }
   }
