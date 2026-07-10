@@ -33,7 +33,7 @@ export function SuppliersPage() {
 
   const items = [
     { id: 'list' as const, label: '供应商列表', icon: Boxes },
-    { id: 'sourcing' as const, label: '寻源发现', icon: Search },
+    { id: 'sourcing' as const, label: '智能寻源', icon: Search },
     { id: 'invitation' as const, label: '邀请管理', icon: Mail },
     {
       id: 'admission' as const,
@@ -46,8 +46,8 @@ export function SuppliersPage() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-slate-200 bg-white px-2 shadow-sm shadow-slate-200/50">
+    <div className="mx-auto max-w-7xl space-y-4">
+      <div className="rounded-lg bg-white shadow-sm shadow-slate-200/50">
         <Tabs items={items} value={sub} onChange={(t) => setSub(t as SubId)} />
       </div>
 

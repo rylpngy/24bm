@@ -6,6 +6,7 @@ import { AppShell, FeedbackNotice, Panel } from '@24bid/ui';
 import { useAuthStore } from './lib/auth-store';
 import { PortalLanding } from './features/portal/portal-landing';
 import { DemandsPage } from './features/demands/demands-page';
+import { ProcurementPlansPage } from './features/procurement-plans/procurement-plans-page';
 import { ApprovalsPage } from './features/approvals/approvals-page';
 import { SuppliersPage } from './features/suppliers/suppliers-page';
 import { MaterialsPage } from './features/materials/materials-page';
@@ -67,7 +68,7 @@ export function App() {
   return (
     <AppShell
       brandSubtitle={buyerNavigation.label}
-      mainlineHint="需求申请 - 询价比价 - 订单履约 - 发票付款"
+      mainlineHint="需求申请 - 询比报价 - 订单履约 - 发票付款"
       modules={visibleModules}
       activeModuleId={activeModuleId}
       onSelectModule={selectModule}
@@ -82,13 +83,15 @@ export function App() {
           />
         </Panel>
       ) : activeModuleId === 'dashboard' ? (
-        <DashboardPage />
+        <DashboardPage onNavigate={selectModule} />
       ) : activeModuleId === 'analytics' ? (
         <AnalyticsPage />
       ) : activeModuleId === 'budgets' ? (
         <BudgetsPage />
       ) : activeModuleId === 'demands' ? (
-        <DemandsPage />
+        <DemandsPage onNavigate={selectModule} />
+      ) : activeModuleId === 'procurement-plans' ? (
+        <ProcurementPlansPage />
       ) : activeModuleId === 'approvals' ? (
         <ApprovalsPage />
       ) : activeModuleId === 'suppliers' ? (

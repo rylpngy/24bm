@@ -7,7 +7,7 @@ import { CountTag, FeedbackNotice, Panel, StatusPill } from '@24bid/ui';
 const TARGET_LABELS: Record<string, string> = {
   purchase_demand: '采购需求',
   material: '物料',
-  rfq: '询价',
+  rfq: '询比',
   award: '定标',
   quote: '报价',
   purchase_order: '采购订单',

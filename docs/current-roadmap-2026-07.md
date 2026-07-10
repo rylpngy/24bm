@@ -22,7 +22,7 @@ Use this priority when older documents conflict:
 
 1. Current code and database migrations.
 2. Recent commits.
-3. Current docs in `docs/current-roadmap-2026-07.md`, `docs/demo-to-pilot-acceptance-2026-07.md`, `docs/pilot-operations-handoff-2026-07.md`, and `docs/production-readiness.md`.
+3. Current docs in `docs/current-roadmap-2026-07.md`, `docs/product-business-framework.md`, `docs/demo-to-pilot-acceptance-2026-07.md`, `docs/pilot-operations-handoff-2026-07.md`, and `docs/production-readiness.md`.
 4. Stage closeout packages and presenter runbooks that still exist in the cleaned tree.
 5. Git history for retired legacy files.
 

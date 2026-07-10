@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { BadgeCheck, ChevronRight } from 'lucide-react';
+import { BadgeCheck, CheckCircle2, ChevronRight, FileCheck2, ShieldCheck } from 'lucide-react';
 import {
   type BuyerSupplierResponse,
   useBuyerSupplierList,
   useBuyerSupplierListRelationQualifications,
 } from '@24bid/api-client';
-import { CountTag, FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, ShellState } from '@24bid/ui';
+import { FeedbackNotice, Pagination, Panel, SearchInput, ShellState } from '@24bid/ui';
 import { qualificationAlert } from './supplier-qualifications-tab';
+import { SupplierSummaryChip, SupplierSummaryChips } from './supplier-metric-card';
 
 const PAGE_SIZE = 8;
 
@@ -80,17 +81,18 @@ export function SupplierQualificationsBoard({ onOpen }: { onOpen: (id: string) =
 
   return (
     <Panel title="资质管理" icon={BadgeCheck} subtitle="跨供应商证照台账 · 到期预警">
-      <div className="mb-4 grid gap-2 sm:grid-cols-3">
-        <MiniFact
-          label="跟踪供应商"
-          value={String(all.filter((s) => s.status === '已准入' || s.status === '准入审批中').length)}
-        />
-        <MiniFact label="已准入" value={String(all.filter((s) => s.status === '已准入').length)} />
-        <MiniFact label="准入审批中" value={String(all.filter((s) => s.status === '准入审批中').length)} />
-      </div>
-
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <CountTag>跟踪 {tracked.length} 家</CountTag>
+        <SupplierSummaryChips>
+          <SupplierSummaryChip
+            icon={FileCheck2}
+            label="需维护"
+            value={String(all.filter((s) => s.status === '已准入' || s.status === '准入审批中').length)}
+            tone="blue"
+          />
+          <SupplierSummaryChip icon={CheckCircle2} label="已准入" value={String(all.filter((s) => s.status === '已准入').length)} tone="emerald" />
+          <SupplierSummaryChip icon={ShieldCheck} label="审批中" value={String(all.filter((s) => s.status === '准入审批中').length)} tone="violet" />
+          <SupplierSummaryChip icon={BadgeCheck} label="当前展示" value={String(tracked.length)} tone="amber" />
+        </SupplierSummaryChips>
         <SearchInput
           className="mb-0 ml-auto"
           placeholder="按供应商名称搜索"

@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link2, Mail, Plus } from 'lucide-react';
+import { CheckCircle2, Link2, Mail, Plus, RotateCcw, Send, XCircle } from 'lucide-react';
 import {
   type SupplierInvitationResponse,
   useBuyerSupplierInvitationCreate,
@@ -12,7 +12,6 @@ import {
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
-  MiniFact,
   Pagination,
   Panel,
   PrimaryActionButton,
@@ -20,6 +19,7 @@ import {
   StatusPill,
   cn,
 } from '@24bid/ui';
+import { SupplierMetricCard, SupplierMetricGrid } from './supplier-metric-card';
 
 const PAGE_SIZE = 8;
 
@@ -106,12 +106,12 @@ export function SupplierInvitationsView() {
 
   return (
     <Panel title="邀请管理" icon={Mail} subtitle="邀请供应商注册 / 补资料 · 接受可转私域待准入">
-      <div className="mb-4 grid gap-2 sm:grid-cols-4">
-        <MiniFact label="待回复" value={String(count('待回复'))} />
-        <MiniFact label="已接受" value={String(count('已接受'))} />
-        <MiniFact label="已拒绝" value={String(count('已拒绝'))} />
-        <MiniFact label="已撤回" value={String(count('已撤回'))} />
-      </div>
+      <SupplierMetricGrid>
+        <SupplierMetricCard icon={Send} label="待回复" value={String(count('待回复'))} hint="邀请已发出" tone="blue" />
+        <SupplierMetricCard icon={CheckCircle2} label="已接受" value={String(count('已接受'))} hint="可转准入" tone="emerald" />
+        <SupplierMetricCard icon={XCircle} label="已拒绝" value={String(count('已拒绝'))} hint="需重新跟进" tone="rose" />
+        <SupplierMetricCard icon={RotateCcw} label="已撤回" value={String(count('已撤回'))} hint="已停止邀请" tone="slate" />
+      </SupplierMetricGrid>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2">

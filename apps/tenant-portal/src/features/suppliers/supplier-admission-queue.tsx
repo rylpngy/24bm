@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Clock3, ShieldCheck } from 'lucide-react';
 import {
   useBuyerSupplierList,
   useBuyerSupplierReviewAdmission,
   useBuyerSupplierSubmitAdmission,
 } from '@24bid/api-client';
-import { CountTag, FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
+import { FeedbackNotice, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
+import { SupplierSummaryChip, SupplierSummaryChips } from './supplier-metric-card';
 
 const ADMISSION_STATUSES = ['待准入', '准入审批中', '已驳回'];
 const PAGE_SIZE = 8;
@@ -80,14 +81,13 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
 
   return (
     <Panel title="准入审批台" icon={ShieldCheck} subtitle="准入流程中的供应商工作队列 · 提交 / 审核">
-      <div className="mb-4 grid gap-2 sm:grid-cols-3">
-        <MiniFact label="待提交准入" value={String(count('待准入'))} />
-        <MiniFact label="准入审批中" value={String(count('准入审批中'))} />
-        <MiniFact label="已驳回待整改" value={String(count('已驳回'))} />
-      </div>
-
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <CountTag>队列 {queue.length} 家</CountTag>
+        <SupplierSummaryChips>
+          <SupplierSummaryChip icon={Clock3} label="待提交" value={String(count('待准入'))} tone="amber" />
+          <SupplierSummaryChip icon={ShieldCheck} label="审批中" value={String(count('准入审批中'))} tone="blue" />
+          <SupplierSummaryChip icon={AlertCircle} label="已驳回" value={String(count('已驳回'))} tone="rose" />
+          <SupplierSummaryChip icon={CheckCircle2} label="队列总量" value={String(queue.length)} tone="emerald" />
+        </SupplierSummaryChips>
         <SearchInput
           className="mb-0 ml-auto"
           placeholder="按供应商名称 / 等级 / 品类搜索"

@@ -8,7 +8,7 @@ import { BidEvaluationPanel } from './bid-evaluation-panel';
 
 const PAGE_SIZE = 5;
 
-// 报价对比:跨 RFQ 的比价定标工作台——汇总已收到报价的询价,逐个比价并定标。
+// 报价对比:跨 RFQ 的比价定标工作台——汇总已收到报价的询比,逐个比价并定标。
 export function QuoteComparisonPage() {
   const queryClient = useQueryClient();
   const [keyword, setKeyword] = useState('');
@@ -60,9 +60,9 @@ export function QuoteComparisonPage() {
     award.mutate({ rfqId, data: { quoteId, reason } }, { onSuccess: () => refresh() });
 
   return (
-    <Panel title="报价对比" icon={BarChart3} subtitle="跨询价比价 · 定标入口">
+    <Panel title="报价对比" icon={BarChart3} subtitle="跨询比报价 · 定标入口">
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
-        <MiniFact label="有报价询价" value={String(withQuotes.length)} />
+        <MiniFact label="有报价询比" value={String(withQuotes.length)} />
         <MiniFact label="可定标(报价中)" value={String(awardable)} />
         <MiniFact label="累计收到报价" value={String(totalQuotes)} />
       </div>
@@ -106,8 +106,8 @@ export function QuoteComparisonPage() {
           tone="info"
           message={
             keyword || statusFilter !== '全部'
-              ? '没有符合条件的询价。'
-              : '暂无已收到报价的询价。供应商提交报价后在此比价定标。'
+              ? '没有符合条件的询比。'
+              : '暂无已收到报价的询比。供应商提交报价后在此比价定标。'
           }
         />
       ) : (

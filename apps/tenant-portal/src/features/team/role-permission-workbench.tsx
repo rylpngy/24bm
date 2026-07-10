@@ -16,7 +16,7 @@ import { FeedbackNotice, cn } from '@24bid/ui';
 // 角色描述(后端角色无描述字段,按 id 给演示文案,缺省回落)。
 const ROLE_DESC: Record<string, string> = {
   'role-buyer-owner': '拥有采购方全部权限,不可删除',
-  'role-buyer-requester': '负责需求申请与询价比价',
+  'role-buyer-requester': '负责需求申请与询比报价',
   'role-buyer-finance': '负责付款登记与对账差异审批',
 };
 

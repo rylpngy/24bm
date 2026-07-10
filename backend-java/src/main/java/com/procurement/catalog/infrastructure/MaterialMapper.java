@@ -29,6 +29,7 @@ public interface MaterialMapper {
         and (
           code ilike concat('%', #{keyword}, '%')
           or name ilike concat('%', #{keyword}, '%')
+          or category ilike concat('%', #{keyword}, '%')
           or specification ilike concat('%', #{keyword}, '%')
           or brand ilike concat('%', #{keyword}, '%')
         )

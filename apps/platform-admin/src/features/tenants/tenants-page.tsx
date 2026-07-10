@@ -13,7 +13,7 @@ import { TenantUsagePanel } from './tenant-usage-panel';
 
 const PLAN_OPTIONS = ['MVP', '标准版', '企业版'];
 const FEATURE_DEFS = [
-  { key: 'rfq', label: '询价 RFQ' },
+  { key: 'rfq', label: '询比 RFQ' },
   { key: 'order', label: '订单履约' },
   { key: 'finance', label: '财务付款' },
 ];

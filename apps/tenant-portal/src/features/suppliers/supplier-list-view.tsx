@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Boxes, ChevronRight, Plus, Search } from 'lucide-react';
+import { Activity, Boxes, CheckCircle2, ChevronRight, Clock3, Plus, Search, ShieldCheck } from 'lucide-react';
 import { useBuyerSupplierCreate, useBuyerSupplierList } from '@24bid/api-client';
 import {
   FeedbackNotice,
@@ -15,6 +15,7 @@ import {
   StatusPill,
   cn,
 } from '@24bid/ui';
+import { SupplierMetricCard, SupplierMetricGrid } from './supplier-metric-card';
 
 const PAGE_SIZE = 8;
 
@@ -110,13 +111,13 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
 
   return (
     <Panel title="供应商列表" icon={Boxes} subtitle="私域关系 · 准入 · 分级 · 绩效">
-      <div className="mb-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
-        <MiniFact label="供应商总数" value={String(all.length)} />
-        <MiniFact label="待准入" value={String(count('待准入'))} />
-        <MiniFact label="准入审批中" value={String(count('准入审批中'))} />
-        <MiniFact label="已准入" value={String(count('已准入'))} />
-        <MiniFact label="平均绩效" value={avgScore == null ? '—' : String(avgScore)} />
-      </div>
+      <SupplierMetricGrid columns={5}>
+        <SupplierMetricCard icon={Boxes} label="供应商总数" value={String(all.length)} hint="私域关系池" tone="blue" />
+        <SupplierMetricCard icon={Clock3} label="待准入" value={String(count('待准入'))} hint="待提交资料" tone="amber" />
+        <SupplierMetricCard icon={ShieldCheck} label="准入审批中" value={String(count('准入审批中'))} hint="流程处理中" tone="violet" />
+        <SupplierMetricCard icon={CheckCircle2} label="已准入" value={String(count('已准入'))} hint="可参与采购" tone="emerald" />
+        <SupplierMetricCard icon={Activity} label="平均绩效" value={avgScore == null ? '—' : String(avgScore)} hint="综合评分" tone="slate" />
+      </SupplierMetricGrid>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2">
@@ -279,17 +280,17 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
             </button>
           ))}
         >
-          <table className="min-w-[820px] w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
+          <table className="w-full min-w-[920px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-black text-slate-500">
               <tr>
-                <th className="px-4 py-3 w-14">序号</th>
-                <th className="px-4 py-3">供应商</th>
-                <th className="px-4 py-3">准入状态</th>
-                <th className="px-4 py-3">等级</th>
-                <th className="px-4 py-3">生命周期标记</th>
-                <th className="px-4 py-3">授权品类</th>
-                <th className="px-4 py-3 text-right">绩效</th>
-                <th className="px-4 py-3 text-right">操作</th>
+                <th className="w-14 px-5 py-4">序号</th>
+                <th className="px-5 py-4">供应商</th>
+                <th className="px-5 py-4">准入状态</th>
+                <th className="px-5 py-4">等级</th>
+                <th className="px-5 py-4">生命周期标记</th>
+                <th className="px-5 py-4">授权品类</th>
+                <th className="px-5 py-4 text-right">绩效</th>
+                <th className="px-5 py-4 text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
@@ -297,20 +298,25 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
                 <tr
                   key={s.id}
                   onClick={() => s.id && onOpen(s.id)}
-                  className="cursor-pointer transition hover:bg-blue-50/40"
+                  className="cursor-pointer transition hover:bg-blue-50/30"
                 >
-                  <td className="px-4 py-4 font-mono font-black text-slate-400">
+                  <td className="px-5 py-5 font-mono font-black text-slate-400">
                     {(safePage - 1) * PAGE_SIZE + i + 1}
                   </td>
-                  <td className="px-4 py-4 font-bold text-slate-900">{s.supplierName}</td>
-                  <td className="px-4 py-4">{s.status && <StatusPill label={s.status} />}</td>
-                  <td className="px-4 py-4 font-black text-slate-700">{s.level}</td>
-                  <td className="px-4 py-4">{s.cooperationTier && <StatusPill label={s.cooperationTier} />}</td>
-                  <td className="px-4 py-4 text-slate-600">{(s.categories ?? []).join('、')}</td>
-                  <td className="px-4 py-4 text-right font-mono font-black text-slate-900">
-                    {s.performanceScore}
+                  <td className="px-5 py-5">
+                    <p className="font-black text-slate-950">{s.supplierName}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-400">{s.creditCode || s.supplierId || '待补充统一信用代码'}</p>
                   </td>
-                  <td className="px-4 py-4 text-right">
+                  <td className="px-5 py-5">{s.status && <StatusPill label={s.status} />}</td>
+                  <td className="px-5 py-5 text-sm font-bold text-slate-600">{s.level}</td>
+                  <td className="px-5 py-5">{s.cooperationTier && <StatusPill label={s.cooperationTier} />}</td>
+                  <td className="px-5 py-5">
+                    <p className="max-w-sm truncate text-sm font-bold text-slate-600">{(s.categories ?? []).join('、') || '—'}</p>
+                  </td>
+                  <td className="px-5 py-5 text-right font-mono font-black text-slate-900">
+                    {s.performanceScore ?? '—'}
+                  </td>
+                  <td className="px-5 py-5 text-right">
                     <span className="inline-flex items-center gap-1 text-xs font-black text-blue-600">
                       查看 <ChevronRight size={13} />
                     </span>

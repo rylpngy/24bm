@@ -123,7 +123,7 @@ export function OrdersPage() {
         </div>
         <SearchInput
           className="mb-0 ml-auto"
-          placeholder="按订单号 / 询价号搜索"
+          placeholder="按订单号 / 询比号搜索"
           onSearch={(k) => {
             setKeyword(k);
             setPage(1);
@@ -164,7 +164,7 @@ export function OrdersPage() {
                       <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                       {o.id}
                     </p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">询价 {o.rfqId ?? '—'}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">询比 {o.rfqId ?? '—'}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     {o.status && <StatusPill label={o.status} />}

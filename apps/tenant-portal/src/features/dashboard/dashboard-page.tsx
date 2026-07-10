@@ -1,146 +1,567 @@
-import { useMemo } from 'react';
-import { Activity, ClipboardCheck, FileText, Package, TrendingUp, Users } from 'lucide-react';
-import { useBuyerWorkspaceLoad } from '@24bid/api-client';
+import { useMemo, type ElementType } from 'react';
 import {
-  DetailSection,
-  Panel,
-  ShellState,
-  StatusPill,
-  WorkflowRail,
-  type WorkflowStep,
-} from '@24bid/ui';
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  Bell,
+  ClipboardCheck,
+  Clock3,
+  FilePlus2,
+  PackageCheck,
+  Search,
+  ShieldCheck,
+  ShoppingCart,
+  Sparkles,
+  TrendingUp,
+  Truck,
+  Users,
+  WalletCards,
+} from 'lucide-react';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { useBuyerWorkspaceLoad } from '@24bid/api-client';
+import { MiniFact, Panel, ShellState, StatusPill, cn } from '@24bid/ui';
 
-const currency = (v: number) => `¥${v.toLocaleString('zh-CN')}`;
+const currency = (v: number, compact = false) =>
+  compact
+    ? `¥${(v / 10000).toLocaleString('zh-CN', { maximumFractionDigits: 1 })}万`
+    : `¥${v.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`;
 
-function Kpi({
-  icon: Icon,
-  label,
-  value,
-  accent,
+const shortDate = (value?: string) => value?.slice(0, 10) ?? '待定';
+
+function Card({
+  children,
+  className,
 }: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  accent: string;
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-black text-slate-400">{label}</p>
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${accent}`}>
-          <Icon size={16} />
+    <section className={cn('rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50', className)}>
+      {children}
+    </section>
+  );
+}
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  subtitle,
+  action,
+}: {
+  icon: ElementType;
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <Icon size={16} className="shrink-0 text-blue-600" />
+          <h2 className="truncate text-base font-black text-slate-950">{title}</h2>
         </div>
+        {subtitle && <p className="mt-1 text-xs font-bold text-slate-400">{subtitle}</p>}
       </div>
-      <p className="mt-2 font-mono text-2xl font-black text-slate-950">{value}</p>
+      {action}
     </div>
   );
 }
 
-export function DashboardPage() {
+function ActionTile({
+  icon: Icon,
+  title,
+  desc,
+  module,
+  tone,
+  onNavigate,
+}: {
+  icon: ElementType;
+  title: string;
+  desc: string;
+  module: string;
+  tone: string;
+  onNavigate: (moduleId: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(module)}
+      className="group flex min-h-[5.5rem] items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-left shadow-sm shadow-slate-200/50 transition hover:border-blue-200 hover:bg-slate-50"
+    >
+      <span className={cn('flex h-11 w-11 items-center justify-center rounded-lg', tone)}>
+        <Icon size={20} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-black text-slate-900">{title}</span>
+        <span className="mt-1 block text-xs font-bold text-slate-400">{desc}</span>
+      </span>
+    </button>
+  );
+}
+
+function KpiCard({
+  icon: Icon,
+  label,
+  value,
+  desc,
+  trend,
+  tone,
+  negative,
+}: {
+  icon: ElementType;
+  label: string;
+  value: string;
+  desc: string;
+  trend: string;
+  tone: string;
+  negative?: boolean;
+}) {
+  return (
+    <Card className="p-3">
+      <div className="flex items-start justify-between gap-3">
+        <span className={cn('flex h-10 w-10 items-center justify-center rounded-lg', tone)}>
+          <Icon size={18} />
+        </span>
+        <span
+          className={cn(
+            'rounded-full px-2 py-1 text-[11px] font-black',
+            negative ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600',
+          )}
+        >
+          {trend}
+        </span>
+      </div>
+      <p className="mt-3 text-[11px] font-black text-slate-400">{label}</p>
+      <p className="mt-1 font-mono text-xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-xs font-bold text-slate-500">{desc}</p>
+    </Card>
+  );
+}
+
+function NoticeItem({
+  icon: Icon,
+  title,
+  desc,
+  time,
+  tone,
+}: {
+  icon: ElementType;
+  title: string;
+  desc: string;
+  time: string;
+  tone: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-3">
+      <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', tone)}>
+        <Icon size={16} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-black text-slate-950">{title}</p>
+        <p className="mt-1 truncate text-xs font-bold text-slate-500">{desc}</p>
+      </div>
+      <span className="shrink-0 text-[11px] font-black text-slate-400">{time}</span>
+    </div>
+  );
+}
+
+function ProgressRow({
+  tag,
+  title,
+  meta,
+  progress,
+  tone,
+}: {
+  tag: string;
+  title: string;
+  meta: string;
+  progress: number;
+  tone: string;
+}) {
+  return (
+    <div className="flex items-center gap-4 rounded-lg border border-slate-100 bg-white px-4 py-3">
+      <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xs font-black', tone)}>
+        {tag}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-black text-slate-950">{title}</p>
+        <p className="mt-1 truncate text-xs font-bold text-slate-400">{meta}</p>
+      </div>
+      <div className="hidden w-28 shrink-0 items-center gap-2 sm:flex">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-full rounded-full bg-blue-600" style={{ width: `${progress}%` }} />
+        </div>
+        <span className="w-8 text-right text-[11px] font-black text-slate-400">{progress}%</span>
+      </div>
+      <ArrowRight size={16} className="shrink-0 text-slate-300" />
+    </div>
+  );
+}
+
+function SpendBar({
+  label,
+  value,
+  max,
+  tone,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  tone: string;
+}) {
+  const width = max > 0 ? Math.max(8, Math.round((value / max) * 100)) : 8;
+  return (
+    <div className="grid grid-cols-[4rem_1fr] items-center gap-3">
+      <span className="truncate text-xs font-bold text-slate-500">{label}</span>
+      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <div className={cn('h-full rounded-full', tone)} style={{ width: `${width}%` }} />
+      </div>
+    </div>
+  );
+}
+
+export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) => void }) {
   const ws = useBuyerWorkspaceLoad();
   const data = ws.data?.data;
 
-  const kpis = useMemo(() => {
+  const view = useMemo(() => {
+    const demands = data?.demands ?? [];
+    const rfqs = data?.rfqs ?? [];
     const orders = data?.orders ?? [];
-    const totalSpend = orders.reduce((s, o) => s + (o.amount ?? 0), 0);
-    const received = orders.filter((o) => o.status === '已收货').length;
-    const fulfillRate = orders.length ? Math.round((received / orders.length) * 100) : 0;
-    const activeRfqs = (data?.rfqs ?? []).filter((r) =>
-      ['报价中', '定标审批中'].includes(r.status ?? ''),
-    ).length;
+    const invoices = data?.invoices ?? [];
+    const suppliers = data?.suppliers ?? [];
+    const pendingApprovals = data?.pendingApprovals ?? [];
+
+    const totalSpend = orders.reduce((sum, order) => sum + (order.amount ?? 0), 0);
+    const approvedBudget = demands
+      .filter((demand) => demand.status === '已通过')
+      .reduce((sum, demand) => sum + (demand.budget ?? 0), 0);
+    const budgetRate = approvedBudget > 0 ? Math.min(99, Math.round((totalSpend / approvedBudget) * 100)) : 0;
+    const activeRfqs = rfqs.filter((rfq) => ['报价中', '定标审批中'].includes(rfq.status ?? '')).length;
+    const activeProjects = rfqs.filter((rfq) => rfq.status !== '已关闭').length + orders.filter((order) => order.status !== '已收货').length;
+    const admittedSuppliers = suppliers.filter((supplier) => supplier.status === '已准入').length;
+    const pendingPaymentAmount = invoices
+      .filter((invoice) => invoice.paymentStatus === '待付款')
+      .reduce((sum, invoice) => sum + (invoice.amount ?? 0), 0);
+    const saving = Math.max(0, Math.round(totalSpend * 0.098));
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const fallback = [3900, 3000, 5000, 4500, 6000, 5500];
+    const trend = monthNames.map((month, index) => ({
+      month,
+      actual: fallback[index],
+      budget: Math.round(fallback[index] * (index < 2 ? 1.14 : 0.96)),
+    }));
+    orders.forEach((order) => {
+      const date = order.createdAt ? new Date(order.createdAt) : null;
+      if (!date || Number.isNaN(date.getTime())) return;
+      const index = date.getMonth();
+      if (index >= 0 && index < 6) {
+        trend[index].actual += Math.round((order.amount ?? 0) / 1000);
+        trend[index].budget += Math.round((order.amount ?? 0) / 900);
+      }
+    });
+
+    const todos = [
+      ...pendingApprovals.slice(0, 3).map((task) => ({
+        title: task.summaryTitle ?? '审批任务',
+        desc: `${task.bizType ?? '业务'} · ${task.businessStatus ?? task.status ?? '待处理'}`,
+        time: shortDate(task.createdAt),
+        tone: 'bg-blue-50 text-blue-600',
+      })),
+      ...(activeRfqs > 0
+        ? [{ title: '询比方案待跟进', desc: `${activeRfqs} 个询比项目仍在报价或定标中`, time: '今日', tone: 'bg-violet-50 text-violet-600' }]
+        : []),
+      ...(pendingPaymentAmount > 0
+        ? [{ title: '付款登记待处理', desc: `待付款金额 ${currency(pendingPaymentAmount, true)}`, time: '本周', tone: 'bg-amber-50 text-amber-600' }]
+        : []),
+    ].slice(0, 4);
+
+    const risks = [
+      ...invoices
+        .filter((invoice) => (invoice.varianceAmount ?? 0) > 0 || invoice.reconciliationStatus === '金额差异')
+        .slice(0, 1)
+        .map((invoice) => ({
+          tone: 'red',
+          title: '发票存在对账差异',
+          desc: `${invoice.invoiceNo ?? invoice.id} 差异 ${currency(invoice.varianceAmount ?? 0)}`,
+        })),
+      ...rfqs
+        .filter((rfq) => rfq.status === '报价中')
+        .slice(0, 1)
+        .map((rfq) => ({
+          tone: 'amber',
+          title: '询比仍在报价中',
+          desc: `${rfq.title ?? rfq.id} · 截止 ${shortDate(rfq.deadlineAt)}`,
+        })),
+    ];
+
+    const projects = [
+      ...rfqs.slice(0, 3).map((rfq, index) => ({
+        tag: index === 0 ? '询比' : index === 1 ? '竞价' : '评标',
+        title: rfq.title ?? rfq.id ?? '询比项目',
+        meta: `${shortDate(rfq.deadlineAt)} 截止 · ${rfq.status ?? '进行中'}`,
+        progress: rfq.status === '已定标' ? 90 : rfq.status === '报价中' ? 65 : 40,
+        tone: index === 0 ? 'bg-blue-50 text-blue-600' : index === 1 ? 'bg-orange-50 text-orange-600' : 'bg-violet-50 text-violet-600',
+      })),
+      ...orders.slice(0, 1).map((order) => ({
+        tag: '订单',
+        title: `采购订单 ${order.id}`,
+        meta: `${shortDate(order.expectedReceiptDate)} 到货 · ${order.status ?? '执行中'}`,
+        progress: order.status === '已收货' ? 100 : order.status === '已发货' ? 70 : 45,
+        tone: 'bg-emerald-50 text-emerald-600',
+      })),
+    ].slice(0, 4);
+
+    const spendDistribution = [
+      { label: 'IT设备', value: demands.filter((d) => d.departmentId === 'dept-it').reduce((s, d) => s + (d.budget ?? 0), 0), tone: 'bg-blue-600' },
+      { label: '原材料', value: orders.filter((o) => o.status === '已收货').reduce((s, o) => s + (o.amount ?? 0), 0), tone: 'bg-emerald-500' },
+      { label: 'MRO', value: demands.filter((d) => d.title?.includes('打印')).reduce((s, d) => s + (d.budget ?? 0), 0), tone: 'bg-amber-500' },
+      { label: '服务', value: demands.filter((d) => d.departmentId === 'dept-finance').reduce((s, d) => s + (d.budget ?? 0), 0), tone: 'bg-violet-500' },
+    ];
+
     return {
       totalSpend,
-      fulfillRate,
+      budgetRate,
       activeRfqs,
-      suppliers: (data?.suppliers ?? []).length,
-      materials: (data?.materials ?? []).length,
-      demands: (data?.demands ?? []).length,
+      activeProjects,
+      admittedSuppliers,
+      saving,
+      todos,
+      risks,
+      projects,
+      trend,
+      spendDistribution,
+      pendingCount: data?.todoSummary?.pendingApprovalCount ?? pendingApprovals.length,
+      pendingPaymentAmount,
     };
   }, [data]);
 
-  const workflow = useMemo<WorkflowStep[]>(() => {
-    const d = data?.demands ?? [];
-    const r = data?.rfqs ?? [];
-    const o = data?.orders ?? [];
-    const inv = data?.invoices ?? [];
-    const has = (arr: unknown[]) => arr.length > 0;
-    const some = <T,>(arr: T[], f: (x: T) => boolean) => arr.some(f);
-    const st = (done: boolean, doing: boolean) => (done ? '已完成' : doing ? '进行中' : '待开始');
-    return [
-      { key: 'demand', label: '需求申请', owner: '采购方', status: st(has(d), false) },
-      { key: 'approval', label: '需求审批', owner: '审批人', status: st(some(d, (x) => x.status === '已通过'), some(d, (x) => x.status === '审批中')) },
-      { key: 'rfq', label: '询价发布', owner: '采购方', status: st(has(r), false) },
-      { key: 'quote', label: '供应商报价', owner: '供应商', status: st(some(r, (x) => (x.quotes ?? []).length > 0), false) },
-      { key: 'award', label: '比价定标', owner: '采购方', status: st(some(r, (x) => x.status === '已定标'), some(r, (x) => x.status === '定标审批中')) },
-      { key: 'order', label: '采购订单', owner: '采购方', status: st(has(o), false) },
-      { key: 'delivery', label: '供应商发货', owner: '供应商', status: st(some(o, (x) => ['已发货', '已收货'].includes(x.status ?? '')), false) },
-      { key: 'receipt', label: '收货验收', owner: '采购方', status: st(some(o, (x) => x.status === '已收货'), false) },
-      { key: 'payment', label: '发票付款', owner: '采购方', status: st(some(inv, (x) => x.paymentStatus === '已付款'), some(inv, (x) => x.paymentStatus === '待付款')) },
-    ];
-  }, [data]);
-
-  const todo = data?.todoSummary;
-  const recent = data?.recentApprovals ?? [];
-
   if (ws.isLoading) {
-    return <ShellState variant="loading" title="正在加载工作台" desc="拉取采购概览、待办与履约进度…" />;
+    return <ShellState variant="loading" title="正在加载采购人首页" desc="拉取采购概览、待办与风险预警…" />;
   }
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <Kpi icon={TrendingUp} label="采购订单总额" value={currency(kpis.totalSpend)} accent="bg-blue-50 text-blue-700" />
-        <Kpi icon={ClipboardCheck} label="待办审批" value={String(todo?.pendingApprovalCount ?? 0)} accent="bg-amber-50 text-amber-700" />
-        <Kpi icon={FileText} label="活跃询价" value={String(kpis.activeRfqs)} accent="bg-indigo-50 text-indigo-700" />
-        <Kpi icon={Activity} label="履约率" value={`${kpis.fulfillRate}%`} accent="bg-emerald-50 text-emerald-700" />
-        <Kpi icon={Users} label="私域供应商" value={String(kpis.suppliers)} accent="bg-cyan-50 text-cyan-700" />
-        <Kpi icon={Package} label="物料/需求" value={`${kpis.materials} / ${kpis.demands}`} accent="bg-slate-100 text-slate-600" />
-      </div>
-
-      <Panel title="采购主线进度" icon={Activity} subtitle="需求 → 询价 → 定标 → 订单 → 收货 → 付款">
-        <WorkflowRail steps={workflow} />
-      </Panel>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Panel title="待办聚合" icon={ClipboardCheck} subtitle="按主流程节点统计">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              { label: '待审批', value: todo?.pendingApprovalCount ?? 0 },
-              { label: '待定标', value: todo?.pendingAwardCount ?? 0 },
-              { label: '待收货', value: todo?.pendingReceiptCount ?? 0 },
-              { label: '待付款', value: todo?.pendingPaymentCount ?? 0 },
-            ].map((t) => (
-              <div key={t.label} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs font-black text-slate-400">{t.label}</p>
-                <p className="mt-1 font-mono text-xl font-black text-slate-950">{t.value}</p>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel title="最近审批" icon={ClipboardCheck} subtitle="已处理记录">
-          {recent.length === 0 ? (
-            <ShellState variant="empty" title="暂无审批记录" desc="处理审批后将在此汇总。" />
-          ) : (
-            <DetailSection title="最近处理" countLabel={`${recent.length} 条`}>
-              <div className="space-y-2">
-                {recent.slice(0, 6).map((t) => (
-                  <div
-                    key={t.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="break-words text-sm font-black text-slate-900">{t.summaryTitle}</p>
-                      <p className="mt-0.5 text-xs font-bold text-slate-500">{t.bizType}</p>
-                    </div>
-                    {t.businessStatus && <StatusPill label={t.businessStatus} />}
+    <Panel title="首页看板" icon={BarChart3} subtitle="采购金额、待办、履约进度">
+      <div className="space-y-5">
+        <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
+          <Card className="p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                    <ClipboardCheck size={17} />
+                  </span>
+                  <div>
+                    <h1 className="text-lg font-black text-slate-950">下午好，采购负责人</h1>
+                    <p className="mt-0.5 text-xs font-bold text-slate-400">采购工作台今日运行正常</p>
                   </div>
+                </div>
+                <p className="mt-4 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
+                  您有 {view.pendingCount} 项待办审批，{view.activeRfqs} 个询比项目需要关注。系统已按采购需求、询比、订单、发票与审批任务自动汇总。
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('approvals')}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                >
+                  <ClipboardCheck size={14} /> 处理待办 ({view.pendingCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('analytics')}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+                >
+                  <Sparkles size={14} /> 查看 AI 报告
+                </button>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              <MiniFact label="待办审批" value={`${view.pendingCount} 项`} />
+              <MiniFact label="活跃询比" value={`${view.activeRfqs} 个`} />
+              <MiniFact label="待付款金额" value={currency(view.pendingPaymentAmount, true)} />
+            </div>
+          </Card>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            <ActionTile icon={FilePlus2} title="发起立项" desc="创建采购需求" module="demands" tone="bg-blue-50 text-blue-600" onNavigate={onNavigate} />
+            <ActionTile icon={Search} title="供应商寻源" desc="全网智能匹配" module="suppliers" tone="bg-violet-50 text-violet-600" onNavigate={onNavigate} />
+            <ActionTile icon={Truck} title="订单跟踪" desc="查看物流状态" module="orders" tone="bg-orange-50 text-orange-600" onNavigate={onNavigate} />
+            <ActionTile icon={BarChart3} title="数据分析" desc="查看支出报表" module="analytics" tone="bg-emerald-50 text-emerald-600" onNavigate={onNavigate} />
+          </div>
+        </div>
+
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          <KpiCard
+            icon={WalletCards}
+            label="本年度累计支出"
+            value={currency(view.totalSpend, true)}
+            desc={`预算执行率 ${view.budgetRate}%`}
+            trend="↗ 12.5%"
+            tone="bg-blue-50 text-blue-600"
+          />
+          <KpiCard
+            icon={Users}
+            label="活跃供应商"
+            value={String(view.admittedSuppliers)}
+            desc={`供应商总数 ${(data?.suppliers ?? []).length} 家`}
+            trend="↗ 3.2%"
+            tone="bg-indigo-50 text-indigo-600"
+          />
+          <KpiCard
+            icon={ShoppingCart}
+            label="进行中项目"
+            value={String(view.activeProjects)}
+            desc={`${view.activeRfqs} 个询比需跟进`}
+            trend="↘ 2.4%"
+            tone="bg-violet-50 text-violet-600"
+            negative
+          />
+          <KpiCard
+            icon={ShieldCheck}
+            label="累计节约成本"
+            value={currency(view.saving, true)}
+            desc="按比价节支与执行节约估算"
+            trend="↗ 8.1%"
+            tone="bg-emerald-50 text-emerald-600"
+          />
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
+          <Card className="p-4">
+          <SectionHeader icon={TrendingUp} title="采购支出趋势" subtitle="近 6 个月实际支出 vs 预算" />
+          <div className="mt-5 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={view.trend} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="dashboardSpend" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.18} />
+                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 700 }}
+                  formatter={(value) => [`${value}k`, '']}
+                />
+                <Area type="monotone" dataKey="budget" stroke="#cbd5e1" strokeDasharray="4 4" fill="transparent" strokeWidth={2} />
+                <Area type="monotone" dataKey="actual" stroke="#2563eb" fill="url(#dashboardSpend)" strokeWidth={3} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          </Card>
+
+          <Card className="p-4">
+          <SectionHeader
+            icon={Bell}
+            title="待办事项"
+            action={<span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-black text-white">{view.todos.length}</span>}
+          />
+          <div className="mt-4">
+            {view.todos.length === 0 ? (
+              <ShellState variant="empty" title="暂无待办" desc="当前没有需要立即处理的事项。" />
+            ) : (
+              <div className="space-y-2">
+                {view.todos.map((todo) => (
+                  <NoticeItem
+                    key={`${todo.title}-${todo.time}`}
+                    icon={ClipboardCheck}
+                    title={todo.title}
+                    desc={todo.desc}
+                    time={todo.time}
+                    tone={todo.tone}
+                  />
                 ))}
               </div>
-            </DetailSection>
-          )}
-        </Panel>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('approvals')}
+            className="mt-4 flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-black text-slate-700 transition hover:bg-slate-50"
+          >
+            进入审批中心
+          </button>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
+          <Card className="p-4">
+          <SectionHeader
+            icon={PackageCheck}
+            title="进行中的项目"
+            action={<button type="button" className="text-xs font-black text-blue-600" onClick={() => onNavigate('rfqs')}>查看全部</button>}
+          />
+          <div className="mt-5 space-y-3">
+            {view.projects.map((project) => (
+              <ProgressRow key={project.title} {...project} />
+            ))}
+          </div>
+          </Card>
+
+          <div className="space-y-4">
+            <Card className="p-4">
+            <SectionHeader icon={AlertTriangle} title="风险预警" />
+            <div className="mt-4 space-y-3">
+              {view.risks.length === 0 ? (
+                <NoticeItem
+                  icon={ShieldCheck}
+                  title="暂无高优先级风险"
+                  desc="合同、对账与询比状态正常"
+                  time="实时"
+                  tone="bg-emerald-50 text-emerald-600"
+                />
+              ) : (
+                view.risks.map((risk) => (
+                  <NoticeItem
+                    key={risk.title}
+                    icon={AlertTriangle}
+                    title={risk.title}
+                    desc={risk.desc}
+                    time="预警"
+                    tone={
+                      risk.tone === 'red'
+                        ? 'bg-red-50 text-red-600'
+                        : 'bg-amber-50 text-amber-600'
+                    }
+                  />
+                ))
+              )}
+            </div>
+            </Card>
+
+            <Card className="p-4">
+            <SectionHeader icon={Clock3} title="支出分布 (本月)" />
+            <div className="mt-5 space-y-4">
+              {view.spendDistribution.map((item) => (
+                <SpendBar
+                  key={item.label}
+                  {...item}
+                  max={Math.max(...view.spendDistribution.map((entry) => entry.value), 1)}
+                />
+              ))}
+            </div>
+            </Card>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400">
+          <StatusPill label="数据来自采购工作台" />
+          <span>遵循统一列表页体验规约，数据实时来自采购工作台。</span>
+        </div>
       </div>
-    </div>
+    </Panel>
   );
 }

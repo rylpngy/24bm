@@ -10,7 +10,14 @@ import {
   useBuyerBudgetUpsert,
   useDepartmentList,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, PrimaryActionButton } from '@24bid/ui';
+import {
+  FeedbackNotice,
+  MiniFact,
+  Pagination,
+  Panel,
+  PrimaryActionButton,
+  SearchInput,
+} from '@24bid/ui';
 
 const currency = (value?: number) =>
   value == null ? '—' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`;
@@ -82,6 +89,8 @@ function BudgetCard({ b }: { b: DepartmentBudgetResponse }) {
 export function BudgetsPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
 
   const query = useBuyerBudgetBudgets();
   const departments = useDepartmentList().data?.data ?? [];
@@ -119,6 +128,19 @@ export function BudgetsPage() {
   const overCount = budgets.filter((b) => b.overBudget).length;
   const totalBudget = budgets.reduce((s, b) => s + (b.totalAmount ?? 0), 0);
   const totalOccupied = budgets.reduce((s, b) => s + (b.committed ?? 0) + (b.pending ?? 0), 0);
+  const PAGE_SIZE = 6;
+  const kw = keyword.toLowerCase();
+  const filteredBudgets = budgets.filter((b) => {
+    if (!kw) return true;
+    return [b.departmentName, b.departmentId, b.period]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(kw);
+  });
+  const pageCount = Math.max(1, Math.ceil(filteredBudgets.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = filteredBudgets.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <Panel title="预算管理" icon={Wallet} subtitle="部门预算池 · 占用 · 超预算预警">
@@ -128,7 +150,15 @@ export function BudgetsPage() {
         <MiniFact label="超预算部门" value={String(overCount)} />
       </div>
 
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按部门 / 编号 / 年份搜索"
+          onSearch={(value) => {
+            setKeyword(value);
+            setPage(1);
+          }}
+        />
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
@@ -198,12 +228,17 @@ export function BudgetsPage() {
         <FeedbackNotice tone="info" message="正在加载部门预算…" />
       ) : budgets.length === 0 ? (
         <FeedbackNotice tone="info" message="暂无部门预算,点击「设置预算」创建。" />
+      ) : filteredBudgets.length === 0 ? (
+        <FeedbackNotice tone="info" message="当前搜索条件下暂无部门预算。" />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {budgets.map((b) => (
-            <BudgetCard key={b.id} b={b} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {pageItems.map((b) => (
+              <BudgetCard key={b.id} b={b} />
+            ))}
+          </div>
+          <Pagination page={safePage} pageSize={PAGE_SIZE} total={filteredBudgets.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );

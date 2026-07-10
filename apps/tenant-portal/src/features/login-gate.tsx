@@ -11,11 +11,11 @@ export function LoginGate() {
     <div className="flex min-h-dvh items-center justify-center bg-slate-100/70 p-6">
       <div className="w-full max-w-md">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 text-lg font-black text-white shadow-lg shadow-blue-950/30">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-sm font-black text-white shadow-sm">
             24
           </div>
           <div>
-            <p className="text-lg font-black text-slate-900">24Bid 企业工作台</p>
+            <p className="text-base font-black text-slate-900">24Bid 企业工作台</p>
             <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
               Tenant Portal
             </p>
@@ -50,9 +50,9 @@ export function LoginGate() {
                     type="button"
                     onClick={() => handleLogin(acc.account, acc.name)}
                     disabled={login.isPending}
-                    className="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                    className="flex h-9 w-full items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
                   >
-                    <LogIn size={16} className="shrink-0 text-slate-400" />
+                    <LogIn size={14} className="shrink-0 text-slate-400" />
                     <span>{login.isPending ? '登录中…' : `以${acc.name}登录`}</span>
                     <span className="ml-auto text-[11px] font-bold text-slate-400">{acc.hint}</span>
                   </button>

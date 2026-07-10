@@ -14,10 +14,10 @@ export interface TabsProps {
   onChange: (id: string) => void;
 }
 
-/** 轻量受控横向 Tab——一条标签栏 + 选中下划线;用于详情页二级切换。 */
+/** 轻量受控横向 Tab——分段式二级导航;用于模块内视图切换。 */
 export function Tabs({ items, value, onChange }: TabsProps) {
   return (
-    <div className="flex flex-wrap gap-1 border-b border-slate-200">
+    <div className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
       {items.map((t) => {
         const active = t.id === value;
         const Icon = t.icon;
@@ -27,11 +27,10 @@ export function Tabs({ items, value, onChange }: TabsProps) {
             type="button"
             onClick={() => onChange(t.id)}
             className={cn(
-              'relative inline-flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-black transition',
-              '-mb-px border-b-2',
+              'relative inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-black transition',
               active
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800',
+                ? 'bg-white text-blue-700 shadow-sm shadow-slate-200/70 ring-1 ring-slate-200'
+                : 'text-slate-500 hover:bg-white/70 hover:text-slate-800',
             )}
           >
             {Icon && <Icon size={15} />}

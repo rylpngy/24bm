@@ -209,7 +209,7 @@ export function OrdersPage() {
         </div>
         <SearchInput
           className="mb-0 ml-auto"
-          placeholder="按订单号 / 询价号 / 供应商搜索"
+          placeholder="按订单号 / 询比号 / 供应商搜索"
           onSearch={(k) => {
             setKeyword(k);
             setPage(1);
@@ -261,7 +261,7 @@ export function OrdersPage() {
               </div>
 
               <div className="mt-3 grid gap-2 sm:grid-cols-4">
-                <MiniFact label="关联询价" value={o.rfqId ?? '—'} />
+                <MiniFact label="关联询比" value={o.rfqId ?? '—'} />
                 <MiniFact label="预计到货" value={o.expectedReceiptDate ?? '—'} />
                 <MiniFact label="付款方式" value={o.paymentTerms ?? '—'} />
                 <MiniFact

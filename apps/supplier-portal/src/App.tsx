@@ -23,7 +23,7 @@ export function App() {
   return (
     <AppShell
       brandSubtitle={supplierNavigation.label}
-      mainlineHint="询价邀请 - 报价 - 订单履约 - 发票应收"
+      mainlineHint="询比邀请 - 报价 - 订单履约 - 发票应收"
       modules={supplierNavigation.modules}
       activeModuleId={activeModuleId}
       onSelectModule={setActiveModuleId}

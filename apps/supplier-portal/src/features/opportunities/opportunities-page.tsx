@@ -27,7 +27,7 @@ const currency = (v: number) => `¥${v.toLocaleString('zh-CN', { minimumFraction
 const lineAmount = (l: LineRow) => (Number(l.quantity) || 0) * (Number(l.unitPrice) || 0);
 const formTotal = (f: QuoteForm) => f.lines.reduce((sum, l) => sum + lineAmount(l), 0);
 
-// 询价邀请:供应商在报价中状态按行报价(描述/单位/数量/单价),报价金额按行汇总。
+// 询比邀请:供应商在报价中状态按行报价(描述/单位/数量/单价),报价金额按行汇总。
 export function OpportunitiesPage() {
   const queryClient = useQueryClient();
   const supplierId = useAuthStore((s) => s.session?.supplierId ?? '');
@@ -95,13 +95,13 @@ export function OpportunitiesPage() {
       },
       {
         onSuccess: () => {
-          setFeedback(`询价 ${rfqId} 报价已提交（${lines.length} 个行项，合计 ${currency(formTotal(f))}）`);
+          setFeedback(`询比 ${rfqId} 报价已提交（${lines.length} 个行项，合计 ${currency(formTotal(f))}）`);
           setForms((s) => ({ ...s, [rfqId]: defaultForm() }));
           setError(null);
           refresh();
         },
         onError: () => {
-          setError(`询价 ${rfqId} 报价提交失败：可能已提交过报价或询价已截止。`);
+          setError(`询比 ${rfqId} 报价提交失败：可能已提交过报价或询比已截止。`);
         },
       },
     );
@@ -111,7 +111,7 @@ export function OpportunitiesPage() {
     'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100';
 
   return (
-    <Panel title="询价邀请" icon={Send} subtitle="可报价商机 · 按行报价">
+    <Panel title="询比邀请" icon={Send} subtitle="可报价商机 · 按行报价">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2">
           {statuses.map((s) => (
@@ -136,7 +136,7 @@ export function OpportunitiesPage() {
         </div>
         <SearchInput
           className="mb-0 ml-auto"
-          placeholder="按询价标题 / 编号搜索"
+          placeholder="按询比标题 / 编号搜索"
           onSearch={(k) => {
             setKeyword(k);
             setPage(1);
@@ -155,14 +155,14 @@ export function OpportunitiesPage() {
       )}
 
       {rfqs.isLoading ? (
-        <FeedbackNotice tone="info" message="正在加载询价邀请…" />
+        <FeedbackNotice tone="info" message="正在加载询比邀请…" />
       ) : list.length === 0 ? (
         <FeedbackNotice
           tone="info"
           message={
             keyword || statusFilter !== '全部'
-              ? '没有符合条件的询价。'
-              : '暂无询价邀请。被采购方邀请后出现在此。'
+              ? '没有符合条件的询比。'
+              : '暂无询比邀请。被采购方邀请后出现在此。'
           }
         />
       ) : (

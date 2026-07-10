@@ -20,7 +20,7 @@ function decodeJwt(token: string): Record<string, unknown> {
 
 export const demoAccounts = [
   { account: 'buyer.owner@example.com', name: '采购管理员', hint: '全部权限' },
-  { account: 'zhang.req@example.com', name: '采购申请员', hint: '需求/物料/询价' },
+  { account: 'zhang.req@example.com', name: '采购申请员', hint: '需求/物料/询比' },
   { account: 'li.fin@example.com', name: '财务专员', hint: '付款/对账' },
 ];
 

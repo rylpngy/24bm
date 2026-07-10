@@ -54,7 +54,7 @@ export function QuotesPage() {
         </div>
         <SearchInput
           className="mb-0 ml-auto"
-          placeholder="按询价号 / 报价号搜索"
+          placeholder="按询比号 / 报价号搜索"
           onSearch={(k) => {
             setKeyword(k);
             setPage(1);
@@ -70,7 +70,7 @@ export function QuotesPage() {
           message={
             keyword || statusFilter !== '全部'
               ? '没有符合条件的报价。'
-              : '暂无报价记录。在询价邀请中提交报价后出现在此。'
+              : '暂无报价记录。在询比邀请中提交报价后出现在此。'
           }
         />
       ) : (

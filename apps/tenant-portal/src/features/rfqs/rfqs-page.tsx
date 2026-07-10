@@ -11,7 +11,16 @@ import {
   useRfqOpen,
   useRfqStartNewRound,
 } from '@24bid/api-client';
-import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
+import {
+  CountTag,
+  FeedbackNotice,
+  MiniFact,
+  Pagination,
+  Panel,
+  PrimaryActionButton,
+  SearchInput,
+  cn,
+} from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
 import { RfqClarificationsBuyer } from './rfq-clarifications';
 import { RfqResultBuyer } from './rfq-result';
@@ -23,24 +32,45 @@ const inputCls =
 const deadlinePassed = (deadlineAt?: string | null) =>
   deadlineAt ? new Date(deadlineAt).getTime() <= Date.now() : false;
 
-const METHODS = ['公开招标', '邀请招标', '竞争性谈判', '询价', '单一来源'];
+const METHODS = ['询比', '竞价', '商城', '单一来源'];
+const SUPPLIER_COLLECTION_METHODS = ['公开', '邀请'];
+const STATUS_FILTERS = ['全部', '草稿', '报价中', '已开标', '定标审批中', '已定标', '已流标', '已废标'] as const;
+const PAGE_SIZE = 6;
+
+const statusTone = (status?: string | null) => {
+  if (status === '报价中') return 'border-amber-100 bg-amber-50 text-amber-700';
+  if (status === '已开标') return 'border-blue-100 bg-blue-50 text-blue-700';
+  if (status === '定标审批中') return 'border-violet-100 bg-violet-50 text-violet-700';
+  if (status === '已定标') return 'border-emerald-100 bg-emerald-50 text-emerald-700';
+  if (status === '已流标' || status === '已废标') return 'border-red-100 bg-red-50 text-red-700';
+  return 'border-slate-100 bg-slate-50 text-slate-600';
+};
+
+const methodTone = (method?: string | null) => {
+  if (method === '竞价') return 'bg-amber-50 text-amber-700';
+  if (method === '商城') return 'bg-emerald-50 text-emerald-700';
+  if (method === '单一来源') return 'bg-violet-50 text-violet-700';
+  return 'bg-blue-50 text-blue-700';
+};
+
+const deadlineText = (deadlineAt?: string | null) => deadlineAt?.slice(0, 10) ?? '—';
+
 // 各采购方式定标门槛提示。
-const awardGateHint = (method?: string, currentRound = 1, bidders = 0): string => {
-  if (method === '竞争性谈判') {
-    return currentRound >= 2
-      ? '竞争性谈判已满足多轮要求,可定标。'
-      : '竞争性谈判须经至少一轮谈判(再次报价)后方可定标。';
-  }
-  if (method === '单一来源') return '单一来源 1 家报价即可定标。';
+const awardGateHint = (method?: string, bidders = 0): string => {
+  if (method === '商城') return '商城采购按商品目录/货架规则执行，不强制供应商报价定标。';
+  if (method === '单一来源') return bidders >= 1 ? '单一来源已收到报价，可定标。' : '单一来源须有 1 家有效报价。';
   return bidders >= 3
     ? `已收到 ${bidders} 家有效报价,满足法定家数。`
-    : `${method ?? '招标/询价'}定标须不少于 3 家有效报价(当前 ${bidders} 家),否则应予流标。`;
+    : `${method ?? '询比'}定标须不少于 3 家有效报价(当前 ${bidders} 家),否则应予流标。`;
 };
 // 进行中可终止;终态显示终止类型。
 const ABORTED_STATUS: Record<string, string> = { 已流标: '流标', 已废标: '废标' };
 
 export function RfqsPage() {
   const queryClient = useQueryClient();
+  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>('全部');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -61,13 +91,29 @@ export function RfqsPage() {
   const [supplierIds, setSupplierIds] = useState<string[]>([]);
   const [deadline, setDeadline] = useState('');
   const [evaluationMethod, setEvaluationMethod] = useState('最低价');
-  const [method, setMethod] = useState('询价');
+  const [method, setMethod] = useState('询比');
+  const [collectionMethod, setCollectionMethod] = useState('公开');
   const [quoteRequirement, setQuoteRequirement] = useState('');
   const [deliveryRequirement, setDeliveryRequirement] = useState('');
 
   const list = rfqs.data?.data ?? [];
   const demands = approvedDemands.data?.data ?? [];
   const suppliers = admittedSuppliers.data?.data ?? [];
+  const filtered = list.filter((r) => {
+    const statusMatched = status === '全部' || r.status === status;
+    const kw = keyword.trim().toLowerCase();
+    const keywordMatched =
+      !kw ||
+      [r.title, r.id, r.status, r.method, r.quoteRequirement, r.deliveryRequirement]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(kw);
+    return statusMatched && keywordMatched;
+  });
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const supplierNames = useMemo(() => {
     const map: Record<string, string> = {};
@@ -76,6 +122,13 @@ export function RfqsPage() {
     });
     return map;
   }, [suppliers]);
+
+  const supplierCollectionLabel =
+    method === '商城' ? '目录采购' : method === '单一来源' ? '定向' : collectionMethod;
+  const supplierSelectionRequired =
+    method === '单一来源' || (method !== '商城' && collectionMethod === '邀请');
+  const supplierRequirementMet =
+    !supplierSelectionRequired || (method === '单一来源' ? supplierIds.length === 1 : supplierIds.length >= 3);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -95,7 +148,8 @@ export function RfqsPage() {
           evaluationMethod,
           method,
           quoteRequirement: quoteRequirement || undefined,
-          deliveryRequirement: deliveryRequirement || undefined,
+          deliveryRequirement:
+            [deliveryRequirement, `供应商征集方式：${supplierCollectionLabel}`].filter(Boolean).join('\n') || undefined,
         },
       },
       {
@@ -105,7 +159,8 @@ export function RfqsPage() {
           setSupplierIds([]);
           setDeadline('');
           setEvaluationMethod('最低价');
-          setMethod('询价');
+          setMethod('询比');
+          setCollectionMethod('公开');
           setQuoteRequirement('');
           setDeliveryRequirement('');
           setShowForm(false);
@@ -158,27 +213,87 @@ export function RfqsPage() {
   };
 
   const toggleSupplier = (id: string) =>
-    setSupplierIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+    setSupplierIds((cur) =>
+      method === '单一来源' ? (cur.includes(id) ? [] : [id]) : cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
+    );
+
+  const handleMethodChange = (value: string) => {
+    setMethod(value);
+    if (value === '商城') {
+      setSupplierIds([]);
+    } else if (value === '单一来源' && supplierIds.length > 1) {
+      setSupplierIds(supplierIds.slice(0, 1));
+    }
+  };
+
+  const handleCollectionMethodChange = (value: string) => {
+    setCollectionMethod(value);
+    if (value === '公开') {
+      setSupplierIds([]);
+    }
+  };
 
   return (
-    <Panel title="询价项目" icon={FileText} subtitle="RFQ 列表 · 邀请 · 比价定标">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <CountTag>共 {list.length} 条</CountTag>
+    <Panel title="询比项目" icon={FileText} subtitle="询比列表 · 邀请 · 比价定标">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setStatus(s);
+                setPage(1);
+              }}
+              className={cn(
+                'h-8 rounded-md border px-3 text-xs font-black transition',
+                s === status
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按标题 / 编号 / 方式 / 要求搜索"
+          onSearch={(k) => {
+            setKeyword(k);
+            setPage(1);
+          }}
+        />
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
         >
-          <Plus size={14} /> {showForm ? '收起' : '创建询价'}
+          <Plus size={14} /> {showForm ? '收起' : '创建询比'}
         </button>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <CountTag>共 {list.length} 条</CountTag>
+        <CountTag>当前展示 {filtered.length} 条</CountTag>
+        <CountTag>报价中 {list.filter((r) => r.status === '报价中').length} 条</CountTag>
+        <CountTag>待定标 {list.filter((r) => r.status === '已开标').length} 条</CountTag>
+      </div>
+
       {showForm && (
-        <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
-          <p className="text-sm font-black text-blue-800">创建询价(从已通过需求)</p>
+        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/40 p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+              <Plus size={18} />
+            </span>
+            <div>
+              <p className="text-sm font-black text-blue-800">创建询比(从已通过需求)</p>
+              <p className="mt-1 text-xs font-bold text-blue-700/70">选择采购需求、供应商与截止时间后发起报价邀请。</p>
+            </div>
+          </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-black text-slate-500">询价标题</label>
+              <label className="text-xs font-black text-slate-500">询比标题</label>
               <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div>
@@ -214,13 +329,33 @@ export function RfqsPage() {
             </div>
             <div>
               <label className="text-xs font-black text-slate-500">采购方式</label>
-              <select className={inputCls} value={method} onChange={(e) => setMethod(e.target.value)}>
+              <select className={inputCls} value={method} onChange={(e) => handleMethodChange(e.target.value)}>
                 {METHODS.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="text-xs font-black text-slate-500">供应商征集方式</label>
+              {method === '询比' || method === '竞价' ? (
+                <select className={inputCls} value={collectionMethod} onChange={(e) => handleCollectionMethodChange(e.target.value)}>
+                  {SUPPLIER_COLLECTION_METHODS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className={cn(inputCls, 'flex items-center text-slate-500')}>
+                  {method === '商城' ? '目录采购' : '定向'}
+                </div>
+              )}
               <p className="mt-1 text-[11px] font-bold text-slate-400">
-                {method === '单一来源' ? '需且仅邀请 1 家供应商。' : '须邀请不少于 3 家供应商。'}
+                {method === '商城'
+                  ? '商城采购不按供应商征集方式执行。'
+                  : method === '单一来源'
+                    ? '单一来源须定向选择 1 家供应商。'
+                    : collectionMethod === '公开'
+                      ? `${method}公开征集，不预先限定供应商。`
+                      : `${method}邀请征集，需选择不少于 3 家供应商。`}
               </p>
             </div>
           </div>
@@ -244,6 +379,12 @@ export function RfqsPage() {
               />
             </div>
           </div>
+          {method !== '商城' && method !== '单一来源' && collectionMethod === '公开' && (
+            <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-bold text-blue-700">
+              当前为公开征集，创建项目时不限定具体供应商。
+            </div>
+          )}
+          {supplierSelectionRequired && (
           <div className="mt-3">
             <label className="text-xs font-black text-slate-500">邀请供应商(已准入)</label>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -264,60 +405,75 @@ export function RfqsPage() {
               ))}
             </div>
           </div>
+          )}
           {create.isError && (
             <div className="mt-3">
-              <FeedbackNotice tone="error" message="创建失败：需求需已通过且未关联其它询价。" />
+              <FeedbackNotice tone="error" message="创建失败：需求需已通过且未关联其它询比项目。" />
             </div>
           )}
           <PrimaryActionButton
             onClick={submitCreate}
             busy={create.isPending}
             pendingLabel="创建中"
-            disabled={!title || !demandId || supplierIds.length === 0}
+            disabled={!title || !demandId || !supplierRequirementMet}
           >
-            创建询价
+            创建询比
           </PrimaryActionButton>
         </div>
       )}
 
       {rfqs.isLoading ? (
-        <FeedbackNotice tone="info" message="正在加载询价项目…" />
+        <FeedbackNotice tone="info" message="正在加载询比项目…" />
       ) : list.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无询价项目，点击创建。" />
+        <FeedbackNotice tone="info" message="暂无询比项目，点击创建。" />
+      ) : filtered.length === 0 ? (
+        <FeedbackNotice tone="info" message="没有符合当前筛选条件的询比项目。" />
       ) : (
+        <>
         <div className="space-y-3">
-          {list.map((r) => (
+          {pageItems.map((r) => (
             <div
               key={r.id}
-              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50"
+              className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200/50 transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-white to-slate-50/80 p-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="break-words font-black text-slate-950">{r.title}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{r.id}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] font-black text-slate-500">
+                      {r.id}
+                    </span>
+                    {r.method && (
+                      <span className={cn('rounded-md px-2 py-1 text-[11px] font-black', methodTone(r.method))}>
+                        {r.method}
+                      </span>
+                    )}
+                    {(r.currentRound ?? 1) > 1 && (
+                      <span className="rounded-md bg-violet-50 px-2 py-1 text-[11px] font-black text-violet-700">
+                        第{r.currentRound}轮{r.finalRound ? ' · 最终' : ''}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 break-words text-base font-black text-slate-950">{r.title}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">
+                    {r.evaluationMethod ?? '最低价'} · 报价截止 {deadlineText(r.deadlineAt)}
+                  </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  {r.method && (
-                    <span className="rounded-md bg-sky-100 px-2 py-0.5 text-[11px] font-black text-sky-700">
-                      {r.method}
+                <div className="flex shrink-0 items-center gap-2">
+                  {r.status && (
+                    <span className={cn('rounded-lg border px-3 py-1 text-xs font-black', statusTone(r.status))}>
+                      {r.status}
                     </span>
                   )}
-                  {(r.currentRound ?? 1) > 1 && (
-                    <span className="rounded-md bg-violet-100 px-2 py-0.5 text-[11px] font-black text-violet-700">
-                      第{r.currentRound}轮{r.finalRound ? '·最终' : ''}
-                    </span>
-                  )}
-                  {r.status && <StatusPill label={r.status} />}
                 </div>
               </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-4">
+              <div className="grid gap-2 p-4 sm:grid-cols-4">
                 <MiniFact label="邀请供应商" value={String((r.invitedSupplierIds ?? []).length)} />
                 <MiniFact label="收到报价" value={String((r.quotes ?? []).length)} />
-                <MiniFact label="报价截止" value={r.deadlineAt?.slice(0, 10) ?? '—'} />
+                <MiniFact label="报价截止" value={deadlineText(r.deadlineAt)} />
                 <MiniFact label="评选方式" value={r.evaluationMethod ?? '最低价'} />
               </div>
               {(r.quoteRequirement || r.deliveryRequirement) && (
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2 px-4 pb-4 sm:grid-cols-2">
                   <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                     <p className="text-[11px] font-black text-slate-400">报价要求</p>
                     <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">
@@ -333,9 +489,9 @@ export function RfqsPage() {
                 </div>
               )}
               {ABORTED_STATUS[r.status ?? ''] && (
-                <div className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-3">
+                <div className="mx-4 mb-4 rounded-lg border border-red-200 bg-red-50/60 p-3">
                   <p className="text-xs font-black text-red-700">
-                    本询价已{ABORTED_STATUS[r.status ?? '']}
+                    本询比已{ABORTED_STATUS[r.status ?? '']}
                   </p>
                   {r.closeReason && (
                     <p className="mt-0.5 text-[11px] font-bold text-red-600/80">理由:{r.closeReason}</p>
@@ -344,14 +500,20 @@ export function RfqsPage() {
               )}
 
               {r.status === '已定标' && r.id && (
-                <RfqResultBuyer rfqId={r.id} supplierNames={supplierNames} />
+                <div className="px-4 pb-4">
+                  <RfqResultBuyer rfqId={r.id} supplierNames={supplierNames} />
+                </div>
               )}
 
-              {r.id && <RfqClarificationsBuyer rfqId={r.id} />}
+              {r.id && (
+                <div className="px-4 pb-4">
+                  <RfqClarificationsBuyer rfqId={r.id} />
+                </div>
+              )}
 
               {r.status === '报价中' ? (
                 // 封存:报价明细对采购方不可见,需开标后方可比价定标。
-                <div className="mt-3 flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mx-4 mb-4 flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-2">
                     <Lock size={15} className="mt-0.5 shrink-0 text-amber-600" />
                     <div>
@@ -407,7 +569,7 @@ export function RfqsPage() {
                         }
                         className="inline-flex h-8 items-center gap-1.5 rounded-md border border-violet-200 bg-white px-3 text-xs font-black text-violet-700 hover:bg-violet-50"
                       >
-                        <RotateCcw size={13} /> {r.method === '竞争性谈判' ? '发起谈判轮' : '再次报价'}
+                        <RotateCcw size={13} /> 再次报价
                       </button>
                     )}
                     {r.status === '已开标' && (
@@ -430,9 +592,9 @@ export function RfqsPage() {
                     )}
                   </div>
                   {openId === r.id && (
-                    <div className="mt-3">
+                    <div className="mt-3 px-4 pb-4">
                       <div className="mb-2 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2 text-[11px] font-bold text-sky-700">
-                        {r.method ?? '采购方式'} · 定标门槛:{awardGateHint(r.method ?? undefined, r.currentRound ?? 1, (r.quotes ?? []).length)}
+                        {r.method ?? '采购方式'} · 定标门槛:{awardGateHint(r.method ?? undefined, (r.quotes ?? []).length)}
                       </div>
                       {r.id && <RfqSupplierPerformance rfqId={r.id} supplierNames={supplierNames} />}
                       <QuoteComparisonTable
@@ -454,6 +616,8 @@ export function RfqsPage() {
             </div>
           ))}
         </div>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+        </>
       )}
 
       {roundForm && (
@@ -482,7 +646,7 @@ export function RfqsPage() {
             </label>
             <div className="mt-3">
               <label className="text-xs font-black text-slate-500">
-                谈判说明{roundForm.method === '竞争性谈判' ? '(竞争性谈判须留痕)' : '(可选)'}
+                轮次说明（可选）
               </label>
               <textarea
                 className={cn(inputCls, 'min-h-[56px] resize-y')}
