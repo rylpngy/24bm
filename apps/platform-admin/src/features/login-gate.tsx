@@ -2,24 +2,14 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { KeyRound, LogIn } from 'lucide-react';
 import { LoginRequestScope, useAuthLogin } from '@24bid/api-client';
+import { keycloakPasswordLogin } from '@24bid/shared';
 import { FeedbackNotice, Panel, PrimaryActionButton } from '@24bid/ui';
 import { useAuthStore } from '../lib/auth-store';
 
 // 自研 JWT 已退役为 CI/开发后备;生产登录走 Keycloak(OIDC)。
 const SELF_LOGIN_FALLBACK = (import.meta.env.VITE_SELF_LOGIN ?? 'true') !== 'false';
 
-const KEYCLOAK_TOKEN_URL =
-  (import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081') +
-  '/realms/24bid/protocol/openid-connect/token';
-
-function decodeJwt(token: string): Record<string, unknown> {
-  try {
-    const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(decodeURIComponent(escape(atob(part))));
-  } catch {
-    return {};
-  }
-}
+const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081';
 
 // 平台运营登录门:自研 JWT 与 Keycloak(OIDC)双路径,PLATFORM scope。
 export function LoginGate() {
@@ -33,20 +23,11 @@ export function LoginGate() {
     setKcBusy(true);
     setKcError(false);
     try {
-      const res = await fetch(KEYCLOAK_TOKEN_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'password',
-          client_id: '24bid-portal',
-          username: 'platform.admin@example.com',
-          password: 'demo123456',
-        }),
+      const { token, claims } = await keycloakPasswordLogin({
+        keycloakUrl: KEYCLOAK_URL,
+        username: 'platform.admin@example.com',
+        password: 'demo123456',
       });
-      if (!res.ok) throw new Error('keycloak login failed');
-      const data = await res.json();
-      const token = data.access_token as string;
-      const claims = decodeJwt(token);
       signIn({
         token,
         userId: (claims.userId as string) ?? '',
