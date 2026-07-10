@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Calculator, CheckSquare, ClipboardList, Layers3, Plus, Search, Sparkles, Users, X } from 'lucide-react';
 import {
+  useMaterialList,
+  type BuyerSupplierResponse,
   type PurchaseDemandResponse,
   useBuyerSupplierList,
   usePurchaseDemandList,
@@ -538,7 +540,7 @@ export function ProcurementPlanMergePage({
   setPlanUrgency: (value: string) => void;
   approvalRequired: string;
   setApprovalRequired: (value: string) => void;
-  suppliers: { id?: string; supplierId?: string; supplierName?: string }[];
+  suppliers: BuyerSupplierResponse[];
   supplierIds: string[];
   setSupplierIds: (value: string[]) => void;
   toggleSupplier: (id?: string) => void;
@@ -547,6 +549,35 @@ export function ProcurementPlanMergePage({
   onBack: () => void;
   onSubmit: () => void;
 }) {
+  const materialsForRef = useMaterialList();
+  const materialIndex = useMemo(() => {
+    const map: Record<string, { referencePrice: number; category: string; name: string }> = {};
+    (materialsForRef.data?.data ?? []).forEach((m) => {
+      if (m.id) map[m.id] = { referencePrice: m.referencePrice ?? 0, category: m.category ?? '其他', name: m.name ?? m.id };
+    });
+    return map;
+  }, [materialsForRef.data]);
+  // 市场参考价:所选需求行项 × 物料参考价(真实数据,替代此前"预算×0.96"的假测算)。
+  const marketReference = selectedDemands.reduce(
+    (sum, demand) =>
+      sum +
+      (demand.lineItems ?? []).reduce(
+        (lineSum, line) =>
+          lineSum + (materialIndex[line.materialId ?? '']?.referencePrice ?? 0) * (line.quantity ?? 0),
+        0,
+      ),
+    0,
+  );
+  const budgetDeviation = marketReference > 0 ? (selectedBudget - marketReference) / marketReference : null;
+  const demandCategories = Array.from(
+    new Set(
+      selectedDemands.flatMap((demand) =>
+        (demand.lineItems ?? []).map((line) => materialIndex[line.materialId ?? '']?.category).filter(Boolean),
+      ),
+    ),
+  ) as string[];
+  const [showSuggestion, setShowSuggestion] = useState(false);
+  const [recommendNote, setRecommendNote] = useState<string | null>(null);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [supplierKeyword, setSupplierKeyword] = useState('');
   const mergedRows = selectedDemands.flatMap((d) =>
@@ -561,7 +592,6 @@ export function ProcurementPlanMergePage({
       subtotal: d.budget ?? 0,
     })),
   );
-  const marketReference = Math.round(selectedBudget * 0.96);
   const isSingleSource = planMethod === '单一来源';
   const isOpenSolicitation = planMethod !== '商城' && planMethod !== '单一来源' && collectionMethod === '公开';
   const supplierSelectionRequired = planMethod === '单一来源' || (planMethod !== '商城' && collectionMethod === '邀请');
@@ -710,10 +740,31 @@ export function ProcurementPlanMergePage({
             </p>
             <button
               type="button"
-              className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg bg-violet-50 px-3 text-xs font-black text-violet-600"
+              onClick={() => setShowSuggestion((v) => !v)}
+              className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg bg-violet-50 px-3 text-xs font-black text-violet-600 hover:bg-violet-100"
             >
-              <Sparkles size={14} /> AI 智能建议
+              <Sparkles size={14} /> {showSuggestion ? '收起方案建议' : '方案建议(基于所选需求)'}
             </button>
+            {showSuggestion && (
+              <div className="mt-3 space-y-1.5 rounded-lg border border-violet-100 bg-violet-50/50 p-3 text-xs font-bold text-violet-800">
+                <p>
+                  · 预算规模 {currency(selectedBudget)}:
+                  {selectedBudget >= 500000
+                    ? '金额较大,建议采用竞价引入价格竞争,或询比+多轮 BAFO。'
+                    : selectedBudget < 50000 && demandCategories.length <= 1
+                      ? '金额较小且品类单一,若有协议价商品可走商城直购降低流程成本。'
+                      : '建议采用询比,兼顾效率与竞争。'}
+                </p>
+                <p>
+                  · 品类分布:{demandCategories.length > 0 ? demandCategories.join('、') : '所选需求行项未关联物料品类'}
+                  {demandCategories.length > 1 && ';品类跨度较大,可考虑拆分方案分别征集。'}
+                </p>
+                <p>
+                  · 已准入供应商 {suppliers.length} 家可选
+                  {planMethod !== '商城' && planMethod !== '单一来源' && suppliers.length < 3 && ';不足 3 家,邀请征集无法满足法定家数,建议公开征集或先补充准入。'}
+                </p>
+              </div>
+            )}
             {isOpenSolicitation && (
               <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-bold text-blue-700">
                 当前为公开征集，提交方案时不需要选择具体供应商，后续由符合条件的供应商参与响应。
@@ -825,16 +876,24 @@ export function ProcurementPlanMergePage({
                 <Calculator size={18} />
               </span>
               <div>
-                <p className="text-sm font-black text-blue-900">AI 预算合理性评估</p>
+                <p className="text-sm font-black text-blue-900">预算合理性核对(基于物料参考价)</p>
                 <p className="mt-1 text-xs font-bold text-blue-700">
-                  当前方案总预算 {currency(selectedBudget)}，市场参考总价约 {currency(marketReference)}。
-                  <span className="text-emerald-600"> 预算在合理市场浮动范围内。</span>
+                  {marketReference > 0 ? (
+                    <>
+                      方案总预算 {currency(selectedBudget)},物料参考价合计 {currency(marketReference)}
+                      (偏差 {budgetDeviation != null ? `${(budgetDeviation * 100).toFixed(1)}%` : '—'})。
+                      {budgetDeviation != null && Math.abs(budgetDeviation) <= 0.15 ? (
+                        <span className="text-emerald-600"> 预算与参考价偏差在 15% 以内,合理。</span>
+                      ) : (
+                        <span className="text-red-600"> 预算与参考价偏差超过 15%,建议复核数量与单价或在方案说明中补充原因。</span>
+                      )}
+                    </>
+                  ) : (
+                    <>方案总预算 {currency(selectedBudget)};所选需求行项暂无物料参考价,无法核对,请在物料目录维护参考价。</>
+                  )}
                 </p>
               </div>
             </div>
-            <button className="inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-white px-4 text-xs font-black text-blue-700">
-              重新测算
-            </button>
           </div>
         </div>
 
@@ -871,7 +930,7 @@ export function ProcurementPlanMergePage({
                   选择参与供应商
                 </h2>
                 <p className="mt-1 text-sm font-bold text-slate-500">
-                  {isSingleSource ? '单选供应商；后续将接入 AI 推荐候选。' : '多选供应商，至少 3 家；后续将接入 AI 推荐候选。'}
+                  {isSingleSource ? '单选供应商;可按品类匹配与绩效评分推荐候选。' : '多选供应商,至少 3 家;可按品类匹配与绩效评分推荐候选。'}
                 </p>
               </div>
               <button
@@ -897,12 +956,38 @@ export function ProcurementPlanMergePage({
                 </label>
                 <button
                   type="button"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-violet-100 bg-violet-50 px-4 text-xs font-black text-violet-700"
+                  onClick={() => {
+                    // 推荐规则(真实数据):品类匹配优先,其次绩效评分;单一来源取 1 家,其余取前 3。
+                    const ranked = [...suppliers].sort((a, b) => {
+                      const matchA = (a.categories ?? []).some((c) => demandCategories.includes(c)) ? 1 : 0;
+                      const matchB = (b.categories ?? []).some((c) => demandCategories.includes(c)) ? 1 : 0;
+                      if (matchA !== matchB) return matchB - matchA;
+                      return (b.performanceScore ?? 0) - (a.performanceScore ?? 0);
+                    });
+                    const picked = ranked.slice(0, isSingleSource ? 1 : 3);
+                    setSupplierIds(picked.map((sup) => sup.supplierId!).filter(Boolean));
+                    setRecommendNote(
+                      picked.length === 0
+                        ? '暂无已准入供应商可推荐。'
+                        : `已按品类匹配与绩效评分选中:${picked
+                            .map((sup) => {
+                              const matched = (sup.categories ?? []).filter((c) => demandCategories.includes(c));
+                              return `${sup.supplierName}(评分 ${sup.performanceScore ?? '—'}${matched.length ? ` · 品类 ${matched.join('/')}` : ''})`;
+                            })
+                            .join('、')}`,
+                    );
+                  }}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-violet-100 bg-violet-50 px-4 text-xs font-black text-violet-700 hover:bg-violet-100"
                 >
                   <Sparkles size={14} />
-                  AI 推荐供应商
+                  按评分推荐
                 </button>
               </div>
+              {recommendNote && (
+                <div className="rounded-lg border border-violet-100 bg-violet-50/60 px-3 py-2 text-xs font-bold text-violet-700">
+                  {recommendNote}
+                </div>
+              )}
               <div className="max-h-[360px] overflow-y-auto rounded-lg border border-slate-100">
                 {filteredSuppliers.length > 0 ? (
                   filteredSuppliers.map((supplier) => {
