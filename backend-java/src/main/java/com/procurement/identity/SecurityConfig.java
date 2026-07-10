@@ -2,6 +2,7 @@ package com.procurement.identity;
 
 import com.procurement.identity.security.JwtAuthenticationFilter;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,9 +20,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final List<String> corsAllowedOrigins;
 
-  public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+  public SecurityConfig(
+      JwtAuthenticationFilter jwtAuthenticationFilter,
+      @Value("${procurement.security.cors-allowed-origins}") List<String> corsAllowedOrigins) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    this.corsAllowedOrigins = corsAllowedOrigins;
   }
 
   @Bean
@@ -50,15 +55,8 @@ public class SecurityConfig {
   @Bean
   CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(List.of(
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:5175",
-        "http://127.0.0.1:5175",
-        "http://localhost:4173",
-        "http://127.0.0.1:4173"));
+    // 来源白名单由配置注入(CORS_ALLOWED_ORIGINS,逗号分隔);默认值仅覆盖本地三端 dev/preview。
+    configuration.setAllowedOrigins(corsAllowedOrigins);
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("authorization", "content-type"));
     configuration.setExposedHeaders(List.of("authorization"));

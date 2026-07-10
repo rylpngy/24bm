@@ -47,9 +47,15 @@ procurement:
   security:
     jwt-secret: ${JWT_SECRET:change-me-in-non-local-environments}
     jwt-expires-in-seconds: ${JWT_EXPIRES_IN_SECONDS:7200}
+    # 生产置 false:JWT_SECRET 缺失或仍为演示占位时启动即失败(与中标通知书 allow-demo-secret 同模式)。
+    allow-demo-jwt-secret: ${ALLOW_DEMO_JWT_SECRET:true}
     # 自研 JWT 签发(/auth/login)开关:生产以 Keycloak 为唯一签发方时置 false 退役;
     # 默认 true 仅为 CI/测试确定性(令牌验签仍双签发器共存)。
     self-issued-login-enabled: ${SELF_LOGIN_ENABLED:true}
+    # 无 Bearer 时信任 X-Tenant-Id 等请求头的旧原型兼容路径;默认关闭,生产禁止开启。
+    tenant-header-fallback-enabled: ${TENANT_HEADER_FALLBACK_ENABLED:false}
+    # CORS 来源白名单(逗号分隔);默认仅本地三端 dev(5173/5174/5175)与 preview(4173)。
+    cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175,http://localhost:4173,http://127.0.0.1:4173}
   storage:
     minio:
       endpoint: ${MINIO_ENDPOINT:http://localhost:9000}

@@ -12,6 +12,10 @@ Pilot 前的真实接收人、备份恢复演练和生产策略签核记录统�
 |---|---|---|
 | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | 数据库 | 必填 |
 | `JWT_SECRET` | 自研 JWT(开发后备登录) | ≥32 字节,必改(默认 `change-me-in-non-local-environments`) |
+| `ALLOW_DEMO_JWT_SECRET` | 演示 JWT 密钥回退开关 | 生产必须 `false`:`JWT_SECRET` 缺失或仍为占位时启动即失败 |
+| `SELF_LOGIN_ENABLED` | 自研 JWT 签发(`/auth/login`) | 生产必须 `false`,Keycloak 为唯一签发方 |
+| `TENANT_HEADER_FALLBACK_ENABLED` | 无 Bearer 时信任 `X-Tenant-Id` 等请求头(旧原型兼容) | 默认已关闭;生产禁止开启 |
+| `CORS_ALLOWED_ORIGINS` | CORS 来源白名单(逗号分隔) | 生产必填真实前端域名;默认值仅本地 dev 端口 |
 | `KEYCLOAK_JWK_SET_URI` | OIDC 主登录验签 | 指向生产 Keycloak |
 | `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | 对象存储 | 必填 |
 | `AWARD_NOTICE_SIGNATURE_SECRET` | 中标通知书电子签章 HMAC 密钥 | ≥32 字节,必填;生产启动参数建议加 `-Dprocurement.award-notice.allow-demo-secret=false` 禁用演示密钥 |
