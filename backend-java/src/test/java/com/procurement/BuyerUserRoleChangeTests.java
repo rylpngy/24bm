@@ -83,9 +83,12 @@ class BuyerUserRoleChangeTests {
 
     assertThat(response.roleId()).isEqualTo("role-buyer-requester");
     verify(buyerUserMapper).replaceRole("tenant-1", "user-1", "role-buyer-requester");
+    // 角色名查不到时回落到 id;明细体现「从→到」(此处同名,仅验证格式与透出)。
     verify(auditLogApplicationService).recordTenantAction(
+        "tenant-1",
         "buyer_user.role_changed",
         "buyer_user",
-        "user-1");
+        "user-1",
+        "角色: role-buyer-requester → role-buyer-requester");
   }
 }

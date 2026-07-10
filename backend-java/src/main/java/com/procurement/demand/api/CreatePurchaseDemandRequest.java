@@ -5,11 +5,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public record CreatePurchaseDemandRequest(
     @NotBlank String title,
     @NotBlank String departmentId,
     @Positive BigDecimal budget,
-    @Valid @NotEmpty List<PurchaseDemandLineItemRequest> lineItems) {
+    @Valid @NotEmpty List<PurchaseDemandLineItemRequest> lineItems,
+    LocalDate expectedDeliveryDate,
+    String priority,
+    String purpose) {
 }

@@ -47,7 +47,7 @@ class ContractSaveActionTests {
         BigDecimal.valueOf(60000),
         "已生效",
         "履约中",
-        LocalDate.parse("2026-06-21")));
+        LocalDate.parse("2026-06-21"), null, null, null, null));
 
     assertThat(response.contractNo()).isEqualTo("CTR-NEW-1");
     assertThat(response.relatedOrderId()).isEqualTo("po-1");
@@ -62,7 +62,11 @@ class ContractSaveActionTests {
         org.mockito.ArgumentMatchers.eq("已生效"),
         org.mockito.ArgumentMatchers.eq("未归档"),
         org.mockito.ArgumentMatchers.eq("履约中"),
-        org.mockito.ArgumentMatchers.eq(LocalDate.parse("2026-06-21")));
+        org.mockito.ArgumentMatchers.eq(LocalDate.parse("2026-06-21")),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.eq(""),
+        org.mockito.ArgumentMatchers.eq(""));
   }
 
   @Test
@@ -78,7 +82,7 @@ class ContractSaveActionTests {
         BigDecimal.valueOf(60000),
         "已生效",
         "履约中",
-        LocalDate.parse("2026-06-21"))))
+        LocalDate.parse("2026-06-21"), null, null, null, null)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Purchase order not found in tenant scope");
 
@@ -93,7 +97,11 @@ class ContractSaveActionTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.any());
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
   }
 
   @Test
@@ -110,7 +118,7 @@ class ContractSaveActionTests {
             BigDecimal.valueOf(61000),
             "履约完成",
             "已收货验收",
-            LocalDate.parse("2026-06-22"))))
+            LocalDate.parse("2026-06-22"), null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Archived contract can only be audited");
 
@@ -122,7 +130,11 @@ class ContractSaveActionTests {
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.any());
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
   }
 
   private PurchaseOrder order() {
@@ -135,7 +147,7 @@ class ContractSaveActionTests {
         "已收货",
         LocalDate.parse("2026-06-21"),
         OffsetDateTime.parse("2026-06-21T08:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-21T08:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-21T08:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
   }
 
   private ContractLedger contract(String id, String archiveStatus) {
@@ -152,6 +164,6 @@ class ContractSaveActionTests {
         "履约中",
         LocalDate.parse("2026-06-21"),
         OffsetDateTime.parse("2026-06-21T08:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-21T08:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-21T08:00:00+08:00"), java.time.LocalDate.parse("2026-06-01"), java.time.LocalDate.parse("2027-06-01"), "验收后30天内电汇", "质保2年，逾期交付按日0.5%计违约金", null);
   }
 }

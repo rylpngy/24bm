@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Update;
 public interface RfqMapper {
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason
       from rfqs
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -22,7 +22,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason
       from rfqs
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -31,23 +31,41 @@ public interface RfqMapper {
         <if test="keyword != null and keyword != ''">
         and title ilike concat('%', #{keyword}, '%')
         </if>
+        <if test="scopeDepartmentIds != null">
+        and exists (
+          select 1
+          from rfq_demands rd
+          join purchase_demands pd on pd.tenant_id = rd.tenant_id and pd.id = rd.demand_id
+          where rd.tenant_id = rfqs.tenant_id
+            and rd.rfq_id = rfqs.id
+            and pd.department_id in
+            <foreach collection="scopeDepartmentIds" item="departmentId" open="(" separator="," close=")">
+              #{departmentId}
+            </foreach>
+        )
+        </if>
+        <if test="requesterId != null and requesterId != ''">
+        and owner_id = #{requesterId}
+        </if>
       order by created_at desc
       </script>
       """)
   List<Rfq> listByTenantFiltered(
       @Param("tenantId") String tenantId,
       @Param("status") String status,
-      @Param("keyword") String keyword);
+      @Param("keyword") String keyword,
+      @Param("scopeDepartmentIds") List<String> scopeDepartmentIds,
+      @Param("requesterId") String requesterId);
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason
       from rfqs
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Rfq findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where r.id = #{rfqId}
@@ -57,7 +75,7 @@ public interface RfqMapper {
   Rfq findBySupplierInvite(@Param("rfqId") String rfqId, @Param("supplierId") String supplierId);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -68,7 +86,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -88,8 +106,10 @@ public interface RfqMapper {
       @Param("keyword") String keyword);
 
   @Insert("""
-      insert into rfqs (id, tenant_id, title, status, deadline_at, owner_id)
-      values (#{id}, #{tenantId}, #{title}, #{status}, #{deadlineAt}, #{ownerId})
+      insert into rfqs (id, tenant_id, title, status, deadline_at, owner_id,
+                        quote_requirement, delivery_requirement, evaluation_method, method)
+      values (#{id}, #{tenantId}, #{title}, #{status}, #{deadlineAt}, #{ownerId},
+              #{quoteRequirement}, #{deliveryRequirement}, #{evaluationMethod}, #{method})
       """)
   void insert(
       @Param("id") String id,
@@ -97,7 +117,11 @@ public interface RfqMapper {
       @Param("title") String title,
       @Param("status") String status,
       @Param("deadlineAt") OffsetDateTime deadlineAt,
-      @Param("ownerId") String ownerId);
+      @Param("ownerId") String ownerId,
+      @Param("quoteRequirement") String quoteRequirement,
+      @Param("deliveryRequirement") String deliveryRequirement,
+      @Param("evaluationMethod") String evaluationMethod,
+      @Param("method") String method);
 
   @Update("""
       update rfqs
@@ -133,6 +157,9 @@ public interface RfqMapper {
       update rfqs
       set title = #{title},
           deadline_at = #{deadlineAt},
+          quote_requirement = #{quoteRequirement},
+          delivery_requirement = #{deliveryRequirement},
+          evaluation_method = #{evaluationMethod},
           updated_at = now()
       where tenant_id = #{tenantId}
         and id = #{id}
@@ -142,5 +169,61 @@ public interface RfqMapper {
       @Param("tenantId") String tenantId,
       @Param("id") String id,
       @Param("title") String title,
-      @Param("deadlineAt") OffsetDateTime deadlineAt);
+      @Param("deadlineAt") OffsetDateTime deadlineAt,
+      @Param("quoteRequirement") String quoteRequirement,
+      @Param("deliveryRequirement") String deliveryRequirement,
+      @Param("evaluationMethod") String evaluationMethod);
+
+  @Update("""
+      update rfqs
+      set status = #{status},
+          opened_at = now(),
+          opened_by = #{openedBy},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = #{currentStatus}
+      """)
+  int openBids(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("currentStatus") String currentStatus,
+      @Param("status") String status,
+      @Param("openedBy") String openedBy);
+
+  // 再次报价:已开标 → 报价中,轮次+1、重新封存、设新截止(可标记最终轮 BAFO)。
+  @Update("""
+      update rfqs
+      set status = '报价中',
+          current_round = current_round + 1,
+          final_round = #{finalRound},
+          deadline_at = #{deadlineAt},
+          opened_at = null,
+          opened_by = null,
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status = '已开标'
+      """)
+  int startNewRound(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("deadlineAt") OffsetDateTime deadlineAt,
+      @Param("finalRound") boolean finalRound);
+
+  // 终止(流标/废标):置终态 + 记录理由(仅在进行中的状态可终止)。
+  @Update("""
+      update rfqs
+      set status = #{status},
+          close_reason = #{closeReason},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status in ('报价中', '已开标')
+      """)
+  int abort(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("status") String status,
+      @Param("closeReason") String closeReason);
 }

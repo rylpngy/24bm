@@ -71,7 +71,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     org.assertj.core.api.Assertions.assertThat(service.confirmCurrentSupplierOrder("po-1").status())
         .isEqualTo("待发货");
@@ -93,7 +94,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     assertThatThrownBy(() -> service.confirmCurrentSupplierOrder("po-1"))
         .isInstanceOf(IllegalStateException.class)
@@ -116,7 +118,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123", null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("status changed before delivery");
   }
@@ -137,7 +139,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123", null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Purchase order already has a delivery");
 
@@ -148,6 +150,10 @@ class OrderFulfillmentStateTransitionTests {
         anyString(),
         anyString(),
         anyString(),
+        anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
         anyString());
   }
 
@@ -192,7 +198,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
 
@@ -239,7 +246,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     var response = service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
 
@@ -280,7 +288,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     assertThatThrownBy(() -> service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20"))))
         .isInstanceOf(IllegalStateException.class)
@@ -320,7 +329,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     assertThatThrownBy(() -> service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20"))))
         .isInstanceOf(IllegalStateException.class)
@@ -350,7 +360,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     service.listCurrentTenantOrders("待供应商确认", "supplier-1", "rfq-1");
 
@@ -370,7 +381,8 @@ class OrderFulfillmentStateTransitionTests {
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
-        new PurchaseOrderStatusTransition());
+        new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
     service.listCurrentSupplierOrders("待发货", "rfq-1");
 
@@ -387,6 +399,8 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
@@ -434,7 +448,7 @@ class OrderFulfillmentStateTransitionTests {
             "顺丰",
             "SF123",
             "已发货",
-            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货"));
 
     DeliveryApplicationService service = new DeliveryApplicationService(
         purchaseOrderMapper,
@@ -444,7 +458,7 @@ class OrderFulfillmentStateTransitionTests {
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123"));
+    service.create("po-1", new CreateDeliveryRequest("顺丰", "SF123", null, null, null, null));
 
     verify(auditLogApplicationService).recordTenantAction(
         org.mockito.ArgumentMatchers.eq("tenant-1"),
@@ -467,12 +481,14 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("status changed before receipt");
 
@@ -491,17 +507,25 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Shipped delivery not found for receipt");
 
     verify(receiptMapper, never()).insert(
         anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
         anyString(),
         anyString(),
         anyString(),
@@ -522,17 +546,25 @@ class OrderFulfillmentStateTransitionTests {
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过")))
+    assertThatThrownBy(() -> service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Purchase order already has a receipt");
 
     verify(receiptMapper, never()).insert(
         anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(),
         anyString(),
         anyString(),
         anyString(),
@@ -557,23 +589,66 @@ class OrderFulfillmentStateTransitionTests {
             "po-1",
             "user-buyer",
             "验收通过",
-            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 100, 98, "外观完好，抽检合格", null, null, null));
 
     ReceiptApplicationService service = new ReceiptApplicationService(
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
         auditLogApplicationService,
         notificationApplicationService,
         tenantFeatureApplicationService,
         new PurchaseOrderStatusTransition());
 
-    service.create("po-1", new CreateReceiptRequest("验收通过"));
+    service.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null));
 
     verify(auditLogApplicationService).recordTenantAction(
         "purchase_order.received",
         "purchase_order",
         "po-1");
+  }
+
+  @Test
+  void buyerReceiptWithLineItemsPersistsPerLineInspectionFromOrderLines() {
+    TenantContext.set("tenant-1", null, "user-buyer");
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "已发货"));
+    when(deliveryMapper.countByTenantOrderAndStatus("tenant-1", "po-1", "已发货")).thenReturn(1);
+    when(purchaseOrderMapper.updateStatus("tenant-1", "po-1", "已发货", "已收货")).thenReturn(1);
+    when(receiptMapper.findByTenantAndId(
+            org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> new Receipt(invocation.getArgument(1), "tenant-1", "po-1",
+            "user-buyer", "部分合格", OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 0, 0, "", null, null, null));
+
+    var orderLineItemMapper =
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class);
+    var receiptLineItemMapper =
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class);
+    when(orderLineItemMapper.listByOrder("tenant-1", "po-1"))
+        .thenReturn(List.of(new com.procurement.order.domain.OrderLineItem(
+            "oli-1", "tenant-1", "po-1", "网络机柜", "台",
+            BigDecimal.valueOf(4), BigDecimal.valueOf(12000), BigDecimal.valueOf(48000), 0)));
+
+    ReceiptApplicationService service = new ReceiptApplicationService(
+        purchaseOrderMapper, deliveryMapper, receiptMapper,
+        orderLineItemMapper, receiptLineItemMapper,
+        auditLogApplicationService, notificationApplicationService,
+        tenantFeatureApplicationService, new PurchaseOrderStatusTransition());
+
+    service.create("po-1", new CreateReceiptRequest("部分合格", null, null, null,
+        List.of(new com.procurement.order.api.ReceiptLineItemRequest(
+            "oli-1", BigDecimal.valueOf(4), BigDecimal.valueOf(3))), null, null));
+
+    // 冗余订单行项的 品名/单位/订购数量,并记录收货 4 / 合格 3。
+    verify(receiptLineItemMapper).insert(anyString(), org.mockito.ArgumentMatchers.eq("tenant-1"),
+        anyString(), org.mockito.ArgumentMatchers.eq("oli-1"),
+        org.mockito.ArgumentMatchers.eq("网络机柜"), org.mockito.ArgumentMatchers.eq("台"),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(4)),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(4)),
+        org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(3)),
+        org.mockito.ArgumentMatchers.eq(0));
   }
 
   private PurchaseOrder order(String id, String tenantId, String supplierId, String status) {
@@ -586,7 +661,7 @@ class OrderFulfillmentStateTransitionTests {
         status,
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
   }
 
   private Rfq rfq(String id, String tenantId, String status, String awardedSupplierId) {
@@ -599,6 +674,6 @@ class OrderFulfillmentStateTransitionTests {
         "buyer-user",
         awardedSupplierId,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
   }
 }

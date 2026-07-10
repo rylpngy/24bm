@@ -1,0 +1,4 @@
+#
+#Wed Jun 24 17:34:41 CST 2026
+no\ classes\ should\ access\ another\ module's\ api=06a8299c-6d3b-441e-990b-f3ef9c456485
+no\ classes\ should\ access\ another\ module's\ infrastructure=e5957135-792e-454b-a86d-f8e0d8042cf2

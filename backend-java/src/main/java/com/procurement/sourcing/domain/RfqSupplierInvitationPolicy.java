@@ -9,7 +9,7 @@ public final class RfqSupplierInvitationPolicy {
 
   public static void requireValidInviteList(List<String> supplierIds) {
     if (supplierIds == null || supplierIds.isEmpty()) {
-      throw new IllegalArgumentException("RFQ requires at least one invited supplier");
+      return;
     }
     Set<String> seenSupplierIds = new HashSet<>();
     for (String supplierId : supplierIds) {

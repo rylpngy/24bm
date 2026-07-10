@@ -1,34 +1,27 @@
 # Local Java Integration
 
-This guide runs the Spring Boot backend and the Vite frontend together for the Java-backed SaaS workspaces.
+This guide runs the Spring Boot backend and the refactored Vite workspaces together for the Java-backed SaaS.
 
 ## What Is Wired
 
 - Java backend is the official backend direction under `backend-java/`.
-- Frontend Java adapter is `createJavaProcurementApiClient` in `services/procurementApiClient.ts`.
-- The frontend calls `POST /api/v1/auth/login`, caches platform, buyer, and supplier tokens, and sends `Authorization: Bearer <accessToken>` to Java endpoints.
-- The platform workspace loads Java-backed aggregate data from `GET /api/v1/platform/workspace`.
-- The buyer workspace loads Java-backed aggregate data from `GET /api/v1/buyer/workspace`.
-- The supplier workspace loads Java-backed aggregate data from `GET /api/v1/supplier/workspace`.
-- The page still uses mock workspace shells for display-only tenant and layout metadata while Java data overlays the real platform, buyer, and supplier records. The Node backend remains a legacy prototype only and should not receive new backend business features.
-- Frontend Java-only approval copy lives in `data/approvalUi.ts`; it only formats reader-facing labels and status messages. Business status changes must remain owned by Java APIs and refreshed Java data.
+- Frontend API access goes through `@24bid/api-client` in `packages/api-client`.
+- Shared navigation, permissions, formatting, and tokens live in `packages/shared`.
+- Shared UI primitives live in `packages/ui`.
+- The buyer portal lives in `apps/tenant-portal` and starts on port `5173`.
+- The platform admin lives in `apps/platform-admin` and starts on port `5174`.
+- The supplier portal lives in `apps/supplier-portal` and starts on port `5175`.
 
 ## Workspace Boundary Before Java Refactor
 
 Keep these artifacts as the active Java refactor path:
 
 - `backend-java/`: official Spring Boot backend.
-- `services/procurementApiClient.ts`: frontend adapter for Java API calls.
-- `data/approvalUi.ts`: frontend-only display helper for Java approval tasks.
+- `apps/*`: refactored frontend workspaces.
+- `packages/api-client`: generated API client and HTTP mutator.
+- `packages/shared`: shared navigation, permissions, and domain-facing helpers.
+- `packages/ui`: shared UI primitives.
 - `docs/java-backend-architecture.md` and this guide: source of current backend boundary and local verification commands.
-
-Treat these artifacts as temporary or legacy:
-
-- `server/`: Node prototype, useful for field and flow reference only.
-- `scripts/*legacy*` and legacy API scripts: local demo/reference utilities only.
-- `data/procurementModel.ts`: mock frontend data model, not the source of truth for Java domain modeling.
-
-Do not delete legacy files while frontend tests still cover them. Retire them in a later cleanup step after the Java-backed frontend path covers the same visible flows and the test suite has been moved off the Node prototype.
 
 ## Backend: Verify And Start
 
@@ -39,10 +32,10 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 export PATH=/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:$PATH
 mvn test
 docker compose up -d
-npm run java:dev
+pnpm java:dev
 ```
 
-`npm run java:dev` starts Spring Boot from `backend-java/` with the local Flyway locations pinned:
+`pnpm java:dev` starts Spring Boot from `backend-java/` with the local Flyway locations pinned:
 
 ```bash
 SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev'
@@ -70,25 +63,20 @@ The `local` Spring profile uses PostgreSQL at `jdbc:postgresql://localhost:5432/
 In another terminal:
 
 ```bash
-npm run dev:java
+pnpm dev:portal
 ```
 
-Optional demo login overrides:
+In separate terminals, start the other workspaces when needed:
 
 ```bash
-VITE_JAVA_BUYER_ACCOUNT=buyer.owner@example.com \
-VITE_JAVA_BUYER_PASSWORD=demo123456 \
-VITE_JAVA_BUYER_TENANT_ID=tenant-acme \
-VITE_JAVA_PLATFORM_ACCOUNT=platform.admin@example.com \
-VITE_JAVA_PLATFORM_PASSWORD=demo123456 \
-VITE_JAVA_API_BASE_URL=http://localhost:8080 \
-npm run dev
+pnpm dev:admin
+pnpm dev:supplier
 ```
 
-The `dev:java` script sets `VITE_JAVA_API_BASE_URL=http://localhost:8080` for the standard local backend. The raw `npm run dev` command is still available for custom environment overrides; if `VITE_JAVA_API_BASE_URL` is not set, the page surfaces a configuration error instead of silently using mock data. Use explicit mock mode only when you intentionally want the local visual shell without Java:
+Optional backend URL override:
 
 ```bash
-npm run dev:mock
+VITE_JAVA_API_BASE_URL=http://localhost:8080 pnpm dev:portal
 ```
 
 ## CORS For Local Browser Calls
@@ -97,10 +85,10 @@ Spring Security allows local Vite origins for Java API calls:
 
 - `http://localhost:5173`
 - `http://127.0.0.1:5173`
-- `http://localhost:3000`
-- `http://127.0.0.1:3000`
-- `http://localhost:3001`
-- `http://127.0.0.1:3001`
+- `http://localhost:5174`
+- `http://127.0.0.1:5174`
+- `http://localhost:5175`
+- `http://127.0.0.1:5175`
 - `http://localhost:4173`
 - `http://127.0.0.1:4173`
 
@@ -121,7 +109,7 @@ The backend accepts `GET`, `POST`, `PUT`, and `OPTIONS`, including the `Authoriz
 Run the API smoke check after Spring Boot is up:
 
 ```bash
-npm run java:smoke
+pnpm java:smoke
 ```
 
 It logs in as the seeded platform, buyer, and supplier accounts, verifies `GET /api/v1/platform/workspace`, `GET /api/v1/buyer/workspace`, `GET /api/v1/supplier/workspace`, and the key list endpoints return expected Java data, then checks supplier admission submission, approval, and refreshed buyer workspace relation status when a pending admission relation is available. It also creates one RFQ, submits one supplier quote, submits and approves one award decision, creates one purchase order, confirms the order as supplier, submits one delivery, registers one receipt, creates one invoice, runs 三单差异阻断恢复 smoke by perturbing the local smoke invoice amount through PostgreSQL, rebuilding three-way matches, verifying payment request blocking, creating/resolving variance handling, and restoring payment request creation, then runs 付款申请和付款批次 smoke through `POST /api/v1/buyer/payment-requests`, `PUT /api/v1/buyer/payment-requests/{paymentRequestId}/status`, `GET /api/v1/buyer/payment-batches`, `GET /api/v1/buyer/payment-execution-records`, `PUT /api/v1/buyer/payment-batches/{paymentBatchNo}/status`, and `GET /api/v1/buyer/approvals/pending` to verify the `payment_batch` approval task appears and closes, the execution record moves from `待登记付款` to `已登记付款`, then registers payment status. After the payment batch reaches `已付款归档`, the smoke script calls `POST /api/v1/buyer/contracts` and `PUT /api/v1/buyer/contracts/{contractId}` to create and edit a contract ledger row for the dynamic order, then calls `PUT /api/v1/buyer/contracts/{contractId}/archive-status` to verify an already received and paid contract can be archived successfully.
@@ -157,22 +145,22 @@ curl -s http://localhost:8080/api/v1/buyer/users \
 Run the regular local baseline before and after Java backend refactors:
 
 ```bash
-npm run verify
+pnpm verify
 ```
 
 `npm run verify` runs:
 
-- `npm run openapi:check`
-- `npm test`
-- `npm run build`
+- `pnpm openapi:check`
+- `pnpm test`
+- `pnpm build`
 - `mvn clean test` in `backend-java/`
 
 Use the lower-level commands when you need a narrower check:
 
 ```bash
-npm run openapi:check
-npm test
-npm run build
+pnpm openapi:check
+pnpm test
+pnpm build
 ```
 
 Java backend only:

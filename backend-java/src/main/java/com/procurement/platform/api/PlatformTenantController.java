@@ -49,6 +49,11 @@ public class PlatformTenantController {
     return ApiResponse.ok(platformTenantApplicationService.updateTenantPlan(tenantId, request));
   }
 
+  @GetMapping("/{tenantId}/plan-changes")
+  public ApiResponse<List<TenantPlanChangeResponse>> planChanges(@PathVariable String tenantId) {
+    return ApiResponse.ok(platformTenantApplicationService.listPlanChanges(tenantId));
+  }
+
   @PostMapping("/{tenantId}/enable")
   public ApiResponse<TenantResponse> enable(@PathVariable String tenantId) {
     return ApiResponse.ok(platformTenantApplicationService.enableTenant(tenantId));

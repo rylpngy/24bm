@@ -19,10 +19,14 @@ import com.procurement.catalog.api.MaterialController;
 import com.procurement.catalog.api.MaterialResponse;
 import com.procurement.catalog.application.MaterialApplicationService;
 import com.procurement.contract.api.BuyerContractController;
+import com.procurement.contract.api.ContractScheduleController;
 import com.procurement.contract.api.ContractResponse;
 import com.procurement.contract.api.UpdateContractArchiveStatusRequest;
 import com.procurement.contract.api.UpdateContractStatusRequest;
 import com.procurement.contract.application.ContractApplicationService;
+import com.procurement.buyer.api.BuyerAnalyticsController;
+import com.procurement.buyer.api.BuyerBudgetController;
+import com.procurement.buyer.api.DepartmentBudgetResponse;
 import com.procurement.buyer.api.BuyerWorkspaceController;
 import com.procurement.buyer.api.BuyerWorkspaceResponse;
 import com.procurement.buyer.api.BuyerTodoSummaryResponse;
@@ -48,12 +52,14 @@ import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.api.AuthController;
 import com.procurement.identity.api.BuyerRoleController;
 import com.procurement.identity.api.BuyerRoleResponse;
+import com.procurement.identity.api.PermissionPointResponse;
 import com.procurement.identity.api.ChangeBuyerUserRoleRequest;
 import com.procurement.identity.api.ChangeBuyerUserStatusRequest;
 import com.procurement.identity.api.ResetBuyerUserPasswordRequest;
 import com.procurement.identity.api.BuyerUserController;
 import com.procurement.identity.api.BuyerUserResponse;
 import com.procurement.identity.application.AuthenticationApplicationService;
+import com.procurement.identity.api.MyPermissionsResponse;
 import com.procurement.identity.application.BuyerRoleApplicationService;
 import com.procurement.identity.application.BuyerUserApplicationService;
 import com.procurement.identity.domain.AuthenticatedUser;
@@ -82,6 +88,7 @@ import com.procurement.finance.application.FinanceActionApplicationService;
 import com.procurement.finance.application.InvoiceApplicationService;
 import com.procurement.finance.application.PaymentApplicationService;
 import com.procurement.finance.api.UpdateSupplierReceivableRequest;
+import com.procurement.notification.api.BuyerNotificationChannelController;
 import com.procurement.notification.api.BuyerNotificationController;
 import com.procurement.notification.api.NotificationResponse;
 import com.procurement.notification.api.SupplierNotificationController;
@@ -89,6 +96,8 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.organization.api.DepartmentController;
 import com.procurement.organization.api.DepartmentResponse;
 import com.procurement.organization.application.DepartmentApplicationService;
+import com.procurement.order.api.BuyerDeliveryController;
+import com.procurement.workflow.api.FlowableDemandApprovalController;
 import com.procurement.order.api.BuyerReceiptController;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.CreateReceiptRequest;
@@ -115,6 +124,7 @@ import com.procurement.platform.api.PlatformEnterpriseController;
 import com.procurement.platform.api.PlatformOperationSummaryResponse;
 import com.procurement.platform.api.PlatformOverviewController;
 import com.procurement.platform.api.PlatformOverviewResponse;
+import com.procurement.platform.api.PlatformBillingController;
 import com.procurement.platform.api.PlatformTenantController;
 import com.procurement.platform.api.PlatformWorkspaceController;
 import com.procurement.platform.api.SupplierAnnouncementController;
@@ -132,6 +142,9 @@ import com.procurement.sourcing.api.AwardDecisionResponse;
 import com.procurement.sourcing.api.AwardRfqRequest;
 import com.procurement.sourcing.api.RfqAwardController;
 import com.procurement.sourcing.api.SubmitQuoteRequest;
+import com.procurement.sourcing.api.AnswerClarificationRequest;
+import com.procurement.sourcing.api.AskClarificationRequest;
+import com.procurement.sourcing.api.RfqClarificationResponse;
 import com.procurement.sourcing.api.RfqController;
 import com.procurement.sourcing.api.RfqResponse;
 import com.procurement.sourcing.api.SupplierQuoteListController;
@@ -141,6 +154,12 @@ import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.api.UpdateQuoteRequest;
 import com.procurement.supplier.api.BuyerSupplierController;
+import com.procurement.supplier.api.BuyerSupplierDiscoveryController;
+import com.procurement.supplier.api.BuyerSupplierInvitationController;
+import com.procurement.supplier.api.DiscoverableSupplierResponse;
+import com.procurement.supplier.api.SupplierInvitationResponse;
+import com.procurement.supplier.api.SupplierEvaluationController;
+import com.procurement.supplier.api.SupplierFulfillmentController;
 import com.procurement.supplier.api.BuyerSupplierResponse;
 import com.procurement.supplier.api.ChangeBuyerSupplierProfileRequest;
 import com.procurement.supplier.api.ChangeBuyerSupplierPerformanceRequest;
@@ -162,6 +181,7 @@ import com.procurement.supplier.api.SupplierWorkspaceController;
 import com.procurement.supplier.api.SupplierWorkspaceResponse;
 import com.procurement.supplier.api.SupplierTodoSummaryResponse;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
+import com.procurement.supplier.application.SupplierEvaluationApplicationService;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
 import com.procurement.supplier.application.SupplierQualificationApplicationService;
 import com.procurement.supplier.application.SupplierUserApplicationService;
@@ -193,10 +213,15 @@ import org.springframework.test.web.servlet.MvcResult;
     PlatformAnnouncementController.class,
     BuyerAnnouncementController.class,
     PlatformTenantController.class,
+    PlatformBillingController.class,
     PlatformEnterpriseController.class,
     PlatformWorkspaceController.class,
     SupplierAnnouncementController.class,
     BuyerSupplierController.class,
+    BuyerSupplierDiscoveryController.class,
+    BuyerSupplierInvitationController.class,
+    SupplierEvaluationController.class,
+    SupplierFulfillmentController.class,
     MaterialController.class,
     BuyerRoleController.class,
     BuyerUserController.class,
@@ -207,9 +232,12 @@ import org.springframework.test.web.servlet.MvcResult;
     RfqAwardController.class,
     PurchaseOrderController.class,
     BuyerContractController.class,
+    ContractScheduleController.class,
     SupplierOrderController.class,
     BuyerReceiptController.class,
     SupplierDeliveryController.class,
+    BuyerDeliveryController.class,
+    FlowableDemandApprovalController.class,
     BuyerInvoiceReconciliationController.class,
     SupplierInvoiceReconciliationController.class,
     BuyerFinanceActionController.class,
@@ -218,16 +246,22 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierReceivableController.class,
     AuditLogController.class,
     BuyerWorkspaceController.class,
+    BuyerAnalyticsController.class,
+    BuyerBudgetController.class,
     SupplierWorkspaceController.class,
     AttachmentController.class,
     BuyerNotificationController.class,
+    BuyerNotificationChannelController.class,
     SupplierNotificationController.class,
-    DepartmentController.class
+    DepartmentController.class,
+    com.procurement.process.api.ProcessDefinitionController.class,
+    com.procurement.process.api.ProcessInstanceController.class
 })
 @Import({
     SecurityConfig.class,
     JwtAuthenticationFilter.class,
     JwtTokenService.class,
+    com.procurement.identity.security.KeycloakTokenService.class,
     AuthenticationApplicationService.class
 })
 @TestPropertySource(properties = {
@@ -240,6 +274,9 @@ class HttpSecurityContractTests {
 
   @Autowired
   private MockMvc mockMvc;
+
+  @MockBean
+  private com.procurement.workflow.application.FlowableDemandApprovalService flowableDemandApprovalService;
 
   @MockBean
   private PurchaseDemandApplicationService purchaseDemandApplicationService;
@@ -260,6 +297,18 @@ class HttpSecurityContractTests {
   private RfqApplicationService rfqApplicationService;
 
   @MockBean
+  private com.procurement.sourcing.application.RfqClarificationApplicationService rfqClarificationApplicationService;
+
+  @MockBean
+  private com.procurement.sourcing.application.RfqResultApplicationService rfqResultApplicationService;
+
+  @MockBean
+  private com.procurement.sourcing.application.RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService;
+
+  @MockBean
+  private com.procurement.sourcing.application.AwardNoticeApplicationService awardNoticeApplicationService;
+
+  @MockBean
   private AwardApplicationService awardApplicationService;
 
   @MockBean
@@ -267,6 +316,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private ContractApplicationService contractApplicationService;
+
+  @MockBean
+  private com.procurement.contract.application.ContractScheduleService contractScheduleService;
 
   @MockBean
   private ReceiptApplicationService receiptApplicationService;
@@ -287,6 +339,9 @@ class HttpSecurityContractTests {
   private PlatformTenantApplicationService platformTenantApplicationService;
 
   @MockBean
+  private com.procurement.platform.application.BillingApplicationService billingApplicationService;
+
+  @MockBean
   private PlatformAnnouncementApplicationService platformAnnouncementApplicationService;
 
   @MockBean
@@ -300,6 +355,18 @@ class HttpSecurityContractTests {
 
   @MockBean
   private BuyerSupplierApplicationService buyerSupplierApplicationService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierDiscoveryApplicationService supplierDiscoveryApplicationService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierInvitationApplicationService supplierInvitationApplicationService;
+
+  @MockBean
+  private SupplierEvaluationApplicationService supplierEvaluationApplicationService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierFulfillmentMetricsService supplierFulfillmentMetricsService;
 
   @MockBean
   private SupplierProfileApplicationService supplierProfileApplicationService;
@@ -320,10 +387,25 @@ class HttpSecurityContractTests {
   private BuyerUserApplicationService buyerUserApplicationService;
 
   @MockBean
+  private com.procurement.identity.application.BuyerUserImportApplicationService buyerUserImportApplicationService;
+
+  @MockBean
+  private com.procurement.process.application.ProcessDefinitionApplicationService processDefinitionApplicationService;
+
+  @MockBean
+  private com.procurement.process.application.ProcessInstanceApplicationService processInstanceApplicationService;
+
+  @MockBean
   private AuditLogApplicationService auditLogApplicationService;
 
   @MockBean
   private BuyerWorkspaceApplicationService buyerWorkspaceApplicationService;
+
+  @MockBean
+  private com.procurement.buyer.application.BuyerAnalyticsApplicationService buyerAnalyticsApplicationService;
+
+  @MockBean
+  private com.procurement.buyer.application.BudgetApplicationService budgetApplicationService;
 
   @MockBean
   private SupplierWorkspaceApplicationService supplierWorkspaceApplicationService;
@@ -333,6 +415,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private NotificationApplicationService notificationApplicationService;
+
+  @MockBean
+  private com.procurement.notification.application.NotificationChannelService notificationChannelService;
 
   @MockBean
   private DepartmentApplicationService departmentApplicationService;
@@ -384,25 +469,25 @@ class HttpSecurityContractTests {
   }
 
   @Test
-  void vitePort3000PreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
+  void platformAdminPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
     mockMvc.perform(options("/api/v1/buyer/suppliers")
-            .header("Origin", "http://localhost:3000")
+            .header("Origin", "http://localhost:5174")
             .header("Access-Control-Request-Method", "GET")
             .header("Access-Control-Request-Headers", "authorization"))
         .andExpect(status().isOk())
-        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5174"))
         .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
         .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
   }
 
   @Test
-  void vitePort3001PreflightCanUseAuthorizationHeaderForJavaVisualChecks() throws Exception {
+  void supplierPortalPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
     mockMvc.perform(options("/api/v1/buyer/workspace")
-            .header("Origin", "http://127.0.0.1:3001")
+            .header("Origin", "http://127.0.0.1:5175")
             .header("Access-Control-Request-Method", "GET")
             .header("Access-Control-Request-Headers", "authorization"))
         .andExpect(status().isOk())
-        .andExpect(header().string("Access-Control-Allow-Origin", "http://127.0.0.1:3001"))
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://127.0.0.1:5175"))
         .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
         .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
   }
@@ -410,11 +495,11 @@ class HttpSecurityContractTests {
   @Test
   void vitePreflightCanUsePutForJavaStatusActions() throws Exception {
     mockMvc.perform(options("/api/v1/buyer/payment-block-resolutions/resolution-demo/status")
-            .header("Origin", "http://localhost:3000")
+            .header("Origin", "http://localhost:5173")
             .header("Access-Control-Request-Method", "PUT")
             .header("Access-Control-Request-Headers", "authorization,content-type"))
         .andExpect(status().isOk())
-        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
         .andExpect(header().string("Access-Control-Allow-Methods", org.hamcrest.Matchers.containsString("PUT")))
         .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
   }
@@ -461,7 +546,12 @@ class HttpSecurityContractTests {
             "已通过",
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-            List.of())));
+            List.of(),
+            java.time.LocalDate.parse("2026-07-15"),
+            "常规",
+            "采购用途说明",
+            null,
+            null)));
     String buyerToken = loginAndExtractToken("""
         {
           "account": "buyer",
@@ -513,6 +603,332 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].title").value("办公电脑 RFQ"));
+  }
+
+  @Test
+  void buyerCanManageProcessDefinitionsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account": "supplier", "password": "demo123456", "scope": "SUPPLIER", "supplierId": "ent-supplier-sunrise"}
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {"account": "buyer", "password": "demo123456", "scope": "BUYER", "tenantId": "tenant-acme"}
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/process-definitions")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(processDefinitionApplicationService.listCurrentTenantProcesses())
+        .thenReturn(List.of(new com.procurement.process.api.ProcessDefinitionResponse(
+            "proc-1", "采购立项审批", "适用于非生产性物资采购申请", "box", "enabled",
+            "{\"fields\":[]}", "{\"steps\":[]}",
+            OffsetDateTime.parse("2026-06-29T10:00:00+08:00"))));
+    mockMvc.perform(get("/api/v1/buyer/process-definitions")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].name").value("采购立项审批"))
+        .andExpect(jsonPath("$.data[0].status").value("enabled"));
+
+    when(processDefinitionApplicationService.updateProcess(
+        org.mockito.ArgumentMatchers.eq("proc-1"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.process.api.ProcessDefinitionResponse(
+            "proc-1", "采购立项审批", "x", "box", "enabled",
+            "{\"fields\":[]}", "{\"steps\":[]}",
+            OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
+    mockMvc.perform(put("/api/v1/buyer/process-definitions/proc-1")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"name": "采购立项审批", "description": "x", "status": "enabled",
+                 "formSchema": "{\\"fields\\":[]}", "flowSchema": "{\\"steps\\":[]}"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("enabled"));
+
+    // 流程实例:发起 / 审批。供应商越权 403;采购方 200。
+    mockMvc.perform(post("/api/v1/buyer/process-instances")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"processId": "proc-1", "formData": "{}", "amount": 8000}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(processInstanceApplicationService.start(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.process.api.ProcessInstanceResponse(
+            "pi-1", "proc-1", "采购立项审批", new java.math.BigDecimal("8000"), "processing", 0,
+            "[]", "{}", "user-buyer-owner", OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
+    mockMvc.perform(post("/api/v1/buyer/process-instances")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"processId": "proc-1", "formData": "{}", "amount": 8000}
+                """))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.status").value("processing"));
+
+    when(processInstanceApplicationService.review(
+        org.mockito.ArgumentMatchers.eq("pi-1"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.process.api.ProcessInstanceResponse(
+            "pi-1", "proc-1", "采购立项审批", new java.math.BigDecimal("8000"), "approved", 0,
+            "[]", "{}", "user-buyer-owner", OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
+    mockMvc.perform(post("/api/v1/buyer/process-instances/pi-1/review")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"decision": "approve", "comment": "同意"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("approved"));
+  }
+
+  @Test
+  void buyerCanEvaluateRfqBidsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/rfqs/rfq-demo/evaluation")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(rfqApplicationService.evaluateRfq("rfq-demo", 70, 30))
+        .thenReturn(new com.procurement.sourcing.api.BidEvaluationResponse(
+            "rfq-demo", 70, 30, "quote-a", "ent-supplier-sunrise",
+            List.of(new com.procurement.sourcing.api.BidEvaluationRowResponse(
+                "quote-a", "ent-supplier-sunrise",
+                java.math.BigDecimal.valueOf(118000), 7, java.math.BigDecimal.valueOf(13),
+                java.math.BigDecimal.valueOf(100), java.math.BigDecimal.valueOf(100),
+                java.math.BigDecimal.valueOf(100), 1, true))));
+
+    mockMvc.perform(get("/api/v1/buyer/rfqs/rfq-demo/evaluation")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.recommendedQuoteId").value("quote-a"))
+        .andExpect(jsonPath("$.data.rows[0].rank").value(1))
+        .andExpect(jsonPath("$.data.rows[0].recommended").value(true));
+  }
+
+  @Test
+  void buyerCanOpenRfqBidsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/open")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"force\": true}"))
+        .andExpect(status().isForbidden());
+
+    when(rfqApplicationService.openBids("rfq-demo", true))
+        .thenReturn(new RfqResponse(
+            "rfq-demo", "tenant-acme", "办公电脑询价", "已开标",
+            OffsetDateTime.parse("2026-06-20T18:00:00+08:00"),
+            "user-buyer-owner", null,
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-21T09:00:00+08:00"),
+            List.of(), List.of()));
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/open")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"force\": true}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("已开标"));
+  }
+
+  @Test
+  void buyerCanStartNewRfqRoundButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    String body = "{\"deadlineAt\": \"2026-07-10T18:00:00+08:00\", \"finalRound\": true}";
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/new-round")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isForbidden());
+
+    when(rfqApplicationService.startNewRound(
+        org.mockito.ArgumentMatchers.eq("rfq-demo"),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.eq(true),
+        org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new RfqResponse(
+            "rfq-demo", "tenant-acme", "办公电脑询价", "报价中",
+            OffsetDateTime.parse("2026-07-10T18:00:00+08:00"),
+            "user-buyer-owner", null,
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-21T09:00:00+08:00"),
+            List.of(), List.of(), List.of(), "", "", "最低价", null, 2, true, "询价", null));
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/new-round")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("报价中"))
+        .andExpect(jsonPath("$.data.currentRound").value(2))
+        .andExpect(jsonPath("$.data.finalRound").value(true));
+  }
+
+  @Test
+  void buyerCanAbortRfqButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    String body = "{\"kind\": \"流标\", \"reason\": \"不足法定家数\"}";
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/abort")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isForbidden());
+
+    when(rfqApplicationService.abortRfq(
+        org.mockito.ArgumentMatchers.eq("rfq-demo"),
+        org.mockito.ArgumentMatchers.eq("流标"),
+        org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new RfqResponse(
+            "rfq-demo", "tenant-acme", "办公电脑询价", "已流标",
+            OffsetDateTime.parse("2026-06-20T18:00:00+08:00"),
+            "user-buyer-owner", null,
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-21T09:00:00+08:00"),
+            List.of(), List.of(), List.of(), "", "", "最低价", null, 1, false, "询价", "不足法定家数"));
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/abort")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("已流标"))
+        .andExpect(jsonPath("$.data.closeReason").value("不足法定家数"));
+  }
+
+  @Test
+  void buyerAndSupplierCanUseRfqClarificationsWithinTheirScope() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    RfqClarificationResponse asked = new RfqClarificationResponse(
+        "clar-1", "rfq-demo", "ent-supplier-sunrise", "是否接受分批交货?",
+        null, false, false,
+        OffsetDateTime.parse("2026-06-18T10:00:00+08:00"), null);
+
+    // 供应商提问:采购方禁止走供应商提问端点。
+    mockMvc.perform(post("/api/v1/supplier/rfqs/rfq-demo/clarifications")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"question\": \"是否接受分批交货?\"}"))
+        .andExpect(status().isForbidden());
+
+    when(rfqClarificationApplicationService.ask(
+        org.mockito.ArgumentMatchers.eq("rfq-demo"),
+        org.mockito.ArgumentMatchers.any(AskClarificationRequest.class)))
+        .thenReturn(asked);
+
+    mockMvc.perform(post("/api/v1/supplier/rfqs/rfq-demo/clarifications")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"question\": \"是否接受分批交货?\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.question").value("是否接受分批交货?"));
+
+    // 采购方答复:供应商禁止走采购方答复端点。
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/clarifications/clar-1/answer")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"answer\": \"接受分批\", \"published\": true}"))
+        .andExpect(status().isForbidden());
+
+    when(rfqClarificationApplicationService.answer(
+        org.mockito.ArgumentMatchers.eq("rfq-demo"),
+        org.mockito.ArgumentMatchers.eq("clar-1"),
+        org.mockito.ArgumentMatchers.any(AnswerClarificationRequest.class)))
+        .thenReturn(new RfqClarificationResponse(
+            "clar-1", "rfq-demo", "ent-supplier-sunrise", "是否接受分批交货?",
+            "接受分批", true, true,
+            OffsetDateTime.parse("2026-06-18T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-18T15:00:00+08:00")));
+
+    mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/clarifications/clar-1/answer")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"answer\": \"接受分批\", \"published\": true}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.answered").value(true))
+        .andExpect(jsonPath("$.data.published").value(true));
   }
 
   @Test
@@ -707,6 +1123,7 @@ class HttpSecurityContractTests {
             "purchase_order.created",
             "purchase_order",
             "po-demo",
+            null,
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
 
     mockMvc.perform(get("/api/v1/buyer/audit-logs")
@@ -755,6 +1172,7 @@ class HttpSecurityContractTests {
                 "contract_fulfillment_event.created",
                 "contract",
                 "contract-demo",
+                null,
                 OffsetDateTime.parse("2026-06-21T12:00:00+08:00"))));
 
     mockMvc.perform(get("/api/v1/buyer/audit-logs/target")
@@ -942,6 +1360,331 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.id").value("dept-old"))
         .andExpect(jsonPath("$.data.status").value("inactive"));
+
+    // 编辑部门:供应商越权 403;采购方 200,透出负责人/成员数等组织架构字段。
+    mockMvc.perform(put("/api/v1/buyer/departments/dept-it")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"name": "信息化部", "description": "负责信息系统建设与运维"}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(departmentApplicationService.updateDepartment(
+        org.mockito.ArgumentMatchers.eq("dept-it"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new DepartmentResponse(
+            "dept-it", "tenant-acme", "信息化部", "dept-hq", "active",
+            "负责信息系统建设与运维", "user-buyer-zhang", "张申请", 1,
+            java.time.LocalDate.parse("2017-06-15")));
+
+    mockMvc.perform(put("/api/v1/buyer/departments/dept-it")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"name": "信息化部", "description": "负责信息系统建设与运维"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.managerName").value("张申请"))
+        .andExpect(jsonPath("$.data.memberCount").value(1));
+  }
+
+  @Test
+  void buyerCanManageRolePermissionsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/roles/permission-catalog")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(buyerRoleApplicationService.permissionCatalog()).thenReturn(List.of(
+        new PermissionPointResponse("buyer:role:manage", "管理角色与权限", "管理"),
+        new PermissionPointResponse("buyer:report:export", "导出报表", "报表")));
+
+    mockMvc.perform(get("/api/v1/buyer/roles/permission-catalog")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].point").value("buyer:role:manage"))
+        .andExpect(jsonPath("$.data[1].label").value("导出报表"));
+
+    mockMvc.perform(post("/api/v1/buyer/roles/role-fin/permissions")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"permissions": ["buyer:report:export"]}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(buyerRoleApplicationService.updateRolePermissions(
+        org.mockito.ArgumentMatchers.eq("role-fin"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new BuyerRoleResponse(
+            "role-fin", "tenant-acme", "财务", List.of("buyer:report:export"), "all"));
+
+    mockMvc.perform(post("/api/v1/buyer/roles/role-fin/permissions")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"permissions": ["buyer:report:export"]}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("role-fin"))
+        .andExpect(jsonPath("$.data.permissions[0]").value("buyer:report:export"));
+
+    // 有效权限点端点:供应商越权 403;采购方返回展平后的权限点(供前端门禁)。
+    mockMvc.perform(get("/api/v1/buyer/roles/my-permissions")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(buyerRoleApplicationService.myPermissions())
+        .thenReturn(new MyPermissionsResponse(List.of("buyer:demand:read", "buyer:demand:create")));
+
+    mockMvc.perform(get("/api/v1/buyer/roles/my-permissions")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.permissions[0]").value("buyer:demand:read"));
+
+    // 数据范围(行级权限)端点:供应商越权 403;采购方 200,透出 dataScope。
+    mockMvc.perform(post("/api/v1/buyer/roles/role-req/data-scope")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"dataScope": "department"}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(buyerRoleApplicationService.updateRoleDataScope(
+        org.mockito.ArgumentMatchers.eq("role-req"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new BuyerRoleResponse(
+            "role-req", "tenant-acme", "申请员", List.of("buyer:demand:read"), "department"));
+
+    mockMvc.perform(post("/api/v1/buyer/roles/role-req/data-scope")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"dataScope": "department"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.dataScope").value("department"));
+  }
+
+  @Test
+  void buyerCanManageSupplierInvitationsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/supplier-invitations")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(supplierInvitationApplicationService.listInvitations()).thenReturn(List.of(
+        new SupplierInvitationResponse(
+            "inv-demo",
+            "ent-supplier-newapply",
+            "远景智能装备有限公司",
+            "zhang@yuanjing.com",
+            "智能制造",
+            "邀请补资料",
+            "待回复",
+            true,
+            OffsetDateTime.parse("2026-06-20T10:00:00+08:00"),
+            null)));
+
+    mockMvc.perform(get("/api/v1/buyer/supplier-invitations")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data[0].supplierName").value("远景智能装备有限公司"))
+        .andExpect(jsonPath("$.data[0].status").value("待回复"))
+        .andExpect(jsonPath("$.data[0].linkedToKnownSupplier").value(true));
+
+    mockMvc.perform(post("/api/v1/buyer/supplier-invitations")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"supplierName": "蓝海办公"}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(supplierInvitationApplicationService.respond(
+        org.mockito.ArgumentMatchers.eq("inv-demo"),
+        org.mockito.ArgumentMatchers.any())).thenReturn(new SupplierInvitationResponse(
+            "inv-demo",
+            "ent-supplier-newapply",
+            "远景智能装备有限公司",
+            "zhang@yuanjing.com",
+            "智能制造",
+            "邀请补资料",
+            "已接受",
+            true,
+            OffsetDateTime.parse("2026-06-20T10:00:00+08:00"),
+            OffsetDateTime.parse("2026-06-21T10:00:00+08:00")));
+
+    mockMvc.perform(post("/api/v1/buyer/supplier-invitations/inv-demo/respond")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"action": "accept"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("已接受"))
+        .andExpect(jsonPath("$.data.respondedAt").value("2026-06-21T10:00:00+08:00"));
+  }
+
+  @Test
+  void buyerCanDiscoverPlatformSuppliersButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/suppliers/discover")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(supplierDiscoveryApplicationService.discover(org.mockito.ArgumentMatchers.eq("智能")))
+        .thenReturn(List.of(new DiscoverableSupplierResponse(
+            "ent-supplier-newapply",
+            "远景智能装备有限公司",
+            "智能制造",
+            "91310000MA1KNEWAPP",
+            "pending",
+            "submitted")));
+
+    mockMvc.perform(get("/api/v1/buyer/suppliers/discover")
+            .queryParam("keyword", "智能")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data[0].supplierId").value("ent-supplier-newapply"))
+        .andExpect(jsonPath("$.data[0].name").value("远景智能装备有限公司"))
+        .andExpect(jsonPath("$.data[0].industry").value("智能制造"))
+        .andExpect(jsonPath("$.data[0].profileStatus").value("submitted"));
+  }
+
+  @Test
+  void buyerCanListAndUpsertDepartmentBudgetsButSupplierCannot() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {
+          "account": "supplier",
+          "password": "demo123456",
+          "scope": "SUPPLIER",
+          "supplierId": "ent-supplier-sunrise"
+        }
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {
+          "account": "buyer",
+          "password": "demo123456",
+          "scope": "BUYER",
+          "tenantId": "tenant-acme"
+        }
+        """);
+
+    mockMvc.perform(get("/api/v1/buyer/budgets")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+
+    when(budgetApplicationService.listBudgets()).thenReturn(List.of(
+        new DepartmentBudgetResponse(
+            "budget-it-2026",
+            "dept-it",
+            "信息化部",
+            "2026",
+            BigDecimal.valueOf(480000),
+            BigDecimal.valueOf(458000),
+            BigDecimal.valueOf(36000),
+            BigDecimal.valueOf(-14000),
+            103,
+            true, new java.math.BigDecimal("0"))));
+
+    mockMvc.perform(get("/api/v1/buyer/budgets")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data[0].departmentId").value("dept-it"))
+        .andExpect(jsonPath("$.data[0].occupancyPercent").value(103))
+        .andExpect(jsonPath("$.data[0].overBudget").value(true));
+
+    mockMvc.perform(post("/api/v1/buyer/budgets")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "departmentId": "dept-finance",
+                  "period": "2026",
+                  "totalAmount": 200000
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    when(budgetApplicationService.upsertBudget(org.mockito.ArgumentMatchers.any())).thenReturn(
+        new DepartmentBudgetResponse(
+            "budget-fin-2026",
+            "dept-finance",
+            "财务部",
+            "2026",
+            BigDecimal.valueOf(200000),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.valueOf(200000),
+            0,
+            false, new java.math.BigDecimal("0")));
+
+    mockMvc.perform(post("/api/v1/buyer/budgets")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "departmentId": "dept-finance",
+                  "period": "2026",
+                  "totalAmount": 200000
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.departmentId").value("dept-finance"))
+        .andExpect(jsonPath("$.data.remaining").value(200000))
+        .andExpect(jsonPath("$.data.overBudget").value(false));
   }
 
   @Test
@@ -1152,7 +1895,8 @@ class HttpSecurityContractTests {
             BigDecimal.valueOf(13),
             7,
             "已提交",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
+            List.of()));
     when(supplierProfileApplicationService.getCurrentSupplierProfile())
         .thenReturn(new SupplierProfileResponse(
             "ent-supplier-sunrise",
@@ -1318,7 +2062,8 @@ class HttpSecurityContractTests {
             BigDecimal.valueOf(13),
             7,
             "已提交",
-            OffsetDateTime.parse("2026-06-15T13:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T13:00:00+08:00"),
+            List.of())));
     when(quoteApplicationService.update(
         org.mockito.ArgumentMatchers.eq("quote-demo"),
         org.mockito.ArgumentMatchers.any(UpdateQuoteRequest.class)))
@@ -1331,7 +2076,8 @@ class HttpSecurityContractTests {
             BigDecimal.valueOf(13),
             6,
             "已提交",
-            OffsetDateTime.parse("2026-06-15T13:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T13:00:00+08:00"),
+            List.of()));
     when(purchaseOrderApplicationService.listCurrentSupplierOrders(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull()))
@@ -1348,7 +2094,8 @@ class HttpSecurityContractTests {
             "待发货",
             LocalDate.parse("2026-07-10"),
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-            OffsetDateTime.parse("2026-06-15T12:05:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款",
+            java.util.List.of())));
     when(purchaseOrderApplicationService.confirmCurrentSupplierOrder("po-demo"))
         .thenReturn(new PurchaseOrderResponse(
             "po-demo",
@@ -1359,7 +2106,8 @@ class HttpSecurityContractTests {
             "待发货",
             LocalDate.parse("2026-07-10"),
             OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-            OffsetDateTime.parse("2026-06-15T12:05:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款",
+            java.util.List.of()));
     when(invoiceApplicationService.listCurrentSupplierInvoices(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull()))
@@ -1387,7 +2135,8 @@ class HttpSecurityContractTests {
             "待付款",
             "登记付款",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
-            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格",
+            java.util.List.of())));
     when(invoiceApplicationService.listCurrentSupplierReconciliations(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull()))
@@ -1404,6 +2153,7 @@ class HttpSecurityContractTests {
             "invoice.paid",
             "invoice",
             "invoice-demo",
+            null,
             OffsetDateTime.parse("2026-06-15T15:00:00+08:00"))));
     when(invoiceApplicationService.updateReceivable(
         org.mockito.ArgumentMatchers.eq("invoice-demo"),
@@ -1428,7 +2178,8 @@ class HttpSecurityContractTests {
             "待付款",
             "登记付款",
             OffsetDateTime.parse("2026-06-15T14:00:00+08:00"),
-            OffsetDateTime.parse("2026-06-15T14:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T14:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格",
+            java.util.List.of()));
 
     mockMvc.perform(post("/api/v1/supplier/rfqs/rfq-demo/quotes")
             .header("Authorization", "Bearer " + supplierToken)
@@ -2345,6 +3096,45 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.reviewComment").value("资料齐全，准入通过。"))
         .andExpect(jsonPath("$.data.profileConfirmed").value(true))
         .andExpect(jsonPath("$.data.riskConfirmed").value(true));
+
+    // 多步审核工作流:推进端点 + 时间线端点。采购方越权 403;平台 200。
+    mockMvc.perform(post("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise/advance")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"action": "preliminary_pass"}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(platformEnterpriseApplicationService.advanceReview(
+        org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
+        org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new EnterpriseReviewResponse(
+            "ent-supplier-sunrise", "晨光供应商", "supplier", false, "preliminary", null, false, false));
+
+    mockMvc.perform(post("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise/advance")
+            .header("Authorization", "Bearer " + platformToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"action": "preliminary_pass"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.reviewStatus").value("preliminary"));
+
+    mockMvc.perform(get("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise/events")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+
+    when(platformEnterpriseApplicationService.listReviewEvents("ent-supplier-sunrise"))
+        .thenReturn(List.of(new com.procurement.platform.api.EnterpriseReviewEventResponse(
+            "erv-1", "preliminary_pass", "pending", "待初审", "preliminary", "初审通过",
+            null, "user-platform-admin", java.time.OffsetDateTime.parse("2026-06-29T10:00:00+08:00"))));
+
+    mockMvc.perform(get("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise/events")
+            .header("Authorization", "Bearer " + platformToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].action").value("preliminary_pass"))
+        .andExpect(jsonPath("$.data[0].toStatusLabel").value("初审通过"));
   }
 
   @Test
@@ -2584,7 +3374,7 @@ class HttpSecurityContractTests {
         "已准入",
         "A",
         List.of("办公设备"),
-        BigDecimal.valueOf(92.50))));
+        BigDecimal.valueOf(92.50), "合格", null, "91310000MA1FL00001", "王法人", "李采购", "13900000000", "sales@demo.com", "电子元器件批发；五金交电销售", "招商银行上海分行", "6225880000000001")));
 
     mockMvc.perform(get("/api/v1/buyer/suppliers")
             .header("Authorization", "Bearer " + buyerToken))
@@ -2605,7 +3395,7 @@ class HttpSecurityContractTests {
             "已准入",
             "A",
             List.of("办公设备"),
-            BigDecimal.valueOf(92.50))));
+            BigDecimal.valueOf(92.50), "合格", null, "91310000MA1FL00001", "王法人", "李采购", "13900000000", "sales@demo.com", "电子元器件批发；五金交电销售", "招商银行上海分行", "6225880000000001")));
 
     mockMvc.perform(get("/api/v1/buyer/suppliers")
             .queryParam("status", "已准入")
@@ -2626,7 +3416,7 @@ class HttpSecurityContractTests {
             "待准入",
             "B",
             List.of("服务"),
-            BigDecimal.ZERO));
+            BigDecimal.ZERO, "合格", null, "91310000MA1FL00001", "王法人", "李采购", "13900000000", "sales@demo.com", "电子元器件批发；五金交电销售", "招商银行上海分行", "6225880000000001"));
 
     mockMvc.perform(post("/api/v1/buyer/suppliers")
             .header("Authorization", "Bearer " + buyerToken)
@@ -2739,7 +3529,7 @@ class HttpSecurityContractTests {
             "黑名单",
             "B",
             List.of("服务"),
-            BigDecimal.ZERO));
+            BigDecimal.ZERO, "合格", null, "91310000MA1FL00001", "王法人", "李采购", "13900000000", "sales@demo.com", "电子元器件批发；五金交电销售", "招商银行上海分行", "6225880000000001"));
 
     mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/status")
             .header("Authorization", "Bearer " + buyerToken)
@@ -2774,7 +3564,7 @@ class HttpSecurityContractTests {
             "黑名单",
             "S",
             List.of("服务", "办公设备"),
-            BigDecimal.ZERO));
+            BigDecimal.ZERO, "合格", null, "91310000MA1FL00001", "王法人", "李采购", "13900000000", "sales@demo.com", "电子元器件批发；五金交电销售", "招商银行上海分行", "6225880000000001"));
 
     mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/profile")
             .header("Authorization", "Bearer " + buyerToken)
@@ -2810,7 +3600,7 @@ class HttpSecurityContractTests {
             "黑名单",
             "S",
             List.of("服务", "办公设备"),
-            BigDecimal.valueOf(96.50)));
+            BigDecimal.valueOf(96.50), "合格", null, "91310000MA1FL00001", "王法人", "李采购", "13900000000", "sales@demo.com", "电子元器件批发；五金交电销售", "招商银行上海分行", "6225880000000001"));
 
     mockMvc.perform(post("/api/v1/buyer/suppliers/rel-created/performance")
             .header("Authorization", "Bearer " + buyerToken)
@@ -2833,7 +3623,7 @@ class HttpSecurityContractTests {
         "办公电脑",
         "办公设备",
         "台",
-        BigDecimal.valueOf(6000))));
+        BigDecimal.valueOf(6000), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述")));
 
     mockMvc.perform(get("/api/v1/buyer/materials")
             .header("Authorization", "Bearer " + buyerToken))
@@ -2850,7 +3640,7 @@ class HttpSecurityContractTests {
             "办公电脑",
             "办公设备",
             "台",
-            BigDecimal.valueOf(6000))));
+            BigDecimal.valueOf(6000), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述")));
 
     mockMvc.perform(get("/api/v1/buyer/materials")
             .queryParam("category", "办公设备")
@@ -2868,7 +3658,7 @@ class HttpSecurityContractTests {
             "显示器",
             "办公设备",
             "台",
-            BigDecimal.valueOf(1200)));
+            BigDecimal.valueOf(1200), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述"));
 
     mockMvc.perform(post("/api/v1/buyer/materials")
             .header("Authorization", "Bearer " + buyerToken)
@@ -2909,7 +3699,7 @@ class HttpSecurityContractTests {
             "27寸显示器",
             "办公设备",
             "台",
-            BigDecimal.valueOf(1500)));
+            BigDecimal.valueOf(1500), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述"));
 
     mockMvc.perform(post("/api/v1/buyer/materials/mat-monitor")
             .header("Authorization", "Bearer " + buyerToken)
@@ -3000,6 +3790,34 @@ class HttpSecurityContractTests {
         .andExpect(jsonPath("$.data.id").value("user-buyer-new"))
         .andExpect(jsonPath("$.data.departmentId").value("dept-it"))
         .andExpect(jsonPath("$.data.roleId").value("role-buyer-requester"));
+
+    // 批量导入:供应商越权 403;采购方 200,返回成功/失败明细。
+    mockMvc.perform(post("/api/v1/buyer/users/import")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"departmentId": "dept-it", "defaultPassword": "demo123456",
+                 "members": [{"name": "王五", "roleName": "采购申请员"}]}
+                """))
+        .andExpect(status().isForbidden());
+
+    when(buyerUserImportApplicationService.importUsers(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.identity.api.ImportBuyerUsersResponse(
+            1, 1, List.of(new com.procurement.identity.api.ImportBuyerUsersResponse.Failure(
+                2, "李四", "角色不存在: 不存在角色"))));
+
+    mockMvc.perform(post("/api/v1/buyer/users/import")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"departmentId": "dept-it", "defaultPassword": "demo123456",
+                 "members": [{"name": "王五", "roleName": "采购申请员"},
+                             {"name": "李四", "roleName": "不存在角色"}]}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.created").value(1))
+        .andExpect(jsonPath("$.data.failed").value(1))
+        .andExpect(jsonPath("$.data.failures[0].row").value(2));
 
     mockMvc.perform(post("/api/v1/buyer/users/user-buyer-new/role")
             .header("Authorization", "Bearer " + supplierToken)
@@ -3113,13 +3931,14 @@ class HttpSecurityContractTests {
         "role-buyer-requester",
         "tenant-acme",
         "需求申请人",
-        List.of("buyer:demand:create", "buyer:demand:read"))));
+        List.of("buyer:demand:create", "buyer:demand:read"), "department")));
 
     mockMvc.perform(get("/api/v1/buyer/roles")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].id").value("role-buyer-requester"))
-        .andExpect(jsonPath("$.data[0].permissions[0]").value("buyer:demand:create"));
+        .andExpect(jsonPath("$.data[0].permissions[0]").value("buyer:demand:create"))
+        .andExpect(jsonPath("$.data[0].dataScope").value("department"));
   }
 
   @Test
@@ -3148,6 +3967,16 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken)
             .contentType(MediaType.APPLICATION_JSON)
             .content(validCreateOrderPayload()))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/contracts/contract-demo/amendments")
+            .header("Authorization", "Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/buyer/contracts/contract-demo/amendments")
+            .header("Authorization", "Bearer " + supplierToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"changeType": "金额变更", "newAmount": 130000, "reason": "新增范围"}
+                """))
         .andExpect(status().isForbidden());
     mockMvc.perform(put("/api/v1/buyer/contracts/contract-demo/status")
             .header("Authorization", "Bearer " + supplierToken)
@@ -3241,7 +4070,8 @@ class HttpSecurityContractTests {
             "po-demo",
             "user-buyer-owner",
             "验收通过",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 100, 98, "外观完好，抽检合格",
+            java.util.List.of(), null, null, null));
     when(receiptApplicationService.listCurrentTenantReceipts(
         org.mockito.ArgumentMatchers.eq("po-demo"),
         org.mockito.ArgumentMatchers.eq("user-buyer-owner")))
@@ -3251,7 +4081,8 @@ class HttpSecurityContractTests {
             "po-demo",
             "user-buyer-owner",
             "验收通过",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 100, 98, "外观完好，抽检合格",
+            java.util.List.of(), null, null, null)));
     when(paymentApplicationService.listCurrentTenantInvoices(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull(),
@@ -3323,7 +4154,13 @@ class HttpSecurityContractTests {
         org.mockito.ArgumentMatchers.eq("contract-demo"),
         org.mockito.ArgumentMatchers.any(UpdateContractArchiveStatusRequest.class)))
         .thenReturn(contractResponse("contract-demo", "履约完成", "已归档"));
-    when(financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord("payexec-demo"))
+    when(financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord(
+        org.mockito.ArgumentMatchers.eq("payexec-demo"),
+        org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(paymentExecutionRecordResponse("payexec-demo", "PAY-202606", "已登记付款"));
+    when(financeActionApplicationService.registerCurrentTenantPaymentExecutionRecord(
+        org.mockito.ArgumentMatchers.eq("payexec-demo"),
+        org.mockito.ArgumentMatchers.any(RegisterPaymentRequest.class)))
         .thenReturn(paymentExecutionRecordResponse("payexec-demo", "PAY-202606", "已登记付款"));
     when(financeActionApplicationService.listCurrentTenantVarianceHandlings(
         org.mockito.ArgumentMatchers.isNull(),
@@ -3356,6 +4193,7 @@ class HttpSecurityContractTests {
             "invoice.paid",
             "invoice",
             "invoice-demo",
+            null,
             OffsetDateTime.parse("2026-06-15T12:30:00+08:00"))));
 
     mockMvc.perform(get("/api/v1/buyer/orders")
@@ -3479,11 +4317,60 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.id").value("contract-demo"))
         .andExpect(jsonPath("$.data.archiveStatus").value("已归档"));
+
+    when(contractApplicationService.addCurrentTenantContractAmendment(
+        org.mockito.ArgumentMatchers.eq("contract-demo"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(new com.procurement.contract.api.ContractAmendmentResponse(
+            "contract-amd-1", "contract-demo", 1, "金额变更",
+            java.math.BigDecimal.valueOf(120000), java.math.BigDecimal.valueOf(130000),
+            null, null, "新增实施范围", "user-buyer-owner",
+            OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
+    mockMvc.perform(post("/api/v1/buyer/contracts/contract-demo/amendments")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"changeType": "金额变更", "newAmount": 130000, "reason": "新增实施范围"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.seq").value(1))
+        .andExpect(jsonPath("$.data.changeType").value("金额变更"))
+        .andExpect(jsonPath("$.data.newAmount").value(130000));
+
+    when(contractApplicationService.listCurrentTenantContractAmendments("contract-demo"))
+        .thenReturn(List.of(new com.procurement.contract.api.ContractAmendmentResponse(
+            "contract-amd-1", "contract-demo", 1, "金额变更",
+            java.math.BigDecimal.valueOf(120000), java.math.BigDecimal.valueOf(130000),
+            null, null, "新增实施范围", "user-buyer-owner",
+            OffsetDateTime.parse("2026-06-29T10:00:00+08:00"))));
+    mockMvc.perform(get("/api/v1/buyer/contracts/contract-demo/amendments")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].changeType").value("金额变更"));
     mockMvc.perform(post("/api/v1/buyer/payment-execution-records/payexec-demo/registration")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.id").value("payexec-demo"))
+        .andExpect(jsonPath("$.data.executionStatus").value("已登记付款"))
+        .andExpect(jsonPath("$.data.releaseEvidenceNo").value("BANK-20260701-001"))
+        .andExpect(jsonPath("$.data.releaseRemark").value("招商银行付款流水"));
+    // 带放款证据 body:controller 必须把 body 透传给 service 的带参重载。
+    mockMvc.perform(post("/api/v1/buyer/payment-execution-records/payexec-demo/registration")
+            .header("Authorization", "Bearer " + buyerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"paymentStatus": "已付款", "releaseEvidenceNo": "BANK-20260701-002", "releaseRemark": "工商银行付款流水"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value("payexec-demo"))
         .andExpect(jsonPath("$.data.executionStatus").value("已登记付款"));
+    org.mockito.Mockito.verify(financeActionApplicationService)
+        .registerCurrentTenantPaymentExecutionRecord(
+            org.mockito.ArgumentMatchers.eq("payexec-demo"),
+            org.mockito.ArgumentMatchers.argThat((RegisterPaymentRequest req) ->
+                req != null
+                    && "已付款".equals(req.paymentStatus())
+                    && "BANK-20260701-002".equals(req.releaseEvidenceNo())
+                    && "工商银行付款流水".equals(req.releaseRemark())));
     mockMvc.perform(get("/api/v1/buyer/variance-handlings")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
@@ -3582,7 +4469,7 @@ class HttpSecurityContractTests {
             "顺丰",
             "SF123",
             "已发货",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货"));
     when(deliveryApplicationService.listCurrentSupplierDeliveries(
         org.mockito.ArgumentMatchers.eq("已发货"),
         org.mockito.ArgumentMatchers.eq("po-demo")))
@@ -3594,7 +4481,7 @@ class HttpSecurityContractTests {
             "顺丰",
             "SF123",
             "已发货",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货")));
     when(deliveryApplicationService.update(
         org.mockito.ArgumentMatchers.eq("delivery-demo"),
         org.mockito.ArgumentMatchers.any(UpdateDeliveryRequest.class)))
@@ -3606,7 +4493,7 @@ class HttpSecurityContractTests {
             "京东物流",
             "JD987654321",
             "已发货",
-            OffsetDateTime.parse("2026-06-15T12:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货"));
     when(invoiceApplicationService.create(
         org.mockito.ArgumentMatchers.eq("po-demo"),
         org.mockito.ArgumentMatchers.any()))
@@ -3788,7 +4675,8 @@ class HttpSecurityContractTests {
         status,
         LocalDate.parse("2026-07-10"),
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款",
+            java.util.List.of());
   }
 
   private InvoiceResponse invoiceResponse(String id, String paymentStatus) {
@@ -3812,7 +4700,8 @@ class HttpSecurityContractTests {
         "待付款",
         "登记付款",
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格",
+            java.util.List.of());
   }
 
   private ContractResponse contractResponse(String id, String status, String archiveStatus) {
@@ -3829,7 +4718,7 @@ class HttpSecurityContractTests {
         "已收货验收",
         LocalDate.parse("2026-06-15"),
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), java.time.LocalDate.parse("2026-06-01"), java.time.LocalDate.parse("2027-06-01"), "验收后30天内电汇", "质保2年，逾期交付按日0.5%计违约金", null);
   }
 
   private InvoiceReconciliationResponse invoiceReconciliationResponse(String id, String invoiceId, String stage) {
@@ -3906,6 +4795,8 @@ class HttpSecurityContractTests {
         executionStatus,
         "付款申请已通过，可进入线下付款登记",
         "付款申请已通过",
+        "BANK-20260701-001",
+        "招商银行付款流水",
         "可登记付款",
         "登记付款状态，真实支付仍不接入",
         "user-buyer-owner",
@@ -3927,6 +4818,7 @@ class HttpSecurityContractTests {
         status,
         "user-buyer-owner",
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"),
+        null, null);
   }
 }

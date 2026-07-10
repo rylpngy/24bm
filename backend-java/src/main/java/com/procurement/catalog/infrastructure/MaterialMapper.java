@@ -12,9 +12,14 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface MaterialMapper {
 
+  String COLUMNS =
+      "id, tenant_id, code, name, category, unit, reference_price,"
+          + " specification, brand, tax_rate, description";
+
   @Select("""
       <script>
-      select id, tenant_id, code, name, category, unit, reference_price
+      select id, tenant_id, code, name, category, unit, reference_price,
+             specification, brand, tax_rate, description
       from materials
       where tenant_id = #{tenantId}
         <if test="category != null and category != ''">
@@ -24,6 +29,9 @@ public interface MaterialMapper {
         and (
           code ilike concat('%', #{keyword}, '%')
           or name ilike concat('%', #{keyword}, '%')
+          or category ilike concat('%', #{keyword}, '%')
+          or specification ilike concat('%', #{keyword}, '%')
+          or brand ilike concat('%', #{keyword}, '%')
         )
         </if>
       order by code asc
@@ -35,15 +43,21 @@ public interface MaterialMapper {
       @Param("keyword") String keyword);
 
   @Select("""
-      select id, tenant_id, code, name, category, unit, reference_price
+      select id, tenant_id, code, name, category, unit, reference_price,
+             specification, brand, tax_rate, description
       from materials
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Material findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Insert("""
-      insert into materials (id, tenant_id, code, name, category, unit, reference_price)
-      values (#{id}, #{tenantId}, #{code}, #{name}, #{category}, #{unit}, #{referencePrice})
+      insert into materials (
+        id, tenant_id, code, name, category, unit, reference_price,
+        specification, brand, tax_rate, description
+      ) values (
+        #{id}, #{tenantId}, #{code}, #{name}, #{category}, #{unit}, #{referencePrice},
+        #{specification}, #{brand}, #{taxRate}, #{description}
+      )
       """)
   void insert(
       @Param("id") String id,
@@ -52,7 +66,11 @@ public interface MaterialMapper {
       @Param("name") String name,
       @Param("category") String category,
       @Param("unit") String unit,
-      @Param("referencePrice") BigDecimal referencePrice);
+      @Param("referencePrice") BigDecimal referencePrice,
+      @Param("specification") String specification,
+      @Param("brand") String brand,
+      @Param("taxRate") BigDecimal taxRate,
+      @Param("description") String description);
 
   @Update("""
       update materials
@@ -61,6 +79,10 @@ public interface MaterialMapper {
           category = #{category},
           unit = #{unit},
           reference_price = #{referencePrice},
+          specification = #{specification},
+          brand = #{brand},
+          tax_rate = #{taxRate},
+          description = #{description},
           updated_at = now()
       where tenant_id = #{tenantId}
         and id = #{id}
@@ -72,5 +94,9 @@ public interface MaterialMapper {
       @Param("name") String name,
       @Param("category") String category,
       @Param("unit") String unit,
-      @Param("referencePrice") BigDecimal referencePrice);
+      @Param("referencePrice") BigDecimal referencePrice,
+      @Param("specification") String specification,
+      @Param("brand") String brand,
+      @Param("taxRate") BigDecimal taxRate,
+      @Param("description") String description);
 }

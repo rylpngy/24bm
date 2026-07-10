@@ -15,7 +15,15 @@ public record RfqResponse(
     OffsetDateTime updatedAt,
     List<String> demandIds,
     List<String> invitedSupplierIds,
-    List<QuoteResponse> quotes) {
+    List<QuoteResponse> quotes,
+    String quoteRequirement,
+    String deliveryRequirement,
+    String evaluationMethod,
+    OffsetDateTime openedAt,
+    int currentRound,
+    boolean finalRound,
+    String method,
+    String closeReason) {
 
   public RfqResponse(
       String id,
@@ -41,6 +49,14 @@ public record RfqResponse(
         updatedAt,
         demandIds,
         invitedSupplierIds,
-        List.of());
+        List.of(),
+        "",
+        "",
+        "最低价",
+        null,
+        1,
+        false,
+        "询比",
+        null);
   }
 }

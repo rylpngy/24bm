@@ -123,6 +123,38 @@ class DepartmentCreationTests {
         org.mockito.ArgumentMatchers.anyString());
   }
 
+  @Test
+  void updatesDepartmentDetailsAndRecordsAuditWithRenameDetail() {
+    TenantContext.set("tenant-1", null, "buyer-admin");
+    when(departmentMapper.findByTenantAndId("tenant-1", "dept-1")).thenReturn(department("dept-1"));
+
+    departmentApplicationService.updateDepartment("dept-1",
+        new com.procurement.organization.api.UpdateDepartmentRequest("采购部", "统筹采购", "user-1"));
+
+    verify(departmentMapper).updateDetails("tenant-1", "dept-1", "采购部", "统筹采购", "user-1");
+    verify(auditLogApplicationService).recordTenantAction(
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("department.updated"),
+        org.mockito.ArgumentMatchers.eq("department"),
+        org.mockito.ArgumentMatchers.eq("dept-1"),
+        org.mockito.ArgumentMatchers.contains("研发采购部 → 采购部"));
+  }
+
+  @Test
+  void updateRejectsUnknownDepartment() {
+    TenantContext.set("tenant-1", null, "buyer-admin");
+    when(departmentMapper.findByTenantAndId("tenant-1", "ghost")).thenReturn(null);
+
+    assertThatThrownBy(() -> departmentApplicationService.updateDepartment("ghost",
+        new com.procurement.organization.api.UpdateDepartmentRequest("X", null, null)))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    verify(departmentMapper, never()).updateDetails(
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
+  }
+
   private Department department(String id) {
     return new Department(id, "tenant-1", "研发采购部", "dept-parent", "active");
   }

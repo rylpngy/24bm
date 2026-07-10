@@ -6,5 +6,6 @@ public record BuyerRoleResponse(
     String id,
     String tenantId,
     String name,
-    List<String> permissions) {
+    List<String> permissions,
+    String dataScope) {
 }

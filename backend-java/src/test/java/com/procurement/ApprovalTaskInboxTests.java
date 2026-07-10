@@ -47,6 +47,8 @@ class ApprovalTaskInboxTests {
       org.mockito.Mockito.mock(PaymentArchiveExceptionRequestMapper.class);
   private final ContractMapper contractMapper = org.mockito.Mockito.mock(ContractMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
+  private final com.procurement.process.infrastructure.ProcessInstanceMapper processInstanceMapper =
+      org.mockito.Mockito.mock(com.procurement.process.infrastructure.ProcessInstanceMapper.class);
   private final ApprovalInboxApplicationService approvalInboxApplicationService =
       new ApprovalInboxApplicationService(
           approvalTaskMapper,
@@ -58,7 +60,8 @@ class ApprovalTaskInboxTests {
           paymentBatchMapper,
           paymentArchiveExceptionRequestMapper,
           contractMapper,
-          buyerUserMapper);
+          buyerUserMapper,
+          processInstanceMapper);
 
   @AfterEach
   void clearTenantContext() {
@@ -319,7 +322,7 @@ class ApprovalTaskInboxTests {
         budget,
         "审批中",
         OffsetDateTime.parse("2026-06-15T09:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
   }
 
   private BuyerSupplierRelation supplierRelation(String id, String tenantId, String supplierName) {
@@ -331,7 +334,7 @@ class ApprovalTaskInboxTests {
         "准入审批中",
         "A",
         "[]",
-        BigDecimal.ZERO);
+        BigDecimal.ZERO, "合格", null, "91310000MA1FL00001", "王法人", "李采购", "13900000000", "sales@demo.com", "电子元器件批发；五金交电销售", "招商银行上海分行", "6225880000000001");
   }
 
   private AwardDecision awardDecision(String id, String tenantId, String rfqId, String supplierId) {
@@ -420,7 +423,7 @@ class ApprovalTaskInboxTests {
         "审批中",
         java.time.LocalDate.parse("2026-06-21"),
         OffsetDateTime.parse("2026-06-21T08:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-21T08:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-21T08:00:00+08:00"), java.time.LocalDate.parse("2026-06-01"), java.time.LocalDate.parse("2027-06-01"), "验收后30天内电汇", "质保2年，逾期交付按日0.5%计违约金", null);
   }
 
   private Rfq rfq(String id, String tenantId, String title) {
@@ -433,7 +436,7 @@ class ApprovalTaskInboxTests {
         "owner-1",
         null,
         OffsetDateTime.parse("2026-06-15T09:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
   }
 
   private BuyerUser user(String id, String name) {

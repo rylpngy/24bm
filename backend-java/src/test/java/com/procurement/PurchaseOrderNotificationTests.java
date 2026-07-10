@@ -50,7 +50,8 @@ class PurchaseOrderNotificationTests {
       auditLogApplicationService,
       notificationApplicationService,
       tenantFeatureApplicationService,
-      new PurchaseOrderStatusTransition());
+      new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
 
   @AfterEach
   void clearTenantContext() {
@@ -67,8 +68,8 @@ class PurchaseOrderNotificationTests {
     when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
         .thenReturn(order("po-1", "tenant-1", "supplier-1", "待发货"));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester"),
-        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it", "role-buyer-requester")));
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "active", "dept-it", "role-buyer-requester"),
+        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "inactive", "dept-it", "role-buyer-requester")));
 
     purchaseOrderApplicationService.confirmCurrentSupplierOrder("po-1");
 
@@ -100,8 +101,8 @@ class PurchaseOrderNotificationTests {
             org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> order(invocation.getArgument(1), "tenant-1", "supplier-1", "待供应商确认"));
     when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
-        supplierUser("supplier-user-active", "启用"),
-        supplierUser("supplier-user-disabled", "停用")));
+        supplierUser("supplier-user-active", "active"),
+        supplierUser("supplier-user-disabled", "inactive")));
 
     var response = purchaseOrderApplicationService.createFromAward(
         new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
@@ -130,7 +131,7 @@ class PurchaseOrderNotificationTests {
         status,
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
   }
 
   private AwardDecision award(String id, String tenantId, String supplierId, String status) {
@@ -156,7 +157,7 @@ class PurchaseOrderNotificationTests {
         "buyer-user",
         awardedSupplierId,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
   }
 
   private SupplierUser supplierUser(String id, String status) {

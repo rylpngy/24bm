@@ -4,5 +4,6 @@ public record BuyerRole(
     String id,
     String tenantId,
     String name,
-    String permissionsJson) {
+    String permissionsJson,
+    String dataScope) {
 }

@@ -3,6 +3,7 @@ package com.procurement.finance.api;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public record InvoiceResponse(
     String id,
@@ -24,5 +25,15 @@ public record InvoiceResponse(
     String reconciliationStage,
     String nextReconciliationAction,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    String invoiceCode,
+    LocalDate invoiceDate,
+    BigDecimal taxRate,
+    BigDecimal taxAmount,
+    BigDecimal netAmount,
+    Integer receivedQuantity,
+    Integer qualifiedQuantity,
+    Integer qualifiedRate,
+    String quantityMatchStatus,
+    List<InvoiceLineItemResponse> lineItems) {
 }

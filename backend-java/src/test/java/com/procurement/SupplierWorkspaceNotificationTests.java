@@ -148,7 +148,8 @@ class SupplierWorkspaceNotificationTests {
         status,
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款",
+            java.util.List.of());
   }
 
   private DeliveryResponse delivery() {
@@ -160,7 +161,7 @@ class SupplierWorkspaceNotificationTests {
         "顺丰速运",
         "SF-SUPPLIER-001",
         "已发货",
-        OffsetDateTime.parse("2026-06-16T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-16T10:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货");
   }
 
   private InvoiceResponse invoice(String id, String paymentStatus) {
@@ -184,6 +185,7 @@ class SupplierWorkspaceNotificationTests {
         "待付款",
         "登记付款",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格",
+            java.util.List.of());
   }
 }

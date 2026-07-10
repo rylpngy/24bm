@@ -1,6 +1,9 @@
 package com.procurement.finance.application;
 
 import com.procurement.approval.application.ApprovalTaskApplicationService;
+import com.procurement.identity.application.DataScopeService;
+import com.procurement.identity.application.PermissionService;
+import com.procurement.identity.domain.DataScope;
 import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.domain.ApprovalTask;
@@ -21,11 +24,15 @@ import com.procurement.finance.api.PaymentExecutionRecordResponse;
 import com.procurement.finance.api.PaymentRequestResponse;
 import com.procurement.finance.api.RegisterPaymentRequest;
 import com.procurement.finance.api.ReviewPaymentArchiveExceptionRequest;
+import com.procurement.finance.api.ThreeWayMatchLineResponse;
 import com.procurement.finance.api.ThreeWayMatchRebuildResponse;
 import com.procurement.finance.api.ThreeWayMatchResponse;
 import com.procurement.finance.api.UpdatePaymentBatchStatusRequest;
 import com.procurement.finance.api.UpdatePaymentBlockResolutionStatusRequest;
 import com.procurement.finance.api.UpdatePaymentRequestStatusRequest;
+import com.procurement.finance.api.ApproveVarianceHandlingRequest;
+import com.procurement.finance.api.FinanceReport;
+import com.procurement.finance.infrastructure.FinanceReportRenderer;
 import com.procurement.finance.api.UpdateVarianceHandlingStatusRequest;
 import com.procurement.finance.api.VarianceHandlingResponse;
 import com.procurement.demand.api.ApprovalTaskResponse;
@@ -36,6 +43,8 @@ import com.procurement.finance.domain.PaymentBlockResolution;
 import com.procurement.finance.domain.PaymentExecutionRecord;
 import com.procurement.finance.domain.PaymentRequest;
 import com.procurement.finance.domain.ThreeWayMatch;
+import com.procurement.finance.domain.VarianceApprovalPolicy;
+import com.procurement.finance.domain.ThreeWayMatchLineRow;
 import com.procurement.finance.domain.VarianceHandling;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.PaymentArchiveExceptionRequestMapper;
@@ -50,9 +59,12 @@ import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +89,8 @@ public class FinanceActionApplicationService {
   private final ApprovalTaskMapper approvalTaskMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
+  private final PermissionService permissionService;
+  private final DataScopeService dataScopeService;
 
   public FinanceActionApplicationService(
       InvoiceMapper invoiceMapper,
@@ -92,7 +106,45 @@ public class FinanceActionApplicationService {
       ApprovalTaskApplicationService approvalTaskApplicationService,
       ApprovalTaskMapper approvalTaskMapper,
       AuditLogApplicationService auditLogApplicationService,
-      TenantFeatureApplicationService tenantFeatureApplicationService) {
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      PermissionService permissionService) {
+    this(
+        invoiceMapper,
+        purchaseOrderMapper,
+        paymentBatchMapper,
+        paymentArchiveExceptionRequestMapper,
+        paymentBlockResolutionMapper,
+        paymentExecutionRecordMapper,
+        paymentRequestMapper,
+        threeWayMatchMapper,
+        varianceHandlingMapper,
+        paymentApplicationService,
+        approvalTaskApplicationService,
+        approvalTaskMapper,
+        auditLogApplicationService,
+        tenantFeatureApplicationService,
+        permissionService,
+        null);
+  }
+
+  @Autowired
+  public FinanceActionApplicationService(
+      InvoiceMapper invoiceMapper,
+      PurchaseOrderMapper purchaseOrderMapper,
+      PaymentBatchMapper paymentBatchMapper,
+      PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper,
+      PaymentBlockResolutionMapper paymentBlockResolutionMapper,
+      PaymentExecutionRecordMapper paymentExecutionRecordMapper,
+      PaymentRequestMapper paymentRequestMapper,
+      ThreeWayMatchMapper threeWayMatchMapper,
+      VarianceHandlingMapper varianceHandlingMapper,
+      PaymentApplicationService paymentApplicationService,
+      ApprovalTaskApplicationService approvalTaskApplicationService,
+      ApprovalTaskMapper approvalTaskMapper,
+      AuditLogApplicationService auditLogApplicationService,
+      TenantFeatureApplicationService tenantFeatureApplicationService,
+      PermissionService permissionService,
+      DataScopeService dataScopeService) {
     this.invoiceMapper = invoiceMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.paymentBatchMapper = paymentBatchMapper;
@@ -107,6 +159,8 @@ public class FinanceActionApplicationService {
     this.approvalTaskMapper = approvalTaskMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+    this.permissionService = permissionService;
+    this.dataScopeService = dataScopeService;
   }
 
   public List<PaymentBatchResponse> listCurrentTenantPaymentBatches(
@@ -114,10 +168,22 @@ public class FinanceActionApplicationService {
       String supplierId) {
     String tenantId = TenantAccessGuard.requireTenantId("payment batch APIs");
     paymentExecutionRecordMapper.refreshTenantFromPaymentRequests(tenantId);
+    DataScope dataScope = dataScopeService == null
+        ? DataScope.unrestricted()
+        : dataScopeService.currentUserDataScope();
+    if (dataScope.blocksAll()) {
+      return List.of();
+    }
+    List<String> scopeDepartmentIds = dataScope.restricted() && dataScope.requesterId() == null
+        ? dataScope.departmentIds()
+        : null;
+    String requesterId = dataScope.restricted() ? dataScope.requesterId() : null;
     return paymentBatchMapper.listByTenantFiltered(
             tenantId,
             blankToNull(batchStatus),
-            blankToNull(supplierId))
+            blankToNull(supplierId),
+            scopeDepartmentIds,
+            requesterId)
         .stream()
         .map(this::toPaymentBatchResponse)
         .toList();
@@ -514,20 +580,51 @@ public class FinanceActionApplicationService {
 
   @Transactional
   public PaymentExecutionRecordResponse registerCurrentTenantPaymentExecutionRecord(String executionRecordId) {
+    return registerCurrentTenantPaymentExecutionRecord(
+        executionRecordId,
+        new RegisterPaymentRequest("已付款"));
+  }
+
+  @Transactional
+  public PaymentExecutionRecordResponse registerCurrentTenantPaymentExecutionRecord(
+      String executionRecordId,
+      RegisterPaymentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment execution record APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    RegisterPaymentRequest effectiveRequest =
+        request == null ? new RegisterPaymentRequest("已付款") : request;
     PaymentExecutionRecord record = paymentExecutionRecordMapper.findByTenantAndId(tenantId, executionRecordId);
     if (record == null) {
       throw new IllegalArgumentException("Payment execution record not found in tenant scope: " + executionRecordId);
     }
     requirePaymentBatchNotArchived(tenantId, record.paymentBatchNo());
+    requirePaymentBatchReadyForExecution(tenantId, record.paymentBatchNo());
     if (!record.executionStatus().equals("待登记付款")) {
       throw new IllegalStateException("Payment execution record is not ready for registration: " + executionRecordId);
     }
-    paymentApplicationService.register(record.invoiceId(), new RegisterPaymentRequest("已付款"));
+    paymentApplicationService.register(record.invoiceId(), new RegisterPaymentRequest(effectiveRequest.paymentStatus()));
     paymentExecutionRecordMapper.refreshByTenantAndId(tenantId, executionRecordId);
+    if (blankToNull(effectiveRequest.releaseEvidenceNo()) != null
+        || blankToNull(effectiveRequest.releaseRemark()) != null) {
+      paymentExecutionRecordMapper.markReleaseEvidence(
+          tenantId,
+          executionRecordId,
+          blankToNull(effectiveRequest.releaseEvidenceNo()),
+          blankToNull(effectiveRequest.releaseRemark()));
+    }
     PaymentExecutionRecord refreshed = paymentExecutionRecordMapper.findByTenantAndId(tenantId, executionRecordId);
     return toPaymentExecutionRecordResponse(refreshed);
+  }
+
+  private void requirePaymentBatchReadyForExecution(String tenantId, String paymentBatchNo) {
+    PaymentBatch paymentBatch = paymentBatchMapper.findByTenantAndPaymentBatchNo(tenantId, paymentBatchNo);
+    if (paymentBatch == null) {
+      throw new IllegalArgumentException("Payment batch not found in tenant scope: " + paymentBatchNo);
+    }
+    if (!"可安排付款".equals(paymentBatch.batchStatus())) {
+      throw new IllegalStateException(
+          "Payment batch must be approved before payment execution registration: " + paymentBatchNo);
+    }
   }
 
   public List<ThreeWayMatchResponse> listCurrentTenantThreeWayMatches(
@@ -545,6 +642,54 @@ public class FinanceActionApplicationService {
         .stream()
         .map(this::toThreeWayMatchResponse)
         .toList();
+  }
+
+  // 行级三单匹配:给定发票,按订单行项逐行对照订单/收货/发票,标注金额差异与数量短缺。
+  public List<ThreeWayMatchLineResponse> listCurrentTenantThreeWayMatchLines(String invoiceId) {
+    String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
+    Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
+    if (invoice == null) {
+      throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
+    }
+    return threeWayMatchMapper.listLineReconciliation(tenantId, invoice.orderId(), invoiceId).stream()
+        .map(this::toThreeWayMatchLineResponse)
+        .toList();
+  }
+
+  private ThreeWayMatchLineResponse toThreeWayMatchLineResponse(ThreeWayMatchLineRow row) {
+    BigDecimal invoiceLineAmount = row.invoiceLineAmount();
+    BigDecimal amountVariance =
+        invoiceLineAmount == null
+            ? BigDecimal.ZERO
+            : invoiceLineAmount.subtract(row.orderLineAmount());
+    String status;
+    if (invoiceLineAmount == null) {
+      status = "未开票";
+    } else if (amountVariance.compareTo(BigDecimal.ZERO) != 0) {
+      status = "金额差异";
+    } else if (row.receivedQuantity() == null) {
+      status = "待收货";
+    } else if (row.qualifiedQuantity() != null
+        && row.orderedQuantity() != null
+        && row.qualifiedQuantity().compareTo(row.orderedQuantity()) < 0) {
+      status = "数量短缺";
+    } else {
+      status = "三单一致";
+    }
+    return new ThreeWayMatchLineResponse(
+        row.orderLineId(),
+        row.description(),
+        row.unit(),
+        row.orderedQuantity(),
+        row.orderUnitPrice(),
+        row.orderLineAmount(),
+        row.receivedQuantity(),
+        row.qualifiedQuantity(),
+        row.invoicedQuantity(),
+        row.invoiceUnitPrice(),
+        invoiceLineAmount,
+        amountVariance,
+        status);
   }
 
   @Transactional
@@ -578,13 +723,56 @@ public class FinanceActionApplicationService {
         userId,
         "待财务复核",
         "待处理",
-        userId);
+        userId,
+        null,
+        null);
     auditLogApplicationService.recordTenantAction(
         tenantId,
         "variance_handling.created_from_three_way_match",
         AuditTargetType.INVOICE,
         match.invoiceId());
     return toVarianceHandlingResponse(varianceHandlingMapper.findByTenantAndInvoice(tenantId, match.invoiceId()));
+  }
+
+  // 行级差异处理:从某条被标记的发票行项(金额差异/数量短缺)发起差异处理,
+  // 标注触发行(orderLineId + 品名)并以该行的差异金额/结论为依据。
+  @Transactional
+  public VarianceHandlingResponse createVarianceHandlingFromMatchLine(
+      String invoiceId, String orderLineId) {
+    String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
+    String userId = TenantAccessGuard.requireUserId("three-way match APIs");
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    Invoice invoice = requireTenantInvoice(tenantId, invoiceId);
+    ThreeWayMatchLineResponse line =
+        listCurrentTenantThreeWayMatchLines(invoiceId).stream()
+            .filter(l -> orderLineId.equals(l.orderLineId()))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Order line not found for invoice " + invoiceId + ": " + orderLineId));
+    if (!"金额差异".equals(line.lineMatchStatus()) && !"数量短缺".equals(line.lineMatchStatus())) {
+      throw new IllegalStateException(
+          "Only flagged invoice lines can open variance handling: " + orderLineId);
+    }
+    String reason = line.description() + " · " + line.lineMatchStatus();
+    varianceHandlingMapper.upsert(
+        "variance-" + UUID.randomUUID(),
+        tenantId,
+        invoice.id(),
+        invoice.supplierId(),
+        invoice.orderId(),
+        line.amountVariance(),
+        reason,
+        userId,
+        "待财务复核",
+        "待处理",
+        userId,
+        orderLineId,
+        line.description());
+    auditLogApplicationService.recordTenantAction(
+        tenantId, "variance_handling.created_from_match_line", AuditTargetType.INVOICE, invoice.id());
+    return toVarianceHandlingResponse(varianceHandlingMapper.findByTenantAndInvoice(tenantId, invoice.id()));
   }
 
   public List<PaymentRequestResponse> listCurrentTenantPaymentRequests(
@@ -625,6 +813,7 @@ public class FinanceActionApplicationService {
   public PaymentRequestResponse createCurrentTenantPaymentRequest(CreatePaymentRequestRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment request APIs");
     String userId = TenantAccessGuard.requireUserId("payment request APIs");
+    permissionService.require("buyer:payment:register"); // 发起付款申请须具备该权限
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     Invoice invoice = requireTenantInvoice(tenantId, request.invoiceId());
     ensureAmountVarianceHandledBeforePaymentRequest(tenantId, invoice);
@@ -725,7 +914,9 @@ public class FinanceActionApplicationService {
         request.ownerId(),
         request.result(),
         request.status(),
-        userId);
+        userId,
+        null,
+        null);
     return toVarianceHandlingResponse(varianceHandlingMapper.findByTenantAndInvoice(tenantId, invoice.id()));
   }
 
@@ -747,13 +938,144 @@ public class FinanceActionApplicationService {
     String result = request.result() == null || request.result().isBlank()
         ? varianceHandling.result()
         : request.result();
-    varianceHandlingMapper.updateStatus(tenantId, varianceHandlingId, request.status(), result);
+    String status = request.status();
+    // 差异分级审批:超阈值差异不能由买方直接结案,改置「待财务经理签核」(付款仍阻断)。
+    if (VarianceApprovalPolicy.STATUS_RESOLVED.equals(status)
+        && VarianceApprovalPolicy.requiresManagerApproval(varianceHandling.varianceAmount())) {
+      status = VarianceApprovalPolicy.STATUS_MANAGER_REVIEW;
+      result =
+          "差异金额 " + varianceHandling.varianceAmount() + " 达 ¥10,000 阈值,转财务经理签核";
+    }
+    varianceHandlingMapper.updateStatus(tenantId, varianceHandlingId, status, result);
     auditLogApplicationService.recordTenantAction(
         tenantId,
         "variance_handling.updated",
         AuditTargetType.INVOICE,
         varianceHandling.invoiceId());
     return toVarianceHandlingResponse(varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId));
+  }
+
+  // 财务经理签核超阈值差异:通过→已处理(解除付款阻断),驳回→退回待处理。
+  @Transactional
+  public VarianceHandlingResponse approveCurrentTenantVarianceHandling(
+      String varianceHandlingId, ApproveVarianceHandlingRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("variance handling APIs");
+    permissionService.require("buyer:variance:approve"); // 财务经理签核须具备该权限
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    VarianceHandling varianceHandling =
+        varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId);
+    if (varianceHandling == null) {
+      throw new IllegalArgumentException(
+          "Variance handling not found in tenant scope: " + varianceHandlingId);
+    }
+    if (!VarianceApprovalPolicy.STATUS_MANAGER_REVIEW.equals(varianceHandling.status())) {
+      throw new IllegalStateException(
+          "Only variance handlings pending manager approval can be reviewed: " + varianceHandlingId);
+    }
+    boolean approved = Boolean.TRUE.equals(request.approved());
+    String status =
+        approved ? VarianceApprovalPolicy.STATUS_RESOLVED : VarianceApprovalPolicy.STATUS_PENDING;
+    String result =
+        request.comment() == null || request.comment().isBlank()
+            ? (approved ? "财务经理签核通过,差异结案" : "财务经理驳回,退回重新核实")
+            : request.comment();
+    varianceHandlingMapper.updateStatus(tenantId, varianceHandlingId, status, result);
+    auditLogApplicationService.recordTenantAction(
+        tenantId,
+        approved ? "variance_handling.manager_approved" : "variance_handling.manager_rejected",
+        AuditTargetType.INVOICE,
+        varianceHandling.invoiceId());
+    return toVarianceHandlingResponse(
+        varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId));
+  }
+
+  // ============ 报表导出(发票清单 / 对账单 / 采购分析)============
+
+  private static String money(BigDecimal v) {
+    return v == null ? "" : v.toPlainString();
+  }
+
+  private static String orEmpty(String v) {
+    return v == null ? "" : v;
+  }
+
+  public FinanceReport exportInvoices(String format) {
+    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    permissionService.require("buyer:report:export");
+    List<String> headers =
+        List.of("发票号", "发票代码", "订单", "供应商", "价税合计", "税率(%)", "开票日期", "付款状态");
+    List<List<String>> rows = new ArrayList<>();
+    for (Invoice inv : invoiceMapper.listByTenant(tenantId)) {
+      rows.add(List.of(
+          orEmpty(inv.invoiceNo()),
+          orEmpty(inv.invoiceCode()),
+          orEmpty(inv.orderId()),
+          orEmpty(inv.supplierId()),
+          money(inv.amount()),
+          money(inv.taxRate()),
+          inv.invoiceDate() == null ? "" : inv.invoiceDate().toString(),
+          orEmpty(inv.paymentStatus())));
+    }
+    return render("发票清单", "invoices", headers, rows, format);
+  }
+
+  public FinanceReport exportReconciliation(String format) {
+    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    permissionService.require("buyer:report:export");
+    List<String> headers =
+        List.of("发票", "订单", "供应商", "订单金额", "发票金额", "差异金额", "匹配状态", "收货状态", "付款就绪");
+    List<List<String>> rows = new ArrayList<>();
+    for (ThreeWayMatch m : threeWayMatchMapper.listByTenantFiltered(tenantId, null, null, null, null)) {
+      rows.add(List.of(
+          orEmpty(m.invoiceId()),
+          orEmpty(m.orderId()),
+          orEmpty(m.supplierId()),
+          money(m.orderAmount()),
+          money(m.invoiceAmount()),
+          money(m.varianceAmount()),
+          orEmpty(m.matchStatus()),
+          orEmpty(m.receiptStatus()),
+          orEmpty(m.paymentReadiness())));
+    }
+    return render("三单匹配对账单", "reconciliation", headers, rows, format);
+  }
+
+  // 采购分析:按订单状态汇总订单数与金额(含合计行)。
+  public FinanceReport exportProcurementAnalytics(String format) {
+    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    permissionService.require("buyer:report:export");
+    Map<String, long[]> byStatusCount = new LinkedHashMap<>();
+    Map<String, BigDecimal> byStatusAmount = new LinkedHashMap<>();
+    BigDecimal total = BigDecimal.ZERO;
+    long totalCount = 0;
+    for (PurchaseOrder po : purchaseOrderMapper.listByTenant(tenantId)) {
+      String status = orEmpty(po.status());
+      byStatusCount.computeIfAbsent(status, k -> new long[1])[0]++;
+      byStatusAmount.merge(status, po.amount() == null ? BigDecimal.ZERO : po.amount(), BigDecimal::add);
+      total = total.add(po.amount() == null ? BigDecimal.ZERO : po.amount());
+      totalCount++;
+    }
+    List<String> headers = List.of("订单状态", "订单数", "订单金额合计");
+    List<List<String>> rows = new ArrayList<>();
+    for (String status : byStatusCount.keySet()) {
+      rows.add(List.of(status, String.valueOf(byStatusCount.get(status)[0]), money(byStatusAmount.get(status))));
+    }
+    rows.add(List.of("合计", String.valueOf(totalCount), money(total)));
+    return render("采购分析汇总", "procurement-analytics", headers, rows, format);
+  }
+
+  private FinanceReport render(
+      String title, String base, List<String> headers, List<List<String>> rows, String format) {
+    if ("pdf".equalsIgnoreCase(format)) {
+      return new FinanceReport(
+          FinanceReportRenderer.toPdf(title, headers, rows),
+          base + ".pdf",
+          FinanceReport.PDF_CONTENT_TYPE);
+    }
+    return new FinanceReport(
+        FinanceReportRenderer.toXlsx(title, headers, rows),
+        base + ".xlsx",
+        FinanceReport.XLSX_CONTENT_TYPE);
   }
 
   private void syncPaymentBatch(String tenantId, String paymentBatchNo) {
@@ -965,6 +1287,8 @@ public class FinanceActionApplicationService {
         record.executionStatus(),
         record.executionTrace(),
         record.executionBlockReason(),
+        record.releaseEvidenceNo(),
+        record.releaseRemark(),
         derivePaymentExecutionStage(record),
         derivePaymentExecutionNextAction(record),
         record.createdBy(),
@@ -1034,7 +1358,9 @@ public class FinanceActionApplicationService {
         handling.status(),
         handling.createdBy(),
         handling.createdAt(),
-        handling.updatedAt());
+        handling.updatedAt(),
+        handling.orderLineId(),
+        handling.lineDescription());
   }
 
   private String blankToNull(String value) {

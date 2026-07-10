@@ -1,13 +1,16 @@
 package com.procurement.finance.application;
 
+import com.procurement.finance.api.InvoiceLineItemResponse;
 import com.procurement.finance.api.InvoiceResponse;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.order.domain.PurchaseOrder;
+import com.procurement.order.domain.Receipt;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 final class InvoiceResponseAssembler {
   private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
@@ -16,7 +19,16 @@ final class InvoiceResponseAssembler {
   private InvoiceResponseAssembler() {
   }
 
-  static InvoiceResponse from(Invoice invoice, PurchaseOrder order) {
+  // 不带行项的重载(付款上下文等无需展示发票明细的场景)。
+  static InvoiceResponse from(Invoice invoice, PurchaseOrder order, Receipt receipt) {
+    return from(invoice, order, receipt, List.of());
+  }
+
+  static InvoiceResponse from(
+      Invoice invoice,
+      PurchaseOrder order,
+      Receipt receipt,
+      List<InvoiceLineItemResponse> lineItems) {
     LocalDate dueDate = invoice.createdAt()
         .atZoneSameInstant(BUSINESS_ZONE)
         .toLocalDate()
@@ -32,6 +44,29 @@ final class InvoiceResponseAssembler {
     String reconciliationStatus = toReconciliationStatus(orderAmount, varianceAmount, receiptStatus);
     String reconciliationStage = toReconciliationStage(invoice.paymentStatus(), reconciliationStatus);
     String nextReconciliationAction = toNextReconciliationAction(reconciliationStage);
+
+    // 价税合计(amount)与税率推导税额与不含税金额：税额 = 价税合计 × 税率 / (100 + 税率)。
+    BigDecimal taxRate = invoice.taxRate() == null ? BigDecimal.ZERO : invoice.taxRate();
+    BigDecimal taxAmount = invoice.amount()
+        .multiply(taxRate)
+        .divide(taxRate.add(new BigDecimal("100")), 2, java.math.RoundingMode.HALF_UP);
+    BigDecimal netAmount = invoice.amount().subtract(taxAmount);
+
+    // 数量维度的三单匹配：从收货单取收货/合格数量，推导合格率与数量匹配结论。
+    Integer receivedQuantity = receipt == null ? null : receipt.receivedQuantity();
+    Integer qualifiedQuantity = receipt == null ? null : receipt.qualifiedQuantity();
+    Integer qualifiedRate =
+        receivedQuantity != null && receivedQuantity > 0 && qualifiedQuantity != null
+            ? Math.round(qualifiedQuantity * 100f / receivedQuantity)
+            : null;
+    String quantityMatchStatus;
+    if (receipt == null || receivedQuantity == null || receivedQuantity == 0) {
+      quantityMatchStatus = "待收货";
+    } else if (qualifiedQuantity != null && qualifiedQuantity.equals(receivedQuantity)) {
+      quantityMatchStatus = "数量全部合格";
+    } else {
+      quantityMatchStatus = "存在不合格";
+    }
 
     return new InvoiceResponse(
         invoice.id(),
@@ -53,7 +88,17 @@ final class InvoiceResponseAssembler {
         reconciliationStage,
         nextReconciliationAction,
         invoice.createdAt(),
-        invoice.updatedAt());
+        invoice.updatedAt(),
+        invoice.invoiceCode(),
+        invoice.invoiceDate(),
+        taxRate,
+        taxAmount,
+        netAmount,
+        receivedQuantity,
+        qualifiedQuantity,
+        qualifiedRate,
+        quantityMatchStatus,
+        lineItems == null ? List.of() : lineItems);
   }
 
   private static String toReconciliationStatus(

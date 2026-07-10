@@ -8,18 +8,23 @@ import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.contract.api.ContractAmendmentResponse;
 import com.procurement.contract.api.ContractFulfillmentEventResponse;
 import com.procurement.contract.api.ContractResponse;
+import com.procurement.contract.api.CreateContractAmendmentRequest;
 import com.procurement.contract.api.CreateContractFulfillmentEventRequest;
 import com.procurement.contract.api.CreateContractRequest;
 import com.procurement.contract.api.ReviewContractApprovalRequest;
 import com.procurement.contract.api.UpdateContractArchiveStatusRequest;
 import com.procurement.contract.api.UpdateContractRequest;
 import com.procurement.contract.api.UpdateContractStatusRequest;
+import com.procurement.contract.domain.ContractAmendment;
 import com.procurement.contract.domain.ContractFulfillmentEvent;
 import com.procurement.contract.domain.ContractLedger;
 import com.procurement.contract.infrastructure.ContractFulfillmentEventMapper;
 import com.procurement.contract.infrastructure.ContractMapper;
+import com.procurement.identity.application.DataScopeService;
+import com.procurement.identity.domain.DataScope;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
@@ -35,6 +40,7 @@ public class ContractApplicationService {
   private final ContractMapper contractMapper;
   private final ContractFulfillmentEventMapper fulfillmentEventMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
+  private final DataScopeService dataScopeService;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -43,14 +49,14 @@ public class ContractApplicationService {
   public ContractApplicationService(
       ContractMapper contractMapper,
       PurchaseOrderMapper purchaseOrderMapper) {
-    this(contractMapper, null, purchaseOrderMapper, null, null, null, null);
+    this(contractMapper, null, purchaseOrderMapper, null, null, null, null, null);
   }
 
   public ContractApplicationService(
       ContractMapper contractMapper,
       ContractFulfillmentEventMapper fulfillmentEventMapper,
       PurchaseOrderMapper purchaseOrderMapper) {
-    this(contractMapper, fulfillmentEventMapper, purchaseOrderMapper, null, null, null, null);
+    this(contractMapper, fulfillmentEventMapper, purchaseOrderMapper, null, null, null, null, null);
   }
 
   public ContractApplicationService(
@@ -64,6 +70,26 @@ public class ContractApplicationService {
         contractMapper,
         null,
         purchaseOrderMapper,
+        null,
+        approvalTaskMapper,
+        approvalTaskApplicationService,
+        auditLogApplicationService,
+        notificationApplicationService);
+  }
+
+  public ContractApplicationService(
+      ContractMapper contractMapper,
+      ContractFulfillmentEventMapper fulfillmentEventMapper,
+      PurchaseOrderMapper purchaseOrderMapper,
+      ApprovalTaskMapper approvalTaskMapper,
+      ApprovalTaskApplicationService approvalTaskApplicationService,
+      AuditLogApplicationService auditLogApplicationService,
+      NotificationApplicationService notificationApplicationService) {
+    this(
+        contractMapper,
+        fulfillmentEventMapper,
+        purchaseOrderMapper,
+        null,
         approvalTaskMapper,
         approvalTaskApplicationService,
         auditLogApplicationService,
@@ -75,6 +101,7 @@ public class ContractApplicationService {
       ContractMapper contractMapper,
       ContractFulfillmentEventMapper fulfillmentEventMapper,
       PurchaseOrderMapper purchaseOrderMapper,
+      DataScopeService dataScopeService,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
       AuditLogApplicationService auditLogApplicationService,
@@ -82,6 +109,7 @@ public class ContractApplicationService {
     this.contractMapper = contractMapper;
     this.fulfillmentEventMapper = fulfillmentEventMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
+    this.dataScopeService = dataScopeService;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -93,11 +121,23 @@ public class ContractApplicationService {
       String archiveStatus,
       String supplierId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    DataScope dataScope = dataScopeService == null
+        ? DataScope.unrestricted()
+        : dataScopeService.currentUserDataScope();
+    if (dataScope.blocksAll()) {
+      return List.of();
+    }
+    List<String> scopeDepartmentIds = dataScope.restricted() && dataScope.requesterId() == null
+        ? dataScope.departmentIds()
+        : null;
+    String requesterId = dataScope.restricted() ? dataScope.requesterId() : null;
     return contractMapper.listByTenantFiltered(
             tenantId,
             blankToNull(status),
             blankToNull(archiveStatus),
-            blankToNull(supplierId))
+            blankToNull(supplierId),
+            scopeDepartmentIds,
+            requesterId)
         .stream()
         .map(this::toResponse)
         .toList();
@@ -123,7 +163,11 @@ public class ContractApplicationService {
         request.status(),
         "未归档",
         request.fulfillmentProgress(),
-        request.effectiveDate());
+        request.effectiveDate(),
+        request.signDate(),
+        request.expiryDate(),
+        orEmpty(request.paymentTerms()),
+        orEmpty(request.warrantyTerms()));
     return toResponse(requireContract(tenantId, contractId));
   }
 
@@ -145,7 +189,11 @@ public class ContractApplicationService {
         request.amount(),
         request.status(),
         request.fulfillmentProgress(),
-        request.effectiveDate());
+        request.effectiveDate(),
+        request.signDate(),
+        request.expiryDate(),
+        orEmpty(request.paymentTerms()),
+        orEmpty(request.warrantyTerms()));
     if (updated == 0) {
       throw new IllegalStateException("Contract changed before update could be saved: " + contractId);
     }
@@ -194,6 +242,44 @@ public class ContractApplicationService {
         request.archiveStatus());
     if (updated == 0) {
       throw new IllegalStateException("Contract archive status changed before update could be saved: " + contractId);
+    }
+    return toResponse(requireContract(tenantId, contractId));
+  }
+
+  // 到期提醒扫描:为 withinDays 内临近到期、未归档、未续签的合同各生成一条提醒通知。
+  // 可由定时任务(每日)或人工触发;返回扫描数与提醒数。
+  @Transactional
+  public com.procurement.contract.api.ScanExpiryResponse scanExpiringContracts(int withinDays) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    int days = withinDays <= 0 ? 60 : withinDays;
+    java.time.LocalDate threshold = java.time.LocalDate.now().plusDays(days);
+    List<ContractLedger> expiring = contractMapper.listExpiringWithin(tenantId, threshold);
+    int notified = 0;
+    for (ContractLedger c : expiring) {
+      String when = c.expiryDate() == null ? "" : c.expiryDate().toString();
+      notificationApplicationService.notifyActiveTenantUsers(
+          tenantId,
+          "合同到期提醒",
+          "合同「" + c.contractName() + "」将于 " + when + " 到期,请及时安排续签或归档。");
+      notified++;
+    }
+    if (notified > 0) {
+      auditLogApplicationService.recordTenantAction(
+          tenantId, "contract.expiry_scanned", "contract", "batch",
+          "扫描到 " + notified + " 份临近到期合同并生成提醒");
+    }
+    return new com.procurement.contract.api.ScanExpiryResponse(days, expiring.size(), notified);
+  }
+
+  // 发起续签:置「已发起续签」(到期提醒驱动),幂等;审计留痕。
+  @Transactional
+  public ContractResponse initiateRenewal(String contractId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    ContractLedger contract = requireContract(tenantId, contractId);
+    if (!"已发起续签".equals(contract.renewalStatus())) {
+      contractMapper.markRenewal(tenantId, contractId, "已发起续签");
+      auditLogApplicationService.recordTenantAction(
+          "contract.renewal_initiated", "contract", contractId);
     }
     return toResponse(requireContract(tenantId, contractId));
   }
@@ -300,6 +386,88 @@ public class ContractApplicationService {
         .toList();
   }
 
+  public List<ContractAmendmentResponse> listCurrentTenantContractAmendments(String contractId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    requireContract(tenantId, contractId);
+    return contractMapper.listAmendments(tenantId, contractId).stream()
+        .map(this::toAmendmentResponse)
+        .toList();
+  }
+
+  // 登记合同变更/补充协议:留痕(按序号)+ 金额/工期变更应用到主合同 + 审计(带「从→到」明细)。
+  @Transactional
+  public ContractAmendmentResponse addCurrentTenantContractAmendment(
+      String contractId, CreateContractAmendmentRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    String userId = TenantAccessGuard.requireUserId("buyer contract APIs");
+    ContractLedger contract = requireContract(tenantId, contractId);
+    requireEditable(contract, contractId);
+    if (!ContractAmendment.isValidType(request.changeType())) {
+      throw new IllegalArgumentException("非法变更类型: " + request.changeType());
+    }
+    boolean amountChange = ContractAmendment.AMOUNT.equals(request.changeType());
+    boolean scheduleChange = ContractAmendment.SCHEDULE.equals(request.changeType());
+    if (amountChange && request.newAmount() == null) {
+      throw new IllegalArgumentException("金额变更需填写新金额");
+    }
+    if (scheduleChange && request.newExpiryDate() == null) {
+      throw new IllegalArgumentException("工期变更需填写新到期日");
+    }
+
+    int seq = contractMapper.maxAmendmentSeq(tenantId, contractId) + 1;
+    java.math.BigDecimal oldAmount = contract.amount();
+    java.time.LocalDate oldExpiry = contract.expiryDate();
+    String amendmentId = "contract-amd-" + UUID.randomUUID();
+    contractMapper.insertAmendment(
+        amendmentId,
+        tenantId,
+        contractId,
+        seq,
+        request.changeType(),
+        amountChange ? oldAmount : null,
+        amountChange ? request.newAmount() : null,
+        scheduleChange ? oldExpiry : null,
+        scheduleChange ? request.newExpiryDate() : null,
+        request.reason(),
+        userId);
+
+    if (amountChange || scheduleChange) {
+      contractMapper.updateAmountAndExpiry(
+          tenantId,
+          contractId,
+          amountChange ? request.newAmount() : contract.amount(),
+          scheduleChange ? request.newExpiryDate() : contract.expiryDate());
+    }
+
+    String detail = "合同变更#" + seq + " " + request.changeType()
+        + (amountChange ? ": ¥" + oldAmount + " → ¥" + request.newAmount() : "")
+        + (scheduleChange ? ": " + oldExpiry + " → " + request.newExpiryDate() : "");
+    if (auditLogApplicationService != null) {
+      auditLogApplicationService.recordTenantAction(
+          tenantId, "contract_amendment.created", AuditTargetType.CONTRACT, contractId, detail);
+    }
+    // 列表按 seq 倒序,刚插入的(最大 seq)即首条。
+    return contractMapper.listAmendments(tenantId, contractId).stream()
+        .findFirst()
+        .map(this::toAmendmentResponse)
+        .orElseThrow();
+  }
+
+  private ContractAmendmentResponse toAmendmentResponse(ContractAmendment a) {
+    return new ContractAmendmentResponse(
+        a.id(),
+        a.contractId(),
+        a.seq(),
+        a.changeType(),
+        a.oldAmount(),
+        a.newAmount(),
+        a.oldExpiryDate(),
+        a.newExpiryDate(),
+        a.reason(),
+        a.actorId(),
+        a.createdAt());
+  }
+
   @Transactional
   public ContractFulfillmentEventResponse createCurrentTenantContractFulfillmentEvent(
       String contractId,
@@ -356,7 +524,16 @@ public class ContractApplicationService {
         contract.fulfillmentProgress(),
         contract.effectiveDate(),
         contract.createdAt(),
-        contract.updatedAt());
+        contract.updatedAt(),
+        contract.signDate(),
+        contract.expiryDate(),
+        contract.paymentTerms(),
+        contract.warrantyTerms(),
+        contract.renewalStatus());
+  }
+
+  private static String orEmpty(String value) {
+    return value == null ? "" : value;
   }
 
   private ContractFulfillmentEventResponse toFulfillmentEventResponse(ContractFulfillmentEvent event) {

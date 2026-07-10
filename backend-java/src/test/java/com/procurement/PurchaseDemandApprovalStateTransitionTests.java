@@ -44,10 +44,12 @@ class PurchaseDemandApprovalStateTransitionTests {
       purchaseDemandItemMapper,
       approvalTaskMapper,
       approvalTaskApplicationService,
+      org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class),
       departmentMapper,
       auditLogApplicationService,
       notificationApplicationService,
-      new PurchaseDemandApprovalStatusTransition());
+      new PurchaseDemandApprovalStatusTransition(),
+      org.mockito.Mockito.mock(com.procurement.identity.application.DataScopeService.class));
 
   @AfterEach
   void clearTenantContext() {
@@ -132,7 +134,7 @@ class PurchaseDemandApprovalStateTransitionTests {
         BigDecimal.valueOf(1000),
         status,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
   }
 
   private ApprovalTask task(String id, String tenantId, String demandId, String status) {

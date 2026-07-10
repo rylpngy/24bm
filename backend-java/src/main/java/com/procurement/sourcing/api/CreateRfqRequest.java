@@ -10,5 +10,9 @@ public record CreateRfqRequest(
     @NotBlank String title,
     @NotEmpty List<String> demandIds,
     @NotEmpty List<String> invitedSupplierIds,
-    @Future OffsetDateTime deadlineAt) {
+    @Future OffsetDateTime deadlineAt,
+    String quoteRequirement,
+    String deliveryRequirement,
+    String evaluationMethod,
+    String method) {
 }

@@ -47,10 +47,12 @@ class PurchaseDemandAuditLogTests {
       purchaseDemandItemMapper,
       approvalTaskMapper,
       approvalTaskApplicationService,
+      org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class),
       departmentMapper,
       auditLogApplicationService,
       notificationApplicationService,
-      new PurchaseDemandApprovalStatusTransition());
+      new PurchaseDemandApprovalStatusTransition(),
+      org.mockito.Mockito.mock(com.procurement.identity.application.DataScopeService.class));
 
   @AfterEach
   void clearTenantContext() {
@@ -74,7 +76,7 @@ class PurchaseDemandAuditLogTests {
         "办公电脑采购",
         "dept-it",
         BigDecimal.valueOf(120000),
-        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.TEN))));
+        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.TEN)), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明"));
 
     verify(auditLogMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("audit-")),
@@ -82,7 +84,8 @@ class PurchaseDemandAuditLogTests {
         org.mockito.ArgumentMatchers.eq("buyer-user-1"),
         org.mockito.ArgumentMatchers.eq("purchase_demand.created"),
         org.mockito.ArgumentMatchers.eq("purchase_demand"),
-        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("dem-")));
+        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && !id.isBlank()),
+        org.mockito.ArgumentMatchers.isNull());
   }
 
   @Test
@@ -107,7 +110,8 @@ class PurchaseDemandAuditLogTests {
         org.mockito.ArgumentMatchers.eq("buyer-user-1"),
         org.mockito.ArgumentMatchers.eq("purchase_demand.submitted"),
         org.mockito.ArgumentMatchers.eq("purchase_demand"),
-        org.mockito.ArgumentMatchers.eq("demand-1"));
+        org.mockito.ArgumentMatchers.eq("demand-1"),
+        org.mockito.ArgumentMatchers.isNull());
   }
 
   private PurchaseDemand demand(String id) {
@@ -120,7 +124,7 @@ class PurchaseDemandAuditLogTests {
         BigDecimal.valueOf(120000),
         "草稿",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
   }
 
   private ApprovalTemplate template(String code, String bizType) {

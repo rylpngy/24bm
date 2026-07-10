@@ -14,14 +14,20 @@ import com.procurement.finance.domain.InvoiceAuditAction;
 import com.procurement.finance.domain.InvoiceCreationStatusPolicy;
 import com.procurement.finance.domain.InvoicePaymentStatus;
 import com.procurement.finance.domain.InvoiceReconciliation;
+import com.procurement.finance.api.InvoiceLineItemResponse;
+import com.procurement.finance.domain.InvoiceLineItem;
+import com.procurement.finance.infrastructure.InvoiceLineItemMapper;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.InvoiceReconciliationMapper;
 import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
+import com.procurement.order.domain.OrderLineItem;
+import com.procurement.order.infrastructure.OrderLineItemMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderDocumentUniquenessPolicy;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.order.infrastructure.ReceiptMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
@@ -32,28 +38,37 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class InvoiceApplicationService {
   private final PurchaseOrderMapper purchaseOrderMapper;
+  private final ReceiptMapper receiptMapper;
   private final InvoiceMapper invoiceMapper;
   private final InvoiceReconciliationMapper invoiceReconciliationMapper;
   private final ThreeWayMatchMapper threeWayMatchMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final OrderLineItemMapper orderLineItemMapper;
+  private final InvoiceLineItemMapper invoiceLineItemMapper;
 
   public InvoiceApplicationService(
       PurchaseOrderMapper purchaseOrderMapper,
+      ReceiptMapper receiptMapper,
       InvoiceMapper invoiceMapper,
       InvoiceReconciliationMapper invoiceReconciliationMapper,
       ThreeWayMatchMapper threeWayMatchMapper,
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      OrderLineItemMapper orderLineItemMapper,
+      InvoiceLineItemMapper invoiceLineItemMapper) {
     this.purchaseOrderMapper = purchaseOrderMapper;
+    this.receiptMapper = receiptMapper;
     this.invoiceMapper = invoiceMapper;
     this.invoiceReconciliationMapper = invoiceReconciliationMapper;
     this.threeWayMatchMapper = threeWayMatchMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.orderLineItemMapper = orderLineItemMapper;
+    this.invoiceLineItemMapper = invoiceLineItemMapper;
   }
 
   public List<InvoiceResponse> listCurrentSupplierInvoices() {
@@ -121,7 +136,12 @@ public class InvoiceApplicationService {
         order.id(),
         request.amount(),
         request.invoiceNo(),
-        InvoicePaymentStatus.PENDING_PAYMENT);
+        InvoicePaymentStatus.PENDING_PAYMENT,
+        request.invoiceCode() == null ? "" : request.invoiceCode(),
+        request.invoiceDate() == null ? java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai")) : request.invoiceDate(),
+        request.taxRate() == null ? new java.math.BigDecimal("13.00") : request.taxRate());
+    // 从订单行项复制为发票行项,贯通「订单→发票」并支撑三单匹配的行级对账。
+    copyLineItemsFromOrder(order.tenantId(), order.id(), invoiceId);
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
         InvoiceAuditAction.CREATED,
@@ -176,7 +196,44 @@ public class InvoiceApplicationService {
   private InvoiceResponse toResponse(Invoice invoice) {
     return InvoiceResponseAssembler.from(
         invoice,
-        purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()));
+        purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()),
+        receiptMapper.findByTenantAndOrder(invoice.tenantId(), invoice.orderId()),
+        lineItemResponses(invoice.tenantId(), invoice.id()));
+  }
+
+  // 发票开具时按订单行项原样复制为发票行项(保留 order_line_id 以支撑后续行级匹配)。
+  private void copyLineItemsFromOrder(String tenantId, String orderId, String invoiceId) {
+    List<OrderLineItem> orderLines = orderLineItemMapper.listByOrder(tenantId, orderId);
+    if (orderLines == null) {
+      return;
+    }
+    for (OrderLineItem line : orderLines) {
+      invoiceLineItemMapper.insert(
+          "ili-" + UUID.randomUUID(),
+          tenantId,
+          invoiceId,
+          line.id(),
+          line.description(),
+          line.unit(),
+          line.quantity(),
+          line.unitPrice(),
+          line.lineAmount(),
+          line.sortNo() == null ? 0 : line.sortNo());
+    }
+  }
+
+  private List<InvoiceLineItemResponse> lineItemResponses(String tenantId, String invoiceId) {
+    List<InvoiceLineItem> lines = invoiceLineItemMapper.listByInvoice(tenantId, invoiceId);
+    if (lines == null) {
+      return List.of();
+    }
+    return lines.stream()
+        .map(
+            l ->
+                new InvoiceLineItemResponse(
+                    l.id(), l.orderLineId(), l.description(), l.unit(),
+                    l.quantity(), l.unitPrice(), l.lineAmount()))
+        .toList();
   }
 
   private InvoiceReconciliationResponse toReconciliationResponse(InvoiceReconciliation reconciliation) {

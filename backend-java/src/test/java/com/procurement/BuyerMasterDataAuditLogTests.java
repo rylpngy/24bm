@@ -89,8 +89,10 @@ class BuyerMasterDataAuditLogTests {
   void materialCreationRecordsAuditLog() {
     TenantContext.set("tenant-1", null, "buyer-admin");
     MaterialMapper materialMapper = org.mockito.Mockito.mock(MaterialMapper.class);
+    org.springframework.context.ApplicationEventPublisher eventPublisher =
+        org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
     MaterialApplicationService materialApplicationService =
-        new MaterialApplicationService(materialMapper, auditLogApplicationService);
+        new MaterialApplicationService(materialMapper, eventPublisher);
     when(materialMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -101,20 +103,25 @@ class BuyerMasterDataAuditLogTests {
         "办公椅",
         "办公家具",
         "把",
-        BigDecimal.valueOf(300)));
+        BigDecimal.valueOf(300), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述"));
 
-    verify(auditLogApplicationService).recordTenantAction(
-        org.mockito.ArgumentMatchers.eq("material.created"),
-        org.mockito.ArgumentMatchers.eq("material"),
-        org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("mat-")));
+    verify(eventPublisher).publishEvent(
+        org.mockito.ArgumentMatchers.<Object>argThat(ev ->
+            ev instanceof com.procurement.common.event.DomainAuditEvent e
+                && e.action().equals("material.created")
+                && e.targetType().equals("material")
+                && e.targetId() != null
+                && e.targetId().startsWith("mat-")));
   }
 
   @Test
   void materialUpdateRecordsAuditLogAndUsesCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-admin");
     MaterialMapper materialMapper = org.mockito.Mockito.mock(MaterialMapper.class);
+    org.springframework.context.ApplicationEventPublisher eventPublisher =
+        org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
     MaterialApplicationService materialApplicationService =
-        new MaterialApplicationService(materialMapper, auditLogApplicationService);
+        new MaterialApplicationService(materialMapper, eventPublisher);
     when(materialMapper.findByTenantAndId("tenant-1", "mat-1"))
         .thenReturn(material("mat-1"));
 
@@ -125,7 +132,7 @@ class BuyerMasterDataAuditLogTests {
             "人体工学椅",
             "办公家具",
             "把",
-            BigDecimal.valueOf(480)));
+            BigDecimal.valueOf(480), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述"));
 
     verify(materialMapper).update(
         "tenant-1",
@@ -134,19 +141,23 @@ class BuyerMasterDataAuditLogTests {
         "人体工学椅",
         "办公家具",
         "把",
-        BigDecimal.valueOf(480));
-    verify(auditLogApplicationService).recordTenantAction(
-        "material.updated",
-        "material",
-        "mat-1");
+        BigDecimal.valueOf(480),
+        "i7/16G/512G SSD",
+        "演示品牌",
+        java.math.BigDecimal.valueOf(13.00),
+        "演示物料描述");
+    verify(eventPublisher).publishEvent(
+        new com.procurement.common.event.DomainAuditEvent("material.updated", "material", "mat-1"));
   }
 
   @Test
   void listMaterialsAppliesFiltersInsideCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-admin");
     MaterialMapper materialMapper = org.mockito.Mockito.mock(MaterialMapper.class);
+    org.springframework.context.ApplicationEventPublisher eventPublisher =
+        org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
     MaterialApplicationService materialApplicationService =
-        new MaterialApplicationService(materialMapper, auditLogApplicationService);
+        new MaterialApplicationService(materialMapper, eventPublisher);
 
     materialApplicationService.listCurrentTenantMaterials("办公家具", "椅");
 
@@ -204,7 +215,7 @@ class BuyerMasterDataAuditLogTests {
   }
 
   private Material material(String id) {
-    return new Material(id, "tenant-1", "MAT-001", "办公椅", "办公家具", "把", BigDecimal.valueOf(300));
+    return new Material(id, "tenant-1", "MAT-001", "办公椅", "办公家具", "把", BigDecimal.valueOf(300), "i7/16G/512G SSD", "演示品牌", java.math.BigDecimal.valueOf(13.00), "演示物料描述");
   }
 
   private BuyerSupplierRelation relation(String id) {
@@ -216,6 +227,6 @@ class BuyerMasterDataAuditLogTests {
         "待准入",
         "A",
         "[\"办公设备\"]",
-        BigDecimal.valueOf(90));
+        BigDecimal.valueOf(90), "合格", null, "91310000MA1FL00001", "王法人", "李采购", "13900000000", "sales@demo.com", "电子元器件批发；五金交电销售", "招商银行上海分行", "6225880000000001");
   }
 }

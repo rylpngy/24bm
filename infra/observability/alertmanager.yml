@@ -1,0 +1,28 @@
+# Alertmanager 示例配置。
+# 本地默认把告警投递到 host.docker.internal:9094,可用任意 webhook receiver 临时接收。
+# 生产环境请替换为企业邮件、钉钉/企微 adapter 或内部值班平台地址,不要提交真实 webhook 密钥。
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: local-webhook
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity="critical"
+      receiver: oncall-webhook
+      repeat_interval: 1h
+
+receivers:
+  - name: local-webhook
+    webhook_configs:
+      - url: http://host.docker.internal:9094/alertmanager/local
+        send_resolved: true
+
+  - name: oncall-webhook
+    webhook_configs:
+      - url: http://host.docker.internal:9094/alertmanager/oncall
+        send_resolved: true

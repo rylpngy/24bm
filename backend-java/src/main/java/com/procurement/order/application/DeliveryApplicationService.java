@@ -86,7 +86,11 @@ public class DeliveryApplicationService {
         supplierId,
         request.carrier(),
         request.trackingNo(),
-        PurchaseOrderStatus.SHIPPED);
+        PurchaseOrderStatus.SHIPPED,
+        request.shippedQuantity() == null ? 0 : request.shippedQuantity(),
+        request.shippedDate(),
+        request.estimatedArrival(),
+        request.logisticsNote() == null ? "" : request.logisticsNote());
     int updated = purchaseOrderMapper.updateStatus(
         order.tenantId(),
         order.id(),
@@ -128,7 +132,11 @@ public class DeliveryApplicationService {
         delivery.id(),
         supplierId,
         request.carrier(),
-        request.trackingNo());
+        request.trackingNo(),
+        request.shippedQuantity(),
+        request.shippedDate(),
+        request.estimatedArrival(),
+        blankToNull(request.logisticsNote()));
     if (updated == 0) {
       throw new IllegalStateException("Delivery changed before tracking could be updated: " + deliveryId);
     }
@@ -154,7 +162,11 @@ public class DeliveryApplicationService {
         delivery.carrier(),
         delivery.trackingNo(),
         delivery.status(),
-        delivery.createdAt());
+        delivery.createdAt(),
+        delivery.shippedQuantity(),
+        delivery.shippedDate(),
+        delivery.estimatedArrival(),
+        delivery.logisticsNote());
   }
 
   private String newId(String prefix) {

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://24bid/processes">
+  <!-- 通用业务审批:接管需求/定标/合同/付款等审批类型,按金额阈值二级会签。 -->
+  <process id="businessApproval" name="业务审批" isExecutable="true">
+    <startEvent id="start" name="提交审批"/>
+    <sequenceFlow id="f0" sourceRef="start" targetRef="review1"/>
+
+    <userTask id="review1" name="一级审批" flowable:candidateGroups="buyer-approver"/>
+    <sequenceFlow id="f1" sourceRef="review1" targetRef="gw1"/>
+
+    <exclusiveGateway id="gw1" name="一级结果"/>
+    <sequenceFlow id="f1r" sourceRef="gw1" targetRef="endRejected">
+      <conditionExpression xsi:type="tFormalExpression">${approved == false}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f1a" sourceRef="gw1" targetRef="gw2">
+      <conditionExpression xsi:type="tFormalExpression">${approved == true}</conditionExpression>
+    </sequenceFlow>
+
+    <exclusiveGateway id="gw2" name="是否需二级"/>
+    <sequenceFlow id="f2low" sourceRef="gw2" targetRef="endApproved">
+      <conditionExpression xsi:type="tFormalExpression">${amount &lt; threshold}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f2high" sourceRef="gw2" targetRef="review2">
+      <conditionExpression xsi:type="tFormalExpression">${amount &gt;= threshold}</conditionExpression>
+    </sequenceFlow>
+
+    <userTask id="review2" name="二级审批(高管复核)" flowable:candidateGroups="buyer-approver"/>
+    <sequenceFlow id="f3" sourceRef="review2" targetRef="gw3"/>
+
+    <exclusiveGateway id="gw3" name="二级结果"/>
+    <sequenceFlow id="f3a" sourceRef="gw3" targetRef="endApproved">
+      <conditionExpression xsi:type="tFormalExpression">${approved == true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f3r" sourceRef="gw3" targetRef="endRejected">
+      <conditionExpression xsi:type="tFormalExpression">${approved == false}</conditionExpression>
+    </sequenceFlow>
+
+    <endEvent id="endApproved" name="已通过"/>
+    <endEvent id="endRejected" name="已驳回"/>
+  </process>
+</definitions>

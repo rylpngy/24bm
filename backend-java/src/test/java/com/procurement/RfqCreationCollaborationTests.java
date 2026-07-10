@@ -11,6 +11,7 @@ import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.application.DataScopeService;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.notification.infrastructure.NotificationMapper;
@@ -19,6 +20,7 @@ import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqAuditAction;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
+import com.procurement.sourcing.infrastructure.QuoteLineItemMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
@@ -40,9 +42,12 @@ class RfqCreationCollaborationTests {
 
   private final RfqMapper rfqMapper = org.mockito.Mockito.mock(RfqMapper.class);
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
+  private final QuoteLineItemMapper quoteLineItemMapper =
+      org.mockito.Mockito.mock(QuoteLineItemMapper.class);
   private final RfqDemandMapper rfqDemandMapper = org.mockito.Mockito.mock(RfqDemandMapper.class);
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
+  private final DataScopeService dataScopeService = org.mockito.Mockito.mock(DataScopeService.class);
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper = org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final SupplierQualificationMapper supplierQualificationMapper = org.mockito.Mockito.mock(SupplierQualificationMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
@@ -56,9 +61,11 @@ class RfqCreationCollaborationTests {
   private final RfqApplicationService rfqApplicationService = new RfqApplicationService(
       rfqMapper,
       quoteMapper,
+      quoteLineItemMapper,
       rfqDemandMapper,
       rfqInviteMapper,
       purchaseDemandMapper,
+      dataScopeService,
       buyerSupplierRelationMapper,
       supplierQualificationMapper,
       tenantFeatureApplicationService,
@@ -87,14 +94,14 @@ class RfqCreationCollaborationTests {
     when(rfqInviteMapper.listSupplierIds(eq("tenant-1"), anyString())).thenReturn(List.of("supplier-1"));
     when(quoteMapper.listByTenantAndRfq(eq("tenant-1"), anyString())).thenReturn(List.of());
     when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
-        supplierUser("supplier-user-active", "启用"),
-        supplierUser("supplier-user-disabled", "停用")));
+        supplierUser("supplier-user-active", "active"),
+        supplierUser("supplier-user-disabled", "inactive")));
 
     var response = rfqApplicationService.create(new CreateRfqRequest(
         "办公电脑询价",
         List.of("demand-1"),
         List.of("supplier-1"),
-        OffsetDateTime.now().plusDays(7)));
+        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源"));
 
     verify(auditLogApplicationService).recordTenantAction(
         RfqAuditAction.CREATED,
@@ -129,7 +136,7 @@ class RfqCreationCollaborationTests {
             "办公电脑询价",
             List.of("demand-1"),
             List.of("supplier-1"),
-            OffsetDateTime.now().plusDays(7))))
+            OffsetDateTime.now().plusDays(7), "", "", "最低价", "询价")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Supplier lacks active qualification for tenant RFQ: supplier-1");
   }
@@ -144,7 +151,7 @@ class RfqCreationCollaborationTests {
         BigDecimal.valueOf(1000),
         status,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
   }
 
   private Rfq rfq(String id, String title) {
@@ -157,7 +164,7 @@ class RfqCreationCollaborationTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
   }
 
   private SupplierUser supplierUser(String id, String status) {

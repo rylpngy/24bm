@@ -5,24 +5,26 @@ import com.procurement.catalog.api.MaterialResponse;
 import com.procurement.catalog.domain.Material;
 import com.procurement.catalog.domain.MaterialAuditAction;
 import com.procurement.catalog.infrastructure.MaterialMapper;
-import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
+import com.procurement.common.event.DomainAuditEvent;
 import com.procurement.common.tenant.TenantAccessGuard;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// 试点:审计改为发布 DomainAuditEvent(而非直接调审计服务),由审计模块监听落库——
+// 跨模块协作从直接 Service 调用 → 领域事件解耦(对标 §第三章 A 类债)。
 @Service
 public class MaterialApplicationService {
   private final MaterialMapper materialMapper;
-  private final AuditLogApplicationService auditLogApplicationService;
+  private final ApplicationEventPublisher eventPublisher;
 
   public MaterialApplicationService(
-      MaterialMapper materialMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      MaterialMapper materialMapper, ApplicationEventPublisher eventPublisher) {
     this.materialMapper = materialMapper;
-    this.auditLogApplicationService = auditLogApplicationService;
+    this.eventPublisher = eventPublisher;
   }
 
   public List<MaterialResponse> listCurrentTenantMaterials() {
@@ -47,8 +49,13 @@ public class MaterialApplicationService {
         request.name(),
         request.category(),
         request.unit(),
-        request.referencePrice());
-    auditLogApplicationService.recordTenantAction(MaterialAuditAction.CREATED, AuditTargetType.MATERIAL, materialId);
+        request.referencePrice(),
+        orEmpty(request.specification()),
+        orEmpty(request.brand()),
+        orDefaultTax(request.taxRate()),
+        orEmpty(request.description()));
+    eventPublisher.publishEvent(
+        new DomainAuditEvent(MaterialAuditAction.CREATED, AuditTargetType.MATERIAL, materialId));
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
   }
 
@@ -63,8 +70,13 @@ public class MaterialApplicationService {
         request.name(),
         request.category(),
         request.unit(),
-        request.referencePrice());
-    auditLogApplicationService.recordTenantAction(MaterialAuditAction.UPDATED, AuditTargetType.MATERIAL, materialId);
+        request.referencePrice(),
+        orEmpty(request.specification()),
+        orEmpty(request.brand()),
+        orDefaultTax(request.taxRate()),
+        orEmpty(request.description()));
+    eventPublisher.publishEvent(
+        new DomainAuditEvent(MaterialAuditAction.UPDATED, AuditTargetType.MATERIAL, materialId));
     return toResponse(materialMapper.findByTenantAndId(tenantId, materialId));
   }
 
@@ -82,7 +94,19 @@ public class MaterialApplicationService {
         material.name(),
         material.category(),
         material.unit(),
-        material.referencePrice());
+        material.referencePrice(),
+        material.specification(),
+        material.brand(),
+        material.taxRate(),
+        material.description());
+  }
+
+  private static String orEmpty(String value) {
+    return value == null ? "" : value;
+  }
+
+  private static java.math.BigDecimal orDefaultTax(java.math.BigDecimal value) {
+    return value == null ? new java.math.BigDecimal("13.00") : value;
   }
 
   private String blankToNull(String value) {

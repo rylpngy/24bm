@@ -71,6 +71,19 @@ public class BuyerContractController {
     return ApiResponse.ok(contractApplicationService.submitCurrentTenantContractApproval(contractId));
   }
 
+  // 发起续签(到期提醒驱动)。
+  @PostMapping("/{contractId}/renew")
+  public ApiResponse<ContractResponse> renew(@PathVariable String contractId) {
+    return ApiResponse.ok(contractApplicationService.initiateRenewal(contractId));
+  }
+
+  // 扫描临近到期合同并为每份生成到期提醒通知(可人工或定时触发)。
+  @PostMapping("/scan-expiry")
+  public ApiResponse<ScanExpiryResponse> scanExpiry(
+      @RequestParam(name = "withinDays", defaultValue = "60") int withinDays) {
+    return ApiResponse.ok(contractApplicationService.scanExpiringContracts(withinDays));
+  }
+
   @PutMapping("/{contractId}/approval-review")
   public ApiResponse<ContractResponse> reviewApproval(
       @PathVariable String contractId,
@@ -93,5 +106,19 @@ public class BuyerContractController {
     return ApiResponse.ok(contractApplicationService.createCurrentTenantContractFulfillmentEvent(
         contractId,
         request));
+  }
+
+  // 合同变更/补充协议:时间线 + 登记变更(金额/工期变更应用到主合同)。
+  @GetMapping("/{contractId}/amendments")
+  public ApiResponse<List<ContractAmendmentResponse>> listAmendments(@PathVariable String contractId) {
+    return ApiResponse.ok(contractApplicationService.listCurrentTenantContractAmendments(contractId));
+  }
+
+  @PostMapping("/{contractId}/amendments")
+  public ApiResponse<ContractAmendmentResponse> createAmendment(
+      @PathVariable String contractId,
+      @Valid @RequestBody CreateContractAmendmentRequest request) {
+    return ApiResponse.ok(
+        contractApplicationService.addCurrentTenantContractAmendment(contractId, request));
   }
 }

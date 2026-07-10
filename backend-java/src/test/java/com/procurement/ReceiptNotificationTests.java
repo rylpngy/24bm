@@ -46,6 +46,8 @@ class ReceiptNotificationTests {
       purchaseOrderMapper,
       deliveryMapper,
       receiptMapper,
+      org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+      org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptLineItemMapper.class),
       auditLogApplicationService,
       notificationApplicationService,
       tenantFeatureApplicationService,
@@ -70,10 +72,10 @@ class ReceiptNotificationTests {
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> receipt(invocation.getArgument(1)));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester"),
-        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it", "role-buyer-requester")));
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "active", "dept-it", "role-buyer-requester"),
+        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "inactive", "dept-it", "role-buyer-requester")));
 
-    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过"));
+    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null));
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
@@ -103,10 +105,10 @@ class ReceiptNotificationTests {
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> receipt(invocation.getArgument(1)));
     when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
-        supplierUser("supplier-user-active", "启用"),
-        supplierUser("supplier-user-disabled", "停用")));
+        supplierUser("supplier-user-active", "active"),
+        supplierUser("supplier-user-disabled", "inactive")));
 
-    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过"));
+    receiptApplicationService.create("po-1", new CreateReceiptRequest("验收通过", null, null, null, null, null, null));
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
@@ -132,7 +134,7 @@ class ReceiptNotificationTests {
         status,
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
   }
 
   private Receipt receipt(String id) {
@@ -142,7 +144,7 @@ class ReceiptNotificationTests {
         "po-1",
         "user-buyer",
         "验收通过",
-        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T12:00:00+08:00"), 100, 98, "外观完好，抽检合格", null, null, null);
   }
 
   private SupplierUser supplierUser(String id, String status) {

@@ -9,5 +9,9 @@ public record CreateMaterialRequest(
     @NotBlank String name,
     @NotBlank String category,
     @NotBlank String unit,
-    @PositiveOrZero BigDecimal referencePrice) {
+    @PositiveOrZero BigDecimal referencePrice,
+    String specification,
+    String brand,
+    @PositiveOrZero BigDecimal taxRate,
+    String description) {
 }

@@ -15,9 +15,13 @@ public interface BuyerSupplierRelationMapper {
   @Select("""
       <script>
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
-             r.categories::text as categories_json, r.performance_score
+             r.categories::text as categories_json, r.performance_score,
+             r.cooperation_tier, r.last_evaluation_score,
+             s.credit_code, s.legal_person, s.contact_name, s.contact_phone,
+             s.contact_email, s.business_scope, s.bank_name, s.bank_account
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
+      left join supplier_enterprises s on s.enterprise_id = r.supplier_id
       where r.tenant_id = #{tenantId}
         <if test="status != null and status != ''">
         and r.status = #{status}
@@ -46,9 +50,13 @@ public interface BuyerSupplierRelationMapper {
 
   @Select("""
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
-             r.categories::text as categories_json, r.performance_score
+             r.categories::text as categories_json, r.performance_score,
+             r.cooperation_tier, r.last_evaluation_score,
+             s.credit_code, s.legal_person, s.contact_name, s.contact_phone,
+             s.contact_email, s.business_scope, s.bank_name, s.bank_account
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
+      left join supplier_enterprises s on s.enterprise_id = r.supplier_id
       where r.tenant_id = #{tenantId} and r.id = #{id}
       """)
   BuyerSupplierRelation findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
@@ -76,6 +84,15 @@ public interface BuyerSupplierRelationMapper {
       @Param("tenantId") String tenantId,
       @Param("supplierId") String supplierId,
       @Param("status") String status);
+
+  @Select("""
+      select count(1)
+      from buyer_supplier_relations
+      where tenant_id = #{tenantId}
+        and supplier_id = #{supplierId}
+      """)
+  int countByTenantSupplier(
+      @Param("tenantId") String tenantId, @Param("supplierId") String supplierId);
 
   @Update("""
       update buyer_supplier_relations
@@ -116,4 +133,19 @@ public interface BuyerSupplierRelationMapper {
       @Param("tenantId") String tenantId,
       @Param("id") String id,
       @Param("performanceScore") BigDecimal performanceScore);
+
+  @Update("""
+      update buyer_supplier_relations
+      set cooperation_tier = #{cooperationTier},
+          last_evaluation_score = #{lastEvaluationScore},
+          last_evaluated_at = now(),
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+      """)
+  void updateCooperationTier(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("cooperationTier") String cooperationTier,
+      @Param("lastEvaluationScore") BigDecimal lastEvaluationScore);
 }

@@ -9,5 +9,9 @@ public record Material(
     String name,
     String category,
     String unit,
-    BigDecimal referencePrice) {
+    BigDecimal referencePrice,
+    String specification,
+    String brand,
+    BigDecimal taxRate,
+    String description) {
 }

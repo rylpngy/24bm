@@ -14,12 +14,22 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class JwtTokenService {
+  // application.yml 的默认占位密钥;生产通过 JWT_SECRET 注入并置 ALLOW_DEMO_JWT_SECRET=false 快速失败。
+  public static final String DEMO_SECRET = "change-me-in-non-local-environments";
+
   private final SecretKey secretKey;
   private final long expiresInSeconds;
 
   public JwtTokenService(
       @Value("${procurement.security.jwt-secret}") String jwtSecret,
-      @Value("${procurement.security.jwt-expires-in-seconds:7200}") long expiresInSeconds) {
+      @Value("${procurement.security.jwt-expires-in-seconds:7200}") long expiresInSeconds,
+      @Value("${procurement.security.allow-demo-jwt-secret:true}") boolean allowDemoJwtSecret) {
+    if (!allowDemoJwtSecret
+        && (jwtSecret == null || jwtSecret.isBlank() || DEMO_SECRET.equals(jwtSecret))) {
+      throw new IllegalStateException(
+          "JWT secret is missing or still the demo placeholder; inject JWT_SECRET or"
+              + " re-enable procurement.security.allow-demo-jwt-secret for local/demo profiles");
+    }
     this.secretKey = Keys.hmacShaKeyFor(normalizeSecret(jwtSecret).getBytes(StandardCharsets.UTF_8));
     this.expiresInSeconds = expiresInSeconds;
   }

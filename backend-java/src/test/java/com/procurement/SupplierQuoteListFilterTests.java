@@ -18,6 +18,7 @@ import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
+import com.procurement.sourcing.infrastructure.QuoteLineItemMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
@@ -35,6 +36,8 @@ class SupplierQuoteListFilterTests {
   private final RfqDemandMapper rfqDemandMapper = org.mockito.Mockito.mock(RfqDemandMapper.class);
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
+  private final QuoteLineItemMapper quoteLineItemMapper =
+      org.mockito.Mockito.mock(QuoteLineItemMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
@@ -45,6 +48,7 @@ class SupplierQuoteListFilterTests {
           rfqDemandMapper,
           rfqInviteMapper,
           quoteMapper,
+          quoteLineItemMapper,
           new RfqSourcingStatusTransition(),
           auditLogApplicationService,
           notificationApplicationService);
@@ -89,7 +93,8 @@ class SupplierQuoteListFilterTests {
     var response = quoteApplicationService.update("quote-1", new UpdateQuoteRequest(
         BigDecimal.valueOf(116000),
         BigDecimal.valueOf(13),
-        6));
+        6,
+        null));
 
     org.assertj.core.api.Assertions.assertThat(response.amount()).isEqualByComparingTo("116000");
     org.assertj.core.api.Assertions.assertThat(response.deliveryDays()).isEqualTo(6);
@@ -121,7 +126,8 @@ class SupplierQuoteListFilterTests {
     assertThatThrownBy(() -> quoteApplicationService.update("quote-1", new UpdateQuoteRequest(
         BigDecimal.valueOf(116000),
         BigDecimal.valueOf(13),
-        6)))
+        6,
+        null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Locked supplier quote cannot be updated: quote-1");
 
@@ -146,7 +152,8 @@ class SupplierQuoteListFilterTests {
     assertThatThrownBy(() -> quoteApplicationService.submit("rfq-1", new SubmitQuoteRequest(
         BigDecimal.valueOf(116000),
         BigDecimal.valueOf(13),
-        6)))
+        6,
+        null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("RFQ quote deadline has passed: rfq-1");
 
@@ -158,7 +165,8 @@ class SupplierQuoteListFilterTests {
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.anyInt(),
-        eq("已提交"));
+        eq("已提交"),
+        org.mockito.ArgumentMatchers.anyInt());
   }
 
   @Test
@@ -168,7 +176,7 @@ class SupplierQuoteListFilterTests {
         .thenReturn(rfq("rfq-1", "报价中"));
     when(rfqInviteMapper.isSupplierInvited("tenant-1", "rfq-1", "ent-supplier-sunrise"))
         .thenReturn(1);
-    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", "已提交"))
+    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", 1))
         .thenReturn(0);
     doThrow(new DuplicateKeyException("duplicate supplier quote"))
         .when(quoteMapper)
@@ -180,12 +188,14 @@ class SupplierQuoteListFilterTests {
             eq(BigDecimal.valueOf(116000)),
             eq(BigDecimal.valueOf(13)),
             eq(6),
-            eq("已提交"));
+            eq("已提交"),
+            eq(1));
 
     assertThatThrownBy(() -> quoteApplicationService.submit("rfq-1", new SubmitQuoteRequest(
         BigDecimal.valueOf(116000),
         BigDecimal.valueOf(13),
-        6)))
+        6,
+        null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Supplier has already submitted a quote: rfq-1");
   }
@@ -221,6 +231,6 @@ class SupplierQuoteListFilterTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
   }
 }

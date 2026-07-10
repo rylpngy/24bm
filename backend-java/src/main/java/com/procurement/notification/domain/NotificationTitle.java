@@ -6,8 +6,8 @@ public final class NotificationTitle {
   public static final String PURCHASE_DEMAND_REJECTED = "采购需求审批已驳回";
   public static final String SUPPLIER_ADMISSION_APPROVED = "供应商准入审批已通过";
   public static final String SUPPLIER_ADMISSION_REJECTED = "供应商准入审批已驳回";
-  public static final String RFQ_INVITATION_CREATED = "询价邀请待报价";
-  public static final String RFQ_INVITATION_UPDATED = "询价邀请已更新";
+  public static final String RFQ_INVITATION_CREATED = "询比邀请待报价";
+  public static final String RFQ_INVITATION_UPDATED = "询比邀请已更新";
   public static final String SUPPLIER_QUOTE_SUBMITTED = "供应商已提交报价";
   public static final String RFQ_AWARD_PENDING_APPROVAL = "定标结果待审批";
   public static final String RFQ_AWARD_APPROVED = "定标审批已通过";

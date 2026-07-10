@@ -13,8 +13,9 @@ class PlatformEnterpriseReviewQueryPolicyTests {
     String mapper = Files.readString(Path.of(
         "src/main/java/com/procurement/platform/infrastructure/PlatformEnterpriseMapper.java"));
 
+    // 多步审核:待办队列含 pending 与 preliminary(初审通过/待复审)两个可处理阶段。
     assertThat(mapper)
         .contains("or (e.type = 'supplier'")
-        .contains("coalesce(s.verified_status, 'pending') = 'pending'");
+        .contains("coalesce(s.verified_status, 'pending') in ('pending', 'preliminary')");
   }
 }

@@ -2,6 +2,7 @@ package com.procurement.sourcing.api;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public record QuoteResponse(
     String id,
@@ -12,5 +13,6 @@ public record QuoteResponse(
     BigDecimal taxRate,
     Integer deliveryDays,
     String status,
-    OffsetDateTime submittedAt) {
+    OffsetDateTime submittedAt,
+    List<QuoteLineItemResponse> lineItems) {
 }

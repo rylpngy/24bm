@@ -272,7 +272,17 @@ public class BuyerSupplierApplicationService {
         relation.status(),
         relation.level(),
         readCategories(relation.categoriesJson()),
-        relation.performanceScore());
+        relation.performanceScore(),
+        relation.cooperationTier(),
+        relation.lastEvaluationScore(),
+        relation.creditCode(),
+        relation.legalPerson(),
+        relation.contactName(),
+        relation.contactPhone(),
+        relation.contactEmail(),
+        relation.businessScope(),
+        relation.bankName(),
+        relation.bankAccount());
   }
 
   private SupplierQualificationResponse toQualificationResponse(SupplierQualification qualification) {

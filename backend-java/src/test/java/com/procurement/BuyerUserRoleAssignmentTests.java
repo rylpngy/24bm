@@ -72,7 +72,9 @@ class BuyerUserRoleAssignmentTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyString());
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -106,7 +108,9 @@ class BuyerUserRoleAssignmentTests {
         org.mockito.ArgumentMatchers.eq("new.user@example.com"),
         org.mockito.ArgumentMatchers.eq("active"),
         org.mockito.ArgumentMatchers.eq("dept-it"),
-        org.mockito.ArgumentMatchers.eq("{bcrypt}new-user-hash"));
+        org.mockito.ArgumentMatchers.eq("{bcrypt}new-user-hash"),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.eq(""));
     verify(buyerUserMapper).assignRole(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("user-")),
         org.mockito.ArgumentMatchers.eq("role-buyer-requester"));

@@ -59,4 +59,29 @@ public interface SupplierProfileMapper {
       order by t.name
       """)
   List<String> listConnectedBuyerNames(@Param("supplierId") String supplierId);
+
+  // 寻源发现:平台上 type=supplier 且尚未进入本租户私域库的供应商企业(可按名称/行业搜索)。
+  @Select("""
+      select e.id,
+             e.name,
+             e.type,
+             e.industry,
+             e.verified,
+             s.credit_code,
+             s.legal_person,
+             s.verified_status,
+             s.profile_status
+      from enterprises e
+      left join supplier_enterprises s on s.enterprise_id = e.id
+      where e.type = 'supplier'
+        and e.id not in (
+          select r.supplier_id from buyer_supplier_relations r where r.tenant_id = #{tenantId}
+        )
+        and (#{keyword,jdbcType=VARCHAR} is null
+             or e.name ilike '%' || #{keyword,jdbcType=VARCHAR} || '%'
+             or coalesce(e.industry, '') ilike '%' || #{keyword,jdbcType=VARCHAR} || '%')
+      order by e.name
+      """)
+  List<SupplierProfile> discoverForTenant(
+      @Param("tenantId") String tenantId, @Param("keyword") String keyword);
 }

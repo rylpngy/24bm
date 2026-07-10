@@ -16,6 +16,7 @@ import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqAwardAuditAction;
 import com.procurement.sourcing.domain.RfqAwardStatusTransition;
+import com.procurement.sourcing.domain.RfqMethod;
 import com.procurement.sourcing.domain.RfqStatus;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
@@ -64,6 +65,9 @@ public class AwardApplicationService {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
     rfqAwardStatusTransition.requireAwardSubmission(rfq.status(), rfqId);
+    // 采购方式差异化定标门槛:竞争性谈判须多轮、招标/询价须法定家数。
+    int bidderCount = quoteMapper.listByTenantAndRfqAndRound(tenantId, rfqId, rfq.currentRound()).size();
+    RfqMethod.requireAwardEligible(rfq.method(), rfq.currentRound(), bidderCount, rfqId);
 
     Quote quote = quoteMapper.findSubmittedQuoteForAward(tenantId, rfqId, request.quoteId(), QuoteStatus.SUBMITTED);
     if (quote == null) {
@@ -73,7 +77,7 @@ public class AwardApplicationService {
     int updated = rfqMapper.updateStatus(
         tenantId,
         rfqId,
-        RfqStatus.QUOTING,
+        RfqStatus.OPENED,
         RfqStatus.AWARD_APPROVAL);
     if (updated == 0) {
       throw new IllegalStateException("RFQ status changed before award approval could be submitted: " + rfqId);

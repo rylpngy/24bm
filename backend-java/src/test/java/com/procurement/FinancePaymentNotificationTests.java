@@ -3,6 +3,7 @@ package com.procurement;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
@@ -52,11 +53,13 @@ class FinancePaymentNotificationTests {
       invoiceReconciliationMapper,
       threeWayMatchMapper,
       purchaseOrderMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
       buyerSupplierRelationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService,
-      new InvoicePaymentStatusTransition());
+      new InvoicePaymentStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
 
   @AfterEach
   void clearTenantContext() {
@@ -74,8 +77,8 @@ class FinancePaymentNotificationTests {
     when(invoiceMapper.updatePaymentStatus("tenant-1", "invoice-1", "待付款", "已付款"))
         .thenReturn(1);
     when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
-        new SupplierUser("supplier-user-1", "supplier-1", "供应商管理员", "13900000001", "supplier@example.com", "启用", "role-supplier-admin"),
-        new SupplierUser("disabled-supplier-user", "supplier-1", "停用用户", "13900000002", "disabled@example.com", "停用", "role-supplier-admin")));
+        new SupplierUser("supplier-user-1", "supplier-1", "供应商管理员", "13900000001", "supplier@example.com", "active", "role-supplier-admin"),
+        new SupplierUser("disabled-supplier-user", "supplier-1", "停用用户", "13900000002", "disabled@example.com", "inactive", "role-supplier-admin")));
 
     paymentApplicationService.register("invoice-1", new RegisterPaymentRequest("已付款"));
 
@@ -94,12 +97,14 @@ class FinancePaymentNotificationTests {
   }
 
   @Test
-  void idempotentPaidRegistrationDoesNotNotifySupplierAgain() {
+  void duplicatePaidRegistrationDoesNotNotifySupplierAgain() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1"))
         .thenReturn(invoice("已付款"));
 
-    paymentApplicationService.register("invoice-1", new RegisterPaymentRequest("已付款"));
+    assertThatThrownBy(() -> paymentApplicationService.register("invoice-1", new RegisterPaymentRequest("已付款")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Payment status already registered: invoice-1");
 
     verify(notificationMapper, never()).insert(
         org.mockito.ArgumentMatchers.anyString(),
@@ -120,7 +125,7 @@ class FinancePaymentNotificationTests {
         paymentStatus,
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "144031909110", java.time.LocalDate.parse("2026-06-01"), new java.math.BigDecimal("13.00"));
   }
 
   private PurchaseOrder order() {
@@ -133,6 +138,6 @@ class FinancePaymentNotificationTests {
         "已收货",
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
   }
 }

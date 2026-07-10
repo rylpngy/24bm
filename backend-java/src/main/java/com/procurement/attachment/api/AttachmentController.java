@@ -1,11 +1,19 @@
 package com.procurement.attachment.api;
 
 import com.procurement.attachment.application.AttachmentApplicationService;
+import com.procurement.attachment.application.AttachmentApplicationService.DownloadedObject;
 import com.procurement.common.api.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,5 +56,31 @@ public class AttachmentController {
   @PostMapping("/{attachmentId}/download-link")
   public ApiResponse<AttachmentDownloadLinkResponse> createDownloadLink(@PathVariable String attachmentId) {
     return ApiResponse.ok(attachmentApplicationService.createCurrentTenantDownloadLink(attachmentId));
+  }
+
+  // 服务端代收上传字节(上传票据中的 upload-sink),落到对象存储。
+  @PostMapping("/upload-sink")
+  public ApiResponse<Void> uploadSink(
+      @RequestParam @NotBlank String storageKey,
+      @RequestParam(required = false) String contentType,
+      @RequestBody byte[] data) {
+    attachmentApplicationService.storeCurrentTenantObject(storageKey, data, contentType);
+    return ApiResponse.ok(null);
+  }
+
+  // 按附件 id 流式下载(下载链接中的 /download)。
+  @GetMapping("/{attachmentId}/download")
+  public ResponseEntity<Resource> download(@PathVariable String attachmentId) {
+    DownloadedObject object = attachmentApplicationService.loadCurrentTenantObject(attachmentId);
+    String encoded = URLEncoder.encode(object.fileName(), StandardCharsets.UTF_8).replace("+", "%20");
+    return ResponseEntity.ok()
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + object.fileName() + "\"; filename*=UTF-8''" + encoded)
+        .contentType(
+            object.contentType() == null || object.contentType().isBlank()
+                ? MediaType.APPLICATION_OCTET_STREAM
+                : MediaType.parseMediaType(object.contentType()))
+        .body(new ByteArrayResource(object.data()));
   }
 }

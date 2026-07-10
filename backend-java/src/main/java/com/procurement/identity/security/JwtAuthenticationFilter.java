@@ -17,9 +17,24 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final JwtTokenService jwtTokenService;
+  private final KeycloakTokenService keycloakTokenService;
 
-  public JwtAuthenticationFilter(JwtTokenService jwtTokenService) {
+  public JwtAuthenticationFilter(
+      JwtTokenService jwtTokenService, KeycloakTokenService keycloakTokenService) {
     this.jwtTokenService = jwtTokenService;
+    this.keycloakTokenService = keycloakTokenService;
+  }
+
+  // 先用自研 JWT 验签;失败再回退 Keycloak(OIDC/JWKS)。两条签发器路径共存。
+  private AuthenticatedPrincipal authenticate(String token) {
+    try {
+      return jwtTokenService.parse(token);
+    } catch (RuntimeException selfJwtFailure) {
+      if (keycloakTokenService.isEnabled()) {
+        return keycloakTokenService.parse(token);
+      }
+      throw selfJwtFailure;
+    }
   }
 
   @Override
@@ -30,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     String authorization = request.getHeader("Authorization");
     if (authorization != null && authorization.startsWith("Bearer ")) {
       try {
-        AuthenticatedPrincipal principal = jwtTokenService.parse(authorization.substring(7));
+        AuthenticatedPrincipal principal = authenticate(authorization.substring(7));
         List<SimpleGrantedAuthority> authorities = principal.roles().stream()
             .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
             .toList();

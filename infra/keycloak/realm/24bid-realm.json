@@ -1,0 +1,218 @@
+{
+  "realm": "24bid",
+  "enabled": true,
+  "displayName": "24Bid Local",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "clients": [
+    {
+      "clientId": "24bid-portal",
+      "name": "24Bid Portal",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://127.0.0.1:5173/*",
+        "http://localhost:5174/*",
+        "http://127.0.0.1:5174/*",
+        "http://localhost:5175/*",
+        "http://127.0.0.1:5175/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175"
+      ],
+      "protocolMappers": [
+        {
+          "name": "userId",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "userId",
+            "claim.name": "userId",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "displayName",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "displayName",
+            "claim.name": "displayName",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "authScope",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "authScope",
+            "claim.name": "authScope",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "tenantId",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "tenantId",
+            "claim.name": "tenantId",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "supplierId",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "supplierId",
+            "claim.name": "supplierId",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "BUYER_OWNER" },
+      { "name": "BUYER_REQUESTER" },
+      { "name": "BUYER_FINANCE" },
+      { "name": "SUPPLIER_SALES" },
+      { "name": "PLATFORM_ADMIN" }
+    ]
+  },
+  "users": [
+    {
+      "username": "buyer.owner@example.com",
+      "email": "buyer.owner@example.com",
+      "firstName": "采购负责人",
+      "lastName": "演示账号",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["BUYER_OWNER"],
+      "credentials": [
+        { "type": "password", "value": "demo123456", "temporary": false }
+      ],
+      "attributes": {
+        "userId": ["user-buyer-owner"],
+        "displayName": ["采购负责人"],
+        "authScope": ["BUYER"],
+        "tenantId": ["tenant-acme"]
+      }
+    },
+    {
+      "username": "zhang.req@example.com",
+      "email": "zhang.req@example.com",
+      "firstName": "采购申请员",
+      "lastName": "演示账号",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["BUYER_REQUESTER"],
+      "credentials": [
+        { "type": "password", "value": "demo123456", "temporary": false }
+      ],
+      "attributes": {
+        "userId": ["user-buyer-zhang"],
+        "displayName": ["采购申请员"],
+        "authScope": ["BUYER"],
+        "tenantId": ["tenant-acme"]
+      }
+    },
+    {
+      "username": "li.fin@example.com",
+      "email": "li.fin@example.com",
+      "firstName": "财务专员",
+      "lastName": "演示账号",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["BUYER_FINANCE"],
+      "credentials": [
+        { "type": "password", "value": "demo123456", "temporary": false }
+      ],
+      "attributes": {
+        "userId": ["user-buyer-li"],
+        "displayName": ["财务专员"],
+        "authScope": ["BUYER"],
+        "tenantId": ["tenant-acme"]
+      }
+    },
+    {
+      "username": "supplier.sales@example.com",
+      "email": "supplier.sales@example.com",
+      "firstName": "供应商销售",
+      "lastName": "演示账号",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["SUPPLIER_SALES"],
+      "credentials": [
+        { "type": "password", "value": "demo123456", "temporary": false }
+      ],
+      "attributes": {
+        "userId": ["user-supplier-sales"],
+        "displayName": ["供应商销售"],
+        "authScope": ["SUPPLIER"],
+        "supplierId": ["ent-supplier-sunrise"]
+      }
+    },
+    {
+      "username": "platform.admin@example.com",
+      "email": "platform.admin@example.com",
+      "firstName": "平台管理员",
+      "lastName": "演示账号",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["PLATFORM_ADMIN"],
+      "credentials": [
+        { "type": "password", "value": "demo123456", "temporary": false }
+      ],
+      "attributes": {
+        "userId": ["user-platform-admin"],
+        "displayName": ["平台管理员"],
+        "authScope": ["PLATFORM"]
+      }
+    }
+  ]
+}

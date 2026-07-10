@@ -71,7 +71,9 @@ class BuyerUserDepartmentValidationTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyString());
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -105,7 +107,9 @@ class BuyerUserDepartmentValidationTests {
         org.mockito.ArgumentMatchers.eq("new.user@example.com"),
         org.mockito.ArgumentMatchers.eq("active"),
         org.mockito.ArgumentMatchers.eq("dept-it"),
-        org.mockito.ArgumentMatchers.eq("{bcrypt}new-user-hash"));
+        org.mockito.ArgumentMatchers.eq("{bcrypt}new-user-hash"),
+        org.mockito.ArgumentMatchers.isNull(),
+        org.mockito.ArgumentMatchers.eq(""));
   }
 
   private BuyerUser user(String id) {

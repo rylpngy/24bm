@@ -21,6 +21,9 @@ import com.procurement.sourcing.domain.Quote;
 import com.procurement.sourcing.domain.QuoteAuditAction;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
+import com.procurement.sourcing.api.QuoteLineItemRequest;
+import com.procurement.sourcing.domain.QuoteLineItem;
+import com.procurement.sourcing.infrastructure.QuoteLineItemMapper;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
@@ -37,6 +40,8 @@ class SupplierQuoteAuditLogTests {
   private final RfqDemandMapper rfqDemandMapper = org.mockito.Mockito.mock(RfqDemandMapper.class);
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
+  private final QuoteLineItemMapper quoteLineItemMapper =
+      org.mockito.Mockito.mock(QuoteLineItemMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationMapper notificationMapper = org.mockito.Mockito.mock(NotificationMapper.class);
@@ -49,6 +54,7 @@ class SupplierQuoteAuditLogTests {
           rfqDemandMapper,
           rfqInviteMapper,
           quoteMapper,
+          quoteLineItemMapper,
           new RfqSourcingStatusTransition(),
           auditLogApplicationService,
           notificationApplicationService);
@@ -65,7 +71,7 @@ class SupplierQuoteAuditLogTests {
         .thenReturn(rfq("rfq-1", "报价中"));
     when(rfqInviteMapper.isSupplierInvited("tenant-1", "rfq-1", "ent-supplier-sunrise"))
         .thenReturn(1);
-    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", "已提交"))
+    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", 1))
         .thenReturn(0);
     when(quoteMapper.findByTenantAndId(eq("tenant-1"), anyString()))
         .thenAnswer(invocation -> quote(invocation.getArgument(1), BigDecimal.valueOf(116000), BigDecimal.valueOf(13), 6));
@@ -73,11 +79,52 @@ class SupplierQuoteAuditLogTests {
     var response = quoteApplicationService.submit("rfq-1", new SubmitQuoteRequest(
         BigDecimal.valueOf(116000),
         BigDecimal.valueOf(13),
-        6));
+        6,
+        null));
 
     assertThat(response.id()).startsWith("quote-");
     verify(auditLogApplicationService)
-        .recordTenantAction(QuoteAuditAction.SUBMITTED, AuditTargetType.QUOTE, response.id());
+        .recordTenantAction("tenant-1", QuoteAuditAction.SUBMITTED, AuditTargetType.QUOTE, response.id());
+  }
+
+  @Test
+  void submittingQuoteWithLineItemsDerivesAmountAndPersistsLines() {
+    TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
+    when(rfqMapper.findBySupplierInvite("rfq-1", "ent-supplier-sunrise"))
+        .thenReturn(rfq("rfq-1", "报价中"));
+    when(rfqInviteMapper.isSupplierInvited("tenant-1", "rfq-1", "ent-supplier-sunrise"))
+        .thenReturn(1);
+    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", 1))
+        .thenReturn(0);
+    when(quoteMapper.findByTenantAndId(eq("tenant-1"), anyString()))
+        .thenAnswer(invocation -> quote(invocation.getArgument(1), BigDecimal.valueOf(118000), BigDecimal.valueOf(13), 7));
+    when(quoteLineItemMapper.listByQuote(eq("tenant-1"), anyString()))
+        .thenReturn(List.of(
+            new QuoteLineItem("qli-a", "tenant-1", "quote-x", "服务器", "台",
+                BigDecimal.valueOf(10), BigDecimal.valueOf(9800), BigDecimal.valueOf(98000), 0),
+            new QuoteLineItem("qli-b", "tenant-1", "quote-x", "交换机", "台",
+                BigDecimal.valueOf(8), BigDecimal.valueOf(2500), BigDecimal.valueOf(20000), 1)));
+
+    // 头金额故意填 1,验证服务端按行汇总(98000 + 20000 = 118000)覆盖。
+    var response = quoteApplicationService.submit("rfq-1", new SubmitQuoteRequest(
+        BigDecimal.ONE,
+        BigDecimal.valueOf(13),
+        7,
+        List.of(
+            new QuoteLineItemRequest("服务器", "台", BigDecimal.valueOf(10), BigDecimal.valueOf(9800)),
+            new QuoteLineItemRequest("交换机", "台", BigDecimal.valueOf(8), BigDecimal.valueOf(2500)))));
+
+    verify(quoteMapper).insert(
+        anyString(), eq("tenant-1"), eq("rfq-1"), eq("ent-supplier-sunrise"),
+        org.mockito.ArgumentMatchers.argThat(a -> a.compareTo(BigDecimal.valueOf(118000)) == 0),
+        eq(BigDecimal.valueOf(13)), eq(7), eq("已提交"), eq(1));
+    verify(quoteLineItemMapper).deleteByQuote(eq("tenant-1"), anyString());
+    verify(quoteLineItemMapper, org.mockito.Mockito.times(2))
+        .insert(anyString(), eq("tenant-1"), anyString(), anyString(), eq("台"),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt());
+    assertThat(response.lineItems()).hasSize(2);
+    assertThat(response.lineItems().get(0).lineAmount()).isEqualByComparingTo("98000");
   }
 
   @Test
@@ -87,18 +134,19 @@ class SupplierQuoteAuditLogTests {
         .thenReturn(rfq("rfq-1", "报价中"));
     when(rfqInviteMapper.isSupplierInvited("tenant-1", "rfq-1", "ent-supplier-sunrise"))
         .thenReturn(1);
-    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", "已提交"))
+    when(quoteMapper.countSubmittedBySupplier("tenant-1", "rfq-1", "ent-supplier-sunrise", 1))
         .thenReturn(0);
     when(quoteMapper.findByTenantAndId(eq("tenant-1"), anyString()))
         .thenAnswer(invocation -> quote(invocation.getArgument(1), BigDecimal.valueOf(116000), BigDecimal.valueOf(13), 6));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        buyerUser("buyer-user-active", "启用"),
-        buyerUser("buyer-user-disabled", "停用")));
+        buyerUser("buyer-user-active", "active"),
+        buyerUser("buyer-user-disabled", "inactive")));
 
     quoteApplicationService.submit("rfq-1", new SubmitQuoteRequest(
         BigDecimal.valueOf(116000),
         BigDecimal.valueOf(13),
-        6));
+        6,
+        null));
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
@@ -138,11 +186,12 @@ class SupplierQuoteAuditLogTests {
     var response = quoteApplicationService.update("quote-1", new UpdateQuoteRequest(
         BigDecimal.valueOf(116000),
         BigDecimal.valueOf(13),
-        6));
+        6,
+        null));
 
     assertThat(response.id()).isEqualTo("quote-1");
     verify(auditLogApplicationService)
-        .recordTenantAction(QuoteAuditAction.UPDATED, AuditTargetType.QUOTE, "quote-1");
+        .recordTenantAction("tenant-1", QuoteAuditAction.UPDATED, AuditTargetType.QUOTE, "quote-1");
   }
 
   @Test
@@ -166,13 +215,14 @@ class SupplierQuoteAuditLogTests {
     when(quoteMapper.findByTenantAndId("tenant-1", "quote-1"))
         .thenReturn(quote("quote-1", BigDecimal.valueOf(116000), BigDecimal.valueOf(13), 6));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        buyerUser("buyer-user-active", "启用"),
-        buyerUser("buyer-user-disabled", "停用")));
+        buyerUser("buyer-user-active", "active"),
+        buyerUser("buyer-user-disabled", "inactive")));
 
     quoteApplicationService.update("quote-1", new UpdateQuoteRequest(
         BigDecimal.valueOf(116000),
         BigDecimal.valueOf(13),
-        6));
+        6,
+        null));
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
@@ -211,7 +261,7 @@ class SupplierQuoteAuditLogTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
   }
 
   private BuyerUser buyerUser(String id, String status) {

@@ -44,12 +44,15 @@ class FinanceInvoiceNotificationTests {
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
       invoiceMapper,
       invoiceReconciliationMapper,
       threeWayMatchMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+          org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
 
   @AfterEach
   void clearTenantContext() {
@@ -66,10 +69,10 @@ class FinanceInvoiceNotificationTests {
         org.mockito.ArgumentMatchers.anyString()))
         .thenAnswer(invocation -> invoice(invocation.getArgument(1)));
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester"),
-        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it", "role-buyer-requester")));
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "active", "dept-it", "role-buyer-requester"),
+        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "inactive", "dept-it", "role-buyer-requester")));
 
-    invoiceApplicationService.create("po-1", new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001"));
+    invoiceApplicationService.create("po-1", new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001", null, null, null));
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),
@@ -100,7 +103,7 @@ class FinanceInvoiceNotificationTests {
     when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
         .thenReturn(order());
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "启用", "dept-it", "role-buyer-requester")));
+        new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "active", "dept-it", "role-buyer-requester")));
 
     invoiceApplicationService.updateReceivable(
         "invoice-1",
@@ -124,7 +127,7 @@ class FinanceInvoiceNotificationTests {
         "已收货",
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
   }
 
   private Invoice invoice(String id) {
@@ -138,7 +141,7 @@ class FinanceInvoiceNotificationTests {
         "待付款",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "144031909110", java.time.LocalDate.parse("2026-06-01"), new java.math.BigDecimal("13.00"));
   }
 
   private Invoice invoiceWithNote(String id, String reconciliationNote) {
@@ -152,6 +155,6 @@ class FinanceInvoiceNotificationTests {
         "待付款",
         reconciliationNote,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "144031909110", java.time.LocalDate.parse("2026-06-01"), new java.math.BigDecimal("13.00"));
   }
 }

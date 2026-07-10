@@ -13,5 +13,9 @@ public record PurchaseOrder(
     String status,
     LocalDate expectedReceiptDate,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    String deliveryAddress,
+    String contactName,
+    String contactPhone,
+    String paymentTerms) {
 }

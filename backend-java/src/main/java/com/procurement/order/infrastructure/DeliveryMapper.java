@@ -12,8 +12,10 @@ import org.apache.ibatis.annotations.Update;
 public interface DeliveryMapper {
 
   @Insert("""
-      insert into deliveries (id, tenant_id, order_id, supplier_id, carrier, tracking_no, status)
-      values (#{id}, #{tenantId}, #{orderId}, #{supplierId}, #{carrier}, #{trackingNo}, #{status,jdbcType=VARCHAR})
+      insert into deliveries (id, tenant_id, order_id, supplier_id, carrier, tracking_no, status,
+                              shipped_quantity, shipped_date, estimated_arrival, logistics_note)
+      values (#{id}, #{tenantId}, #{orderId}, #{supplierId}, #{carrier}, #{trackingNo}, #{status,jdbcType=VARCHAR},
+              #{shippedQuantity}, #{shippedDate,jdbcType=DATE}, #{estimatedArrival,jdbcType=DATE}, #{logisticsNote})
       """)
   void insert(
       @Param("id") String id,
@@ -22,17 +24,21 @@ public interface DeliveryMapper {
       @Param("supplierId") String supplierId,
       @Param("carrier") String carrier,
       @Param("trackingNo") String trackingNo,
-      @Param("status") String status);
+      @Param("status") String status,
+      @Param("shippedQuantity") Integer shippedQuantity,
+      @Param("shippedDate") java.time.LocalDate shippedDate,
+      @Param("estimatedArrival") java.time.LocalDate estimatedArrival,
+      @Param("logisticsNote") String logisticsNote);
 
   @Select("""
-      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
+      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at, shipped_quantity, shipped_date, estimated_arrival, logistics_note
       from deliveries
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Delivery findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
+      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at, shipped_quantity, shipped_date, estimated_arrival, logistics_note
       from deliveries
       where supplier_id = #{supplierId,jdbcType=VARCHAR}
         and id = #{id}
@@ -60,7 +66,7 @@ public interface DeliveryMapper {
       @Param("status") String status);
 
   @Select("""
-      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
+      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at, shipped_quantity, shipped_date, estimated_arrival, logistics_note
       from deliveries
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -69,7 +75,7 @@ public interface DeliveryMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at
+      select id, tenant_id, order_id, supplier_id, carrier, tracking_no, status, created_at, shipped_quantity, shipped_date, estimated_arrival, logistics_note
       from deliveries
       where supplier_id = #{supplierId,jdbcType=VARCHAR}
         <if test="status != null and status != ''">
@@ -89,7 +95,11 @@ public interface DeliveryMapper {
   @Update("""
       update deliveries
       set carrier = #{carrier},
-          tracking_no = #{trackingNo}
+          tracking_no = #{trackingNo},
+          shipped_quantity = coalesce(#{shippedQuantity,jdbcType=INTEGER}, shipped_quantity),
+          shipped_date = coalesce(#{shippedDate,jdbcType=DATE}, shipped_date),
+          estimated_arrival = coalesce(#{estimatedArrival,jdbcType=DATE}, estimated_arrival),
+          logistics_note = coalesce(#{logisticsNote,jdbcType=VARCHAR}, logistics_note)
       where tenant_id = #{tenantId}
         and id = #{id}
         and supplier_id = #{supplierId,jdbcType=VARCHAR}
@@ -99,5 +109,9 @@ public interface DeliveryMapper {
       @Param("id") String id,
       @Param("supplierId") String supplierId,
       @Param("carrier") String carrier,
-      @Param("trackingNo") String trackingNo);
+      @Param("trackingNo") String trackingNo,
+      @Param("shippedQuantity") Integer shippedQuantity,
+      @Param("shippedDate") java.time.LocalDate shippedDate,
+      @Param("estimatedArrival") java.time.LocalDate estimatedArrival,
+      @Param("logisticsNote") String logisticsNote);
 }

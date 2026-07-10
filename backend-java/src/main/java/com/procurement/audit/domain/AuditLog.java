@@ -9,5 +9,6 @@ public record AuditLog(
     String action,
     String targetType,
     String targetId,
+    String detail,
     OffsetDateTime createdAt) {
 }

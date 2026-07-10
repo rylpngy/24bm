@@ -16,6 +16,8 @@ public record PaymentExecutionRecord(
     String executionStatus,
     String executionTrace,
     String executionBlockReason,
+    String releaseEvidenceNo,
+    String releaseRemark,
     String createdBy,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {

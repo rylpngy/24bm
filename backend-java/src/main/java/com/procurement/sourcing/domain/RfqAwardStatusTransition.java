@@ -6,8 +6,8 @@ import org.springframework.stereotype.Component;
 public class RfqAwardStatusTransition {
 
   public void requireAwardSubmission(String currentStatus, String rfqId) {
-    if (!RfqStatus.QUOTING.equals(currentStatus)) {
-      throw new IllegalStateException("Only quoting RFQs can be awarded: " + rfqId);
+    if (!RfqStatus.OPENED.equals(currentStatus)) {
+      throw new IllegalStateException("Only opened RFQs can be awarded: " + rfqId);
     }
   }
 
@@ -17,7 +17,8 @@ public class RfqAwardStatusTransition {
     }
   }
 
+  // 定标审批驳回:退回「已开标」,可重新评标/改定标(无需重新开标)。
   public String reviewTargetStatus(boolean approved) {
-    return approved ? RfqStatus.AWARDED : RfqStatus.QUOTING;
+    return approved ? RfqStatus.AWARDED : RfqStatus.OPENED;
   }
 }

@@ -29,9 +29,9 @@ const javaEnv = {
   ...(existsSync(javaHome) ? { JAVA_HOME: javaHome, PATH: `/opt/homebrew/opt/openjdk@21/bin:${process.env.PATH}` } : {}),
 };
 
-await run('npm', ['run', 'openapi:check']);
-await run('npm', ['test']);
-await run('npm', ['run', 'build']);
+await run('pnpm', ['openapi:check']);
+await run('pnpm', ['test']);
+await run('pnpm', ['build']);
 await run('mvn', ['clean', 'test'], {
   cwd: resolve(root, 'backend-java'),
   env: javaEnv,

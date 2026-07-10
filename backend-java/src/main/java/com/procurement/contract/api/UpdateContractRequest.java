@@ -12,5 +12,9 @@ public record UpdateContractRequest(
     @NotNull @PositiveOrZero BigDecimal amount,
     @NotBlank String status,
     @NotBlank String fulfillmentProgress,
-    LocalDate effectiveDate) {
+    LocalDate effectiveDate,
+    LocalDate signDate,
+    LocalDate expiryDate,
+    String paymentTerms,
+    String warrantyTerms) {
 }

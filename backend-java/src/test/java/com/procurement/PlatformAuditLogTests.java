@@ -40,7 +40,8 @@ class PlatformAuditLogTests {
             platformTenantMapper,
             new ObjectMapper(),
             auditLogApplicationService,
-            passwordEncoder);
+            passwordEncoder,
+        org.mockito.Mockito.mock(com.procurement.platform.infrastructure.TenantPlanChangeMapper.class));
     when(platformTenantMapper.updateEnabledFeatures(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -74,7 +75,8 @@ class PlatformAuditLogTests {
             platformTenantMapper,
             new ObjectMapper(),
             auditLogApplicationService,
-            passwordEncoder);
+            passwordEncoder,
+        org.mockito.Mockito.mock(com.procurement.platform.infrastructure.TenantPlanChangeMapper.class));
     when(platformTenantMapper.updatePlan("tenant-1", "pro", 120)).thenReturn(1);
     when(platformTenantMapper.findById("tenant-1"))
         .thenReturn(new PlatformTenant(
@@ -105,7 +107,8 @@ class PlatformAuditLogTests {
             platformTenantMapper,
             new ObjectMapper(),
             auditLogApplicationService,
-            passwordEncoder);
+            passwordEncoder,
+        org.mockito.Mockito.mock(com.procurement.platform.infrastructure.TenantPlanChangeMapper.class));
     when(platformTenantMapper.updateStatus("tenant-1", "active")).thenReturn(1);
     when(platformTenantMapper.findById("tenant-1"))
         .thenReturn(new PlatformTenant(
@@ -134,7 +137,8 @@ class PlatformAuditLogTests {
             platformTenantMapper,
             new ObjectMapper(),
             auditLogApplicationService,
-            passwordEncoder);
+            passwordEncoder,
+        org.mockito.Mockito.mock(com.procurement.platform.infrastructure.TenantPlanChangeMapper.class));
     when(platformTenantMapper.updateStatus("tenant-1", "inactive")).thenReturn(1);
     when(platformTenantMapper.findById("tenant-1"))
         .thenReturn(new PlatformTenant(
@@ -162,7 +166,8 @@ class PlatformAuditLogTests {
     PlatformEnterpriseApplicationService platformEnterpriseApplicationService =
         new PlatformEnterpriseApplicationService(
             platformEnterpriseMapper,
-            auditLogApplicationService);
+            auditLogApplicationService,
+            new com.procurement.platform.domain.EnterpriseReviewStageTransition());
     when(platformEnterpriseMapper.updateEnterpriseVerified("ent-supplier-1", true)).thenReturn(1);
     when(platformEnterpriseMapper.findById("ent-supplier-1"))
         .thenReturn(new EnterpriseReview(

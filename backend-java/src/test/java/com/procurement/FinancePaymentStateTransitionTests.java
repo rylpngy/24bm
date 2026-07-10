@@ -49,19 +49,24 @@ class FinancePaymentStateTransitionTests {
       invoiceReconciliationMapper,
       threeWayMatchMapper,
       purchaseOrderMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
       buyerSupplierRelationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService,
-      new InvoicePaymentStatusTransition());
+      new InvoicePaymentStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
       invoiceMapper,
       invoiceReconciliationMapper,
       threeWayMatchMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+          org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
 
   @AfterEach
   void clearTenantContext() {
@@ -298,7 +303,7 @@ class FinancePaymentStateTransitionTests {
 
     InvoiceResponse response = invoiceApplicationService.create(
         "po-1",
-        new com.procurement.finance.api.CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001"));
+        new com.procurement.finance.api.CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-001", null, null, null));
 
     org.assertj.core.api.Assertions.assertThat(response.reconciliationStage()).isEqualTo("待付款");
     org.mockito.ArgumentCaptor<String> invoiceIdCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
@@ -390,7 +395,7 @@ class FinancePaymentStateTransitionTests {
         paymentStatus,
         reconciliationNote,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "144031909110", java.time.LocalDate.parse("2026-06-01"), new java.math.BigDecimal("13.00"));
   }
 
   private PurchaseOrder order(BigDecimal amount) {
@@ -403,7 +408,7 @@ class FinancePaymentStateTransitionTests {
         "已收货",
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
   }
 
   private InvoiceReconciliation reconciliation(String id, String invoiceId, String stage, String nextAction) {

@@ -61,7 +61,8 @@ class SupplierTodoSummaryAssemblerTests {
         status,
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款",
+            java.util.List.of());
   }
 
   private InvoiceResponse invoice(String id, String paymentStatus) {
@@ -85,6 +86,7 @@ class SupplierTodoSummaryAssemblerTests {
         "待付款",
         "登记付款",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", null, new java.math.BigDecimal("13.00"), java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 500, 495, 99, "存在不合格",
+            java.util.List.of());
   }
 }

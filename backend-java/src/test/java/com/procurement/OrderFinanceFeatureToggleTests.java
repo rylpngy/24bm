@@ -60,25 +60,31 @@ class OrderFinanceFeatureToggleTests {
       auditLogApplicationService,
       notificationApplicationService,
       tenantFeatureApplicationService,
-      new PurchaseOrderStatusTransition());
+      new PurchaseOrderStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
       invoiceMapper,
       invoiceReconciliationMapper,
       threeWayMatchMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
-      notificationApplicationService);
+      notificationApplicationService,
+          org.mockito.Mockito.mock(com.procurement.order.infrastructure.OrderLineItemMapper.class),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
   private final PaymentApplicationService paymentApplicationService = new PaymentApplicationService(
       invoiceMapper,
       invoiceReconciliationMapper,
       threeWayMatchMapper,
       purchaseOrderMapper,
+        org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
       buyerSupplierRelationMapper,
       auditLogApplicationService,
       tenantFeatureApplicationService,
       notificationApplicationService,
-      new InvoicePaymentStatusTransition());
+      new InvoicePaymentStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
 
   @AfterEach
   void clearTenantContext() {
@@ -116,7 +122,7 @@ class OrderFinanceFeatureToggleTests {
 
     assertThatThrownBy(() -> invoiceApplicationService.create(
         "po-1",
-        new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-1")))
+        new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-1", null, null, null)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Feature is not enabled for tenant: finance");
 
@@ -127,7 +133,10 @@ class OrderFinanceFeatureToggleTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyString());
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -171,6 +180,6 @@ class OrderFinanceFeatureToggleTests {
         status,
         LocalDate.parse("2026-06-20"),
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "上海市浦东新区张江路100号", "王收货", "021-58880000", "货到验收30天内付款");
   }
 }

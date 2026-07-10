@@ -16,6 +16,8 @@ public record PaymentExecutionRecordResponse(
     String executionStatus,
     String executionTrace,
     String executionBlockReason,
+    String releaseEvidenceNo,
+    String releaseRemark,
     String executionStage,
     String executionNextAction,
     String createdBy,

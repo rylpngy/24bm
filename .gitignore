@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 backend-java/target
+.npm-cache
 *.local
 
 # Editor directories and files
@@ -23,3 +24,13 @@ backend-java/target
 *.njsproj
 *.sln
 *.sw?
+.turbo
+
+# Playwright E2E
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Local cleanup archives (contain browser profile data, never commit)
+/cleaned_docs/

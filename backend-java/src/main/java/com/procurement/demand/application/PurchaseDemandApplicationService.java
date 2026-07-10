@@ -20,49 +20,59 @@ import com.procurement.demand.domain.PurchaseDemandItem;
 import com.procurement.demand.domain.PurchaseDemandStatus;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.application.DataScopeService;
+import com.procurement.identity.domain.DataScope;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.organization.infrastructure.DepartmentMapper;
+import com.procurement.sourcing.application.RfqDemandLinkQueryService;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseDemandApplicationService {
+  private static final DateTimeFormatter DEMAND_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
+  private final RfqDemandLinkQueryService rfqDemandLinkQueryService;
   private final DepartmentMapper departmentMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition;
+  private final DataScopeService dataScopeService;
 
   public PurchaseDemandApplicationService(
       PurchaseDemandMapper purchaseDemandMapper,
       PurchaseDemandItemMapper purchaseDemandItemMapper,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
+      RfqDemandLinkQueryService rfqDemandLinkQueryService,
       DepartmentMapper departmentMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
-      PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition) {
+      PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition,
+      DataScopeService dataScopeService) {
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
+    this.rfqDemandLinkQueryService = rfqDemandLinkQueryService;
     this.departmentMapper = departmentMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.purchaseDemandApprovalStatusTransition = purchaseDemandApprovalStatusTransition;
+    this.dataScopeService = dataScopeService;
   }
 
   public List<PurchaseDemandResponse> listCurrentTenantDemands() {
-    String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
-    return purchaseDemandMapper.listByTenant(tenantId).stream()
-        .map(this::toResponse)
-        .toList();
+    return listCurrentTenantDemands(null, null, null);
   }
 
   public List<PurchaseDemandResponse> listCurrentTenantDemands(
@@ -70,11 +80,28 @@ public class PurchaseDemandApplicationService {
       String departmentId,
       String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
+    // 行级权限:按有效数据范围收窄——部门集合(本部门 / 本部门及下级)IN,或仅本人(requester_id)。
+    DataScope dataScope = dataScopeService.currentUserDataScope();
+    if (dataScope.blocksAll()) {
+      return List.of();
+    }
+    String uiDepartmentId = blankToNull(departmentId);
+    List<String> scopeDepartmentIds = dataScope.restricted() && dataScope.requesterId() == null
+        ? dataScope.departmentIds()
+        : null;
+    // 数据范围限定部门集合时,UI 部门筛选只能在范围内收窄。
+    if (scopeDepartmentIds != null && uiDepartmentId != null
+        && !scopeDepartmentIds.contains(uiDepartmentId)) {
+      return List.of();
+    }
+    String requesterId = dataScope.restricted() ? dataScope.requesterId() : null;
     return purchaseDemandMapper.listByTenantFiltered(
             tenantId,
             blankToNull(status),
-            blankToNull(departmentId),
-            blankToNull(keyword))
+            uiDepartmentId,
+            blankToNull(keyword),
+            scopeDepartmentIds,
+            requesterId)
         .stream()
         .map(this::toResponse)
         .toList();
@@ -85,7 +112,7 @@ public class PurchaseDemandApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     String userId = TenantAccessGuard.requireUserId("buyer demand APIs");
     requireActiveDepartment(tenantId, request.departmentId());
-    String demandId = newId("dem");
+    String demandId = nextDemandId(tenantId, request.departmentId());
 
     purchaseDemandMapper.insert(
         demandId,
@@ -94,7 +121,10 @@ public class PurchaseDemandApplicationService {
         request.departmentId(),
         userId,
         request.budget(),
-        PurchaseDemandStatus.DRAFT);
+        PurchaseDemandStatus.DRAFT,
+        request.expectedDeliveryDate(),
+        request.priority() == null ? "常规" : request.priority(),
+        request.purpose() == null ? "" : request.purpose());
 
     for (var lineItem : request.lineItems()) {
       purchaseDemandItemMapper.insert(
@@ -129,7 +159,10 @@ public class PurchaseDemandApplicationService {
         demandId,
         request.title(),
         request.departmentId(),
-        request.budget());
+        request.budget(),
+        request.expectedDeliveryDate(),
+        request.priority() == null ? "常规" : request.priority(),
+        request.purpose() == null ? "" : request.purpose());
     if (updated == 0) {
       throw new IllegalStateException("Purchase demand status changed before update could be saved: " + demandId);
     }
@@ -251,6 +284,8 @@ public class PurchaseDemandApplicationService {
         .stream()
         .map(this::toLineItemResponse)
         .toList();
+    RfqDemandLinkQueryService.RfqDemandLink linkedRfq =
+        rfqDemandLinkQueryService.findLatestLinkForDemand(demand.tenantId(), demand.id());
 
     return new PurchaseDemandResponse(
         demand.id(),
@@ -262,11 +297,37 @@ public class PurchaseDemandApplicationService {
         demand.status(),
         demand.createdAt(),
         demand.updatedAt(),
-        lineItems);
+        lineItems,
+        demand.expectedDeliveryDate(),
+        demand.priority(),
+        demand.purpose(),
+        linkedRfq == null ? null : linkedRfq.rfqId(),
+        linkedRfq == null ? null : linkedRfq.status());
   }
 
   private PurchaseDemandLineItemResponse toLineItemResponse(PurchaseDemandItem item) {
     return new PurchaseDemandLineItemResponse(item.id(), item.materialId(), item.quantity());
+  }
+
+  private String nextDemandId(String tenantId, String departmentId) {
+    String prefix = departmentAbbreviation(departmentId) + LocalDate.now().format(DEMAND_DATE_FORMAT);
+    int nextSeq = purchaseDemandMapper.countByTenantAndIdPrefix(tenantId, prefix) + 1;
+    return prefix + String.format(Locale.ROOT, "%03d", nextSeq);
+  }
+
+  private static String departmentAbbreviation(String departmentId) {
+    return switch (departmentId) {
+      case "dept-it" -> "IT";
+      case "dept-finance" -> "FIN";
+      case "dept-admin" -> "ADM";
+      case "dept-purchase" -> "PUR";
+      case "dept-hq" -> "HQ";
+      default -> {
+        String normalized = departmentId == null ? "GEN" : departmentId.replace("dept-", "");
+        String letters = normalized.replaceAll("[^A-Za-z0-9]", "").toUpperCase(Locale.ROOT);
+        yield letters.isBlank() ? "GEN" : letters.substring(0, Math.min(3, letters.length()));
+      }
+    };
   }
 
   private String newId(String prefix) {

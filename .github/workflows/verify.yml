@@ -1,4 +1,4 @@
-name: Verify
+name: CI
 
 on:
   pull_request:
@@ -8,27 +8,98 @@ on:
       - master
 
 jobs:
-  verify:
+  backend:
+    name: Backend (Java 21)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
+      - uses: actions/checkout@v4
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
           cache: maven
+      # 单测均以 mock 隔离,无需数据库;集成测试(*IT)由 Testcontainers 自起容器。
+      - name: Backend tests (unit + integration)
+        working-directory: backend-java
+        run: mvn -B -ntp verify
 
-      - name: Install frontend dependencies
-        run: npm ci
+  frontend:
+    name: Frontend (pnpm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm 版本以 package.json 的 packageManager 为准,不在此重复指定。
+      - uses: pnpm/action-setup@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck (all packages + apps)
+        run: pnpm typecheck:all
+      - name: Unit tests (Vitest)
+        run: pnpm test
 
-      - name: Run verification baseline
-        run: npm run verify
+  e2e:
+    name: E2E (Playwright, 三端)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: procurement_saas
+          POSTGRES_USER: procurement
+          POSTGRES_PASSWORD: procurement
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U procurement -d procurement_saas"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21, cache: maven }
+      - uses: pnpm/action-setup@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright chromium
+        run: pnpm exec playwright install --with-deps chromium
+      # 登录链路走 Keycloak(演示 realm),用 docker run 以便挂载仓库内 realm 文件。
+      - name: Start Keycloak (realm import) in background
+        run: |
+          docker run -d --name keycloak -p 8081:8081 \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
+            -v "$PWD/infra/keycloak/realm:/opt/keycloak/data/import:ro" \
+            quay.io/keycloak/keycloak:26.0 start-dev --http-port=8081 --import-realm
+      - name: Start backend (demo 种子) in background
+        working-directory: backend-java
+        env:
+          SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/demo
+        run: |
+          nohup mvn -B -ntp spring-boot:run -Dspring-boot.run.profiles=local > /tmp/backend.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/api/v1/health && break || sleep 3
+          done
+      - name: Wait for Keycloak realm
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8081/realms/24bid/.well-known/openid-configuration >/dev/null && exit 0 || sleep 3
+          done
+          echo "Keycloak realm not ready" >&2
+          docker logs keycloak | tail -50 >&2
+          exit 1
+      - name: Run E2E (webServer 自起三端 dev)
+        run: pnpm exec playwright test
+      - name: Dump backend log on failure
+        if: failure()
+        run: tail -100 /tmp/backend.log
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: playwright-report, path: playwright-report/, retention-days: 7 }

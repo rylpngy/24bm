@@ -1,5 +1,6 @@
 package com.procurement.order.api;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record DeliveryResponse(
@@ -10,5 +11,9 @@ public record DeliveryResponse(
     String carrier,
     String trackingNo,
     String status,
-    OffsetDateTime createdAt) {
+    OffsetDateTime createdAt,
+    Integer shippedQuantity,
+    LocalDate shippedDate,
+    LocalDate estimatedArrival,
+    String logisticsNote) {
 }

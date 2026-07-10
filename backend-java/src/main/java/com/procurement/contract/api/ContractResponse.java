@@ -17,5 +17,10 @@ public record ContractResponse(
     String fulfillmentProgress,
     LocalDate effectiveDate,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    LocalDate signDate,
+    LocalDate expiryDate,
+    String paymentTerms,
+    String warrantyTerms,
+    String renewalStatus) {
 }

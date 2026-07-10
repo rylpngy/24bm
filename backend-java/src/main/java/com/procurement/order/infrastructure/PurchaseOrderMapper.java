@@ -14,7 +14,7 @@ import org.apache.ibatis.annotations.Update;
 public interface PurchaseOrderMapper {
 
   @Select("""
-      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
+      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at, delivery_address, contact_name, contact_phone, payment_terms
       from purchase_orders
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -23,7 +23,7 @@ public interface PurchaseOrderMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
+      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at, delivery_address, contact_name, contact_phone, payment_terms
       from purchase_orders
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -45,7 +45,7 @@ public interface PurchaseOrderMapper {
       @Param("rfqId") String rfqId);
 
   @Select("""
-      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
+      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at, delivery_address, contact_name, contact_phone, payment_terms
       from purchase_orders
       where tenant_id = #{tenantId}
         and rfq_id = #{rfqId,jdbcType=VARCHAR}
@@ -57,21 +57,21 @@ public interface PurchaseOrderMapper {
       @Param("supplierId") String supplierId);
 
   @Select("""
-      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
+      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at, delivery_address, contact_name, contact_phone, payment_terms
       from purchase_orders
       where tenant_id = #{tenantId} and id = #{id}
       """)
   PurchaseOrder findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
+      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at, delivery_address, contact_name, contact_phone, payment_terms
       from purchase_orders
       where id = #{id} and supplier_id = #{supplierId,jdbcType=VARCHAR}
       """)
   PurchaseOrder findBySupplierAndId(@Param("supplierId") String supplierId, @Param("id") String id);
 
   @Select("""
-      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
+      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at, delivery_address, contact_name, contact_phone, payment_terms
       from purchase_orders
       where supplier_id = #{supplierId,jdbcType=VARCHAR}
       order by created_at desc
@@ -80,7 +80,7 @@ public interface PurchaseOrderMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at
+      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at, delivery_address, contact_name, contact_phone, payment_terms
       from purchase_orders
       where supplier_id = #{supplierId,jdbcType=VARCHAR}
         <if test="status != null and status != ''">
@@ -135,4 +135,23 @@ public interface PurchaseOrderMapper {
       @Param("tenantId") String tenantId,
       @Param("id") String id,
       @Param("expectedReceiptDate") LocalDate expectedReceiptDate);
+
+  @Update("""
+      update purchase_orders
+      set delivery_address = coalesce(#{deliveryAddress,jdbcType=VARCHAR}, delivery_address),
+          contact_name = coalesce(#{contactName,jdbcType=VARCHAR}, contact_name),
+          contact_phone = coalesce(#{contactPhone,jdbcType=VARCHAR}, contact_phone),
+          payment_terms = coalesce(#{paymentTerms,jdbcType=VARCHAR}, payment_terms),
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{id}
+        and status <> '已收货'
+      """)
+  int updateOrderDetails(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("deliveryAddress") String deliveryAddress,
+      @Param("contactName") String contactName,
+      @Param("contactPhone") String contactPhone,
+      @Param("paymentTerms") String paymentTerms);
 }

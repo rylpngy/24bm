@@ -67,10 +67,14 @@ class RfqAwardNotificationTests {
   void submittingRfqAwardCreatesInAppNotificationsForActiveTenantUsers() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
-        .thenReturn(rfq("rfq-1", "办公电脑询价", "报价中"));
+        .thenReturn(rfq("rfq-1", "办公电脑询价", "已开标"));
+    when(quoteMapper.listByTenantAndRfqAndRound("tenant-1", "rfq-1", 1)).thenReturn(java.util.List.of(
+        quote("quote-1", "tenant-1", "rfq-1", "supplier-1"),
+        quote("quote-2", "tenant-1", "rfq-1", "supplier-2"),
+        quote("quote-3", "tenant-1", "rfq-1", "supplier-3")));
     when(quoteMapper.findSubmittedQuoteForAward("tenant-1", "rfq-1", "quote-1", "已提交"))
         .thenReturn(quote("quote-1", "tenant-1", "rfq-1", "supplier-1"));
-    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "报价中", "定标审批中"))
+    when(rfqMapper.updateStatus("tenant-1", "rfq-1", "已开标", "定标审批中"))
         .thenReturn(1);
     when(quoteMapper.lockSubmittedQuoteForAward("tenant-1", "quote-1", "已提交", "已锁定"))
         .thenReturn(1);
@@ -83,8 +87,8 @@ class RfqAwardNotificationTests {
     when(buyerUserMapper.findDefaultApproverId("tenant-1", "role-buyer-owner"))
         .thenReturn("user-buyer-owner");
     when(buyerUserMapper.listByTenant("tenant-1")).thenReturn(List.of(
-        new BuyerUser("approver-1", "tenant-1", "审批人", "13800000001", "approver@example.com", "启用", "dept-it", "role-buyer-owner"),
-        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "停用", "dept-it", "role-buyer-requester")));
+        new BuyerUser("approver-1", "tenant-1", "审批人", "13800000001", "approver@example.com", "active", "dept-it", "role-buyer-owner"),
+        new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "inactive", "dept-it", "role-buyer-requester")));
 
     awardApplicationService.award("rfq-1", new AwardRfqRequest("quote-1", "最低价"));
 
@@ -124,9 +128,9 @@ class RfqAwardNotificationTests {
             quote("quote-1", "tenant-1", "rfq-1", "supplier-1"),
             quote("quote-2", "tenant-1", "rfq-1", "supplier-2")));
     when(supplierUserMapper.listBySupplier("supplier-1")).thenReturn(List.of(
-        supplierUser("supplier-user-awarded", "supplier-1", "启用")));
+        supplierUser("supplier-user-awarded", "supplier-1", "active")));
     when(supplierUserMapper.listBySupplier("supplier-2")).thenReturn(List.of(
-        supplierUser("supplier-user-unawarded", "supplier-2", "启用")));
+        supplierUser("supplier-user-unawarded", "supplier-2", "active")));
 
     awardApplicationService.reviewApproval(
         "rfq-1",
@@ -160,7 +164,7 @@ class RfqAwardNotificationTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"));
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
   }
 
   private Quote quote(String id, String tenantId, String rfqId, String supplierId) {
