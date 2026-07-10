@@ -43,6 +43,7 @@ import type {
   OpenRfqRequest,
   RfqEvaluationParams,
   RfqListParams,
+  UpdateRfqInvitationsRequest,
   UpdateRfqRequest
 } from '.././model';
 
@@ -107,6 +108,64 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getRfqUpdateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const rfqUpdateInvitations = (
+    rfqId: string,
+    updateRfqInvitationsRequest: BodyType<UpdateRfqInvitationsRequest>,
+ ) => {
+      
+      
+      return customInstance<ApiResponseRfqResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/invitations`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: updateRfqInvitationsRequest
+    },
+      );
+    }
+  
+
+
+export const getRfqUpdateInvitationsMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqUpdateInvitations>>, TError,{rfqId: string;data: BodyType<UpdateRfqInvitationsRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqUpdateInvitations>>, TError,{rfqId: string;data: BodyType<UpdateRfqInvitationsRequest>}, TContext> => {
+
+const mutationKey = ['rfqUpdateInvitations'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqUpdateInvitations>>, {rfqId: string;data: BodyType<UpdateRfqInvitationsRequest>}> = (props) => {
+          const {rfqId,data} = props ?? {};
+
+          return  rfqUpdateInvitations(rfqId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RfqUpdateInvitationsMutationResult = NonNullable<Awaited<ReturnType<typeof rfqUpdateInvitations>>>
+    export type RfqUpdateInvitationsMutationBody = BodyType<UpdateRfqInvitationsRequest>
+    export type RfqUpdateInvitationsMutationError = ErrorType<ApiResponseVoid>
+
+    export const useRfqUpdateInvitations = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqUpdateInvitations>>, TError,{rfqId: string;data: BodyType<UpdateRfqInvitationsRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rfqUpdateInvitations>>,
+        TError,
+        {rfqId: string;data: BodyType<UpdateRfqInvitationsRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getRfqUpdateInvitationsMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -308,6 +367,62 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getRfqRemindMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const rfqPublish = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseRfqResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/publish`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getRfqPublishMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqPublish>>, TError,{rfqId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqPublish>>, TError,{rfqId: string}, TContext> => {
+
+const mutationKey = ['rfqPublish'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqPublish>>, {rfqId: string}> = (props) => {
+          const {rfqId} = props ?? {};
+
+          return  rfqPublish(rfqId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RfqPublishMutationResult = NonNullable<Awaited<ReturnType<typeof rfqPublish>>>
+    
+    export type RfqPublishMutationError = ErrorType<ApiResponseVoid>
+
+    export const useRfqPublish = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqPublish>>, TError,{rfqId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rfqPublish>>,
+        TError,
+        {rfqId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getRfqPublishMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

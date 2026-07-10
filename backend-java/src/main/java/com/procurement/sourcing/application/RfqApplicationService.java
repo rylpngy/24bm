@@ -228,9 +228,15 @@ public class RfqApplicationService {
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.RFQ);
     rfqSourcingStatusTransition.requireFutureDeadline(request.deadlineAt(), "new RFQ");
     validateDemands(tenantId, request.demandIds());
-    validateSuppliers(tenantId, request.invitedSupplierIds());
     String method = RfqMethod.orDefault(request.method());
-    RfqMethod.requireSupplierCount(method, request.invitedSupplierIds().size());
+    boolean draft = Boolean.TRUE.equals(request.saveAsDraft());
+    List<String> invitedSupplierIds =
+        request.invitedSupplierIds() == null ? List.of() : request.invitedSupplierIds();
+    validateSuppliers(tenantId, invitedSupplierIds);
+    if (!draft) {
+      // 直接发布路径:创建时即校验家数;草稿路径在发布时校验(供应商在选商步骤补充)。
+      RfqMethod.requireSupplierCount(method, invitedSupplierIds.size());
+    }
     RfqAuctionPolicy.requireValidParams(
         method, request.auctionStartPrice(), request.auctionMinDecrement());
     RfqMethod.requireSourceJustification(method, request.singleSourceReason());
@@ -240,7 +246,7 @@ public class RfqApplicationService {
         rfqId,
         tenantId,
         request.title(),
-        RfqStatus.QUOTING,
+        draft ? RfqStatus.DRAFT : RfqStatus.QUOTING,
         request.deadlineAt(),
         userId,
         orEmpty(request.quoteRequirement()),
@@ -253,7 +259,7 @@ public class RfqApplicationService {
 
     insertRfqDemandLinks(tenantId, rfqId, request.demandIds());
 
-    for (String supplierId : request.invitedSupplierIds()) {
+    for (String supplierId : invitedSupplierIds) {
       rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
     }
 
@@ -261,7 +267,7 @@ public class RfqApplicationService {
         RfqAuditAction.CREATED,
         AuditTargetType.RFQ,
         rfqId);
-    for (String supplierId : request.invitedSupplierIds()) {
+    for (String supplierId : draft ? List.<String>of() : invitedSupplierIds) {
       notificationApplicationService.notifyActiveSupplierUsers(
           tenantId,
           supplierId,
@@ -356,6 +362,59 @@ public class RfqApplicationService {
     }
   }
 
+  // 草稿选商:替换草稿项目的受邀供应商名单(发布前可反复调整)。
+  @Transactional
+  public RfqResponse updateDraftInvitations(String rfqId, List<String> supplierIds) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    Rfq rfq = requireRfq(tenantId, rfqId);
+    if (!RfqStatus.DRAFT.equals(rfq.status())) {
+      throw new IllegalStateException("仅草稿状态可调整受邀供应商: " + rfqId);
+    }
+    List<String> target = supplierIds == null ? List.of() : supplierIds;
+    validateSuppliers(tenantId, target);
+    rfqInviteMapper.deleteByRfq(tenantId, rfqId);
+    for (String supplierId : target) {
+      rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
+    }
+    auditLogApplicationService.recordTenantAction(RfqAuditAction.UPDATED, AuditTargetType.RFQ, rfqId);
+    return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
+  }
+
+  // 正式发布:草稿 → 报价中;此刻校验方式家数并通知受邀供应商(询价函下发)。
+  @Transactional
+  public RfqResponse publish(String rfqId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    Rfq rfq = requireRfq(tenantId, rfqId);
+    if (!RfqStatus.DRAFT.equals(rfq.status())) {
+      throw new IllegalStateException("仅草稿状态可发布询价单: " + rfqId);
+    }
+    List<String> supplierIds = rfqInviteMapper.listSupplierIds(tenantId, rfqId);
+    RfqMethod.requireSupplierCount(RfqMethod.orDefault(rfq.method()), supplierIds.size());
+    rfqSourcingStatusTransition.requireFutureDeadline(rfq.deadlineAt(), rfqId);
+    int updated = rfqMapper.updateStatus(tenantId, rfqId, RfqStatus.DRAFT, RfqStatus.QUOTING);
+    if (updated == 0) {
+      throw new IllegalStateException("RFQ status changed before publish: " + rfqId);
+    }
+    for (String supplierId : supplierIds) {
+      notificationApplicationService.notifyActiveSupplierUsers(
+          tenantId,
+          supplierId,
+          NotificationTitle.RFQ_INVITATION_CREATED,
+          rfq.title() + " 询价单已发布,请在 "
+              + (rfq.deadlineAt() == null ? "截止时间" : rfq.deadlineAt().toLocalDate()) + " 前提交报价。");
+    }
+    auditLogApplicationService.recordTenantAction(RfqAuditAction.UPDATED, AuditTargetType.RFQ, rfqId);
+    return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
+  }
+
+  private Rfq requireRfq(String tenantId, String rfqId) {
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    if (rfq == null) {
+      throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
+    }
+    return rfq;
+  }
+
   // 一键催标:向本轮尚未提交报价的受邀供应商发送催报提醒,返回催促家数。
   @Transactional
   public int remindPendingSuppliers(String rfqId) {
@@ -434,7 +493,11 @@ public class RfqApplicationService {
         rfq.auctionStartPrice(),
         rfq.auctionMinDecrement(),
         auctionLowestAmount(rfq),
-        rfq.singleSourceReason());
+        rfq.singleSourceReason(),
+        rfqInviteMapper.listByRfq(rfq.tenantId(), rfq.id()).stream()
+            .map(inv -> new com.procurement.sourcing.api.RfqInvitationResponse(
+                inv.supplierId(), inv.inviteStatus(), inv.viewedAt(), inv.declineReason()))
+            .toList());
   }
 
   // 仅竞价方式回传当前轮最低已提交报价,供买卖双方观察价格竞争进度。

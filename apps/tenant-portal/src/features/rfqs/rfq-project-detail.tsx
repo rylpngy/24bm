@@ -35,8 +35,11 @@ const currency = (v?: number) =>
 // 项目全流程节点:报价对比/定标是流程中的「定标决策」环节,而非独立模块。
 const STAGES = ['建项需求', '选择供应商', '发布询价单', '接收报价', '定标决策'] as const;
 
-function stageIndex(status?: string | null): number {
-  if (status === '报价中') return 3;
+function stageIndex(rfq: RfqResponse): number {
+  if (rfq.status === '草稿') {
+    return (rfq.invitedSupplierIds ?? []).length > 0 ? 2 : 1; // 建项已完成→选商/发布
+  }
+  if (rfq.status === '报价中') return 3;
   return 4; // 已开标 / 定标审批中 / 已定标均处于定标决策环节
 }
 
@@ -72,11 +75,13 @@ export function RfqProjectDetail({
   budget,
   supplierNames,
   onBack,
+  onResumeDraft,
 }: {
   rfq: RfqResponse;
   budget: number;
   supplierNames: Record<string, string>;
   onBack: () => void;
+  onResumeDraft?: () => void;
 }) {
   const queryClient = useQueryClient();
   const open = useRfqOpen();
@@ -90,7 +95,8 @@ export function RfqProjectDetail({
 
   const quoting = rfq.status === '报价中';
   const terminal = TERMINAL[rfq.status ?? ''];
-  const currentIndex = stageIndex(rfq.status);
+  const currentIndex = stageIndex(rfq);
+  const isDraft = rfq.status === '草稿';
   const invited = rfq.invitedSupplierIds ?? [];
   const quotes = rfq.quotes ?? [];
   const quotedSuppliers = new Set(quotes.map((q) => q.supplierId));
@@ -163,9 +169,13 @@ export function RfqProjectDetail({
                     : done
                       ? '已完成'
                       : current
-                        ? index === 3
-                          ? `${quotes.length}/${invited.length || '不限'} 家已报`
-                          : rfq.status === '定标审批中' ? '定标审批中' : rfq.status === '已定标' ? '已定标' : '比价定标中'
+                        ? index === 1
+                          ? '草稿 · 待选商'
+                          : index === 2
+                            ? isDraft ? '草稿 · 待发布' : '待发布'
+                            : index === 3
+                              ? `${quotes.length}/${invited.length || '不限'} 家已报`
+                              : rfq.status === '定标审批中' ? '定标审批中' : rfq.status === '已定标' ? '已定标' : '比价定标中'
                         : '待开始'}
                 </p>
               </div>
@@ -173,6 +183,23 @@ export function RfqProjectDetail({
           })}
         </div>
       </div>
+
+      {isDraft && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3">
+          <p className="text-xs font-black text-blue-800">
+            本项目为草稿,尚未发布;完成选商与发布后询价函才会下发给供应商。
+          </p>
+          {onResumeDraft && (
+            <button
+              type="button"
+              onClick={onResumeDraft}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700"
+            >
+              继续办理(选商 / 发布)
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-center shadow-sm">
@@ -263,6 +290,10 @@ export function RfqProjectDetail({
           )}
           {invited.map((supplierId) => {
             const submitted = quotedSuppliers.has(supplierId);
+            const invitation = (rfq.invitations ?? []).find((inv) => inv.supplierId === supplierId);
+            const declined = invitation?.inviteStatus === '已拒绝';
+            const viewed = invitation?.viewedAt;
+            const stateLabel = declined ? '已拒绝参与' : submitted ? '已提交报价' : viewed ? '已查看询价单' : '未读';
             return (
               <div key={supplierId} className="flex items-center justify-between gap-3 py-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -272,17 +303,29 @@ export function RfqProjectDetail({
                   <div className="min-w-0">
                     <p className="break-words text-sm font-black text-slate-950">{supplierNames[supplierId] ?? supplierId}</p>
                     <p className="text-[11px] font-bold text-slate-400">
-                      {submitted ? (quoting ? '已提交报价(封存,开标后可见)' : '已提交报价') : '尚未提交报价'}
+                      {declined
+                        ? invitation?.declineReason ?? '供应商拒绝参与'
+                        : submitted
+                          ? quoting ? '已提交报价(封存,开标后可见)' : '已提交报价'
+                          : viewed
+                            ? `${viewed.slice(5, 16).replace('T', ' ')} 已读`
+                            : isDraft ? '待发布后通知' : '尚未查看询价单'}
                     </p>
                   </div>
                 </div>
                 <span
                   className={cn(
                     'rounded-md px-2.5 py-1 text-[11px] font-black',
-                    submitted ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500',
+                    declined
+                      ? 'bg-red-50 text-red-700'
+                      : submitted
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : viewed
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-slate-100 text-slate-500',
                   )}
                 >
-                  {submitted ? '已提交报价' : '待报价'}
+                  {stateLabel}
                 </span>
               </div>
             );
@@ -318,6 +361,18 @@ export function RfqProjectDetail({
           <div className="mt-3 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2 text-[11px] font-bold text-sky-700">
             {rfq.method ?? '询比'} · 定标门槛:{awardGateHint(rfq.method ?? undefined, quotes.length)}
           </div>
+          {budget > 0 && quotes.length > 0 && (() => {
+            const lowest = Math.min(...quotes.map((q) => q.amount ?? Number.POSITIVE_INFINITY));
+            if (!Number.isFinite(lowest)) return null;
+            const premium = ((lowest - budget) / budget) * 100;
+            return (
+              <div className="mt-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-[11px] font-bold text-indigo-700">
+                市场参考(关联需求预算,数据来源:需求/物料目录):{currency(budget)}
+                {' · '}最低报价 {currency(lowest)}
+                {' · '}溢价率 <span className={premium <= 0 ? 'text-emerald-600' : 'text-red-600'}>{premium.toFixed(2)}%{premium <= 0 ? '(优)' : ''}</span>
+              </div>
+            );
+          })()}
           {rfq.id && <RfqSupplierPerformance rfqId={rfq.id} supplierNames={supplierNames} />}
           <div className="mt-3">
             <QuoteComparisonTable

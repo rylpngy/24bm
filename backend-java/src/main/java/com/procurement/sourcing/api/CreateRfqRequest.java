@@ -9,7 +9,7 @@ import java.util.List;
 public record CreateRfqRequest(
     @NotBlank String title,
     @NotEmpty List<String> demandIds,
-    @NotEmpty List<String> invitedSupplierIds,
+    List<String> invitedSupplierIds,
     @Future OffsetDateTime deadlineAt,
     String quoteRequirement,
     String deliveryRequirement,
@@ -19,5 +19,7 @@ public record CreateRfqRequest(
     java.math.BigDecimal auctionStartPrice,
     java.math.BigDecimal auctionMinDecrement,
     // 单一来源专属:来源说明(必填,审批留痕)。
-    String singleSourceReason) {
+    String singleSourceReason,
+    // true=保存为草稿(建项步骤),供应商与发布在后续步骤完成;缺省沿用创建即发布。
+    Boolean saveAsDraft) {
 }

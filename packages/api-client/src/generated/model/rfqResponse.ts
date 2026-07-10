@@ -6,6 +6,7 @@
  * OpenAPI spec version: v1
  */
 import type { QuoteResponse } from './quoteResponse';
+import type { RfqInvitationResponse } from './rfqInvitationResponse';
 
 export interface RfqResponse {
   id?: string;
@@ -32,4 +33,5 @@ export interface RfqResponse {
   auctionMinDecrement?: number;
   auctionLowestAmount?: number;
   singleSourceReason?: string;
+  invitations?: RfqInvitationResponse[];
 }

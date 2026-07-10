@@ -32,6 +32,7 @@ import type {
   ApiResponseRfqResultResponse,
   ApiResponseVoid,
   AskClarificationRequest,
+  DeclineRfqInvitationRequest,
   SubmitQuoteRequest,
   SupplierQuoteListRfqsParams
 } from '.././model';
@@ -42,7 +43,63 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const supplierQuoteSubmit = (
+export const supplierQuoteMarkViewed = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseVoid>(
+      {url: `/api/v1/supplier/rfqs/${rfqId}/view`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierQuoteMarkViewedMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteMarkViewed>>, TError,{rfqId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteMarkViewed>>, TError,{rfqId: string}, TContext> => {
+
+const mutationKey = ['supplierQuoteMarkViewed'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQuoteMarkViewed>>, {rfqId: string}> = (props) => {
+          const {rfqId} = props ?? {};
+
+          return  supplierQuoteMarkViewed(rfqId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierQuoteMarkViewedMutationResult = NonNullable<Awaited<ReturnType<typeof supplierQuoteMarkViewed>>>
+    
+    export type SupplierQuoteMarkViewedMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierQuoteMarkViewed = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteMarkViewed>>, TError,{rfqId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierQuoteMarkViewed>>,
+        TError,
+        {rfqId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierQuoteMarkViewedMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierQuoteSubmit = (
     rfqId: string,
     submitQuoteRequest: BodyType<SubmitQuoteRequest>,
  signal?: AbortSignal
@@ -98,6 +155,65 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getSupplierQuoteSubmitMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierQuoteDecline = (
+    rfqId: string,
+    declineRfqInvitationRequest: BodyType<DeclineRfqInvitationRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseVoid>(
+      {url: `/api/v1/supplier/rfqs/${rfqId}/decline`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: declineRfqInvitationRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierQuoteDeclineMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteDecline>>, TError,{rfqId: string;data: BodyType<DeclineRfqInvitationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteDecline>>, TError,{rfqId: string;data: BodyType<DeclineRfqInvitationRequest>}, TContext> => {
+
+const mutationKey = ['supplierQuoteDecline'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQuoteDecline>>, {rfqId: string;data: BodyType<DeclineRfqInvitationRequest>}> = (props) => {
+          const {rfqId,data} = props ?? {};
+
+          return  supplierQuoteDecline(rfqId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierQuoteDeclineMutationResult = NonNullable<Awaited<ReturnType<typeof supplierQuoteDecline>>>
+    export type SupplierQuoteDeclineMutationBody = BodyType<DeclineRfqInvitationRequest>
+    export type SupplierQuoteDeclineMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierQuoteDecline = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQuoteDecline>>, TError,{rfqId: string;data: BodyType<DeclineRfqInvitationRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierQuoteDecline>>,
+        TError,
+        {rfqId: string;data: BodyType<DeclineRfqInvitationRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierQuoteDeclineMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
