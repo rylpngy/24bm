@@ -44,6 +44,26 @@ public class OrderLineItemApplicationService {
     }
   }
 
+  // 商城直购单行明细:协议价 × 数量,无报价来源。
+  public void addDirectLine(
+      String tenantId,
+      String orderId,
+      String description,
+      String unit,
+      java.math.BigDecimal quantity,
+      java.math.BigDecimal unitPrice) {
+    orderLineItemMapper.insert(
+        "oli-" + UUID.randomUUID(),
+        tenantId,
+        orderId,
+        description,
+        unit,
+        quantity,
+        unitPrice,
+        quantity.multiply(unitPrice),
+        1);
+  }
+
   public List<OrderLineItemResponse> listForOrder(String tenantId, String orderId) {
     List<OrderLineItem> lines = orderLineItemMapper.listByOrder(tenantId, orderId);
     if (lines == null) {

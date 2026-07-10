@@ -7,6 +7,7 @@ import { useAuthStore } from './lib/auth-store';
 import { PortalLanding } from './features/portal/portal-landing';
 import { DemandsPage } from './features/demands/demands-page';
 import { ProcurementPlansPage } from './features/procurement-plans/procurement-plans-page';
+import { MallPage } from './features/mall/mall-page';
 import { ApprovalsPage } from './features/approvals/approvals-page';
 import { SuppliersPage } from './features/suppliers/suppliers-page';
 import { MaterialsPage } from './features/materials/materials-page';
@@ -98,6 +99,8 @@ export function App() {
         <SuppliersPage />
       ) : activeModuleId === 'materials' ? (
         <MaterialsPage />
+      ) : activeModuleId === 'mall' ? (
+        <MallPage onNavigate={selectModule} />
       ) : activeModuleId === 'rfqs' ? (
         <RfqsPage />
       ) : activeModuleId === 'orders' || activeModuleId === 'receipts' ? (

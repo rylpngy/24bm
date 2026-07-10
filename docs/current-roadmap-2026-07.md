@@ -210,7 +210,13 @@ Assessment found 竞价/商城/单一来源 all rode the 询比 engine with no m
 - `RfqAuctionPolicy` enforces creation params (positive start price, auction-only fields) and bid rules (first bid ≤ start price, later bids must undercut the current lowest by the decrement) on both quote submit and update.
 - The current-round lowest bid is exposed to invited suppliers on auction RFQs only (`auctionLowestAmount`) — price competition is the point; other methods stay sealed.
 - Tenant portal exposes start-price/decrement inputs when creating a 竞价 RFQ and shows the auction rule line; supplier portal shows start price, current lowest, and the max allowed next bid.
-- Not yet: realtime push (polling only), auction-specific rounds/extension rules, 商城 module.
+- Not yet: realtime push (polling only), auction-specific rounds/extension rules.
+
+### Mall (商城) module — first slice landed 2026-07-10
+
+New `mall` bounded context (registered in the module architecture tests): tenant-curated agreement-price shelf (`mall_listings`, V169 — admitted supplier × material × price with 在架/下架) plus catalog direct purchase. A direct order creates a mall anchor RFQ (method 商城, immediately 已定标 — satisfies the orders schema's NOT NULL rfq FK and keeps the data-scope chain) through `RfqApplicationService.createMallAnchor`, then a purchase order with a single agreement-price line through `PurchaseOrderApplicationService.createMallOrder`; cross-module access stays at the application layer (no new infrastructure/api boundary debt beyond the controller's standard ApiResponse entries, refrozen and reviewed). Guards: positive price, admitted-supplier-only publishing, on-shelf + positive quantity ordering. Tenant portal gains the 企业商城 module (shop + shelf tabs, keyword search, direct-buy). Demo seed V244.
+
+- Not yet: supplier self-service shelf (needs a supplier-facing material view), cart/multi-line checkout, mall spend analytics.
 - 2026-07-10 follow-up: 单一来源 now requires a source justification (`single_source_reason`, V168) at creation — non-single-source methods reject the field; the reason is echoed on RFQ responses and shown in the tenant portal. This closes the last 单一来源 gap against the 1.0 framework.
 
 ### Track C: Tender/Auction Expansion

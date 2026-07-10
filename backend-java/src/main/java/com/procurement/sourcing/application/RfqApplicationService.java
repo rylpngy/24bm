@@ -356,6 +356,30 @@ public class RfqApplicationService {
     }
   }
 
+  // 商城直购锚点:方式=商城、直接已定标的 RFQ 记录,作为目录直购订单的来源与数据范围锚点。
+  @Transactional
+  public String createMallAnchor(String title, String supplierId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    String userId = TenantAccessGuard.requireUserId("buyer RFQ APIs");
+    String rfqId = newId("rfq");
+    rfqMapper.insert(
+        rfqId,
+        tenantId,
+        title,
+        RfqStatus.AWARDED,
+        java.time.OffsetDateTime.now(),
+        userId,
+        "",
+        "商城协议价目录直购",
+        "目录价",
+        RfqMethod.MALL,
+        null,
+        null,
+        null);
+    rfqMapper.updateAward(tenantId, rfqId, RfqStatus.AWARDED, RfqStatus.AWARDED, supplierId);
+    return rfqId;
+  }
+
   private RfqResponse toResponse(Rfq rfq) {
     return new RfqResponse(
         rfq.id(),

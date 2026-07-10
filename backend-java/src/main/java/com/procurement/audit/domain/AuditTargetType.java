@@ -7,6 +7,7 @@ public final class AuditTargetType {
   public static final String DEPARTMENT = "department";
   public static final String ENTERPRISE = "enterprise";
   public static final String INVOICE = "invoice";
+  public static final String MALL_LISTING = "mall_listing";
   public static final String MATERIAL = "material";
   public static final String PAYMENT_BATCH = "payment_batch";
   public static final String PLATFORM_ANNOUNCEMENT = "platform_announcement";

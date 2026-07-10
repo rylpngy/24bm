@@ -1,0 +1,265 @@
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ShoppingCart, Store } from 'lucide-react';
+import {
+  useBuyerMallCreateOrder,
+  useBuyerMallListings,
+  useBuyerMallPublish,
+  useBuyerMallUpdateStatus,
+  useBuyerSupplierList,
+  useMaterialList,
+  type MallListingResponse,
+} from '@24bid/api-client';
+import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, SearchInput, StatusPill, Tabs, cn } from '@24bid/ui';
+
+const inputCls =
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+
+const currency = (v?: number) =>
+  v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
+
+function ListingCard({
+  listing,
+  busy,
+  onOrder,
+  onToggleStatus,
+}: {
+  listing: MallListingResponse;
+  busy: boolean;
+  onOrder: (listingId: string, quantity: number) => void;
+  onToggleStatus: (listingId: string, status: string) => void;
+}) {
+  const [quantity, setQuantity] = useState('1');
+  const onShelf = listing.status === '在架';
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="break-words font-black text-slate-950">{listing.materialName}</p>
+          <p className="mt-1 text-xs font-bold text-slate-500">
+            {listing.materialCode || '—'} · {listing.category || '未分类'} · 供应商 {listing.supplierName}
+          </p>
+        </div>
+        {listing.status && <StatusPill label={listing.status} />}
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <MiniFact label="协议单价" value={`${currency(listing.price)} / ${listing.unit ?? '件'}`} />
+        <MiniFact label="最近更新" value={listing.updatedAt?.slice(0, 10) ?? '—'} />
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {onShelf && (
+          <>
+            <input
+              className={cn(inputCls, 'h-9 w-24')}
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              aria-label={`数量 ${listing.materialName}`}
+            />
+            <button
+              type="button"
+              disabled={busy || Number(quantity) <= 0}
+              onClick={() => listing.id && onOrder(listing.id, Number(quantity))}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              <ShoppingCart size={13} /> 直购下单
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => listing.id && onToggleStatus(listing.id, onShelf ? '下架' : '在架')}
+          className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        >
+          {onShelf ? '下架' : '重新上架'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 企业商城:协议价货架(已准入供应商 × 物料 × 协议价)+ 目录直购成单。
+export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => void }) {
+  const queryClient = useQueryClient();
+  const [tab, setTab] = useState('shop');
+  const [keyword, setKeyword] = useState('');
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const [supplierId, setSupplierId] = useState('');
+  const [materialId, setMaterialId] = useState('');
+  const [price, setPrice] = useState('');
+  const [unit, setUnit] = useState('');
+
+  const listings = useBuyerMallListings({ keyword: keyword.trim() || undefined });
+  const suppliers = useBuyerSupplierList({ status: '已准入' });
+  const materials = useMaterialList();
+  const publish = useBuyerMallPublish();
+  const updateStatus = useBuyerMallUpdateStatus();
+  const createOrder = useBuyerMallCreateOrder();
+
+  const items = listings.data?.data ?? [];
+  const onShelfCount = items.filter((l) => l.status === '在架').length;
+  const busy = publish.isPending || updateStatus.isPending || createOrder.isPending;
+
+  const refresh = () => {
+    setError(null);
+    queryClient.invalidateQueries({
+      predicate: (q) =>
+        typeof q.queryKey[0] === 'string' && /\/buyer\/(mall|orders|rfqs)/.test(q.queryKey[0] as string),
+    });
+  };
+  const reportError = (e: unknown) => {
+    const message =
+      (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+      '操作失败,请稍后重试';
+    setError(message);
+    setFeedback(null);
+  };
+
+  const submitOrder = (listingId: string, quantity: number) =>
+    createOrder.mutate(
+      { data: { listingId, quantity } },
+      {
+        onSuccess: (res) => {
+          const order = res.data;
+          setFeedback(
+            `直购订单已生成:${order?.orderId ?? ''}(${order?.materialName ?? ''} × ${quantity},合计 ${currency(order?.amount)})。可在采购订单模块跟进履约。`,
+          );
+          refresh();
+        },
+        onError: reportError,
+      },
+    );
+
+  const submitPublish = () =>
+    publish.mutate(
+      { data: { supplierId, materialId, price: Number(price), unit: unit.trim() || undefined } },
+      {
+        onSuccess: () => {
+          setSupplierId('');
+          setMaterialId('');
+          setPrice('');
+          setUnit('');
+          setFeedback('商品已上架。');
+          refresh();
+        },
+        onError: reportError,
+      },
+    );
+
+  return (
+    <Panel title="企业商城" icon={Store} subtitle="协议价货架 · 商品检索 · 目录直购">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <Tabs
+          items={[
+            { id: 'shop', label: '商城选购' },
+            { id: 'shelf', label: '货架维护' },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+        <CountTag>在架 {onShelfCount} / 共 {items.length} 件</CountTag>
+      </div>
+
+      {feedback && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <FeedbackNotice tone="success" message={feedback} />
+          </div>
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('orders')}
+              className="shrink-0 rounded-md border border-emerald-200 bg-white px-3 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50"
+            >
+              查看采购订单
+            </button>
+          )}
+        </div>
+      )}
+      {error && (
+        <div className="mb-3">
+          <FeedbackNotice tone="error" message={error} />
+        </div>
+      )}
+
+      {tab === 'shelf' && (
+        <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
+          <p className="text-xs font-black text-blue-900">上架商品(已准入供应商 + 物料 + 协议价)</p>
+          <div className="mt-2 grid gap-3 sm:grid-cols-4">
+            <select className={inputCls} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+              <option value="">选择供应商</option>
+              {(suppliers.data?.data ?? []).map((s) => (
+                <option key={s.supplierId} value={s.supplierId ?? ''}>
+                  {s.supplierName ?? s.supplierId}
+                </option>
+              ))}
+            </select>
+            <select className={inputCls} value={materialId} onChange={(e) => setMaterialId(e.target.value)}>
+              <option value="">选择物料</option>
+              {(materials.data?.data ?? []).map((m) => (
+                <option key={m.id} value={m.id ?? ''}>
+                  {m.name}({m.code})
+                </option>
+              ))}
+            </select>
+            <input
+              className={inputCls}
+              type="number"
+              min="0"
+              placeholder="协议单价(元)"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+            <input
+              className={inputCls}
+              placeholder="计量单位,缺省「件」"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+            />
+          </div>
+          <div className="mt-3">
+            <PrimaryActionButton
+              onClick={submitPublish}
+              disabled={busy || !supplierId || !materialId || Number(price) <= 0}
+            >
+              上架商品
+            </PrimaryActionButton>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-3">
+        <SearchInput onSearch={setKeyword} placeholder="搜索物料名称 / 编码 / 分类 / 供应商" />
+      </div>
+
+      {listings.isLoading ? (
+        <FeedbackNotice tone="info" message="正在加载商城货架…" />
+      ) : items.length === 0 ? (
+        <FeedbackNotice tone="info" message="货架为空。切换到「货架维护」为已准入供应商上架协议价商品。" />
+      ) : (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {items
+            .filter((l) => tab === 'shelf' || l.status === '在架')
+            .map((l) => (
+              <ListingCard
+                key={l.id}
+                listing={l}
+                busy={busy}
+                onOrder={submitOrder}
+                onToggleStatus={(listingId, status) =>
+                  updateStatus.mutate(
+                    { listingId, data: { status } },
+                    { onSuccess: refresh, onError: reportError },
+                  )
+                }
+              />
+            ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
