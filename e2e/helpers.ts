@@ -21,12 +21,17 @@ export async function loginViaDevJwt(page: Page) {
   await page.getByRole('button', { name: /自研 JWT|采购管理员/ }).first().click();
 }
 
+// 左侧全局导航(aside)里的模块按钮;限定侧边栏范围,避免匹配到工作台快捷操作。
+export function navButton(page: Page, name: string | RegExp) {
+  return page.getByRole('complementary').getByRole('button', { name });
+}
+
 // 点左侧全局导航某模块(导航按钮可见名含模块名)。
 export async function openModule(page: Page, name: string | RegExp) {
-  await page.getByRole('button', { name }).first().click();
+  await navButton(page, name).first().click();
 }
 
 // 断言已离开登录门(进入工作台)。
 export async function expectLoggedIn(page: Page, anyNav: string | RegExp) {
-  await expect(page.getByRole('button', { name: anyNav }).first()).toBeVisible();
+  await expect(navButton(page, anyNav).first()).toBeVisible();
 }

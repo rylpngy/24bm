@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { loginViaKeycloak } from './helpers';
+import { loginViaKeycloak, navButton } from './helpers';
 
 // 采购方端冒烟:登录 → 工作台 → 供应商库(SRM)→ 供应商列表(表头/序号/分页)→ 采购需求。
 // 覆盖真实链路:Keycloak 登录 + 真数据列表渲染 + 统一工具条。
@@ -94,11 +94,11 @@ test('采购申请员仅显示需求与寻源相关菜单', async ({ page }) => 
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
   await page.getByRole('button', { name: /以采购申请员登录/ }).click();
 
-  await expect(page.getByRole('button', { name: /采购需求/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /询价项目/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /物料目录/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /合同管理/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /付款批次/ })).toHaveCount(0);
+  await expect(navButton(page, /采购需求/)).toBeVisible();
+  await expect(navButton(page, /询比项目/)).toBeVisible();
+  await expect(navButton(page, /物料目录/)).toBeVisible();
+  await expect(navButton(page, /合同管理/)).toHaveCount(0);
+  await expect(navButton(page, /付款批次/)).toHaveCount(0);
 });
 
 test('财务专员显示合同与付款菜单但不显示采购需求', async ({ page }) => {
@@ -106,9 +106,9 @@ test('财务专员显示合同与付款菜单但不显示采购需求', async ({
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
   await page.getByRole('button', { name: /以财务专员登录/ }).click();
 
-  await expect(page.getByRole('button', { name: /合同管理/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /发票付款/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /付款批次/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /采购需求/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /团队与权限/ })).toHaveCount(0);
+  await expect(navButton(page, /合同管理/)).toBeVisible();
+  await expect(navButton(page, /发票付款/)).toBeVisible();
+  await expect(navButton(page, /付款批次/)).toBeVisible();
+  await expect(navButton(page, /采购需求/)).toHaveCount(0);
+  await expect(navButton(page, /团队与权限/)).toHaveCount(0);
 });
