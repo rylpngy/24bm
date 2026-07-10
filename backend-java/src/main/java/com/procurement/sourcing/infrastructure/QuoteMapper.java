@@ -14,6 +14,19 @@ public interface QuoteMapper {
 
   // 当前轮去重:同一供应商在同一轮只能有一份报价(允许跨轮再报)。
   @Select("""
+      select min(amount)
+      from quotes
+      where tenant_id = #{tenantId}
+        and rfq_id = #{rfqId,jdbcType=VARCHAR}
+        and round = #{round}
+        and amount is not null
+      """)
+  java.math.BigDecimal findLowestSubmittedAmount(
+      @Param("tenantId") String tenantId,
+      @Param("rfqId") String rfqId,
+      @Param("round") int round);
+
+  @Select("""
       select count(1)
       from quotes
       where tenant_id = #{tenantId}

@@ -28,4 +28,7 @@ export interface RfqResponse {
   finalRound?: boolean;
   method?: string;
   closeReason?: string;
+  auctionStartPrice?: number;
+  auctionMinDecrement?: number;
+  auctionLowestAmount?: number;
 }

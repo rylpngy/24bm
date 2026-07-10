@@ -1,22 +1,12 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { LoginRequestScope, useAuthLogin } from '@24bid/api-client';
+import { keycloakPasswordLogin } from '@24bid/shared';
 import { useAuthStore } from '../../lib/auth-store';
 
 export const SELF_LOGIN_FALLBACK = (import.meta.env.VITE_SELF_LOGIN ?? 'true') !== 'false';
 
-const KEYCLOAK_TOKEN_URL =
-  (import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081') +
-  '/realms/24bid/protocol/openid-connect/token';
-
-function decodeJwt(token: string): Record<string, unknown> {
-  try {
-    const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(decodeURIComponent(escape(atob(part))));
-  } catch {
-    return {};
-  }
-}
+const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081';
 
 export const demoAccounts = [
   { account: 'buyer.owner@example.com', name: '采购管理员', hint: '全部权限' },
@@ -35,20 +25,11 @@ export function useBuyerLogin() {
     setKcBusy(true);
     setKcError(false);
     try {
-      const res = await fetch(KEYCLOAK_TOKEN_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'password',
-          client_id: '24bid-portal',
-          username: 'buyer.owner@example.com',
-          password: 'demo123456',
-        }),
+      const { token, claims } = await keycloakPasswordLogin({
+        keycloakUrl: KEYCLOAK_URL,
+        username: 'buyer.owner@example.com',
+        password: 'demo123456',
       });
-      if (!res.ok) throw new Error('keycloak login failed');
-      const data = await res.json();
-      const token = data.access_token as string;
-      const claims = decodeJwt(token);
       signIn({
         token,
         userId: (claims.userId as string) ?? '',

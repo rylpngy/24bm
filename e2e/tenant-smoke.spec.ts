@@ -41,6 +41,13 @@ test('采购方登录后可进入工作台', async ({ page }) => {
   await expect(navButton(page, /采购需求/)).toBeVisible();
 });
 
+test('刷新页面后登录态保持(会话持久化)', async ({ page }) => {
+  await loginAsBuyer(page);
+  await page.reload();
+  await expect(navButton(page, /供应商库/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /登录 \/ 注册/ })).toHaveCount(0);
+});
+
 test('供应商库列表:工具条 + 序号 + 分页', async ({ page }) => {
   await loginAsBuyer(page);
   await navButton(page, /供应商库/).click();

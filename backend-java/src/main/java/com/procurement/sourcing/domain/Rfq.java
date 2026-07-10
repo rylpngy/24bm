@@ -1,5 +1,6 @@
 package com.procurement.sourcing.domain;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 public record Rfq(
@@ -19,6 +20,8 @@ public record Rfq(
     int currentRound,
     boolean finalRound,
     String method,
-    String closeReason) {
+    String closeReason,
+    BigDecimal auctionStartPrice,
+    BigDecimal auctionMinDecrement) {
   // 单一(规范)构造器:避免 MyBatis 在多构造器间按 join 查询误选,丢失 currentRound 等新列。
 }

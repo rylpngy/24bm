@@ -11591,6 +11591,15 @@
           },
           "closeReason": {
             "type": "string"
+          },
+          "auctionStartPrice": {
+            "type": "number"
+          },
+          "auctionMinDecrement": {
+            "type": "number"
+          },
+          "auctionLowestAmount": {
+            "type": "number"
           }
         }
       },
@@ -14005,6 +14014,12 @@
           },
           "method": {
             "type": "string"
+          },
+          "auctionStartPrice": {
+            "type": "number"
+          },
+          "auctionMinDecrement": {
+            "type": "number"
           }
         }
       },

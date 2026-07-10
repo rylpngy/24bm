@@ -262,7 +262,7 @@ class SourcingAwardStateTransitionTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null);
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null, null, null);
   }
 
   private Quote quote(String id, String tenantId, String rfqId, String supplierId) {

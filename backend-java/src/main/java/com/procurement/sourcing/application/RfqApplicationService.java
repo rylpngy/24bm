@@ -23,6 +23,7 @@ import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqAuditAction;
 import com.procurement.sourcing.domain.RfqDemandLinkPolicy;
 import com.procurement.sourcing.domain.RfqInviteStatus;
+import com.procurement.sourcing.domain.RfqAuctionPolicy;
 import com.procurement.sourcing.domain.RfqMethod;
 import com.procurement.sourcing.domain.RfqSourcingStatusTransition;
 import com.procurement.sourcing.domain.RfqStatus;
@@ -230,6 +231,8 @@ public class RfqApplicationService {
     validateSuppliers(tenantId, request.invitedSupplierIds());
     String method = RfqMethod.orDefault(request.method());
     RfqMethod.requireSupplierCount(method, request.invitedSupplierIds().size());
+    RfqAuctionPolicy.requireValidParams(
+        method, request.auctionStartPrice(), request.auctionMinDecrement());
 
     String rfqId = newId("rfq");
     rfqMapper.insert(
@@ -242,7 +245,9 @@ public class RfqApplicationService {
         orEmpty(request.quoteRequirement()),
         orEmpty(request.deliveryRequirement()),
         orDefaultEvaluation(request.evaluationMethod()),
-        method);
+        method,
+        request.auctionStartPrice(),
+        request.auctionMinDecrement());
 
     insertRfqDemandLinks(tenantId, rfqId, request.demandIds());
 
@@ -372,7 +377,18 @@ public class RfqApplicationService {
         rfq.currentRound(),
         rfq.finalRound(),
         RfqMethod.orDefault(rfq.method()),
-        rfq.closeReason());
+        rfq.closeReason(),
+        rfq.auctionStartPrice(),
+        rfq.auctionMinDecrement(),
+        auctionLowestAmount(rfq));
+  }
+
+  // 仅竞价方式回传当前轮最低已提交报价,供买卖双方观察价格竞争进度。
+  private java.math.BigDecimal auctionLowestAmount(Rfq rfq) {
+    if (!RfqAuctionPolicy.isAuction(rfq.method())) {
+      return null;
+    }
+    return quoteMapper.findLowestSubmittedAmount(rfq.tenantId(), rfq.id(), rfq.currentRound());
   }
 
   private static String orEmpty(String value) {

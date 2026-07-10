@@ -200,7 +200,17 @@ Track B closeout complete (2026-07-10):
 - `e2e/tenant-finance-flow.spec.ts` adds behavioral coverage: the release-evidence form is submitted against an unapproved batch and the backend guard error surfaces in the UI (no state change), and batch submit-for-approval advances status while premature approval is rejected. Both are rerun-tolerant.
 - Contract approval review (`PUT contracts/{id}/approval-review`) is wired on the contracts page: contracts in 审批中 expose approve/reject actions (approve → 已生效, reject → back to 草案).
 
-Track B is now closed; the next business track decision (C tender/auction vs D platform ecosystem) should follow pilot feedback.
+Track B is now closed.
+
+### Auction (竞价) deepening — first slice landed 2026-07-10
+
+Assessment found 竞价/商城/单一来源 all rode the 询比 engine with no method-specific behavior beyond `RfqMethod` counts; 商城 needs a whole new module (catalog shelf → cart → direct order) while 竞价 can reuse the RFQ engine, so 竞价 went first to honor the 1.0 framework's "竞价规则/过程/结果" promise:
+
+- `rfqs` gains `auction_start_price` / `auction_min_decrement` (V167); the auction window reuses the existing quote deadline guard.
+- `RfqAuctionPolicy` enforces creation params (positive start price, auction-only fields) and bid rules (first bid ≤ start price, later bids must undercut the current lowest by the decrement) on both quote submit and update.
+- The current-round lowest bid is exposed to invited suppliers on auction RFQs only (`auctionLowestAmount`) — price competition is the point; other methods stay sealed.
+- Tenant portal exposes start-price/decrement inputs when creating a 竞价 RFQ and shows the auction rule line; supplier portal shows start price, current lowest, and the max allowed next bid.
+- Not yet: realtime push (polling only), auction-specific rounds/extension rules, 商城 module, 单一来源 mandatory justification field.
 
 ### Track C: Tender/Auction Expansion
 
