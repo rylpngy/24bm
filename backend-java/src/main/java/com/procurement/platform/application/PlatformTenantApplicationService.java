@@ -245,6 +245,43 @@ public class PlatformTenantApplicationService {
     }
   }
 
+  // 平台侧开通供应商企业:enterprises(type=supplier) + 明细 + 初始管理员(users.supplier_id)。
+  // 干净环境引导:开通后需在 Keycloak 为管理员建号并配 claim(userId/supplierId/authScope=SUPPLIER)。
+  @Transactional
+  public com.procurement.platform.api.SupplierEnterpriseResponse createSupplierEnterprise(
+      com.procurement.platform.api.CreateSupplierEnterpriseRequest request) {
+    if (platformTenantMapper.countEnterpriseById(request.enterpriseId()) > 0) {
+      throw new IllegalStateException("企业 ID 已存在: " + request.enterpriseId());
+    }
+    String adminUserId = "user-" + request.enterpriseId() + "-owner";
+    platformTenantMapper.insertSupplierEnterprise(
+        request.enterpriseId(), request.name(), request.industry());
+    platformTenantMapper.insertSupplierEnterpriseDetail(
+        request.enterpriseId(),
+        request.creditCode() == null ? "" : request.creditCode(),
+        request.legalPerson() == null ? "" : request.legalPerson());
+    platformTenantMapper.insertInitialSupplierAdminUser(
+        adminUserId,
+        request.enterpriseId(),
+        request.adminName(),
+        request.adminMobile(),
+        request.adminEmail(),
+        PlatformTenantStatus.ACTIVE,
+        passwordEncoder.encode(request.adminPassword()));
+    auditLogApplicationService.recordTenantAction(
+        null,
+        "supplier_enterprise.created",
+        AuditTargetType.ENTERPRISE,
+        request.enterpriseId(),
+        "平台开通供应商企业: " + request.name());
+    return new com.procurement.platform.api.SupplierEnterpriseResponse(
+        request.enterpriseId(),
+        request.name(),
+        request.industry(),
+        adminUserId,
+        request.adminEmail());
+  }
+
   private String buyerOwnerRoleId(String tenantId) {
     return "role-" + tenantId + "-buyer-owner";
   }

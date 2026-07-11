@@ -119,4 +119,45 @@ class PlatformTenantOnboardingTests {
         "tenant",
         "tenant-demo");
   }
+
+  @Test
+  void createSupplierEnterpriseInitializesProfileAndAdminUser() {
+    TenantContext.set(null, null, "user-platform-admin");
+    when(passwordEncoder.encode("supplier-pass")).thenReturn("{bcrypt}supplier-hash");
+
+    var response = platformTenantApplicationService.createSupplierEnterprise(
+        new com.procurement.platform.api.CreateSupplierEnterpriseRequest(
+            "ent-pilot-supplier", "试点机电设备公司", "机电设备",
+            "91310000PILOT001", "张三",
+            "供应商管理员", "13800000001", "sales@pilot-supplier.example.com", "supplier-pass"));
+
+    org.assertj.core.api.Assertions.assertThat(response.adminUserId())
+        .isEqualTo("user-ent-pilot-supplier-owner");
+    verify(platformTenantMapper).insertSupplierEnterprise(
+        "ent-pilot-supplier", "试点机电设备公司", "机电设备");
+    verify(platformTenantMapper).insertSupplierEnterpriseDetail(
+        "ent-pilot-supplier", "91310000PILOT001", "张三");
+    verify(platformTenantMapper).insertInitialSupplierAdminUser(
+        "user-ent-pilot-supplier-owner",
+        "ent-pilot-supplier",
+        "供应商管理员",
+        "13800000001",
+        "sales@pilot-supplier.example.com",
+        "active",
+        "{bcrypt}supplier-hash");
+  }
+
+  @Test
+  void createSupplierEnterpriseRejectsDuplicateEnterpriseId() {
+    TenantContext.set(null, null, "user-platform-admin");
+    when(platformTenantMapper.countEnterpriseById("ent-dup")).thenReturn(1);
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+        platformTenantApplicationService.createSupplierEnterprise(
+            new com.procurement.platform.api.CreateSupplierEnterpriseRequest(
+                "ent-dup", "重复企业", "机电", null, null,
+                "管理员", null, "a@b.example.com", "supplier-pass")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("已存在");
+  }
 }

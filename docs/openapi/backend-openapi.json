@@ -3063,6 +3063,56 @@
         }
       }
     },
+    "/api/v1/platform/suppliers": {
+      "post": {
+        "tags": [
+          "platform-supplier-controller"
+        ],
+        "operationId": "PlatformSupplier_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupplierEnterpriseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierEnterpriseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/platform/enterprise-reviews/{enterpriseId}": {
       "post": {
         "tags": [
@@ -14452,6 +14502,82 @@
           },
           "overageCost": {
             "type": "number"
+          }
+        }
+      },
+      "CreateSupplierEnterpriseRequest": {
+        "required": [
+          "adminEmail",
+          "adminName",
+          "adminPassword",
+          "enterpriseId",
+          "industry",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "enterpriseId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "industry": {
+            "type": "string"
+          },
+          "creditCode": {
+            "type": "string"
+          },
+          "legalPerson": {
+            "type": "string"
+          },
+          "adminName": {
+            "type": "string"
+          },
+          "adminMobile": {
+            "type": "string"
+          },
+          "adminEmail": {
+            "type": "string"
+          },
+          "adminPassword": {
+            "maxLength": 2147483647,
+            "minLength": 8,
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseSupplierEnterpriseResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SupplierEnterpriseResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierEnterpriseResponse": {
+        "type": "object",
+        "properties": {
+          "enterpriseId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "industry": {
+            "type": "string"
+          },
+          "adminUserId": {
+            "type": "string"
+          },
+          "adminEmail": {
+            "type": "string"
           }
         }
       },

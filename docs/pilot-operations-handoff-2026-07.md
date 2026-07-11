@@ -118,3 +118,14 @@ DB_URL=jdbc:postgresql://localhost:15432/procurement_saas mvn -f backend-java sp
 
 通过标准沿用第 2 节 Restore pass criteria;演练记录存运维工作区,表格中只放链接。
 
+### 5.3 新企业开通与 Keycloak 建号(试点预演验证过的完整链路)
+
+1. 平台后台(platform-admin → 租户列表 → 企业开通)创建采购租户或供应商企业;开通成功后界面会显示该管理员的 `userId`(确定性:`user-<租户ID>-owner` / `user-<企业ID>-owner`)。
+2. Keycloak 管理台 → 24bid realm → Users → Create user:
+   - 用户名用管理员邮箱;**必须填写姓/名并勾选 Email verified**,否则密码登录报 `Account is not fully set up`;
+   - Credentials 设置密码并去掉 Temporary;
+   - Attributes 添加四个属性:`userId`(上一步回显值)、`tenantId`(采购方)或 `supplierId`(供应商)、`authScope`(`BUYER`/`SUPPLIER`)、`displayName`;
+   - Role mapping 分配 realm 角色:采购方 `BUYER_OWNER`(或 `BUYER_REQUESTER`/`BUYER_FINANCE`),供应商 `SUPPLIER_SALES`——接口层按角色放行,缺失会一律 403。
+3. 平台管理员账号(`platform.admin@example.com`)已随 realm 内置,并需要 realm 角色 `PLATFORM_ADMIN`;干净库的对应 users 行由正式迁移 V172 引导。
+4. 注意:realm 已配置 `unmanagedAttributePolicy=ENABLED`(24bid-realm.json 内置)。若使用自建 realm,必须在 Realm settings → User profile 开启 Unmanaged attributes,否则管理台写入的自定义属性会被静默丢弃,登录后二三步的 claim 全为空。
+

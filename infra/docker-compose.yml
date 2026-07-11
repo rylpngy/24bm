@@ -86,6 +86,8 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minio}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio12345}
       # 试点安全基线:关闭演示 JWT 密钥;自研登录仅作 CI/开发后备,试点默认关闭。
+      # 注意:ALLOW_DEMO_JWT_SECRET=false 时必须注入 JWT_SECRET,否则启动即失败(fail-fast 属预期)。
+      JWT_SECRET: ${JWT_SECRET:-}
       ALLOW_DEMO_JWT_SECRET: ${ALLOW_DEMO_JWT_SECRET:-true}
       SELF_LOGIN_ENABLED: ${SELF_LOGIN_ENABLED:-true}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174,http://localhost:5175}
