@@ -61,7 +61,6 @@ export const platformAdminModules: AdminNavigationModule[] = [
 export const supplierAdminModules: AdminNavigationModule[] = [
   { id: 'overview', label: '供应商看板', desc: '合作采购方、商机、订单' },
   { id: 'opportunities', label: '询比邀请', desc: '可报价商机与截止时间' },
-  { id: 'quotes', label: '报价记录', desc: '已提交报价与报价状态' },
   { id: 'orders', label: '销售订单', desc: '确认、发货、开票入口' },
   { id: 'shelf', label: '商城货架', desc: '协议价商品、自主调价与上下架' },
   { id: 'invoices', label: '发票应收', desc: '发票与回款状态' },

@@ -1,20 +1,35 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart } from 'lucide-react';
 import {
+  type PurchaseOrderResponse,
   useSupplierDeliveryCreate,
   useSupplierInvoiceCreate,
   useSupplierOrderConfirm,
   useSupplierOrderList,
 } from '@24bid/api-client';
-import { FilterTabs, FeedbackNotice, MiniFact, Pagination, Panel, PrimaryActionButton, SearchInput, StatusPill} from '@24bid/ui';
+import {
+  FilterTabs,
+  FeedbackNotice,
+  MiniFact,
+  Pagination,
+  Panel,
+  PrimaryActionButton,
+  ResponsiveTableFrame,
+  SearchInput,
+  StatusPill,
+  cn,
+} from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
 
 const PAGE_SIZE = 8;
 
-// 销售订单:供应商确认订单(待确认→待发货),并登记发货(承运商/运单/数量)。
+const inputCls =
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+
+// 销售订单:供应商确认订单(待确认→待发货),并登记发货(承运商/运单/数量)与开票。
 export function OrdersPage() {
   const queryClient = useQueryClient();
   const orders = useSupplierOrderList();
@@ -22,6 +37,7 @@ export function OrdersPage() {
   const ship = useSupplierDeliveryCreate();
   const issue = useSupplierInvoiceCreate();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [shipForm, setShipForm] = useState<{ orderId: string; carrier: string; trackingNo: string; qty: string } | null>(null);
   const [invForm, setInvForm] = useState<{
     orderId: string;
@@ -94,11 +110,165 @@ export function OrdersPage() {
     );
   };
 
-  const inputCls =
-    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100';
+  // 展开区:行项明细 + 收货/付款信息 + 发货/开票表单(仅展开行渲染)。
+  const renderExpanded = (o: PurchaseOrderResponse) => {
+    const busyS = ship.isPending && ship.variables?.orderId === o.id;
+    const busyI = issue.isPending && issue.variables?.orderId === o.id;
+    const editing = shipForm?.orderId === o.id;
+    const invEditing = invForm?.orderId === o.id;
+    return (
+      <div className="space-y-3">
+        <div className="grid gap-2 sm:grid-cols-3">
+          <MiniFact label="预计到货" value={o.expectedReceiptDate ?? '—'} />
+          <MiniFact label="收货地址" value={o.deliveryAddress || '—'} />
+          <MiniFact label="付款方式" value={o.paymentTerms ?? '—'} />
+        </div>
+
+        {(o.lineItems ?? []).length > 0 && (
+          <div className="overflow-hidden rounded-lg border border-slate-100">
+            <p className="bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400">
+              订单行项明细（{(o.lineItems ?? []).length} 项）
+            </p>
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                <tr>
+                  <th className="px-3 py-1.5">品名/规格</th>
+                  <th className="px-3 py-1.5 text-right">数量</th>
+                  <th className="px-3 py-1.5 text-right">单价</th>
+                  <th className="px-3 py-1.5 text-right">行金额</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(o.lineItems ?? []).map((l) => (
+                  <tr key={l.id} className="font-bold text-slate-700">
+                    <td className="px-3 py-1.5">{l.description}</td>
+                    <td className="px-3 py-1.5 text-right">
+                      {l.quantity}
+                      {l.unit ? ` ${l.unit}` : ''}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">{currency(l.unitPrice)}</td>
+                    <td className="px-3 py-1.5 text-right font-black text-slate-900">{currency(l.lineAmount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {editing && (
+          <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-3">
+            <p className="text-xs font-black text-blue-800">发货登记</p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              <input className={inputCls} placeholder="承运商" value={shipForm!.carrier}
+                onChange={(e) => setShipForm({ ...shipForm!, carrier: e.target.value })} />
+              <input className={inputCls} placeholder="运单号" value={shipForm!.trackingNo}
+                onChange={(e) => setShipForm({ ...shipForm!, trackingNo: e.target.value })} />
+              <input className={inputCls} type="number" placeholder="发货数量" value={shipForm!.qty}
+                onChange={(e) => setShipForm({ ...shipForm!, qty: e.target.value })} />
+            </div>
+            <div className="mt-2 flex gap-2">
+              <PrimaryActionButton
+                onClick={() => onShip(o.id!)}
+                busy={busyS}
+                pendingLabel="提交中"
+                disabled={!shipForm?.carrier?.trim() || !shipForm?.trackingNo?.trim()}
+              >
+                提交发货
+              </PrimaryActionButton>
+              <button type="button" onClick={() => setShipForm(null)}
+                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50">
+                取消
+              </button>
+            </div>
+          </div>
+        )}
+
+        {invEditing && (
+          <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-3">
+            <p className="text-xs font-black text-blue-800">开具发票(金额须与订单一致 {currency(o.amount)})</p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              <input className={inputCls} placeholder="发票号码" value={invForm!.invoiceNo}
+                onChange={(e) => setInvForm({ ...invForm!, invoiceNo: e.target.value })} />
+              <input className={inputCls} placeholder="发票代码" value={invForm!.invoiceCode}
+                onChange={(e) => setInvForm({ ...invForm!, invoiceCode: e.target.value })} />
+              <input className={inputCls} type="number" placeholder="税率%" value={invForm!.taxRate}
+                onChange={(e) => setInvForm({ ...invForm!, taxRate: e.target.value })} />
+            </div>
+            <div className="mt-2 flex gap-2">
+              <PrimaryActionButton
+                onClick={() => onIssueInvoice(o.id!, o.amount)}
+                busy={busyI}
+                pendingLabel="开票中"
+                disabled={!invForm?.invoiceNo?.trim()}
+              >
+                提交开票
+              </PrimaryActionButton>
+              <button type="button" onClick={() => setInvForm(null)}
+                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50">
+                取消
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 操作按钮组(表格行与移动卡片共用)。
+  const rowActions = (o: PurchaseOrderResponse) => {
+    const busyC = confirm.isPending && confirm.variables?.orderId === o.id;
+    const expanded = expandedId === o.id;
+    return (
+      <div className="flex flex-wrap justify-end gap-2">
+        {o.status === '待确认' && o.id && (
+          <button
+            type="button"
+            disabled={busyC}
+            onClick={() => onConfirm(o.id!)}
+            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:bg-slate-400"
+          >
+            {busyC ? '确认中' : '确认订单'}
+          </button>
+        )}
+        {o.status === '待发货' && o.id && (
+          <button
+            type="button"
+            onClick={() => {
+              setShipForm({ orderId: o.id!, carrier: '', trackingNo: '', qty: '' });
+              setInvForm(null);
+              setExpandedId(o.id!);
+            }}
+            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+          >
+            登记发货
+          </button>
+        )}
+        {o.status === '已收货' && o.id && (
+          <button
+            type="button"
+            onClick={() => {
+              setInvForm({ orderId: o.id!, invoiceNo: '', invoiceCode: '', taxRate: '13' });
+              setShipForm(null);
+              setExpandedId(o.id!);
+            }}
+            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+          >
+            开具发票
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setExpandedId(expanded ? null : o.id ?? null)}
+          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+        >
+          {expanded ? '收起' : '明细'}
+        </button>
+      </div>
+    );
+  };
 
   return (
-    <Panel title="销售订单" icon={ShoppingCart} subtitle="订单确认 · 发货登记">
+    <Panel title="销售订单" icon={ShoppingCart} subtitle="订单确认 · 发货登记 · 开票">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterTabs
           items={statuses.map((s) => ({
@@ -129,6 +299,8 @@ export function OrdersPage() {
 
       {orders.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载销售订单…" />
+      ) : orders.isError ? (
+        <FeedbackNotice tone="error" message="订单加载失败:登录态可能已过期,请重新登录后重试。" />
       ) : list.length === 0 ? (
         <FeedbackNotice
           tone="info"
@@ -140,14 +312,8 @@ export function OrdersPage() {
         />
       ) : (
         <>
-        <div className="space-y-3">
-          {pageItems.map((o, i) => {
-            const busyC = confirm.isPending && confirm.variables?.orderId === o.id;
-            const busyS = ship.isPending && ship.variables?.orderId === o.id;
-            const busyI = issue.isPending && issue.variables?.orderId === o.id;
-            const editing = shipForm?.orderId === o.id;
-            const invEditing = invForm?.orderId === o.id;
-            return (
+          <ResponsiveTableFrame
+            mobileCards={pageItems.map((o, i) => (
               <div key={o.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -162,125 +328,53 @@ export function OrdersPage() {
                     <span className="font-mono text-sm font-black text-slate-900">{currency(o.amount)}</span>
                   </div>
                 </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  <MiniFact label="预计到货" value={o.expectedReceiptDate ?? '—'} />
-                  <MiniFact label="收货地址" value={o.deliveryAddress || '—'} />
-                  <MiniFact label="付款方式" value={o.paymentTerms ?? '—'} />
-                </div>
-
-                {(o.lineItems ?? []).length > 0 && (
-                  <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
-                    <p className="bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                      订单行项明细（{(o.lineItems ?? []).length} 项）
-                    </p>
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
-                        <tr>
-                          <th className="px-3 py-1.5">品名/规格</th>
-                          <th className="px-3 py-1.5 text-right">数量</th>
-                          <th className="px-3 py-1.5 text-right">单价</th>
-                          <th className="px-3 py-1.5 text-right">行金额</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {(o.lineItems ?? []).map((l) => (
-                          <tr key={l.id} className="font-bold text-slate-700">
-                            <td className="px-3 py-1.5">{l.description}</td>
-                            <td className="px-3 py-1.5 text-right">
-                              {l.quantity}
-                              {l.unit ? ` ${l.unit}` : ''}
-                            </td>
-                            <td className="px-3 py-1.5 text-right">{currency(l.unitPrice)}</td>
-                            <td className="px-3 py-1.5 text-right font-black text-slate-900">{currency(l.lineAmount)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {o.status === '待确认' && o.id && (
-                  <PrimaryActionButton onClick={() => onConfirm(o.id!)} busy={busyC} pendingLabel="确认中">
-                    确认订单
-                  </PrimaryActionButton>
-                )}
-
-                {o.status === '待发货' && o.id && (
-                  editing ? (
-                    <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/40 p-3">
-                      <p className="text-xs font-black text-emerald-800">发货登记</p>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                        <input className={inputCls} placeholder="承运商" value={shipForm!.carrier}
-                          onChange={(e) => setShipForm({ ...shipForm!, carrier: e.target.value })} />
-                        <input className={inputCls} placeholder="运单号" value={shipForm!.trackingNo}
-                          onChange={(e) => setShipForm({ ...shipForm!, trackingNo: e.target.value })} />
-                        <input className={inputCls} type="number" placeholder="发货数量" value={shipForm!.qty}
-                          onChange={(e) => setShipForm({ ...shipForm!, qty: e.target.value })} />
-                      </div>
-                      <div className="mt-2 flex gap-2">
-                        <PrimaryActionButton
-                          onClick={() => onShip(o.id!)}
-                          busy={busyS}
-                          pendingLabel="提交中"
-                          disabled={!shipForm?.carrier?.trim() || !shipForm?.trackingNo?.trim()}
-                        >
-                          提交发货
-                        </PrimaryActionButton>
-                        <button type="button" onClick={() => setShipForm(null)}
-                          className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50">
-                          取消
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button type="button"
-                      onClick={() => setShipForm({ orderId: o.id!, carrier: '', trackingNo: '', qty: '' })}
-                      className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700">
-                      登记发货
-                    </button>
-                  )
-                )}
-
-                {o.status === '已收货' && o.id && (
-                  invEditing ? (
-                    <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/40 p-3">
-                      <p className="text-xs font-black text-emerald-800">开具发票(金额须与订单一致 {currency(o.amount)})</p>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                        <input className={inputCls} placeholder="发票号码" value={invForm!.invoiceNo}
-                          onChange={(e) => setInvForm({ ...invForm!, invoiceNo: e.target.value })} />
-                        <input className={inputCls} placeholder="发票代码" value={invForm!.invoiceCode}
-                          onChange={(e) => setInvForm({ ...invForm!, invoiceCode: e.target.value })} />
-                        <input className={inputCls} type="number" placeholder="税率%" value={invForm!.taxRate}
-                          onChange={(e) => setInvForm({ ...invForm!, taxRate: e.target.value })} />
-                      </div>
-                      <div className="mt-2 flex gap-2">
-                        <PrimaryActionButton
-                          onClick={() => onIssueInvoice(o.id!, o.amount)}
-                          busy={busyI}
-                          pendingLabel="开票中"
-                          disabled={!invForm?.invoiceNo?.trim()}
-                        >
-                          提交开票
-                        </PrimaryActionButton>
-                        <button type="button" onClick={() => setInvForm(null)}
-                          className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50">
-                          取消
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button type="button"
-                      onClick={() => setInvForm({ orderId: o.id!, invoiceNo: '', invoiceCode: '', taxRate: '13' })}
-                      className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700">
-                      开具发票
-                    </button>
-                  )
-                )}
+                <div className="mt-3">{rowActions(o)}</div>
+                {expandedId === o.id && <div className="mt-3">{renderExpanded(o)}</div>}
               </div>
-            );
-          })}
-        </div>
-        <Pagination page={safePage} pageSize={PAGE_SIZE} total={list.length} onPageChange={setPage} />
+            ))}
+          >
+            <table className="w-full min-w-[920px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-black text-slate-500">
+                <tr>
+                  <th className="w-12 px-2 py-4 text-center">序号</th>
+                  <th className="px-5 py-4">订单编号</th>
+                  <th className="px-5 py-4">预计到货</th>
+                  <th className="px-5 py-4">付款方式</th>
+                  <th className="px-5 py-4">状态</th>
+                  <th className="px-5 py-4 text-right">订单金额</th>
+                  <th className="px-5 py-4 text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pageItems.map((o, i) => (
+                  <Fragment key={o.id}>
+                    <tr className={cn('hover:bg-blue-50/30', expandedId === o.id && 'bg-blue-50/30')}>
+                      <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
+                        {(safePage - 1) * PAGE_SIZE + i + 1}
+                      </td>
+                      <td className="px-5 py-5">
+                        <p className="font-mono text-xs font-black text-slate-900">{o.id}</p>
+                        <p className="mt-1 font-mono text-[11px] font-bold text-slate-400">询比 {o.rfqId ?? '—'}</p>
+                      </td>
+                      <td className="px-5 py-5 text-sm font-bold text-slate-600">{o.expectedReceiptDate ?? '—'}</td>
+                      <td className="px-5 py-5 text-sm font-bold text-slate-600">{o.paymentTerms ?? '—'}</td>
+                      <td className="px-5 py-5">{o.status && <StatusPill label={o.status} />}</td>
+                      <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(o.amount)}</td>
+                      <td className="px-5 py-5 text-right">{rowActions(o)}</td>
+                    </tr>
+                    {expandedId === o.id && (
+                      <tr className="bg-slate-50/60">
+                        <td colSpan={7} className="px-5 py-4">
+                          {renderExpanded(o)}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </ResponsiveTableFrame>
+          <Pagination page={safePage} pageSize={PAGE_SIZE} total={list.length} onPageChange={setPage} />
         </>
       )}
     </Panel>

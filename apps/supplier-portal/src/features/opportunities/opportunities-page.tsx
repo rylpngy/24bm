@@ -27,6 +27,7 @@ import {
   Pagination,
   Panel,
   PrimaryActionButton,
+  ResponsiveTableFrame,
   SearchInput,
   StatusPill,
   cn,
@@ -610,86 +611,134 @@ export function OpportunitiesPage() {
         />
       ) : (
         <>
-          <div className="space-y-3">
-            {pageItems.map((r, i) => {
+          <ResponsiveTableFrame
+            mobileCards={pageItems.map((r, i) => {
               const myInvitation = (r.invitations ?? [])[0];
               const declined = myInvitation?.inviteStatus === '已拒绝';
               const quoting = r.status === '报价中' && !declined;
               const myQuote = myQuoteFor(r.id);
               return (
-                <div
-                  key={r.id}
-                  className={cn(
-                    'rounded-lg border bg-white p-4 shadow-sm shadow-slate-200/50 transition hover:border-blue-200',
-                    quoting && !myQuote ? 'border-blue-200 ring-1 ring-blue-100' : 'border-slate-200',
-                  )}
-                >
-                  <div className="flex flex-wrap items-start gap-3">
-                    <div className="min-w-0 flex-1">
+                <div key={r.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <MethodChip method={r.method} />
-                        {(r.currentRound ?? 1) > 1 && (
-                          <span className="rounded-md bg-violet-100 px-2 py-0.5 text-[11px] font-black text-violet-700">
-                            第{r.currentRound}轮{r.finalRound ? '·最终' : ''}
-                          </span>
-                        )}
-                        <span className="font-mono text-[11px] font-bold text-slate-400">{r.id}</span>
-                      </div>
-                      <p className="mt-1.5 break-words text-[15px] font-black text-slate-950">
-                        <span className="mr-1.5 font-mono text-slate-400">
-                          {(safePage - 1) * PAGE_SIZE + i + 1}.
+                        <span className="font-mono text-[11px] font-bold text-slate-400">
+                          {(safePage - 1) * PAGE_SIZE + i + 1}. {r.id}
                         </span>
-                        {r.title}
-                      </p>
-                      <p className="mt-1.5 text-xs font-bold text-slate-500">
-                        评选方式 {r.evaluationMethod ?? '最低价'}
-                        {myQuote?.amount != null ? (
-                          <span className="ml-2 font-mono font-black text-emerald-700">
-                            我的报价 {currency(myQuote.amount)}
-                          </span>
-                        ) : declined ? (
-                          <span className="ml-2 font-black text-red-600">已拒绝参与</span>
-                        ) : (
-                          <span className="ml-2 text-slate-400">未报价</span>
-                        )}
-                      </p>
-                      {r.quoteRequirement && (
-                        <p className="mt-2 truncate rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-500">
-                          询价摘要:{r.quoteRequirement}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      <div className="flex items-center gap-2">
-                        {r.status && <StatusPill label={r.status} />}
                       </div>
-                      <p className={cn('font-mono text-xs font-black', quoting ? 'text-red-600' : 'text-slate-400')}>
-                        截止 {shortDate(r.deadlineAt)}
-                      </p>
+                      <p className="mt-1.5 break-words font-black text-slate-950">{r.title}</p>
                     </div>
+                    {r.status && <StatusPill label={r.status} />}
                   </div>
-                  <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
-                    <button
-                      type="button"
-                      onClick={() => r.id && setSelectedId(r.id)}
-                      className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-700 transition hover:bg-slate-50"
-                    >
-                      查看详情
-                    </button>
-                    {quoting && (
-                      <button
-                        type="button"
-                        onClick={() => r.id && setSelectedId(r.id)}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700"
-                      >
-                        <Send size={13} /> {myQuote && r.method === '竞价' ? '继续出价' : myQuote ? '查看报价' : '立即报价'}
-                      </button>
-                    )}
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <MiniFact label="报价截止" value={shortDate(r.deadlineAt)} />
+                    <MiniFact
+                      label="我的参与"
+                      value={myQuote?.amount != null ? currency(myQuote.amount) : declined ? '已拒绝' : '未报价'}
+                    />
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => r.id && setSelectedId(r.id)}
+                    className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
+                  >
+                    {quoting && !myQuote ? '立即报价' : '查看详情'}
+                  </button>
                 </div>
               );
             })}
-          </div>
+          >
+            <table className="w-full min-w-[920px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-black text-slate-500">
+                <tr>
+                  <th className="w-12 px-2 py-4 text-center">序号</th>
+                  <th className="px-5 py-4">项目编号</th>
+                  <th className="px-5 py-4">项目名称</th>
+                  <th className="px-5 py-4">评选方式</th>
+                  <th className="px-5 py-4">我的参与</th>
+                  <th className="px-5 py-4">状态</th>
+                  <th className="px-5 py-4">报价截止</th>
+                  <th className="px-5 py-4 text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pageItems.map((r, i) => {
+                  const myInvitation = (r.invitations ?? [])[0];
+                  const declined = myInvitation?.inviteStatus === '已拒绝';
+                  const quoting = r.status === '报价中' && !declined;
+                  const myQuote = myQuoteFor(r.id);
+                  return (
+                    <tr key={r.id} className="hover:bg-blue-50/30">
+                      <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
+                        {(safePage - 1) * PAGE_SIZE + i + 1}
+                      </td>
+                      <td className="px-5 py-5 font-mono text-xs font-black text-slate-500">{r.id}</td>
+                      <td className="px-5 py-5">
+                        <p className="flex items-center gap-2 font-black text-slate-950">
+                          <MethodChip method={r.method} />
+                          {r.title}
+                          {(r.currentRound ?? 1) > 1 && (
+                            <span className="shrink-0 rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-black text-violet-700">
+                              第{r.currentRound}轮{r.finalRound ? '·最终' : ''}
+                            </span>
+                          )}
+                        </p>
+                        {r.quoteRequirement && (
+                          <p className="mt-1 max-w-md truncate text-xs font-bold text-slate-400">
+                            询价摘要:{r.quoteRequirement}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-5 py-5 text-sm font-bold text-slate-600">{r.evaluationMethod ?? '最低价'}</td>
+                      <td className="px-5 py-5">
+                        {myQuote?.amount != null ? (
+                          <span className="font-mono text-xs font-black text-emerald-700">{currency(myQuote.amount)}</span>
+                        ) : declined ? (
+                          <span className="text-xs font-black text-red-600">已拒绝</span>
+                        ) : (
+                          <span className="text-xs font-bold text-slate-400">未报价</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-5">{r.status && <StatusPill label={r.status} />}</td>
+                      <td className={cn('px-5 py-5 font-mono text-xs font-black', quoting ? 'text-red-600' : 'text-slate-400')}>
+                        {shortDate(r.deadlineAt)}
+                      </td>
+                      <td className="px-5 py-5 text-right">
+                        <div className="flex justify-end gap-2">
+                          {quoting && !myQuote && (
+                            <button
+                              type="button"
+                              onClick={() => r.id && setSelectedId(r.id)}
+                              className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                            >
+                              立即报价
+                            </button>
+                          )}
+                          {quoting && myQuote && r.method === '竞价' && (
+                            <button
+                              type="button"
+                              onClick={() => r.id && setSelectedId(r.id)}
+                              className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                            >
+                              继续出价
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => r.id && setSelectedId(r.id)}
+                            className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                          >
+                            详情
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </ResponsiveTableFrame>
           <Pagination page={safePage} pageSize={PAGE_SIZE} total={list.length} onPageChange={setPage} />
         </>
       )}
