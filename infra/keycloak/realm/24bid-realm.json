@@ -117,11 +117,21 @@
   ],
   "roles": {
     "realm": [
-      { "name": "BUYER_OWNER" },
-      { "name": "BUYER_REQUESTER" },
-      { "name": "BUYER_FINANCE" },
-      { "name": "SUPPLIER_SALES" },
-      { "name": "PLATFORM_ADMIN" }
+      {
+        "name": "BUYER_OWNER"
+      },
+      {
+        "name": "BUYER_REQUESTER"
+      },
+      {
+        "name": "BUYER_FINANCE"
+      },
+      {
+        "name": "SUPPLIER_SALES"
+      },
+      {
+        "name": "PLATFORM_ADMIN"
+      }
     ]
   },
   "users": [
@@ -132,15 +142,29 @@
       "lastName": "演示账号",
       "enabled": true,
       "emailVerified": true,
-      "realmRoles": ["BUYER_OWNER"],
+      "realmRoles": [
+        "BUYER_OWNER"
+      ],
       "credentials": [
-        { "type": "password", "value": "demo123456", "temporary": false }
+        {
+          "type": "password",
+          "value": "demo123456",
+          "temporary": false
+        }
       ],
       "attributes": {
-        "userId": ["user-buyer-owner"],
-        "displayName": ["采购负责人"],
-        "authScope": ["BUYER"],
-        "tenantId": ["tenant-acme"]
+        "userId": [
+          "user-buyer-owner"
+        ],
+        "displayName": [
+          "采购负责人"
+        ],
+        "authScope": [
+          "BUYER"
+        ],
+        "tenantId": [
+          "tenant-acme"
+        ]
       }
     },
     {
@@ -150,15 +174,29 @@
       "lastName": "演示账号",
       "enabled": true,
       "emailVerified": true,
-      "realmRoles": ["BUYER_REQUESTER"],
+      "realmRoles": [
+        "BUYER_REQUESTER"
+      ],
       "credentials": [
-        { "type": "password", "value": "demo123456", "temporary": false }
+        {
+          "type": "password",
+          "value": "demo123456",
+          "temporary": false
+        }
       ],
       "attributes": {
-        "userId": ["user-buyer-zhang"],
-        "displayName": ["采购申请员"],
-        "authScope": ["BUYER"],
-        "tenantId": ["tenant-acme"]
+        "userId": [
+          "user-buyer-zhang"
+        ],
+        "displayName": [
+          "采购申请员"
+        ],
+        "authScope": [
+          "BUYER"
+        ],
+        "tenantId": [
+          "tenant-acme"
+        ]
       }
     },
     {
@@ -168,15 +206,29 @@
       "lastName": "演示账号",
       "enabled": true,
       "emailVerified": true,
-      "realmRoles": ["BUYER_FINANCE"],
+      "realmRoles": [
+        "BUYER_FINANCE"
+      ],
       "credentials": [
-        { "type": "password", "value": "demo123456", "temporary": false }
+        {
+          "type": "password",
+          "value": "demo123456",
+          "temporary": false
+        }
       ],
       "attributes": {
-        "userId": ["user-buyer-li"],
-        "displayName": ["财务专员"],
-        "authScope": ["BUYER"],
-        "tenantId": ["tenant-acme"]
+        "userId": [
+          "user-buyer-li"
+        ],
+        "displayName": [
+          "财务专员"
+        ],
+        "authScope": [
+          "BUYER"
+        ],
+        "tenantId": [
+          "tenant-acme"
+        ]
       }
     },
     {
@@ -186,15 +238,29 @@
       "lastName": "演示账号",
       "enabled": true,
       "emailVerified": true,
-      "realmRoles": ["SUPPLIER_SALES"],
+      "realmRoles": [
+        "SUPPLIER_SALES"
+      ],
       "credentials": [
-        { "type": "password", "value": "demo123456", "temporary": false }
+        {
+          "type": "password",
+          "value": "demo123456",
+          "temporary": false
+        }
       ],
       "attributes": {
-        "userId": ["user-supplier-sales"],
-        "displayName": ["供应商销售"],
-        "authScope": ["SUPPLIER"],
-        "supplierId": ["ent-supplier-sunrise"]
+        "userId": [
+          "user-supplier-sales"
+        ],
+        "displayName": [
+          "供应商销售"
+        ],
+        "authScope": [
+          "SUPPLIER"
+        ],
+        "supplierId": [
+          "ent-supplier-sunrise"
+        ]
       }
     },
     {
@@ -204,15 +270,40 @@
       "lastName": "演示账号",
       "enabled": true,
       "emailVerified": true,
-      "realmRoles": ["PLATFORM_ADMIN"],
+      "realmRoles": [
+        "PLATFORM_ADMIN"
+      ],
       "credentials": [
-        { "type": "password", "value": "demo123456", "temporary": false }
+        {
+          "type": "password",
+          "value": "demo123456",
+          "temporary": false
+        }
       ],
       "attributes": {
-        "userId": ["user-platform-admin"],
-        "displayName": ["平台管理员"],
-        "authScope": ["PLATFORM"]
+        "userId": [
+          "user-platform-admin"
+        ],
+        "displayName": [
+          "平台管理员"
+        ],
+        "authScope": [
+          "PLATFORM"
+        ]
       }
     }
-  ]
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\": [{\"name\": \"username\", \"displayName\": \"${username}\", \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}, \"up-username-not-idn-homograph\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"email\", \"displayName\": \"${email}\", \"validations\": {\"email\": {}, \"length\": {\"max\": 255}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"firstName\", \"displayName\": \"${firstName}\", \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"lastName\", \"displayName\": \"${lastName}\", \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}], \"groups\": [{\"name\": \"user-metadata\", \"displayHeader\": \"User metadata\", \"displayDescription\": \"Attributes, which refer to user metadata\"}], \"unmanagedAttributePolicy\": \"ENABLED\"}"
+          ]
+        }
+      }
+    ]
+  }
 }

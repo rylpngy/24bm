@@ -125,6 +125,7 @@ import com.procurement.platform.api.PlatformOperationSummaryResponse;
 import com.procurement.platform.api.PlatformOverviewController;
 import com.procurement.platform.api.PlatformOverviewResponse;
 import com.procurement.platform.api.PlatformBillingController;
+import com.procurement.platform.api.PlatformSupplierController;
 import com.procurement.platform.api.PlatformTenantController;
 import com.procurement.platform.api.PlatformWorkspaceController;
 import com.procurement.platform.api.SupplierAnnouncementController;
@@ -212,6 +213,7 @@ import org.springframework.test.web.servlet.MvcResult;
     PlatformOverviewController.class,
     PlatformAnnouncementController.class,
     BuyerAnnouncementController.class,
+    PlatformSupplierController.class,
     PlatformTenantController.class,
     PlatformBillingController.class,
     PlatformEnterpriseController.class,

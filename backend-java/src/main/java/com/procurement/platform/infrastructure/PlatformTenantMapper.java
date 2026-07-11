@@ -43,6 +43,44 @@ public interface PlatformTenantMapper {
       @Param("name") String name,
       @Param("permissionsJson") String permissionsJson);
 
+  // ====== 供应商企业开通(干净环境引导:平台侧创建供应商 + 初始管理员)======
+
+  @Insert("""
+      insert into enterprises (id, name, type, industry, verified)
+      values (#{id}, #{name}, 'supplier', #{industry}, true)
+      """)
+  void insertSupplierEnterprise(
+      @Param("id") String id,
+      @Param("name") String name,
+      @Param("industry") String industry);
+
+  @Insert("""
+      insert into supplier_enterprises (enterprise_id, credit_code, legal_person, verified_status, profile_status)
+      values (#{enterpriseId}, #{creditCode}, #{legalPerson}, 'approved', 'complete')
+      """)
+  void insertSupplierEnterpriseDetail(
+      @Param("enterpriseId") String enterpriseId,
+      @Param("creditCode") String creditCode,
+      @Param("legalPerson") String legalPerson);
+
+  @Insert("""
+      insert into users (id, supplier_id, name, mobile, email, status, department_id, password_hash)
+      values (#{id}, #{supplierId}, #{name}, #{mobile}, #{email}, #{status}, null, #{passwordHash})
+      """)
+  void insertInitialSupplierAdminUser(
+      @Param("id") String id,
+      @Param("supplierId") String supplierId,
+      @Param("name") String name,
+      @Param("mobile") String mobile,
+      @Param("email") String email,
+      @Param("status") String status,
+      @Param("passwordHash") String passwordHash);
+
+  @Select("""
+      select count(1) from enterprises where id = #{enterpriseId}
+      """)
+  int countEnterpriseById(@Param("enterpriseId") String enterpriseId);
+
   @Insert("""
       insert into users (id, tenant_id, name, mobile, email, status, department_id, password_hash)
       values (#{id}, #{tenantId}, #{name}, #{mobile}, #{email}, #{status}, null, #{passwordHash})

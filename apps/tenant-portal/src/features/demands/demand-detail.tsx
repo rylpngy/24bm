@@ -152,34 +152,23 @@ function ProgressTracker({
           );
         })}
       </div>
-      <div className="mt-6 grid gap-3 border-t border-slate-100 pt-5 md:grid-cols-2">
-        <div
-          className={cn(
-            'rounded-lg border p-4',
-            linked ? 'border-emerald-100 bg-emerald-50' : approved ? 'border-blue-100 bg-blue-50' : 'border-slate-100 bg-slate-50',
-          )}
-        >
-          <p className={cn('text-xs font-black', linked ? 'text-emerald-700' : approved ? 'text-blue-700' : 'text-slate-500')}>
-            后续阶段 · 合并计划
-          </p>
+      {/* 后续阶段:仅在有真实进展时显示——已关联展示计划与状态,审批通过给出下一步动作;其余状态由上方步进器表达,不再重复占位。 */}
+      {linked ? (
+        <div className="mt-6 rounded-lg border border-emerald-100 bg-emerald-50 p-4">
+          <p className="text-xs font-black text-emerald-700">后续阶段 · 已进入采购计划</p>
           <p className="mt-2 text-sm font-black text-slate-950">
-            {linked ? `已关联采购计划 ${linkedRfqId}` : approved ? '可合并生成采购计划' : '审批通过后可合并'}
+            已关联采购计划 {linkedRfqId}
+            {linkedRfqStatus ? ` · 当前${linkedRfqStatus}` : ''}
           </p>
         </div>
-        <div
-          className={cn(
-            'rounded-lg border p-4',
-            linked ? 'border-emerald-100 bg-emerald-50' : 'border-slate-100 bg-slate-50',
-          )}
-        >
-          <p className={cn('text-xs font-black', linked ? 'text-emerald-700' : 'text-slate-500')}>
-            后续阶段 · 转采购计划
-          </p>
+      ) : approved ? (
+        <div className="mt-6 rounded-lg border border-blue-100 bg-blue-50 p-4">
+          <p className="text-xs font-black text-blue-700">后续阶段 · 合并立项</p>
           <p className="mt-2 text-sm font-black text-slate-950">
-            {linked ? `已进入${linkedRfqStatus ?? '询比流程'}` : '待采购计划生成后进入'}
+            审批已通过,可在「采购计划」中与同类需求合并立项,或用右侧「扫描可合并需求」查找候选。
           </p>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
 import { TenantUsagePanel } from './tenant-usage-panel';
+import { EnterpriseOnboardingPanel } from './enterprise-onboarding-panel';
 
 const PLAN_OPTIONS = ['MVP', '标准版', '企业版'];
 const FEATURE_DEFS = [
@@ -82,6 +83,8 @@ export function TenantsPage() {
   };
 
   return (
+    <div className="space-y-4">
+    <EnterpriseOnboardingPanel />
     <Panel title="租户列表" icon={Building2} subtitle="采购企业 · 套餐 · 启停">
       <div className="mb-4">
         <CountTag>共 {list.length} 家</CountTag>
@@ -193,5 +196,6 @@ export function TenantsPage() {
         </div>
       )}
     </Panel>
+    </div>
   );
 }

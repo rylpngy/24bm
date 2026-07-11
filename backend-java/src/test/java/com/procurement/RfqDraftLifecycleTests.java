@@ -124,6 +124,18 @@ class RfqDraftLifecycleTests {
   }
 
   @Test
+  void publishRejectsEmptyInvitationList() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(rfq("草稿"));
+    when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1")).thenReturn(List.of());
+
+    // 空邀请单发布=无人可见的死项目,必须拦截。
+    assertThatThrownBy(() -> rfqApplicationService.publish("rfq-1"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("邀请供应商");
+  }
+
+  @Test
   void publishRejectsNonDraft() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(rfq("报价中"));

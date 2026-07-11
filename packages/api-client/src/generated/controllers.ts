@@ -31,6 +31,7 @@ export * from './platform-announcement-controller/platform-announcement-controll
 export * from './platform-billing-controller/platform-billing-controller';
 export * from './platform-enterprise-controller/platform-enterprise-controller';
 export * from './platform-overview-controller/platform-overview-controller';
+export * from './platform-supplier-controller/platform-supplier-controller';
 export * from './platform-tenant-controller/platform-tenant-controller';
 export * from './platform-workspace-controller/platform-workspace-controller';
 export * from './process-definition-controller/process-definition-controller';

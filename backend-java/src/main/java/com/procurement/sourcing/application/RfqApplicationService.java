@@ -389,6 +389,10 @@ public class RfqApplicationService {
       throw new IllegalStateException("仅草稿状态可发布询价单: " + rfqId);
     }
     List<String> supplierIds = rfqInviteMapper.listSupplierIds(tenantId, rfqId);
+    // 空邀请单发布=无人可见的死项目;商城锚点走 createMallAnchor 不经此路径。
+    if (supplierIds.isEmpty()) {
+      throw new IllegalStateException("发布前请先在「选择供应商」步骤邀请供应商: " + rfqId);
+    }
     RfqMethod.requireSupplierCount(RfqMethod.orDefault(rfq.method()), supplierIds.size());
     rfqSourcingStatusTransition.requireFutureDeadline(rfq.deadlineAt(), rfqId);
     int updated = rfqMapper.updateStatus(tenantId, rfqId, RfqStatus.DRAFT, RfqStatus.QUOTING);
