@@ -711,6 +711,7 @@ export function ProcurementPlanMergePage({
               {direct
                 ? '直接创建(直录)· 提交时系统自动登记「直录登记」需求,保留完整业务闭环'
                 : `填写方案基本信息与执行策略 · 已合并 ${selectedDemands.length} 条需求 · 涉及部门 ${selectedDepartments.join('、') || '—'}`}
+              <span className="ml-2 text-xs font-bold text-slate-400">(<span className="text-red-500">*</span> 为必填项)</span>
             </p>
           </div>
         </div>
@@ -895,7 +896,7 @@ export function ProcurementPlanMergePage({
             )}
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="采购时间 / 报价截止">
+            <Field label="采购时间 / 报价截止" required>
               <input className={inputCls} type="date" value={planDate} onChange={(e) => setPlanDate(e.target.value)} />
             </Field>
             <Field label="采购地点">

@@ -167,18 +167,18 @@ export function SupplierInvitationsView() {
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <label className="text-xs font-black text-slate-500">供应商名称 *</label>
+              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>供应商名称</label>
               <input className={inputCls} placeholder="如 蓝海办公用品" {...register('supplierName')} />
               {errors.supplierName && (
                 <p className="mt-1 text-xs font-bold text-red-600">{errors.supplierName.message}</p>
               )}
             </div>
             <div>
-              <label className="text-xs font-black text-slate-500">联系方式</label>
+              <label className="text-xs font-black text-slate-500">联系方式(选填)</label>
               <input className={inputCls} placeholder="邮箱 / 电话" {...register('contact')} />
             </div>
             <div>
-              <label className="text-xs font-black text-slate-500">品类</label>
+              <label className="text-xs font-black text-slate-500">品类(选填)</label>
               <input className={inputCls} placeholder="如 办公耗材" {...register('category')} />
             </div>
             <div>
@@ -186,7 +186,7 @@ export function SupplierInvitationsView() {
               <input className={inputCls} placeholder="如 ent-supplier-newapply" {...register('supplierId')} />
             </div>
             <div className="sm:col-span-1 lg:col-span-2">
-              <label className="text-xs font-black text-slate-500">邀请说明</label>
+              <label className="text-xs font-black text-slate-500">邀请说明(选填)</label>
               <input className={inputCls} placeholder="邀请补充资质并报价…" {...register('note')} />
             </div>
           </div>

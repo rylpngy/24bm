@@ -205,24 +205,24 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
           className="mb-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4"
         >
           <p className="text-sm font-black text-blue-800">登记私域供应商</p>
-          <p className="mt-0.5 text-xs font-bold text-blue-600">登记后状态为「待准入」,在详情页提交准入。</p>
+          <p className="mt-0.5 text-xs font-bold text-blue-600">登记后状态为「待准入」,在详情页提交准入。<span className="ml-1 text-slate-400">(<span className="text-red-500">*</span> 为必填项)</span></p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div>
-              <label className="text-xs font-black text-slate-500">供应商企业 ID</label>
+              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>供应商企业 ID</label>
               <input className={inputCls} placeholder="如 ent-supplier-sunrise" {...register('supplierId')} />
               {errors.supplierId && (
                 <p className="mt-1 text-xs font-bold text-red-600">{errors.supplierId.message}</p>
               )}
             </div>
             <div>
-              <label className="text-xs font-black text-slate-500">合作等级</label>
+              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>合作等级</label>
               <input className={inputCls} placeholder="战略 / 重要 / 普通" {...register('level')} />
               {errors.level && (
                 <p className="mt-1 text-xs font-bold text-red-600">{errors.level.message}</p>
               )}
             </div>
             <div>
-              <label className="text-xs font-black text-slate-500">授权品类(逗号分隔)</label>
+              <label className="text-xs font-black text-slate-500">授权品类(选填,逗号分隔)</label>
               <input className={inputCls} placeholder="办公设备, 办公耗材" {...register('categories')} />
               {errors.categories && (
                 <p className="mt-1 text-xs font-bold text-red-600">{errors.categories.message}</p>

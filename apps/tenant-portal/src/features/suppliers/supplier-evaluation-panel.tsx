@@ -132,7 +132,7 @@ export function SupplierEvaluationPanel({
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="text-xs font-black text-slate-500">考核周期</label>
+          <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>考核周期</label>
           <input
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
@@ -170,7 +170,7 @@ export function SupplierEvaluationPanel({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <PrimaryActionButton onClick={submit} busy={create.isPending} pendingLabel="提交中" flushTop>
+        <PrimaryActionButton onClick={submit} busy={create.isPending} pendingLabel="提交中" flushTop disabled={!period.trim()}>
           提交考核单
         </PrimaryActionButton>
         <button
