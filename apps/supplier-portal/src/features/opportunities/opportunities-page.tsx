@@ -597,6 +597,8 @@ export function OpportunitiesPage() {
 
       {rfqs.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载询比邀请…" />
+      ) : rfqs.isError ? (
+        <FeedbackNotice tone="error" message="商机加载失败:登录态可能已过期,请重新登录后重试。" />
       ) : list.length === 0 ? (
         <FeedbackNotice
           tone="info"
@@ -617,7 +619,10 @@ export function OpportunitiesPage() {
               return (
                 <div
                   key={r.id}
-                  className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50 transition hover:border-blue-200"
+                  className={cn(
+                    'rounded-lg border bg-white p-4 shadow-sm shadow-slate-200/50 transition hover:border-blue-200',
+                    quoting && !myQuote ? 'border-blue-200 ring-1 ring-blue-100' : 'border-slate-200',
+                  )}
                 >
                   <div className="flex flex-wrap items-start gap-3">
                     <div className="min-w-0 flex-1">
@@ -648,6 +653,11 @@ export function OpportunitiesPage() {
                           <span className="ml-2 text-slate-400">未报价</span>
                         )}
                       </p>
+                      {r.quoteRequirement && (
+                        <p className="mt-2 truncate rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-500">
+                          询价摘要:{r.quoteRequirement}
+                        </p>
+                      )}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-2">
                       <div className="flex items-center gap-2">

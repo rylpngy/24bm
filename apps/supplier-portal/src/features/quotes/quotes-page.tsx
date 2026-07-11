@@ -55,6 +55,8 @@ export function QuotesPage() {
 
       {quotes.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载报价记录…" />
+      ) : quotes.isError ? (
+        <FeedbackNotice tone="error" message="报价记录加载失败:登录态可能已过期,请重新登录后重试。" />
       ) : list.length === 0 ? (
         <FeedbackNotice
           tone="info"

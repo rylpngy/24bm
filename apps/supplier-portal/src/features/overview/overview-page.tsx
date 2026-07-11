@@ -211,6 +211,9 @@ export function OverviewPage({ onNavigate }: { onNavigate: (moduleId: string) =>
   if (ws.isLoading) {
     return <ShellState variant="loading" title="正在加载供应商看板" desc="拉取商机、订单与应收数据…" />;
   }
+  if (ws.isError) {
+    return <ShellState variant="error" title="看板加载失败" desc="登录态可能已过期,请重新登录后重试。" />;
+  }
 
   return (
     <div className="space-y-5">

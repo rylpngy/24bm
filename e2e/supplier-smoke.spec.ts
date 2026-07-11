@@ -47,3 +47,27 @@ test('供应商看板:欢迎横幅 + 经营指标 + 待办', async ({ page }) =>
   await expect(page.getByText('待办事项')).toBeVisible();
   await expect(page.getByText('成交趋势')).toBeVisible();
 });
+
+test('商城货架:表格列表 + 发布商品页 + 编辑商品页', async ({ page }) => {
+  await loginViaKeycloak(page);
+  await openModule(page, /商城货架/);
+  await expect(page.getByRole('heading', { name: '商城货架', level: 3 })).toBeVisible();
+  await expect(page.getByPlaceholder(/搜索商品/)).toBeVisible();
+
+  // 发布商品独立页
+  await page.getByRole('button', { name: /发布商品/ }).click();
+  await expect(page.getByRole('heading', { name: '发布商品' })).toBeVisible();
+  await expect(page.getByText('基础信息')).toBeVisible();
+  await expect(page.getByText('销售信息')).toBeVisible();
+  await page.getByRole('button', { name: '返回商品列表' }).click();
+  await expect(page.getByRole('heading', { name: '商城货架', level: 3 })).toBeVisible();
+
+  // 编辑商品独立页(有商品时)
+  const editButtons = page.getByRole('button', { name: /编辑/ });
+  if ((await editButtons.count()) === 0) return;
+  await editButtons.first().click();
+  await expect(page.getByRole('heading', { name: '编辑商品信息' })).toBeVisible();
+  await expect(page.getByText('协议单价(元)')).toBeVisible();
+  await page.getByRole('button', { name: '取消' }).click();
+  await expect(page.getByRole('heading', { name: '商城货架', level: 3 })).toBeVisible();
+});
