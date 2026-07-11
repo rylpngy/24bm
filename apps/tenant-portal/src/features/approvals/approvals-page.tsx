@@ -20,6 +20,7 @@ import {
   usePurchaseDemandReview,
   usePurchaseOrderCreate,
   useRfqAwardReviewApproval,
+  useBuyerSupplierReviewAdmission,
 } from '@24bid/api-client';
 import { FeedbackNotice, cn } from '@24bid/ui';
 import { ApprovalNodeConfig } from './approval-node-config';
@@ -112,8 +113,10 @@ export function ApprovalsPage() {
   const awardReview = useRfqAwardReviewApproval();
   const orderCreate = usePurchaseOrderCreate();
   const contractReview = useBuyerContractReviewApproval();
+  const admissionReview = useBuyerSupplierReviewAdmission();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [selected, setSelected] = useState<PendingApprovalTaskResponse | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [showNodeConfig, setShowNodeConfig] = useState(false);
   const [businessFilter, setBusinessFilter] = useState('全部业务类型');
   const [statusFilter, setStatusFilter] = useState('全部状态');
@@ -153,6 +156,7 @@ export function ApprovalsPage() {
     (awardReview.isPending && awardReview.variables?.data.awardId) ||
     (orderCreate.isPending && orderCreate.variables?.data.awardId) ||
     (contractReview.isPending && contractReview.variables?.contractId) ||
+    (admissionReview.isPending && admissionReview.variables?.relationId) ||
     null;
 
   const handleContractReview = (contractId: string, approved: boolean) => {
@@ -164,6 +168,7 @@ export function ApprovalsPage() {
           setSelected(null);
           refresh();
         },
+        onError: (err) => setActionError(errMsg(err, '合同审批操作失败,请稍后重试。')),
       },
     );
   };
@@ -177,6 +182,7 @@ export function ApprovalsPage() {
           setSelected(null);
           refresh();
         },
+        onError: (err) => setActionError(errMsg(err, '需求审批操作失败,请稍后重试。')),
       },
     );
   };
@@ -209,17 +215,36 @@ export function ApprovalsPage() {
             refresh();
           }
         },
+        onError: (err) => setActionError(errMsg(err, '定标审批操作失败,请稍后重试。')),
       },
     );
   };
 
+  const errMsg = (err: unknown, fallback: string) =>
+    (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
+
   const actOnTask = (task: PendingApprovalTaskResponse, approved: boolean) => {
+    setActionError(null);
     if (task.bizType === 'purchase_demand' && task.bizId) handleDemandReview(task.bizId, approved);
     else if (task.bizType === 'rfq_award' && task.bizId && task.parentBizId)
       handleAwardReview(task.parentBizId, task.bizId, approved);
     else if (task.bizType === 'contract_approval' && task.bizId) handleContractReview(task.bizId, approved);
+    else if (task.bizType === 'buyer_supplier_admission' && task.bizId)
+      admissionReview.mutate(
+        { relationId: task.bizId, data: { approved, comment: approved ? '资料与资质核验通过,同意准入。' : '资料不足,驳回准入。' } },
+        {
+          onSuccess: () => {
+            setFeedback(approved ? '供应商准入已通过' : '供应商准入已驳回');
+            setSelected(null);
+            void queryClient.invalidateQueries({
+              predicate: (q) => typeof q.queryKey[0] === 'string' && /\/buyer\/(approvals|suppliers)/.test(q.queryKey[0] as string),
+            });
+          },
+          onError: (err) => setActionError(errMsg(err, '准入审批操作失败,请稍后重试。')),
+        },
+      );
     else {
-      setFeedback('该业务类型暂不支持在此审批,请到对应业务模块处理。');
+      setActionError('该业务类型(付款/财务类)需在「发票付款 / 付款批次」模块处理,此处不直接审批。');
     }
   };
 
@@ -228,6 +253,7 @@ export function ApprovalsPage() {
     return (
       <ApprovalDetailPage
         task={selected}
+        notice={actionError}
         busy={!!busy}
         onBack={() => setSelected(null)}
         onApprove={() => actOnTask(selected, true)}
@@ -416,12 +442,14 @@ function SummaryCard({
 
 function ApprovalDetailPage({
   task,
+  notice,
   busy,
   onBack,
   onApprove,
   onReject,
 }: {
   task: PendingApprovalTaskResponse;
+  notice?: string | null;
   busy: boolean;
   onBack: () => void;
   onApprove: () => void;
@@ -468,6 +496,8 @@ function ApprovalDetailPage({
           </div>
         </div>
       </div>
+
+      {notice && <FeedbackNotice tone="error" message={notice} />}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
