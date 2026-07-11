@@ -161,6 +161,8 @@ export function SupplierDetailPage({
           )}
         </main>
       </div>
+
+      <AdmissionActionBar supplier={supplier} />
     </div>
   );
 }
@@ -269,6 +271,19 @@ function ContactCard({ supplier }: { supplier: BuyerSupplierResponse }) {
 }
 
 function AdmissionCard({ supplier }: { supplier: BuyerSupplierResponse }) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <PanelTitle icon={ShieldCheck} title="准入与生命周期" />
+      <p className="mt-3 text-sm font-bold leading-6 text-slate-500">
+        当前状态为 <span className="font-black text-slate-900">{supplier.status ?? '—'}</span>，
+        生命周期操作(提交准入 / 审批 / 冻结 / 恢复)见页面底部悬浮操作条。
+      </p>
+    </section>
+  );
+}
+
+// 底部悬浮操作条:生命周期动作常驻可见,样式对齐需求/登记页提交操作条。
+function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
   const queryClient = useQueryClient();
   const submit = useBuyerSupplierSubmitAdmission();
   const review = useBuyerSupplierReviewAdmission();
@@ -289,33 +304,47 @@ function AdmissionCard({ supplier }: { supplier: BuyerSupplierResponse }) {
     restore: () =>
       changeStatus.mutate({ relationId: id, data: { status: '待准入' } }, { onSuccess: refresh }),
   });
+  const hint =
+    supplier.status === '待准入' || supplier.status === '已驳回'
+      ? '资料确认无误后提交准入,进入准入审批。'
+      : supplier.status === '准入审批中'
+        ? '准入审批中:可在此直接通过或驳回。'
+        : supplier.status === '已准入'
+          ? '已准入供应商;发现重大风险可加入黑名单。'
+          : supplier.status === '黑名单'
+            ? '黑名单供应商;整改核实后可恢复为待准入。'
+            : '可执行生命周期操作。';
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <PanelTitle icon={ShieldCheck} title="准入与生命周期" />
-      <p className="mt-3 text-sm font-bold leading-6 text-slate-500">
-        当前状态为 <span className="font-black text-slate-900">{supplier.status ?? '—'}</span>，
-        可在此完成提交准入、审批、冻结或恢复。
-      </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {action.map((item) => (
-          <button
-            key={item.label}
-            type="button"
-            disabled={busy || !id}
-            onClick={item.onClick}
-            className={cn(
-              'inline-flex h-9 items-center rounded-lg px-4 text-xs font-black text-white transition disabled:bg-slate-300',
-              item.tone === 'blue' && 'bg-blue-600 hover:bg-blue-700',
-              item.tone === 'emerald' && 'bg-emerald-600 hover:bg-emerald-700',
-              item.tone === 'red' && 'bg-red-600 hover:bg-red-700',
-            )}
-          >
-            {busy ? '处理中' : item.label}
-          </button>
-        ))}
+    <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+          <ShieldCheck size={14} className="shrink-0 text-blue-600" />
+          <span>
+            当前状态 <StatusPill label={supplier.status ?? '—'} />
+            <span className="ml-2">{hint}</span>
+          </span>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {action.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              disabled={busy || !id}
+              onClick={item.onClick}
+              className={cn(
+                'inline-flex h-10 items-center rounded-lg px-5 text-sm font-black text-white transition disabled:bg-slate-300',
+                item.tone === 'blue' && 'bg-blue-600 hover:bg-blue-700',
+                item.tone === 'emerald' && 'bg-emerald-600 hover:bg-emerald-700',
+                item.tone === 'red' && 'bg-red-600 hover:bg-red-700',
+              )}
+            >
+              {busy ? '处理中' : item.label}
+            </button>
+          ))}
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
 
