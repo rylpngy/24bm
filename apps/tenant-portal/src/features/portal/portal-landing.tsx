@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   ArrowRight,
   BadgeCheck,
@@ -10,7 +10,6 @@ import {
   Lock,
   LogIn,
   Megaphone,
-  PackageSearch,
   Search,
   ShieldCheck,
   Store,
@@ -21,8 +20,10 @@ import { FeedbackNotice } from '@24bid/ui';
 import { SELF_LOGIN_FALLBACK, useBuyerLogin } from '../auth/use-buyer-login';
 import {
   HomeAnnouncementsStrip,
+  HomeOpportunitiesSection,
   HomeSuppliersSection,
   PortalAnnouncementsPage,
+  PortalOpportunitiesPage,
   PortalSuppliersPage,
 } from './portal-public-pages';
 
@@ -55,15 +56,6 @@ const buyers = [
   ['ST', '盛泰置业(演示)', '房地产'],
   ['JG', '精工机械(演示)', '机械制造'],
   ['BC', '北辰新材(演示)', '新材料'],
-];
-
-const opportunities = [
-  ['询比采购', '设备', '核心机房服务器集群扩容项目询价公告(示例)', '信息技术部', '2026-07-12'],
-  ['询比采购', '服务', '季度行政办公用品及耗材集中采购询比函(示例)', '行政部', '2026-07-11'],
-  ['竞价采购', '工程', '生产基地自动化流水线改造项目定标结果公示(示例)', '生产技术部', '2026-07-10'],
-  ['询比采购', '服务', '年度物流运输服务合作伙伴征集公告(示例)', '供应链管理部', '2026-07-08'],
-  ['单一来源', '工程', '车间安防监控系统采购单一来源公示(示例)', '安环部', '2026-07-06'],
-  ['竞价采购', '设备', '废旧钢材及边角料年度回收处置竞价交易(示例)', '资产管理部', '2026-07-05'],
 ];
 
 const hotKeywords = ['服务器设备', '办公用品', '物流运输', '辅材工程', 'SaaS软件'];
@@ -268,14 +260,14 @@ function BuyerLoginPage({ onBack }: { onBack: () => void }) {
   );
 }
 
-type PortalPage = 'home' | 'suppliers' | 'announcements';
+type PortalPage = 'home' | 'opportunities' | 'suppliers' | 'announcements';
 
 export function PortalLanding() {
   const [loginOpen, setLoginOpen] = useState(false);
   // 门户页面路由(?page= 深链接):home / suppliers 供应商名录 / announcements 平台公告。
   const [page, setPageState] = useState<PortalPage>(() => {
     const p = new URLSearchParams(window.location.search).get('page');
-    return p === 'suppliers' || p === 'announcements' ? p : 'home';
+    return p === 'suppliers' || p === 'announcements' || p === 'opportunities' ? p : 'home';
   });
   const setPage = (next: PortalPage) => {
     setPageState(next);
@@ -286,11 +278,6 @@ export function PortalLanding() {
     window.scrollTo({ top: 0 });
   };
   const [query, setQuery] = useState('');
-  const filteredOpportunities = useMemo(() => {
-    const keyword = query.trim();
-    if (!keyword) return opportunities;
-    return opportunities.filter((item) => item.join('').includes(keyword));
-  }, [query]);
 
   if (loginOpen) {
     return <BuyerLoginPage onBack={() => setLoginOpen(false)} />;
@@ -303,7 +290,7 @@ export function PortalLanding() {
           <LogoMark />
           <nav className="hidden items-center gap-8 text-sm font-black text-slate-600 md:flex">
             <button type="button" onClick={() => setPage('home')} className={page === 'home' ? 'text-blue-600' : 'hover:text-blue-600'}>首页</button>
-            <a href="#opportunities" onClick={() => setPage('home')} className="hover:text-blue-600">商机大厅</a>
+            <button type="button" onClick={() => setPage('opportunities')} className={page === 'opportunities' ? 'text-blue-600' : 'hover:text-blue-600'}>商机大厅</button>
             <button type="button" onClick={() => setPage('suppliers')} className={page === 'suppliers' ? 'text-blue-600' : 'hover:text-blue-600'}>供应商名录</button>
             <button type="button" onClick={() => setPage('announcements')} className={page === 'announcements' ? 'text-blue-600' : 'hover:text-blue-600'}>平台公告</button>
             <a href="#help" onClick={() => setPage('home')} className="hover:text-blue-600">帮助中心</a>
@@ -321,7 +308,11 @@ export function PortalLanding() {
         </div>
       </header>
 
-      {page === 'suppliers' ? (
+      {page === 'opportunities' ? (
+        <main className="min-h-[60vh] bg-slate-50">
+          <PortalOpportunitiesPage />
+        </main>
+      ) : page === 'suppliers' ? (
         <main className="min-h-[60vh] bg-slate-50">
           <PortalSuppliersPage onLogin={() => setLoginOpen(true)} />
         </main>
@@ -355,12 +346,13 @@ export function PortalLanding() {
                 placeholder="请输入采购品目、项目名称或供应商关键词..."
                 className="h-11 min-w-0 flex-1 bg-transparent text-sm font-bold text-white outline-none placeholder:text-slate-500"
               />
-              <a
-                href="#opportunities"
+              <button
+                type="button"
+                onClick={() => setPage('opportunities')}
                 className="inline-flex h-11 shrink-0 items-center rounded-md bg-blue-600 px-5 text-sm font-black text-white hover:bg-blue-500"
               >
                 搜商机
-              </a>
+              </button>
             </div>
             <div className="mt-5 flex flex-wrap justify-center gap-4 text-xs font-bold text-slate-500">
               <span>热门搜索：</span>
@@ -426,25 +418,11 @@ export function PortalLanding() {
             <SectionHeader
               icon={Megaphone}
               title="最新商机"
-              subtitle="演示环境示例商机 · 正式环境接入企业真实发布的采购公告"
-              action="登录查看商机"
-              onAction={() => setLoginOpen(true)}
+              subtitle="平台采购人发布的项目公开信息 · 实时更新"
+              action="进入商机大厅"
+              onAction={() => setPage('opportunities')}
             />
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {filteredOpportunities.slice(0, 6).map(([type, category, title, dept, date]) => (
-                <article key={title} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/30">
-                  <div className="flex gap-2">
-                    <span className="rounded-md bg-violet-50 px-2 py-1 text-[11px] font-black text-violet-600">{type}</span>
-                    <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">{category}</span>
-                  </div>
-                  <h3 className="mt-4 line-clamp-2 min-h-12 text-sm font-black leading-6 text-slate-950">{title}</h3>
-                  <div className="mt-5 flex items-center justify-between gap-3 text-xs font-bold text-slate-400">
-                    <span className="inline-flex items-center gap-1.5"><PackageSearch size={14} />{dept}</span>
-                    <span>{date}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
+            <HomeOpportunitiesSection onOpenHall={() => setPage('opportunities')} />
           </div>
         </section>
 
