@@ -1055,7 +1055,7 @@ export function ProcurementPlanMergePage({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex h-11 items-center rounded-lg border border-slate-200 bg-white px-6 text-sm font-black text-slate-600 transition hover:bg-slate-50 active:scale-[0.98]"
+              className="inline-flex h-10 items-center whitespace-nowrap rounded-lg border border-slate-200 bg-white px-6 text-sm font-black text-slate-600 transition hover:bg-slate-50 active:scale-[0.98]"
             >
               返回选择
             </button>
@@ -1064,8 +1064,11 @@ export function ProcurementPlanMergePage({
               busy={createPending}
               pendingLabel="生成中"
               disabled={!canSubmit}
+              icon={ClipboardCheck}
+              size="md"
+              flushTop
             >
-              <ClipboardCheck size={16} /> 生成采购计划
+              生成采购计划
             </PrimaryActionButton>
           </div>
         </div>
