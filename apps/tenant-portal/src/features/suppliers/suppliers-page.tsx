@@ -1,5 +1,5 @@
 import { useState, type ElementType } from 'react';
-import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck, Store } from 'lucide-react';
+import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck } from 'lucide-react';
 import { useBuyerSupplierList } from '@24bid/api-client';
 import { cn } from '@24bid/ui';
 import { SupplierListView } from './supplier-list-view';
@@ -57,74 +57,50 @@ export function SuppliersPage() {
   const active = items.find((i) => i.id === sub);
 
   return (
-    <div className="mx-auto max-w-7xl">
-      <div className="grid gap-4 lg:grid-cols-[15rem_1fr]">
-        {/* 左侧二级菜单:粘性卡片,活动项蓝底高亮 + 待办徽标 */}
-        <aside className="lg:sticky lg:top-4 lg:self-start">
-          <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/50">
-            <div className="flex items-center gap-2 px-2 pb-3 pt-1">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
-                <Store size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-black text-slate-950">供应商库</p>
-                <p className="text-[11px] font-bold text-slate-400">寻源 · 准入 · 绩效 · 资质</p>
-              </div>
-            </div>
-            <nav className="flex gap-1 overflow-x-auto border-t border-slate-100 pt-2 lg:flex-col lg:overflow-visible">
-              {items.map((item) => {
-                const isActive = sub === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSub(item.id)}
-                    className={cn(
-                      'group flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition lg:w-full',
-                      isActive ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' : 'text-slate-600 hover:bg-slate-50',
-                    )}
-                  >
-                    <item.icon
-                      size={16}
-                      className={cn('shrink-0', isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600')}
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-black">{item.label}</span>
-                      <span
-                        className={cn(
-                          'hidden text-[11px] font-bold lg:block',
-                          isActive ? 'text-blue-100' : 'text-slate-400',
-                        )}
-                      >
-                        {item.desc}
-                      </span>
-                    </span>
-                    {item.badge != null && (
-                      <span
-                        className={cn(
-                          'ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-black',
-                          isActive ? 'bg-white text-blue-700' : 'bg-red-500 text-white',
-                        )}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </aside>
+    <div className="mx-auto max-w-7xl lg:grid lg:grid-cols-[auto_1fr] lg:gap-4">
+      {/* 图标式二级菜单:窄栏仅占左侧一列图标宽度,悬停展开名称与说明,内容区保持原样式 */}
+      <aside className="relative z-30 mb-4 lg:mb-0 lg:self-start lg:sticky lg:top-4">
+        <nav className="flex gap-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm shadow-slate-200/50 lg:flex-col">
+          {items.map((item) => {
+            const isActive = sub === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSub(item.id)}
+                aria-label={item.label}
+                className={cn(
+                  'group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition',
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+                    : 'text-slate-400 hover:bg-slate-50 hover:text-blue-600',
+                )}
+              >
+                <item.icon size={18} />
+                {item.badge != null && (
+                  <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">
+                    {item.badge}
+                  </span>
+                )}
+                {/* 悬停提示:名称 + 职责说明 */}
+                <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-2.5 hidden -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-2 text-left shadow-lg group-hover:block">
+                  <span className="block text-xs font-black text-white">{item.label}</span>
+                  <span className="block text-[11px] font-bold text-slate-400">{item.desc}</span>
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
 
-        {/* 右侧内容区 */}
-        <div className="min-w-0 space-y-4" key={active?.id}>
-          {sub === 'list' && <SupplierListView onOpen={setSelectedId} onRegister={() => setRegistering(true)} />}
-          {sub === 'admission' && <SupplierAdmissionQueue onOpen={setSelectedId} />}
-          {sub === 'performance' && <SupplierPerformanceBoard onOpen={setSelectedId} />}
-          {sub === 'qualifications' && <SupplierQualificationsBoard onOpen={setSelectedId} />}
-          {sub === 'sourcing' && <SupplierSourcingView />}
-          {sub === 'invitation' && <SupplierInvitationsView />}
-        </div>
+      {/* 内容区:保持原页面宽度与样式 */}
+      <div className="min-w-0 space-y-4" key={active?.id}>
+        {sub === 'list' && <SupplierListView onOpen={setSelectedId} onRegister={() => setRegistering(true)} />}
+        {sub === 'admission' && <SupplierAdmissionQueue onOpen={setSelectedId} />}
+        {sub === 'performance' && <SupplierPerformanceBoard onOpen={setSelectedId} />}
+        {sub === 'qualifications' && <SupplierQualificationsBoard onOpen={setSelectedId} />}
+        {sub === 'sourcing' && <SupplierSourcingView />}
+        {sub === 'invitation' && <SupplierInvitationsView />}
       </div>
     </div>
   );
