@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { useSupplierQuoteListList } from '@24bid/api-client';
-import { FilterTabs, FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill} from '@24bid/ui';
+import { FilterTabs, FeedbackNotice, Pagination, Panel, SearchInput, StatusPill} from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -69,20 +69,28 @@ export function QuotesPage() {
           <div className="space-y-3">
             {pageItems.map((q, i) => (
               <div key={q.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="break-words font-mono font-black text-slate-950">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {q.status && <StatusPill label={q.status} />}
+                      <span className="font-mono text-[11px] font-bold text-slate-400">报价 {q.id}</span>
+                    </div>
+                    <p className="mt-1.5 break-words font-mono text-[15px] font-black text-slate-950">
                       <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                       {q.rfqId}
                     </p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">报价 {q.id}</p>
+                    <p className="mt-1.5 text-xs font-bold text-slate-500">
+                      税率 {q.taxRate != null ? `${q.taxRate}%` : '—'} · 承诺交期{' '}
+                      {q.deliveryDays != null ? `${q.deliveryDays} 天` : '—'}
+                      {q.submittedAt && (
+                        <span className="ml-2 font-mono">提交于 {q.submittedAt.slice(0, 10)}</span>
+                      )}
+                    </p>
                   </div>
-                  {q.status && <StatusPill label={q.status} />}
-                </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  <MiniFact label="报价金额" value={currency(q.amount)} />
-                  <MiniFact label="税率" value={q.taxRate != null ? `${q.taxRate}%` : '—'} />
-                  <MiniFact label="交期" value={q.deliveryDays != null ? `${q.deliveryDays} 天` : '—'} />
+                  <div className="shrink-0 text-right">
+                    <p className="text-[11px] font-black text-slate-400">报价金额(含税)</p>
+                    <p className="mt-0.5 font-mono text-xl font-black text-slate-950">{currency(q.amount)}</p>
+                  </div>
                 </div>
                 {(q.lineItems ?? []).length > 0 && (
                   <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">

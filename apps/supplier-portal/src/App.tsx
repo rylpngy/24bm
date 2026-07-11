@@ -41,7 +41,7 @@ export function App() {
       accountLabel={`${session.displayName} · ${session.supplierId}`}
     >
       {activeModuleId === 'overview' ? (
-        <OverviewPage />
+        <OverviewPage onNavigate={selectModule} />
       ) : activeModuleId === 'opportunities' ? (
         <OpportunitiesPage />
       ) : activeModuleId === 'quotes' ? (
