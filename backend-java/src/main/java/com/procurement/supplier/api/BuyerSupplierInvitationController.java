@@ -41,4 +41,17 @@ public class BuyerSupplierInvitationController {
       @PathVariable String id, @Valid @RequestBody RespondSupplierInvitationRequest request) {
     return ApiResponse.ok(supplierInvitationApplicationService.respond(id, request));
   }
+
+  // Excel 批量导入:模板下载 + 文件字节直传(application/octet-stream)。
+  @GetMapping("/import-template")
+  public org.springframework.http.ResponseEntity<org.springframework.core.io.ByteArrayResource> importTemplate() {
+    return com.procurement.common.excel.ExcelDownloads.xlsx(
+        "供应商邀请导入模板.xlsx", supplierInvitationApplicationService.importTemplate());
+  }
+
+  @PostMapping("/import")
+  public ApiResponse<com.procurement.common.api.ImportResultResponse> importInvitations(
+      @RequestBody byte[] data) {
+    return ApiResponse.ok(supplierInvitationApplicationService.importInvitations(data));
+  }
 }

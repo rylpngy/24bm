@@ -36,6 +36,62 @@ public class SupplierInvitationApplicationService {
     return invitationMapper.listByTenant(tenantId).stream().map(this::toResponse).toList();
   }
 
+  // ====== Excel 批量导入:每行生成一条待回复邀请(供应商名称必填,库内待回复重名跳过)======
+
+  public byte[] importTemplate() {
+    return com.procurement.common.excel.ExcelSheets.template(
+        "供应商邀请导入模板",
+        List.of("供应商名称*", "联系方式", "主营品类", "备注"),
+        List.of(List.of("XX 机电设备有限公司", "李经理 138xxxx0000", "机电设备", "老供应商迁移")));
+  }
+
+  @Transactional
+  public com.procurement.common.api.ImportResultResponse importInvitations(byte[] content) {
+    String tenantId = TenantAccessGuard.requireTenantId("supplier invitation APIs");
+    List<List<String>> rows = com.procurement.common.excel.ExcelSheets.readFirstSheet(content, 501);
+    if (rows.size() <= 1) {
+      throw new IllegalArgumentException("文件中没有数据行,请按模板填写后再导入");
+    }
+    java.util.Set<String> pendingNames = new java.util.HashSet<>();
+    for (SupplierInvitation invitation : invitationMapper.listByTenant(tenantId)) {
+      if (SupplierInvitationStatus.PENDING.equals(invitation.status())) {
+        pendingNames.add(invitation.supplierName());
+      }
+    }
+    List<com.procurement.common.api.ImportRowError> failures = new java.util.ArrayList<>();
+    int success = 0;
+    for (int r = 1; r < rows.size(); r++) {
+      List<String> cells = rows.get(r);
+      int rowNumber = r + 1;
+      String name = cells.isEmpty() ? "" : cells.get(0);
+      if (cells.stream().allMatch(String::isBlank)) {
+        continue; // 整行空白跳过。
+      }
+      if (name.isBlank()) {
+        failures.add(new com.procurement.common.api.ImportRowError(rowNumber, "供应商名称为必填项"));
+        continue;
+      }
+      if (pendingNames.contains(name)) {
+        failures.add(new com.procurement.common.api.ImportRowError(
+            rowNumber, "已存在同名待回复邀请(库内或文件内重复): " + name));
+        continue;
+      }
+      String id = "inv-" + UUID.randomUUID();
+      invitationMapper.insert(
+          id,
+          tenantId,
+          null,
+          name,
+          blankToNull(cells.size() > 1 ? cells.get(1) : null),
+          blankToNull(cells.size() > 2 ? cells.get(2) : null),
+          blankToNull(cells.size() > 3 ? cells.get(3) : null),
+          SupplierInvitationStatus.PENDING);
+      pendingNames.add(name);
+      success++;
+    }
+    return new com.procurement.common.api.ImportResultResponse(rows.size() - 1, success, failures);
+  }
+
   @Transactional
   public SupplierInvitationResponse createInvitation(CreateSupplierInvitationRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("supplier invitation APIs");

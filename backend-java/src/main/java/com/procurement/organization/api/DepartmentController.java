@@ -45,4 +45,17 @@ public class DepartmentController {
   public ApiResponse<DepartmentResponse> disable(@PathVariable String departmentId) {
     return ApiResponse.ok(departmentApplicationService.disableDepartment(departmentId));
   }
+
+  // Excel 批量导入:模板下载 + 文件字节直传(application/octet-stream)。
+  @GetMapping("/import-template")
+  public org.springframework.http.ResponseEntity<org.springframework.core.io.ByteArrayResource> importTemplate() {
+    return com.procurement.common.excel.ExcelDownloads.xlsx(
+        "部门导入模板.xlsx", departmentApplicationService.importTemplate());
+  }
+
+  @PostMapping("/import")
+  public ApiResponse<com.procurement.common.api.ImportResultResponse> importDepartments(
+      @RequestBody byte[] data) {
+    return ApiResponse.ok(departmentApplicationService.importDepartments(data));
+  }
 }
