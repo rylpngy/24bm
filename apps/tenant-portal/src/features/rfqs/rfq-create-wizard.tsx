@@ -247,11 +247,11 @@ export function RfqCreateWizard({
           <p className="text-sm font-black text-slate-950">基本信息</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-black text-slate-500">项目名称</label>
+              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>项目名称</label>
               <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="如:2026年度行政车辆维保服务询价" />
             </div>
             <div>
-              <label className="text-xs font-black text-slate-500">关联需求(已通过)</label>
+              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>关联需求(已通过)</label>
               <select
                 className={inputCls}
                 value={demandId}
@@ -270,13 +270,13 @@ export function RfqCreateWizard({
               </select>
             </div>
             <div>
-              <label className="text-xs font-black text-slate-500">采购方式</label>
+              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>采购方式</label>
               <select className={inputCls} value={method} onChange={(e) => setMethod(e.target.value)}>
                 {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-black text-slate-500">评选方式</label>
+              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>评选方式</label>
               <select className={inputCls} value={evaluationMethod} onChange={(e) => setEvaluationMethod(e.target.value)}>
                 <option value="最低价">最低价</option>
                 <option value="综合评分">综合评分</option>
@@ -289,7 +289,7 @@ export function RfqCreateWizard({
               <p className="text-sm font-black text-amber-900">直录采购内容(系统将自动登记「直录登记」需求)</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-black text-slate-500">归口部门</label>
+                  <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>归口部门</label>
                   <select
                     className={inputCls}
                     value={directDepartmentId}
@@ -351,11 +351,11 @@ export function RfqCreateWizard({
             <p className="text-sm font-black text-slate-950">截止时间与商务要求</p>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-black text-slate-500">报价截止</label>
+                <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>报价截止</label>
                 <input className={inputCls} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-black text-slate-500">商务特殊条款</label>
+                <label className="text-xs font-black text-slate-500">商务特殊条款(选填)</label>
                 <textarea
                   className={cn(inputCls, 'min-h-[42px] resize-y')}
                   placeholder="如:账期不少于60天,需要提供原厂质保函等"
@@ -365,7 +365,7 @@ export function RfqCreateWizard({
               </div>
             </div>
             <div className="mt-3">
-              <label className="text-xs font-black text-slate-500">交付要求</label>
+              <label className="text-xs font-black text-slate-500">交付要求(选填)</label>
               <textarea
                 className={cn(inputCls, 'min-h-[42px] resize-y')}
                 placeholder="到货地址、到货时限、质保与验收方式。"
@@ -378,7 +378,7 @@ export function RfqCreateWizard({
           {method === '竞价' && (
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-black text-slate-500">起拍价(元,必填)</label>
+                <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>起拍价(元)</label>
                 <input className={inputCls} type="number" min="0" value={auctionStartPrice} onChange={(e) => setAuctionStartPrice(e.target.value)} />
               </div>
               <div>
@@ -389,7 +389,7 @@ export function RfqCreateWizard({
           )}
           {isSingleSource && (
             <div className="mt-3">
-              <label className="text-xs font-black text-slate-500">来源说明(必填,审批留痕)</label>
+              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>来源说明(审批留痕)</label>
               <textarea
                 className={cn(inputCls, 'min-h-[56px] resize-y')}
                 placeholder="说明定向选择该供应商的依据。"

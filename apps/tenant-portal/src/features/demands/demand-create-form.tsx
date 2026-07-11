@@ -155,6 +155,10 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
       </section>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <p className="text-xs font-bold text-slate-400">
+          <span className="mr-1 text-red-500">*</span>为必填项;物料明细至少一条。
+        </p>
+
         <DemandCreateSection accent="blue" title="基本信息">
           <div className="grid gap-6 lg:grid-cols-[1fr_1fr_16rem]">
             <Field label="需求标题" required error={errors.title?.message}>
@@ -200,7 +204,7 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
           </div>
         </DemandCreateSection>
 
-        <DemandCreateSection accent="violet" title="采购物料明细">
+        <DemandCreateSection accent="violet" title="采购物料明细(必填,至少一条)">
           <div className="grid gap-5 xl:grid-cols-[22rem_1fr]">
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
               <div className="relative">
