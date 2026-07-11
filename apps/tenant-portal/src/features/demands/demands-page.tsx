@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Calculator, CheckSquare, ClipboardList, Layers3, Plus, Search, Sparkles, Users, X } from 'lucide-react';
+import { ArrowLeft, Calculator, CheckSquare, ClipboardList, Layers3, Plus, Search, Sparkles, Users, X,
+  ClipboardCheck,
+} from 'lucide-react';
 import {
   useMaterialList,
   type BuyerSupplierResponse,
@@ -450,7 +452,7 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
                   </td>
                   <td className="px-5 py-5 font-mono text-xs font-black text-slate-500">{d.id}</td>
                   <td className="px-5 py-5">
-                    <p className="font-black text-slate-950">{d.title}</p>
+                    <p className="flex items-center gap-2 font-black text-slate-950">{d.title}{d.source === '直录登记' && (<span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-black text-amber-700">直录登记</span>)}</p>
                     <p className="mt-1 text-xs font-bold text-slate-400">
                       {d.expectedDeliveryDate ? `期望交期 ${d.expectedDeliveryDate}` : d.priority ? `优先级 ${d.priority}` : '待补充交付信息'}
                     </p>
@@ -494,6 +496,12 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
   );
 }
 
+function supplierCollectionHint(method: string, collection: string) {
+  if (method === '商城') return '目录采购';
+  if (method === '单一来源') return '定向 1 家';
+  return collection === '公开' ? '公开征集' : '邀请征集';
+}
+
 export function ProcurementPlanMergePage({
   selectedDemands,
   selectedBudget,
@@ -521,6 +529,11 @@ export function ProcurementPlanMergePage({
   createPending,
   onBack,
   onSubmit,
+  directRows,
+  setDirectRows,
+  directDepartmentId,
+  setDirectDepartmentId,
+  departments,
 }: {
   selectedDemands: PurchaseDemandResponse[];
   selectedBudget: number;
@@ -548,6 +561,12 @@ export function ProcurementPlanMergePage({
   createPending: boolean;
   onBack: () => void;
   onSubmit: () => void;
+  // 直录模式(采购部门直接创建,不基于既有需求;提交时系统反向登记「直录登记」需求保闭环)
+  directRows?: Array<{ materialId: string; quantity: number }>;
+  setDirectRows?: (rows: Array<{ materialId: string; quantity: number }>) => void;
+  directDepartmentId?: string;
+  setDirectDepartmentId?: (id: string) => void;
+  departments?: Array<{ id?: string; name?: string }>;
 }) {
   const materialsForRef = useMaterialList();
   const materialIndex = useMemo(() => {
@@ -580,18 +599,40 @@ export function ProcurementPlanMergePage({
   const [recommendNote, setRecommendNote] = useState<string | null>(null);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [supplierKeyword, setSupplierKeyword] = useState('');
-  const mergedRows = selectedDemands.flatMap((d) =>
-    (d.lineItems?.length ? d.lineItems : [{ materialId: d.title, quantity: 1 }]).map((line) => ({
-      demandId: d.id,
-      demandTitle: d.title,
-      materialName: line.materialId || d.title || '示例物资',
-      spec: d.departmentId || '常规规格',
-      quantity: line.quantity ?? 1,
-      unit: '个',
-      budgetUnit: Math.round((d.budget ?? 0) / Math.max(line.quantity ?? 1, 1)),
-      subtotal: d.budget ?? 0,
-    })),
+  const direct = !!setDirectRows;
+  const directReference = (directRows ?? []).reduce(
+    (sum, row) => sum + (materialIndex[row.materialId]?.referencePrice ?? 0) * row.quantity,
+    0,
   );
+  const effectiveBudget = direct ? directReference : selectedBudget;
+  const mergedRows = direct
+    ? (directRows ?? []).map((row) => {
+        const material = materialIndex[row.materialId];
+        return {
+          demandId: row.materialId,
+          demandTitle: '直录采购内容',
+          materialName: material?.name ?? row.materialId,
+          spec: material?.category ?? '—',
+          quantity: row.quantity,
+          unit: '个',
+          budgetUnit: material?.referencePrice ?? 0,
+          referencePrice: material?.referencePrice ?? 0,
+          subtotal: (material?.referencePrice ?? 0) * row.quantity,
+        };
+      })
+    : selectedDemands.flatMap((d) =>
+        (d.lineItems?.length ? d.lineItems : [{ materialId: d.title, quantity: 1 }]).map((line) => ({
+          demandId: d.id,
+          demandTitle: d.title,
+          materialName: materialIndex[line.materialId ?? '']?.name ?? line.materialId ?? d.title ?? '未命名物资',
+          spec: materialIndex[line.materialId ?? '']?.category ?? d.departmentId ?? '常规规格',
+          quantity: line.quantity ?? 1,
+          unit: '个',
+          budgetUnit: Math.round((d.budget ?? 0) / Math.max(line.quantity ?? 1, 1)),
+          referencePrice: materialIndex[line.materialId ?? '']?.referencePrice ?? 0,
+          subtotal: d.budget ?? 0,
+        })),
+      );
   const isSingleSource = planMethod === '单一来源';
   const isOpenSolicitation = planMethod !== '商城' && planMethod !== '单一来源' && collectionMethod === '公开';
   const supplierSelectionRequired = planMethod === '单一来源' || (planMethod !== '商城' && collectionMethod === '邀请');
@@ -602,7 +643,11 @@ export function ProcurementPlanMergePage({
     return !supplierKw || text.includes(supplierKw);
   });
   const supplierRequirementMet = !supplierSelectionRequired || (isSingleSource ? supplierIds.length === 1 : supplierIds.length >= 3);
-  const canSubmit = selectedDemands.length > 0 && supplierRequirementMet && !!planDate;
+  const directRowsValid =
+    (directRows ?? []).length > 0 && (directRows ?? []).every((row) => row.materialId && row.quantity > 0);
+  const canSubmit = direct
+    ? directRowsValid && !!directDepartmentId && supplierRequirementMet && !!planDate
+    : selectedDemands.length > 0 && supplierRequirementMet && !!planDate;
 
   const handlePlanMethodChange = (value: string) => {
     setPlanMethod(value);
@@ -647,7 +692,9 @@ export function ProcurementPlanMergePage({
           <div>
             <h1 className="text-2xl font-black text-slate-950">新建采购方案</h1>
             <p className="mt-1 text-sm font-bold text-slate-500">
-              填写方案基本信息与执行策略 · 已合并 {selectedDemands.length} 条需求 · 涉及部门 {selectedDepartments.join('、') || '—'}
+              {direct
+                ? '直接创建(直录)· 提交时系统自动登记「直录登记」需求,保留完整业务闭环'
+                : `填写方案基本信息与执行策略 · 已合并 ${selectedDemands.length} 条需求 · 涉及部门 ${selectedDepartments.join('、') || '—'}`}
             </p>
           </div>
         </div>
@@ -700,16 +747,34 @@ export function ProcurementPlanMergePage({
 
       <MergeSection accent="emerald" title="申请信息">
         <div className="grid gap-6 lg:grid-cols-2">
-          <Field label="采购预算（元）">
-            <input className={inputCls} value={selectedBudget} readOnly />
+          <Field label={direct ? '采购预算(元,按物料参考价自动测算)' : '采购预算（元）'}>
+            <input className={inputCls} value={effectiveBudget} readOnly />
           </Field>
-          <Field label="项目概况介绍">
-            <textarea
-              className={`${inputCls} min-h-24 resize-none`}
-              value={selectedContent || '由多个已审批采购需求合并生成，统一形成采购方案并进入寻源执行。'}
-              readOnly
-            />
-          </Field>
+          {direct ? (
+            <Field label="归口部门" required>
+              <select
+                className={inputCls}
+                value={directDepartmentId ?? ''}
+                onChange={(e) => setDirectDepartmentId?.(e.target.value)}
+              >
+                <option value="">请选择归口部门</option>
+                {(departments ?? []).map((dept) => (
+                  <option key={dept.id} value={dept.id}>{dept.name ?? dept.id}</option>
+                ))}
+              </select>
+              <p className="mt-2 text-xs font-bold text-slate-500">
+                直录立项将自动登记一条「直录登记」需求并归口到该部门,便于回链与预算口径统计。
+              </p>
+            </Field>
+          ) : (
+            <Field label="项目概况介绍">
+              <textarea
+                className={`${inputCls} min-h-24 resize-none`}
+                value={selectedContent || '由多个已审批采购需求合并生成，统一形成采购方案并进入寻源执行。'}
+                readOnly
+              />
+            </Field>
+          )}
           <Field label="采购方式与供应商征集方式">
             <div className="grid gap-3 sm:grid-cols-2">
               <select className={inputCls} value={planMethod} onChange={(e) => handlePlanMethodChange(e.target.value)}>
@@ -826,8 +891,59 @@ export function ProcurementPlanMergePage({
 
       <MergeSection accent="violet" title="采购内容明细">
         <p className="mb-3 text-xs font-bold text-slate-500">
-          合并创建采购计划时，采购内容由已选采购需求自动汇总，提交前不允许再增删或替换物料。
+          {direct
+            ? '直录模式:直接选择物料并填写数量;预算按物料参考价自动测算。'
+            : '合并创建采购计划时，采购内容由已选采购需求自动汇总，提交前不允许再增删或替换物料。'}
         </p>
+        {direct && (
+          <div className="mb-4 space-y-2">
+            {(directRows ?? []).map((row, index) => (
+              <div key={index} className="flex flex-wrap items-center gap-2">
+                <select
+                  className={`${inputCls} w-72`}
+                  value={row.materialId}
+                  onChange={(e) => {
+                    const next = [...(directRows ?? [])];
+                    next[index] = { ...next[index], materialId: e.target.value };
+                    setDirectRows?.(next);
+                  }}
+                >
+                  <option value="">请选择物料</option>
+                  {(materialsForRef.data?.data ?? []).map((m) => (
+                    <option key={m.id} value={m.id}>{m.code} · {m.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  className={`${inputCls} w-28`}
+                  value={row.quantity || ''}
+                  placeholder="数量"
+                  onChange={(e) => {
+                    const next = [...(directRows ?? [])];
+                    next[index] = { ...next[index], quantity: Number(e.target.value) };
+                    setDirectRows?.(next);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setDirectRows?.((directRows ?? []).filter((_, i) => i !== index))}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  aria-label="删除该行"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setDirectRows?.([...(directRows ?? []), { materialId: '', quantity: 1 }])}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-dashed border-violet-300 bg-violet-50/50 px-4 text-xs font-black text-violet-700 hover:bg-violet-50"
+            >
+              + 添加采购内容
+            </button>
+          </div>
+        )}
         <div className="overflow-hidden rounded-lg border border-slate-100">
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-slate-50 text-xs font-black text-slate-500">
@@ -854,7 +970,9 @@ export function ProcurementPlanMergePage({
                   <td className="px-4 py-4 text-right font-mono">{row.quantity}</td>
                   <td className="px-4 py-4">{row.unit}</td>
                   <td className="px-4 py-4 text-right font-mono">{currency(row.budgetUnit)}</td>
-                  <td className="px-4 py-4 text-right font-mono text-slate-400">{currency(Math.round(row.budgetUnit * 0.96))}</td>
+                  <td className="px-4 py-4 text-right font-mono text-slate-400">
+                    {row.referencePrice > 0 ? currency(row.referencePrice) : '—'}
+                  </td>
                   <td className="px-4 py-4 text-right font-mono font-black text-slate-950">{currency(row.subtotal)}</td>
                 </tr>
               ))}
@@ -863,7 +981,7 @@ export function ProcurementPlanMergePage({
               <tr>
                 <td colSpan={6} />
                 <td className="px-4 py-4 text-right text-xs font-black text-slate-500">合计预算</td>
-                <td className="px-4 py-4 text-right text-xl font-black text-violet-600">{currency(selectedBudget)}</td>
+                <td className="px-4 py-4 text-right text-xl font-black text-violet-600">{currency(effectiveBudget)}</td>
               </tr>
             </tfoot>
           </table>
@@ -878,7 +996,9 @@ export function ProcurementPlanMergePage({
               <div>
                 <p className="text-sm font-black text-blue-900">预算合理性核对(基于物料参考价)</p>
                 <p className="mt-1 text-xs font-bold text-blue-700">
-                  {marketReference > 0 ? (
+                  {direct ? (
+                    <>直录预算按物料参考价自动测算:合计 {currency(directReference)};如需调整请在物料目录维护参考价。</>
+                  ) : marketReference > 0 ? (
                     <>
                       方案总预算 {currency(selectedBudget)},物料参考价合计 {currency(marketReference)}
                       (偏差 {budgetDeviation != null ? `${(budgetDeviation * 100).toFixed(1)}%` : '—'})。
@@ -902,24 +1022,54 @@ export function ProcurementPlanMergePage({
             <FeedbackNotice tone="error" message="采购计划创建失败：请确认所选需求均为已通过且未被其他采购计划关联，供应商数量符合采购方式要求。" />
           </div>
         )}
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-black text-slate-600 hover:bg-slate-50"
-          >
-            返回选择
-          </button>
-          <PrimaryActionButton
-            onClick={onSubmit}
-            busy={createPending}
-            pendingLabel="生成中"
-            disabled={!canSubmit}
-          >
-            生成采购计划
-          </PrimaryActionButton>
-        </div>
       </MergeSection>
+
+      {/* 底部提交操作条:左侧汇总与阻塞原因,右侧动作按钮。 */}
+      <section className="sticky bottom-4 rounded-lg border border-slate-200 bg-white/95 px-6 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5">
+            <p className="text-sm font-bold text-slate-500">
+              {direct ? `直录明细 ${(directRows ?? []).length} 行` : `已合并 ${selectedDemands.length} 条需求`}
+              <span className="mx-2 text-slate-200">|</span>
+              合计预算 <span className="font-mono text-lg font-black text-violet-600">{currency(effectiveBudget)}</span>
+              <span className="mx-2 text-slate-200">|</span>
+              {planMethod} · {supplierCollectionHint(planMethod, collectionMethod)}
+            </p>
+            {!canSubmit && (
+              <p className="text-xs font-black text-amber-600">
+                {!planDate
+                  ? '请先填写「采购时间 / 报价截止」'
+                  : direct && !directRowsValid
+                    ? '请完善直录明细(物料与数量)'
+                    : direct && !directDepartmentId
+                      ? '请选择归口部门'
+                      : !supplierRequirementMet
+                        ? isSingleSource
+                          ? '单一来源需定向选择 1 家供应商'
+                          : '邀请征集需选择不少于 3 家供应商'
+                        : '请先在上一步勾选要合并的需求'}
+              </p>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex h-11 items-center rounded-lg border border-slate-200 bg-white px-6 text-sm font-black text-slate-600 transition hover:bg-slate-50 active:scale-[0.98]"
+            >
+              返回选择
+            </button>
+            <PrimaryActionButton
+              onClick={onSubmit}
+              busy={createPending}
+              pendingLabel="生成中"
+              disabled={!canSubmit}
+            >
+              <ClipboardCheck size={16} /> 生成采购计划
+            </PrimaryActionButton>
+          </div>
+        </div>
+      </section>
 
       {supplierDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4 py-6">

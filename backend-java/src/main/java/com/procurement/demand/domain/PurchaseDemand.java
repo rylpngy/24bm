@@ -16,5 +16,6 @@ public record PurchaseDemand(
     OffsetDateTime updatedAt,
     LocalDate expectedDeliveryDate,
     String priority,
-    String purpose) {
+    String purpose,
+    String source) {
 }

@@ -55,6 +55,7 @@ class RfqUpdateQuotingTests {
       rfqDemandMapper,
       rfqInviteMapper,
       purchaseDemandMapper,
+      org.mockito.Mockito.mock(com.procurement.demand.application.DirectDemandRegistrar.class),
       dataScopeService,
       buyerSupplierRelationMapper,
       supplierQualificationMapper,

@@ -14,7 +14,7 @@ public interface PurchaseDemandMapper {
 
   @Select("""
       select id, tenant_id, title, department_id, requester_id, budget, status, created_at, updated_at,
-             expected_delivery_date, priority, purpose
+             expected_delivery_date, priority, purpose, source
       from purchase_demands
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -24,7 +24,7 @@ public interface PurchaseDemandMapper {
   @Select("""
       <script>
       select id, tenant_id, title, department_id, requester_id, budget, status, created_at, updated_at,
-             expected_delivery_date, priority, purpose
+             expected_delivery_date, priority, purpose, source
       from purchase_demands
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -58,7 +58,7 @@ public interface PurchaseDemandMapper {
 
   @Select("""
       select id, tenant_id, title, department_id, requester_id, budget, status, created_at, updated_at,
-             expected_delivery_date, priority, purpose
+             expected_delivery_date, priority, purpose, source
       from purchase_demands
       where tenant_id = #{tenantId} and id = #{id}
       """)
@@ -67,10 +67,10 @@ public interface PurchaseDemandMapper {
   @Insert("""
       insert into purchase_demands (
         id, tenant_id, title, department_id, requester_id, budget, status,
-        expected_delivery_date, priority, purpose
+        expected_delivery_date, priority, purpose, source
       ) values (
         #{id}, #{tenantId}, #{title}, #{departmentId}, #{requesterId}, #{budget}, #{status,jdbcType=VARCHAR},
-        #{expectedDeliveryDate,jdbcType=DATE}, #{priority}, #{purpose}
+        #{expectedDeliveryDate,jdbcType=DATE}, #{priority}, #{purpose}, #{source}
       )
       """)
   void insert(
@@ -83,7 +83,8 @@ public interface PurchaseDemandMapper {
       @Param("status") String status,
       @Param("expectedDeliveryDate") java.time.LocalDate expectedDeliveryDate,
       @Param("priority") String priority,
-      @Param("purpose") String purpose);
+      @Param("purpose") String purpose,
+      @Param("source") String source);
 
   @Update("""
       update purchase_demands

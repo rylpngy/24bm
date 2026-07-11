@@ -234,7 +234,15 @@ export function RfqsPage() {
                   </td>
                   <td className="px-4 py-4 font-mono text-xs font-black text-slate-500">{r.id}</td>
                   <td className="px-4 py-4">
-                    <p className="break-words font-black text-slate-950">{r.title}</p>
+                    <p className="flex flex-wrap items-center gap-2 break-words font-black text-slate-950">
+                      {r.title}
+                      {(r.demandIds?.length ?? 0) > 0 &&
+                        r.demandIds!.every((id) =>
+                          (allDemands.data?.data ?? []).find((d) => d.id === id)?.source === '直录登记',
+                        ) && (
+                          <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-black text-amber-700">直接创建</span>
+                        )}
+                    </p>
                     <p className="mt-1 text-xs font-bold text-slate-400">
                       <span className={cn('mr-1.5 rounded px-1.5 py-0.5 text-[11px] font-black', methodTone(r.method))}>
                         {r.method ?? '询比'}

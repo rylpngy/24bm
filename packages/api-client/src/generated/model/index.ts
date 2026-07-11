@@ -233,6 +233,7 @@ export * from './departmentBudgetResponse';
 export * from './departmentResponse';
 export * from './dictionaryEntryResponse';
 export * from './dictionaryListParams';
+export * from './directRfqItemRequest';
 export * from './discoverableSupplierResponse';
 export * from './enterpriseReviewEventResponse';
 export * from './enterpriseReviewRequest';

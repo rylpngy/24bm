@@ -15,6 +15,7 @@ import com.procurement.demand.api.ReviewPurchaseDemandRequest;
 import com.procurement.demand.api.UpdatePurchaseDemandRequest;
 import com.procurement.demand.domain.PurchaseDemand;
 import com.procurement.demand.domain.PurchaseDemandAuditAction;
+import com.procurement.demand.domain.PurchaseDemandSource;
 import com.procurement.demand.domain.PurchaseDemandApprovalStatusTransition;
 import com.procurement.demand.domain.PurchaseDemandItem;
 import com.procurement.demand.domain.PurchaseDemandStatus;
@@ -124,7 +125,8 @@ public class PurchaseDemandApplicationService {
         PurchaseDemandStatus.DRAFT,
         request.expectedDeliveryDate(),
         request.priority() == null ? "常规" : request.priority(),
-        request.purpose() == null ? "" : request.purpose());
+        request.purpose() == null ? "" : request.purpose(),
+        PurchaseDemandSource.DEPARTMENT);
 
     for (var lineItem : request.lineItems()) {
       purchaseDemandItemMapper.insert(
@@ -302,7 +304,8 @@ public class PurchaseDemandApplicationService {
         demand.priority(),
         demand.purpose(),
         linkedRfq == null ? null : linkedRfq.rfqId(),
-        linkedRfq == null ? null : linkedRfq.status());
+        linkedRfq == null ? null : linkedRfq.status(),
+        demand.source());
   }
 
   private PurchaseDemandLineItemResponse toLineItemResponse(PurchaseDemandItem item) {

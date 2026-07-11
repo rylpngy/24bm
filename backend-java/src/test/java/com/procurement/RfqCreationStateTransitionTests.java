@@ -62,6 +62,7 @@ class RfqCreationStateTransitionTests {
       rfqDemandMapper,
       rfqInviteMapper,
       purchaseDemandMapper,
+      org.mockito.Mockito.mock(com.procurement.demand.application.DirectDemandRegistrar.class),
       dataScopeService,
       buyerSupplierRelationMapper,
       supplierQualificationMapper,
@@ -87,7 +88,7 @@ class RfqCreationStateTransitionTests {
         "办公电脑询价",
         List.of("demand-1"),
         List.of("supplier-1"),
-        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, "原厂唯一授权服务商", null);
+        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, "原厂唯一授权服务商", null, null, null, null);
 
     assertThatThrownBy(() -> rfqApplicationService.create(request))
         .isInstanceOf(IllegalStateException.class)
@@ -192,7 +193,7 @@ class RfqCreationStateTransitionTests {
         "办公电脑询价",
         List.of("demand-1"),
         List.of("supplier-1"),
-        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, "原厂唯一授权服务商", null);
+        OffsetDateTime.now().plusDays(7), "", "", "最低价", "单一来源", null, null, "原厂唯一授权服务商", null, null, null, null);
 
     assertThatThrownBy(() -> rfqApplicationService.create(request))
         .isInstanceOf(IllegalStateException.class)
@@ -209,7 +210,7 @@ class RfqCreationStateTransitionTests {
         BigDecimal.valueOf(1000),
         status,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明", null);
   }
 
   private SupplierQualification qualification(String id, String supplierId) {

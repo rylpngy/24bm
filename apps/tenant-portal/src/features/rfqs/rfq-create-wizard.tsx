@@ -4,6 +4,7 @@ import {
   type BuyerSupplierResponse,
   type PurchaseDemandResponse,
   type RfqResponse,
+  useDepartmentList,
   useMaterialList,
   useRfqCreate,
   useRfqPublish,
@@ -43,6 +44,8 @@ export function RfqCreateWizard({
   const updateInvitations = useRfqUpdateInvitations();
   const publish = useRfqPublish();
   const materials = useMaterialList();
+  const departmentsQuery = useDepartmentList();
+  const departments = departmentsQuery.data?.data ?? [];
 
   const [step, setStep] = useState(resumeDraft ? ((resumeDraft.invitedSupplierIds ?? []).length > 0 ? 3 : 2) : 1);
   const [draftId, setDraftId] = useState<string | null>(resumeDraft?.id ?? null);
@@ -50,6 +53,9 @@ export function RfqCreateWizard({
 
   const [title, setTitle] = useState(resumeDraft?.title ?? '');
   const [demandId, setDemandId] = useState(resumeDraft?.demandIds?.[0] ?? '');
+  // 直录模式:不基于既有需求,直接录入采购内容(系统反登「直录登记」需求保闭环)。
+  const [directRows, setDirectRows] = useState<Array<{ materialId: string; quantity: number }>>([]);
+  const [directDepartmentId, setDirectDepartmentId] = useState('');
   const [method, setMethod] = useState(resumeDraft?.method ?? '询比');
   const [deadline, setDeadline] = useState(resumeDraft?.deadlineAt?.slice(0, 10) ?? '');
   const [evaluationMethod, setEvaluationMethod] = useState(resumeDraft?.evaluationMethod ?? '最低价');
@@ -69,7 +75,7 @@ export function RfqCreateWizard({
 
   const selectedDemand = demands.find((d) => d.id === demandId);
   const materialIndex = useMemo(() => {
-    const map: Record<string, { name: string; unit: string; specification: string; category: string }> = {};
+    const map: Record<string, { name: string; unit: string; specification: string; category: string; referencePrice: number; code: string }> = {};
     (materials.data?.data ?? []).forEach((m) => {
       if (m.id) {
         map[m.id] = {
@@ -77,6 +83,8 @@ export function RfqCreateWizard({
           unit: m.unit ?? '件',
           specification: m.specification ?? '',
           category: m.category ?? '其他',
+          referencePrice: m.referencePrice ?? 0,
+          code: m.code ?? m.id,
         };
       }
     });
@@ -95,9 +103,16 @@ export function RfqCreateWizard({
   );
 
   const isSingleSource = method === '单一来源';
+  const isDirect = demandId === '__direct__';
+  const directBudget = directRows.reduce(
+    (sum, row) => sum + (materialIndex[row.materialId]?.referencePrice ?? 0) * row.quantity,
+    0,
+  );
+  const directValid =
+    directRows.length > 0 && directRows.every((row) => row.materialId && row.quantity > 0) && !!directDepartmentId;
   const step1Valid =
     !!title &&
-    !!demandId &&
+    (isDirect ? directValid : !!demandId) &&
     !!deadline &&
     (method !== '竞价' || Number(auctionStartPrice) > 0) &&
     (!isSingleSource || singleSourceReason.trim().length > 0);
@@ -118,7 +133,14 @@ export function RfqCreateWizard({
       {
         data: {
           title,
-          demandIds: demandId ? [demandId] : [],
+          demandIds: isDirect || !demandId ? [] : [demandId],
+          ...(isDirect
+            ? {
+                directItems: directRows.filter((row) => row.materialId && row.quantity > 0),
+                directDepartmentId,
+                directBudget,
+              }
+            : {}),
           invitedSupplierIds: [],
           deadlineAt: `${deadline}T18:00:00+08:00`,
           evaluationMethod,
@@ -229,8 +251,18 @@ export function RfqCreateWizard({
             </div>
             <div>
               <label className="text-xs font-black text-slate-500">关联需求(已通过)</label>
-              <select className={inputCls} value={demandId} onChange={(e) => setDemandId(e.target.value)}>
+              <select
+                className={inputCls}
+                value={demandId}
+                onChange={(e) => {
+                  setDemandId(e.target.value);
+                  if (e.target.value === '__direct__' && directRows.length === 0) {
+                    setDirectRows([{ materialId: '', quantity: 1 }]);
+                  }
+                }}
+              >
                 <option value="">选择需求</option>
+                <option value="__direct__">不基于需求 · 直接录入(直录登记)</option>
                 {demands.map((d) => (
                   <option key={d.id} value={d.id}>{d.title}(预算 {currency(d.budget)})</option>
                 ))}
@@ -250,6 +282,77 @@ export function RfqCreateWizard({
               </select>
             </div>
           </div>
+
+          {isDirect && (
+            <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50/40 p-4">
+              <p className="text-sm font-black text-amber-900">直录采购内容(系统将自动登记「直录登记」需求)</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-black text-slate-500">归口部门</label>
+                  <select
+                    className={inputCls}
+                    value={directDepartmentId}
+                    onChange={(e) => setDirectDepartmentId(e.target.value)}
+                  >
+                    <option value="">请选择归口部门</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>{dept.name ?? dept.id}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500">
+                  预算按物料参考价自动测算:<span className="font-mono font-black text-slate-900">{currency(directBudget)}</span>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                {directRows.map((row, index) => (
+                  <div key={index} className="flex flex-wrap items-center gap-2">
+                    <select
+                      className={`${inputCls} w-72`}
+                      value={row.materialId}
+                      onChange={(e) => {
+                        const next = [...directRows];
+                        next[index] = { ...next[index], materialId: e.target.value };
+                        setDirectRows(next);
+                      }}
+                    >
+                      <option value="">请选择物料</option>
+                      {(materials.data?.data ?? []).map((m) => (
+                        <option key={m.id} value={m.id}>{m.code} · {m.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min={1}
+                      className={`${inputCls} w-28`}
+                      value={row.quantity || ''}
+                      placeholder="数量"
+                      onChange={(e) => {
+                        const next = [...directRows];
+                        next[index] = { ...next[index], quantity: Number(e.target.value) };
+                        setDirectRows(next);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setDirectRows(directRows.filter((_, i) => i !== index))}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      aria-label="删除该行"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setDirectRows([...directRows, { materialId: '', quantity: 1 }])}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-dashed border-amber-300 bg-white px-4 text-xs font-black text-amber-700 hover:bg-amber-50"
+                >
+                  + 添加采购内容
+                </button>
+              </div>
+            </div>
+          )}
 
           {selectedDemand && (
             <div className="mt-4">

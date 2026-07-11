@@ -13668,6 +13668,9 @@
           },
           "linkedRfqStatus": {
             "type": "string"
+          },
+          "source": {
+            "type": "string"
           }
         }
       },
@@ -15511,7 +15514,6 @@
       },
       "CreateRfqRequest": {
         "required": [
-          "demandIds",
           "title"
         ],
         "type": "object",
@@ -15558,6 +15560,33 @@
           },
           "saveAsDraft": {
             "type": "boolean"
+          },
+          "directItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DirectRfqItemRequest"
+            }
+          },
+          "directDepartmentId": {
+            "type": "string"
+          },
+          "directBudget": {
+            "type": "number"
+          }
+        }
+      },
+      "DirectRfqItemRequest": {
+        "required": [
+          "materialId"
+        ],
+        "type": "object",
+        "properties": {
+          "materialId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

@@ -5,10 +5,11 @@
  * 多租户采购协同管理 SaaS 后端契约（平台 / 采购方 / 供应商三端）。
  * OpenAPI spec version: v1
  */
+import type { DirectRfqItemRequest } from './directRfqItemRequest';
 
 export interface CreateRfqRequest {
   title: string;
-  demandIds: string[];
+  demandIds?: string[];
   invitedSupplierIds?: string[];
   deadlineAt?: string;
   quoteRequirement?: string;
@@ -19,4 +20,7 @@ export interface CreateRfqRequest {
   auctionMinDecrement?: number;
   singleSourceReason?: string;
   saveAsDraft?: boolean;
+  directItems?: DirectRfqItemRequest[];
+  directDepartmentId?: string;
+  directBudget?: number;
 }

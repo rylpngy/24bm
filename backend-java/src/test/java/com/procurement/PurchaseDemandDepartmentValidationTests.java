@@ -83,7 +83,7 @@ class PurchaseDemandDepartmentValidationTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.any(),
-        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -114,7 +114,7 @@ class PurchaseDemandDepartmentValidationTests {
         org.mockito.ArgumentMatchers.eq("dept-it"),
         org.mockito.ArgumentMatchers.eq("buyer-user-1"),
         org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(120000)),
-        org.mockito.ArgumentMatchers.eq("草稿"), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        org.mockito.ArgumentMatchers.eq("草稿"), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -147,7 +147,7 @@ class PurchaseDemandDepartmentValidationTests {
         org.mockito.ArgumentMatchers.eq("草稿"),
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.any(),
-        org.mockito.ArgumentMatchers.any());
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -224,6 +224,6 @@ class PurchaseDemandDepartmentValidationTests {
         BigDecimal.valueOf(120000),
         "草稿",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明", null);
   }
 }

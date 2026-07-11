@@ -23,4 +23,5 @@ export interface PurchaseDemandResponse {
   purpose?: string;
   linkedRfqId?: string;
   linkedRfqStatus?: string;
+  source?: string;
 }

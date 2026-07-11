@@ -558,6 +558,7 @@ class HttpSecurityContractTests {
             "常规",
             "采购用途说明",
             null,
+            null,
             null)));
     String buyerToken = loginAndExtractToken("""
         {
