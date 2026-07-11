@@ -2533,6 +2533,66 @@
         }
       }
     },
+    "/api/v1/public/opportunities/{rfqId}/enroll": {
+      "post": {
+        "tags": [
+          "public-opportunity-controller"
+        ],
+        "operationId": "PublicOpportunity_enroll",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollOpportunityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/platform/tenants": {
       "get": {
         "tags": [
@@ -5471,6 +5531,122 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseRfqResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/rfqs/{rfqId}/enrollments/{enrollmentId}/dismiss": {
+      "post": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_dismissEnrollment",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "enrollmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqEnrollmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/rfqs/{rfqId}/enrollments/{enrollmentId}/accept": {
+      "post": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_acceptEnrollment",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "enrollmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRfqEnrollmentResponse"
                 }
               }
             }
@@ -9640,6 +9816,96 @@
         }
       }
     },
+    "/api/v1/public/opportunities": {
+      "get": {
+        "tags": [
+          "public-opportunity-controller"
+        ],
+        "operationId": "PublicOpportunity_list",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListPublicOpportunityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/opportunities/{rfqId}": {
+      "get": {
+        "tags": [
+          "public-opportunity-controller"
+        ],
+        "operationId": "PublicOpportunity_get",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePublicOpportunityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/announcements": {
       "get": {
         "tags": [
@@ -11049,6 +11315,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseBidEvaluationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/rfqs/{rfqId}/enrollments": {
+      "get": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_listEnrollments",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListRfqEnrollmentResponse"
                 }
               }
             }
@@ -14473,6 +14789,36 @@
           }
         }
       },
+      "EnrollOpportunityRequest": {
+        "required": [
+          "companyName",
+          "contactName",
+          "contactPhone"
+        ],
+        "type": "object",
+        "properties": {
+          "companyName": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "contactName": {
+            "maxLength": 50,
+            "minLength": 0,
+            "type": "string"
+          },
+          "contactPhone": {
+            "maxLength": 30,
+            "minLength": 0,
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
       "CreateTenantRequest": {
         "required": [
           "adminEmail",
@@ -15848,6 +16194,53 @@
             "type": "boolean"
           },
           "note": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseRfqEnrollmentResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RfqEnrollmentResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RfqEnrollmentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rfqId": {
+            "type": "string"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "matchedSupplierId": {
             "type": "string"
           }
         }
@@ -18051,6 +18444,78 @@
           }
         }
       },
+      "ApiResponseListPublicOpportunityResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicOpportunityResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicOpportunityResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "evaluationMethod": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "deadlineAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resultAnnouncedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "quoteRequirement": {
+            "type": "string"
+          },
+          "deliveryRequirement": {
+            "type": "string"
+          },
+          "buyerName": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponsePublicOpportunityResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PublicOpportunityResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "ApiResponseListPublicAnnouncementResponse": {
         "type": "object",
         "properties": {
@@ -19250,6 +19715,23 @@
           },
           "recommended": {
             "type": "boolean"
+          }
+        }
+      },
+      "ApiResponseListRfqEnrollmentResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RfqEnrollmentResponse"
+            }
+          },
+          "message": {
+            "type": "string"
           }
         }
       },

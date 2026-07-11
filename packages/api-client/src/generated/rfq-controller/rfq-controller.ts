@@ -32,9 +32,11 @@ import type {
   ApiResponseBidEvaluationResponse,
   ApiResponseInteger,
   ApiResponseListRfqClarificationResponse,
+  ApiResponseListRfqEnrollmentResponse,
   ApiResponseListRfqResponse,
   ApiResponseListRfqSupplierPerformanceResponse,
   ApiResponseRfqClarificationResponse,
+  ApiResponseRfqEnrollmentResponse,
   ApiResponseRfqResponse,
   ApiResponseRfqResultResponse,
   ApiResponseVoid,
@@ -654,6 +656,120 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getRfqStartNewRoundMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const rfqDismissEnrollment = (
+    rfqId: string,
+    enrollmentId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseRfqEnrollmentResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/enrollments/${enrollmentId}/dismiss`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getRfqDismissEnrollmentMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqDismissEnrollment>>, TError,{rfqId: string;enrollmentId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqDismissEnrollment>>, TError,{rfqId: string;enrollmentId: string}, TContext> => {
+
+const mutationKey = ['rfqDismissEnrollment'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqDismissEnrollment>>, {rfqId: string;enrollmentId: string}> = (props) => {
+          const {rfqId,enrollmentId} = props ?? {};
+
+          return  rfqDismissEnrollment(rfqId,enrollmentId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RfqDismissEnrollmentMutationResult = NonNullable<Awaited<ReturnType<typeof rfqDismissEnrollment>>>
+    
+    export type RfqDismissEnrollmentMutationError = ErrorType<ApiResponseVoid>
+
+    export const useRfqDismissEnrollment = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqDismissEnrollment>>, TError,{rfqId: string;enrollmentId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rfqDismissEnrollment>>,
+        TError,
+        {rfqId: string;enrollmentId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getRfqDismissEnrollmentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const rfqAcceptEnrollment = (
+    rfqId: string,
+    enrollmentId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseRfqEnrollmentResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/enrollments/${enrollmentId}/accept`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getRfqAcceptEnrollmentMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAcceptEnrollment>>, TError,{rfqId: string;enrollmentId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rfqAcceptEnrollment>>, TError,{rfqId: string;enrollmentId: string}, TContext> => {
+
+const mutationKey = ['rfqAcceptEnrollment'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqAcceptEnrollment>>, {rfqId: string;enrollmentId: string}> = (props) => {
+          const {rfqId,enrollmentId} = props ?? {};
+
+          return  rfqAcceptEnrollment(rfqId,enrollmentId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RfqAcceptEnrollmentMutationResult = NonNullable<Awaited<ReturnType<typeof rfqAcceptEnrollment>>>
+    
+    export type RfqAcceptEnrollmentMutationError = ErrorType<ApiResponseVoid>
+
+    export const useRfqAcceptEnrollment = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rfqAcceptEnrollment>>, TError,{rfqId: string;enrollmentId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rfqAcceptEnrollment>>,
+        TError,
+        {rfqId: string;enrollmentId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getRfqAcceptEnrollmentMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -1348,6 +1464,92 @@ export function useRfqEvaluation<TData = Awaited<ReturnType<typeof rfqEvaluation
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getRfqEvaluationQueryOptions(rfqId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const rfqListEnrollments = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListRfqEnrollmentResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/enrollments`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getRfqListEnrollmentsQueryKey = (rfqId?: string,) => {
+    return [
+    `/api/v1/buyer/rfqs/${rfqId}/enrollments`
+    ] as const;
+    }
+
+    
+export const getRfqListEnrollmentsQueryOptions = <TData = Awaited<ReturnType<typeof rfqListEnrollments>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListEnrollments>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRfqListEnrollmentsQueryKey(rfqId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof rfqListEnrollments>>> = ({ signal }) => rfqListEnrollments(rfqId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rfqListEnrollments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RfqListEnrollmentsQueryResult = NonNullable<Awaited<ReturnType<typeof rfqListEnrollments>>>
+export type RfqListEnrollmentsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useRfqListEnrollments<TData = Awaited<ReturnType<typeof rfqListEnrollments>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListEnrollments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqListEnrollments>>,
+          TError,
+          Awaited<ReturnType<typeof rfqListEnrollments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqListEnrollments<TData = Awaited<ReturnType<typeof rfqListEnrollments>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListEnrollments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqListEnrollments>>,
+          TError,
+          Awaited<ReturnType<typeof rfqListEnrollments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqListEnrollments<TData = Awaited<ReturnType<typeof rfqListEnrollments>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListEnrollments>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRfqListEnrollments<TData = Awaited<ReturnType<typeof rfqListEnrollments>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListEnrollments>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRfqListEnrollmentsQueryOptions(rfqId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -30,18 +30,21 @@ public class RfqController {
   private final RfqResultApplicationService rfqResultApplicationService;
   private final RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService;
   private final AwardNoticeApplicationService awardNoticeApplicationService;
+  private final com.procurement.sourcing.application.OpportunityApplicationService opportunityApplicationService;
 
   public RfqController(
       RfqApplicationService rfqApplicationService,
       RfqClarificationApplicationService rfqClarificationApplicationService,
       RfqResultApplicationService rfqResultApplicationService,
       RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService,
-      AwardNoticeApplicationService awardNoticeApplicationService) {
+      AwardNoticeApplicationService awardNoticeApplicationService,
+      com.procurement.sourcing.application.OpportunityApplicationService opportunityApplicationService) {
     this.rfqApplicationService = rfqApplicationService;
     this.rfqClarificationApplicationService = rfqClarificationApplicationService;
     this.rfqResultApplicationService = rfqResultApplicationService;
     this.rfqSupplierPerformanceApplicationService = rfqSupplierPerformanceApplicationService;
     this.awardNoticeApplicationService = awardNoticeApplicationService;
+    this.opportunityApplicationService = opportunityApplicationService;
   }
 
   @GetMapping
@@ -142,6 +145,24 @@ public class RfqController {
   }
 
   // 一键催标:提醒本轮未报价的受邀供应商。
+  // 公开商机报名管理:列表 / 受理(转正式邀请) / 忽略。
+  @GetMapping("/{rfqId}/enrollments")
+  public ApiResponse<java.util.List<RfqEnrollmentResponse>> listEnrollments(@PathVariable String rfqId) {
+    return ApiResponse.ok(opportunityApplicationService.listEnrollments(rfqId));
+  }
+
+  @PostMapping("/{rfqId}/enrollments/{enrollmentId}/accept")
+  public ApiResponse<RfqEnrollmentResponse> acceptEnrollment(
+      @PathVariable String rfqId, @PathVariable String enrollmentId) {
+    return ApiResponse.ok(opportunityApplicationService.acceptEnrollment(rfqId, enrollmentId));
+  }
+
+  @PostMapping("/{rfqId}/enrollments/{enrollmentId}/dismiss")
+  public ApiResponse<RfqEnrollmentResponse> dismissEnrollment(
+      @PathVariable String rfqId, @PathVariable String enrollmentId) {
+    return ApiResponse.ok(opportunityApplicationService.dismissEnrollment(rfqId, enrollmentId));
+  }
+
   @PostMapping("/{rfqId}/remind")
   public ApiResponse<Integer> remind(@PathVariable String rfqId) {
     return ApiResponse.ok(rfqApplicationService.remindPendingSuppliers(rfqId));
