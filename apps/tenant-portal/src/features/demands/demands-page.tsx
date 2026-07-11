@@ -83,7 +83,8 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
   const safePage = Math.min(page, pageCount);
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const selectedDemands = demands.filter((d) => d.id && selectedIds.includes(d.id));
-  const selectablePageItems = pageItems.filter((d) => d.status === '已通过' && d.id);
+  // 可合并 = 已通过且未被其他计划关联(与后端 requireUnlinkedDemand 规则一致)。
+  const selectablePageItems = pageItems.filter((d) => d.status === '已通过' && d.id && !d.linkedRfqId);
   const selectedBudget = selectedDemands.reduce((sum, d) => sum + (d.budget ?? 0), 0);
   const selectedDepartments = Array.from(
     new Set(selectedDemands.map((d) => d.departmentId).filter((id): id is string => !!id)),
@@ -198,6 +199,7 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
         setSupplierIds={setSupplierIds}
         toggleSupplier={toggleSupplier}
         createError={createRfq.isError}
+        createErrorMessage={(createRfq.error as { response?: { data?: { message?: string } } } | null)?.response?.data?.message}
         createPending={createRfq.isPending}
         onBack={() => setShowPlanForm(false)}
         onSubmit={submitProcurementPlan}
@@ -344,7 +346,10 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
                 </div>
               </div>
               {createRfq.isError && (
-                <FeedbackNotice tone="error" message="采购计划创建失败：请确认所选需求均为已通过且未被其他采购计划关联，供应商数量符合采购方式要求。" />
+                <FeedbackNotice
+                  tone="error"
+                  message={(createRfq.error as { response?: { data?: { message?: string } } } | null)?.response?.data?.message ?? '采购计划创建失败,请稍后重试。'}
+                />
               )}
               <div className="mt-4 flex justify-end">
                 <PrimaryActionButton
@@ -379,7 +384,7 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
                     type="checkbox"
                     className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600"
                     checked={!!d.id && selectedIds.includes(d.id)}
-                    disabled={d.status !== '已通过'}
+                    disabled={d.status !== '已通过' || !!d.linkedRfqId}
                     onChange={() => toggleDemand(d.id)}
                     aria-label={`选择需求 ${d.id}`}
                   />
@@ -443,7 +448,7 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
                       type="checkbox"
                       className="h-4 w-4 rounded border-slate-300 text-blue-600"
                       checked={!!d.id && selectedIds.includes(d.id)}
-                      disabled={d.status !== '已通过'}
+                      disabled={d.status !== '已通过' || !!d.linkedRfqId}
                       onChange={() => toggleDemand(d.id)}
                       aria-label={`选择需求 ${d.id}`}
                     />
@@ -453,7 +458,15 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
                   </td>
                   <td className="px-5 py-5 font-mono text-xs font-black text-slate-500">{d.id}</td>
                   <td className="px-5 py-5">
-                    <p className="flex items-center gap-2 font-black text-slate-950">{d.title}{d.source === '直录登记' && (<span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-black text-amber-700">直录登记</span>)}</p>
+                    <p className="flex items-center gap-2 font-black text-slate-950">
+                      {d.title}
+                      {d.source === '直录登记' && (
+                        <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-black text-amber-700">直录登记</span>
+                      )}
+                      {d.linkedRfqId && (
+                        <span className="shrink-0 rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-black text-emerald-700">已关联计划</span>
+                      )}
+                    </p>
                     <p className="mt-1 text-xs font-bold text-slate-400">
                       {d.expectedDeliveryDate ? `期望交期 ${d.expectedDeliveryDate}` : d.priority ? `优先级 ${d.priority}` : '待补充交付信息'}
                     </p>
@@ -527,6 +540,7 @@ export function ProcurementPlanMergePage({
   setSupplierIds,
   toggleSupplier,
   createError,
+  createErrorMessage,
   createPending,
   onBack,
   onSubmit,
@@ -559,6 +573,7 @@ export function ProcurementPlanMergePage({
   setSupplierIds: (value: string[]) => void;
   toggleSupplier: (id?: string) => void;
   createError: boolean;
+  createErrorMessage?: string;
   createPending: boolean;
   onBack: () => void;
   onSubmit: () => void;
@@ -978,7 +993,7 @@ export function ProcurementPlanMergePage({
 
         {createError && (
           <div className="mt-4">
-            <FeedbackNotice tone="error" message="采购计划创建失败：请确认所选需求均为已通过且未被其他采购计划关联，供应商数量符合采购方式要求。" />
+            <FeedbackNotice tone="error" message={createErrorMessage ?? '采购计划创建失败,请稍后重试。'} />
           </div>
         )}
       </MergeSection>

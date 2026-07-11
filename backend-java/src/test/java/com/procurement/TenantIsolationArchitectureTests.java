@@ -157,7 +157,9 @@ class TenantIsolationArchitectureTests {
 
     assertThat(mapperSource)
         .contains("countByTenantAndDemand")
-        .contains("where tenant_id = #{tenantId} and demand_id = #{demandId}");
+        .contains("where rd.tenant_id = #{tenantId} and rd.demand_id = #{demandId}")
+        // 流标/废标项目不占用需求,允许重新立项。
+        .contains("r.status not in ('已流标', '已废标')");
   }
 
   @Test

@@ -17,10 +17,13 @@ public interface RfqDemandMapper {
       """)
   List<String> listDemandIds(@Param("tenantId") String tenantId, @Param("rfqId") String rfqId);
 
+  // 占用判定:已流标/已废标的项目不再占用需求(流标后需求可重新立项)。
   @Select("""
       select count(1)
-      from rfq_demands
-      where tenant_id = #{tenantId} and demand_id = #{demandId}
+      from rfq_demands rd
+      join rfqs r on r.tenant_id = rd.tenant_id and r.id = rd.rfq_id
+      where rd.tenant_id = #{tenantId} and rd.demand_id = #{demandId}
+        and r.status not in ('已流标', '已废标')
       """)
   int countByTenantAndDemand(@Param("tenantId") String tenantId, @Param("demandId") String demandId);
 
@@ -29,6 +32,7 @@ public interface RfqDemandMapper {
       from rfq_demands rd
       join rfqs r on r.tenant_id = rd.tenant_id and r.id = rd.rfq_id
       where rd.tenant_id = #{tenantId} and rd.demand_id = #{demandId}
+        and r.status not in ('已流标', '已废标')
       order by r.created_at desc
       limit 1
       """)
