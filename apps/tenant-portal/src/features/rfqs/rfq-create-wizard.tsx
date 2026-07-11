@@ -11,6 +11,7 @@ import {
   useRfqUpdateInvitations,
 } from '@24bid/api-client';
 import { FeedbackNotice, PrimaryActionButton, cn } from '@24bid/ui';
+import { MaterialLinePicker } from '../shared/material-line-picker';
 
 const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -304,52 +305,8 @@ export function RfqCreateWizard({
                   预算按物料参考价自动测算:<span className="font-mono font-black text-slate-900">{currency(directBudget)}</span>
                 </div>
               </div>
-              <div className="mt-3 space-y-2">
-                {directRows.map((row, index) => (
-                  <div key={index} className="flex flex-wrap items-center gap-2">
-                    <select
-                      className={`${inputCls} w-72`}
-                      value={row.materialId}
-                      onChange={(e) => {
-                        const next = [...directRows];
-                        next[index] = { ...next[index], materialId: e.target.value };
-                        setDirectRows(next);
-                      }}
-                    >
-                      <option value="">请选择物料</option>
-                      {(materials.data?.data ?? []).map((m) => (
-                        <option key={m.id} value={m.id}>{m.code} · {m.name}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={1}
-                      className={`${inputCls} w-28`}
-                      value={row.quantity || ''}
-                      placeholder="数量"
-                      onChange={(e) => {
-                        const next = [...directRows];
-                        next[index] = { ...next[index], quantity: Number(e.target.value) };
-                        setDirectRows(next);
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setDirectRows(directRows.filter((_, i) => i !== index))}
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
-                      aria-label="删除该行"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setDirectRows([...directRows, { materialId: '', quantity: 1 }])}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-dashed border-amber-300 bg-white px-4 text-xs font-black text-amber-700 hover:bg-amber-50"
-                >
-                  + 添加采购内容
-                </button>
+              <div className="mt-3">
+                <MaterialLinePicker rows={directRows} onChange={setDirectRows} />
               </div>
             </div>
           )}
