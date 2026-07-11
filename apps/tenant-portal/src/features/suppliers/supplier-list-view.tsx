@@ -1,16 +1,11 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Activity, Boxes, CheckCircle2, ChevronRight, Clock3, Plus, Search, ShieldCheck } from 'lucide-react';
-import { useBuyerSupplierCreate, useBuyerSupplierList } from '@24bid/api-client';
+import { useBuyerSupplierList } from '@24bid/api-client';
 import {
   FeedbackNotice,
   MiniFact,
   Pagination,
   Panel,
-  PrimaryActionButton,
   ResponsiveTableFrame,
   StatusPill,
   cn,
@@ -22,28 +17,17 @@ const PAGE_SIZE = 8;
 const STATUS_FILTERS = ['全部', '待准入', '准入审批中', '已准入', '已驳回', '黑名单'] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
-const schema = z.object({
-  supplierId: z.string().min(2, '请填写供应商企业 ID'),
-  level: z.string().min(1, '请填写合作等级'),
-  categories: z.string().min(1, '请填写授权品类'),
-});
-type FormValues = z.infer<typeof schema>;
 
-const inputCls =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
 
 // 供应商列表子页:KPI + 状态筛选 + 登记 + 钻取 360(onOpen)。
-export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
-  const queryClient = useQueryClient();
+export function SupplierListView({ onOpen, onRegister }: { onOpen: (id: string) => void; onRegister: () => void }) {
   const [status, setStatus] = useState<StatusFilter>('全部');
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [level, setLevel] = useState('全部');
-  const [showForm, setShowForm] = useState(false);
   const [page, setPage] = useState(1);
 
   const query = useBuyerSupplierList();
-  const create = useBuyerSupplierCreate();
   const all = query.data?.data ?? [];
 
   const levels = ['全部', ...Array.from(new Set(all.map((s) => s.level).filter(Boolean) as string[]))];
@@ -67,40 +51,8 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
     setPage(1);
   };
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { supplierId: '', level: '普通', categories: '' },
-  });
 
-  const refresh = () =>
-    queryClient.invalidateQueries({
-      predicate: (q) =>
-        typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/suppliers'),
-    });
 
-  const onSubmit = (values: FormValues) =>
-    create.mutate(
-      {
-        data: {
-          supplierId: values.supplierId,
-          status: '待准入',
-          level: values.level,
-          categories: values.categories.split(/[,，、\s]+/).filter(Boolean),
-        },
-      },
-      {
-        onSuccess: () => {
-          reset();
-          setShowForm(false);
-          refresh();
-        },
-      },
-    );
 
   const count = (s: StatusFilter) => (s === '全部' ? all.length : all.filter((x) => x.status === s).length);
   const scored = all.filter((s) => s.performanceScore != null);
@@ -192,53 +144,13 @@ export function SupplierListView({ onOpen }: { onOpen: (id: string) => void }) {
         </form>
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={onRegister}
           className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
         >
-          <Plus size={14} /> {showForm ? '收起' : '新增供应商'}
+          <Plus size={14} /> 登记供应商
         </button>
       </div>
 
-      {showForm && (
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="mb-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4"
-        >
-          <p className="text-sm font-black text-blue-800">登记私域供应商</p>
-          <p className="mt-0.5 text-xs font-bold text-blue-600">登记后状态为「待准入」,在详情页提交准入。<span className="ml-1 text-slate-400">(<span className="text-red-500">*</span> 为必填项)</span></p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <div>
-              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>供应商企业 ID</label>
-              <input className={inputCls} placeholder="如 ent-supplier-sunrise" {...register('supplierId')} />
-              {errors.supplierId && (
-                <p className="mt-1 text-xs font-bold text-red-600">{errors.supplierId.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>合作等级</label>
-              <input className={inputCls} placeholder="战略 / 重要 / 普通" {...register('level')} />
-              {errors.level && (
-                <p className="mt-1 text-xs font-bold text-red-600">{errors.level.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-black text-slate-500">授权品类(选填,逗号分隔)</label>
-              <input className={inputCls} placeholder="办公设备, 办公耗材" {...register('categories')} />
-              {errors.categories && (
-                <p className="mt-1 text-xs font-bold text-red-600">{errors.categories.message}</p>
-              )}
-            </div>
-          </div>
-          {create.isError && (
-            <div className="mt-3">
-              <FeedbackNotice tone="error" message="登记失败:供应商可能已在库中。" />
-            </div>
-          )}
-          <PrimaryActionButton onClick={handleSubmit(onSubmit)} busy={create.isPending} pendingLabel="登记中">
-            登记供应商
-          </PrimaryActionButton>
-        </form>
-      )}
 
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载供应商库…" />

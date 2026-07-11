@@ -3,6 +3,7 @@ import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck } from 'lucide-reac
 import { useBuyerSupplierList } from '@24bid/api-client';
 import { Tabs } from '@24bid/ui';
 import { SupplierListView } from './supplier-list-view';
+import { SupplierRegisterPage } from './supplier-register-page';
 import { SupplierSourcingView } from './supplier-sourcing-view';
 import { SupplierInvitationsView } from './supplier-invitations-view';
 import { SupplierAdmissionQueue } from './supplier-admission-queue';
@@ -18,10 +19,16 @@ const ADMISSION_STATUSES = ['待准入', '准入审批中', '已驳回'];
 export function SuppliersPage() {
   const [sub, setSub] = useState<SubId>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [registering, setRegistering] = useState(false);
 
   const query = useBuyerSupplierList();
   const all = query.data?.data ?? [];
   const admissionCount = all.filter((s) => ADMISSION_STATUSES.includes(s.status ?? '')).length;
+
+  // 供应商登记独立页(详细建档)。
+  if (registering) {
+    return <SupplierRegisterPage onBack={() => setRegistering(false)} />;
+  }
 
   // 360 详情:从任意子页钻取,返回回到工作台当前子页。
   if (selectedId) {
@@ -51,7 +58,7 @@ export function SuppliersPage() {
         <Tabs items={items} value={sub} onChange={(t) => setSub(t as SubId)} />
       </div>
 
-      {sub === 'list' && <SupplierListView onOpen={setSelectedId} />}
+      {sub === 'list' && <SupplierListView onOpen={setSelectedId} onRegister={() => setRegistering(true)} />}
       {sub === 'admission' && <SupplierAdmissionQueue onOpen={setSelectedId} />}
       {sub === 'performance' && <SupplierPerformanceBoard onOpen={setSelectedId} />}
       {sub === 'qualifications' && <SupplierQualificationsBoard onOpen={setSelectedId} />}

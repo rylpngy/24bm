@@ -185,7 +185,8 @@ class BuyerMasterDataAuditLogTests {
             auditLogApplicationService,
             notificationApplicationService,
             new BuyerSupplierAdmissionStatusTransition(),
-            new BuyerSupplierManualStatusTransition());
+            new BuyerSupplierManualStatusTransition(),
+      org.mockito.Mockito.mock(com.procurement.supplier.infrastructure.SupplierProfileMapper.class));
     when(buyerSupplierRelationMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))
@@ -195,7 +196,7 @@ class BuyerMasterDataAuditLogTests {
         "supplier-1",
         "待准入",
         "A",
-        List.of("办公设备")));
+        List.of("办公设备"), null, null, null, null, null, null, null, null));
 
     verify(auditLogApplicationService).recordTenantAction(
         org.mockito.ArgumentMatchers.eq("buyer_supplier_relation.created"),
