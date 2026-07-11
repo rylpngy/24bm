@@ -1,5 +1,6 @@
 package com.procurement.platform.infrastructure;
 
+import com.procurement.platform.api.PublicSupplierResponse;
 import com.procurement.platform.domain.EnterpriseReview;
 import com.procurement.platform.domain.EnterpriseReviewEvent;
 import java.util.List;
@@ -26,6 +27,26 @@ public interface PlatformEnterpriseMapper {
       order by e.created_at desc
       """)
   List<EnterpriseReview> listPendingReviews();
+
+  // 公开门户名录:仅认证通过的供应商企业,仅公开安全字段。
+  @Select("""
+      select e.id, e.name, e.industry, e.verified,
+             coalesce(s.verified_status, 'pending') as verified_status
+      from enterprises e
+      left join supplier_enterprises s on s.enterprise_id = e.id
+      where e.type = 'supplier' and e.verified = true
+      order by e.name asc
+      """)
+  List<PublicSupplierResponse> listPublicSuppliers();
+
+  @Select("""
+      select e.id, e.name, e.industry, e.verified,
+             coalesce(s.verified_status, 'pending') as verified_status
+      from enterprises e
+      left join supplier_enterprises s on s.enterprise_id = e.id
+      where e.id = #{enterpriseId} and e.type = 'supplier' and e.verified = true
+      """)
+  PublicSupplierResponse findPublicSupplierById(@Param("enterpriseId") String enterpriseId);
 
   @Select("""
       select count(1)
