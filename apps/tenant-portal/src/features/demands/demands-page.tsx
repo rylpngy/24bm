@@ -23,6 +23,7 @@ import {
   StatusPill,
   cn,
 } from '@24bid/ui';
+import { MaterialLinePicker } from '../shared/material-line-picker';
 import { DemandCreateForm } from './demand-create-form';
 import { DemandDetail } from './demand-detail';
 
@@ -896,54 +897,11 @@ export function ProcurementPlanMergePage({
             : '合并创建采购计划时，采购内容由已选采购需求自动汇总，提交前不允许再增删或替换物料。'}
         </p>
         {direct && (
-          <div className="mb-4 space-y-2">
-            {(directRows ?? []).map((row, index) => (
-              <div key={index} className="flex flex-wrap items-center gap-2">
-                <select
-                  className={`${inputCls} w-72`}
-                  value={row.materialId}
-                  onChange={(e) => {
-                    const next = [...(directRows ?? [])];
-                    next[index] = { ...next[index], materialId: e.target.value };
-                    setDirectRows?.(next);
-                  }}
-                >
-                  <option value="">请选择物料</option>
-                  {(materialsForRef.data?.data ?? []).map((m) => (
-                    <option key={m.id} value={m.id}>{m.code} · {m.name}</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min={1}
-                  className={`${inputCls} w-28`}
-                  value={row.quantity || ''}
-                  placeholder="数量"
-                  onChange={(e) => {
-                    const next = [...(directRows ?? [])];
-                    next[index] = { ...next[index], quantity: Number(e.target.value) };
-                    setDirectRows?.(next);
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setDirectRows?.((directRows ?? []).filter((_, i) => i !== index))}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
-                  aria-label="删除该行"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setDirectRows?.([...(directRows ?? []), { materialId: '', quantity: 1 }])}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-dashed border-violet-300 bg-violet-50/50 px-4 text-xs font-black text-violet-700 hover:bg-violet-50"
-            >
-              + 添加采购内容
-            </button>
+          <div className="mb-4">
+            <MaterialLinePicker rows={directRows ?? []} onChange={(rows) => setDirectRows?.(rows)} />
           </div>
         )}
+        {!direct && (
         <div className="overflow-hidden rounded-lg border border-slate-100">
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-slate-50 text-xs font-black text-slate-500">
@@ -986,6 +944,7 @@ export function ProcurementPlanMergePage({
             </tfoot>
           </table>
         </div>
+        )}
 
         <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50 px-4 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
