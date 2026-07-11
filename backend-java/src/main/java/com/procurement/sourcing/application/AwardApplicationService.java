@@ -1,6 +1,7 @@
 package com.procurement.sourcing.application;
 
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.application.ApprovalGate;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
@@ -34,6 +35,7 @@ public class AwardApplicationService {
   private final AwardDecisionMapper awardDecisionMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
+  private final ApprovalGate approvalGate;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final RfqAwardStatusTransition rfqAwardStatusTransition;
@@ -44,6 +46,7 @@ public class AwardApplicationService {
       AwardDecisionMapper awardDecisionMapper,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
+      ApprovalGate approvalGate,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       RfqAwardStatusTransition rfqAwardStatusTransition) {
@@ -52,6 +55,7 @@ public class AwardApplicationService {
     this.awardDecisionMapper = awardDecisionMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
+    this.approvalGate = approvalGate;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.rfqAwardStatusTransition = rfqAwardStatusTransition;
@@ -92,6 +96,7 @@ public class AwardApplicationService {
     }
 
     String awardId = newId("award");
+    boolean requiresApproval = approvalGate.requiresApproval(tenantId, ApprovalBusinessType.RFQ_AWARD);
     awardDecisionMapper.insert(
         awardId,
         tenantId,
@@ -100,21 +105,44 @@ public class AwardApplicationService {
         quote.supplierId(),
         quote.amount(),
         request.reason(),
-        ApprovalStatus.PENDING);
+        requiresApproval ? ApprovalStatus.PENDING : ApprovalStatus.APPROVED);
 
-    approvalTaskApplicationService.createPendingTask(
-        tenantId,
-        ApprovalBusinessType.RFQ_AWARD,
-        awardId,
-        null);
-    auditLogApplicationService.recordTenantAction(
-        RfqAwardAuditAction.SUBMITTED,
-        ApprovalBusinessType.RFQ_AWARD,
-        awardId);
-    notificationApplicationService.notifyActiveTenantUsers(
-        tenantId,
-        NotificationTitle.RFQ_AWARD_PENDING_APPROVAL,
-        rfq.title() + "已提交定标审批，请及时处理。");
+    if (requiresApproval) {
+      approvalTaskApplicationService.createPendingTask(
+          tenantId,
+          ApprovalBusinessType.RFQ_AWARD,
+          awardId,
+          null);
+      auditLogApplicationService.recordTenantAction(
+          RfqAwardAuditAction.SUBMITTED,
+          ApprovalBusinessType.RFQ_AWARD,
+          awardId);
+      notificationApplicationService.notifyActiveTenantUsers(
+          tenantId,
+          NotificationTitle.RFQ_AWARD_PENDING_APPROVAL,
+          rfq.title() + "已提交定标审批，请及时处理。");
+    } else {
+      // 免审直通:定标审批节点已关闭,直接完成定标(状态机与审批通过路径一致)。
+      int rfqUpdated = rfqMapper.updateAward(
+          tenantId,
+          rfqId,
+          RfqStatus.AWARD_APPROVAL,
+          rfqAwardStatusTransition.reviewTargetStatus(true),
+          quote.supplierId());
+      if (rfqUpdated == 0) {
+        throw new IllegalStateException("RFQ status changed before award could be finalized: " + rfqId);
+      }
+      int awardedQuote = quoteMapper.markAwardedQuote(
+          tenantId, quote.id(), QuoteStatus.LOCKED, QuoteStatus.AWARDED);
+      if (awardedQuote == 0) {
+        throw new IllegalStateException("Selected quote changed before award could be finalized: " + quote.id());
+      }
+      quoteMapper.closeUnawardedQuotes(tenantId, rfqId, quote.id(), QuoteStatus.SUBMITTED, QuoteStatus.NOT_SELECTED);
+      auditLogApplicationService.recordTenantAction(
+          tenantId, RfqAwardAuditAction.SUBMITTED, ApprovalBusinessType.RFQ_AWARD, awardId,
+          ApprovalGate.bypassDetail());
+      notifySupplierAwardResults(tenantId, rfq, awardDecisionMapper.findByTenantAndId(tenantId, awardId));
+    }
 
     return toResponse(awardDecisionMapper.findByTenantAndId(tenantId, awardId));
   }

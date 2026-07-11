@@ -3,6 +3,7 @@ package com.procurement.supplier.application;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.procurement.approval.application.ApprovalGate;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalTask;
@@ -43,6 +44,7 @@ public class BuyerSupplierApplicationService {
   private final ObjectMapper objectMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
+  private final ApprovalGate approvalGate;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition;
@@ -54,6 +56,7 @@ public class BuyerSupplierApplicationService {
       ObjectMapper objectMapper,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
+      ApprovalGate approvalGate,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition,
@@ -63,6 +66,7 @@ public class BuyerSupplierApplicationService {
     this.objectMapper = objectMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
+    this.approvalGate = approvalGate;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.buyerSupplierAdmissionStatusTransition = buyerSupplierAdmissionStatusTransition;
@@ -122,6 +126,26 @@ public class BuyerSupplierApplicationService {
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
     buyerSupplierAdmissionStatusTransition.requireAdmissionSubmission(relation.status(), relationId);
     requireActiveQualification(relation);
+
+    // 审批闸门:准入审批节点关闭时免审直通(直接已准入,审计留痕)。
+    if (!approvalGate.requiresApproval(tenantId, ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION)) {
+      int bypassed = buyerSupplierRelationMapper.updateStatus(
+          tenantId,
+          relationId,
+          BuyerSupplierRelationStatus.PENDING_ADMISSION,
+          BuyerSupplierRelationStatus.ADMITTED);
+      if (bypassed == 0) {
+        throw new IllegalStateException("Supplier relation status changed before admission could be submitted: " + relationId);
+      }
+      auditLogApplicationService.recordTenantAction(
+          tenantId,
+          BuyerSupplierAuditAction.ADMISSION_SUBMITTED,
+          AuditTargetType.BUYER_SUPPLIER_RELATION,
+          relationId,
+          ApprovalGate.bypassDetail());
+      return new ApprovalTaskResponse(
+          null, tenantId, ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION, relationId, null, "免审批", null);
+    }
 
     int updated = buyerSupplierRelationMapper.updateStatus(
         tenantId,

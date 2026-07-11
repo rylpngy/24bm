@@ -22,6 +22,7 @@ import {
   useRfqAwardReviewApproval,
 } from '@24bid/api-client';
 import { FeedbackNotice, cn } from '@24bid/ui';
+import { ApprovalNodeConfig } from './approval-node-config';
 
 type RiskLevel = '低风险' | '中风险' | '高风险';
 
@@ -260,6 +261,8 @@ export function ApprovalsPage() {
       </div>
 
       {feedback && <FeedbackNotice tone="success" message={feedback} />}
+
+      <ApprovalNodeConfig />
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-center lg:justify-between">

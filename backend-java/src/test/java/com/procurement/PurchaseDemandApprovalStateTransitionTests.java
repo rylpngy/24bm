@@ -44,6 +44,7 @@ class PurchaseDemandApprovalStateTransitionTests {
       purchaseDemandItemMapper,
       approvalTaskMapper,
       approvalTaskApplicationService,
+      com.procurement.TestApprovalGates.alwaysOn(),
       org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class),
       departmentMapper,
       auditLogApplicationService,

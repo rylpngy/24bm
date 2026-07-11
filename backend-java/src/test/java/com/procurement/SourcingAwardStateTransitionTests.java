@@ -51,6 +51,7 @@ class SourcingAwardStateTransitionTests {
       awardDecisionMapper,
       approvalTaskMapper,
       approvalTaskApplicationService,
+      com.procurement.TestApprovalGates.alwaysOn(),
       auditLogApplicationService,
       notificationApplicationService,
       new RfqAwardStatusTransition());

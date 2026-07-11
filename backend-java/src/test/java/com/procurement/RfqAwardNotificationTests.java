@@ -54,6 +54,7 @@ class RfqAwardNotificationTests {
       awardDecisionMapper,
       approvalTaskMapper,
       approvalTaskApplicationService,
+      com.procurement.TestApprovalGates.alwaysOn(),
       auditLogApplicationService,
       notificationApplicationService,
       new RfqAwardStatusTransition());

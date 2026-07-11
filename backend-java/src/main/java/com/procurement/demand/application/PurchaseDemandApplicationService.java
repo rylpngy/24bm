@@ -1,6 +1,7 @@
 package com.procurement.demand.application;
 
 import com.procurement.approval.domain.ApprovalTask;
+import com.procurement.approval.application.ApprovalGate;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
@@ -42,6 +43,7 @@ public class PurchaseDemandApplicationService {
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
+  private final ApprovalGate approvalGate;
   private final RfqDemandLinkQueryService rfqDemandLinkQueryService;
   private final DepartmentMapper departmentMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -54,6 +56,7 @@ public class PurchaseDemandApplicationService {
       PurchaseDemandItemMapper purchaseDemandItemMapper,
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
+      ApprovalGate approvalGate,
       RfqDemandLinkQueryService rfqDemandLinkQueryService,
       DepartmentMapper departmentMapper,
       AuditLogApplicationService auditLogApplicationService,
@@ -64,6 +67,7 @@ public class PurchaseDemandApplicationService {
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
+    this.approvalGate = approvalGate;
     this.rfqDemandLinkQueryService = rfqDemandLinkQueryService;
     this.departmentMapper = departmentMapper;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -194,6 +198,23 @@ public class PurchaseDemandApplicationService {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
     purchaseDemandApprovalStatusTransition.requireSubmission(demand.status(), demandId);
+
+    // 审批闸门:需求审批节点关闭时免审直通(状态直达已通过,审计留痕)。
+    if (!approvalGate.requiresApproval(tenantId, ApprovalBusinessType.PURCHASE_DEMAND)) {
+      purchaseDemandMapper.updateStatus(tenantId, demandId, PurchaseDemandStatus.APPROVED);
+      auditLogApplicationService.recordTenantAction(
+          tenantId,
+          PurchaseDemandAuditAction.SUBMITTED,
+          ApprovalBusinessType.PURCHASE_DEMAND,
+          demandId,
+          ApprovalGate.bypassDetail());
+      notificationApplicationService.notifyActiveTenantUsers(
+          tenantId,
+          NotificationTitle.PURCHASE_DEMAND_PENDING_APPROVAL,
+          demand.title() + "已提交,审批节点已关闭,自动通过。");
+      return new ApprovalTaskResponse(
+          null, tenantId, ApprovalBusinessType.PURCHASE_DEMAND, demandId, null, "免审批", null);
+    }
 
     purchaseDemandMapper.updateStatus(tenantId, demandId, PurchaseDemandStatus.IN_APPROVAL);
 

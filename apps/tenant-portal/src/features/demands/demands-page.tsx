@@ -64,7 +64,6 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
   const [planMethod, setPlanMethod] = useState('询比');
   const [collectionMethod, setCollectionMethod] = useState('公开');
   const [planUrgency, setPlanUrgency] = useState('普通');
-  const [approvalRequired, setApprovalRequired] = useState('否');
   const [supplierIds, setSupplierIds] = useState<string[]>([]);
 
   const query = usePurchaseDemandList(status === '全部' ? undefined : { status });
@@ -152,7 +151,6 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
           setPlanMethod('询比');
           setCollectionMethod('公开');
           setPlanUrgency('普通');
-          setApprovalRequired('否');
           setShowPlanForm(false);
           refreshDemands();
           onNavigate?.('procurement-plans');
@@ -192,8 +190,6 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
           setCollectionMethod={setCollectionMethod}
           planUrgency={planUrgency}
         setPlanUrgency={setPlanUrgency}
-        approvalRequired={approvalRequired}
-        setApprovalRequired={setApprovalRequired}
         suppliers={suppliers}
         supplierIds={supplierIds}
         setSupplierIds={setSupplierIds}
@@ -533,8 +529,6 @@ export function ProcurementPlanMergePage({
   setCollectionMethod,
   planUrgency,
   setPlanUrgency,
-  approvalRequired,
-  setApprovalRequired,
   suppliers,
   supplierIds,
   setSupplierIds,
@@ -566,8 +560,6 @@ export function ProcurementPlanMergePage({
   setCollectionMethod: (value: string) => void;
   planUrgency: string;
   setPlanUrgency: (value: string) => void;
-  approvalRequired: string;
-  setApprovalRequired: (value: string) => void;
   suppliers: BuyerSupplierResponse[];
   supplierIds: string[];
   setSupplierIds: (value: string[]) => void;
@@ -733,31 +725,6 @@ export function ProcurementPlanMergePage({
                 <option key={item} value={item}>{item}</option>
               ))}
             </select>
-          </Field>
-          <Field label="是否需要审批" required>
-            <div className="flex gap-3">
-              {['是', '否'].map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setApprovalRequired(item)}
-                  className={cn(
-                    'inline-flex h-10 min-w-20 items-center justify-center rounded-lg border px-4 text-sm font-black',
-                    approvalRequired === item
-                      ? 'border-blue-200 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-600',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'mr-2 h-4 w-4 rounded-full border',
-                      approvalRequired === item ? 'border-blue-600 bg-blue-600 shadow-[inset_0_0_0_4px_white]' : 'border-slate-300',
-                    )}
-                  />
-                  {item}
-                </button>
-              ))}
-            </div>
           </Field>
         </div>
       </MergeSection>
