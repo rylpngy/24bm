@@ -9906,6 +9906,46 @@
         }
       }
     },
+    "/api/v1/public/mall/overview": {
+      "get": {
+        "tags": [
+          "public-mall-controller"
+        ],
+        "operationId": "PublicMall_overview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePublicMallOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/announcements": {
       "get": {
         "tags": [
@@ -18499,6 +18539,12 @@
           },
           "buyerName": {
             "type": "string"
+          },
+          "budget": {
+            "type": "number"
+          },
+          "categories": {
+            "type": "string"
           }
         }
       },
@@ -18513,6 +18559,63 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponsePublicMallOverviewResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PublicMallOverviewResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "CategoryCount": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "listingCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "FeaturedItem": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicMallOverviewResponse": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryCount"
+            }
+          },
+          "featured": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeaturedItem"
+            }
           }
         }
       },

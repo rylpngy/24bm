@@ -14,5 +14,7 @@ public record PublicOpportunityResponse(
     OffsetDateTime resultAnnouncedAt,
     String quoteRequirement,
     String deliveryRequirement,
-    String buyerName) {
+    String buyerName,
+    java.math.BigDecimal budget,
+    String categories) {
 }

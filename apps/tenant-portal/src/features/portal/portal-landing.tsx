@@ -23,6 +23,7 @@ import {
   HomeOpportunitiesSection,
   HomeSuppliersSection,
   PortalAnnouncementsPage,
+  PortalMallPage,
   PortalOpportunitiesPage,
   PortalSuppliersPage,
 } from './portal-public-pages';
@@ -260,14 +261,14 @@ function BuyerLoginPage({ onBack }: { onBack: () => void }) {
   );
 }
 
-type PortalPage = 'home' | 'opportunities' | 'suppliers' | 'announcements';
+type PortalPage = 'home' | 'opportunities' | 'mall' | 'suppliers' | 'announcements';
 
 export function PortalLanding() {
   const [loginOpen, setLoginOpen] = useState(false);
   // 门户页面路由(?page= 深链接):home / suppliers 供应商名录 / announcements 平台公告。
   const [page, setPageState] = useState<PortalPage>(() => {
     const p = new URLSearchParams(window.location.search).get('page');
-    return p === 'suppliers' || p === 'announcements' || p === 'opportunities' ? p : 'home';
+    return p === 'suppliers' || p === 'announcements' || p === 'opportunities' || p === 'mall' ? p : 'home';
   });
   const setPage = (next: PortalPage) => {
     setPageState(next);
@@ -291,6 +292,7 @@ export function PortalLanding() {
           <nav className="hidden items-center gap-8 text-sm font-black text-slate-600 md:flex">
             <button type="button" onClick={() => setPage('home')} className={page === 'home' ? 'text-blue-600' : 'hover:text-blue-600'}>首页</button>
             <button type="button" onClick={() => setPage('opportunities')} className={page === 'opportunities' ? 'text-blue-600' : 'hover:text-blue-600'}>商机大厅</button>
+            <button type="button" onClick={() => setPage('mall')} className={page === 'mall' ? 'text-blue-600' : 'hover:text-blue-600'}>采购商城</button>
             <button type="button" onClick={() => setPage('suppliers')} className={page === 'suppliers' ? 'text-blue-600' : 'hover:text-blue-600'}>供应商名录</button>
             <button type="button" onClick={() => setPage('announcements')} className={page === 'announcements' ? 'text-blue-600' : 'hover:text-blue-600'}>平台公告</button>
             <a href="#help" onClick={() => setPage('home')} className="hover:text-blue-600">帮助中心</a>
@@ -308,7 +310,11 @@ export function PortalLanding() {
         </div>
       </header>
 
-      {page === 'opportunities' ? (
+      {page === 'mall' ? (
+        <main className="min-h-[60vh] bg-slate-50">
+          <PortalMallPage onLogin={() => setLoginOpen(true)} />
+        </main>
+      ) : page === 'opportunities' ? (
         <main className="min-h-[60vh] bg-slate-50">
           <PortalOpportunitiesPage />
         </main>

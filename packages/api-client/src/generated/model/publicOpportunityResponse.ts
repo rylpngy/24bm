@@ -18,4 +18,6 @@ export interface PublicOpportunityResponse {
   quoteRequirement?: string;
   deliveryRequirement?: string;
   buyerName?: string;
+  budget?: number;
+  categories?: string;
 }

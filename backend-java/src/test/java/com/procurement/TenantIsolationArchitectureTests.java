@@ -32,7 +32,9 @@ class TenantIsolationArchitectureTests {
       // 账单快照行按 statement_id 检索(账单头已按 tenant_id 限定)。
       "platform/infrastructure/BillingStatementLineMapper.java",
       // 公开商机跨租户只读(门户商机大厅),仅公开安全字段。
-      "sourcing/infrastructure/PublicOpportunityMapper.java");
+      "sourcing/infrastructure/PublicOpportunityMapper.java",
+      // 公开商城跨租户只读(门户采购商城),不暴露价格/租户/供应商。
+      "mall/infrastructure/PublicMallMapper.java");
 
   @Test
   void applicationServicesUseCentralTenantAccessGuardInsteadOfLocalThreadLocalReads() throws IOException {

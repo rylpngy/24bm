@@ -182,11 +182,18 @@ test('公开门户:供应商名录与平台公告页真实数据 + 二级详情'
 test('商机大厅:公开列表 + 详情 + 报名参与', async ({ page }) => {
   await page.goto('/?page=opportunities');
   await expect(page.getByRole('heading', { name: '商机大厅' })).toBeVisible();
-  await expect(page.getByText('平台采购人发布的项目公开信息 · 实时数据')).toBeVisible();
+  // 新版布局:方式页签 + 搜索按钮 + 物资分类筛选 + 行式列表(预算金额)。
+  await expect(page.getByRole('tab', { name: /全部商机/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: '搜索' })).toBeVisible();
+  await expect(page.getByText('物资分类:')).toBeVisible();
+  await expect(page.getByText('预算金额').first()).toBeVisible();
   // 进入一个报名期内的商机详情。
   await page.locator('main').getByText('报名与报价中').first().click();
-  await expect(page.getByText('采购内容与报价要求')).toBeVisible();
-  await expect(page.getByText('报名参与').first()).toBeVisible();
+  await expect(page.getByText('返回大厅')).toBeVisible();
+  await expect(page.getByText('1. 采购内容与报价要求')).toBeVisible();
+  await expect(page.getByText('项目关键信息')).toBeVisible();
+  // 立即报名展开表单。
+  await page.getByRole('button', { name: /立即报名/ }).click();
   // 报名登记(公司名带时间戳避免重复报名守卫)。
   await page.getByPlaceholder('与营业执照一致的企业全称').fill(`E2E报名企业${Date.now()}`);
   await page.getByPlaceholder('姓名').fill('测试联系人');

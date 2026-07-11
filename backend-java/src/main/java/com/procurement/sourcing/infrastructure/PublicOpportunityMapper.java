@@ -15,7 +15,16 @@ public interface PublicOpportunityMapper {
       r.id, r.title, r.method, r.evaluation_method, r.status,
       r.deadline_at, r.created_at, r.result_announced_at,
       r.quote_requirement, r.delivery_requirement,
-      t.name as buyer_name
+      t.name as buyer_name,
+      (select coalesce(sum(pd.budget), 0)
+         from rfq_demands rd
+         join purchase_demands pd on pd.id = rd.demand_id and pd.tenant_id = rd.tenant_id
+        where rd.rfq_id = r.id and rd.tenant_id = r.tenant_id) as budget,
+      (select string_agg(distinct m.category, '、')
+         from rfq_demands rd2
+         join purchase_demand_items li on li.demand_id = rd2.demand_id and li.tenant_id = rd2.tenant_id
+         join materials m on m.id = li.material_id and m.tenant_id = rd2.tenant_id
+        where rd2.rfq_id = r.id and rd2.tenant_id = r.tenant_id) as categories
       """;
 
   @Select("""
