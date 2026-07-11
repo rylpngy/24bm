@@ -56,6 +56,68 @@ public class DepartmentApplicationService {
     return toResponse(departmentMapper.findByTenantAndId(tenantId, departmentId));
   }
 
+  // ====== Excel 批量导入:名称必填,上级部门按名称解析(可引用文件内先建的行)======
+
+  private static final java.util.List<String> IMPORT_HEADERS = java.util.List.of("部门名称*", "上级部门名称");
+
+  public byte[] importTemplate() {
+    return com.procurement.common.excel.ExcelSheets.template(
+        "部门导入模板",
+        IMPORT_HEADERS,
+        List.of(
+            List.of("采购中心", ""),
+            List.of("寻源组", "采购中心")));
+  }
+
+  @Transactional
+  public com.procurement.common.api.ImportResultResponse importDepartments(byte[] content) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    List<List<String>> rows = com.procurement.common.excel.ExcelSheets.readFirstSheet(content, 201);
+    if (rows.size() <= 1) {
+      throw new IllegalArgumentException("文件中没有数据行,请按模板填写后再导入");
+    }
+    java.util.Map<String, String> idByName = new java.util.HashMap<>();
+    for (Department department : departmentMapper.listActiveByTenant(tenantId)) {
+      idByName.put(department.name(), department.id());
+    }
+    List<com.procurement.common.api.ImportRowError> failures = new java.util.ArrayList<>();
+    int success = 0;
+    for (int r = 1; r < rows.size(); r++) {
+      List<String> cells = rows.get(r);
+      int rowNumber = r + 1;
+      String name = cells.isEmpty() ? "" : cells.get(0);
+      String parentName = cells.size() > 1 ? cells.get(1) : "";
+      if (name.isBlank() && parentName.isBlank()) {
+        continue; // 整行空白跳过。
+      }
+      if (name.isBlank()) {
+        failures.add(new com.procurement.common.api.ImportRowError(rowNumber, "部门名称为必填项"));
+        continue;
+      }
+      if (idByName.containsKey(name)) {
+        failures.add(new com.procurement.common.api.ImportRowError(
+            rowNumber, "部门名称已存在(现有部门或文件内重复): " + name));
+        continue;
+      }
+      String parentId = null;
+      if (!parentName.isBlank()) {
+        parentId = idByName.get(parentName);
+        if (parentId == null) {
+          failures.add(new com.procurement.common.api.ImportRowError(
+              rowNumber, "上级部门不存在: " + parentName + "(可先在文件上方行中创建)"));
+          continue;
+        }
+      }
+      String departmentId = "dept-" + UUID.randomUUID();
+      departmentMapper.insert(departmentId, tenantId, name, parentId, DepartmentStatus.ACTIVE);
+      auditLogApplicationService.recordTenantAction(
+          DepartmentAuditAction.CREATED, AuditTargetType.DEPARTMENT, departmentId);
+      idByName.put(name, departmentId);
+      success++;
+    }
+    return new com.procurement.common.api.ImportResultResponse(rows.size() - 1, success, failures);
+  }
+
   // 编辑部门:名称/描述/负责人。审计带「部门: 旧名 → 新名」明细。
   @Transactional
   public DepartmentResponse updateDepartment(String departmentId, UpdateDepartmentRequest request) {

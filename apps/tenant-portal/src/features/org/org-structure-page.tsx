@@ -32,6 +32,7 @@ import {
   useDepartmentUpdate,
 } from '@24bid/api-client';
 import { FeedbackNotice, SearchInput, StatusPill, cn } from '@24bid/ui';
+import { ExcelImportControl } from '../shared/excel-import-control';
 
 interface TreeNode {
   dept: DepartmentResponse;
@@ -227,6 +228,14 @@ export function OrgStructurePage() {
             </button>
           </div>
           <SearchInput className="mb-2" placeholder="搜索部门…" onSearch={setTreeSearch} />
+          <div className="mb-2">
+            <ExcelImportControl
+              endpoint="/api/v1/buyer/departments/import"
+              templateName="部门导入模板"
+              invalidatePrefix="/api/v1/buyer/departments"
+              label="批量导入部门"
+            />
+          </div>
           {mode === 'add-root' && (
             <InlineDeptForm
               title="新增一级部门"

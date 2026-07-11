@@ -48,5 +48,24 @@ export async function downloadReport(path: string, fallbackName: string): Promis
   URL.revokeObjectURL(url);
 }
 
+export interface ImportRowError {
+  rowNumber: number;
+  message: string;
+}
+
+export interface ImportResult {
+  totalRows: number;
+  successCount: number;
+  failures: ImportRowError[];
+}
+
+/** Excel 导入:文件字节直传(application/octet-stream),返回部分成功结果。 */
+export async function uploadImportFile(path: string, file: File): Promise<ImportResult> {
+  const res = await axiosInstance.post(path, await file.arrayBuffer(), {
+    headers: { 'Content-Type': 'application/octet-stream' },
+  });
+  return (res.data as { data: ImportResult }).data;
+}
+
 export type ErrorType<Error> = AxiosError<Error>;
 export type BodyType<BodyData> = BodyData;

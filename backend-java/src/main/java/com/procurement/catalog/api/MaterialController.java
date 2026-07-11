@@ -42,4 +42,17 @@ public class MaterialController {
       @Valid @RequestBody CreateMaterialRequest request) {
     return ApiResponse.ok(materialApplicationService.updateMaterial(materialId, request));
   }
+
+  // Excel 批量导入:模板下载 + 文件字节直传(application/octet-stream)。
+  @GetMapping("/import-template")
+  public org.springframework.http.ResponseEntity<org.springframework.core.io.ByteArrayResource> importTemplate() {
+    return com.procurement.common.excel.ExcelDownloads.xlsx(
+        "物料导入模板.xlsx", materialApplicationService.importTemplate());
+  }
+
+  @PostMapping("/import")
+  public ApiResponse<com.procurement.common.api.ImportResultResponse> importMaterials(
+      @RequestBody byte[] data) {
+    return ApiResponse.ok(materialApplicationService.importMaterials(data));
+  }
 }

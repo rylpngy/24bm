@@ -19,6 +19,7 @@ import {
   StatusPill,
   cn,
 } from '@24bid/ui';
+import { ExcelImportControl } from '../shared/excel-import-control';
 import { SupplierMetricCard, SupplierMetricGrid } from './supplier-metric-card';
 
 const PAGE_SIZE = 8;
@@ -142,6 +143,12 @@ export function SupplierInvitationsView() {
             setKeyword(k);
             setPage(1);
           }}
+        />
+        <ExcelImportControl
+          endpoint="/api/v1/buyer/supplier-invitations/import"
+          templateName="供应商邀请导入模板"
+          invalidatePrefix="/api/v1/buyer/supplier-invitations"
+          label="批量导入邀请"
         />
         <button
           type="button"

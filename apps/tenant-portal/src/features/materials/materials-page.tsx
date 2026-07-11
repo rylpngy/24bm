@@ -1,12 +1,13 @@
-import { type ChangeEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Database, Edit3, FileImage, FolderPlus, Package, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
+import { Database, Edit3, FileImage, FolderPlus, Package, Plus, Search, Trash2, X } from 'lucide-react';
 import { type MaterialResponse, useMaterialCreate, useMaterialList } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, Pagination, Panel, ResponsiveTableFrame, StatusPill, cn } from '@24bid/ui';
 import { MaterialDetail } from './material-detail';
+import { ExcelImportControl } from '../shared/excel-import-control';
 
 const PAGE_SIZE = 8;
 
@@ -59,91 +60,6 @@ function loadStoredCategoryGroups(): CategoryGroup[] {
   } catch {
     return DEFAULT_CATEGORY_GROUPS;
   }
-}
-
-const headerMap: Record<string, keyof FormValues> = {
-  code: 'code',
-  编码: 'code',
-  物料编码: 'code',
-  name: 'name',
-  名称: 'name',
-  物料名称: 'name',
-  category: 'category',
-  分类: 'category',
-  所属分类: 'category',
-  unit: 'unit',
-  单位: 'unit',
-  计量单位: 'unit',
-  referencePrice: 'referencePrice',
-  参考价: 'referencePrice',
-  参考单价: 'referencePrice',
-  specification: 'specification',
-  规格: 'specification',
-  规格型号: 'specification',
-  brand: 'brand',
-  品牌: 'brand',
-  物料属性: 'brand',
-  taxRate: 'taxRate',
-  税率: 'taxRate',
-  description: 'description',
-  描述: 'description',
-  备注: 'description',
-};
-
-function parseCsv(text: string) {
-  const rows: string[][] = [];
-  let cell = '';
-  let row: string[] = [];
-  let quoted = false;
-  for (let index = 0; index < text.length; index += 1) {
-    const char = text[index];
-    const next = text[index + 1];
-    if (char === '"' && quoted && next === '"') {
-      cell += '"';
-      index += 1;
-    } else if (char === '"') {
-      quoted = !quoted;
-    } else if (char === ',' && !quoted) {
-      row.push(cell.trim());
-      cell = '';
-    } else if ((char === '\n' || char === '\r') && !quoted) {
-      if (char === '\r' && next === '\n') index += 1;
-      row.push(cell.trim());
-      if (row.some(Boolean)) rows.push(row);
-      row = [];
-      cell = '';
-    } else {
-      cell += char;
-    }
-  }
-  row.push(cell.trim());
-  if (row.some(Boolean)) rows.push(row);
-  return rows;
-}
-
-function csvRowToMaterial(headers: string[], row: string[]): FormValues | null {
-  const values: FormValues = {
-    code: '',
-    name: '',
-    category: '',
-    unit: '',
-    referencePrice: 0,
-    specification: '',
-    brand: '',
-    taxRate: 13,
-    description: '',
-  };
-  headers.forEach((header, index) => {
-    const key = headerMap[header.trim()];
-    if (!key) return;
-    const raw = row[index]?.trim() ?? '';
-    if (key === 'referencePrice' || key === 'taxRate') {
-      values[key] = Number(raw || (key === 'taxRate' ? 13 : 0));
-    } else {
-      values[key] = raw;
-    }
-  });
-  return values.code && values.name && values.category && values.unit ? values : null;
 }
 
 function MaterialDialog({
@@ -298,7 +214,6 @@ function Field({
 
 export function MaterialsPage() {
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showForm, setShowForm] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('全部物料');
@@ -313,8 +228,6 @@ export function MaterialsPage() {
     null,
   );
   const [editName, setEditName] = useState('');
-  const [importing, setImporting] = useState(false);
-  const [importMessage, setImportMessage] = useState<{ tone: 'info' | 'error'; text: string } | null>(null);
 
   const query = useMaterialList(keyword ? { keyword } : undefined);
   const create = useMaterialCreate();
@@ -479,42 +392,6 @@ export function MaterialsPage() {
     );
     if (categoryFilter === name) setCategoryFilter('全部物料');
     setCategoryMessage('分类已删除。');
-  };
-
-  const importMaterials = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    setImporting(true);
-    setImportMessage(null);
-    try {
-      const rows = parseCsv(await file.text());
-      const [headers, ...body] = rows;
-      const payloads = body.map((row) => csvRowToMaterial(headers ?? [], row)).filter(Boolean) as FormValues[];
-      if (payloads.length === 0) {
-        setImportMessage({ tone: 'error', text: '未识别到有效物料，请确认 CSV 包含物料编码、物料名称、所属分类、计量单位。' });
-        return;
-      }
-      let success = 0;
-      let failed = 0;
-      for (const payload of payloads) {
-        try {
-          await create.mutateAsync({ data: payload });
-          success += 1;
-        } catch {
-          failed += 1;
-        }
-      }
-      await refresh();
-      setImportMessage({
-        tone: failed > 0 ? 'error' : 'info',
-        text: `导入完成：成功 ${success} 条${failed > 0 ? `，失败 ${failed} 条（请检查编码是否重复）` : ''}。`,
-      });
-    } catch {
-      setImportMessage({ tone: 'error', text: '导入失败：请上传 UTF-8 编码的 CSV 文件。' });
-    } finally {
-      setImporting(false);
-    }
   };
 
   if (selected) {
@@ -690,15 +567,13 @@ export function MaterialsPage() {
               <option>启用</option>
               <option>停用</option>
             </select>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={importing}
-              className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50"
-            >
-              <UploadCloud size={14} /> {importing ? '导入中' : '导入'}
-            </button>
-            <input ref={fileInputRef} type="file" accept=".csv,text/csv,.txt" className="hidden" onChange={importMaterials} />
+            <div className="ml-auto">
+              <ExcelImportControl
+                endpoint="/api/v1/buyer/materials/import"
+                templateName="物料导入模板"
+                invalidatePrefix="/api/v1/buyer/materials"
+              />
+            </div>
             <button
               type="button"
               onClick={() => setShowForm(true)}
@@ -707,11 +582,6 @@ export function MaterialsPage() {
               <Plus size={14} /> 新增物料
             </button>
           </div>
-          {importMessage && (
-            <div className="mb-4">
-              <FeedbackNotice tone={importMessage.tone} message={importMessage.text} />
-            </div>
-          )}
 
           {query.isLoading ? (
             <FeedbackNotice tone="info" message="正在加载物料库…" />

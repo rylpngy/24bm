@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseImportResultResponse,
   ApiResponseListSupplierInvitationResponse,
   ApiResponseSupplierInvitationResponse,
   ApiResponseVoid,
@@ -241,4 +242,148 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerSupplierInvitationImportInvitations = (
+    buyerSupplierInvitationImportInvitationsBody: BodyType<string>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseImportResultResponse>(
+      {url: `/api/v1/buyer/supplier-invitations/import`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: buyerSupplierInvitationImportInvitationsBody, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerSupplierInvitationImportInvitationsMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierInvitationImportInvitations>>, TError,{data: BodyType<string>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierInvitationImportInvitations>>, TError,{data: BodyType<string>}, TContext> => {
+
+const mutationKey = ['buyerSupplierInvitationImportInvitations'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierInvitationImportInvitations>>, {data: BodyType<string>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerSupplierInvitationImportInvitations(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerSupplierInvitationImportInvitationsMutationResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierInvitationImportInvitations>>>
+    export type BuyerSupplierInvitationImportInvitationsMutationBody = BodyType<string>
+    export type BuyerSupplierInvitationImportInvitationsMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerSupplierInvitationImportInvitations = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierInvitationImportInvitations>>, TError,{data: BodyType<string>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerSupplierInvitationImportInvitations>>,
+        TError,
+        {data: BodyType<string>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerSupplierInvitationImportInvitationsMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerSupplierInvitationImportTemplate = (
     
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<Blob>(
+      {url: `/api/v1/buyer/supplier-invitations/import-template`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerSupplierInvitationImportTemplateQueryKey = () => {
+    return [
+    `/api/v1/buyer/supplier-invitations/import-template`
+    ] as const;
+    }
+
+    
+export const getBuyerSupplierInvitationImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierInvitationImportTemplateQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>> = ({ signal }) => buyerSupplierInvitationImportTemplate(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerSupplierInvitationImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>>
+export type BuyerSupplierInvitationImportTemplateQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerSupplierInvitationImportTemplate<TData = Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierInvitationImportTemplate<TData = Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierInvitationImportTemplate<TData = Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerSupplierInvitationImportTemplate<TData = Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierInvitationImportTemplate>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerSupplierInvitationImportTemplateQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+

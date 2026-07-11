@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseImportResultResponse,
   ApiResponseListMaterialResponse,
   ApiResponseMaterialResponse,
   ApiResponseVoid,
@@ -242,4 +243,148 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const materialImportMaterials = (
+    materialImportMaterialsBody: BodyType<string>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseImportResultResponse>(
+      {url: `/api/v1/buyer/materials/import`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: materialImportMaterialsBody, signal
+    },
+      );
+    }
+  
+
+
+export const getMaterialImportMaterialsMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof materialImportMaterials>>, TError,{data: BodyType<string>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof materialImportMaterials>>, TError,{data: BodyType<string>}, TContext> => {
+
+const mutationKey = ['materialImportMaterials'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof materialImportMaterials>>, {data: BodyType<string>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  materialImportMaterials(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MaterialImportMaterialsMutationResult = NonNullable<Awaited<ReturnType<typeof materialImportMaterials>>>
+    export type MaterialImportMaterialsMutationBody = BodyType<string>
+    export type MaterialImportMaterialsMutationError = ErrorType<ApiResponseVoid>
+
+    export const useMaterialImportMaterials = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof materialImportMaterials>>, TError,{data: BodyType<string>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof materialImportMaterials>>,
+        TError,
+        {data: BodyType<string>},
+        TContext
+      > => {
+
+      const mutationOptions = getMaterialImportMaterialsMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const materialImportTemplate = (
     
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<Blob>(
+      {url: `/api/v1/buyer/materials/import-template`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      );
+    }
+  
+
+
+
+export const getMaterialImportTemplateQueryKey = () => {
+    return [
+    `/api/v1/buyer/materials/import-template`
+    ] as const;
+    }
+
+    
+export const getMaterialImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof materialImportTemplate>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialImportTemplate>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMaterialImportTemplateQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof materialImportTemplate>>> = ({ signal }) => materialImportTemplate(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof materialImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MaterialImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof materialImportTemplate>>>
+export type MaterialImportTemplateQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useMaterialImportTemplate<TData = Awaited<ReturnType<typeof materialImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialImportTemplate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof materialImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof materialImportTemplate>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMaterialImportTemplate<TData = Awaited<ReturnType<typeof materialImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialImportTemplate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof materialImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof materialImportTemplate>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMaterialImportTemplate<TData = Awaited<ReturnType<typeof materialImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialImportTemplate>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useMaterialImportTemplate<TData = Awaited<ReturnType<typeof materialImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialImportTemplate>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getMaterialImportTemplateQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
