@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Calculator, CheckSquare, ClipboardList, Layers3, Plus, Search, Sparkles, Users, X } from 'lucide-react';
+import { ArrowLeft, Calculator, CheckSquare, ClipboardList, Layers3, Plus, Search, Sparkles, Users, X,
+  ClipboardCheck,
+} from 'lucide-react';
 import {
   useMaterialList,
   type BuyerSupplierResponse,
@@ -492,6 +494,12 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
     </Panel>
     </div>
   );
+}
+
+function supplierCollectionHint(method: string, collection: string) {
+  if (method === '商城') return '目录采购';
+  if (method === '单一来源') return '定向 1 家';
+  return collection === '公开' ? '公开征集' : '邀请征集';
 }
 
 export function ProcurementPlanMergePage({
@@ -1014,24 +1022,54 @@ export function ProcurementPlanMergePage({
             <FeedbackNotice tone="error" message="采购计划创建失败：请确认所选需求均为已通过且未被其他采购计划关联，供应商数量符合采购方式要求。" />
           </div>
         )}
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-black text-slate-600 hover:bg-slate-50"
-          >
-            返回选择
-          </button>
-          <PrimaryActionButton
-            onClick={onSubmit}
-            busy={createPending}
-            pendingLabel="生成中"
-            disabled={!canSubmit}
-          >
-            生成采购计划
-          </PrimaryActionButton>
-        </div>
       </MergeSection>
+
+      {/* 底部提交操作条:左侧汇总与阻塞原因,右侧动作按钮。 */}
+      <section className="sticky bottom-4 rounded-lg border border-slate-200 bg-white/95 px-6 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5">
+            <p className="text-sm font-bold text-slate-500">
+              {direct ? `直录明细 ${(directRows ?? []).length} 行` : `已合并 ${selectedDemands.length} 条需求`}
+              <span className="mx-2 text-slate-200">|</span>
+              合计预算 <span className="font-mono text-lg font-black text-violet-600">{currency(effectiveBudget)}</span>
+              <span className="mx-2 text-slate-200">|</span>
+              {planMethod} · {supplierCollectionHint(planMethod, collectionMethod)}
+            </p>
+            {!canSubmit && (
+              <p className="text-xs font-black text-amber-600">
+                {!planDate
+                  ? '请先填写「采购时间 / 报价截止」'
+                  : direct && !directRowsValid
+                    ? '请完善直录明细(物料与数量)'
+                    : direct && !directDepartmentId
+                      ? '请选择归口部门'
+                      : !supplierRequirementMet
+                        ? isSingleSource
+                          ? '单一来源需定向选择 1 家供应商'
+                          : '邀请征集需选择不少于 3 家供应商'
+                        : '请先在上一步勾选要合并的需求'}
+              </p>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex h-11 items-center rounded-lg border border-slate-200 bg-white px-6 text-sm font-black text-slate-600 transition hover:bg-slate-50 active:scale-[0.98]"
+            >
+              返回选择
+            </button>
+            <PrimaryActionButton
+              onClick={onSubmit}
+              busy={createPending}
+              pendingLabel="生成中"
+              disabled={!canSubmit}
+            >
+              <ClipboardCheck size={16} /> 生成采购计划
+            </PrimaryActionButton>
+          </div>
+        </div>
+      </section>
 
       {supplierDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4 py-6">
