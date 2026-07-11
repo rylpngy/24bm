@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
+import { Settings2,
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
@@ -114,6 +114,7 @@ export function ApprovalsPage() {
   const contractReview = useBuyerContractReviewApproval();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [selected, setSelected] = useState<PendingApprovalTaskResponse | null>(null);
+  const [showNodeConfig, setShowNodeConfig] = useState(false);
   const [businessFilter, setBusinessFilter] = useState('全部业务类型');
   const [statusFilter, setStatusFilter] = useState('全部状态');
   const [keyword, setKeyword] = useState('');
@@ -245,8 +246,22 @@ export function ApprovalsPage() {
               集中处理供应商入驻、资料变更、风险申诉及考核申诉等全流程审批业务
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowNodeConfig((v) => !v)}
+            className={cn(
+              'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-black transition',
+              showNodeConfig
+                ? 'border-blue-200 bg-blue-50 text-blue-700'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+            )}
+          >
+            <Settings2 size={14} /> {showNodeConfig ? '收起节点配置' : '审批节点配置'}
+          </button>
         </div>
       </div>
+
+      {showNodeConfig && <ApprovalNodeConfig />}
 
       <div className="grid gap-2 md:grid-cols-3">
         <SummaryCard icon={UserRoundCheck} tone="blue" label="待办审批" value={String(tasks.length)} unit="个任务" />
@@ -261,8 +276,6 @@ export function ApprovalsPage() {
       </div>
 
       {feedback && <FeedbackNotice tone="success" message={feedback} />}
-
-      <ApprovalNodeConfig />
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-center lg:justify-between">

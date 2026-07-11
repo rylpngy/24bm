@@ -206,7 +206,8 @@ test('智能审批:审批节点配置面板(可配置+财务节点固定开启)'
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
   await page.getByRole('button', { name: /登录系统/ }).click();
 
-  await expect(page.getByText('审批节点配置')).toBeVisible();
+  // 入口在标题栏右上角,点击展开配置面板。
+  await page.getByRole('button', { name: '审批节点配置' }).click();
   await expect(page.getByText(/审批人与流转规则由审批引擎/)).toBeVisible();
   // 七个节点渲染,财务节点带固定开启锁。
   await expect(page.getByRole('switch').first()).toBeVisible();
