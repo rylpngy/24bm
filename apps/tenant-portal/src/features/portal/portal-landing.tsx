@@ -19,6 +19,12 @@ import {
 } from 'lucide-react';
 import { FeedbackNotice } from '@24bid/ui';
 import { SELF_LOGIN_FALLBACK, useBuyerLogin } from '../auth/use-buyer-login';
+import {
+  HomeAnnouncementsStrip,
+  HomeSuppliersSection,
+  PortalAnnouncementsPage,
+  PortalSuppliersPage,
+} from './portal-public-pages';
 
 const ecosystem = [
   {
@@ -58,15 +64,6 @@ const opportunities = [
   ['询比采购', '服务', '年度物流运输服务合作伙伴征集公告(示例)', '供应链管理部', '2026-07-08'],
   ['单一来源', '工程', '车间安防监控系统采购单一来源公示(示例)', '安环部', '2026-07-06'],
   ['竞价采购', '设备', '废旧钢材及边角料年度回收处置竞价交易(示例)', '资产管理部', '2026-07-05'],
-];
-
-const suppliers = [
-  ['CF', '长风工业超市(演示)', 'MRO工业品'],
-  ['LH', '联合办公用品(演示)', '办公用品'],
-  ['HC', '华驰电气(演示)', '电气设备'],
-  ['XD', '迅达物流(演示)', '物流服务'],
-  ['HX', '恒信标准件(演示)', '紧固件'],
-  ['YD', '远大钢铁(演示)', '原材料'],
 ];
 
 const hotKeywords = ['服务器设备', '办公用品', '物流运输', '辅材工程', 'SaaS软件'];
@@ -271,8 +268,23 @@ function BuyerLoginPage({ onBack }: { onBack: () => void }) {
   );
 }
 
+type PortalPage = 'home' | 'suppliers' | 'announcements';
+
 export function PortalLanding() {
   const [loginOpen, setLoginOpen] = useState(false);
+  // 门户页面路由(?page= 深链接):home / suppliers 供应商名录 / announcements 平台公告。
+  const [page, setPageState] = useState<PortalPage>(() => {
+    const p = new URLSearchParams(window.location.search).get('page');
+    return p === 'suppliers' || p === 'announcements' ? p : 'home';
+  });
+  const setPage = (next: PortalPage) => {
+    setPageState(next);
+    const url = new URL(window.location.href);
+    if (next === 'home') url.searchParams.delete('page');
+    else url.searchParams.set('page', next);
+    window.history.replaceState(null, '', url.toString());
+    window.scrollTo({ top: 0 });
+  };
   const [query, setQuery] = useState('');
   const filteredOpportunities = useMemo(() => {
     const keyword = query.trim();
@@ -290,11 +302,11 @@ export function PortalLanding() {
         <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
           <LogoMark />
           <nav className="hidden items-center gap-8 text-sm font-black text-slate-600 md:flex">
-            <a href="#home" className="text-blue-600">首页</a>
-            <a href="#opportunities" className="hover:text-blue-600">商机大厅</a>
-            <a href="#buyers" className="hover:text-blue-600">采购商城</a>
-            <a href="#suppliers" className="hover:text-blue-600">供应商入驻</a>
-            <a href="#help" className="hover:text-blue-600">帮助中心</a>
+            <button type="button" onClick={() => setPage('home')} className={page === 'home' ? 'text-blue-600' : 'hover:text-blue-600'}>首页</button>
+            <a href="#opportunities" onClick={() => setPage('home')} className="hover:text-blue-600">商机大厅</a>
+            <button type="button" onClick={() => setPage('suppliers')} className={page === 'suppliers' ? 'text-blue-600' : 'hover:text-blue-600'}>供应商名录</button>
+            <button type="button" onClick={() => setPage('announcements')} className={page === 'announcements' ? 'text-blue-600' : 'hover:text-blue-600'}>平台公告</button>
+            <a href="#help" onClick={() => setPage('home')} className="hover:text-blue-600">帮助中心</a>
           </nav>
           <div className="flex items-center gap-3">
             <button
@@ -309,6 +321,15 @@ export function PortalLanding() {
         </div>
       </header>
 
+      {page === 'suppliers' ? (
+        <main className="min-h-[60vh] bg-slate-50">
+          <PortalSuppliersPage onLogin={() => setLoginOpen(true)} />
+        </main>
+      ) : page === 'announcements' ? (
+        <main className="min-h-[60vh] bg-slate-50">
+          <PortalAnnouncementsPage />
+        </main>
+      ) : (
       <main id="home">
         <section className="relative overflow-hidden bg-slate-950">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(37,99,235,0.28),transparent_34%),radial-gradient(circle_at_78%_30%,rgba(124,58,237,0.18),transparent_28%)]" />
@@ -375,6 +396,8 @@ export function PortalLanding() {
           </div>
         </section>
 
+        <HomeAnnouncementsStrip onOpenAll={() => setPage('announcements')} />
+
         <section id="buyers" className="bg-slate-50 py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <SectionHeader
@@ -430,21 +453,11 @@ export function PortalLanding() {
             <SectionHeader
               icon={Store}
               title="优质供应商"
-              subtitle="演示环境示例展示(虚构企业)· 正式环境呈现通过准入的真实供应商"
-              action="我是供应商，登录入驻"
-              onAction={() => setLoginOpen(true)}
+              subtitle="平台认证供应商 · 实时公开名录"
+              action="进入供应商名录"
+              onAction={() => setPage('suppliers')}
             />
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-              {suppliers.map(([code, name, industry]) => (
-                <article key={name} className="rounded-lg border border-slate-200 bg-white p-5 text-center shadow-sm">
-                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-slate-900 text-xs font-black text-white">
-                    {code}
-                  </div>
-                  <p className="mt-4 text-sm font-black text-slate-950">{name}</p>
-                  <p className="mt-1 text-xs font-bold text-slate-400">{industry}</p>
-                </article>
-              ))}
-            </div>
+            <HomeSuppliersSection onOpenDirectory={() => setPage('suppliers')} />
             <div className="mt-12 rounded-lg bg-blue-600 px-6 py-10 text-center shadow-sm">
               <h2 className="text-2xl font-black text-white">加入 24Bid 大平台</h2>
               <p className="mt-3 text-sm font-bold text-blue-100">
@@ -462,6 +475,7 @@ export function PortalLanding() {
           </div>
         </section>
       </main>
+      )}
 
       <footer id="help" className="bg-slate-950 py-14 text-slate-300">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 md:grid-cols-4">

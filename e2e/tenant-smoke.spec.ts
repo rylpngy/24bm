@@ -163,3 +163,19 @@ test('采购分析:KPI 与图表由后端真实聚合驱动', async ({ page }) =
   await expect(page.getByText('中国石化')).toHaveCount(0);
   await expect(page.getByText('分享看板')).toHaveCount(0);
 });
+test('公开门户:供应商名录与平台公告页真实数据 + 二级详情', async ({ page }) => {
+  // 未登录直达供应商名录(?page= 深链)。
+  await page.goto('/?page=suppliers');
+  await expect(page.getByRole('heading', { name: '供应商名录' })).toBeVisible();
+  await expect(page.getByText('平台认证供应商公开名录 · 实时数据')).toBeVisible();
+  // 真实数据卡片(demo 库至少有认证供应商)→ 点击进入二级详情。
+  await page.getByText('查看公开信息 →').first().click();
+  await expect(page.getByText('认证状态')).toBeVisible();
+  await expect(page.getByRole('button', { name: '登录发起合作' })).toBeVisible();
+
+  // 平台公告页 + 详情。
+  await page.goto('/?page=announcements');
+  await expect(page.getByRole('heading', { name: '平台公告', exact: true })).toBeVisible();
+  await page.locator('main').getByRole('button').first().click();
+  await expect(page.getByText(/发布于 \d{4}-\d{2}-\d{2}/)).toBeVisible();
+});

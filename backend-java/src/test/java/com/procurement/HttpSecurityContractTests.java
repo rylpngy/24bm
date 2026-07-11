@@ -126,6 +126,7 @@ import com.procurement.platform.api.PlatformOverviewController;
 import com.procurement.platform.api.PlatformOverviewResponse;
 import com.procurement.platform.api.PlatformBillingController;
 import com.procurement.platform.api.PlatformSupplierController;
+import com.procurement.platform.api.PublicPortalController;
 import com.procurement.platform.api.PlatformTenantController;
 import com.procurement.platform.api.PlatformWorkspaceController;
 import com.procurement.platform.api.SupplierAnnouncementController;
@@ -214,6 +215,7 @@ import org.springframework.test.web.servlet.MvcResult;
     PlatformAnnouncementController.class,
     BuyerAnnouncementController.class,
     PlatformSupplierController.class,
+    PublicPortalController.class,
     PlatformTenantController.class,
     PlatformBillingController.class,
     PlatformEnterpriseController.class,
@@ -281,6 +283,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.workflow.application.FlowableDemandApprovalService flowableDemandApprovalService;
+
+  @MockBean
+  private com.procurement.platform.application.PublicPortalApplicationService publicPortalApplicationService;
 
   @MockBean
   private PurchaseDemandApplicationService purchaseDemandApplicationService;
@@ -4876,4 +4881,22 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isOk());
   }
+  @Test
+  void publicPortalEndpointsAreReadableWithoutAuthentication() throws Exception {
+    // 公开门户只读端点:未登录 200(permitAll),供门户首页展示真实名录与公告。
+    org.mockito.Mockito.when(publicPortalApplicationService.listPublicSuppliers())
+        .thenReturn(java.util.List.of(new com.procurement.platform.api.PublicSupplierResponse(
+            "ent-supplier-sunrise", "晨光科技供应商", "办公设备", true, "approved")));
+    org.mockito.Mockito.when(publicPortalApplicationService.listActiveAnnouncements())
+        .thenReturn(java.util.List.of(new com.procurement.platform.api.PublicAnnouncementResponse(
+            "ann-1", "平台维护通知", "内容", "all", null)));
+
+    mockMvc.perform(get("/api/v1/public/suppliers"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].name").value("晨光科技供应商"));
+    mockMvc.perform(get("/api/v1/public/announcements"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].title").value("平台维护通知"));
+  }
+
 }
