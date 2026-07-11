@@ -214,3 +214,20 @@ test('智能审批:审批节点配置面板(可配置+财务节点固定开启)'
   await expect(page.getByText('固定开启').first()).toBeVisible();
   await expect(page.getByText('需求审批', { exact: true })).toBeVisible();
 });
+test('门户供应商入驻:注册入口 + 申请表单 + 提交成功', async ({ page }) => {
+  await page.goto('/?page=supplier-register');
+  await expect(page.getByRole('heading', { name: '供应商入驻申请' })).toBeVisible();
+  await expect(page.getByText('入驻流程')).toBeVisible();
+  await expect(page.getByText('平台初审')).toBeVisible();
+  // 提交真实申请(名称带时间戳防重名守卫)。
+  await page.getByPlaceholder('与营业执照一致的企业全称').fill(`E2E入驻企业${Date.now()}`);
+  await page.getByPlaceholder('如:机电设备').fill('测试行业');
+  await page.getByPlaceholder('91xxxxxxxxxxxxxxxx').fill('91310000E2E00001');
+  const fields = page.locator('main input');
+  await fields.nth(3).fill('测试法人');
+  await fields.nth(4).fill('测试联系人');
+  await fields.nth(5).fill('13500000000');
+  await fields.nth(6).fill('e2e@reg.example.com');
+  await page.getByRole('button', { name: /提交入驻申请/ }).click();
+  await expect(page.getByText('入驻申请已提交')).toBeVisible();
+});

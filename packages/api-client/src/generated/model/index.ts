@@ -313,6 +313,7 @@ export * from './receiptLineItemRequest';
 export * from './receiptLineItemResponse';
 export * from './receiptResponse';
 export * from './registerPaymentRequest';
+export * from './registerSupplierRequest';
 export * from './resetBuyerUserPasswordRequest';
 export * from './resetSupplierUserPasswordRequest';
 export * from './respondSupplierInvitationRequest';

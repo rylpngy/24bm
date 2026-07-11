@@ -24,6 +24,7 @@ import {
   HomeSuppliersSection,
   PortalAnnouncementsPage,
   PortalMallPage,
+  PortalSupplierRegisterPage,
   PortalOpportunitiesPage,
   PortalSuppliersPage,
 } from './portal-public-pages';
@@ -261,14 +262,14 @@ function BuyerLoginPage({ onBack }: { onBack: () => void }) {
   );
 }
 
-type PortalPage = 'home' | 'opportunities' | 'mall' | 'suppliers' | 'announcements';
+type PortalPage = 'home' | 'opportunities' | 'mall' | 'suppliers' | 'announcements' | 'supplier-register';
 
 export function PortalLanding() {
   const [loginOpen, setLoginOpen] = useState(false);
   // 门户页面路由(?page= 深链接):home / suppliers 供应商名录 / announcements 平台公告。
   const [page, setPageState] = useState<PortalPage>(() => {
     const p = new URLSearchParams(window.location.search).get('page');
-    return p === 'suppliers' || p === 'announcements' || p === 'opportunities' || p === 'mall' ? p : 'home';
+    return p === 'suppliers' || p === 'announcements' || p === 'opportunities' || p === 'mall' || p === 'supplier-register' ? p : 'home';
   });
   const setPage = (next: PortalPage) => {
     setPageState(next);
@@ -295,6 +296,7 @@ export function PortalLanding() {
             <button type="button" onClick={() => setPage('mall')} className={page === 'mall' ? 'text-blue-600' : 'hover:text-blue-600'}>采购商城</button>
             <button type="button" onClick={() => setPage('suppliers')} className={page === 'suppliers' ? 'text-blue-600' : 'hover:text-blue-600'}>供应商名录</button>
             <button type="button" onClick={() => setPage('announcements')} className={page === 'announcements' ? 'text-blue-600' : 'hover:text-blue-600'}>平台公告</button>
+            <button type="button" onClick={() => setPage('supplier-register')} className={page === 'supplier-register' ? 'text-blue-600' : 'hover:text-blue-600'}>供应商入驻</button>
             <a href="#help" onClick={() => setPage('home')} className="hover:text-blue-600">帮助中心</a>
           </nav>
           <div className="flex items-center gap-3">
@@ -310,7 +312,11 @@ export function PortalLanding() {
         </div>
       </header>
 
-      {page === 'mall' ? (
+      {page === 'supplier-register' ? (
+        <main className="min-h-[60vh] bg-slate-50">
+          <PortalSupplierRegisterPage />
+        </main>
+      ) : page === 'mall' ? (
         <main className="min-h-[60vh] bg-slate-50">
           <PortalMallPage onLogin={() => setLoginOpen(true)} />
         </main>
@@ -449,10 +455,10 @@ export function PortalLanding() {
               </p>
               <button
                 type="button"
-                onClick={() => setLoginOpen(true)}
+                onClick={() => setPage('supplier-register')}
                 className="mt-7 inline-flex h-11 items-center gap-2 rounded-md bg-white px-6 text-sm font-black text-blue-600 hover:bg-blue-50"
               >
-                立即免费注册
+                申请供应商入驻
                 <ArrowRight size={16} />
               </button>
             </div>

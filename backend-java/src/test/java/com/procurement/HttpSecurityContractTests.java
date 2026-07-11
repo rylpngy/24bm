@@ -2459,7 +2459,7 @@ class HttpSecurityContractTests {
             "pending",
             null,
             false,
-            false))));
+            false, null, null, null, null, null, null))));
 
     mockMvc.perform(get("/api/v1/platform/workspace")
             .header("Authorization", "Bearer " + platformToken))
@@ -3080,7 +3080,7 @@ class HttpSecurityContractTests {
         "pending",
         null,
         false,
-        false)));
+        false, null, null, null, null, null, null)));
 
     mockMvc.perform(get("/api/v1/platform/enterprise-reviews")
             .header("Authorization", "Bearer " + platformToken))
@@ -3099,7 +3099,7 @@ class HttpSecurityContractTests {
             "approved",
             "资料齐全，准入通过。",
             true,
-            true));
+            true, null, null, null, null, null, null));
 
     mockMvc.perform(post("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise")
             .header("Authorization", "Bearer " + platformToken)
@@ -3133,7 +3133,7 @@ class HttpSecurityContractTests {
         org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
         org.mockito.ArgumentMatchers.any()))
         .thenReturn(new EnterpriseReviewResponse(
-            "ent-supplier-sunrise", "晨光供应商", "supplier", false, "preliminary", null, false, false));
+            "ent-supplier-sunrise", "晨光供应商", "supplier", false, "preliminary", null, false, false, null, null, null, null, null, null));
 
     mockMvc.perform(post("/api/v1/platform/enterprise-reviews/ent-supplier-sunrise/advance")
             .header("Authorization", "Bearer " + platformToken)

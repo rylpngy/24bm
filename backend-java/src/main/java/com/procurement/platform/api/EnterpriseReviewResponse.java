@@ -8,5 +8,11 @@ public record EnterpriseReviewResponse(
     String reviewStatus,
     String reviewComment,
     Boolean profileConfirmed,
-    Boolean riskConfirmed) {
+    Boolean riskConfirmed,
+    String industry,
+    String creditCode,
+    String legalPerson,
+    String contactName,
+    String contactPhone,
+    String contactEmail) {
 }

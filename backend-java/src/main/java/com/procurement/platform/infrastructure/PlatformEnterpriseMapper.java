@@ -18,7 +18,9 @@ public interface PlatformEnterpriseMapper {
              coalesce(s.verified_status, case when e.verified then 'approved' else 'pending' end) as review_status,
              s.review_comment,
              coalesce(s.profile_confirmed, false) as profile_confirmed,
-             coalesce(s.risk_confirmed, false) as risk_confirmed
+             coalesce(s.risk_confirmed, false) as risk_confirmed,
+             e.industry, s.credit_code, s.legal_person,
+             s.contact_name, s.contact_phone, s.contact_email
       from enterprises e
       left join supplier_enterprises s on s.enterprise_id = e.id
       where (e.type <> 'supplier' and e.verified = false)
@@ -27,6 +29,39 @@ public interface PlatformEnterpriseMapper {
       order by e.created_at desc
       """)
   List<EnterpriseReview> listPendingReviews();
+
+  // 门户入驻申请:未认证供应商企业 + 待初审明细(含联系人,供审核联系)。
+  @Select("""
+      select count(*) from enterprises where name = #{name}
+      """)
+  int countEnterpriseByName(@Param("name") String name);
+
+  @Insert("""
+      insert into enterprises (id, name, type, industry, verified)
+      values (#{id}, #{name}, 'supplier', #{industry}, false)
+      """)
+  void insertSupplierRegistration(
+      @Param("id") String id,
+      @Param("name") String name,
+      @Param("industry") String industry);
+
+  @Insert("""
+      insert into supplier_enterprises (
+        enterprise_id, credit_code, legal_person, verified_status, profile_status,
+        contact_name, contact_phone, contact_email, business_scope
+      ) values (
+        #{enterpriseId}, #{creditCode}, #{legalPerson}, 'pending', 'draft',
+        #{contactName}, #{contactPhone}, #{contactEmail}, #{businessScope}
+      )
+      """)
+  void insertSupplierRegistrationDetail(
+      @Param("enterpriseId") String enterpriseId,
+      @Param("creditCode") String creditCode,
+      @Param("legalPerson") String legalPerson,
+      @Param("contactName") String contactName,
+      @Param("contactPhone") String contactPhone,
+      @Param("contactEmail") String contactEmail,
+      @Param("businessScope") String businessScope);
 
   // 公开门户名录:仅认证通过的供应商企业,仅公开安全字段。
   @Select("""
@@ -60,7 +95,9 @@ public interface PlatformEnterpriseMapper {
              coalesce(s.verified_status, case when e.verified then 'approved' else 'pending' end) as review_status,
              s.review_comment,
              coalesce(s.profile_confirmed, false) as profile_confirmed,
-             coalesce(s.risk_confirmed, false) as risk_confirmed
+             coalesce(s.risk_confirmed, false) as risk_confirmed,
+             e.industry, s.credit_code, s.legal_person,
+             s.contact_name, s.contact_phone, s.contact_email
       from enterprises e
       left join supplier_enterprises s on s.enterprise_id = e.id
       where e.id = #{enterpriseId}
