@@ -19,10 +19,13 @@ test('租户列表 / 企业审核 / 公告 渲染', async ({ page }) => {
   await expect(page.getByRole('tab', { name: /已启用/ })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: '序号' })).toBeVisible();
   await expect(page.getByText(/共\s*\d+\s*条/).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /开通新企业/ })).toBeVisible();
 
   await openModule(page, /企业审核/);
-  await expect(page.getByRole('heading', { name: '企业审核', level: 3 })).toBeVisible();
-  await expect(page.getByRole('tab', { name: /待初审/ })).toBeVisible();
+  // 对齐智能审批样式:标题卡 + 汇总卡 + 筛选工具条。
+  await expect(page.getByRole('heading', { name: '企业审核中心' })).toBeVisible();
+  await expect(page.getByText('在审企业').first()).toBeVisible();
+  await expect(page.getByRole('combobox').first()).toBeVisible();
 
   await openModule(page, /平台公告/);
   await expect(page.getByRole('heading', { name: '平台公告', level: 3 })).toBeVisible();

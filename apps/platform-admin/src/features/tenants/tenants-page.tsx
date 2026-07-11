@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Building2, CheckCircle2, PauseCircle, Users } from 'lucide-react';
+import { Building2, CheckCircle2, PauseCircle, Plus, Users } from 'lucide-react';
 import {
   usePlatformTenantDisable,
   usePlatformTenantEnable,
@@ -45,6 +45,7 @@ export function TenantsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ plan: string; userLimit: string; features: string[] } | null>(null);
   const [usageId, setUsageId] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const list = tenants.data?.data ?? [];
   const activeCount = list.filter((t) => t.status === 'active').length;
@@ -115,7 +116,6 @@ export function TenantsPage() {
 
   return (
     <div className="space-y-4">
-      <EnterpriseOnboardingPanel />
       <Panel title="租户列表" icon={Building2} subtitle="采购企业 · 套餐 · 启停 · 用量计费">
         <MetricGrid>
           <MetricCard icon={Building2} label="入驻租户" value={String(list.length)} hint="含已停用" tone="blue" />
@@ -139,7 +139,20 @@ export function TenantsPage() {
             placeholder="按名称 / 租户 ID / 套餐搜索"
             onSearch={(k) => { setKeyword(k); setPage(1); }}
           />
+          <button
+            type="button"
+            onClick={() => setShowOnboarding((v) => !v)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
+          >
+            <Plus size={14} /> {showOnboarding ? '收起开通' : '开通新企业'}
+          </button>
         </div>
+
+        {showOnboarding && (
+          <div className="mb-4">
+            <EnterpriseOnboardingPanel embedded />
+          </div>
+        )}
 
         {feedback && (
           <div className="mb-4">

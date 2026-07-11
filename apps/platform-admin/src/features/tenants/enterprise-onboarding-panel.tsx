@@ -37,12 +37,12 @@ function Field({
 
 // 企业开通:平台侧创建采购租户 / 供应商企业 + 初始管理员;
 // 成功后展示 Keycloak 建号清单(OIDC 身份在 Keycloak,claim 必须与库内 ID 对齐)。
-export function EnterpriseOnboardingPanel() {
+export function EnterpriseOnboardingPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const queryClient = useQueryClient();
   const createTenant = usePlatformTenantCreate();
   const createSupplier = usePlatformSupplierCreate();
   const [kind, setKind] = useState<Kind>('buyer');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(embedded);
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [claimGuide, setClaimGuide] = useState<{ userId: string; scopeKey: string; scopeValue: string } | null>(null);
   const [form, setForm] = useState({
@@ -121,8 +121,8 @@ export function EnterpriseOnboardingPanel() {
     }
   };
 
-  return (
-    <Panel title="企业开通" icon={Plus} subtitle="创建采购租户 / 供应商企业与初始管理员">
+  const body = (
+    <>
       {!open ? (
         <button
           type="button"
@@ -215,6 +215,15 @@ export function EnterpriseOnboardingPanel() {
           )}
         </div>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="rounded-lg border border-blue-100 bg-blue-50/30 p-4">{body}</div>;
+  }
+  return (
+    <Panel title="企业开通" icon={Plus} subtitle="创建采购租户 / 供应商企业与初始管理员">
+      {body}
     </Panel>
   );
 }
