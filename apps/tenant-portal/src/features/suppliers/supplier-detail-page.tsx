@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -14,7 +14,6 @@ import {
   Mail,
   MapPin,
   Phone,
-  ShieldAlert,
   ShieldCheck,
   Star,
   TrendingUp,
@@ -65,17 +64,14 @@ export function SupplierDetailPage({
     supplierId ? { supplierId } : undefined,
     { query: { enabled: !!supplierId } },
   );
-  const orders = useMemo(
-    () => enrichOrders(ordersQuery.data?.data ?? [], supplier),
-    [ordersQuery.data, supplier],
-  );
+  const orders = ordersQuery.data?.data ?? [];
   const score = Math.round(
     supplier.lastEvaluationScore ?? supplier.performanceScore ?? fallbackScore(supplier),
   );
   const totalAmount = orders.reduce((sum, order) => sum + (order.amount ?? 0), 0);
   const completedOrders = orders.filter((order) => ['已完成', '已收货'].includes(order.status ?? '')).length;
-  const trend = buildTrend(orders, totalAmount);
-  const categories = supplier.categories?.length ? supplier.categories : ['零部件', 'MRO'];
+  const trend = buildTrend(orders);
+  const categories = supplier.categories?.length ? supplier.categories : ['未维护品类'];
 
   return (
     <div className="mx-auto max-w-7xl space-y-5">
@@ -109,9 +105,6 @@ export function SupplierDetailPage({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:bg-slate-50">
-              <ShieldAlert size={16} /> 风险扫描
-            </button>
             <button
               onClick={() => setTab('performance')}
               className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-black text-white  hover:bg-slate-800"
@@ -181,9 +174,11 @@ function ScoreCard({
   supplier: BuyerSupplierResponse;
   orders: PurchaseOrderResponse[];
 }) {
-  const stars = Math.max(3, Math.min(5, Math.round(score / 20)));
-  const onTime = score >= 90 ? '98.5%' : score >= 80 ? '94.2%' : '89.6%';
-  const quality = supplier.lastEvaluationScore && supplier.lastEvaluationScore < 85 ? '96.8%' : '99.2%';
+  const stars = Math.max(1, Math.min(5, Math.round(score / 20)));
+  // 订单完成率:该供应商真实订单中「已收货」的占比;无订单时为空。
+  const completionRate = orders.length > 0
+    ? `${Math.round((orders.filter((o) => o.status === '已收货').length / orders.length) * 100)}%`
+    : '—';
 
   return (
     <section className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -203,12 +198,12 @@ function ScoreCard({
           ))}
         </div>
         <span className={cn('mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-black', scoreTone(score))}>
-          高于行业平均水平 {Math.max(8, Math.round((score - 75) * 0.75))}%
+          综合绩效评分(来自考核台账)
         </span>
       </div>
       <div className="mt-6 grid grid-cols-2 gap-3">
-        <MetricTile label="准时交付率" value={orders.length > 0 ? onTime : '98.5%'} />
-        <MetricTile label="质检合格率" value={quality} />
+        <MetricTile label="订单完成率" value={completionRate} />
+        <MetricTile label="最近考核实测" value={supplier.lastEvaluationScore != null ? String(supplier.lastEvaluationScore) : '—'} />
       </div>
     </section>
   );
@@ -227,18 +222,18 @@ function RiskCard({ supplier }: { supplier: BuyerSupplierResponse }) {
         </span>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <MetricTile label="纳税信用等级" value={`${supplier.level ?? 'A'} 级`} />
-        <MetricTile label="行政处罚" value="0 条" />
+        <MetricTile label="供应商等级" value={`${supplier.level ?? '—'} 级`} />
+        <MetricTile label="合作层级" value={supplier.cooperationTier ?? '—'} />
       </div>
       <InfoRows
         rows={[
           ['统一社会信用代码', supplier.creditCode || '—'],
-          ['司法诉讼记录', '无风险'],
-          ['信用中国/黑名单', supplier.status === '黑名单' ? '已列入' : '未列入'],
+          ['准入状态', supplier.status ?? '—'],
+          ['黑名单', supplier.status === '黑名单' ? '已列入' : '未列入'],
         ]}
       />
       <p className="mt-4 text-center text-[11px] font-bold text-slate-400">
-        数据源：企业主档 / 信用台账 / 供应商准入记录
+        数据源:供应商主档与准入台账;工商/司法风控需接入外部征信后启用
       </p>
     </section>
   );
@@ -251,8 +246,8 @@ function ArchiveCard({ supplier }: { supplier: BuyerSupplierResponse }) {
       <div className="mt-4 space-y-3">
         <ArchiveItem icon={Building2} label="企业全称" value={supplier.supplierName ?? '—'} />
         <ArchiveItem icon={Contact} label="法定代表人" value={supplier.legalPerson || '—'} />
-        <ArchiveItem icon={Banknote} label="注册资本" value="5000万人民币" />
-        <ArchiveItem icon={CalendarDays} label="成立日期" value="2010-05-18" />
+        <ArchiveItem icon={Banknote} label="统一社会信用代码" value={supplier.creditCode || '—'} />
+        <ArchiveItem icon={CalendarDays} label="合作层级" value={supplier.cooperationTier ?? '—'} />
       </div>
     </section>
   );
@@ -267,7 +262,6 @@ function ContactCard({ supplier }: { supplier: BuyerSupplierResponse }) {
           ['销售代表', supplier.contactName || supplier.legalPerson || '—', Contact],
           ['移动电话', supplier.contactPhone || '—', Phone],
           ['电子邮箱', supplier.contactEmail || '—', Mail],
-          ['注册地址', '江苏省苏州市工业园区星湖街328号', MapPin],
         ]}
       />
     </section>
@@ -341,98 +335,49 @@ function HistoryOverview({
       <PanelTitle icon={LineChart} title="采购历史概览" />
       <div className="mt-4 grid gap-4 xl:grid-cols-[13rem_1fr]">
         <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-          <MetricTile label="累计交易总额" value={currency(totalAmount || 2450000)} strong />
-          <MetricTile label="签订订单" value={`${orderCount || 12} 份`} />
-          <MetricTile label="已完成订单" value={`${orderCount > 0 ? completedOrders : 5} 份`} />
+          <MetricTile label="累计交易总额" value={orderCount > 0 ? currency(totalAmount) : '—'} strong />
+          <MetricTile label="签订订单" value={`${orderCount} 份`} />
+          <MetricTile label="已完成订单" value={`${completedOrders} 份`} />
         </div>
-        <MiniLineChart points={trend} />
+        {trend.length > 0 ? (
+          <MiniLineChart points={trend} />
+        ) : (
+          <p className="flex items-center justify-center rounded-lg bg-slate-50 p-6 text-sm font-bold text-slate-400">
+            暂无订单交易,趋势图将在产生订单后展示。
+          </p>
+        )}
       </div>
     </section>
   );
 }
 
 function PerformanceTab({ supplier, score }: { supplier: BuyerSupplierResponse; score: number }) {
-  const baseScore = Math.max(score, 82);
-  const records = [
-    { period: '2026 Q2 绩效考核', grade: gradeFromScore(baseScore), score: baseScore, reviewer: '系统自动', date: '2026-06-30' },
-    { period: '2026 Q1 绩效考核', grade: gradeFromScore(baseScore - 3), score: baseScore - 3, reviewer: supplier.contactName || '采购经理', date: '2026-03-31' },
-    { period: '2025 Q4 绩效考核', grade: gradeFromScore(baseScore - 6), score: baseScore - 6, reviewer: '质量专员', date: '2025-12-31' },
-  ];
-
+  // 仅展示台账中的真实评分维度:综合评分与最近实测;分项维度待考核体系产生真实数据后展示。
+  const lastEvaluation = supplier.lastEvaluationScore;
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <PanelTitle icon={Award} title="全方位绩效评估" />
-          <p className="mt-1 text-sm font-bold text-slate-500">
-            基于交付、质量、成本、服务和技术协同的综合评价。
-          </p>
-        </div>
-        <button
-          type="button"
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-black text-white  hover:bg-slate-800"
-        >
-          发起新考核
-        </button>
+      <div>
+        <PanelTitle icon={Award} title="绩效评估(考核台账)" />
+        <p className="mt-1 text-sm font-bold text-slate-500">
+          数据来源:供应商绩效台账与最近实测考核;发起新考核请在「绩效考核」看板操作。
+        </p>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_22rem]">
-        <div className="rounded-lg bg-white">
-          <RadarChart
-            items={[
-              { label: '质量稳定性', value: Math.min(98, baseScore + 3) },
-              { label: '交付及时率', value: Math.min(99, baseScore + 6) },
-              { label: '成本竞争力', value: Math.max(76, baseScore - 7) },
-              { label: '服务响应', value: Math.max(78, baseScore - 2) },
-              { label: '技术创新', value: Math.max(72, baseScore - 9) },
-            ]}
-          />
-          <p className="mt-3 text-center text-sm font-black text-slate-400">五维能力雷达图</p>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-base font-black text-slate-950">历史考核记录</h3>
-            <div className="mt-3 space-y-3">
-              {records.map((record) => (
-                <div
-                  key={record.period}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-slate-100 bg-white px-4 py-3 shadow-sm"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span
-                      className={cn(
-                        'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-black',
-                        record.score >= 90 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700',
-                      )}
-                    >
-                      {record.grade}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-slate-950">{record.period}</p>
-                      <p className="mt-0.5 text-xs font-bold text-slate-500">
-                        评估人：{record.reviewer} · {record.date}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="shrink-0 text-base font-black text-slate-950">
-                    {record.score}
-                    <span className="ml-1 text-xs font-bold text-slate-500">分</span>
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-lg bg-slate-50 p-4">
-            <p className="text-xs font-black text-slate-500">综合评价建议</p>
-            <p className="mt-2 text-sm font-bold leading-6 text-slate-700">
-              该供应商在<span className="font-black text-blue-600">交付及时率</span>和质量稳定性方面表现较好，
-              可继续纳入重点合作池；建议在下一周期补充技术协同评估，并结合订单履约数据复核成本竞争力。
-            </p>
-          </div>
-        </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <MetricTile label="综合绩效评分" value={String(score)} strong />
+        <MetricTile label="最近实测评分" value={lastEvaluation != null ? String(lastEvaluation) : '—'} strong />
+        <MetricTile
+          label="评分等级"
+          value={gradeFromScore(score)}
+          strong
+        />
       </div>
+      {lastEvaluation != null && (
+        <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-600">
+          最近实测 {lastEvaluation} 分,较综合评分{lastEvaluation >= score ? '持平或提升' : `低 ${Math.round((score - lastEvaluation) * 10) / 10} 分`};
+          综合评分由历史考核与履约自动评分联动更新。
+        </p>
+      )}
     </section>
   );
 }
@@ -442,7 +387,6 @@ function OrdersTab({ orders, loading }: { orders: PurchaseOrderResponse[]; loadi
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-slate-950">历史采购交易记录</h2>
-        <button className="text-xs font-black text-blue-600 hover:text-blue-700">查看全部</button>
       </div>
       {loading ? (
         <p className="mt-6 rounded-lg bg-slate-50 p-4 text-sm font-bold text-slate-500">正在加载订单...</p>
@@ -459,10 +403,10 @@ function OrdersTab({ orders, loading }: { orders: PurchaseOrderResponse[]; loadi
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {orders.slice(0, 6).map((order, index) => (
-                <tr key={`${order.id}-${index}`} className="font-bold text-slate-700">
+              {orders.slice(0, 6).map((order) => (
+                <tr key={order.id} className="font-bold text-slate-700">
                   <td className="px-4 py-4 font-mono text-slate-500">{order.id}</td>
-                  <td className="px-4 py-4 text-slate-950">{orderProjectName(order, index)}</td>
+                  <td className="px-4 py-4 text-slate-950">{orderProjectName(order)}</td>
                   <td className="px-4 py-4 font-black text-slate-950">{currency(order.amount)}</td>
                   <td className="px-4 py-4">
                     <StatusPill label={order.status ?? '执行中'} />
@@ -479,8 +423,11 @@ function OrdersTab({ orders, loading }: { orders: PurchaseOrderResponse[]; loadi
 }
 
 function FinanceTab({ orders }: { orders: PurchaseOrderResponse[] }) {
-  const total = orders.reduce((sum, order) => sum + (order.amount ?? 0), 0) || 2450000;
-  const paid = Math.round(total * 0.72);
+  const total = orders.reduce((sum, order) => sum + (order.amount ?? 0), 0);
+  // 已结算口径:已收货订单金额(真实数据);精确到发票/付款须在财务模块查看。
+  const paid = orders
+    .filter((order) => order.status === '已收货')
+    .reduce((sum, order) => sum + (order.amount ?? 0), 0);
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="text-base font-black text-slate-950">财务结算概览</h2>
@@ -490,16 +437,16 @@ function FinanceTab({ orders }: { orders: PurchaseOrderResponse[] }) {
         <MetricTile label="待付款" value={currency(total - paid)} strong />
       </div>
       <div className="mt-5 space-y-3">
-        {orders.slice(0, 4).map((order, index) => (
+        {orders.slice(0, 4).map((order) => (
           <div
             key={`${order.id}-finance`}
             className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/60 px-4 py-3"
           >
             <div>
               <p className="text-sm font-black text-slate-900">{order.id}</p>
-              <p className="text-xs font-bold text-slate-500">{order.paymentTerms || '月结 30 天'}</p>
+              <p className="text-xs font-bold text-slate-500">{order.paymentTerms || '—'}</p>
             </div>
-            <span className="font-black text-slate-950">{currency(order.amount ?? 57000 + index * 45000)}</span>
+            <span className="font-black text-slate-950">{currency(order.amount ?? 0)}</span>
           </div>
         ))}
       </div>
@@ -508,7 +455,7 @@ function FinanceTab({ orders }: { orders: PurchaseOrderResponse[] }) {
 }
 
 function ProductsTab({ supplier }: { supplier: BuyerSupplierResponse }) {
-  const categories = supplier.categories?.length ? supplier.categories : ['零部件', 'MRO'];
+  const categories = supplier.categories?.length ? supplier.categories : ['未维护品类'];
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="text-base font-black text-slate-950">供应产品与能力范围</h2>
@@ -595,61 +542,6 @@ function InfoRows({
 
 type TrendPoint = { label: string; value: number };
 
-type RadarItem = { label: string; value: number };
-
-function RadarChart({ items }: { items: RadarItem[] }) {
-  const center = 140;
-  const radius = 92;
-  const angleStep = (Math.PI * 2) / items.length;
-  const pointAt = (index: number, scale: number) => {
-    const angle = -Math.PI / 2 + index * angleStep;
-    return {
-      x: center + Math.cos(angle) * radius * scale,
-      y: center + Math.sin(angle) * radius * scale,
-    };
-  };
-  const polygon = (scale: number) =>
-    items
-      .map((_, index) => {
-        const p = pointAt(index, scale);
-        return `${p.x},${p.y}`;
-      })
-      .join(' ');
-  const valuePolygon = items
-    .map((item, index) => {
-      const p = pointAt(index, Math.max(0.2, item.value / 100));
-      return `${p.x},${p.y}`;
-    })
-    .join(' ');
-
-  return (
-    <svg viewBox="0 0 280 280" className="mx-auto h-72 w-full max-w-[360px]" role="img" aria-label="供应商绩效雷达图">
-      {[0.25, 0.5, 0.75, 1].map((scale) => (
-        <polygon key={scale} points={polygon(scale)} fill="none" stroke="#dbeafe" strokeWidth="1" />
-      ))}
-      {items.map((item, index) => {
-        const outer = pointAt(index, 1);
-        const label = pointAt(index, 1.22);
-        return (
-          <g key={item.label}>
-            <line x1={center} y1={center} x2={outer.x} y2={outer.y} stroke="#dbeafe" strokeWidth="1" />
-            <text
-              x={label.x}
-              y={label.y}
-              textAnchor={label.x < center - 8 ? 'end' : label.x > center + 8 ? 'start' : 'middle'}
-              dominantBaseline="middle"
-              className="fill-slate-500 text-[12px] font-black"
-            >
-              {item.label}
-            </text>
-          </g>
-        );
-      })}
-      <polygon points={valuePolygon} fill="#2563eb" fillOpacity="0.18" stroke="#2563eb" strokeWidth="3" />
-    </svg>
-  );
-}
-
 function MiniLineChart({ points }: { points: TrendPoint[] }) {
   const max = Math.max(...points.map((p) => p.value), 1);
   const min = Math.min(...points.map((p) => p.value), 0);
@@ -683,32 +575,18 @@ function MiniLineChart({ points }: { points: TrendPoint[] }) {
   );
 }
 
-function enrichOrders(orders: PurchaseOrderResponse[], supplier: BuyerSupplierResponse) {
-  if (orders.length > 0) return orders;
-  const base = [57000, 102000, 147000, 192000, 237000];
-  return base.map((amount, index) => ({
-    id: `PO-2023102${index + 1}`,
-    supplierId: supplier.supplierId,
-    amount,
-    status: '已完成',
-    createdAt: `2023-10-2${index + 1}`,
-    paymentTerms: index % 2 === 0 ? '月结 30 天' : '验收后付款',
-  }));
-}
-
-function buildTrend(orders: PurchaseOrderResponse[], total: number): TrendPoint[] {
-  const labels = ['6月', '7月', '8月', '9月', '10月'];
-  if (orders.length === 0) {
-    return [280000, 360000, 540000, 390000, 470000].map((value, index) => ({
-      label: labels[index],
-      value,
-    }));
-  }
-  const base = Math.max(Math.round((total || 500000) / 5), 1);
-  return labels.map((label, index) => ({
-    label,
-    value: Math.round(base * (0.75 + ((index * 17) % 38) / 50)),
-  }));
+function buildTrend(orders: PurchaseOrderResponse[]): TrendPoint[] {
+  // 按订单创建月真实聚合;无订单则为空(图表隐藏)。
+  const byMonth = new Map<string, number>();
+  orders.forEach((order) => {
+    const month = order.createdAt?.slice(0, 7);
+    if (!month) return;
+    byMonth.set(month, (byMonth.get(month) ?? 0) + (order.amount ?? 0));
+  });
+  return Array.from(byMonth.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-6)
+    .map(([label, value]) => ({ label: label.slice(5) + '月', value }));
 }
 
 function gradeFromScore(score: number) {
@@ -720,15 +598,11 @@ function gradeFromScore(score: number) {
 }
 
 function fallbackScore(supplier: BuyerSupplierResponse) {
-  if (supplier.status === '黑名单') return 72;
-  if (supplier.status === '准入审批中') return 84;
-  return 95;
+  return supplier.performanceScore ?? supplier.lastEvaluationScore ?? 0;
 }
 
-function orderProjectName(order: PurchaseOrderResponse, index: number) {
-  const firstLine = order.lineItems?.[0]?.description;
-  if (firstLine) return firstLine;
-  return `Q4季度${index % 2 === 0 ? '零部件常规补库' : '生产物资补采'}批次${index + 1}`;
+function orderProjectName(order: PurchaseOrderResponse) {
+  return order.lineItems?.[0]?.description ?? order.rfqId ?? '—';
 }
 
 function lifecycleAction(

@@ -21,14 +21,17 @@ export function useBuyerLogin() {
   const [kcBusy, setKcBusy] = useState(false);
   const [kcError, setKcError] = useState(false);
 
-  const handleKeycloakLogin = async () => {
+  const handleKeycloakLogin = async (
+    username = 'buyer.owner@example.com',
+    password = 'demo123456',
+  ) => {
     setKcBusy(true);
     setKcError(false);
     try {
       const { token, claims } = await keycloakPasswordLogin({
         keycloakUrl: KEYCLOAK_URL,
-        username: 'buyer.owner@example.com',
-        password: 'demo123456',
+        username,
+        password,
       });
       signIn({
         token,

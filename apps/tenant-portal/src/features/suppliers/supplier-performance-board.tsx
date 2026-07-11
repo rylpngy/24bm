@@ -20,10 +20,6 @@ function scoreBadgeTone(score: number) {
   return 'border-red-100 bg-red-50 text-red-700';
 }
 
-function deriveMetric(score: number, offset: number) {
-  return Math.max(0, Math.min(99.8, Math.round((score + offset) * 10) / 10));
-}
-
 function metricTone(value: number) {
   if (value >= 90) return 'text-emerald-600';
   if (value >= 75) return 'text-blue-600';
@@ -111,16 +107,15 @@ export function SupplierPerformanceBoard({ onOpen }: { onOpen: (id: string) => v
             <span>排名</span>
             <span>供应商</span>
             <span>综合评级</span>
-            <span>关键绩效</span>
+            <span>评分构成(综合 / 最近实测)</span>
             <span>最近考核</span>
             <span />
           </div>
           {pageItems.map((s, i) => {
             const rank = (safePage - 1) * PAGE_SIZE + i;
             const score = s.performanceScore ?? 0;
-            const delivery = deriveMetric(score, rank % 2 === 0 ? 1.8 : -2.4);
-            const quality = deriveMetric(score, rank % 3 === 0 ? 3.2 : -1.1);
-            const price = deriveMetric(score, rank % 2 === 0 ? -4.6 : 2.5);
+            const lastEvaluation = s.lastEvaluationScore;
+            const delta = lastEvaluation != null ? Math.round((lastEvaluation - score) * 10) / 10 : null;
             return (
               <div
                 key={s.id}
@@ -154,16 +149,20 @@ export function SupplierPerformanceBoard({ onOpen }: { onOpen: (id: string) => v
                 </div>
                 <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs font-black text-slate-500">
                   <span className="whitespace-nowrap">
-                    交付 <strong className={`font-mono text-sm ${metricTone(delivery)}`}>{delivery}</strong>
+                    综合 <strong className={`font-mono text-sm ${metricTone(score)}`}>{score}</strong>
                   </span>
                   <span className="hidden text-slate-200 sm:inline">|</span>
                   <span className="whitespace-nowrap">
-                    质量 <strong className={`font-mono text-sm ${metricTone(quality)}`}>{quality}</strong>
+                    最近实测{' '}
+                    <strong className={`font-mono text-sm ${lastEvaluation != null ? metricTone(lastEvaluation) : 'text-slate-300'}`}>
+                      {lastEvaluation ?? '—'}
+                    </strong>
                   </span>
-                  <span className="hidden text-slate-200 sm:inline">|</span>
-                  <span className="whitespace-nowrap">
-                    价格 <strong className={`font-mono text-sm ${metricTone(price)}`}>{price}</strong>
-                  </span>
+                  {delta != null && (
+                    <span className={`whitespace-nowrap font-mono ${delta >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {delta >= 0 ? '↗' : '↘'}{Math.abs(delta)}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <p className="lg:hidden text-[11px] font-black text-slate-400">最近考核</p>

@@ -82,7 +82,7 @@ export function SupplierSourcingView() {
     );
 
   return (
-    <Panel title="智能寻源" icon={Search} subtitle="AI 匹配平台供应商 · 一键加入私域待准入">
+    <Panel title="智能寻源" icon={Search} subtitle="按资料完备度筛选平台供应商 · 一键加入私域待准入">
       <div className="mb-4 overflow-hidden rounded-lg border border-blue-100 bg-blue-50/70 p-3 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-start gap-3">
@@ -90,7 +90,7 @@ export function SupplierSourcingView() {
               <WandSparkles size={16} />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-black text-slate-950">AI 智能寻源助手</p>
+              <p className="text-sm font-black text-slate-950">寻源筛选助手</p>
               <p className="mt-1 max-w-3xl text-xs font-bold leading-5 text-slate-500">
                 基于认证状态、资料完整度、行业匹配与信用代码完整性，为采购人筛选可纳入私域供应商。
               </p>
@@ -102,14 +102,14 @@ export function SupplierSourcingView() {
                   <CheckCircle2 size={12} /> 资料完整
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-black text-violet-700 ring-1 ring-violet-100">
-                  <Sparkles size={12} /> 智能推荐
+                  <Sparkles size={12} /> 资料完备
                 </span>
               </div>
             </div>
           </div>
           <div className="grid min-w-[220px] grid-cols-2 gap-2 rounded-lg border border-blue-100 bg-white p-3 shadow-sm">
             <div>
-              <p className="text-[11px] font-black text-slate-400">平均匹配度</p>
+              <p className="text-[11px] font-black text-slate-400">平均资料完备度</p>
               <p className="mt-1 font-mono text-xl font-black text-slate-950">{avgMatch ? `${avgMatch}%` : '—'}</p>
             </div>
             <div>
@@ -198,7 +198,7 @@ export function SupplierSourcingView() {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="font-mono text-base font-black text-blue-700">{matchScore(s)}%</p>
-                      <p className="text-[10px] font-black text-slate-400">匹配度</p>
+                      <p className="text-[10px] font-black text-slate-400">资料完备度</p>
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1.5">
@@ -214,7 +214,7 @@ export function SupplierSourcingView() {
                   </div>
                   <div className="mt-4">
                     <div className="mb-1 flex items-center justify-between text-[11px] font-black text-slate-400">
-                      <span>AI 推荐强度</span>
+                      <span>纳入建议</span>
                       <span>{s.verifiedStatus === 'approved' ? '优先纳入' : '建议核验后纳入'}</span>
                     </div>
                     <div className="h-2 rounded-full bg-slate-100">

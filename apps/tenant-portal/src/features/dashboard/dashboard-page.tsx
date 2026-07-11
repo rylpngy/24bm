@@ -232,6 +232,8 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
   const ws = useBuyerWorkspaceLoad();
   const analytics = useBuyerAnalyticsProcurement();
   const categorySpend = analytics.data?.data?.categorySpend;
+  const monthlySpend = analytics.data?.data?.monthlySpend;
+  const biddingSavings = analytics.data?.data?.biddingSavings;
   const data = ws.data?.data;
 
   const view = useMemo(() => {
@@ -253,24 +255,15 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
     const pendingPaymentAmount = invoices
       .filter((invoice) => invoice.paymentStatus === '待付款')
       .reduce((sum, invoice) => sum + (invoice.amount ?? 0), 0);
-    const saving = Math.max(0, Math.round(totalSpend * 0.098));
+    // 节约成本 = 比价节支(后端按报价对比真实聚合),不再用系数编造。
+    const saving = Math.max(0, Math.round(biddingSavings ?? 0));
 
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    const fallback = [3900, 3000, 5000, 4500, 6000, 5500];
-    const trend = monthNames.map((month, index) => ({
-      month,
-      actual: fallback[index],
-      budget: Math.round(fallback[index] * (index < 2 ? 1.14 : 0.96)),
+    // 支出趋势 = 后端月度订单聚合(真实数据),不再使用写死基线。
+    const trend = (monthlySpend ?? []).slice(-6).map((m) => ({
+      month: m.period ?? '',
+      actual: Math.round((m.totalAmount ?? 0) / 1000),
+      orders: m.orderCount ?? 0,
     }));
-    orders.forEach((order) => {
-      const date = order.createdAt ? new Date(order.createdAt) : null;
-      if (!date || Number.isNaN(date.getTime())) return;
-      const index = date.getMonth();
-      if (index >= 0 && index < 6) {
-        trend[index].actual += Math.round((order.amount ?? 0) / 1000);
-        trend[index].budget += Math.round((order.amount ?? 0) / 900);
-      }
-    });
 
     const todos = [
       ...pendingApprovals.slice(0, 3).map((task) => ({
@@ -346,7 +339,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
       pendingCount: data?.todoSummary?.pendingApprovalCount ?? pendingApprovals.length,
       pendingPaymentAmount,
     };
-  }, [data, categorySpend]);
+  }, [data, categorySpend, monthlySpend, biddingSavings]);
 
   if (ws.isLoading) {
     return <ShellState variant="loading" title="正在加载采购人首页" desc="拉取采购概览、待办与风险预警…" />;
@@ -410,7 +403,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
             label="本年度累计支出"
             value={currency(view.totalSpend, true)}
             desc={`预算执行率 ${view.budgetRate}%`}
-            trend="↗ 12.5%"
+            trend={`订单 ${analytics.data?.data?.orderCount ?? '—'} 单`}
             tone="bg-blue-50 text-blue-600"
           />
           <KpiCard
@@ -418,7 +411,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
             label="活跃供应商"
             value={String(view.admittedSuppliers)}
             desc={`供应商总数 ${(data?.suppliers ?? []).length} 家`}
-            trend="↗ 3.2%"
+            trend={`头部集中度 ${analytics.data?.data?.topSupplierSharePercent ?? '—'}%`}
             tone="bg-indigo-50 text-indigo-600"
           />
           <KpiCard
@@ -426,23 +419,22 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
             label="进行中项目"
             value={String(view.activeProjects)}
             desc={`${view.activeRfqs} 个询比需跟进`}
-            trend="↘ 2.4%"
+            trend={`${view.pendingCount} 项待审批`}
             tone="bg-violet-50 text-violet-600"
-            negative
           />
           <KpiCard
             icon={ShieldCheck}
             label="累计节约成本"
             value={currency(view.saving, true)}
-            desc="按比价节支与执行节约估算"
-            trend="↗ 8.1%"
+            desc="按定标价与最高报价差额聚合"
+            trend={view.totalSpend > 0 ? `占支出 ${((view.saving / view.totalSpend) * 100).toFixed(1)}%` : '—'}
             tone="bg-emerald-50 text-emerald-600"
           />
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
           <Card className="p-4">
-          <SectionHeader icon={TrendingUp} title="采购支出趋势" subtitle="近 6 个月实际支出 vs 预算" />
+          <SectionHeader icon={TrendingUp} title="采购支出趋势" subtitle="近 6 个月订单支出(千元) · 来源:采购分析聚合" />
           <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={view.trend} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
@@ -459,7 +451,6 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
                   contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 700 }}
                   formatter={(value) => [`${value}k`, '']}
                 />
-                <Area type="monotone" dataKey="budget" stroke="#cbd5e1" strokeDasharray="4 4" fill="transparent" strokeWidth={2} />
                 <Area type="monotone" dataKey="actual" stroke="#2563eb" fill="url(#dashboardSpend)" strokeWidth={3} />
               </AreaChart>
             </ResponsiveContainer>
@@ -505,6 +496,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
           <SectionHeader
             icon={PackageCheck}
             title="进行中的项目"
+            subtitle="进度按单据状态阶段推导"
             action={<button type="button" className="text-xs font-black text-blue-600" onClick={() => onNavigate('rfqs')}>查看全部</button>}
           />
           <div className="mt-5 space-y-3">

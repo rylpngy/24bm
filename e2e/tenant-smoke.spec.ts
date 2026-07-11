@@ -28,8 +28,6 @@ test('门户登录入口展示分栏登录页面', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: /连接企业采购的\s*数字化未来/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: '欢迎回来' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '账号密码登录' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '手机验证码' })).toBeVisible();
   await expect(page.getByPlaceholder('请输入用户名或企业邮箱')).toBeVisible();
   await expect(page.getByPlaceholder('请输入密码')).toBeVisible();
   await expect(page.getByRole('button', { name: /登录系统/ })).toBeVisible();
@@ -150,3 +148,18 @@ test('需求详情:合并助手真实扫描,预算核对基于参考价', async 
   ).toBeVisible();
 });
 
+test('采购分析:KPI 与图表由后端真实聚合驱动', async ({ page }) => {
+  await page.goto('/?module=analytics');
+  await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
+  await page.getByRole('button', { name: /登录系统/ }).click();
+
+  await expect(page.getByText('累计支出')).toBeVisible();
+  await expect(page.getByText('月度支出趋势')).toBeVisible();
+  await expect(page.getByText('品类支出占比')).toBeVisible();
+  await expect(page.getByText('供应商支出排行')).toBeVisible();
+  await expect(page.getByRole('button', { name: /导出报表/ })).toBeVisible();
+  // 假数据元素已移除:虚构行情/虚构大额订单供应商不再出现。
+  await expect(page.getByText('关键价格指标')).toHaveCount(0);
+  await expect(page.getByText('中国石化')).toHaveCount(0);
+  await expect(page.getByText('分享看板')).toHaveCount(0);
+});

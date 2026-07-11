@@ -60,7 +60,7 @@ export function OrdersPage() {
         orderId,
         data: {
           amount: orderAmount ?? 0,
-          invoiceNo: f?.invoiceNo || `INV-${Date.now().toString().slice(-8)}`,
+          invoiceNo: f!.invoiceNo,
           invoiceCode: f?.invoiceCode || undefined,
           taxRate: Number(f?.taxRate) || 13,
         },
@@ -85,8 +85,8 @@ export function OrdersPage() {
       {
         orderId,
         data: {
-          carrier: f?.carrier || '顺丰速运',
-          trackingNo: f?.trackingNo || `SF${Date.now().toString().slice(-9)}`,
+          carrier: f!.carrier,
+          trackingNo: f!.trackingNo,
           shippedQuantity: Number(f?.qty) || undefined,
         },
       },
@@ -218,7 +218,12 @@ export function OrdersPage() {
                           onChange={(e) => setShipForm({ ...shipForm!, qty: e.target.value })} />
                       </div>
                       <div className="mt-2 flex gap-2">
-                        <PrimaryActionButton onClick={() => onShip(o.id!)} busy={busyS} pendingLabel="提交中">
+                        <PrimaryActionButton
+                          onClick={() => onShip(o.id!)}
+                          busy={busyS}
+                          pendingLabel="提交中"
+                          disabled={!shipForm?.carrier?.trim() || !shipForm?.trackingNo?.trim()}
+                        >
                           提交发货
                         </PrimaryActionButton>
                         <button type="button" onClick={() => setShipForm(null)}
@@ -229,7 +234,7 @@ export function OrdersPage() {
                     </div>
                   ) : (
                     <button type="button"
-                      onClick={() => setShipForm({ orderId: o.id!, carrier: '顺丰速运', trackingNo: '', qty: '' })}
+                      onClick={() => setShipForm({ orderId: o.id!, carrier: '', trackingNo: '', qty: '' })}
                       className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700">
                       登记发货
                     </button>
@@ -249,7 +254,12 @@ export function OrdersPage() {
                           onChange={(e) => setInvForm({ ...invForm!, taxRate: e.target.value })} />
                       </div>
                       <div className="mt-2 flex gap-2">
-                        <PrimaryActionButton onClick={() => onIssueInvoice(o.id!, o.amount)} busy={busyI} pendingLabel="开票中">
+                        <PrimaryActionButton
+                          onClick={() => onIssueInvoice(o.id!, o.amount)}
+                          busy={busyI}
+                          pendingLabel="开票中"
+                          disabled={!invForm?.invoiceNo?.trim()}
+                        >
                           提交开票
                         </PrimaryActionButton>
                         <button type="button" onClick={() => setInvForm(null)}

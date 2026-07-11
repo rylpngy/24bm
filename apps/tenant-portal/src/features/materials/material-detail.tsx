@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, CircleDollarSign, Database, FileText, History, Package, ShieldCheck, Tag } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, CircleDollarSign, Database, History, Package, ShieldCheck, Tag } from 'lucide-react';
 import {
   type MaterialResponse,
   useAuditLogListTargetActions,
@@ -59,20 +59,7 @@ export function MaterialDetail({
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
-              type="button"
-            >
-              <FileText size={15} /> 查看记录
-            </button>
-            <button
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700"
-              type="button"
-            >
-              <CheckCircle2 size={15} /> 数据有效
-            </button>
-          </div>
+
         </div>
       </div>
 
