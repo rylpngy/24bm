@@ -38,7 +38,7 @@ export function App() {
       accountLabel={`${session.displayName} · 平台运营`}
     >
       {activeModuleId === 'overview' ? (
-        <OverviewPage />
+        <OverviewPage onNavigate={selectModule} />
       ) : activeModuleId === 'tenants' ? (
         <TenantsPage />
       ) : activeModuleId === 'reviews' ? (
