@@ -27,7 +27,7 @@ class ContractDataScopeTests {
       null,
       null,
       null,
-      null);
+      null, null);
 
   @AfterEach
   void clearTenantContext() {

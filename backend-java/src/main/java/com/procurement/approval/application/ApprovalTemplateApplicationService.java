@@ -33,10 +33,17 @@ public class ApprovalTemplateApplicationService {
         .toList();
   }
 
+  // 财务合规节点固定开启:付款申请/付款批次/归档异常审批不可停用。
+  private static final java.util.Set<String> LOCKED_ACTIVE_TEMPLATES = java.util.Set.of(
+      "TPL_PAYMENT_REQUEST", "TPL_PAYMENT_BATCH", "TPL_PAYMENT_ARCHIVE_EXCEPTION");
+
   @Transactional
   public ApprovalTemplateResponse updateTemplate(String templateCode, UpdateApprovalTemplateRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer approval template APIs");
     approvalTemplateStatusTransition.requireSupportedTarget(request.status());
+    if (LOCKED_ACTIVE_TEMPLATES.contains(templateCode) && !"active".equals(request.status())) {
+      throw new IllegalStateException("财务合规审批节点不可关闭: " + templateCode);
+    }
     requireBuyerRole(tenantId, request.defaultApproverRoleId());
     int updated = approvalTemplateMapper.updateTemplateConfig(
         tenantId,

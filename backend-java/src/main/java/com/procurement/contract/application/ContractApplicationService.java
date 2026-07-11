@@ -1,5 +1,6 @@
 package com.procurement.contract.application;
 
+import com.procurement.approval.application.ApprovalGate;
 import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
@@ -43,20 +44,21 @@ public class ContractApplicationService {
   private final DataScopeService dataScopeService;
   private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
+  private final ApprovalGate approvalGate;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
 
   public ContractApplicationService(
       ContractMapper contractMapper,
       PurchaseOrderMapper purchaseOrderMapper) {
-    this(contractMapper, null, purchaseOrderMapper, null, null, null, null, null);
+    this(contractMapper, null, purchaseOrderMapper, null, null, null, null, null, null);
   }
 
   public ContractApplicationService(
       ContractMapper contractMapper,
       ContractFulfillmentEventMapper fulfillmentEventMapper,
       PurchaseOrderMapper purchaseOrderMapper) {
-    this(contractMapper, fulfillmentEventMapper, purchaseOrderMapper, null, null, null, null, null);
+    this(contractMapper, fulfillmentEventMapper, purchaseOrderMapper, null, null, null, null, null, null);
   }
 
   public ContractApplicationService(
@@ -74,7 +76,8 @@ public class ContractApplicationService {
         approvalTaskMapper,
         approvalTaskApplicationService,
         auditLogApplicationService,
-        notificationApplicationService);
+        notificationApplicationService,
+        null);
   }
 
   public ContractApplicationService(
@@ -93,7 +96,8 @@ public class ContractApplicationService {
         approvalTaskMapper,
         approvalTaskApplicationService,
         auditLogApplicationService,
-        notificationApplicationService);
+        notificationApplicationService,
+        null);
   }
 
   @Autowired
@@ -105,7 +109,8 @@ public class ContractApplicationService {
       ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      ApprovalGate approvalGate) {
     this.contractMapper = contractMapper;
     this.fulfillmentEventMapper = fulfillmentEventMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
@@ -114,6 +119,7 @@ public class ContractApplicationService {
     this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.approvalGate = approvalGate;
   }
 
   public List<ContractResponse> listCurrentTenantContracts(
@@ -291,6 +297,22 @@ public class ContractApplicationService {
     requireEditable(contract, contractId);
     if (!"草案".equals(contract.status())) {
       throw new IllegalStateException("Only draft contracts can submit approval: " + contractId);
+    }
+
+    // 审批闸门:合同审批节点关闭时免审直通(草案直达已生效,审计留痕)。
+    if (approvalGate != null && !approvalGate.requiresApproval(tenantId, ApprovalBusinessType.CONTRACT_APPROVAL)) {
+      int bypassed = contractMapper.updateStatus(
+          tenantId, contractId, contract.status(), "已生效", "已生效");
+      if (bypassed == 0) {
+        throw new IllegalStateException("Contract status changed before approval could be submitted: " + contractId);
+      }
+      auditLogApplicationService.recordTenantAction(
+          tenantId,
+          "contract_approval.submitted",
+          ApprovalBusinessType.CONTRACT_APPROVAL,
+          contractId,
+          ApprovalGate.bypassDetail());
+      return toResponse(requireContract(tenantId, contractId));
     }
 
     int updated = contractMapper.updateStatus(

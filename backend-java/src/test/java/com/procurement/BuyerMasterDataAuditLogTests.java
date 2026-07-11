@@ -181,6 +181,7 @@ class BuyerMasterDataAuditLogTests {
             new ObjectMapper(),
             approvalTaskMapper,
             new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper),
+      com.procurement.TestApprovalGates.alwaysOn(),
             auditLogApplicationService,
             notificationApplicationService,
             new BuyerSupplierAdmissionStatusTransition(),

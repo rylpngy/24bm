@@ -201,3 +201,15 @@ test('商机大厅:公开列表 + 详情 + 报名参与', async ({ page }) => {
   await page.getByRole('button', { name: /提交报名/ }).click();
   await expect(page.getByText('报名已提交')).toBeVisible();
 });
+test('智能审批:审批节点配置面板(可配置+财务节点固定开启)', async ({ page }) => {
+  await page.goto('/?module=approvals');
+  await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
+  await page.getByRole('button', { name: /登录系统/ }).click();
+
+  await expect(page.getByText('审批节点配置')).toBeVisible();
+  await expect(page.getByText(/审批人与流转规则由审批引擎/)).toBeVisible();
+  // 七个节点渲染,财务节点带固定开启锁。
+  await expect(page.getByRole('switch').first()).toBeVisible();
+  await expect(page.getByText('固定开启').first()).toBeVisible();
+  await expect(page.getByText('需求审批', { exact: true })).toBeVisible();
+});

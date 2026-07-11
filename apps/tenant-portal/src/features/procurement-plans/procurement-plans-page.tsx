@@ -475,8 +475,8 @@ function PlanDetail({
                   desc: awardApproval
                     ? `${awardApproval.status ?? '待审批'} · 提交人 ${awardApproval.submittedByName ?? '--'}${awardApproval.actedAt ? ` · ${awardApproval.actedAt.slice(0, 10)}` : ''}${awardApproval.reviewComment ? ` · ${awardApproval.reviewComment}` : ''}`
                     : plan.status === '已定标'
-                      ? '定标已生效'
-                      : '尚未发起定标审批',
+                      ? '定标已生效(免审直通,审批节点已关闭)'
+                      : '尚未发起定标审批(若审批节点已关闭,定标将免审直通)',
                   done: plan.status === '已定标' || awardApproval?.status === '已通过',
                   active: plan.status === '定标审批中' || awardApproval?.status === '待审批',
                 },
@@ -530,7 +530,6 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
   const [planMethod, setPlanMethod] = useState('询比');
   const [collectionMethod, setCollectionMethod] = useState('公开');
   const [planUrgency, setPlanUrgency] = useState('普通');
-  const [approvalRequired, setApprovalRequired] = useState('否');
   const [supplierIds, setSupplierIds] = useState<string[]>([]);
 
   const demands = demandsQuery.data?.data ?? [];
@@ -606,7 +605,6 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
     setPlanMethod('询比');
     setCollectionMethod('公开');
     setPlanUrgency('普通');
-    setApprovalRequired('否');
     setSupplierIds([]);
   };
 
@@ -793,8 +791,6 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
         setCollectionMethod={setCollectionMethod}
         planUrgency={planUrgency}
         setPlanUrgency={setPlanUrgency}
-        approvalRequired={approvalRequired}
-        setApprovalRequired={setApprovalRequired}
         suppliers={suppliersQuery.data?.data ?? []}
         supplierIds={supplierIds}
         setSupplierIds={setSupplierIds}

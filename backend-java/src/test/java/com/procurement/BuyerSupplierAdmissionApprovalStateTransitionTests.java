@@ -57,6 +57,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
           new ObjectMapper(),
           approvalTaskMapper,
           approvalTaskApplicationService,
+      com.procurement.TestApprovalGates.alwaysOn(),
           auditLogApplicationService,
           notificationApplicationService,
           new BuyerSupplierAdmissionStatusTransition(),
