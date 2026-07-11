@@ -245,76 +245,9 @@ export function RfqProjectDetail({
       {feedback && <FeedbackNotice tone="success" message={feedback} />}
       {error && <FeedbackNotice tone="error" message={error} />}
 
-      {/* 公开商机报名:门户报名登记 → 受理(转正式邀请)/ 忽略。 */}
-      {(enrollments.data?.data ?? []).length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-5 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-black text-slate-950">商机报名({(enrollments.data?.data ?? []).filter((en) => en.status === '待处理').length} 条待处理)</h3>
-            <span className="text-xs font-bold text-slate-500">来自门户商机大厅的报名登记;受理后自动向对应平台供应商发出询价邀请。</span>
-          </div>
-          <div className="mt-3 divide-y divide-amber-100">
-            {(enrollments.data?.data ?? []).map((en) => (
-              <div key={en.id} className="flex flex-wrap items-center gap-3 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-2 text-sm font-black text-slate-950">
-                    {en.companyName}
-                    {en.matchedSupplierId ? (
-                      <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-black text-emerald-700">平台认证供应商</span>
-                    ) : (
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-black text-slate-500">未入驻平台</span>
-                    )}
-                    <span className={
-                      en.status === '待处理'
-                        ? 'rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-black text-amber-700'
-                        : en.status === '已受邀'
-                          ? 'rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-black text-emerald-700'
-                          : 'rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-black text-slate-500'
-                    }>{en.status}</span>
-                  </p>
-                  <p className="mt-1 text-[11px] font-bold text-slate-500">
-                    {en.contactName} · {en.contactPhone} · 报名于 {en.createdAt?.slice(0, 16).replace('T', ' ')}
-                    {en.note ? ` · ${en.note}` : ''}
-                  </p>
-                </div>
-                {en.status === '待处理' && (
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      type="button"
-                      disabled={acceptEnrollment.isPending || !en.matchedSupplierId}
-                      title={en.matchedSupplierId ? undefined : '报名企业未入驻平台,请先通过「供应商邀请」引导入驻'}
-                      onClick={() =>
-                        rfq.id && en.id &&
-                        acceptEnrollment.mutate(
-                          { rfqId: rfq.id, enrollmentId: en.id },
-                          { onSuccess: () => { setFeedback(`已受理「${en.companyName}」的报名并发出询价邀请。`); refresh(); }, onError: reportError },
-                        )
-                      }
-                      className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-300"
-                    >
-                      受理并邀请
-                    </button>
-                    <button
-                      type="button"
-                      disabled={dismissEnrollment.isPending}
-                      onClick={() =>
-                        rfq.id && en.id &&
-                        dismissEnrollment.mutate(
-                          { rfqId: rfq.id, enrollmentId: en.id },
-                          { onSuccess: () => { setFeedback('已忽略该报名。'); refresh(); }, onError: reportError },
-                        )
-                      }
-                      className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      忽略
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* 参考智能审批详情布局:主栏(参与进度/澄清/定标)+ 右栏(商机报名紧凑卡) */}
+      <div className={(enrollments.data?.data ?? []).length > 0 ? 'grid items-start gap-4 xl:grid-cols-[1fr_22rem]' : undefined}>
+      <div className="min-w-0 space-y-4">
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-base font-black text-slate-950">供应商参与进度</h3>
@@ -410,6 +343,8 @@ export function RfqProjectDetail({
           })}
         </div>
       </div>
+
+      {rfq.id && <RfqClarificationsBuyer rfqId={rfq.id} canBulletin={quoting} />}
 
       {!quoting && !terminal && (
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
@@ -516,8 +451,84 @@ export function RfqProjectDetail({
         </div>
       )}
       {rfq.status === '已定标' && rfq.id && <RfqResultBuyer rfqId={rfq.id} supplierNames={supplierNames} />}
+      </div>
 
-      {rfq.id && <RfqClarificationsBuyer rfqId={rfq.id} canBulletin={quoting} />}
+      {/* 商机报名:门户报名登记 → 受理(转正式邀请)/ 忽略;紧凑卡置于右栏 */}
+      {(enrollments.data?.data ?? []).length > 0 && (
+        <aside className="rounded-lg border border-amber-200 bg-white shadow-sm shadow-slate-200/50">
+          <div className="flex items-center justify-between rounded-t-md border-b border-amber-100 bg-amber-50/70 px-4 py-3">
+            <p className="text-sm font-black text-slate-950">商机报名</p>
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[11px] font-black text-white">
+              {(enrollments.data?.data ?? []).filter((en) => en.status === '待处理').length}
+            </span>
+          </div>
+          <p className="px-4 pt-3 text-[11px] font-bold text-slate-400">
+            来自门户商机大厅的报名登记;受理后自动发出询价邀请。
+          </p>
+          <div className="divide-y divide-slate-100 px-4 pb-2">
+            {(enrollments.data?.data ?? []).map((en) => (
+              <div key={en.id} className="py-3">
+                <p className="flex flex-wrap items-center gap-1.5 text-sm font-black text-slate-950">
+                  <span className="break-words">{en.companyName}</span>
+                  {en.matchedSupplierId ? (
+                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-black text-emerald-700">平台认证</span>
+                  ) : (
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-500">未入驻</span>
+                  )}
+                  <span className={
+                    en.status === '待处理'
+                      ? 'rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-black text-amber-700'
+                      : en.status === '已受邀'
+                        ? 'rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-black text-emerald-700'
+                        : 'rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-500'
+                  }>{en.status}</span>
+                </p>
+                <p className="mt-1 text-[11px] font-bold text-slate-500">
+                  {en.contactName} · {en.contactPhone}
+                  <br />报名于 {en.createdAt?.slice(0, 16).replace('T', ' ')}
+                  {en.note ? ` · ${en.note}` : ''}
+                </p>
+                {en.status === '待处理' && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      disabled={acceptEnrollment.isPending || !en.matchedSupplierId}
+                      title={en.matchedSupplierId ? undefined : '报名企业未入驻平台,请先通过「供应商邀请」引导入驻'}
+                      onClick={() =>
+                        rfq.id && en.id &&
+                        acceptEnrollment.mutate(
+                          { rfqId: rfq.id, enrollmentId: en.id },
+                          { onSuccess: () => { setFeedback(`已受理「${en.companyName}」的报名并发出询价邀请。`); refresh(); }, onError: reportError },
+                        )
+                      }
+                      className="inline-flex h-8 flex-1 items-center justify-center rounded-md bg-emerald-600 px-2 text-[11px] font-black text-white hover:bg-emerald-700 disabled:bg-slate-300"
+                    >
+                      受理并邀请
+                    </button>
+                    <button
+                      type="button"
+                      disabled={dismissEnrollment.isPending}
+                      onClick={() =>
+                        rfq.id && en.id &&
+                        dismissEnrollment.mutate(
+                          { rfqId: rfq.id, enrollmentId: en.id },
+                          { onSuccess: () => { setFeedback('已忽略该报名。'); refresh(); }, onError: reportError },
+                        )
+                      }
+                      className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      忽略
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </aside>
+      )}
+      </div>
+
+
 
       {roundForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-6" onClick={() => setRoundForm(null)}>
