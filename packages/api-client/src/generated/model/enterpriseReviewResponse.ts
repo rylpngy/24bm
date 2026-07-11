@@ -15,4 +15,10 @@ export interface EnterpriseReviewResponse {
   reviewComment?: string;
   profileConfirmed?: boolean;
   riskConfirmed?: boolean;
+  industry?: string;
+  creditCode?: string;
+  legalPerson?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
 }

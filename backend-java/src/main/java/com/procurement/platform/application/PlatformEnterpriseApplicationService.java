@@ -133,6 +133,12 @@ public class PlatformEnterpriseApplicationService {
         review.reviewStatus(),
         review.reviewComment(),
         review.profileConfirmed(),
-        review.riskConfirmed());
+        review.riskConfirmed(),
+        review.industry(),
+        review.creditCode(),
+        review.legalPerson(),
+        review.contactName(),
+        review.contactPhone(),
+        review.contactEmail());
   }
 }

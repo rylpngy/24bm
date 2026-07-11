@@ -2,6 +2,7 @@ package com.procurement.platform.application;
 
 import com.procurement.platform.api.PublicAnnouncementResponse;
 import com.procurement.platform.api.PublicSupplierResponse;
+import com.procurement.platform.api.RegisterSupplierRequest;
 import com.procurement.platform.domain.PlatformAnnouncement;
 import com.procurement.platform.infrastructure.PlatformAnnouncementMapper;
 import com.procurement.platform.infrastructure.PlatformEnterpriseMapper;
@@ -19,6 +20,26 @@ public class PublicPortalApplicationService {
       PlatformAnnouncementMapper platformAnnouncementMapper) {
     this.platformEnterpriseMapper = platformEnterpriseMapper;
     this.platformAnnouncementMapper = platformAnnouncementMapper;
+  }
+
+  /** 门户入驻申请:创建未认证供应商企业(待初审),进入平台企业审核工作流。 */
+  @org.springframework.transaction.annotation.Transactional
+  public String registerSupplier(RegisterSupplierRequest request) {
+    String name = request.companyName().strip();
+    if (platformEnterpriseMapper.countEnterpriseByName(name) > 0) {
+      throw new IllegalStateException("该企业名称已注册或正在审核中: " + name);
+    }
+    String enterpriseId = "ent-reg-" + java.util.UUID.randomUUID();
+    platformEnterpriseMapper.insertSupplierRegistration(enterpriseId, name, request.industry().strip());
+    platformEnterpriseMapper.insertSupplierRegistrationDetail(
+        enterpriseId,
+        request.creditCode().strip(),
+        request.legalPerson().strip(),
+        request.contactName().strip(),
+        request.contactPhone().strip(),
+        request.contactEmail().strip(),
+        request.businessScope() == null ? "" : request.businessScope().strip());
+    return enterpriseId;
   }
 
   public List<PublicSupplierResponse> listPublicSuppliers() {

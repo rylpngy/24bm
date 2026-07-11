@@ -5,6 +5,7 @@ import {
   type PublicOpportunityResponse,
   type PublicSupplierResponse,
   usePublicMallOverview,
+  usePublicPortalRegisterSupplier,
   usePublicOpportunityEnroll,
   usePublicOpportunityList,
   usePublicPortalListAnnouncements,
@@ -868,3 +869,171 @@ export function HomeOpportunitiesSection({ onOpenHall }: { onOpenHall: () => voi
   );
 }
 
+
+
+// 供应商入驻申请:提交后进入平台企业审核工作流(待初审→初审通过→准入通过→开通账号)。
+export function PortalSupplierRegisterPage() {
+  const register = usePublicPortalRegisterSupplier();
+  const [form, setForm] = useState({
+    companyName: '',
+    industry: '',
+    creditCode: '',
+    legalPerson: '',
+    contactName: '',
+    contactPhone: '',
+    contactEmail: '',
+    businessScope: '',
+  });
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const set = (key: keyof typeof form) => (value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const ready =
+    form.companyName.trim() && form.industry.trim() && form.creditCode.trim() && form.legalPerson.trim()
+    && form.contactName.trim() && form.contactPhone.trim() && form.contactEmail.trim();
+
+  const steps = [
+    { title: '提交申请', desc: '填写企业与联系人信息' },
+    { title: '平台初审', desc: '运营团队核对基础资料' },
+    { title: '复审准入', desc: '资料与风险双确认后准入' },
+    { title: '开通账号', desc: '通过后平台联系开通登录账号' },
+  ];
+
+  const inputCls =
+    'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+
+  if (done) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
+        <CheckCircle2 size={44} className="mx-auto text-emerald-500" />
+        <h1 className="mt-5 text-2xl font-black text-slate-950">入驻申请已提交</h1>
+        <p className="mx-auto mt-3 max-w-md text-sm font-bold leading-6 text-slate-500">
+          平台运营团队将按「初审 → 复审准入」流程审核您的资料;
+          审核结果与账号开通信息将通过预留的联系方式通知({form.contactEmail} / {form.contactPhone})。
+        </p>
+        <div className="mx-auto mt-8 grid max-w-xl gap-2 sm:grid-cols-4">
+          {steps.map((step, index) => (
+            <div key={step.title} className={cn('rounded-lg border p-3', index === 0 ? 'border-emerald-100 bg-emerald-50' : 'border-slate-200 bg-white')}>
+              <p className={cn('text-xs font-black', index === 0 ? 'text-emerald-700' : 'text-slate-700')}>{index + 1}. {step.title}</p>
+              <p className="mt-1 text-[11px] font-bold text-slate-400">{index === 0 ? '已完成' : step.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <div className="mb-7">
+        <h1 className="flex items-center gap-2.5 text-2xl font-black text-slate-950">
+          <Store size={24} className="text-blue-600" />
+          供应商入驻申请
+        </h1>
+        <p className="mt-1.5 text-sm font-bold text-slate-500">
+          提交后进入平台准入审核,通过后即可参与询价、竞价与商城供货
+          <span className="ml-2 text-xs text-slate-400">(<span className="text-red-500">*</span> 为必填项)</span>
+        </p>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[20rem_1fr]">
+        {/* 流程说明 */}
+        <aside className="space-y-4">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-black text-slate-950">入驻流程</p>
+            <div className="mt-4 space-y-5 border-l border-slate-200 pl-4">
+              {steps.map((step, index) => (
+                <div key={step.title} className="relative">
+                  <span className={cn('absolute -left-[1.28rem] top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black', index === 0 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500')}>
+                    {index + 1}
+                  </span>
+                  <p className="text-sm font-black text-slate-900">{step.title}</p>
+                  <p className="mt-0.5 text-xs font-bold text-slate-400">{step.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="rounded-lg border border-blue-100 bg-blue-50/40 p-4 text-xs font-bold leading-5 text-slate-600">
+            准入通过后,贵司将进入平台认证供应商名录;采购方可在其供应商库中与贵司建立合作,
+            并通过询价邀请、商机报名受理等方式向贵司发起业务。
+          </section>
+        </aside>
+
+        {/* 申请表单 */}
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setError(null);
+            register.mutate(
+              { data: { ...form, businessScope: form.businessScope || undefined } },
+              {
+                onSuccess: () => setDone(true),
+                onError: (err) =>
+                  setError(
+                    (err as { response?: { data?: { message?: string } } }).response?.data?.message
+                      ?? '提交失败,请稍后重试',
+                  ),
+              },
+            );
+          }}
+        >
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-black text-slate-950">企业信息</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>企业名称</span>
+                <input className={cn(inputCls, 'mt-1.5')} placeholder="与营业执照一致的企业全称" value={form.companyName} onChange={(e) => set('companyName')(e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>所属行业</span>
+                <input className={cn(inputCls, 'mt-1.5')} placeholder="如:机电设备" value={form.industry} onChange={(e) => set('industry')(e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>统一社会信用代码</span>
+                <input className={cn(inputCls, 'mt-1.5')} placeholder="91xxxxxxxxxxxxxxxx" value={form.creditCode} onChange={(e) => set('creditCode')(e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>法定代表人</span>
+                <input className={cn(inputCls, 'mt-1.5')} value={form.legalPerson} onChange={(e) => set('legalPerson')(e.target.value)} />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-xs font-black text-slate-500">经营范围(选填)</span>
+                <textarea className="mt-1.5 min-h-[72px] w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  placeholder="主营产品与服务范围" value={form.businessScope} onChange={(e) => set('businessScope')(e.target.value)} />
+              </label>
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-black text-slate-950">联系人信息</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">审核结果与账号开通信息将通过以下联系方式通知</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <label className="block">
+                <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>联系人姓名</span>
+                <input className={cn(inputCls, 'mt-1.5')} value={form.contactName} onChange={(e) => set('contactName')(e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>联系电话</span>
+                <input className={cn(inputCls, 'mt-1.5')} value={form.contactPhone} onChange={(e) => set('contactPhone')(e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>联系邮箱</span>
+                <input className={cn(inputCls, 'mt-1.5')} value={form.contactEmail} onChange={(e) => set('contactEmail')(e.target.value)} />
+              </label>
+            </div>
+          </section>
+
+          {error && <FeedbackNotice tone="error" message={error} />}
+          <button
+            type="submit"
+            disabled={!ready || register.isPending}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-black text-white shadow-sm transition hover:bg-blue-500 active:scale-[0.98] disabled:bg-blue-200 sm:w-auto sm:px-10"
+          >
+            <Send size={15} /> {register.isPending ? '提交中…' : '提交入驻申请'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

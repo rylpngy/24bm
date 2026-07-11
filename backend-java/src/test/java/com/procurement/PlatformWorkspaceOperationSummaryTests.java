@@ -67,6 +67,6 @@ class PlatformWorkspaceOperationSummaryTests {
         "pending",
         null,
         false,
-        false);
+        false, null, null, null, null, null, null);
   }
 }

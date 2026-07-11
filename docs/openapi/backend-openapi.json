@@ -2533,6 +2533,56 @@
         }
       }
     },
+    "/api/v1/public/supplier-registrations": {
+      "post": {
+        "tags": [
+          "public-portal-controller"
+        ],
+        "operationId": "PublicPortal_registerSupplier",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterSupplierRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseString"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/opportunities/{rfqId}/enroll": {
       "post": {
         "tags": [
@@ -14829,6 +14879,74 @@
           }
         }
       },
+      "RegisterSupplierRequest": {
+        "required": [
+          "companyName",
+          "contactEmail",
+          "contactName",
+          "contactPhone",
+          "creditCode",
+          "industry",
+          "legalPerson"
+        ],
+        "type": "object",
+        "properties": {
+          "companyName": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "industry": {
+            "maxLength": 50,
+            "minLength": 0,
+            "type": "string"
+          },
+          "creditCode": {
+            "maxLength": 30,
+            "minLength": 0,
+            "type": "string"
+          },
+          "legalPerson": {
+            "maxLength": 50,
+            "minLength": 0,
+            "type": "string"
+          },
+          "contactName": {
+            "maxLength": 50,
+            "minLength": 0,
+            "type": "string"
+          },
+          "contactPhone": {
+            "maxLength": 30,
+            "minLength": 0,
+            "type": "string"
+          },
+          "contactEmail": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "businessScope": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseString": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "EnrollOpportunityRequest": {
         "required": [
           "companyName",
@@ -15214,6 +15332,24 @@
           },
           "riskConfirmed": {
             "type": "boolean"
+          },
+          "industry": {
+            "type": "string"
+          },
+          "creditCode": {
+            "type": "string"
+          },
+          "legalPerson": {
+            "type": "string"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "contactEmail": {
+            "type": "string"
           }
         }
       },
@@ -19209,20 +19345,6 @@
           "actedAt": {
             "type": "string",
             "format": "date-time"
-          }
-        }
-      },
-      "ApiResponseString": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
           }
         }
       },

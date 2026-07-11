@@ -6,16 +6,20 @@
  * OpenAPI spec version: v1
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -25,16 +29,76 @@ import type {
   ApiResponseListPublicSupplierResponse,
   ApiResponsePublicAnnouncementResponse,
   ApiResponsePublicSupplierResponse,
-  ApiResponseVoid
+  ApiResponseString,
+  ApiResponseVoid,
+  RegisterSupplierRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
-import type { ErrorType } from '../../http-client';
+import type { ErrorType , BodyType } from '../../http-client';
 
 
 
 
-export const publicPortalListSuppliers = (
+export const publicPortalRegisterSupplier = (
+    registerSupplierRequest: BodyType<RegisterSupplierRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseString>(
+      {url: `/api/v1/public/supplier-registrations`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: registerSupplierRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getPublicPortalRegisterSupplierMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicPortalRegisterSupplier>>, TError,{data: BodyType<RegisterSupplierRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof publicPortalRegisterSupplier>>, TError,{data: BodyType<RegisterSupplierRequest>}, TContext> => {
+
+const mutationKey = ['publicPortalRegisterSupplier'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publicPortalRegisterSupplier>>, {data: BodyType<RegisterSupplierRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  publicPortalRegisterSupplier(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublicPortalRegisterSupplierMutationResult = NonNullable<Awaited<ReturnType<typeof publicPortalRegisterSupplier>>>
+    export type PublicPortalRegisterSupplierMutationBody = BodyType<RegisterSupplierRequest>
+    export type PublicPortalRegisterSupplierMutationError = ErrorType<ApiResponseVoid>
+
+    export const usePublicPortalRegisterSupplier = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicPortalRegisterSupplier>>, TError,{data: BodyType<RegisterSupplierRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof publicPortalRegisterSupplier>>,
+        TError,
+        {data: BodyType<RegisterSupplierRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getPublicPortalRegisterSupplierMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const publicPortalListSuppliers = (
     
  signal?: AbortSignal
 ) => {

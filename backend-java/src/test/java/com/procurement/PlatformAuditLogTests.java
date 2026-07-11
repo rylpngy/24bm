@@ -178,7 +178,7 @@ class PlatformAuditLogTests {
             "approved",
             "资料齐全，准入通过。",
             true,
-            true));
+            true, null, null, null, null, null, null));
 
     platformEnterpriseApplicationService.reviewEnterprise(
         "ent-supplier-1",

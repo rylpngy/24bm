@@ -358,10 +358,21 @@ function ReviewDetailPage({
                 <Info label="企业名称" value={e.name ?? '—'} />
                 <Info label="企业 ID" value={e.id ?? '—'} />
                 <Info label="企业类型" value={TYPE_LABEL[e.type ?? ''] ?? e.type ?? '—'} />
+                <Info label="所属行业" value={e.industry ?? '—'} />
+                <Info label="统一社会信用代码" value={e.creditCode || '—'} />
+                <Info label="法定代表人" value={e.legalPerson || '—'} />
                 <Info label="平台认证" value={e.verified ? '已认证' : '未认证'} />
                 <Info label="资料核验" value={e.profileConfirmed ? '已核验' : '未核验'} />
                 <Info label="风险核验" value={e.riskConfirmed ? '已核验' : '未核验'} />
               </div>
+              {(e.contactName || e.contactPhone || e.contactEmail) && (
+                <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/40 p-3">
+                  <p className="text-xs font-black text-blue-800">申请人联系方式(审核结果与账号开通请联系)</p>
+                  <p className="mt-1 text-sm font-black text-slate-900">
+                    {e.contactName ?? '—'} · {e.contactPhone ?? '—'} · {e.contactEmail ?? '—'}
+                  </p>
+                </div>
+              )}
               {e.reviewComment && (
                 <p className="mt-4 rounded-lg border border-slate-200 bg-white p-3 text-xs font-bold text-slate-600">
                   最近审核意见:{e.reviewComment}

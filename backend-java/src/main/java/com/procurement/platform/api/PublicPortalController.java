@@ -6,6 +6,10 @@ import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 // 公开门户只读 API(permitAll):认证供应商名录 + 生效平台公告,供未登录门户首页展示。
@@ -16,6 +20,14 @@ public class PublicPortalController {
 
   public PublicPortalController(PublicPortalApplicationService publicPortalApplicationService) {
     this.publicPortalApplicationService = publicPortalApplicationService;
+  }
+
+  // 供应商入驻申请:提交后进入平台企业审核工作流(待初审)。
+  @PostMapping("/supplier-registrations")
+  @ResponseStatus(HttpStatus.CREATED)
+  public ApiResponse<String> registerSupplier(
+      @jakarta.validation.Valid @RequestBody RegisterSupplierRequest request) {
+    return ApiResponse.ok(publicPortalApplicationService.registerSupplier(request));
   }
 
   @GetMapping("/suppliers")

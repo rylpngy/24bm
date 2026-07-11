@@ -34,7 +34,7 @@ class EnterpriseReviewWorkflowTests {
   }
 
   private EnterpriseReview review(String status) {
-    return new EnterpriseReview("ent-1", "晨光", "supplier", false, status, null, false, false);
+    return new EnterpriseReview("ent-1", "晨光", "supplier", false, status, null, false, false, null, null, null, null, null, null);
   }
 
   @Test
