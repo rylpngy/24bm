@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   CircleHelp,
   Database,
-  Globe2,
   KeyRound,
   Lock,
   LogIn,
@@ -17,7 +16,6 @@ import {
   Store,
   User,
   Eye,
-  QrCode,
 } from 'lucide-react';
 import { FeedbackNotice } from '@24bid/ui';
 import { SELF_LOGIN_FALLBACK, useBuyerLogin } from '../auth/use-buyer-login';
@@ -43,31 +41,32 @@ const ecosystem = [
   },
 ];
 
+// 以下均为演示环境示例数据(虚构企业名),正式环境替换为真实入驻企业与发布商机。
 const buyers = [
-  ['CS', '中国建航', '建筑工程'],
-  ['GL', '吉利控股', '汽车制造'],
-  ['MD', '美的集团', '家电制造'],
-  ['VK', '万科集团', '房地产'],
-  ['SY', '三一重工', '机械制造'],
-  ['LX', '立讯精密', '电子制造'],
+  ['HY', '宏远建设(演示)', '建筑工程'],
+  ['LW', '蓝湾汽车(演示)', '汽车制造'],
+  ['HX', '华信电子(演示)', '电子制造'],
+  ['ST', '盛泰置业(演示)', '房地产'],
+  ['JG', '精工机械(演示)', '机械制造'],
+  ['BC', '北辰新材(演示)', '新材料'],
 ];
 
 const opportunities = [
-  ['招标采购', '物流', '集团2024年度核心机房服务器集群扩容项目招标公告', '信息技术部', '2026-07-12'],
-  ['询比采购', '服务', 'Q4季度行政办公用品及耗材集中采购询比函', '行政部', '2026-07-11'],
-  ['招标采购', '工程', '生产基地自动化流水线改造项目中标结果公示', '生产技术部', '2026-07-10'],
-  ['招标采购', '服务', '关于征集2026年度物流运输服务合作伙伴的公告', '供应链管理部', '2026-07-08'],
-  ['单一来源', '工程', '三号车间安防监控系统采购项目延期通知', '安环部', '2026-07-06'],
-  ['竞价采购', '设备', '废旧钢材及边角料年度回收处置竞价交易', '资产管理部', '2026-07-05'],
+  ['询比采购', '设备', '核心机房服务器集群扩容项目询价公告(示例)', '信息技术部', '2026-07-12'],
+  ['询比采购', '服务', '季度行政办公用品及耗材集中采购询比函(示例)', '行政部', '2026-07-11'],
+  ['竞价采购', '工程', '生产基地自动化流水线改造项目定标结果公示(示例)', '生产技术部', '2026-07-10'],
+  ['询比采购', '服务', '年度物流运输服务合作伙伴征集公告(示例)', '供应链管理部', '2026-07-08'],
+  ['单一来源', '工程', '车间安防监控系统采购单一来源公示(示例)', '安环部', '2026-07-06'],
+  ['竞价采购', '设备', '废旧钢材及边角料年度回收处置竞价交易(示例)', '资产管理部', '2026-07-05'],
 ];
 
 const suppliers = [
-  ['ZK', '真坤行工业超市', 'MRO工业品'],
-  ['JD', '京东企业购', '综合物资'],
-  ['SE', '施耐德电气', '电气设备'],
-  ['SF', '顺丰速运', '物流服务'],
-  ['MG', '晨光科力普', '办公用品'],
-  ['BS', '宝钢股份', '原材料'],
+  ['CF', '长风工业超市(演示)', 'MRO工业品'],
+  ['LH', '联合办公用品(演示)', '办公用品'],
+  ['HC', '华驰电气(演示)', '电气设备'],
+  ['XD', '迅达物流(演示)', '物流服务'],
+  ['HX', '恒信标准件(演示)', '紧固件'],
+  ['YD', '远大钢铁(演示)', '原材料'],
 ];
 
 const hotKeywords = ['服务器设备', '办公用品', '物流运输', '辅材工程', 'SaaS软件'];
@@ -93,11 +92,13 @@ function SectionHeader({
   title,
   subtitle,
   action,
+  onAction,
 }: {
   icon: typeof Building2;
   title: string;
   subtitle: string;
   action?: string;
+  onAction?: () => void;
 }) {
   return (
     <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
@@ -108,9 +109,10 @@ function SectionHeader({
         </h2>
         <p className="mt-2 text-sm font-bold text-slate-500">{subtitle}</p>
       </div>
-      {action && (
+      {action && onAction && (
         <button
           type="button"
+          onClick={onAction}
           className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-blue-600 hover:bg-slate-50"
         >
           {action}
@@ -123,7 +125,9 @@ function SectionHeader({
 
 function BuyerLoginPage({ onBack }: { onBack: () => void }) {
   const { demoAccounts, handleKeycloakLogin, handleLogin, kcBusy, kcError, login } = useBuyerLogin();
-  const [activeTab, setActiveTab] = useState<'password' | 'sms'>('password');
+  const [username, setUsername] = useState('buyer.owner@example.com');
+  const [password, setPassword] = useState('demo123456');
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="grid min-h-dvh bg-slate-50 lg:grid-cols-[42%_58%]">
@@ -140,18 +144,11 @@ function BuyerLoginPage({ onBack }: { onBack: () => void }) {
             一站式 SRM 供应商管理与电子招投标平台。让寻源更智能，让交易更透明，让决策更科学。
           </p>
         </div>
-        <div className="relative z-10 mt-auto flex items-center gap-5">
-          <div className="flex -space-x-3">
-            {['bg-blue-200', 'bg-amber-200', 'bg-slate-200', 'bg-emerald-200'].map((tone, index) => (
-              <span key={tone} className={`h-11 w-11 rounded-full border-2 border-slate-950 ${tone}`} aria-hidden="true">
-                <span className="sr-only">trusted enterprise {index + 1}</span>
-              </span>
-            ))}
-          </div>
-          <div>
-            <p className="text-lg font-black">10,000+ 家企业信赖</p>
-            <p className="mt-1 text-sm font-bold text-slate-500">加入行业领先的采购生态网络</p>
-          </div>
+        <div className="relative z-10 mt-auto">
+          <p className="text-lg font-black">三端协同 · 全流程留痕</p>
+          <p className="mt-1 text-sm font-bold text-slate-500">
+            采购方 / 供应商 / 平台运营三端联动,询比、竞价、商城、单一来源全流程线上化。
+          </p>
         </div>
         <p className="relative z-10 mt-8 text-sm font-bold text-slate-700">© 2026 24Bid Cloud Inc.</p>
         <div className="absolute -bottom-28 left-10 h-[660px] w-[520px] rotate-[-8deg] rounded-[55%] bg-blue-500/10" />
@@ -168,98 +165,68 @@ function BuyerLoginPage({ onBack }: { onBack: () => void }) {
             <p className="mt-3 text-sm font-bold text-slate-500">请登录您的账号以继续管理业务</p>
           </div>
 
-          <div className="mb-7 grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
-            <button
-              type="button"
-              onClick={() => setActiveTab('password')}
-              className={`h-9 rounded-md text-xs font-black transition ${
-                activeTab === 'password' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'
-              }`}
-            >
-              账号密码登录
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('sms')}
-              className={`h-9 rounded-md text-xs font-black transition ${
-                activeTab === 'sms' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'
-              }`}
-            >
-              手机验证码
-            </button>
-          </div>
-
-          <div className="space-y-5">
+          <form
+            className="space-y-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleKeycloakLogin(username, password);
+            }}
+          >
             <label className="block">
-              <span className="text-xs font-black text-slate-500">{activeTab === 'password' ? '账号 / 邮箱' : '手机号'}</span>
+              <span className="text-xs font-black text-slate-500">账号 / 邮箱</span>
               <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100">
                 <User size={16} className="text-slate-400" />
                 <input
-                  placeholder={activeTab === 'password' ? '请输入用户名或企业邮箱' : '请输入手机号'}
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  autoComplete="username"
+                  placeholder="请输入用户名或企业邮箱"
                   className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-slate-700 outline-none placeholder:text-slate-400"
                 />
               </span>
             </label>
 
             <label className="block">
-              <span className="flex items-center justify-between text-xs font-black text-slate-500">
-                <span>{activeTab === 'password' ? '密码' : '验证码'}</span>
-                {activeTab === 'password' && (
-                  <button type="button" className="text-xs font-black text-blue-600 hover:text-blue-700">忘记密码?</button>
-                )}
-              </span>
+              <span className="text-xs font-black text-slate-500">密码</span>
               <span className="mt-2 flex h-11 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100">
                 <Lock size={16} className="text-slate-400" />
                 <input
-                  type={activeTab === 'password' ? 'password' : 'text'}
-                  placeholder={activeTab === 'password' ? '请输入密码' : '请输入验证码'}
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="请输入密码"
                   className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-slate-700 outline-none placeholder:text-slate-400"
                 />
-                {activeTab === 'password' && <Eye size={16} className="text-slate-400" />}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <Eye size={16} />
+                </button>
               </span>
             </label>
-          </div>
 
-          <div className="mt-6">
             <button
-              type="button"
-              onClick={handleKeycloakLogin}
-              disabled={kcBusy}
+              type="submit"
+              disabled={kcBusy || !username.trim() || !password}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
               <KeyRound size={17} />
               {kcBusy ? '登录中' : '登录系统'}
               <ArrowRight size={17} />
             </button>
-          </div>
+          </form>
           {kcError && (
             <div className="mt-3">
-              <FeedbackNotice tone="error" message="Keycloak 登录失败：请确认 Keycloak 已在 8081 运行。" />
+              <FeedbackNotice tone="error" message="登录失败：请检查账号密码，或确认 Keycloak 已在 8081 运行。" />
             </div>
           )}
-
-          <div className="my-6 flex items-center gap-3">
-            <span className="h-px flex-1 bg-slate-100" />
-            <span className="text-xs font-black text-slate-400">其他登录方式</span>
-            <span className="h-px flex-1 bg-slate-100" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
-            >
-              <QrCode size={18} className="text-emerald-500" />
-              微信扫码
-            </button>
-            <button
-              type="button"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
-            >
-              <Globe2 size={18} className="text-blue-500" />
-              钉钉登录
-            </button>
-          </div>
+          <p className="mt-4 text-center text-xs font-bold text-slate-400">
+            统一身份认证由 Keycloak(OIDC)提供，登录即代表同意平台服务协议。
+          </p>
 
           {SELF_LOGIN_FALLBACK && (
             <div className="mt-5 rounded-lg border border-slate-100 bg-slate-50 p-3">
@@ -287,9 +254,8 @@ function BuyerLoginPage({ onBack }: { onBack: () => void }) {
             </div>
           )}
 
-          <p className="mt-6 text-center text-sm font-bold text-slate-500">
-            还没有账号?
-            <button type="button" className="ml-1 font-black text-blue-600 hover:text-blue-700">立即注册企业</button>
+          <p className="mt-6 text-center text-xs font-bold text-slate-500">
+            还没有账号？企业开户与成员邀请由平台运营方统一开通，请联系管理员。
           </p>
 
           <button
@@ -331,10 +297,6 @@ export function PortalLanding() {
             <a href="#help" className="hover:text-blue-600">帮助中心</a>
           </nav>
           <div className="flex items-center gap-3">
-            <button type="button" className="hidden items-center gap-1.5 text-xs font-black text-slate-600 sm:inline-flex">
-              <Globe2 size={15} />
-              CN
-            </button>
             <button
               type="button"
               onClick={() => setLoginOpen(true)}
@@ -353,7 +315,7 @@ export function PortalLanding() {
           <div className="relative mx-auto flex min-h-[520px] max-w-6xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-300/20 bg-blue-400/10 px-4 py-1.5 text-xs font-black text-blue-200">
               <ShieldCheck size={14} />
-              连接 10 万+ 采购商与 500 万+ 供应商
+              询比 · 竞价 · 商城 · 单一来源 全流程线上化
             </div>
             <h1 className="max-w-3xl text-4xl font-black leading-tight text-white sm:text-6xl">
               数据驱动的
@@ -372,12 +334,12 @@ export function PortalLanding() {
                 placeholder="请输入采购品目、项目名称或供应商关键词..."
                 className="h-11 min-w-0 flex-1 bg-transparent text-sm font-bold text-white outline-none placeholder:text-slate-500"
               />
-              <button
-                type="button"
-                className="h-11 shrink-0 rounded-md bg-blue-600 px-5 text-sm font-black text-white hover:bg-blue-500"
+              <a
+                href="#opportunities"
+                className="inline-flex h-11 shrink-0 items-center rounded-md bg-blue-600 px-5 text-sm font-black text-white hover:bg-blue-500"
               >
                 搜商机
-              </button>
+              </a>
             </div>
             <div className="mt-5 flex flex-wrap justify-center gap-4 text-xs font-bold text-slate-500">
               <span>热门搜索：</span>
@@ -415,7 +377,13 @@ export function PortalLanding() {
 
         <section id="buyers" className="bg-slate-50 py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <SectionHeader icon={Building2} title="入驻采购业主" subtitle="世界 500 强及行业龙头企业都在使用 24Bid" action="我是采购商，立即入驻" />
+            <SectionHeader
+              icon={Building2}
+              title="入驻采购业主"
+              subtitle="演示环境示例展示(虚构企业)· 正式环境呈现真实入驻企业"
+              action="我是采购商，登录入驻"
+              onAction={() => setLoginOpen(true)}
+            />
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
               {buyers.map(([code, name, industry]) => (
                 <article key={name} className="rounded-lg border border-slate-200 bg-white p-5 text-center shadow-sm">
@@ -432,7 +400,13 @@ export function PortalLanding() {
 
         <section id="opportunities" className="bg-white py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <SectionHeader icon={Megaphone} title="最新商机" subtitle="实时更新全国各行业采购需求与中标公示" action="进入商机大厅" />
+            <SectionHeader
+              icon={Megaphone}
+              title="最新商机"
+              subtitle="演示环境示例商机 · 正式环境接入企业真实发布的采购公告"
+              action="登录查看商机"
+              onAction={() => setLoginOpen(true)}
+            />
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {filteredOpportunities.slice(0, 6).map(([type, category, title, dept, date]) => (
                 <article key={title} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/30">
@@ -453,7 +427,13 @@ export function PortalLanding() {
 
         <section id="suppliers" className="bg-slate-50 py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <SectionHeader icon={Store} title="优质供应商" subtitle="平台认证的行业标杆供应商展示" action="我是供应商，申请入驻" />
+            <SectionHeader
+              icon={Store}
+              title="优质供应商"
+              subtitle="演示环境示例展示(虚构企业)· 正式环境呈现通过准入的真实供应商"
+              action="我是供应商，登录入驻"
+              onAction={() => setLoginOpen(true)}
+            />
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
               {suppliers.map(([code, name, industry]) => (
                 <article key={name} className="rounded-lg border border-slate-200 bg-white p-5 text-center shadow-sm">
@@ -510,15 +490,15 @@ export function PortalLanding() {
           <div>
             <p className="font-black text-white">联系我们</p>
             <div className="mt-4 space-y-3 text-sm font-bold text-slate-500">
-              <p className="flex items-center gap-2"><CircleHelp size={15} />400-888-9999</p>
               <p className="flex items-center gap-2"><BadgeCheck size={15} />support@24bid.local</p>
-              <p className="flex items-center gap-2"><CheckCircle2 size={15} />上海市浦东新区张江高科园区</p>
+              <p className="flex items-center gap-2"><CircleHelp size={15} />工作日 9:00 - 18:00 响应</p>
+              <p className="flex items-center gap-2"><CheckCircle2 size={15} />当前为演示环境</p>
             </div>
           </div>
         </div>
         <div className="mx-auto mt-10 flex max-w-6xl flex-wrap items-center justify-between gap-4 border-t border-white/10 px-4 pt-6 text-xs font-bold text-slate-600 sm:px-6">
           <p>© 2026 24Bid Cloud Inc. All rights reserved.</p>
-          <p>隐私政策 · 服务条款 · ICP备12345678号</p>
+          <p>演示环境 · 页面示例数据不代表真实交易</p>
         </div>
       </footer>
 

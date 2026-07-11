@@ -24,7 +24,7 @@ export function LoginGate() {
         <Panel title="登录" icon={LogIn} subtitle="采购方企业端 · tenant-acme">
           <FeedbackNotice tone="info" message="生产登录走 Keycloak（OIDC 统一身份）。演示账号：采购负责人。" />
           <PrimaryActionButton
-            onClick={handleKeycloakLogin}
+            onClick={() => handleKeycloakLogin()}
             busy={kcBusy}
             pendingLabel="登录中"
             icon={KeyRound}

@@ -5,9 +5,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock3,
-  FileCheck2,
   FileText,
-  History,
   Search,
   ShieldCheck,
   TrendingUp,
@@ -47,7 +45,7 @@ const typeTone: Record<string, string> = {
 
 const statusTone: Record<string, string> = {
   待审批: 'bg-blue-50 text-blue-700',
-  AI预警: 'bg-amber-50 text-amber-700',
+  风险提示: 'bg-amber-50 text-amber-700',
   待裁决: 'bg-indigo-50 text-indigo-700',
   已通过: 'bg-emerald-50 text-emerald-700',
   合规复核: 'bg-amber-50 text-amber-700',
@@ -84,7 +82,7 @@ function displayStatus(t: PendingApprovalTaskResponse) {
   const risk = riskOf(t);
   if (t.status === '已通过' || t.businessStatus === '已通过') return '已通过';
   if (risk === '高风险') return t.bizType === 'supplier_blacklist_appeal' ? '合规复核' : '待裁决';
-  if (risk === '中风险') return 'AI预警';
+  if (risk === '中风险') return '风险提示';
   return '待审批';
 }
 
@@ -219,8 +217,7 @@ export function ApprovalsPage() {
       handleAwardReview(task.parentBizId, task.bizId, approved);
     else if (task.bizType === 'contract_approval' && task.bizId) handleContractReview(task.bizId, approved);
     else {
-      setFeedback(approved ? '该审批项已模拟通过' : '该审批项已模拟驳回');
-      setSelected(null);
+      setFeedback('该业务类型暂不支持在此审批,请到对应业务模块处理。');
     }
   };
 
@@ -247,21 +244,19 @@ export function ApprovalsPage() {
               集中处理供应商入驻、资料变更、风险申诉及考核申诉等全流程审批业务
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50">
-              <History size={16} /> 审批历史
-            </button>
-            <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700">
-              <CheckCircle2 size={16} /> 批量通过
-            </button>
-          </div>
         </div>
       </div>
 
       <div className="grid gap-2 md:grid-cols-3">
         <SummaryCard icon={UserRoundCheck} tone="blue" label="待办审批" value={String(tasks.length)} unit="个任务" />
-        <SummaryCard icon={AlertTriangle} tone="amber" label="AI 风险预警" value={String(riskCount)} unit="个高风险" />
-        <SummaryCard icon={TrendingUp} tone="emerald" label="本周处理效率" value="Avg 4h" unit="/ 单" />
+        <SummaryCard icon={AlertTriangle} tone="amber" label="规则风险提示" value={String(riskCount)} unit="个高风险" />
+        <SummaryCard
+          icon={TrendingUp}
+          tone="emerald"
+          label="待办金额合计"
+          value={`¥${Math.round(tasks.reduce((sum, t) => sum + (t.amount ?? 0), 0) / 10000).toLocaleString('zh-CN')}`}
+          unit="万元"
+        />
       </div>
 
       {feedback && <FeedbackNotice tone="success" message={feedback} />}
@@ -277,7 +272,7 @@ export function ApprovalsPage() {
             </select>
             <select className={inputCls} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option>全部状态</option>
-              {['待审批', 'AI预警', '待裁决', '已通过', '合规复核'].map((label) => (
+              {['待审批', '风险提示', '待裁决', '已通过', '合规复核'].map((label) => (
                 <option key={label}>{label}</option>
               ))}
             </select>
@@ -417,7 +412,6 @@ function ApprovalDetailPage({
   onReject: () => void;
 }) {
   const risk = riskOf(task);
-  const score = risk === '低风险' ? 88 : risk === '中风险' ? 72 : 58;
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
@@ -464,22 +458,14 @@ function ApprovalDetailPage({
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
             <SectionTitle icon={FileText} title="业务详情" />
             <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
-              <p className="text-base font-black text-slate-950">基本工商信息</p>
+              <p className="text-base font-black text-slate-950">单据信息(来自审批任务)</p>
               <div className="mt-5 grid gap-6 sm:grid-cols-2">
-                <Info label="企业名称" value={task.counterpartyName ?? '浙江明辉机电有限公司'} />
-                <Info label="统一社会信用代码" value={task.counterpartyId ?? '91330100MA2ABCDE12'} />
-                <Info label="注册资本" value={task.amount ? `${Math.round(task.amount / 10000)} 万人民币` : '5000 万人民币'} />
-                <Info label="成立日期" value="2018-05-20" />
-              </div>
-            </div>
-            <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
-              <p className="text-base font-black text-slate-950">上传附件</p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {['营业执照.pdf', '开户许可证.jpg', 'ISO9001证书.pdf'].map((file) => (
-                  <span key={file} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-blue-600">
-                    <FileText size={15} /> {file}
-                  </span>
-                ))}
+                <Info label="业务类型" value={bizLabel(task)} />
+                <Info label="单据编号" value={task.bizId ?? '—'} />
+                <Info label="交易对手" value={task.counterpartyName ?? '—'} />
+                <Info label="对手编号" value={task.counterpartyId ?? '—'} />
+                <Info label="涉及金额" value={task.amount != null ? `¥${task.amount.toLocaleString('zh-CN')}` : '—'} />
+                <Info label="提交人" value={task.submittedByName ?? '—'} />
               </div>
             </div>
           </section>
@@ -488,9 +474,8 @@ function ApprovalDetailPage({
             <SectionTitle icon={Clock3} title="审批流转日志" />
             <div className="mt-6 space-y-7 border-l border-slate-200 pl-5">
               {[
-                ['提交申请', `${task.submittedByName ?? '外部提交'} · ${dateText(task.createdAt)} 09:30`, '资料已备齐', 'bg-emerald-500'],
-                ['系统预审', 'AI Assistant · 09:31', '自动通过格式校验', 'bg-emerald-500'],
-                ['待您处理', '当前节点 · 现在', '等待人工复核', 'bg-blue-600'],
+                ['提交申请', `${task.submittedByName ?? '外部提交'} · ${dateText(task.createdAt)}`, '已提交待审', 'bg-emerald-500'],
+                ['待您处理', '当前节点', '等待人工复核', 'bg-blue-600'],
               ].map(([title, desc, tag, dot]) => (
                 <div key={title} className="relative">
                   <span className={cn('absolute -left-[25px] top-1 h-2 w-2 rounded-full', dot)} />
@@ -511,58 +496,57 @@ function ApprovalDetailPage({
                   <ShieldCheck size={17} />
                 </span>
                 <div>
-                  <p className="text-base font-black">AI 智能审计</p>
-                  <p className="font-mono text-[11px] font-black text-blue-200">INTELLIGENT AUDIT</p>
+                  <p className="text-base font-black">规则合规检查</p>
+                  <p className="font-mono text-[11px] font-black text-blue-200">基于单据数据逐条核对</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs font-black text-slate-300">合规评分</p>
-                <p className={cn('font-mono text-4xl font-black', score >= 80 ? 'text-emerald-400' : score >= 70 ? 'text-amber-300' : 'text-red-300')}>
-                  {score}
-                </p>
-              </div>
+              <span className={cn('rounded-md px-2 py-1 text-xs font-black', risk === '低风险' ? 'bg-emerald-500/20 text-emerald-300' : risk === '中风险' ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300')}>
+                {risk}
+              </span>
             </div>
             <div className="mt-5 border-t border-white/10 pt-4">
               {[
-                ['工商信息一致性核验', '企业名称、法人、国家信用公示系统一致', 'ok'],
-                ['经营异常名录扫描', '未发现列入经营异常名录记录', 'ok'],
-                ['法律诉讼风险', risk === '高风险' ? '发现历史合同纠纷，需人工确认' : '发现 1 条历史合同纠纷（已结案）', risk === '高风险' ? 'warn' : 'mid'],
-                ['资质证书真实性', 'ISO9001 证书编号核验有效', 'ok'],
-              ].map(([title, desc, kind]) => (
-                <div key={title} className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3">
+                {
+                  title: '金额规模',
+                  desc: task.amount != null
+                    ? `涉及金额 ¥${task.amount.toLocaleString('zh-CN')}${task.amount >= 500000 ? ',达到大额复核线(≥50万),建议双人复核' : ',低于大额复核线(50万)'}`
+                    : '单据未携带金额信息',
+                  ok: (task.amount ?? 0) < 500000,
+                },
+                {
+                  title: '交易对手信息',
+                  desc: task.counterpartyName ? `对手方 ${task.counterpartyName} 信息完备` : '单据未关联交易对手,请人工确认',
+                  ok: !!task.counterpartyName,
+                },
+                {
+                  title: '提交人可追溯',
+                  desc: task.submittedByName ? `提交人 ${task.submittedByName},责任可追溯` : '缺少提交人信息',
+                  ok: !!task.submittedByName,
+                },
+                {
+                  title: '优先级',
+                  desc: (task.priority ?? 0) >= 8 ? '高优先级任务,建议当日处理' : '常规优先级',
+                  ok: (task.priority ?? 0) < 8,
+                },
+              ].map((check) => (
+                <div key={check.title} className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3">
                   <div className="flex items-start gap-3">
-                    {kind === 'ok' ? (
+                    {check.ok ? (
                       <CheckCircle2 size={15} className="mt-0.5 text-emerald-400" />
                     ) : (
                       <AlertTriangle size={15} className="mt-0.5 text-amber-300" />
                     )}
                     <div>
-                      <p className="text-sm font-black text-white">{title}</p>
-                      <p className="mt-1 text-xs font-bold text-slate-400">{desc}</p>
+                      <p className="text-sm font-black text-white">{check.title}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-400">{check.desc}</p>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="mt-4 rounded-lg border border-emerald-500/40 bg-emerald-500/20 p-3">
-              <p className="text-xs font-black text-emerald-100">AI 综合结论</p>
-              <p className="mt-1 font-black text-white">{risk === '高风险' ? '存在风险，建议补充材料' : '资质合规，建议通过'}</p>
-            </div>
-            <button className="mt-4 h-9 w-full rounded-lg bg-white/10 text-xs font-black text-white hover:bg-white/15">
-              重新运行审计
-            </button>
-          </section>
-
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
-            <SectionTitle icon={FileCheck2} title="辅助工具" />
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <button className="h-16 rounded-lg border border-slate-100 bg-slate-50 text-xs font-black text-slate-600 hover:bg-slate-100">
-                文档比对
-              </button>
-              <button className="h-16 rounded-lg border border-slate-100 bg-slate-50 text-xs font-black text-slate-600 hover:bg-slate-100">
-                关联查询
-              </button>
-            </div>
+            <p className="mt-4 rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] font-bold text-slate-400">
+              以上为系统按单据数据的规则核对结果,最终审批决定以人工判断为准。
+            </p>
           </section>
         </aside>
       </div>
