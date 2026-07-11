@@ -800,6 +800,7 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
         setSupplierIds={setSupplierIds}
         toggleSupplier={toggleSupplier}
         createError={createRfq.isError}
+        createErrorMessage={(createRfq.error as { response?: { data?: { message?: string } } } | null)?.response?.data?.message}
         createPending={createRfq.isPending}
         onBack={() => setCreateMode('pick')}
         onSubmit={submitProcurementPlan}
