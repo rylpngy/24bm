@@ -4,7 +4,6 @@ import {
   Bell,
   ClipboardList,
   LayoutGrid,
-  PackageCheck,
   Send,
   Store,
   Timer,
@@ -217,7 +216,8 @@ export function OverviewPage({ onNavigate }: { onNavigate: (moduleId: string) =>
 
   return (
     <div className="space-y-5">
-      {/* 欢迎横幅:真实待办摘要 + 两个高频动作直达 */}
+      {/* 欢迎横幅(左)+ 快捷入口(右):对齐采购人看板布局 */}
+      <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
       <Card className="p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -272,6 +272,32 @@ export function OverviewPage({ onNavigate }: { onNavigate: (moduleId: string) =>
           </div>
         )}
       </Card>
+
+      {/* 快捷入口:高频业务直达(布局对齐采购人看板右侧动作列) */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        {[
+          { icon: Send, title: '询比邀请', desc: '查看商机并报价', module: 'opportunities', tone: 'bg-blue-50 text-blue-600' },
+          { icon: Truck, title: '销售订单', desc: '确认、发货、开票', module: 'orders', tone: 'bg-orange-50 text-orange-600' },
+          { icon: Store, title: '商城货架', desc: '协议价商品管理', module: 'shelf', tone: 'bg-violet-50 text-violet-600' },
+          { icon: Banknote, title: '发票应收', desc: '开票与回款跟踪', module: 'invoices', tone: 'bg-emerald-50 text-emerald-600' },
+        ].map((a) => (
+          <button
+            key={a.module}
+            type="button"
+            onClick={() => onNavigate(a.module)}
+            className="group flex min-h-[4.5rem] items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-left shadow-sm shadow-slate-200/50 transition hover:border-blue-200 hover:bg-slate-50"
+          >
+            <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-lg', a.tone)}>
+              <a.icon size={20} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-black text-slate-900">{a.title}</span>
+              <span className="mt-1 block text-xs font-bold text-slate-400">{a.desc}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+      </div>
 
       {/* 经营指标:全部为真实聚合值,无同比装饰 */}
       <MetricGrid>
@@ -348,9 +374,8 @@ export function OverviewPage({ onNavigate }: { onNavigate: (moduleId: string) =>
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        {/* 最新通知 */}
-        <Card className="p-5">
+      {/* 最新通知 */}
+      <Card className="p-5">
           <SectionHeader icon={Bell} title="最新通知" subtitle="采购方协作消息" />
           <div className="mt-4 space-y-2">
             {notifications.length === 0 ? (
@@ -371,35 +396,6 @@ export function OverviewPage({ onNavigate }: { onNavigate: (moduleId: string) =>
             )}
           </div>
         </Card>
-
-        {/* 快捷入口 */}
-        <Card className="p-5">
-          <SectionHeader icon={PackageCheck} title="快捷入口" subtitle="高频业务直达" />
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {[
-              { icon: Send, title: '询比邀请', desc: '查看商机并报价', module: 'opportunities', tone: 'bg-blue-50 text-blue-600' },
-              { icon: Truck, title: '销售订单', desc: '确认、发货、开票', module: 'orders', tone: 'bg-orange-50 text-orange-600' },
-              { icon: Store, title: '商城货架', desc: '协议价商品管理', module: 'shelf', tone: 'bg-violet-50 text-violet-600' },
-              { icon: Banknote, title: '发票应收', desc: '开票与回款跟踪', module: 'invoices', tone: 'bg-emerald-50 text-emerald-600' },
-            ].map((a) => (
-              <button
-                key={a.module}
-                type="button"
-                onClick={() => onNavigate(a.module)}
-                className="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-left shadow-sm shadow-slate-200/50 transition hover:border-blue-200 hover:bg-slate-50"
-              >
-                <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-lg', a.tone)}>
-                  <a.icon size={20} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-black text-slate-900">{a.title}</span>
-                  <span className="mt-1 block text-xs font-bold text-slate-400">{a.desc}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </Card>
-      </div>
     </div>
   );
 }

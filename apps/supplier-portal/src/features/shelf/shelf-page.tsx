@@ -15,6 +15,7 @@ import {
   Pagination,
   Panel,
   PrimaryActionButton,
+  ResponsiveTableFrame,
   SearchInput,
   cn,
 } from '@24bid/ui';
@@ -423,7 +424,7 @@ export function ShelfPage() {
           <button
             type="button"
             onClick={() => setMode('publish')}
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700"
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
           >
             <Plus size={14} /> 发布商品
           </button>
@@ -456,40 +457,75 @@ export function ShelfPage() {
         />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+          <ResponsiveTableFrame
+            mobileCards={pageItems.map((l, i) => (
+              <div key={l.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words font-black text-slate-950">
+                      <span className="mr-1.5 font-mono text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
+                      {l.materialName}
+                    </p>
+                    <p className="mt-1 font-mono text-xs font-bold text-slate-500">{l.materialCode || '—'} · {l.tenantName ?? l.tenantId}</p>
+                  </div>
+                  <span
+                    className={cn(
+                      'rounded-md px-2 py-0.5 text-[11px] font-black',
+                      statusTone[l.status ?? ''] ?? 'bg-slate-100 text-slate-500',
+                    )}
+                  >
+                    {l.status ?? '—'}
+                  </span>
+                </div>
+                <p className="mt-2 font-mono text-sm font-black text-slate-900">
+                  {currency(l.price)} <span className="text-[11px] font-bold text-slate-400">/ {l.unit ?? '件'}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(l.id ?? null);
+                    setMode('edit');
+                  }}
+                  className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
+                >
+                  编辑商品
+                </button>
+              </div>
+            ))}
+          >
+            <table className="w-full min-w-[920px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
-                  <th className="px-4 py-2.5">序号</th>
-                  <th className="px-4 py-2.5">商品名称</th>
-                  <th className="px-4 py-2.5">分类</th>
-                  <th className="px-4 py-2.5">上架商城</th>
-                  <th className="px-4 py-2.5 text-right">协议价</th>
-                  <th className="px-4 py-2.5">状态</th>
-                  <th className="px-4 py-2.5 text-right">操作</th>
+                  <th className="w-12 px-2 py-4 text-center">序号</th>
+                  <th className="px-5 py-4">商品名称</th>
+                  <th className="px-5 py-4">分类</th>
+                  <th className="px-5 py-4">上架商城</th>
+                  <th className="px-5 py-4 text-right">协议价</th>
+                  <th className="px-5 py-4">状态</th>
+                  <th className="px-5 py-4 text-right">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100">
                 {pageItems.map((l, i) => {
                   const onShelf = l.status === '在架';
                   return (
-                    <tr key={l.id} className="transition hover:bg-slate-50/60">
-                      <td className="px-4 py-3 font-mono text-xs font-black text-slate-400">
+                    <tr key={l.id} className="hover:bg-blue-50/30">
+                      <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                         {(safePage - 1) * PAGE_SIZE + i + 1}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-5">
                         <p className="font-black text-slate-950">{l.materialName}</p>
-                        <p className="mt-0.5 font-mono text-[11px] font-bold text-slate-400">
+                        <p className="mt-1 font-mono text-[11px] font-bold text-slate-400">
                           {l.materialCode || '—'} · 更新 {l.updatedAt?.slice(0, 10) ?? '—'}
                         </p>
                       </td>
-                      <td className="px-4 py-3 text-xs font-bold text-slate-600">{l.category || '未分类'}</td>
-                      <td className="px-4 py-3 text-xs font-bold text-slate-600">{l.tenantName ?? l.tenantId}</td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="font-mono text-sm font-black text-slate-950">{currency(l.price)}</span>
+                      <td className="px-5 py-5 text-sm font-bold text-slate-600">{l.category || '未分类'}</td>
+                      <td className="px-5 py-5 text-sm font-bold text-slate-600">{l.tenantName ?? l.tenantId}</td>
+                      <td className="px-5 py-5 text-right">
+                        <span className="font-mono font-black text-slate-900">{currency(l.price)}</span>
                         <span className="ml-1 text-[11px] font-bold text-slate-400">/ {l.unit ?? '件'}</span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-5">
                         <span
                           className={cn(
                             'rounded-md px-2 py-0.5 text-[11px] font-black',
@@ -499,8 +535,8 @@ export function ShelfPage() {
                           {l.status ?? '—'}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-5 py-5">
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -543,7 +579,7 @@ export function ShelfPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTableFrame>
           <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
         </>
       )}

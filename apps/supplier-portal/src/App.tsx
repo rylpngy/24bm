@@ -6,7 +6,6 @@ import { useAuthStore } from './lib/auth-store';
 import { LoginGate } from './features/login-gate';
 import { OverviewPage } from './features/overview/overview-page';
 import { OpportunitiesPage } from './features/opportunities/opportunities-page';
-import { QuotesPage } from './features/quotes/quotes-page';
 import { OrdersPage } from './features/orders/orders-page';
 import { ShelfPage } from './features/shelf/shelf-page';
 import { ReceivablesPage } from './features/receivables/receivables-page';
@@ -44,8 +43,6 @@ export function App() {
         <OverviewPage onNavigate={selectModule} />
       ) : activeModuleId === 'opportunities' ? (
         <OpportunitiesPage />
-      ) : activeModuleId === 'quotes' ? (
-        <QuotesPage />
       ) : activeModuleId === 'orders' ? (
         <OrdersPage />
       ) : activeModuleId === 'shelf' ? (
