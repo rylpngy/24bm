@@ -20,5 +20,6 @@ public record PurchaseDemandResponse(
     String priority,
     String purpose,
     String linkedRfqId,
-    String linkedRfqStatus) {
+    String linkedRfqStatus,
+    String source) {
 }

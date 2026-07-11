@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   FileText,
   Layers3,
+  ScanSearch,
   Send,
   ShieldCheck,
   Timer,
@@ -111,17 +112,42 @@ function approvalStepDetail(status?: string, index = 0) {
   return '待审批人完成审核。';
 }
 
-function ProgressTracker({
-  status,
-  linkedRfqId,
-  linkedRfqStatus,
-}: {
-  status?: string;
-  linkedRfqId?: string;
-  linkedRfqStatus?: string;
-}) {
+function stayDuration(updatedAt?: string) {
+  if (!updatedAt) return null;
+  const ms = Date.now() - new Date(updatedAt).getTime();
+  if (ms < 0) return null;
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours < 1) return `${Math.max(1, Math.floor(ms / 60_000))} 分钟`;
+  if (hours < 48) return `${hours} 小时`;
+  return `${Math.floor(hours / 24)} 天`;
+}
+
+function nextActionFor(status?: string) {
+  if (status === '草稿') return { node: '需求编制', action: '完善物料明细后点击右上角「提交审批」。' };
+  if (status === '已驳回') return { node: '需求编制(已驳回)', action: '按驳回意见修改后重新提交审批。' };
+  if (status === '审批中') return { node: '需求审批', action: '等待审批人在「智能审批」中处理,通过后可合并立项。' };
+  if (status === '已通过') return { node: '合并立项', action: '可在「采购计划」中与同类需求合并,或用右侧「扫描可合并需求」。' };
+  return { node: status ?? '—', action: '—' };
+}
+
+function StageFact({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-4">
+      <p className="text-xs font-black text-slate-400">{label}</p>
+      <p className="mt-1.5 break-words text-sm font-black text-slate-950">{value}</p>
+      {hint && <p className="mt-1 text-xs font-bold leading-5 text-slate-500">{hint}</p>}
+    </div>
+  );
+}
+
+function ProgressTracker({ demand }: { demand: PurchaseDemandResponse }) {
+  const status = demand.status;
+  const linkedRfqId = demand.linkedRfqId;
+  const linkedRfqStatus = demand.linkedRfqStatus;
   const linked = !!linkedRfqId;
   const approved = status === '已通过';
+  const stay = stayDuration(demand.updatedAt);
+  const next = nextActionFor(status);
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50">
       <div className="mb-8 flex items-center gap-2">
@@ -152,23 +178,38 @@ function ProgressTracker({
           );
         })}
       </div>
-      {/* 后续阶段:仅在有真实进展时显示——已关联展示计划与状态,审批通过给出下一步动作;其余状态由上方步进器表达,不再重复占位。 */}
-      {linked ? (
-        <div className="mt-6 rounded-lg border border-emerald-100 bg-emerald-50 p-4">
-          <p className="text-xs font-black text-emerald-700">后续阶段 · 已进入采购计划</p>
-          <p className="mt-2 text-sm font-black text-slate-950">
-            已关联采购计划 {linkedRfqId}
-            {linkedRfqStatus ? ` · 当前${linkedRfqStatus}` : ''}
-          </p>
-        </div>
-      ) : approved ? (
-        <div className="mt-6 rounded-lg border border-blue-100 bg-blue-50 p-4">
-          <p className="text-xs font-black text-blue-700">后续阶段 · 合并立项</p>
-          <p className="mt-2 text-sm font-black text-slate-950">
-            审批已通过,可在「采购计划」中与同类需求合并立项,或用右侧「扫描可合并需求」查找候选。
-          </p>
-        </div>
-      ) : null}
+      {/* 流转事实区:当前节点与下一步、关键时间、后续去向——全部由真实字段推导。 */}
+      <div className="mt-6 grid gap-3 border-t border-slate-100 pt-5 lg:grid-cols-3">
+        <StageFact
+          label="当前节点"
+          value={next.node + (stay && !linked ? ` · 已停留 ${stay}` : '')}
+          hint={next.action}
+        />
+        <StageFact
+          label="关键时间"
+          value={`创建 ${demand.createdAt?.slice(0, 10) ?? '—'} · 更新 ${demand.updatedAt?.slice(0, 10) ?? '—'}`}
+          hint={demand.expectedDeliveryDate ? `期望交付 ${demand.expectedDeliveryDate}` : '未填写期望交付日期'}
+        />
+        {linked ? (
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
+            <p className="text-xs font-black text-emerald-700">后续去向 · 已进入采购计划</p>
+            <p className="mt-1.5 break-words text-sm font-black text-slate-950">{linkedRfqId}</p>
+            <p className="mt-1 text-xs font-bold text-emerald-700">
+              {linkedRfqStatus ? `当前${linkedRfqStatus}` : '询比流程进行中'} · 在「采购计划」中查看进度
+            </p>
+          </div>
+        ) : (
+          <StageFact
+            label="后续去向"
+            value={approved ? '待合并立项' : '合并立项 → 询比/竞价/商城'}
+            hint={
+              approved
+                ? '与同部门、相近交期、相同品类的已通过需求合并后进入采购流程。'
+                : '需求审批通过后,按品类与交期合并生成采购计划,再进入对应采购方式。'
+            }
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -246,6 +287,11 @@ export function DemandDetail({
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="break-words text-xl font-black text-slate-950">{demand.title ?? '--'}</h2>
                 <StatusPill label={demand.status ?? '草稿'} />
+                {demand.source === '直录登记' && (
+                  <span className="rounded bg-amber-50 px-2 py-1 text-xs font-black text-amber-700">
+                    直录登记 · 由采购计划/询价直接创建
+                  </span>
+                )}
               </div>
               <p className="mt-1 text-sm font-bold text-slate-500">
                 需求编号: {demand.id ?? '--'} · 创建日期: {demand.createdAt?.slice(0, 10) ?? '--'} · 申请部门: {departmentLabel(demand.departmentId)}
@@ -253,9 +299,6 @@ export function DemandDetail({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50" type="button">
-              <FileText size={15} /> 查看原件
-            </button>
             {canSubmit ? (
               <PrimaryActionButton onClick={submitDemand} busy={submit.isPending} pendingLabel="提交中">
                 <Send size={15} /> 提交审批
@@ -277,11 +320,7 @@ export function DemandDetail({
             <MetricCard icon={Layers3} label="优先级" value={demand.priority ?? '常规'} tone="bg-amber-50 text-amber-600" />
           </div>
 
-          <ProgressTracker
-            status={demand.status}
-            linkedRfqId={demand.linkedRfqId}
-            linkedRfqStatus={demand.linkedRfqStatus}
-          />
+          <ProgressTracker demand={demand} />
 
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50">
             <div className="mb-5 flex flex-wrap items-center gap-2">
@@ -377,7 +416,7 @@ export function DemandDetail({
               </p>
             </div>
             <button
-              className="mt-5 h-10 w-full rounded-lg bg-white text-xs font-black text-slate-950 hover:bg-slate-100"
+              className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-xs font-black text-white shadow-sm shadow-blue-900/40 transition hover:bg-blue-500 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
               type="button"
               onClick={() => {
                 // 真实扫描:同部门或品类重叠、已通过且未关联询比的其它需求。
@@ -403,7 +442,8 @@ export function DemandDetail({
                 setMergeCandidates(candidates);
               }}
             >
-              扫描可合并需求
+              <ScanSearch size={15} />
+              {mergeCandidates == null ? '扫描可合并需求' : '重新扫描'}
             </button>
             {mergeCandidates && (
               <div className="mt-3 space-y-2">

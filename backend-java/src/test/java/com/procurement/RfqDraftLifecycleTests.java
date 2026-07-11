@@ -57,6 +57,7 @@ class RfqDraftLifecycleTests {
       rfqDemandMapper,
       rfqInviteMapper,
       purchaseDemandMapper,
+      org.mockito.Mockito.mock(com.procurement.demand.application.DirectDemandRegistrar.class),
       dataScopeService,
       buyerSupplierRelationMapper,
       supplierQualificationMapper,
@@ -85,14 +86,14 @@ class RfqDraftLifecycleTests {
         .thenReturn(new com.procurement.demand.domain.PurchaseDemand(
             "demand-1", "tenant-1", "维保需求", "dept-it", "buyer-user",
             java.math.BigDecimal.valueOf(80000), "已通过", null, null,
-            null, null, null));
+            null, null, null, null));
     when(rfqDemandMapper.countByTenantAndDemand("tenant-1", "demand-1")).thenReturn(0);
     when(rfqMapper.findByTenantAndId(eq("tenant-1"), anyString())).thenReturn(rfq("草稿"));
     when(rfqInviteMapper.listByRfq(eq("tenant-1"), anyString())).thenReturn(List.of());
 
     rfqApplicationService.create(new CreateRfqRequest(
         "行政车辆维保询价", List.of("demand-1"), List.of(),
-        OffsetDateTime.now().plusDays(3), "", "", "最低价", "询比", null, null, null, true));
+        OffsetDateTime.now().plusDays(3), "", "", "最低价", "询比", null, null, null, true, null, null, null));
 
     // 草稿:不校验 3 家下限、不通知供应商。
     verify(rfqMapper).insert(anyString(), eq("tenant-1"), anyString(), eq("草稿"), any(),

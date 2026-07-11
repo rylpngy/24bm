@@ -132,7 +132,7 @@ class PurchaseDemandUpdateDraftTests {
         BigDecimal.valueOf(120000),
         status,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明", null);
   }
 
   private PurchaseDemand updatedDemand(String id) {
@@ -145,6 +145,6 @@ class PurchaseDemandUpdateDraftTests {
         BigDecimal.valueOf(88000),
         "草稿",
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明");
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), java.time.LocalDate.parse("2026-07-15"), "常规", "采购用途说明", null);
   }
 }

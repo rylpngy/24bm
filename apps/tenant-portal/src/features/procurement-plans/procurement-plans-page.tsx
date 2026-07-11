@@ -149,7 +149,12 @@ function PlanList({
                   <td className="px-5 py-5 font-mono font-black text-slate-400">{index + 1}</td>
                   <td className="px-5 py-5 font-mono text-xs font-black text-slate-500">{planNo(plan, index)}</td>
                   <td className="px-5 py-5">
-                    <p className="font-black text-slate-950">{plan.title}</p>
+                    <p className="flex items-center gap-2 font-black text-slate-950">
+                      {plan.title}
+                      {linked.length > 0 && linked.every((d) => d.source === '直录登记') && (
+                        <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-black text-amber-700">直接创建</span>
+                      )}
+                    </p>
                     <p className="mt-1 text-xs font-bold text-slate-400">{departmentLabel(linked.map((d) => d.departmentId), departmentNames)}</p>
                   </td>
                   <td className="px-5 py-5">
@@ -514,6 +519,11 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
   const createRfq = useRfqCreate();
   const [selected, setSelected] = useState<RfqResponse | null>(null);
   const [creating, setCreating] = useState(false);
+  // 立项方式:merge=基于需求合并(显式勾选);direct=采购部门直录(反登「直录登记」需求保闭环)。
+  const [createMode, setCreateMode] = useState<'pick' | 'merge' | 'direct'>('pick');
+  const [selectedDemandIds, setSelectedDemandIds] = useState<string[]>([]);
+  const [directRows, setDirectRows] = useState<Array<{ materialId: string; quantity: number }>>([]);
+  const [directDepartmentId, setDirectDepartmentId] = useState('');
   const [planTitle, setPlanTitle] = useState('');
   const [planDate, setPlanDate] = useState('');
   const [planPlace, setPlanPlace] = useState('上海市浦东新区张江园区');
@@ -540,12 +550,27 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
       ),
     [pendingApprovals.data, recentApprovals.data],
   );
-  const mergeDemands = demands.filter((demand) => demand.status === '已通过' && demand.id);
+  // 可合并池:已通过且未关联计划的需求;实际合并范围由用户显式勾选。
+  const mergeCandidates = demands.filter(
+    (demand) => demand.status === '已通过' && demand.id && !demand.linkedRfqId,
+  );
+  const mergeDemands = mergeCandidates.filter((demand) => selectedDemandIds.includes(demand.id!));
   const selectedBudget = mergeDemands.reduce((sum, demand) => sum + (demand.budget ?? 0), 0);
   const selectedDepartments = Array.from(
     new Set(mergeDemands.map((demand) => demand.departmentId).filter((id): id is string => !!id)),
   );
   const selectedContent = mergeDemands.map((demand) => demand.title).filter(Boolean).join('、');
+  const materialRefIndex = useMemo(() => {
+    const map: Record<string, number> = {};
+    (materialsQuery.data?.data ?? []).forEach((m) => {
+      if (m.id) map[m.id] = m.referencePrice ?? 0;
+    });
+    return map;
+  }, [materialsQuery.data?.data]);
+  const directBudget = directRows.reduce(
+    (sum, row) => sum + (materialRefIndex[row.materialId] ?? 0) * row.quantity,
+    0,
+  );
   const supplierNames = useMemo(() => {
     const map: Record<string, string> = {};
     (suppliersQuery.data?.data ?? []).forEach((supplier) => {
@@ -571,6 +596,10 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
   };
 
   const resetCreateForm = () => {
+    setCreateMode('pick');
+    setSelectedDemandIds([]);
+    setDirectRows([]);
+    setDirectDepartmentId('');
     setPlanTitle('');
     setPlanDate('');
     setPlanPlace('上海市浦东新区张江园区');
@@ -585,18 +614,31 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
     planMethod === '商城' ? '目录采购' : planMethod === '单一来源' ? '定向' : collectionMethod;
 
   const submitProcurementPlan = () => {
-    const demandIds = mergeDemands.map((demand) => demand.id).filter((id): id is string => !!id);
-    if (demandIds.length === 0) return;
+    const isDirect = createMode === 'direct';
+    const demandIds = isDirect
+      ? []
+      : mergeDemands.map((demand) => demand.id).filter((id): id is string => !!id);
+    if (!isDirect && demandIds.length === 0) return;
+    if (isDirect && (directRows.length === 0 || !directDepartmentId)) return;
     createRfq.mutate(
       {
         data: {
-          title: planTitle || `采购方案-${mergeDemands[0]?.title ?? '合并需求'}`,
+          title: planTitle || (isDirect ? '直录采购方案' : `采购方案-${mergeDemands[0]?.title ?? '合并需求'}`),
           demandIds,
+          ...(isDirect
+            ? {
+                directItems: directRows.filter((row) => row.materialId && row.quantity > 0),
+                directDepartmentId,
+                directBudget,
+              }
+            : {}),
           invitedSupplierIds: supplierIds,
           deadlineAt: planDate ? `${planDate}T18:00:00+08:00` : undefined,
           method: planMethod,
           evaluationMethod: planMethod === '竞价' ? '最低价' : '综合评分',
-          quoteRequirement: `采购内容：${selectedContent || '合并采购需求'}；预算合计：${currency(selectedBudget)}。`,
+          quoteRequirement: createMode === 'direct'
+            ? `采购内容：直录明细 ${directRows.length} 项；预算合计(参考价测算)：${currency(directBudget)}。`
+            : `采购内容：${selectedContent || '合并采购需求'}；预算合计：${currency(selectedBudget)}。`,
           deliveryRequirement: `采购时间：${planDate || '待定'}；采购地点：${planPlace || '待定'}；采购方式：${planMethod}；供应商征集方式：${supplierCollectionLabel}。`,
         },
       },
@@ -637,6 +679,101 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
     );
   }
 
+  if (creating && createMode === 'pick') {
+    return (
+      <div className="mx-auto max-w-5xl space-y-5">
+        <section className="rounded-lg border border-slate-200 bg-white px-6 py-5 shadow-sm">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => { resetCreateForm(); setCreating(false); }}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
+              aria-label="返回列表"
+            >
+              ←
+            </button>
+            <div>
+              <h1 className="text-2xl font-black text-slate-950">新建采购计划</h1>
+              <p className="mt-1 text-sm font-bold text-slate-500">选择立项方式:基于部门申报的需求合并,或采购部门直接创建</p>
+            </div>
+          </div>
+        </section>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-base font-black text-slate-950">基于需求合并立项</p>
+            <p className="mt-1.5 text-xs font-bold leading-5 text-slate-500">
+              勾选业务部门已申报且审批通过的需求,合并形成采购计划。可选 {mergeCandidates.length} 条(已通过且未关联计划)。
+            </p>
+            <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+              {mergeCandidates.length === 0 ? (
+                <p className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs font-bold text-slate-500">
+                  暂无可合并的需求。业务部门审批通过的需求会出现在这里;也可以使用右侧「直接创建」。
+                </p>
+              ) : (
+                mergeCandidates.map((demand) => (
+                  <label
+                    key={demand.id}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2.5 hover:border-blue-200"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedDemandIds.includes(demand.id!)}
+                      onChange={() =>
+                        setSelectedDemandIds((current) =>
+                          current.includes(demand.id!)
+                            ? current.filter((id) => id !== demand.id)
+                            : [...current, demand.id!],
+                        )
+                      }
+                      className="h-4 w-4 accent-blue-600"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-black text-slate-900">{demand.title}</span>
+                      <span className="mt-0.5 block text-xs font-bold text-slate-400">
+                        {demand.id} · {departmentNames[demand.departmentId ?? ''] ?? demand.departmentId} · {currency(demand.budget ?? 0)}
+                        {demand.source === '直录登记' ? ' · 直录登记' : ''}
+                      </span>
+                    </span>
+                  </label>
+                ))
+              )}
+            </div>
+            <button
+              type="button"
+              disabled={selectedDemandIds.length === 0}
+              onClick={() => setCreateMode('merge')}
+              className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg bg-slate-900 text-sm font-black text-white transition hover:bg-slate-800 disabled:bg-slate-300"
+            >
+              合并 {selectedDemandIds.length} 条需求,进入方案编辑
+            </button>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="flex items-center gap-2 text-base font-black text-slate-950">
+              直接创建(直录)
+              <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-black text-amber-700">采购部门专用场景</span>
+            </p>
+            <p className="mt-1.5 text-xs font-bold leading-5 text-slate-500">
+              不基于既有需求,直接录入采购内容。提交时系统自动登记一条来源为「直录登记」的需求并挂链,
+              需求回链、品类支出与预算口径保持完整闭环,全程审计留痕。
+            </p>
+            <ul className="mt-4 space-y-1.5 text-xs font-bold text-slate-500">
+              <li>· 采购内容:物料 + 数量,预算按物料参考价自动测算</li>
+              <li>· 须选择归口部门,便于统计与追溯</li>
+              <li>· 列表与详情将标注「直接创建」来源徽标</li>
+            </ul>
+            <button
+              type="button"
+              onClick={() => { setDirectRows([{ materialId: '', quantity: 1 }]); setCreateMode('direct'); }}
+              className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-white text-sm font-black text-slate-900 transition hover:bg-slate-50"
+            >
+              直接创建,进入方案编辑
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (creating) {
     return (
       <ProcurementPlanMergePage
@@ -664,11 +801,17 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
         toggleSupplier={toggleSupplier}
         createError={createRfq.isError}
         createPending={createRfq.isPending}
-        onBack={() => {
-          resetCreateForm();
-          setCreating(false);
-        }}
+        onBack={() => setCreateMode('pick')}
         onSubmit={submitProcurementPlan}
+        {...(createMode === 'direct'
+          ? {
+              directRows,
+              setDirectRows,
+              directDepartmentId,
+              setDirectDepartmentId,
+              departments: departmentsQuery.data?.data ?? [],
+            }
+          : {})}
       />
     );
   }

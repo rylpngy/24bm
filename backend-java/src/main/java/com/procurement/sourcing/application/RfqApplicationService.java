@@ -4,6 +4,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.domain.PurchaseDemand;
+import com.procurement.demand.application.DirectDemandRegistrar;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.identity.application.DataScopeService;
 import com.procurement.identity.domain.DataScope;
@@ -52,6 +53,7 @@ public class RfqApplicationService {
   private final RfqDemandMapper rfqDemandMapper;
   private final RfqInviteMapper rfqInviteMapper;
   private final PurchaseDemandMapper purchaseDemandMapper;
+  private final DirectDemandRegistrar directDemandRegistrar;
   private final DataScopeService dataScopeService;
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final SupplierQualificationMapper supplierQualificationMapper;
@@ -67,6 +69,7 @@ public class RfqApplicationService {
       RfqDemandMapper rfqDemandMapper,
       RfqInviteMapper rfqInviteMapper,
       PurchaseDemandMapper purchaseDemandMapper,
+      DirectDemandRegistrar directDemandRegistrar,
       DataScopeService dataScopeService,
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       SupplierQualificationMapper supplierQualificationMapper,
@@ -80,6 +83,7 @@ public class RfqApplicationService {
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
+    this.directDemandRegistrar = directDemandRegistrar;
     this.dataScopeService = dataScopeService;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.supplierQualificationMapper = supplierQualificationMapper;
@@ -227,7 +231,26 @@ public class RfqApplicationService {
     String userId = TenantAccessGuard.requireUserId("buyer RFQ APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.RFQ);
     rfqSourcingStatusTransition.requireFutureDeadline(request.deadlineAt(), "new RFQ");
-    validateDemands(tenantId, request.demandIds());
+    // 立项来源二选一:基于既有需求合并,或采购部门直录(反向登记「直录登记」需求保闭环)。
+    List<String> demandIds = request.demandIds() == null ? List.of() : request.demandIds();
+    boolean directCreate = demandIds.isEmpty();
+    if (directCreate) {
+      if (request.directItems() == null || request.directItems().isEmpty()) {
+        throw new IllegalArgumentException("请选择要合并的采购需求,或在直录模式下录入采购内容明细");
+      }
+      String directDemandId = directDemandRegistrar.registerApproved(
+          "直录·" + request.title(),
+          request.directDepartmentId(),
+          request.directBudget(),
+          request.directItems().stream()
+              .map(item -> new com.procurement.demand.application.DirectDemandRegistrar.DirectLineItem(
+                  item.materialId(), item.quantity()))
+              .toList());
+      demandIds = List.of(directDemandId);
+    } else if (request.directItems() != null && !request.directItems().isEmpty()) {
+      throw new IllegalArgumentException("不能同时选择既有需求与直录采购内容");
+    }
+    validateDemands(tenantId, demandIds);
     String method = RfqMethod.orDefault(request.method());
     boolean draft = Boolean.TRUE.equals(request.saveAsDraft());
     List<String> invitedSupplierIds =
@@ -257,7 +280,7 @@ public class RfqApplicationService {
         request.auctionMinDecrement(),
         blankToNull(request.singleSourceReason()));
 
-    insertRfqDemandLinks(tenantId, rfqId, request.demandIds());
+    insertRfqDemandLinks(tenantId, rfqId, demandIds);
 
     for (String supplierId : invitedSupplierIds) {
       rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
