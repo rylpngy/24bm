@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Megaphone, Plus } from 'lucide-react';
+import { CheckCircle2, Megaphone, Plus, Undo2, Users } from 'lucide-react';
 import {
   usePlatformAnnouncementList,
   usePlatformAnnouncementPublish,
   usePlatformAnnouncementWithdraw,
 } from '@24bid/api-client';
-import { CountTag, FeedbackNotice, Panel, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import {
+  FeedbackNotice,
+  FilterTabs,
+  MetricCard,
+  MetricGrid,
+  Pagination,
+  Panel,
+  PrimaryActionButton,
+  SearchInput,
+  StatusPill,
+} from '@24bid/ui';
 
 const AUDIENCE_LABELS: Record<string, string> = { all: '全部', buyer: '采购方', supplier: '供应商' };
 
@@ -21,8 +31,24 @@ export function AnnouncementsPage() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [audience, setAudience] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 6;
 
   const items = list.data?.data ?? [];
+  const activeCount = items.filter((a) => a.status === 'active').length;
+  const filtered = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    return items.filter((a) => {
+      if (statusFilter === 'active' && a.status !== 'active') return false;
+      if (statusFilter === 'withdrawn' && a.status === 'active') return false;
+      if (kw && ![a.title, a.content].filter(Boolean).join(' ').toLowerCase().includes(kw)) return false;
+      return true;
+    });
+  }, [items, statusFilter, keyword]);
+  const safePage = Math.min(page, Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)));
+  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -52,8 +78,28 @@ export function AnnouncementsPage() {
 
   return (
     <Panel title="平台公告" icon={Megaphone} subtitle="发布 · 撤回 · 受众">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <CountTag>共 {items.length} 条</CountTag>
+      <MetricGrid>
+        <MetricCard icon={Megaphone} label="公告总数" value={String(items.length)} hint="含已撤回" tone="blue" />
+        <MetricCard icon={CheckCircle2} label="生效中" value={String(activeCount)} hint="租户与供应商可见" tone="emerald" />
+        <MetricCard icon={Undo2} label="已撤回" value={String(items.length - activeCount)} hint="不再展示" tone="slate" />
+        <MetricCard icon={Users} label="全员公告" value={String(items.filter((a) => a.audience === 'all').length)} hint="受众为全部" tone="violet" />
+      </MetricGrid>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <FilterTabs
+          items={[
+            { id: 'all', label: '全部', count: items.length },
+            { id: 'active', label: '已发布', count: activeCount },
+            { id: 'withdrawn', label: '已撤回', count: items.length - activeCount },
+          ]}
+          value={statusFilter}
+          onChange={(id) => { setStatusFilter(id); setPage(1); }}
+        />
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按标题 / 正文搜索"
+          onSearch={(k) => { setKeyword(k); setPage(1); }}
+        />
         <button type="button" onClick={() => setShowForm((v) => !v)}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800">
           <Plus size={14} /> {showForm ? '收起' : '发布公告'}
@@ -95,11 +141,12 @@ export function AnnouncementsPage() {
 
       {list.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载公告…" />
-      ) : items.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无公告。点击发布公告创建。" />
+      ) : filtered.length === 0 ? (
+        <FeedbackNotice tone="info" message={keyword || statusFilter !== 'all' ? '没有符合条件的公告。' : '暂无公告。点击发布公告创建。'} />
       ) : (
+        <>
         <div className="space-y-3">
-          {items.map((a) => {
+          {pageItems.map((a) => {
             const active = a.status === 'active';
             const busy = withdraw.isPending && withdraw.variables?.announcementId === a.id;
             return (
@@ -126,6 +173,8 @@ export function AnnouncementsPage() {
             );
           })}
         </div>
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );

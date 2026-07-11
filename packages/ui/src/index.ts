@@ -56,3 +56,4 @@ export type { SearchInputProps } from './components/search-input';
 
 export { CountTag } from './components/count-tag';
 export type { CountTagProps } from './components/count-tag';
+export { MetricGrid, MetricCard, SummaryChips, SummaryChip } from './components/metric-card';

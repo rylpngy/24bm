@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { History, ShieldCheck } from 'lucide-react';
 import {
@@ -7,7 +7,17 @@ import {
   usePlatformEnterpriseEvents,
   usePlatformEnterpriseListPendingReviews,
 } from '@24bid/api-client';
-import { CountTag, FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import {
+  FeedbackNotice,
+  FilterTabs,
+  MetricCard,
+  MetricGrid,
+  MiniFact,
+  Pagination,
+  Panel,
+  SearchInput,
+  StatusPill,
+} from '@24bid/ui';
 
 // 阶段中文标签。
 const STAGE_LABEL: Record<string, string> = {
@@ -18,18 +28,53 @@ const STAGE_LABEL: Record<string, string> = {
 };
 
 // 企业准入审核:多步状态机(待初审 → 初审通过 → 准入通过/驳回)+ 时间线留痕。
+const PAGE_SIZE = 6;
+
 export function EnterpriseReviewsPage() {
   const pending = usePlatformEnterpriseListPendingReviews();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [stageFilter, setStageFilter] = useState('all');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
   const reviews = pending.data?.data ?? [];
+
+  const count = (stage: string) => reviews.filter((e) => (e.reviewStatus ?? 'pending') === stage).length;
+  const filtered = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    return reviews.filter((e) => {
+      if (stageFilter !== 'all' && (e.reviewStatus ?? 'pending') !== stageFilter) return false;
+      if (kw && ![e.name, e.id, e.type].filter(Boolean).join(' ').toLowerCase().includes(kw)) return false;
+      return true;
+    });
+  }, [reviews, stageFilter, keyword]);
+  const safePage = Math.min(page, Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)));
+  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <Panel title="企业审核" icon={ShieldCheck} subtitle="多步准入工作流 · 初审 → 复审 → 准入 · 留痕可追溯">
-      <div className="mb-4 flex items-center gap-2">
-        <CountTag>共 {reviews.length} 家在审</CountTag>
-        <span className="text-[11px] font-bold text-slate-400">
-          待初审 → 初审通过 → 准入通过 / 驳回；驳回与退回需填理由
-        </span>
+      <MetricGrid>
+        <MetricCard icon={ShieldCheck} label="在审企业" value={String(reviews.length)} hint="待处理总量" tone="blue" />
+        <MetricCard icon={History} label="待初审" value={String(count('pending'))} hint="等待第一步核验" tone="amber" />
+        <MetricCard icon={ShieldCheck} label="初审通过" value={String(count('preliminary'))} hint="待准入复核" tone="violet" />
+        <MetricCard icon={ShieldCheck} label="已驳回" value={String(count('rejected'))} hint="待企业补充重提" tone="rose" />
+      </MetricGrid>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <FilterTabs
+          items={[
+            { id: 'all', label: '全部', count: reviews.length },
+            { id: 'pending', label: '待初审', count: count('pending') },
+            { id: 'preliminary', label: '初审通过', count: count('preliminary') },
+            { id: 'rejected', label: '已驳回', count: count('rejected') },
+          ]}
+          value={stageFilter}
+          onChange={(id) => { setStageFilter(id); setPage(1); }}
+        />
+        <SearchInput
+          className="mb-0 ml-auto"
+          placeholder="按企业名称 / ID / 类型搜索"
+          onSearch={(k) => { setKeyword(k); setPage(1); }}
+        />
       </div>
       {feedback && (
         <div className="mb-4">
@@ -39,14 +84,20 @@ export function EnterpriseReviewsPage() {
 
       {pending.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载在审企业…" />
-      ) : reviews.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无在审企业。新企业提交入驻后出现在此。" />
+      ) : filtered.length === 0 ? (
+        <FeedbackNotice
+          tone="info"
+          message={keyword || stageFilter !== 'all' ? '没有符合条件的在审企业。' : '暂无在审企业。新企业提交入驻后出现在此。'}
+        />
       ) : (
-        <div className="space-y-3">
-          {reviews.map((e) => (
-            <ReviewCard key={e.id} enterprise={e} onDone={setFeedback} />
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {pageItems.map((e) => (
+              <ReviewCard key={e.id} enterprise={e} onDone={setFeedback} />
+            ))}
+          </div>
+          <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+        </>
       )}
     </Panel>
   );
