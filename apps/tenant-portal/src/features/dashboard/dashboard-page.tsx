@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Truck,
   Users,
+  Timer,
   WalletCards,
 } from 'lucide-react';
 import {
@@ -324,6 +325,19 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
       tone: spendTones[index % spendTones.length],
     }));
 
+    const pendingDemandCount = demands.filter((demand) => demand.status === '审批中').length;
+    const receivingOrderCount = orders.filter((order) => order.status !== '已收货').length;
+    const deadlineWatch = rfqs
+      .filter((rfq) => rfq.status === '报价中' && rfq.deadlineAt)
+      .sort((a, b) => (a.deadlineAt ?? '').localeCompare(b.deadlineAt ?? ''))
+      .slice(0, 2)
+      .map((rfq) => ({
+        title: rfq.title ?? rfq.id ?? '询比项目',
+        deadlineAt: rfq.deadlineAt,
+        quotes: (rfq.quotes ?? []).length,
+        invited: (rfq.invitedSupplierIds ?? []).length,
+      }));
+
     return {
       totalSpend,
       budgetRate,
@@ -338,6 +352,9 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
       spendDistribution,
       pendingCount: data?.todoSummary?.pendingApprovalCount ?? pendingApprovals.length,
       pendingPaymentAmount,
+      pendingDemandCount,
+      receivingOrderCount,
+      deadlineWatch,
     };
   }, [data, categorySpend, monthlySpend, biddingSavings]);
 
@@ -386,6 +403,37 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
               <MiniFact label="待办审批" value={`${view.pendingCount} 项`} />
               <MiniFact label="活跃询比" value={`${view.activeRfqs} 个`} />
               <MiniFact label="待付款金额" value={currency(view.pendingPaymentAmount, true)} />
+              <MiniFact label="审批中需求" value={`${view.pendingDemandCount} 条`} />
+              <MiniFact label="履约中订单" value={`${view.receivingOrderCount} 单`} />
+              <MiniFact label="已准入供应商" value={`${view.admittedSuppliers} 家`} />
+            </div>
+            {/* 临近截止:报价中项目按截止时间排序,直达询比项目处理。 */}
+            <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50/40 p-3">
+              <p className="flex items-center gap-1.5 text-xs font-black text-amber-800">
+                <Timer size={13} /> 临近截止
+              </p>
+              {view.deadlineWatch.length === 0 ? (
+                <p className="mt-1.5 text-xs font-bold text-slate-500">暂无报价中的项目,当前没有临近截止事项。</p>
+              ) : (
+                <div className="mt-1.5 space-y-1.5">
+                  {view.deadlineWatch.map((item) => (
+                    <button
+                      key={item.title}
+                      type="button"
+                      onClick={() => onNavigate('rfqs')}
+                      className="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 rounded-md px-1 py-0.5 text-left transition hover:bg-amber-50"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-xs font-black text-slate-900">{item.title}</span>
+                      <span className="shrink-0 text-[11px] font-bold text-slate-500">
+                        已报价 {item.quotes}{item.invited > 0 ? `/${item.invited}` : ''} 家
+                      </span>
+                      <span className="shrink-0 font-mono text-[11px] font-black text-amber-700">
+                        截止 {shortDate(item.deadlineAt)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
 
