@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, BadgeCheck, CalendarDays, CheckCircle2, Megaphone, PackageSearch, Search, Send, Store, Timer, Users } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, CalendarDays, CheckCircle2, FileText, Gift, Lock, Megaphone, Monitor, PackageSearch, Search, Send, SlidersHorizontal, Store, Timer, Users, Wrench } from 'lucide-react';
 import {
   type PublicAnnouncementResponse,
   type PublicOpportunityResponse,
   type PublicSupplierResponse,
+  usePublicMallOverview,
   usePublicOpportunityEnroll,
   usePublicOpportunityList,
   usePublicPortalListAnnouncements,
   usePublicPortalListSuppliers,
 } from '@24bid/api-client';
-import { FeedbackNotice, cn } from '@24bid/ui';
+import { FeedbackNotice, FilterTabs, cn } from '@24bid/ui';
 
 const AUDIENCE_LABELS: Record<string, string> = { all: '全部用户', buyer: '采购方', supplier: '供应商' };
 const AUDIENCE_TONE: Record<string, string> = {
@@ -476,137 +477,358 @@ function EnrollForm({ rfqId }: { rfqId: string }) {
 }
 
 // 商机大厅:平台上采购人发布项目的公开列表(真实数据)+ 二级详情(含报名参与)。
+// 布局参考验收提供的原型;组件规范(按钮/边框/间距)与系统统一。
 export function PortalOpportunitiesPage() {
   const opportunities = usePublicOpportunityList();
   const [keyword, setKeyword] = useState('');
-  const [methodFilter, setMethodFilter] = useState('全部方式');
+  const [searchDraft, setSearchDraft] = useState('');
+  const [methodFilter, setMethodFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('全部');
   const [selected, setSelected] = useState<PublicOpportunityResponse | null>(null);
 
   const list = opportunities.data?.data ?? [];
-  const methods = ['全部方式', ...Array.from(new Set(list.map((o) => o.method).filter(Boolean) as string[]))];
+  const methods = Array.from(new Set(list.map((o) => o.method).filter(Boolean) as string[]));
+  const categories = [
+    '全部',
+    ...Array.from(new Set(list.flatMap((o) => (o.categories ?? '').split('、')).filter(Boolean))),
+  ];
   const filtered = list.filter((o) => {
-    if (methodFilter !== '全部方式' && o.method !== methodFilter) return false;
+    if (methodFilter !== 'all' && o.method !== methodFilter) return false;
+    if (categoryFilter !== '全部' && !(o.categories ?? '').includes(categoryFilter)) return false;
     const kw = keyword.trim().toLowerCase();
-    if (kw && ![o.title, o.buyerName, o.method].filter(Boolean).join(' ').toLowerCase().includes(kw)) return false;
+    if (kw && ![o.title, o.buyerName, o.id].filter(Boolean).join(' ').toLowerCase().includes(kw)) return false;
     return true;
   });
 
   if (selected) {
-    const enrollable = selected.status === '报价中';
-    return (
-      <PageShell
-        icon={PackageSearch}
-        title={selected.title ?? '商机详情'}
-        subtitle={`${selected.buyerName ?? '采购方'} · ${selected.method ?? '询比'}采购 · 发布于 ${dateText(selected.createdAt)}`}
-        onBack={() => setSelected(null)}
-      >
-        <div className="grid gap-4 lg:grid-cols-[1fr_24rem]">
-          <div className="space-y-4">
-            <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={cn('rounded-full px-2.5 py-1 text-xs font-black', OPPORTUNITY_STATUS_TONE[selected.status ?? ''] ?? 'bg-slate-100 text-slate-600')}>
-                  {opportunityStatusLabel(selected)}
-                </span>
-                <span className="rounded-md bg-violet-50 px-2 py-1 text-xs font-black text-violet-600">{selected.method}采购</span>
-                <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-black text-slate-500">评选:{selected.evaluationMethod ?? '—'}</span>
-                {enrollable && (
-                  <span className="ml-auto inline-flex items-center gap-1.5 text-xs font-black text-amber-600">
-                    <Timer size={14} /> {deadlineText(selected.deadlineAt)} · 截止 {dateText(selected.deadlineAt)}
-                  </span>
-                )}
-              </div>
-              <div className="mt-5 grid gap-3">
-                <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs font-black text-slate-400">采购内容与报价要求</p>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-700">
-                    {selected.quoteRequirement || '详见报价邀请;受理报名后可在供应商门户查看完整要求。'}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs font-black text-slate-400">交付与商务要求</p>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-700">
-                    {selected.deliveryRequirement || '以正式询价函为准。'}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs font-black text-slate-400">采购方</p>
-                  <p className="mt-1.5 text-sm font-black text-slate-950">{selected.buyerName}</p>
-                  <p className="mt-1 font-mono text-[11px] font-bold text-slate-400">项目编号 {selected.id}</p>
-                </div>
-              </div>
-            </section>
-          </div>
-          <aside>
-            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="flex items-center gap-2 text-base font-black text-slate-950">
-                <Send size={16} className="text-blue-600" /> 报名参与
-              </p>
-              {enrollable ? (
-                <>
-                  <p className="mt-1.5 text-xs font-bold leading-5 text-slate-500">
-                    填写企业与联系人信息完成报名;采购方受理后将发出正式询价邀请。
-                  </p>
-                  <div className="mt-4">
-                    <EnrollForm rfqId={selected.id!} />
-                  </div>
-                </>
-              ) : (
-                <FeedbackNotice tone="info" message={`该项目当前为「${opportunityStatusLabel(selected)}」,报名已结束。`} />
-              )}
-            </section>
-          </aside>
-        </div>
-      </PageShell>
-    );
+    return <OpportunityDetail opportunity={selected} onBack={() => setSelected(null)} />;
   }
 
   return (
-    <PageShell icon={PackageSearch} title="商机大厅" subtitle="平台采购人发布的项目公开信息 · 实时数据">
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap gap-2">
-          {methods.map((m) => (
-            <button key={m} type="button" onClick={() => setMethodFilter(m)}
-              className={cn('h-8 rounded-md border px-3 text-xs font-black transition',
-                m === methodFilter ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')}>
-              {m}
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      {/* 头部面板:标题 + 方式页签 + 搜索 + 品类筛选 */}
+      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50">
+        <h1 className="flex items-center gap-2.5 text-2xl font-black text-slate-950">
+          <PackageSearch size={24} className="text-blue-600" />
+          商机大厅
+        </h1>
+        <div className="mt-5">
+          <FilterTabs
+            items={[
+              { id: 'all', label: '全部商机', count: list.length },
+              ...methods.map((m) => ({ id: m, label: `${m}采购`, count: list.filter((o) => o.method === m).length })),
+            ]}
+            value={methodFilter}
+            onChange={setMethodFilter}
+          />
+        </div>
+        <form
+          className="mt-4 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setKeyword(searchDraft);
+          }}
+        >
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              placeholder="搜索项目名称、采购方、项目编号…"
+              className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <button
+            type="submit"
+            className="inline-flex h-11 shrink-0 items-center rounded-lg bg-blue-600 px-6 text-sm font-black text-white shadow-sm transition hover:bg-blue-500 active:scale-[0.98]"
+          >
+            搜索
+          </button>
+        </form>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-black text-slate-400">物资分类:</span>
+          {categories.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategoryFilter(c)}
+              className={cn(
+                'h-8 rounded-md border px-3 text-xs font-black transition',
+                c === categoryFilter
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+              )}
+            >
+              {c}
             </button>
           ))}
         </div>
-        <div className="relative ml-auto w-64">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="搜索项目、采购方"
-            className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100" />
-        </div>
-      </div>
+      </section>
 
-      {opportunities.isLoading ? (
-        <FeedbackNotice tone="info" message="正在加载商机…" />
-      ) : filtered.length === 0 ? (
-        <FeedbackNotice tone="info" message={keyword || methodFilter !== '全部方式' ? '没有符合条件的商机。' : '暂无公开商机,采购人发布项目后展示在此。'} />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {filtered.map((o) => (
-            <button key={o.id} type="button" onClick={() => setSelected(o)}
-              className="rounded-lg border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
-              <div className="flex items-center gap-2">
-                <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-black', OPPORTUNITY_STATUS_TONE[o.status ?? ''] ?? 'bg-slate-100 text-slate-600')}>
-                  {opportunityStatusLabel(o)}
+      {/* 商机列表:单列行式布局 */}
+      <div className="mt-5">
+        {opportunities.isLoading ? (
+          <FeedbackNotice tone="info" message="正在加载商机…" />
+        ) : filtered.length === 0 ? (
+          <FeedbackNotice tone="info" message={keyword || methodFilter !== 'all' || categoryFilter !== '全部' ? '没有符合条件的商机。' : '暂无公开商机,采购人发布项目后展示在此。'} />
+        ) : (
+          <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
+            {filtered.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setSelected(o)}
+                className="flex w-full items-center gap-4 px-5 py-5 text-left transition hover:bg-blue-50/30"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className={cn('shrink-0 rounded-md px-2 py-1 text-[11px] font-black', OPPORTUNITY_STATUS_TONE[o.status ?? ''] ?? 'bg-slate-100 text-slate-600')}>
+                      {opportunityStatusLabel(o)}
+                    </span>
+                    <span className="shrink-0 rounded-md bg-violet-50 px-2 py-1 text-[11px] font-black text-violet-600">{o.method}采购</span>
+                    <p className="min-w-0 truncate text-base font-black text-slate-950">{o.title}</p>
+                  </div>
+                  <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold text-slate-400">
+                    <span className="inline-flex items-center gap-1.5"><Users size={13} />{o.buyerName}</span>
+                    {o.categories && <span>{o.categories}</span>}
+                    <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} />发布于 {dateText(o.createdAt)}</span>
+                    {o.status === '报价中' && <span className="font-black text-amber-600">{deadlineText(o.deadlineAt)}</span>}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[11px] font-black text-slate-400">预算金额</p>
+                  <p className="mt-0.5 font-mono text-lg font-black text-slate-950">
+                    {(o.budget ?? 0) > 0 ? `¥${Math.round((o.budget ?? 0) / 10000).toLocaleString('zh-CN')}万` : '公开'}
+                  </p>
+                </div>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <ArrowLeft size={16} className="rotate-180" />
                 </span>
-                <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[11px] font-black text-violet-600">{o.method}</span>
-                {o.status === '报价中' && (
-                  <span className="ml-auto text-[11px] font-black text-amber-600">{deadlineText(o.deadlineAt)}</span>
-                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 商机详情(二级):正文分节 + 右侧关键信息卡与报名操作,布局参考原型、规范沿用系统。
+function OpportunityDetail({
+  opportunity: o,
+  onBack,
+}: {
+  opportunity: PublicOpportunityResponse;
+  onBack: () => void;
+}) {
+  const [enrollOpen, setEnrollOpen] = useState(false);
+  const enrollable = o.status === '报价中';
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-1.5 text-sm font-black text-slate-500 transition hover:text-slate-900"
+      >
+        <ArrowLeft size={16} /> 返回大厅
+      </button>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_22rem]">
+        {/* 主栏 */}
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50 sm:p-8">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className={cn('rounded-md px-2.5 py-1 text-xs font-black', OPPORTUNITY_STATUS_TONE[o.status ?? ''] ?? 'bg-slate-100 text-slate-600')}>
+              {opportunityStatusLabel(o)}
+            </span>
+            <span className="rounded-md bg-violet-50 px-2.5 py-1 text-xs font-black text-violet-600">{o.method}采购</span>
+            <span className="font-mono text-xs font-bold text-slate-400">项目编号:{o.id}</span>
+          </div>
+          <h1 className="mt-4 break-words text-2xl font-black leading-snug text-slate-950 sm:text-3xl">{o.title}</h1>
+
+          <DetailSection index={1} title="采购内容与报价要求">
+            {o.quoteRequirement || '详见报价邀请;受理报名后可在供应商门户查看完整要求。'}
+          </DetailSection>
+          <DetailSection index={2} title="交付与商务要求">
+            {o.deliveryRequirement || '以正式询价函为准。'}
+          </DetailSection>
+          <DetailSection index={3} title="报名与参与须知">
+            {`3.1 本项目评选方式为「${o.evaluationMethod ?? '—'}」。\n3.2 已入驻并通过平台认证的供应商,报名经采购方受理后将收到正式询价邀请,可在供应商门户直接报价。\n3.3 尚未入驻的企业,报名后由采购方引导完成入驻与准入,再进入报价环节。`}
+          </DetailSection>
+        </section>
+
+        {/* 侧栏:关键信息 + 报名 */}
+        <aside className="space-y-4">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
+            <p className="text-base font-black text-slate-950">项目关键信息</p>
+            <dl className="mt-4 space-y-4">
+              <SideFact icon={Users} label="采购单位" value={o.buyerName ?? '—'} />
+              <SideFact
+                icon={PackageSearch}
+                label="项目预算"
+                value={(o.budget ?? 0) > 0 ? `¥${Math.round((o.budget ?? 0) / 10000).toLocaleString('zh-CN')}万` : '公开征集'}
+                em
+              />
+              {o.categories && <SideFact icon={Store} label="物资分类" value={o.categories} />}
+              <SideFact icon={CalendarDays} label="发布时间" value={dateText(o.createdAt)} />
+              {enrollable && (
+                <SideFact icon={Timer} label="报价截止" value={`${dateText(o.deadlineAt)} · ${deadlineText(o.deadlineAt)}`} />
+              )}
+            </dl>
+            <div className="mt-5 border-t border-slate-100 pt-4">
+              {enrollable ? (
+                <button
+                  type="button"
+                  onClick={() => setEnrollOpen((v) => !v)}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-black text-white shadow-sm transition hover:bg-blue-500 active:scale-[0.98]"
+                >
+                  <Send size={15} /> {enrollOpen ? '收起报名表' : '立即报名'}
+                </button>
+              ) : (
+                <FeedbackNotice tone="info" message={`该项目当前为「${opportunityStatusLabel(o)}」,报名已结束。`} />
+              )}
+            </div>
+          </section>
+          {enrollable && enrollOpen && (
+            <section className="rounded-lg border border-blue-100 bg-blue-50/30 p-5">
+              <p className="text-sm font-black text-slate-950">报名参与</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+                填写企业与联系人信息;采购方受理后将发出正式询价邀请。
+              </p>
+              <div className="mt-4">
+                <EnrollForm rfqId={o.id!} />
               </div>
-              <p className="mt-3 line-clamp-2 min-h-11 text-sm font-black leading-6 text-slate-950">{o.title}</p>
-              <div className="mt-3 flex items-center justify-between text-xs font-bold text-slate-400">
-                <span className="truncate">{o.buyerName}</span>
-                <span className="shrink-0">{dateText(o.createdAt)}</span>
+            </section>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+// 正文分节:序号 + 左侧蓝条标题(布局参考原型)。
+function DetailSection({ index, title, children }: { index: number; title: string; children: string }) {
+  return (
+    <div className="mt-7">
+      <div className="flex items-center gap-2.5">
+        <span className="h-5 w-1 shrink-0 rounded-full bg-blue-600" />
+        <h2 className="text-base font-black text-slate-950">{index}. {title}</h2>
+      </div>
+      <p className="mt-3 whitespace-pre-wrap pl-3.5 text-sm font-semibold leading-7 text-slate-700">
+        {children.replace(/\\n/g, '\n')}
+      </p>
+    </div>
+  );
+}
+
+function SideFact({
+  icon: Icon,
+  label,
+  value,
+  em = false,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: string;
+  em?: boolean;
+}) {
+  return (
+    <div>
+      <dt className="text-xs font-black text-slate-400">{label}</dt>
+      <dd className={cn('mt-1 flex items-start gap-1.5 break-words font-black text-slate-950', em ? 'text-2xl' : 'text-sm')}>
+        <Icon size={em ? 18 : 14} className="mt-1 shrink-0 text-slate-400" />
+        <span className="min-w-0">{value}</span>
+      </dd>
+    </div>
+  );
+}
+
+// 公开商城页:品类分布与精选商品为真实在架数据;协议价按租户隔离,登录后可见。
+export function PortalMallPage({ onLogin }: { onLogin: () => void }) {
+  const overview = usePublicMallOverview();
+  const data = overview.data?.data;
+  const categoryIcons = [FileText, Monitor, Wrench, Gift, SlidersHorizontal, Store];
+  const categoryTones = [
+    'bg-blue-50 text-blue-600',
+    'bg-violet-50 text-violet-600',
+    'bg-amber-50 text-amber-600',
+    'bg-rose-50 text-rose-600',
+    'bg-emerald-50 text-emerald-600',
+    'bg-slate-100 text-slate-600',
+  ];
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      {/* Hero:深色横幅 + 登录查看协议价 */}
+      <section className="relative overflow-hidden rounded-lg bg-slate-950 px-6 py-14 text-center shadow-sm sm:px-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(37,99,235,0.3),transparent_40%),radial-gradient(circle_at_75%_70%,rgba(124,58,237,0.22),transparent_36%)]" />
+        <div className="relative">
+          <h1 className="text-3xl font-black text-white sm:text-4xl">智采云企业商城</h1>
+          <p className="mx-auto mt-4 max-w-xl text-sm font-bold leading-7 text-slate-400">
+            平台认证供应商的协议价货架,为企业提供协议价采购、统一结算、阳光透明的一站式物资采购体验。
+          </p>
+          <button
+            type="button"
+            onClick={onLogin}
+            className="mt-7 inline-flex h-11 items-center gap-2 rounded-lg bg-white px-6 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-100 active:scale-[0.98]"
+          >
+            <Lock size={15} /> 登录查看企业专属价
+          </button>
+        </div>
+      </section>
+
+      {/* 热门品类:真实在架统计 */}
+      <h2 className="mt-10 text-xl font-black text-slate-950">热门品类</h2>
+      {overview.isLoading ? (
+        <div className="mt-4"><FeedbackNotice tone="info" message="正在加载品类…" /></div>
+      ) : (data?.categories ?? []).length === 0 ? (
+        <div className="mt-4"><FeedbackNotice tone="info" message="暂无在架商品,供应商发布协议价货架后展示在此。" /></div>
+      ) : (
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          {(data?.categories ?? []).slice(0, 5).map((c, index) => {
+            const Icon = categoryIcons[index % categoryIcons.length];
+            return (
+              <button
+                key={c.category}
+                type="button"
+                onClick={onLogin}
+                className="rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+              >
+                <span className={cn('mx-auto flex h-12 w-12 items-center justify-center rounded-lg', categoryTones[index % categoryTones.length])}>
+                  <Icon size={22} />
+                </span>
+                <p className="mt-4 text-sm font-black text-slate-950">{c.category}</p>
+                <p className="mt-1 font-mono text-xs font-bold text-slate-400">{c.listingCount} 款在架</p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 精选商品:真实在架商品,价格登录可见 */}
+      <h2 className="mt-10 text-xl font-black text-slate-950">精选商品</h2>
+      {(data?.featured ?? []).length === 0 ? (
+        <div className="mt-4"><FeedbackNotice tone="info" message="暂无精选商品。" /></div>
+      ) : (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {(data?.featured ?? []).map((item) => (
+            <div key={item.name} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200">
+              <span className="flex h-24 items-center justify-center rounded-lg bg-slate-50 text-slate-300">
+                <Store size={30} />
+              </span>
+              <p className="mt-4 truncate text-sm font-black text-slate-950">{item.name}</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">{item.category} · 按{item.unit}计</p>
+              <div className="mt-3 flex items-center justify-between">
+                <span className="rounded-md bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">协议价登录可见</span>
+                <button type="button" onClick={onLogin} className="text-xs font-black text-blue-600 hover:text-blue-700">
+                  登录查看 →
+                </button>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}
-    </PageShell>
+    </div>
   );
 }
 

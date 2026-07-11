@@ -127,6 +127,7 @@ import com.procurement.platform.api.PlatformOverviewResponse;
 import com.procurement.platform.api.PlatformBillingController;
 import com.procurement.platform.api.PlatformSupplierController;
 import com.procurement.platform.api.PublicPortalController;
+import com.procurement.mall.api.PublicMallController;
 import com.procurement.sourcing.api.PublicOpportunityController;
 import com.procurement.platform.api.PlatformTenantController;
 import com.procurement.platform.api.PlatformWorkspaceController;
@@ -216,6 +217,7 @@ import org.springframework.test.web.servlet.MvcResult;
     PlatformAnnouncementController.class,
     BuyerAnnouncementController.class,
     PlatformSupplierController.class,
+    PublicMallController.class,
     PublicOpportunityController.class,
     PublicPortalController.class,
     PlatformTenantController.class,
@@ -291,6 +293,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.sourcing.application.OpportunityApplicationService opportunityApplicationService;
+
+  @MockBean
+  private com.procurement.mall.application.PublicMallApplicationService publicMallApplicationService;
 
   @MockBean
   private PurchaseDemandApplicationService purchaseDemandApplicationService;
