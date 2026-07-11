@@ -61,7 +61,8 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
           auditLogApplicationService,
           notificationApplicationService,
           new BuyerSupplierAdmissionStatusTransition(),
-          new BuyerSupplierManualStatusTransition());
+          new BuyerSupplierManualStatusTransition(),
+      org.mockito.Mockito.mock(com.procurement.supplier.infrastructure.SupplierProfileMapper.class));
 
   @AfterEach
   void clearTenantContext() {

@@ -30,6 +30,7 @@ import com.procurement.supplier.domain.BuyerSupplierPerformanceScore;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.domain.SupplierQualification;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
+import com.procurement.supplier.infrastructure.SupplierProfileMapper;
 import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
 import java.math.BigDecimal;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BuyerSupplierApplicationService {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
+  private final SupplierProfileMapper supplierProfileMapper;
   private final SupplierQualificationMapper supplierQualificationMapper;
   private final ObjectMapper objectMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
@@ -60,7 +62,8 @@ public class BuyerSupplierApplicationService {
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition,
-      BuyerSupplierManualStatusTransition buyerSupplierManualStatusTransition) {
+      BuyerSupplierManualStatusTransition buyerSupplierManualStatusTransition,
+      SupplierProfileMapper supplierProfileMapper) {
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.supplierQualificationMapper = supplierQualificationMapper;
     this.objectMapper = objectMapper;
@@ -71,6 +74,7 @@ public class BuyerSupplierApplicationService {
     this.notificationApplicationService = notificationApplicationService;
     this.buyerSupplierAdmissionStatusTransition = buyerSupplierAdmissionStatusTransition;
     this.buyerSupplierManualStatusTransition = buyerSupplierManualStatusTransition;
+    this.supplierProfileMapper = supplierProfileMapper;
   }
 
   public List<BuyerSupplierResponse> listCurrentTenantSuppliers() {
@@ -113,11 +117,34 @@ public class BuyerSupplierApplicationService {
         request.status(),
         request.level(),
         writeCategories(request.categories()));
+    applyMasterDataOnCreate(request);
     auditLogApplicationService.recordTenantAction(
         BuyerSupplierAuditAction.RELATION_CREATED,
         AuditTargetType.BUYER_SUPPLIER_RELATION,
         relationId);
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
+  }
+
+  // 采购方建档:登记时提供的主数据写入供应商主档(空值不覆盖既有值)。
+  private void applyMasterDataOnCreate(CreateBuyerSupplierRequest request) {
+    boolean hasAny = java.util.stream.Stream.of(
+            request.creditCode(), request.legalPerson(), request.contactName(), request.contactPhone(),
+            request.contactEmail(), request.businessScope(), request.bankName(), request.bankAccount())
+        .anyMatch(v -> v != null && !v.isBlank());
+    if (!hasAny || supplierProfileMapper == null) {
+      return;
+    }
+    // 空值不覆盖既有值(SQL CASE 保留)。
+    supplierProfileMapper.updateSupplierMasterData(
+        request.supplierId(),
+        request.creditCode(),
+        request.legalPerson(),
+        request.contactName(),
+        request.contactPhone(),
+        request.contactEmail(),
+        request.businessScope(),
+        request.bankName(),
+        request.bankAccount());
   }
 
   @Transactional
