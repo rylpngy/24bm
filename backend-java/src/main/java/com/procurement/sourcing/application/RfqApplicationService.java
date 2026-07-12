@@ -61,6 +61,7 @@ public class RfqApplicationService {
   private final RfqSourcingStatusTransition rfqSourcingStatusTransition;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final RfqAnnouncementService rfqAnnouncementService;
 
   public RfqApplicationService(
       RfqMapper rfqMapper,
@@ -76,7 +77,8 @@ public class RfqApplicationService {
       TenantFeatureApplicationService tenantFeatureApplicationService,
       RfqSourcingStatusTransition rfqSourcingStatusTransition,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      RfqAnnouncementService rfqAnnouncementService) {
     this.rfqMapper = rfqMapper;
     this.quoteMapper = quoteMapper;
     this.quoteLineItemMapper = quoteLineItemMapper;
@@ -91,6 +93,7 @@ public class RfqApplicationService {
     this.rfqSourcingStatusTransition = rfqSourcingStatusTransition;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.rfqAnnouncementService = rfqAnnouncementService;
   }
 
   public List<RfqResponse> listCurrentTenantRfqs() {
@@ -178,7 +181,11 @@ public class RfqApplicationService {
         tenantId,
         "询比进入新一轮报价",
         rfq.title() + "已发起新一轮报价,请关注受邀供应商的二次报价。");
-    return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
+    Rfq afterRound = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    if (rfqAnnouncementService != null) {
+      rfqAnnouncementService.onNewRound(tenantId, afterRound, afterRound.currentRound(), finalRound);
+    }
+    return toResponse(afterRound);
   }
 
   // 终止询价:流标(不足法定家数等)/废标(全部不合格、取消)。置终态 + 记录理由。
@@ -201,6 +208,9 @@ public class RfqApplicationService {
     auditLogApplicationService.recordTenantAction(
         tenantId, "rfq." + ("流标".equals(kind) ? "no_bid" : "aborted"), "rfq", rfqId,
         kind + (reason == null || reason.isBlank() ? "" : " · " + reason));
+    if (rfqAnnouncementService != null) {
+      rfqAnnouncementService.onAborted(tenantId, rfq, kind, reason);
+    }
     return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
   }
 
@@ -431,6 +441,9 @@ public class RfqApplicationService {
               + (rfq.deadlineAt() == null ? "截止时间" : rfq.deadlineAt().toLocalDate()) + " 前提交报价。");
     }
     auditLogApplicationService.recordTenantAction(RfqAuditAction.UPDATED, AuditTargetType.RFQ, rfqId);
+    if (rfqAnnouncementService != null) {
+      rfqAnnouncementService.onPublished(tenantId, rfqMapper.findByTenantAndId(tenantId, rfqId));
+    }
     return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
   }
 
@@ -465,6 +478,9 @@ public class RfqApplicationService {
               : rfq.title() + " 结果公告:本项目已定标" + amountText + ",感谢贵司参与,期待后续合作。");
     }
     auditLogApplicationService.recordTenantAction(RfqAuditAction.UPDATED, AuditTargetType.RFQ, rfqId);
+    if (rfqAnnouncementService != null) {
+      rfqAnnouncementService.onResultAnnounced(tenantId, rfq, awardedAmount);
+    }
     return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
   }
 

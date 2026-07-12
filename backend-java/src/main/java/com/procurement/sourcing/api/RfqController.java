@@ -31,6 +31,7 @@ public class RfqController {
   private final RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService;
   private final AwardNoticeApplicationService awardNoticeApplicationService;
   private final com.procurement.sourcing.application.OpportunityApplicationService opportunityApplicationService;
+  private final com.procurement.sourcing.application.RfqAnnouncementService rfqAnnouncementService;
 
   public RfqController(
       RfqApplicationService rfqApplicationService,
@@ -38,13 +39,15 @@ public class RfqController {
       RfqResultApplicationService rfqResultApplicationService,
       RfqSupplierPerformanceApplicationService rfqSupplierPerformanceApplicationService,
       AwardNoticeApplicationService awardNoticeApplicationService,
-      com.procurement.sourcing.application.OpportunityApplicationService opportunityApplicationService) {
+      com.procurement.sourcing.application.OpportunityApplicationService opportunityApplicationService,
+      com.procurement.sourcing.application.RfqAnnouncementService rfqAnnouncementService) {
     this.rfqApplicationService = rfqApplicationService;
     this.rfqClarificationApplicationService = rfqClarificationApplicationService;
     this.rfqResultApplicationService = rfqResultApplicationService;
     this.rfqSupplierPerformanceApplicationService = rfqSupplierPerformanceApplicationService;
     this.awardNoticeApplicationService = awardNoticeApplicationService;
     this.opportunityApplicationService = opportunityApplicationService;
+    this.rfqAnnouncementService = rfqAnnouncementService;
   }
 
   @GetMapping
@@ -139,6 +142,11 @@ public class RfqController {
   }
 
   // 结果公告:定标后向全体受邀方公示中标结果。
+  @GetMapping("/{rfqId}/announcements")
+  public ApiResponse<java.util.List<RfqAnnouncementResponse>> listAnnouncements(@PathVariable String rfqId) {
+    return ApiResponse.ok(rfqAnnouncementService.listForRfq(rfqId));
+  }
+
   @PostMapping("/{rfqId}/result/announce")
   public ApiResponse<RfqResponse> announceResult(@PathVariable String rfqId) {
     return ApiResponse.ok(rfqApplicationService.announceResult(rfqId));

@@ -9,6 +9,8 @@ import {
   usePublicOpportunityEnroll,
   usePublicOpportunityList,
   usePublicPortalListAnnouncements,
+  usePublicProcurementAnnouncementList,
+  type PublicProcurementAnnouncementResponse,
   usePublicPortalListSuppliers,
 } from '@24bid/api-client';
 import { FeedbackNotice, FilterTabs, cn } from '@24bid/ui';
@@ -213,16 +215,100 @@ export function PortalSuppliersPage({ onLogin }: { onLogin: () => void }) {
 }
 
 // 平台公告:生效公告列表 + 二级详情(真实数据)。
+const PROC_ANN_TONE: Record<string, string> = {
+  采购公告: 'bg-blue-50 text-blue-700',
+  变更公告: 'bg-amber-50 text-amber-700',
+  定标公告: 'bg-emerald-50 text-emerald-700',
+  终止公告: 'bg-red-50 text-red-600',
+};
+
+const money = (v?: number) => (v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`);
+
+// 采购公告详情:模板化展示(公告头 + 项目信息 + 分类型正文区块 + 关键信息侧栏)。
+function ProcurementAnnouncementDetail({
+  a,
+  onBack,
+}: {
+  a: PublicProcurementAnnouncementResponse;
+  onBack: () => void;
+}) {
+  let idx = 0;
+  const next = () => ++idx;
+  return (
+    <PageShell
+      icon={Megaphone}
+      title={a.title ?? '采购公告'}
+      subtitle={`${a.buyerName ?? '采购人'} · 发布于 ${dateText(a.publishedAt)}`}
+      onBack={onBack}
+    >
+      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 pb-4">
+            <span className={cn('rounded-md px-2.5 py-1 text-xs font-black', PROC_ANN_TONE[a.type ?? ''] ?? 'bg-slate-100 text-slate-600')}>
+              {a.type}
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400">
+              <CalendarDays size={14} /> {dateText(a.publishedAt)}
+            </span>
+            <span className="text-xs font-bold text-slate-400">项目编号 {a.rfqId}</span>
+          </div>
+
+          <DetailSection index={next()} title="公告正文">{a.summary ?? '—'}</DetailSection>
+
+          {a.type === '采购公告' && (
+            <>
+              {a.quoteRequirement && <DetailSection index={next()} title="报价要求">{a.quoteRequirement}</DetailSection>}
+              {a.deliveryRequirement && <DetailSection index={next()} title="交付要求">{a.deliveryRequirement}</DetailSection>}
+            </>
+          )}
+          {a.type === '定标公告' && (
+            <DetailSection index={next()} title="定标结果">
+              {`中标供应商:${a.awardedSupplierName ?? '—'}\n中标含税总价:${a.awardAmount != null ? money(a.awardAmount) : '按结果公告为准'}\n公示说明:对定标结果如有异议,请在公示期内联系采购人。`}
+            </DetailSection>
+          )}
+          {a.type === '终止公告' && (
+            <DetailSection index={next()} title="终止说明">
+              {`${a.closeReason ?? '—'}\n关联采购需求已释放,后续如重新采购将另行发布公告。`}
+            </DetailSection>
+          )}
+        </section>
+
+        <aside className="h-fit rounded-lg bg-slate-900 p-6 text-white shadow-sm">
+          <p className="text-sm font-black">关键信息</p>
+          <dl className="mt-5 space-y-4 [&_dd]:!text-white [&_dt]:!text-slate-400">
+            <SideFact icon={Users} label="采购人" value={a.buyerName ?? '—'} />
+            <SideFact icon={Megaphone} label="采购方式" value={a.method ?? '询价'} />
+            <SideFact icon={CalendarDays} label="评选方式" value={a.evaluationMethod ?? '最低价'} />
+            {a.deadlineAt && <SideFact icon={CalendarDays} label="报价截止" value={dateText(a.deadlineAt)} em />}
+            {a.awardedSupplierName && <SideFact icon={Users} label="中标供应商" value={a.awardedSupplierName} />}
+          </dl>
+        </aside>
+      </div>
+    </PageShell>
+  );
+}
+
 export function PortalAnnouncementsPage() {
   const announcements = usePublicPortalListAnnouncements();
+  const procAnnouncements = usePublicProcurementAnnouncementList();
+  const [tab, setTab] = useState<'procurement' | 'platform'>('procurement');
   const [keyword, setKeyword] = useState('');
   const [selected, setSelected] = useState<PublicAnnouncementResponse | null>(null);
+  const [selectedProc, setSelectedProc] = useState<PublicProcurementAnnouncementResponse | null>(null);
 
   const list = announcements.data?.data ?? [];
   const filtered = list.filter((a) => {
     const kw = keyword.trim().toLowerCase();
     return !kw || [a.title, a.content].filter(Boolean).join(' ').toLowerCase().includes(kw);
   });
+  const procList = (procAnnouncements.data?.data ?? []).filter((a) => {
+    const kw = keyword.trim().toLowerCase();
+    return !kw || [a.title, a.summary, a.buyerName].filter(Boolean).join(' ').toLowerCase().includes(kw);
+  });
+
+  if (selectedProc) {
+    return <ProcurementAnnouncementDetail a={selectedProc} onBack={() => setSelectedProc(null)} />;
+  }
 
   if (selected) {
     return (
@@ -250,8 +336,23 @@ export function PortalAnnouncementsPage() {
   }
 
   return (
-    <PageShell icon={Megaphone} title="平台公告" subtitle="平台运营方发布的生效公告 · 实时数据">
-      <div className="mb-5 flex justify-end">
+    <PageShell icon={Megaphone} title="公告中心" subtitle="采购公告 · 变更公告 · 定标公告 · 平台公告,全部实时数据">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-1">
+          {([['procurement', `采购公告 ${procList.length ? `(${procList.length})` : ''}`], ['platform', `平台公告 ${filtered.length ? `(${filtered.length})` : ''}`]] as const).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                'rounded-md px-4 py-2 text-sm font-black transition',
+                tab === id ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="relative w-64">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -263,7 +364,36 @@ export function PortalAnnouncementsPage() {
         </div>
       </div>
 
-      {announcements.isLoading ? (
+      {tab === 'procurement' ? (
+        procAnnouncements.isLoading ? (
+          <FeedbackNotice tone="info" message="正在加载采购公告…" />
+        ) : procList.length === 0 ? (
+          <FeedbackNotice tone="info" message={keyword ? '没有符合条件的采购公告。' : '暂无采购公告。采购人发布询价/定标后自动生成并公示在此。'} />
+        ) : (
+          <div className="space-y-3">
+            {procList.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setSelectedProc(a)}
+                className="w-full rounded-lg border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50/20"
+              >
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={cn('shrink-0 rounded-md px-2.5 py-1 text-xs font-black', PROC_ANN_TONE[a.type ?? ''] ?? 'bg-slate-100 text-slate-600')}>
+                    {a.type}
+                  </span>
+                  <p className="min-w-0 flex-1 truncate text-base font-black text-slate-950">{a.title}</p>
+                  <span className="shrink-0 text-xs font-bold text-slate-500">{a.buyerName}</span>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-slate-400">
+                    <CalendarDays size={14} /> {dateText(a.publishedAt)}
+                  </span>
+                </div>
+                <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-slate-500">{a.summary}</p>
+              </button>
+            ))}
+          </div>
+        )
+      ) : announcements.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载平台公告…" />
       ) : filtered.length === 0 ? (
         <FeedbackNotice tone="info" message={keyword ? '没有符合条件的公告。' : '暂无生效公告。'} />

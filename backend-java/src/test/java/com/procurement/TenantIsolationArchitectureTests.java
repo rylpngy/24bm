@@ -33,6 +33,8 @@ class TenantIsolationArchitectureTests {
       "platform/infrastructure/BillingStatementLineMapper.java",
       // 公开商机跨租户只读(门户商机大厅),仅公开安全字段。
       "sourcing/infrastructure/PublicOpportunityMapper.java",
+      // 门户公开采购公告:跨租户只读,仅公开安全字段。
+      "sourcing/infrastructure/PublicProcurementAnnouncementMapper.java",
       // 公开商城跨租户只读(门户采购商城),不暴露价格/租户/供应商。
       "mall/infrastructure/PublicMallMapper.java");
 

@@ -72,7 +72,7 @@ class RfqCreationCollaborationTests {
       tenantFeatureApplicationService,
       new RfqSourcingStatusTransition(),
       auditLogApplicationService,
-      notificationApplicationService);
+      notificationApplicationService, null);
 
   @AfterEach
   void clearTenantContext() {

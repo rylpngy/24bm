@@ -39,6 +39,7 @@ export * from './process-instance-controller/process-instance-controller';
 export * from './public-mall-controller/public-mall-controller';
 export * from './public-opportunity-controller/public-opportunity-controller';
 export * from './public-portal-controller/public-portal-controller';
+export * from './public-procurement-announcement-controller/public-procurement-announcement-controller';
 export * from './purchase-demand-controller/purchase-demand-controller';
 export * from './purchase-order-controller/purchase-order-controller';
 export * from './rfq-award-controller/rfq-award-controller';

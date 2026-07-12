@@ -22,6 +22,7 @@ import {
   useRfqAcceptEnrollment,
   useRfqDismissEnrollment,
   useRfqListEnrollments,
+  useRfqListAnnouncements,
 } from '@24bid/api-client';
 import { FeedbackNotice, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
@@ -102,6 +103,7 @@ export function RfqProjectDetail({
   const abort = useRfqAbort();
   const remind = useRfqRemind();
   const enrollments = useRfqListEnrollments(rfq.id ?? '', { query: { enabled: !!rfq.id } });
+  const rfqAnnouncements = useRfqListAnnouncements(rfq.id ?? '', { query: { enabled: !!rfq.id } });
   const acceptEnrollment = useRfqAcceptEnrollment();
   const dismissEnrollment = useRfqDismissEnrollment();
   const announce = useRfqAnnounceResult();
@@ -353,6 +355,37 @@ export function RfqProjectDetail({
       </div>
 
       {rfq.id && <RfqClarificationsBuyer rfqId={rfq.id} canBulletin={quoting} />}
+
+      {/* 公告记录:发布/补遗/再次报价/定标/终止时自动生成,同步门户公告中心公示 */}
+      {(rfqAnnouncements.data?.data ?? []).length > 0 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-black text-slate-950">公告记录</h3>
+            <span className="text-xs font-bold text-slate-400">由业务节点自动生成,已同步门户「公告中心」公示。</span>
+          </div>
+          <div className="mt-3 divide-y divide-slate-100">
+            {(rfqAnnouncements.data?.data ?? []).map((ann) => (
+              <div key={ann.id} className="py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={cn(
+                    'rounded-md px-2 py-0.5 text-[11px] font-black',
+                    ann.type === '采购公告' ? 'bg-blue-50 text-blue-700'
+                      : ann.type === '变更公告' ? 'bg-amber-50 text-amber-700'
+                        : ann.type === '定标公告' ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-red-50 text-red-600',
+                  )}>{ann.type}</span>
+                  <p className="min-w-0 flex-1 truncate text-sm font-black text-slate-950">{ann.title}</p>
+                  <span className="shrink-0 font-mono text-[11px] font-bold text-slate-400">
+                    {ann.publishedAt?.slice(0, 16).replace('T', ' ')}
+                  </span>
+                </div>
+                <p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-slate-500">{ann.summary}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
 
       {!quoting && !terminal && (
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">

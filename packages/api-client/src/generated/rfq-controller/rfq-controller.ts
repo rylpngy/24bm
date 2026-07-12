@@ -31,6 +31,7 @@ import type {
   ApiResponseAwardNoticeVerifyResponse,
   ApiResponseBidEvaluationResponse,
   ApiResponseInteger,
+  ApiResponseListRfqAnnouncementResponse,
   ApiResponseListRfqClarificationResponse,
   ApiResponseListRfqEnrollmentResponse,
   ApiResponseListRfqResponse,
@@ -1636,6 +1637,92 @@ export function useRfqClarifications<TData = Awaited<ReturnType<typeof rfqClarif
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getRfqClarificationsQueryOptions(rfqId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const rfqListAnnouncements = (
+    rfqId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListRfqAnnouncementResponse>(
+      {url: `/api/v1/buyer/rfqs/${rfqId}/announcements`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getRfqListAnnouncementsQueryKey = (rfqId?: string,) => {
+    return [
+    `/api/v1/buyer/rfqs/${rfqId}/announcements`
+    ] as const;
+    }
+
+    
+export const getRfqListAnnouncementsQueryOptions = <TData = Awaited<ReturnType<typeof rfqListAnnouncements>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListAnnouncements>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRfqListAnnouncementsQueryKey(rfqId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof rfqListAnnouncements>>> = ({ signal }) => rfqListAnnouncements(rfqId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rfqListAnnouncements>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RfqListAnnouncementsQueryResult = NonNullable<Awaited<ReturnType<typeof rfqListAnnouncements>>>
+export type RfqListAnnouncementsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useRfqListAnnouncements<TData = Awaited<ReturnType<typeof rfqListAnnouncements>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListAnnouncements>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqListAnnouncements>>,
+          TError,
+          Awaited<ReturnType<typeof rfqListAnnouncements>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqListAnnouncements<TData = Awaited<ReturnType<typeof rfqListAnnouncements>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListAnnouncements>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof rfqListAnnouncements>>,
+          TError,
+          Awaited<ReturnType<typeof rfqListAnnouncements>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRfqListAnnouncements<TData = Awaited<ReturnType<typeof rfqListAnnouncements>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListAnnouncements>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRfqListAnnouncements<TData = Awaited<ReturnType<typeof rfqListAnnouncements>>, TError = ErrorType<ApiResponseVoid>>(
+ rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rfqListAnnouncements>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRfqListAnnouncementsQueryOptions(rfqId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -59,7 +59,7 @@ class DirectProjectCreationTests {
       mock(TenantFeatureApplicationService.class),
       new RfqSourcingStatusTransition(),
       mock(AuditLogApplicationService.class),
-      mock(NotificationApplicationService.class));
+      mock(NotificationApplicationService.class), null);
 
   private final PurchaseDemandItemMapper purchaseDemandItemMapper = mock(PurchaseDemandItemMapper.class);
   private final DepartmentMapper departmentMapper = mock(DepartmentMapper.class);
