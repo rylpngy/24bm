@@ -67,3 +67,24 @@ test('商城货架:表格列表 + 发布商品页 + 编辑商品页', async ({ p
   await page.getByRole('button', { name: '取消' }).click();
   await expect(page.getByRole('heading', { name: '商城货架', level: 3 })).toBeVisible();
 });
+
+test('配套功能页:发货管理 / 对账单 / 资质认证 / 员工管理', async ({ page }) => {
+  await loginViaKeycloak(page);
+
+  await openModule(page, /发货管理/);
+  await expect(page.getByRole('heading', { name: '发货管理', level: 3 })).toBeVisible();
+  await expect(page.getByPlaceholder(/搜索/).first()).toBeVisible();
+
+  await openModule(page, /对账单/);
+  await expect(page.getByRole('heading', { name: '对账单', level: 3 })).toBeVisible();
+
+  await openModule(page, /资质认证/);
+  await expect(page.getByRole('heading', { name: '资质认证', level: 3 })).toBeVisible();
+
+  await openModule(page, /员工管理/);
+  await expect(page.getByRole('heading', { name: '员工管理', level: 3 })).toBeVisible();
+  await page.getByRole('button', { name: /新增成员/ }).click();
+  await expect(page.getByRole('heading', { name: '新增成员' })).toBeVisible();
+  await page.getByRole('button', { name: '取消' }).click();
+  await expect(page.getByRole('heading', { name: '员工管理', level: 3 })).toBeVisible();
+});

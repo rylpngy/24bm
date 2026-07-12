@@ -377,6 +377,24 @@ export function OpportunitiesPage() {
               />
             )}
 
+            {/* 开标情况:已开标后进入评标定标,供应商可见自身报价与流程状态 */}
+            {(r.status === '已开标' || r.status === '定标审批中') && (
+              <section className="rounded-lg border border-blue-100 bg-blue-50/40 p-4">
+                <SectionTitle icon={Gavel} title="开标情况" />
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <MiniFact label="开标时间" value={shortTime(r.openedAt) ?? '—'} />
+                  <MiniFact label="当前轮次" value={`第 ${r.currentRound ?? 1} 轮${r.finalRound ? '(最终轮)' : ''}`} />
+                  <MiniFact label="流程状态" value={r.status === '定标审批中' ? '评标完成 · 定标审批中' : '评标定标进行中'} />
+                </div>
+                <p className="mt-3 text-xs font-bold leading-5 text-slate-600">
+                  {myQuote
+                    ? '您的报价已随开标解封进入比价评审;定标结果公示后将通过站内通知与本页「定标结果」告知。'
+                    : '本项目已开标;您未提交报价,不参与本轮评审。'}
+                  {r.status === '已开标' && !r.finalRound && ' 若采购方发起新一轮报价,您将收到再次报价邀请。'}
+                </p>
+              </section>
+            )}
+
             {/* 我的报价单:已提交后展示明细回执 */}
             {myQuote && (
               <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
@@ -722,6 +740,24 @@ export function OpportunitiesPage() {
                               className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
                             >
                               继续出价
+                            </button>
+                          )}
+                          {(r.status === '已开标' || r.status === '定标审批中') && (
+                            <button
+                              type="button"
+                              onClick={() => r.id && setSelectedId(r.id)}
+                              className="inline-flex h-8 items-center rounded-md border border-blue-200 bg-white px-3 text-xs font-black text-blue-700 transition hover:bg-blue-50"
+                            >
+                              查看开标情况
+                            </button>
+                          )}
+                          {r.status === '已定标' && (
+                            <button
+                              type="button"
+                              onClick={() => r.id && setSelectedId(r.id)}
+                              className="inline-flex h-8 items-center rounded-md border border-emerald-200 bg-white px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-50"
+                            >
+                              查看定标结果
                             </button>
                           )}
                           <button
