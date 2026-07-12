@@ -74,6 +74,14 @@ const awardGateHint = (method?: string, bidders = 0): string => {
     : `${method ?? '询比'}定标须不少于 3 家有效报价(当前 ${bidders} 家),否则应予流标。`;
 };
 
+// 定标资格(镜像后端 RfqMethod.requireAwardEligible):不足门槛时开放「流标」入口。
+const awardEligible = (method: string | undefined, bidders: number): boolean => {
+  const m = method ?? '询比';
+  if (m === '商城') return true;
+  if (m === '单一来源') return bidders >= 1;
+  return bidders >= 3;
+};
+
 export function RfqProjectDetail({
   rfq,
   budget,
@@ -360,10 +368,30 @@ export function RfqProjectDetail({
                   <RotateCcw size={14} /> 再次报价
                 </button>
               )}
+              {/* 流标=有效报价不足(仅门槛未达时开放);废标=评审发现重大偏差。两者为不同终止状态。 */}
+              {rfq.status === '已开标' && !awardEligible(rfq.method ?? undefined, quotes.length) && (
+                <button
+                  type="button"
+                  title="有效报价家数不足定标门槛,依规终止本项目"
+                  onClick={() =>
+                    rfq.id &&
+                    window.confirm(`当前有效报价 ${quotes.length} 家,未达定标门槛。确认流标?流标后关联需求将释放,可重新立项。`) &&
+                    abort.mutate({ rfqId: rfq.id, data: { kind: '流标', reason: '有效报价不足,予以流标' } }, { onSuccess: refresh, onError: reportError })
+                  }
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3 text-xs font-black text-white hover:bg-red-700"
+                >
+                  <Ban size={14} /> 流标
+                </button>
+              )}
               {rfq.status === '已开标' && (
                 <button
                   type="button"
-                  onClick={() => rfq.id && abort.mutate({ rfqId: rfq.id, data: { kind: '废标', reason: '评审发现重大偏差,予以废标' } }, { onSuccess: refresh, onError: reportError })}
+                  title="评审中发现重大偏差(如围标/资质造假/实质性不响应),终止本项目"
+                  onClick={() =>
+                    rfq.id &&
+                    window.confirm('确认废标?适用于评审发现重大偏差的情形;废标后关联需求将释放,可重新立项。') &&
+                    abort.mutate({ rfqId: rfq.id, data: { kind: '废标', reason: '评审发现重大偏差,予以废标' } }, { onSuccess: refresh, onError: reportError })
+                  }
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 hover:bg-red-50"
                 >
                   <Ban size={14} /> 废标
@@ -373,6 +401,9 @@ export function RfqProjectDetail({
           </div>
           <div className="mt-3 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2 text-[11px] font-bold text-sky-700">
             {rfq.method ?? '询比'} · 定标门槛:{awardGateHint(rfq.method ?? undefined, quotes.length)}
+            {rfq.status === '已开标' && !awardEligible(rfq.method ?? undefined, quotes.length) && (
+              <span className="ml-1 font-black">可点击右上角「流标」终止;「废标」仅用于评审发现重大偏差。</span>
+            )}
           </div>
           {budget > 0 && quotes.length > 0 && (() => {
             const lowest = Math.min(...quotes.map((q) => q.amount ?? Number.POSITIVE_INFINITY));
