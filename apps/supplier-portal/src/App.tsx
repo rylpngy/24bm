@@ -10,6 +10,10 @@ import { OrdersPage } from './features/orders/orders-page';
 import { ShelfPage } from './features/shelf/shelf-page';
 import { ReceivablesPage } from './features/receivables/receivables-page';
 import { ProfilePage } from './features/profile/profile-page';
+import { DeliveriesPage } from './features/deliveries/deliveries-page';
+import { ReconciliationsPage } from './features/reconciliations/reconciliations-page';
+import { QualificationsPage } from './features/qualifications/qualifications-page';
+import { TeamPage } from './features/team/team-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
@@ -45,12 +49,20 @@ export function App() {
         <OpportunitiesPage />
       ) : activeModuleId === 'orders' ? (
         <OrdersPage />
+      ) : activeModuleId === 'deliveries' ? (
+        <DeliveriesPage />
       ) : activeModuleId === 'shelf' ? (
         <ShelfPage />
       ) : activeModuleId === 'invoices' ? (
         <ReceivablesPage />
+      ) : activeModuleId === 'reconciliations' ? (
+        <ReconciliationsPage />
       ) : activeModuleId === 'profile' ? (
         <ProfilePage />
+      ) : activeModuleId === 'qualifications' ? (
+        <QualificationsPage />
+      ) : activeModuleId === 'team' ? (
+        <TeamPage />
       ) : (
         <Panel title={activeModule?.label ?? '模块'} icon={Construction} subtitle="后续切片实现">
           <FeedbackNotice tone="info" message={`「${activeModule?.label}」将在后续切片接通真实后端。`} />

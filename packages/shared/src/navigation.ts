@@ -62,9 +62,13 @@ export const supplierAdminModules: AdminNavigationModule[] = [
   { id: 'overview', label: '供应商看板', desc: '合作采购方、商机、订单' },
   { id: 'opportunities', label: '询比邀请', desc: '可报价商机与截止时间' },
   { id: 'orders', label: '销售订单', desc: '确认、发货、开票入口' },
+  { id: 'deliveries', label: '发货管理', desc: '发货单与物流跟踪' },
   { id: 'shelf', label: '商城货架', desc: '协议价商品、自主调价与上下架' },
   { id: 'invoices', label: '发票应收', desc: '发票与回款状态' },
+  { id: 'reconciliations', label: '对账单', desc: '订单-发票对账与差异' },
   { id: 'profile', label: '企业档案', desc: '企业能力与资质信息' },
+  { id: 'qualifications', label: '资质认证', desc: '证照档案与有效期' },
+  { id: 'team', label: '员工管理', desc: '成员账号与启停' },
 ];
 
 export const buyerNavigation: AdminRoleNavigation = {
