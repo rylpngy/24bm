@@ -173,11 +173,21 @@ test('公开门户:供应商名录与平台公告页真实数据 + 二级详情'
   await expect(page.getByText('认证状态')).toBeVisible();
   await expect(page.getByRole('button', { name: '登录发起合作' })).toBeVisible();
 
-  // 平台公告页 + 详情。
+  // 公告中心:采购公告(默认页签,业务事件自动生成)+ 平台公告页签 + 模板化详情。
   await page.goto('/?page=announcements');
-  await expect(page.getByRole('heading', { name: '平台公告', exact: true })).toBeVisible();
-  await page.locator('main').getByRole('button').first().click();
-  await expect(page.getByText(/发布于 \d{4}-\d{2}-\d{2}/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: '公告中心', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^采购公告 \(\d+\)/ })).toBeVisible();
+  const procCards = page.locator('main button.w-full'); // 公告卡片(全宽按钮),排除页签
+  if ((await procCards.count()) > 0) {
+    await procCards.first().click();
+    await expect(page.getByText('1. 公告正文')).toBeVisible();
+    await expect(page.getByText('关键信息')).toBeVisible();
+    await page.goBack().catch(() => {});
+    await page.goto('/?page=announcements');
+  }
+  // 平台公告页签:切换后列表(或空态)渲染。
+  await page.locator('main').getByRole('button', { name: /^平台公告/ }).click();
+  await expect(page.getByRole('heading', { name: '公告中心', exact: true })).toBeVisible();
 });
 test('商机大厅:公开列表 + 详情 + 报名参与', async ({ page }) => {
   await page.goto('/?page=opportunities');

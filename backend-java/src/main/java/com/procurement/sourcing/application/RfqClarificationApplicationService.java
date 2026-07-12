@@ -28,18 +28,21 @@ public class RfqClarificationApplicationService {
   private final RfqClarificationMapper rfqClarificationMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final RfqAnnouncementService rfqAnnouncementService;
 
   public RfqClarificationApplicationService(
       RfqMapper rfqMapper,
       RfqInviteMapper rfqInviteMapper,
       RfqClarificationMapper rfqClarificationMapper,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      RfqAnnouncementService rfqAnnouncementService) {
     this.rfqMapper = rfqMapper;
     this.rfqInviteMapper = rfqInviteMapper;
     this.rfqClarificationMapper = rfqClarificationMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.rfqAnnouncementService = rfqAnnouncementService;
   }
 
   // 采购方:看该 RFQ 全部澄清。
@@ -134,6 +137,9 @@ public class RfqClarificationApplicationService {
       notificationApplicationService.notifyActiveSupplierUsers(
           tenantId, invitedSupplierId, NotificationTitle.RFQ_CLARIFICATION_ANSWERED,
           rfq.title() + " 发布补遗公告,请查看并按最新要求报价。");
+    }
+    if (rfqAnnouncementService != null) {
+      rfqAnnouncementService.onBulletin(tenantId, rfq, content);
     }
     return toResponse(rfqClarificationMapper.findByTenantAndId(tenantId, id));
   }

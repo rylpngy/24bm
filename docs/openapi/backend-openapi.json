@@ -9866,6 +9866,96 @@
         }
       }
     },
+    "/api/v1/public/procurement-announcements": {
+      "get": {
+        "tags": [
+          "public-procurement-announcement-controller"
+        ],
+        "operationId": "PublicProcurementAnnouncement_list",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListPublicProcurementAnnouncementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/procurement-announcements/{announcementId}": {
+      "get": {
+        "tags": [
+          "public-procurement-announcement-controller"
+        ],
+        "operationId": "PublicProcurementAnnouncement_get",
+        "parameters": [
+          {
+            "name": "announcementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePublicProcurementAnnouncementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/opportunities": {
       "get": {
         "tags": [
@@ -11505,6 +11595,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListRfqClarificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/rfqs/{rfqId}/announcements": {
+      "get": {
+        "tags": [
+          "rfq-controller"
+        ],
+        "operationId": "Rfq_listAnnouncements",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListRfqAnnouncementResponse"
                 }
               }
             }
@@ -18644,6 +18784,89 @@
           }
         }
       },
+      "ApiResponseListPublicProcurementAnnouncementResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicProcurementAnnouncementResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicProcurementAnnouncementResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rfqId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "deadlineAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evaluationMethod": {
+            "type": "string"
+          },
+          "quoteRequirement": {
+            "type": "string"
+          },
+          "deliveryRequirement": {
+            "type": "string"
+          },
+          "awardedSupplierName": {
+            "type": "string"
+          },
+          "awardAmount": {
+            "type": "number"
+          },
+          "closeReason": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "buyerName": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponsePublicProcurementAnnouncementResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PublicProcurementAnnouncementResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "ApiResponseListPublicOpportunityResponse": {
         "type": "object",
         "properties": {
@@ -19981,6 +20204,72 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseListRfqAnnouncementResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RfqAnnouncementResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RfqAnnouncementResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rfqId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "deadlineAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evaluationMethod": {
+            "type": "string"
+          },
+          "quoteRequirement": {
+            "type": "string"
+          },
+          "deliveryRequirement": {
+            "type": "string"
+          },
+          "awardedSupplierName": {
+            "type": "string"
+          },
+          "awardAmount": {
+            "type": "number"
+          },
+          "closeReason": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
