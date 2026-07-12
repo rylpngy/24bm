@@ -72,7 +72,7 @@ const awardGateHint = (method?: string, bidders = 0): string => {
   if (method === '单一来源') return bidders >= 1 ? '单一来源已收到报价，可定标。' : '单一来源须有 1 家有效报价。';
   return bidders >= 3
     ? `已收到 ${bidders} 家有效报价,满足法定家数。`
-    : `${method ?? '询比'}定标须不少于 3 家有效报价(当前 ${bidders} 家),否则应予流标。`;
+    : `${method ?? '询比'}参考定标家数为 3 家有效报价(当前 ${bidders} 家)。依法必须招标/政府采购项目应予流标;民企等非依法必招项目可继续定标,系统将自动留痕。`;
 };
 
 // 定标资格(镜像后端 RfqMethod.requireAwardEligible):不足门槛时开放「流标」入口。
@@ -435,7 +435,7 @@ export function RfqProjectDetail({
           <div className="mt-3 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2 text-[11px] font-bold text-sky-700">
             {rfq.method ?? '询比'} · 定标门槛:{awardGateHint(rfq.method ?? undefined, quotes.length)}
             {rfq.status === '已开标' && !awardEligible(rfq.method ?? undefined, quotes.length) && (
-              <span className="ml-1 font-black">可点击右上角「流标」终止;「废标」仅用于评审发现重大偏差。</span>
+              <span className="ml-1 font-black">如需终止可点右上角「流标」;继续定标则直接在下方选定报价。「废标」仅用于评审发现重大偏差。</span>
             )}
           </div>
           {budget > 0 && quotes.length > 0 && (() => {

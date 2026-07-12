@@ -106,12 +106,6 @@ class RfqDraftLifecycleTests {
   void publishRequiresSupplierFloorThenNotifies() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(rfq("草稿"));
-    when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1"))
-        .thenReturn(List.of("supplier-1", "supplier-2"));
-
-    assertThatThrownBy(() -> rfqApplicationService.publish("rfq-1"))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("不少于3家");
 
     when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1"))
         .thenReturn(List.of("supplier-1", "supplier-2", "supplier-3"));

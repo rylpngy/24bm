@@ -72,6 +72,12 @@ public class AwardApplicationService {
     // 采购方式差异化定标门槛:竞争性谈判须多轮、招标/询价须法定家数。
     int bidderCount = quoteMapper.listByTenantAndRfqAndRound(tenantId, rfqId, rfq.currentRound()).size();
     RfqMethod.requireAwardEligible(rfq.method(), rfq.currentRound(), bidderCount, rfqId);
+    // 家数不足参考门槛:不阻断(民企/非依法必招项目可继续),但强制审计留痕。
+    String quorumAdvisory = RfqMethod.awardQuorumAdvisory(rfq.method(), bidderCount);
+    if (quorumAdvisory != null) {
+      auditLogApplicationService.recordTenantAction(
+          tenantId, "rfq.award_quorum_shortfall", "rfq", rfqId, quorumAdvisory);
+    }
 
     Quote quote = quoteMapper.findSubmittedQuoteForAward(tenantId, rfqId, request.quoteId(), QuoteStatus.SUBMITTED);
     if (quote == null) {
