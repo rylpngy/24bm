@@ -427,6 +427,12 @@ public class RfqApplicationService {
       throw new IllegalStateException("发布前请先在「选择供应商」步骤邀请供应商: " + rfqId);
     }
     RfqMethod.requireSupplierCount(RfqMethod.orDefault(rfq.method()), supplierIds.size());
+    // 邀请家数不足参考门槛:不阻断发布,审计留痕(依法必招项目由采购人自行把关)。
+    String supplierAdvisory = RfqMethod.supplierCountAdvisory(rfq.method(), supplierIds.size());
+    if (supplierAdvisory != null) {
+      auditLogApplicationService.recordTenantAction(
+          tenantId, "rfq.supplier_quorum_shortfall", "rfq", rfqId, supplierAdvisory);
+    }
     rfqSourcingStatusTransition.requireFutureDeadline(rfq.deadlineAt(), rfqId);
     int updated = rfqMapper.updateStatus(tenantId, rfqId, RfqStatus.DRAFT, RfqStatus.QUOTING);
     if (updated == 0) {

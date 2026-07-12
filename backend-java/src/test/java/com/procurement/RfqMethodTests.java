@@ -11,14 +11,13 @@ import org.junit.jupiter.api.Test;
 class RfqMethodTests {
 
   @Test
-  void compareAndAuctionRequireAtLeastThreeSuppliersWhenSpecified() {
-    assertThatCode(() -> RfqMethod.requireSupplierCount(RfqMethod.COMPARE, 3))
+  void compareAndAuctionSupplierFloorIsAdvisoryNotBlocking() {
+    // 家数门槛放宽:低于 3 家不阻断(民企/非依法必招项目),仅返回提醒文案供留痕。
+    assertThatCode(() -> RfqMethod.requireSupplierCount(RfqMethod.COMPARE, 2))
         .doesNotThrowAnyException();
-    assertThatCode(() -> RfqMethod.requireSupplierCount(RfqMethod.AUCTION, 3))
-        .doesNotThrowAnyException();
-    assertThatThrownBy(() -> RfqMethod.requireSupplierCount(RfqMethod.COMPARE, 2))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("不少于3家");
+    assertThat(RfqMethod.supplierCountAdvisory(RfqMethod.COMPARE, 2)).contains("参考邀请家数").contains("留痕");
+    assertThat(RfqMethod.supplierCountAdvisory(RfqMethod.COMPARE, 3)).isNull();
+    assertThat(RfqMethod.supplierCountAdvisory(RfqMethod.AUCTION, 0)).isNull();
   }
 
   @Test
@@ -43,14 +42,19 @@ class RfqMethodTests {
         .doesNotThrowAnyException();
     assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.SINGLE_SOURCE, 1, 0, "rfq-1"))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("单一来源须有 1 家报价");
+        .hasMessageContaining("至少 1 家有效报价");
   }
 
   @Test
-  void compareAndAuctionRequireThreeBiddersToAward() {
-    assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.COMPARE, 1, 2, "rfq-1"))
+  void awardQuorumIsAdvisoryNotBlocking() {
+    // 定标家数放宽:2 家可定标但产生提醒;无报价仍硬阻断(结构性)。
+    assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.COMPARE, 1, 2, "rfq-1"))
+        .doesNotThrowAnyException();
+    assertThat(RfqMethod.awardQuorumAdvisory(RfqMethod.COMPARE, 2)).contains("参考定标家数").contains("留痕");
+    assertThat(RfqMethod.awardQuorumAdvisory(RfqMethod.AUCTION, 3)).isNull();
+    assertThatThrownBy(() -> RfqMethod.requireAwardEligible(RfqMethod.COMPARE, 1, 0, "rfq-1"))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("不少于3家有效报价");
+        .hasMessageContaining("至少 1 家有效报价");
     assertThatCode(() -> RfqMethod.requireAwardEligible(RfqMethod.AUCTION, 1, 3, "rfq-1"))
         .doesNotThrowAnyException();
   }
