@@ -11,6 +11,7 @@ import {
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
+  FormErrorSummary,
   FilterTabs,
   Pagination,
   Panel,
@@ -214,13 +215,18 @@ function ListingPublishPage({
   const [materialKey, setMaterialKey] = useState('');
   const [price, setPrice] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
   const materialOptions = materials.data?.data ?? [];
   const [tenantId, materialId] = materialKey.split('|');
   const selected = materialOptions.find((m) => m.tenantId === tenantId && m.materialId === materialId);
-  const ready = !!selected && Number(price) > 0;
 
   const submit = () => {
+    const missing: string[] = [];
+    if (!selected) missing.push('请选择「采购方物料」');
+    if (!(Number(price) > 0)) missing.push('请填写大于 0 的「协议单价(元)」');
+    setFormErrors(missing);
+    if (missing.length > 0) return;
     setError(null);
     publish.mutate(
       { data: { tenantId, materialId, price: Number(price), unit: selected?.unit ?? undefined } },
@@ -258,6 +264,7 @@ function ListingPublishPage({
       </div>
 
       {error && <FeedbackNotice tone="error" message={error} />}
+      <FormErrorSummary errors={formErrors} />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
         <FormSection icon={Package} title="基础信息" desc="从采购方物料库选择;名称/分类/单位以采购方档案为准">
@@ -322,7 +329,6 @@ function ListingPublishPage({
               pendingLabel="上架中"
               size="md"
               flushTop
-              disabled={!ready}
             >
               上架商品
             </PrimaryActionButton>

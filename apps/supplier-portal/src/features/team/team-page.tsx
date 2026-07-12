@@ -8,7 +8,9 @@ import {
   useSupplierUserResetPassword,
 } from '@24bid/api-client';
 import {
+  ConfirmDialog,
   FilterTabs,
+  FormErrorSummary,
   FeedbackNotice,
   Pagination,
   Panel,
@@ -29,9 +31,14 @@ function MemberCreatePage({ onBack, onSaved }: { onBack: () => void; onSaved: (m
   const create = useSupplierUserCreate();
   const [form, setForm] = useState({ name: '', mobile: '', email: '', password: '' });
   const [error, setError] = useState<string | null>(null);
-  const ready = form.name.trim() && form.password.trim().length >= 6;
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
   const submit = () => {
+    const missing: string[] = [];
+    if (!form.name.trim()) missing.push('请填写「姓名」');
+    if (form.password.trim().length < 6) missing.push('「初始密码」至少 6 位');
+    setFormErrors(missing);
+    if (missing.length > 0) return;
     setError(null);
     create.mutate(
       {
@@ -77,6 +84,7 @@ function MemberCreatePage({ onBack, onSaved }: { onBack: () => void; onSaved: (m
       </div>
 
       {error && <FeedbackNotice tone="error" message={error} />}
+      <FormErrorSummary errors={formErrors} />
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -105,7 +113,7 @@ function MemberCreatePage({ onBack, onSaved }: { onBack: () => void; onSaved: (m
           >
             取消
           </button>
-          <PrimaryActionButton onClick={submit} busy={create.isPending} pendingLabel="创建中" size="md" flushTop disabled={!ready}>
+          <PrimaryActionButton onClick={submit} busy={create.isPending} pendingLabel="创建中" size="md" flushTop>
             创建成员
           </PrimaryActionButton>
         </div>
@@ -123,6 +131,7 @@ export function TeamPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [resetTarget, setResetTarget] = useState<{ id: string; name: string } | null>(null);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
@@ -166,6 +175,27 @@ export function TeamPage() {
   }
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!resetTarget}
+      tone="primary"
+      title={`重置「${resetTarget?.name ?? ''}」的登录密码`}
+      message="重置后旧密码立即失效,请将新密码告知该成员并提醒尽快修改。"
+      confirmLabel="确认重置"
+      input={{ label: '新密码', type: 'password', minLength: 6, placeholder: '至少 6 位' }}
+      busy={resetPassword.isPending}
+      onCancel={() => setResetTarget(null)}
+      onConfirm={(pwd) => {
+        resetTarget &&
+          resetPassword.mutate(
+            { userId: resetTarget.id, data: { newPassword: pwd } },
+            {
+              onSuccess: () => { setFeedback(`已重置「${resetTarget.name}」的登录密码。`); setResetTarget(null); refresh(); },
+              onError: (e) => { setResetTarget(null); reportError(e); },
+            },
+          );
+      }}
+    />
     <Panel title="员工管理" icon={Users} subtitle="成员账号 · 启停与密码管理">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterTabs
@@ -263,19 +293,7 @@ export function TeamPage() {
                           <button
                             type="button"
                             disabled={resetPassword.isPending}
-                            onClick={() => {
-                              const pwd = window.prompt(`为「${u.name}」设置新密码(至少 6 位):`);
-                              if (!pwd) return;
-                              if (pwd.length < 6) {
-                                setError('密码至少 6 位。');
-                                return;
-                              }
-                              u.id &&
-                                resetPassword.mutate(
-                                  { userId: u.id, data: { newPassword: pwd } },
-                                  { onSuccess: () => { setFeedback(`已重置「${u.name}」的登录密码。`); refresh(); }, onError: reportError },
-                                );
-                            }}
+                            onClick={() => u.id && setResetTarget({ id: u.id, name: u.name ?? '' })}
                             className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                           >
                             <KeyRound size={12} /> 重置密码
@@ -311,5 +329,6 @@ export function TeamPage() {
         </>
       )}
     </Panel>
+    </>
   );
 }

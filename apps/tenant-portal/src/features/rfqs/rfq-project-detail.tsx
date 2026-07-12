@@ -24,7 +24,7 @@ import {
   useRfqListEnrollments,
   useRfqListAnnouncements,
 } from '@24bid/api-client';
-import { FeedbackNotice, StatusPill, cn } from '@24bid/ui';
+import { ConfirmDialog, FeedbackNotice, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
 import { RfqClarificationsBuyer } from './rfq-clarifications';
 import { RfqResultBuyer } from './rfq-result';
@@ -110,6 +110,7 @@ export function RfqProjectDetail({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [roundForm, setRoundForm] = useState<{ deadline: string; final: boolean; note: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<'open-early' | 'no-bid' | 'abort' | null>(null);
 
   const quoting = rfq.status === '报价中';
   const terminal = TERMINAL[rfq.status ?? ''];
@@ -283,21 +284,21 @@ export function RfqProjectDetail({
               <button
                 type="button"
                 disabled={open.isPending}
-                onClick={() =>
-                  rfq.id &&
-                  (deadlinePassed || window.confirm('报价截止时间尚未到达。提前截标开标将结束报价收集,确认继续?')) &&
-                  open.mutate(
-                    { rfqId: rfq.id, data: { force: !deadlinePassed } },
-                    { onSuccess: refresh, onError: reportError },
-                  )
-                }
+                onClick={() => {
+                  if (!rfq.id) return;
+                  if (deadlinePassed) {
+                    open.mutate({ rfqId: rfq.id, data: { force: false } }, { onSuccess: refresh, onError: reportError });
+                  } else {
+                    setConfirmAction('open-early');
+                  }
+                }}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:bg-slate-300"
               >
                 <LockOpen size={14} /> {deadlinePassed ? '开标' : '提前截标开标'}
               </button>
               <button
                 type="button"
-                onClick={() => rfq.id && abort.mutate({ rfqId: rfq.id, data: { kind: '流标', reason: '有效报价不足,予以流标' } }, { onSuccess: refresh, onError: reportError })}
+                onClick={() => setConfirmAction('no-bid')}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 hover:bg-red-50"
               >
                 <Ban size={14} /> 流标
@@ -406,11 +407,7 @@ export function RfqProjectDetail({
                 <button
                   type="button"
                   title="有效报价家数不足定标门槛,依规终止本项目"
-                  onClick={() =>
-                    rfq.id &&
-                    window.confirm(`当前有效报价 ${quotes.length} 家,未达定标门槛。确认流标?流标后关联需求将释放,可重新立项。`) &&
-                    abort.mutate({ rfqId: rfq.id, data: { kind: '流标', reason: '有效报价不足,予以流标' } }, { onSuccess: refresh, onError: reportError })
-                  }
+                  onClick={() => setConfirmAction('no-bid')}
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3 text-xs font-black text-white hover:bg-red-700"
                 >
                   <Ban size={14} /> 流标
@@ -420,11 +417,7 @@ export function RfqProjectDetail({
                 <button
                   type="button"
                   title="评审中发现重大偏差(如围标/资质造假/实质性不响应),终止本项目"
-                  onClick={() =>
-                    rfq.id &&
-                    window.confirm('确认废标?适用于评审发现重大偏差的情形;废标后关联需求将释放,可重新立项。') &&
-                    abort.mutate({ rfqId: rfq.id, data: { kind: '废标', reason: '评审发现重大偏差,予以废标' } }, { onSuccess: refresh, onError: reportError })
-                  }
+                  onClick={() => setConfirmAction('abort')}
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 hover:bg-red-50"
                 >
                   <Ban size={14} /> 废标
@@ -593,6 +586,52 @@ export function RfqProjectDetail({
       </div>
 
 
+
+      <ConfirmDialog
+        open={confirmAction === 'open-early'}
+        tone="primary"
+        title="提前截标开标"
+        message="报价截止时间尚未到达。提前截标将立即结束报价收集并开标,未提交报价的供应商将无法再报价。确认继续?"
+        confirmLabel="确认开标"
+        busy={open.isPending}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          rfq.id && open.mutate(
+            { rfqId: rfq.id, data: { force: true } },
+            { onSuccess: () => { setConfirmAction(null); refresh(); }, onError: (e) => { setConfirmAction(null); reportError(e); } },
+          );
+        }}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'no-bid'}
+        tone="danger"
+        title="确认流标"
+        message={`当前有效报价 ${quotes.length} 家,低于 3 家参考门槛。流标将终止本项目并释放关联需求,可重新立项;流标公告将同步门户公示。`}
+        confirmLabel="确认流标"
+        busy={abort.isPending}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          rfq.id && abort.mutate(
+            { rfqId: rfq.id, data: { kind: '流标', reason: '有效报价不足,予以流标' } },
+            { onSuccess: () => { setConfirmAction(null); refresh(); }, onError: (e) => { setConfirmAction(null); reportError(e); } },
+          );
+        }}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'abort'}
+        tone="danger"
+        title="确认废标"
+        message="废标适用于评审发现重大偏差的情形(如围标、资质造假、实质性不响应)。废标将终止本项目并释放关联需求;废标公告将同步门户公示。"
+        confirmLabel="确认废标"
+        busy={abort.isPending}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          rfq.id && abort.mutate(
+            { rfqId: rfq.id, data: { kind: '废标', reason: '评审发现重大偏差,予以废标' } },
+            { onSuccess: () => { setConfirmAction(null); refresh(); }, onError: (e) => { setConfirmAction(null); reportError(e); } },
+          );
+        }}
+      />
 
       {roundForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-6" onClick={() => setRoundForm(null)}>

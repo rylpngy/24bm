@@ -197,9 +197,8 @@ export function SupplierListView({ onOpen, onRegister }: { onOpen: (id: string) 
               <tr>
                 <th className="w-14 px-5 py-4">序号</th>
                 <th className="px-5 py-4">供应商</th>
-                <th className="px-5 py-4">准入状态</th>
-                <th className="px-5 py-4">等级</th>
-                <th className="px-5 py-4">生命周期标记</th>
+                <th className="px-5 py-4">状态</th>
+                <th className="px-5 py-4">合作等级</th>
                 <th className="px-5 py-4">授权品类</th>
                 <th className="px-5 py-4 text-right">绩效</th>
                 <th className="px-5 py-4 text-right">操作</th>
@@ -217,11 +216,26 @@ export function SupplierListView({ onOpen, onRegister }: { onOpen: (id: string) 
                   </td>
                   <td className="px-5 py-5">
                     <p className="font-black text-slate-950">{s.supplierName}</p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">{s.creditCode || s.supplierId || '待补充统一信用代码'}</p>
+                    {/* 编号定宽截断,悬浮显示完整值,避免长信用代码挤压其他列 */}
+                    <p
+                      title={s.creditCode || s.supplierId || undefined}
+                      className="mt-1 w-40 truncate font-mono text-xs font-bold text-slate-400"
+                    >
+                      {s.creditCode || s.supplierId || '待补充统一信用代码'}
+                    </p>
                   </td>
-                  <td className="px-5 py-5">{s.status && <StatusPill label={s.status} />}</td>
-                  <td className="px-5 py-5 text-sm font-bold text-slate-600">{s.level}</td>
-                  <td className="px-5 py-5">{s.cooperationTier && <StatusPill label={s.cooperationTier} />}</td>
+                  <td className="px-5 py-5">
+                    {/* 状态主标签 + 生命周期以点号辅注,避免双标签并列的杂乱 */}
+                    <div className="flex flex-col gap-1">
+                      {s.status && <StatusPill label={s.status} />}
+                      {s.cooperationTier && s.cooperationTier !== s.status && (
+                        <span className="text-[11px] font-bold text-slate-400">· {s.cooperationTier}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-black text-blue-700">{s.level ?? '—'}</span>
+                  </td>
                   <td className="px-5 py-5">
                     <p className="max-w-sm truncate text-sm font-bold text-slate-600">{(s.categories ?? []).join('、') || '—'}</p>
                   </td>
