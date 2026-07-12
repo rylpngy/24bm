@@ -57,3 +57,9 @@ export type { SearchInputProps } from './components/search-input';
 export { CountTag } from './components/count-tag';
 export type { CountTagProps } from './components/count-tag';
 export { MetricGrid, MetricCard, SummaryChips, SummaryChip } from './components/metric-card';
+
+export { ConfirmDialog } from './components/confirm-dialog';
+export type { ConfirmDialogProps } from './components/confirm-dialog';
+
+export { FormErrorSummary } from './components/form-error-summary';
+export type { FormErrorSummaryProps } from './components/form-error-summary';

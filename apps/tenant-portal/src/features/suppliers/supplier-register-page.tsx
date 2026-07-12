@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Banknote, Building2, Contact, FileBadge, Handshake } from 'lucide-react';
 import { usePublicPortalListSuppliers, useBuyerSupplierCreate } from '@24bid/api-client';
-import { FeedbackNotice, PrimaryActionButton } from '@24bid/ui';
+import { FeedbackNotice, FormErrorSummary, PrimaryActionButton } from '@24bid/ui';
 
 const inputCls =
   'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -69,12 +69,18 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
     bankAccount: '',
   });
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
   const set = (key: keyof typeof form) => (value: string) => setForm((f) => ({ ...f, [key]: value }));
   const selectedPlatform = (platformSuppliers.data?.data ?? []).find((s) => s.id === form.supplierId);
   const ready = form.supplierId.trim() && form.level.trim();
 
   const submit = () => {
+    const missing: string[] = [];
+    if (!form.supplierId.trim()) missing.push('请选择「供应商企业」(从平台认证供应商中选择)');
+    if (!form.level.trim()) missing.push('请选择「合作等级」');
+    setFormErrors(missing);
+    if (missing.length > 0) return;
     setError(null);
     create.mutate(
       {
@@ -205,6 +211,8 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
         </div>
       </Section>
 
+      <FormErrorSummary errors={formErrors} />
+
       <div className="sticky bottom-4 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
@@ -220,7 +228,7 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
             >
               取消
             </button>
-            <PrimaryActionButton onClick={submit} busy={create.isPending} pendingLabel="登记中" size="md" flushTop disabled={!ready}>
+            <PrimaryActionButton onClick={submit} busy={create.isPending} pendingLabel="登记中" size="md" flushTop>
               登记供应商
             </PrimaryActionButton>
           </div>

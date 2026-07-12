@@ -21,6 +21,7 @@ import {
   useSupplierQuoteSubmit,
 } from '@24bid/api-client';
 import {
+  ConfirmDialog,
   FilterTabs,
   FeedbackNotice,
   MiniFact,
@@ -153,6 +154,7 @@ export function OpportunitiesPage() {
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [declineOpen, setDeclineOpen] = useState(false);
 
   const all = rfqs.data?.data ?? [];
   const statuses = ['全部', ...Array.from(new Set(all.map((r) => r.status).filter(Boolean) as string[]))];
@@ -245,6 +247,26 @@ export function OpportunitiesPage() {
 
     return (
       <div className="space-y-4">
+        <ConfirmDialog
+          open={declineOpen}
+          tone="danger"
+          title="拒绝参与本次询价"
+          message="拒绝后本项目将不可再报价,采购方会收到您的拒绝回执。"
+          confirmLabel="确认拒绝"
+          input={{ label: '拒绝原因', placeholder: '如:产能排期冲突', optional: true }}
+          busy={decline.isPending}
+          onCancel={() => setDeclineOpen(false)}
+          onConfirm={(reason) => {
+            r.id &&
+              decline.mutate(
+                { rfqId: r.id, data: { reason: reason || undefined } },
+                {
+                  onSuccess: () => { setDeclineOpen(false); refresh(); },
+                  onError: () => { setDeclineOpen(false); setError('拒绝失败:可能已提交报价。'); },
+                },
+              );
+          }}
+        />
         {/* 头部:返回 + 标题 + 状态,右侧动作 */}
         <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
           <div className="flex flex-wrap items-center gap-3">
@@ -275,15 +297,7 @@ export function OpportunitiesPage() {
               <button
                 type="button"
                 disabled={decline.isPending}
-                onClick={() => {
-                  const reason = window.prompt('确认拒绝参与本次询价?可填写原因(选填):');
-                  if (reason === null) return;
-                  r.id &&
-                    decline.mutate(
-                      { rfqId: r.id, data: { reason: reason || undefined } },
-                      { onSuccess: refresh, onError: () => setError('拒绝失败:可能已提交报价。') },
-                    );
-                }}
+                onClick={() => setDeclineOpen(true)}
                 className="inline-flex h-9 shrink-0 items-center rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 hover:bg-red-50 disabled:opacity-50"
               >
                 拒绝参与
