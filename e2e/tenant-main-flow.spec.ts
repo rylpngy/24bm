@@ -22,10 +22,16 @@ test('采购主链路逐站渲染(需求→询比→报价对比→订单→发�
   await expect(page.getByText('定标决策').first()).toBeVisible();
   await expect(page.getByText('供应商参与进度')).toBeVisible();
 
-  // ④ 采购订单:订单行项明细(源自中标报价)+ KPI。
+  // ④ 采购订单:表格台账 + 详情页行项明细(源自中标报价)。
   await openModule(page, /采购订单/);
   await expect(page.getByText('订单总数').first()).toBeVisible();
-  await expect(page.getByText(/订单行项明细/).first()).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '订单编号' })).toBeVisible();
+  const orderDetail = page.getByRole('button', { name: '详情', exact: true });
+  if ((await orderDetail.count()) > 0) {
+    await orderDetail.first().click();
+    await expect(page.getByText(/订单行项明细|订单信息/).first()).toBeVisible();
+    await page.getByRole('button', { name: '返回订单列表' }).click();
+  }
 
   // ⑤ 发票付款:三单匹配(金额维度)。
   await openModule(page, /发票付款/);
