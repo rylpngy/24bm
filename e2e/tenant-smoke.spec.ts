@@ -76,6 +76,8 @@ test('合同页显示合同-付款对账视图', async ({ page }) => {
   await expect(page.getByText('合同-付款对账视图')).toBeVisible();
   await expect(page.getByText('待核差额')).toBeVisible();
   await page.getByRole('button', { name: '详情', exact: true }).first().click();
+  // 详情页按业务操作类型拆分 TAB:付款对账内容在「付款对账」页签下。
+  await page.getByRole('button', { name: '付款对账' }).click();
   await expect(page.getByText('合同-付款对账', { exact: true })).toBeVisible();
   await expect(page.getByText(/合同付款登记覆盖/).first()).toBeVisible();
   await expect(page.getByText(/付款链路/).first()).toBeVisible();
