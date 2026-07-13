@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CheckCircle2, ClipboardList, Megaphone, Search, Send, Sparkles, Users, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   type BuyerSupplierResponse,
   type PurchaseDemandResponse,
@@ -51,6 +52,7 @@ export function RfqCreateWizard({
   const departmentsQuery = useDepartmentList();
   const departments = departmentsQuery.data?.data ?? [];
 
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(resumeDraft ? ((resumeDraft.invitedSupplierIds ?? []).length > 0 ? 3 : 2) : 1);
   const [draftId, setDraftId] = useState<string | null>(resumeDraft?.id ?? null);
   const [error, setError] = useState<string | null>(null);
@@ -134,16 +136,26 @@ export function RfqCreateWizard({
     (method === '竞价' ? !!auctionPlannedStart && Number(auctionDurationMinutes) > 0 : !!deadline) &&
     (method !== '竞价' || Number(auctionStartPrice) > 0) &&
     (!isSingleSource || singleSourceReason.trim().length > 0);
-  const supplierFloorMet = isSingleSource
-    ? supplierIds.length === 1
-    : method === '商城'
-      ? true
-      : supplierIds.length === 0 || supplierIds.length >= 3;
+  // 邀请供应商为可选项:竞争性方式不设前端硬门槛(不足 3 家由后端做提醒与审计留痕);
+  // 单一来源仍须定向 1 家(结构性规则)。
+  const supplierFloorMet = isSingleSource ? supplierIds.length === 1 : true;
 
-  const reportError = (e: unknown) =>
-    setError(
-      (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '操作失败,请稍后重试',
-    );
+  const reportError = (e: unknown) => {
+    const raw =
+      (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '操作失败,请稍后重试';
+    // 已知后端守卫的英文消息翻译成可执行的中文指引。
+    if (raw.includes('already linked to an RFQ')) {
+      void queryClient.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/demands'),
+      });
+    }
+    const translated = raw.includes('already linked to an RFQ')
+      ? '所选需求已被其他询价/竞价项目占用,请返回重新选择需求(列表已按最新状态刷新)。'
+      : raw.includes('not approved for tenant RFQ')
+        ? '所选供应商尚未完成准入,仅「已准入」供应商可受邀参与。'
+        : raw;
+    setError(translated);
+  };
 
   const saveDraft = () => {
     setError(null);
@@ -595,7 +607,7 @@ export function RfqCreateWizard({
                 })}
                 {supplierIds.length === 0 && (
                   <p className="text-[11px] font-bold text-slate-400">
-                    {isSingleSource ? '单一来源须定向选择 1 家供应商。' : '公开征集可不选;邀请征集建议至少 3 家以保证充分竞争和合规性审计。'}
+                    {isSingleSource ? '单一来源须定向选择 1 家供应商。' : '邀请供应商为可选项:不选即公开征集;建议邀请至少 3 家以保证充分竞争,不足 3 家系统将提醒并留痕。'}
                   </p>
                 )}
               </div>
