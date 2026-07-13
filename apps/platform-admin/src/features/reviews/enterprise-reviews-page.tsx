@@ -218,7 +218,7 @@ function SummaryCard({
   );
 }
 
-// 二级审核详情页:企业信息 + 审核操作 + 流转日志 + 合规检查侧栏,布局对齐智能审批详情页。
+// 二级审核详情页:企业信息 + 核验与意见 + 流转日志 + 合规检查侧栏;审核动作常驻底部悬浮操作条。
 function ReviewDetailPage({
   enterprise: e,
   onBack,
@@ -280,7 +280,7 @@ function ReviewDetailPage({
     },
     {
       title: '阶段合法性',
-      desc: `当前阶段「${STAGE_LABEL[stage] ?? stage}」,可执行动作见「审核操作」主操作区`,
+      desc: `当前阶段「${STAGE_LABEL[stage] ?? stage}」,可执行动作见页面底部常驻操作条`,
       ok: stage !== 'rejected',
     },
   ];
@@ -310,7 +310,7 @@ function ReviewDetailPage({
               href="#review-actions"
               className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-black text-blue-700 transition hover:bg-blue-100"
             >
-              <ShieldCheck size={15} /> 前往审核操作
+              <ShieldCheck size={15} /> 前往核验与意见
             </a>
           )}
         </div>
@@ -355,7 +355,7 @@ function ReviewDetailPage({
           >
             <div className="flex items-center justify-between rounded-t-md border-b border-blue-100 bg-blue-50/70 px-4 py-3">
               <p className="flex items-center gap-2 text-sm font-black text-blue-900">
-                <ShieldCheck size={16} className="text-blue-600" /> 审核操作(主操作区)
+                <ShieldCheck size={16} className="text-blue-600" /> 审核核验与意见
               </p>
               <span className={cn('rounded-full px-2 py-1 text-[11px] font-black', STAGE_TONE[stage] ?? 'bg-slate-100 text-slate-600')}>
                 当前阶段:{STAGE_LABEL[stage] ?? stage}
@@ -407,67 +407,9 @@ function ReviewDetailPage({
                 onChange={(ev) => setComment(ev.target.value)}
               />
             </div>
-            <div>
-              <p className="text-xs font-black text-slate-500">
-                <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[11px] text-white">{stage === 'preliminary' ? 3 : 2}</span>
-                提交审核结果
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {stage === 'pending' && (
-                  <button
-                    type="button"
-                    onClick={() => run('preliminary_pass', '初审通过')}
-                    disabled={busy}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-blue-600 px-5 text-sm font-black text-white hover:bg-blue-700 disabled:bg-slate-400"
-                  >
-                    <CheckCircle2 size={16} /> {busy ? '处理中' : '初审通过'}
-                  </button>
-                )}
-                {stage === 'preliminary' && (
-                  <button
-                    type="button"
-                    onClick={() => run('approve', '准入通过')}
-                    disabled={busy || !(profile && risk)}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-emerald-600 px-5 text-sm font-black text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                  >
-                    <CheckCircle2 size={16} /> {busy ? '处理中' : '准入通过'}
-                  </button>
-                )}
-                {stage === 'preliminary' && (
-                  <button
-                    type="button"
-                    onClick={() => run('return', '退回补充')}
-                    disabled={busy || needReason}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-4 text-sm font-black text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Undo2 size={16} /> 退回补充
-                  </button>
-                )}
-                {(stage === 'pending' || stage === 'preliminary') && (
-                  <button
-                    type="button"
-                    onClick={() => run('reject', '驳回')}
-                    disabled={busy || needReason}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-4 text-sm font-black text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <XCircle size={16} /> 驳回
-                  </button>
-                )}
-                {stage === 'approved' && (
-                  <p className="text-sm font-black text-emerald-700">该企业已准入通过,无需进一步操作。</p>
-                )}
-                {stage === 'rejected' && (
-                  <p className="text-sm font-black text-red-600">该企业已驳回。</p>
-                )}
-              </div>
-              <div className="mt-2 space-y-1 text-[11px] font-bold text-amber-700">
-                {stage === 'preliminary' && !(profile && risk) && <p>· 「准入通过」按钮需先完成第 1 步两项核验勾选</p>}
-                {(stage === 'pending' || stage === 'preliminary') && needReason && <p>· 「驳回{stage === 'preliminary' ? ' / 退回补充' : ''}」需先填写审核意见</p>}
-              </div>
-            </div>
-            {advance.isError && (
-              <p className="text-xs font-bold text-red-600">操作失败:请检查阶段是否允许该动作、必填理由是否填写。</p>
-            )}
+            <p className="text-[11px] font-bold text-slate-400">
+              审核结果在页面底部常驻操作条提交(核验勾选与审核意见为其前置条件)。
+            </p>
             </div>
           </section>
 
@@ -534,6 +476,79 @@ function ReviewDetailPage({
             </p>
           </section>
         </aside>
+      </div>
+
+      {/* 底部悬浮操作条:审核动作常驻可见,交互对齐业务端详情页提交条 */}
+      <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2 text-xs font-bold text-slate-500">
+            <ShieldCheck size={14} className="shrink-0 text-blue-600" />
+            <span className="min-w-0">
+              当前阶段
+              <span className={cn('ml-1.5 rounded-full px-2 py-0.5 text-[11px] font-black', STAGE_TONE[stage] ?? 'bg-slate-100 text-slate-600')}>
+                {STAGE_LABEL[stage] ?? stage}
+              </span>
+              <span className="ml-2">
+                {stage === 'approved'
+                  ? '该企业已准入通过,无需进一步操作。'
+                  : stage === 'rejected'
+                    ? '该企业已驳回。'
+                    : stage === 'preliminary' && !(profile && risk)
+                      ? '「准入通过」需先完成上方两项核验勾选。'
+                      : needReason
+                        ? '「驳回' + (stage === 'preliminary' ? ' / 退回补充' : '') + '」需先填写审核意见。'
+                        : '核对无误后可提交审核结果。'}
+              </span>
+            </span>
+          </div>
+          {(stage === 'pending' || stage === 'preliminary') && (
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {(stage === 'pending' || stage === 'preliminary') && (
+                <button
+                  type="button"
+                  onClick={() => run('reject', '驳回')}
+                  disabled={busy || needReason}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-4 text-sm font-black text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <XCircle size={16} /> 驳回
+                </button>
+              )}
+              {stage === 'preliminary' && (
+                <button
+                  type="button"
+                  onClick={() => run('return', '退回补充')}
+                  disabled={busy || needReason}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-4 text-sm font-black text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Undo2 size={16} /> 退回补充
+                </button>
+              )}
+              {stage === 'pending' && (
+                <button
+                  type="button"
+                  onClick={() => run('preliminary_pass', '初审通过')}
+                  disabled={busy}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-blue-600 px-5 text-sm font-black text-white hover:bg-blue-700 disabled:bg-slate-400"
+                >
+                  <CheckCircle2 size={16} /> {busy ? '处理中' : '初审通过'}
+                </button>
+              )}
+              {stage === 'preliminary' && (
+                <button
+                  type="button"
+                  onClick={() => run('approve', '准入通过')}
+                  disabled={busy || !(profile && risk)}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-emerald-600 px-5 text-sm font-black text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  <CheckCircle2 size={16} /> {busy ? '处理中' : '准入通过'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        {advance.isError && (
+          <p className="mt-2 text-xs font-bold text-red-600">操作失败:请检查阶段是否允许该动作、必填理由是否填写。</p>
+        )}
       </div>
     </div>
   );
