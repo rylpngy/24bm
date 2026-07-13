@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CalendarClock, FileSignature, Info, Plus } from 'lucide-react';
+import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, Info, Plus } from 'lucide-react';
 import {
   useBuyerContractCreate,
   useBuyerContractList,
@@ -21,6 +21,7 @@ import {
   ResponsiveTableFrame,
   SearchInput,
   StatusPill,
+  Tabs,
   cn,
 } from '@24bid/ui';
 import { OwnerAttachments } from '../attachments/owner-attachments';
@@ -133,6 +134,13 @@ export function ContractsPage() {
     );
   };
 
+  const [detailTab, setDetailTab] = useState('info');
+  const openDetail = (id?: string) => {
+    if (!id) return;
+    setDetailTab('info');
+    setSelectedId(id);
+  };
+
   const selected = selectedId ? contracts.find((c) => c.id === selectedId) : undefined;
 
   // ── 详情页 ────────────────────────────────────────────────
@@ -175,6 +183,20 @@ export function ContractsPage() {
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
+            {/* 详情分区按业务操作类型拆分为 TAB:信息/付款对账/履约/变更 */}
+            <Tabs
+              items={[
+                { id: 'info', label: '合同信息', icon: FileText },
+                { id: 'reconciliation', label: '付款对账', icon: Banknote },
+                { id: 'fulfillment', label: '履约时间轴', icon: CalendarClock },
+                { id: 'amendments', label: '合同变更', icon: FileDiff },
+              ]}
+              value={detailTab}
+              onChange={setDetailTab}
+            />
+
+            {detailTab === 'info' && (
+              <>
             {/* 合同条款 */}
             <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">合同条款</h3>
@@ -199,22 +221,28 @@ export function ContractsPage() {
                 </div>
               </div>
             </section>
-
-            {/* 合同-付款对账:从列表页迁入的单合同对账明细 */}
-            <ContractReconciliationDetail contract={c} />
-
-            {/* 行项与付款计划 / 履约事件 / 变更 / 附件:详情页常驻分区 */}
-            {c.id && <ContractScheduleSection contractId={c.id} />}
-            {c.id && <ContractFulfillmentEvents contractId={c.id} />}
-            {c.id && <ContractAmendments contractId={c.id} />}
-            {c.id && (
-              <OwnerAttachments
-                ownerType="contract"
-                ownerId={c.id}
-                title="合同附件"
-                emptyHint="暂无附件,点击右上角上传合同正本、补充协议等。"
-              />
+                {c.id && (
+                  <OwnerAttachments
+                    ownerType="contract"
+                    ownerId={c.id}
+                    title="合同附件"
+                    emptyHint="暂无附件,点击右上角上传合同正本、补充协议等。"
+                  />
+                )}
+              </>
             )}
+
+            {detailTab === 'reconciliation' && (
+              <>
+                {/* 合同-付款对账 + 行项与付款计划:同属资金口径 */}
+                <ContractReconciliationDetail contract={c} />
+                {c.id && <ContractScheduleSection contractId={c.id} />}
+              </>
+            )}
+
+            {detailTab === 'fulfillment' && c.id && <ContractFulfillmentEvents contractId={c.id} />}
+
+            {detailTab === 'amendments' && c.id && <ContractAmendments contractId={c.id} />}
           </div>
 
           {/* 右栏:关键信息 */}
@@ -467,7 +495,7 @@ export function ContractsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => c.id && setSelectedId(c.id)}
+                  onClick={() => openDetail(c.id)}
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                 >
                   查看详情
@@ -526,7 +554,7 @@ export function ContractsPage() {
                         {c.status === '草案' && (
                           <button
                             type="button"
-                            onClick={() => c.id && setSelectedId(c.id)}
+                            onClick={() => openDetail(c.id)}
                             className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
                           >
                             提交审批
@@ -535,7 +563,7 @@ export function ContractsPage() {
                         {c.status === '审批中' && (
                           <button
                             type="button"
-                            onClick={() => c.id && setSelectedId(c.id)}
+                            onClick={() => openDetail(c.id)}
                             className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
                           >
                             去复核
@@ -543,7 +571,7 @@ export function ContractsPage() {
                         )}
                         <button
                           type="button"
-                          onClick={() => c.id && setSelectedId(c.id)}
+                          onClick={() => openDetail(c.id)}
                           className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
                         >
                           详情
