@@ -61,7 +61,10 @@ export function App() {
   const activeModule = buyerNavigation.modules.find((m) => m.id === activeModuleId);
   const permitted = visibleModules.some((m) => m.id === activeModuleId);
 
-  if (!session) {
+  // ?portal=1:登录态下也可回看系统门户(顶栏「门户首页」入口)。
+  const forcePortal = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('portal') === '1';
+  if (!session || forcePortal) {
     return <PortalLanding />;
   }
 
@@ -72,6 +75,8 @@ export function App() {
       modules={visibleModules}
       activeModuleId={activeModuleId}
       onSelectModule={selectModule}
+      portalUrl="/?portal=1"
+      aiModuleId="analytics"
       title={activeModule?.label ?? '企业工作台'}
       accountLabel={`${session.displayName} · ${session.tenantId}`}
     >

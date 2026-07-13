@@ -34,6 +34,7 @@ export function App() {
       modules={platformNavigation.modules}
       activeModuleId={activeModuleId}
       onSelectModule={selectModule}
+      portalUrl={import.meta.env.VITE_PORTAL_URL ?? 'http://localhost:5173'}
       title={activeModule?.label ?? '平台运营后台'}
       accountLabel={`${session.displayName} · 平台运营`}
     >

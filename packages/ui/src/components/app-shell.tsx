@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import type { ElementType, ReactNode } from 'react';
-import {
+import { Globe, Sparkles, Languages, ChevronDown,
   BadgeCheck,
   BarChart3,
   Banknote,
@@ -59,6 +60,10 @@ export interface AppShellProps {
   title: string;
   /** 顶栏账户副标题。 */
   accountLabel?: string;
+  /** 门户首页地址(新开页);不传则不显示按钮。 */
+  portalUrl?: string;
+  /** 智能分析模块 id(有真实 AI 报告能力的端传入,点击经 onSelectModule 跳转)。 */
+  aiModuleId?: string;
   children: ReactNode;
 }
 
@@ -71,8 +76,11 @@ export function AppShell({
   onSelectModule,
   title,
   accountLabel = '主账户',
+  portalUrl,
+  aiModuleId,
   children,
 }: AppShellProps) {
+  const [langOpen, setLangOpen] = useState(false);
   return (
     <div className="flex h-dvh flex-col overflow-hidden overflow-x-hidden bg-slate-100/70 text-slate-900 lg:flex-row">
       <aside className="hidden min-h-0 shrink-0 flex-col bg-slate-950 text-white lg:flex lg:w-72">
@@ -155,6 +163,55 @@ export function AppShell({
               {title}
             </h1>
             <p className="text-xs font-bold text-slate-500">{accountLabel}</p>
+          </div>
+
+          {/* 顶栏功能区:门户首页 / 智能分析(真实 AI 报告入口)/ 语言 */}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {portalUrl && (
+              <a
+                href={portalUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50"
+              >
+                <Globe size={14} /> 门户首页
+              </a>
+            )}
+            {aiModuleId && (
+              <button
+                type="button"
+                onClick={() => onSelectModule(aiModuleId)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-black text-blue-700 transition hover:bg-blue-100"
+              >
+                <Sparkles size={14} /> AI 分析
+              </button>
+            )}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setLangOpen((v: boolean) => !v)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50"
+              >
+                <Languages size={14} /> 简体中文 <ChevronDown size={13} className="text-slate-400" />
+              </button>
+              {langOpen && (
+                <div
+                  className="absolute right-0 top-full z-40 mt-1.5 w-44 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg"
+                  onMouseLeave={() => setLangOpen(false)}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setLangOpen(false)}
+                    className="flex w-full items-center justify-between rounded-md bg-blue-50 px-3 py-2 text-xs font-black text-blue-700"
+                  >
+                    简体中文 <span className="text-[10px]">当前</span>
+                  </button>
+                  <div className="flex w-full cursor-not-allowed items-center justify-between rounded-md px-3 py-2 text-xs font-bold text-slate-300">
+                    English <span className="text-[10px]">规划中</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
