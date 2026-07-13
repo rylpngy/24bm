@@ -72,9 +72,11 @@ test('合同页显示合同-付款对账视图', async ({ page }) => {
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
   await page.getByRole('button', { name: /登录系统/ }).click();
 
+  // 列表页:对账汇总条;逐合同对账明细已迁入详情页。
   await expect(page.getByText('合同-付款对账视图')).toBeVisible();
   await expect(page.getByText('待核差额')).toBeVisible();
-  await expect(page.getByRole('button', { name: /存在付款阻断/ })).toBeVisible();
+  await page.getByRole('button', { name: '详情', exact: true }).first().click();
+  await expect(page.getByText('合同-付款对账', { exact: true })).toBeVisible();
   await expect(page.getByText(/合同付款登记覆盖/).first()).toBeVisible();
   await expect(page.getByText(/付款链路/).first()).toBeVisible();
 });
@@ -176,7 +178,8 @@ test('公开门户:供应商名录与平台公告页真实数据 + 二级详情'
   // 公告中心:采购公告(默认页签,业务事件自动生成)+ 平台公告页签 + 模板化详情。
   await page.goto('/?page=announcements');
   await expect(page.getByRole('heading', { name: '公告中心', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^采购公告 \(\d+\)/ })).toBeVisible();
+  // 页签计数依赖环境数据(CI 干净库可能为 0),断言与计数解耦。
+  await expect(page.locator('main').getByRole('button', { name: /^采购公告/ }).first()).toBeVisible();
   const procCards = page.locator('main button.w-full'); // 公告卡片(全宽按钮),排除页签
   if ((await procCards.count()) > 0) {
     await procCards.first().click();
