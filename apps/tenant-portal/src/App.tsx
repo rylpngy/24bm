@@ -13,6 +13,7 @@ import { SuppliersPage } from './features/suppliers/suppliers-page';
 import { MaterialsPage } from './features/materials/materials-page';
 import { RfqsPage } from './features/rfqs/rfqs-page';
 import { OrdersPage } from './features/orders/orders-page';
+import { ReceiptsPage } from './features/receipts/receipts-page';
 import { InvoicesPage } from './features/finance/invoices-page';
 import { PaymentBatchesPage } from './features/finance/payment-batches-page';
 import { ContractsPage } from './features/contracts/contracts-page';
@@ -107,8 +108,10 @@ export function App() {
         <MallPage onNavigate={selectModule} />
       ) : activeModuleId === 'rfqs' ? (
         <RfqsPage />
-      ) : activeModuleId === 'orders' || activeModuleId === 'receipts' ? (
-        <OrdersPage />
+      ) : activeModuleId === 'receipts' ? (
+        <ReceiptsPage />
+      ) : activeModuleId === 'orders' ? (
+        <OrdersPage onNavigate={selectModule} />
       ) : activeModuleId === 'invoices' ? (
         <InvoicesPage />
       ) : activeModuleId === 'payment-batches' ? (
