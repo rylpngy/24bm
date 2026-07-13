@@ -19,9 +19,12 @@ import {
   useSupplierQuoteListRfqs,
   useSupplierQuoteMarkViewed,
   useSupplierQuoteSubmit,
+  useSupplierEsignSign,
+  useSupplierEsignList,
 } from '@24bid/api-client';
 import {
   ConfirmDialog,
+  EsignRecordList,
   FilterTabs,
   FeedbackNotice,
   MiniFact,
@@ -30,6 +33,7 @@ import {
   PrimaryActionButton,
   ResponsiveTableFrame,
   SearchInput,
+  SignaturePad,
   StatusPill,
   cn,
 } from '@24bid/ui';
@@ -114,6 +118,18 @@ function ProgressNode({
   );
 }
 
+// 报价单电子签署记录:展示本方签署留痕(签署人/时间/内容指纹/笔迹)。
+function QuoteEsignRecords({ quoteId }: { quoteId: string }) {
+  const records = useSupplierEsignList({ targetType: 'quote', targetId: quoteId });
+  const list = records.data?.data ?? [];
+  if (list.length === 0) return null;
+  return (
+    <div className="mt-3">
+      <EsignRecordList records={list} />
+    </div>
+  );
+}
+
 // 询比邀请:列表(商机卡片) → 详情(报价单/要求/澄清 + 关键信息/项目进度)双层结构。
 export function OpportunitiesPage() {
   const queryClient = useQueryClient();
@@ -131,6 +147,10 @@ export function OpportunitiesPage() {
   });
   const myQuotes = useSupplierQuoteListList();
   const submit = useSupplierQuoteSubmit();
+  const esign = useSupplierEsignSign();
+  const displayName = useAuthStore((st) => st.session?.displayName ?? '');
+  // 报价单电子签署:每个项目一份手写签名(询比/单一来源必签;竞价出价免签保时效)。
+  const [signatures, setSignatures] = useState<Record<string, string | null>>({});
   const markViewed = useSupplierQuoteMarkViewed();
   const decline = useSupplierQuoteDecline();
   // 已读回执:进入商机列表即视为查看,幂等且每个询价只上报一次。
@@ -189,15 +209,21 @@ export function OpportunitiesPage() {
 
   const refresh = () =>
     queryClient.invalidateQueries({
-      predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/supplier/rfqs'),
+      predicate: (q) =>
+        typeof q.queryKey[0] === 'string' && /\/supplier\/(rfqs|quotes|esign-records)/.test(q.queryKey[0] as string),
     });
 
   const validLines = (f: QuoteForm) =>
     f.lines.filter((l) => l.description.trim() && Number(l.quantity) > 0 && Number(l.unitPrice) > 0);
 
-  const onSubmit = (rfqId: string) => {
+  const onSubmit = (rfqId: string, requireSign: boolean) => {
     const f = formFor(rfqId);
     const lines = validLines(f);
+    const signature = signatures[rfqId] ?? null;
+    if (requireSign && !signature) {
+      setError('请先在签名板上手写签名——报价单须电子签署后提交。');
+      return;
+    }
     submit.mutate(
       {
         rfqId,
@@ -214,9 +240,18 @@ export function OpportunitiesPage() {
         },
       },
       {
-        onSuccess: () => {
-          setFeedback(`询比 ${rfqId} 报价已提交（${lines.length} 个行项，合计 ${currency(formTotal(f))}）`);
+        onSuccess: (res) => {
+          // 报价落库后即刻电子签署:签署记录绑定报价单内容指纹,双方后续可核验。
+          const quoteId = res.data?.id;
+          if (signature && quoteId) {
+            esign.mutate(
+              { data: { targetType: 'quote', targetId: quoteId, signatureImage: signature, signerName: displayName } },
+              { onSettled: refresh },
+            );
+          }
+          setFeedback(`询比 ${rfqId} 报价已提交${signature ? '并完成电子签署' : ''}（${lines.length} 个行项，合计 ${currency(formTotal(f))}）`);
           setForms((s) => ({ ...s, [rfqId]: defaultForm() }));
+          setSignatures((s) => ({ ...s, [rfqId]: null }));
           setError(null);
           refresh();
         },
@@ -423,6 +458,7 @@ export function OpportunitiesPage() {
             {myQuote && (
               <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <SectionTitle icon={ClipboardList} title="我的报价单" />
+                {myQuote.id && <QuoteEsignRecords quoteId={myQuote.id} />}
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-100 bg-emerald-50/50 px-4 py-3">
                   <div>
                     <p className="text-[11px] font-black text-emerald-700">报价总价(含税)</p>
@@ -540,9 +576,20 @@ export function OpportunitiesPage() {
                   </div>
                 </div>
 
-                <PrimaryActionButton onClick={() => r.id && onSubmit(r.id)} busy={busy} pendingLabel="提交中"
-                  disabled={validLines(f).length === 0}>
-                  提交报价
+                {r.method !== '竞价' && (
+                  <div className="mt-3">
+                    <p className="text-[11px] font-black text-slate-500">
+                      <span className="mr-1 text-red-500">*</span>报价单电子签署(提交前须手写签名,签署记录含单据内容指纹)
+                    </p>
+                    <SignaturePad
+                      className="mt-1.5"
+                      onChange={(dataUrl) => setSignatures((s) => ({ ...s, [r.id ?? '']: dataUrl }))}
+                    />
+                  </div>
+                )}
+                <PrimaryActionButton onClick={() => r.id && onSubmit(r.id, r.method !== '竞价')} busy={busy} pendingLabel="提交中"
+                  disabled={validLines(f).length === 0 || (r.method !== '竞价' && !signatures[r.id ?? ''])}>
+                  {r.method !== '竞价' ? '签署并提交报价' : '提交报价'}
                 </PrimaryActionButton>
               </section>
             )}

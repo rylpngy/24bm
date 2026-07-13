@@ -81,6 +81,15 @@ public class QuoteApplicationService {
         .toList();
   }
 
+  // 电子签署入口:取本方报价(供 esign 模块计算内容指纹),非本方或不存在即抛错。
+  public Quote findSupplierOwnQuote(String quoteId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
+    return quoteMapper.listBySupplier(supplierId).stream()
+        .filter(quote -> quote.id().equals(quoteId))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Quote not found for supplier: " + quoteId));
+  }
+
   public List<QuoteResponse> listSupplierQuotes() {
     String supplierId = TenantAccessGuard.requireSupplierId("quote APIs");
     return quoteMapper.listBySupplier(supplierId).stream()

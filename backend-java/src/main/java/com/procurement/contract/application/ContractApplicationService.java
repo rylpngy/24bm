@@ -122,6 +122,16 @@ public class ContractApplicationService {
     this.approvalGate = approvalGate;
   }
 
+  // 电子签章入口:按当前租户取合同(供 esign 模块计算内容指纹),不存在即抛错。
+  public ContractLedger findCurrentTenantContractForEsign(String contractId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    ContractLedger contract = contractMapper.findByTenantAndId(tenantId, contractId);
+    if (contract == null) {
+      throw new IllegalArgumentException("Contract not found in tenant scope: " + contractId);
+    }
+    return contract;
+  }
+
   public List<ContractResponse> listCurrentTenantContracts(
       String status,
       String archiveStatus,

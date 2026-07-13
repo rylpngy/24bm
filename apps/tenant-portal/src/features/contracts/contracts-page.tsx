@@ -29,6 +29,7 @@ import { ContractFulfillmentEvents } from './contract-fulfillment-events';
 import { ContractAmendments } from './contract-amendments';
 import { ContractScheduleSection } from './contract-schedule-section';
 import { ContractPaymentReconciliationPanel, ContractReconciliationDetail } from './contract-payment-reconciliation-panel';
+import { ContractEsignPanel } from './contract-esign-panel';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -221,6 +222,7 @@ export function ContractsPage() {
                 </div>
               </div>
             </section>
+                {c.id && <ContractEsignPanel contractId={c.id} />}
                 {c.id && (
                   <OwnerAttachments
                     ownerType="contract"
