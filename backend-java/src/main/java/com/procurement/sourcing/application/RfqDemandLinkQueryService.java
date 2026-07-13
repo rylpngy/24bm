@@ -21,6 +21,12 @@ public class RfqDemandLinkQueryService {
     this.rfqMapper = rfqMapper;
   }
 
+  // 供订单等模块读取 RFQ 的采购方式(询比/竞价/商城/单一来源),不暴露 infrastructure。
+  public String findRfqMethod(String tenantId, String rfqId) {
+    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
+    return rfq == null ? null : rfq.method();
+  }
+
   public RfqDemandLink findLatestLinkForDemand(String tenantId, String demandId) {
     String rfqId = rfqDemandMapper.findLatestRfqIdByDemand(tenantId, demandId);
     if (rfqId == null) {

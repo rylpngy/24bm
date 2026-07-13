@@ -153,7 +153,10 @@ export function OpportunitiesPage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 支持 ?rfq= 深链:从「项目邀请 / 项目管理」页跳入时直达对应项目详情。
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get('rfq'),
+  );
   const [declineOpen, setDeclineOpen] = useState(false);
 
   const all = rfqs.data?.data ?? [];

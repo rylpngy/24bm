@@ -6,6 +6,8 @@ import { useAuthStore } from './lib/auth-store';
 import { LoginGate } from './features/login-gate';
 import { OverviewPage } from './features/overview/overview-page';
 import { OpportunitiesPage } from './features/opportunities/opportunities-page';
+import { InvitationsPage } from './features/projects/invitations-page';
+import { ProjectsPage } from './features/projects/projects-page';
 import { OrdersPage } from './features/orders/orders-page';
 import { ShelfPage } from './features/shelf/shelf-page';
 import { ReceivablesPage } from './features/receivables/receivables-page';
@@ -25,7 +27,15 @@ export function App() {
     setActiveModuleId(moduleId);
     const url = new URL(window.location.href);
     url.searchParams.set('module', moduleId);
+    url.searchParams.delete('rfq');
     window.history.replaceState(null, '', url.toString());
+  };
+  // 从项目邀请 / 项目管理直达具体项目:写入 ?rfq= 后整页进入询比邀请详情。
+  const openProject = (rfqId: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('module', 'opportunities');
+    url.searchParams.set('rfq', rfqId);
+    window.location.href = url.toString();
   };
   const activeModule = supplierNavigation.modules.find((m) => m.id === activeModuleId);
 
@@ -48,6 +58,10 @@ export function App() {
         <OverviewPage onNavigate={selectModule} />
       ) : activeModuleId === 'opportunities' ? (
         <OpportunitiesPage />
+      ) : activeModuleId === 'invitations' ? (
+        <InvitationsPage onOpenProject={openProject} />
+      ) : activeModuleId === 'projects' ? (
+        <ProjectsPage onOpenProject={openProject} onOpenOrders={() => selectModule('orders')} />
       ) : activeModuleId === 'orders' ? (
         <OrdersPage />
       ) : activeModuleId === 'deliveries' ? (

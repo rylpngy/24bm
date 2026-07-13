@@ -13,7 +13,7 @@ import {
   type PublicProcurementAnnouncementResponse,
   usePublicPortalListSuppliers,
 } from '@24bid/api-client';
-import { FeedbackNotice, FilterTabs, cn } from '@24bid/ui';
+import { FeedbackNotice, FilterTabs, RichTextView, cn, richTextToPlain } from '@24bid/ui';
 
 const AUDIENCE_LABELS: Record<string, string> = { all: '全部用户', buyer: '采购方', supplier: '供应商' };
 const AUDIENCE_TONE: Record<string, string> = {
@@ -299,7 +299,7 @@ export function PortalAnnouncementsPage() {
   const list = announcements.data?.data ?? [];
   const filtered = list.filter((a) => {
     const kw = keyword.trim().toLowerCase();
-    return !kw || [a.title, a.content].filter(Boolean).join(' ').toLowerCase().includes(kw);
+    return !kw || [a.title, richTextToPlain(a.content ?? '')].filter(Boolean).join(' ').toLowerCase().includes(kw);
   });
   const procList = (procAnnouncements.data?.data ?? []).filter((a) => {
     const kw = keyword.trim().toLowerCase();
@@ -327,9 +327,7 @@ export function PortalAnnouncementsPage() {
               <CalendarDays size={14} /> {dateText(selected.createdAt)}
             </span>
           </div>
-          <p className="mt-5 whitespace-pre-wrap break-words text-sm font-semibold leading-7 text-slate-700">
-            {selected.content}
-          </p>
+          <RichTextView html={selected.content ?? ''} className="mt-5 leading-7" />
         </section>
       </PageShell>
     );
@@ -415,7 +413,7 @@ export function PortalAnnouncementsPage() {
                   <CalendarDays size={14} /> {dateText(a.createdAt)}
                 </span>
               </div>
-              <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-slate-500">{a.content}</p>
+              <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-slate-500">{richTextToPlain(a.content ?? '')}</p>
             </button>
           ))}
         </div>

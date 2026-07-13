@@ -14198,6 +14198,9 @@
             "items": {
               "$ref": "#/components/schemas/OrderLineItemResponse"
             }
+          },
+          "sourceMethod": {
+            "type": "string"
           }
         }
       },

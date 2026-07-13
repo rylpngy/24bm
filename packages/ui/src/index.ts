@@ -12,6 +12,8 @@ export type { MiniFactProps } from './components/mini-fact';
 export { Panel } from './components/panel';
 export type { PanelProps } from './components/panel';
 
+export { RichTextEditor, RichTextView, richTextToPlain, sanitizeRichText } from './components/rich-text';
+export type { RichTextEditorProps } from './components/rich-text';
 export { PrimaryActionButton } from './components/primary-action-button';
 export type { PrimaryActionButtonProps } from './components/primary-action-button';
 
