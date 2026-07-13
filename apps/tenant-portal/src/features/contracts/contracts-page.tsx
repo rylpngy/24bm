@@ -27,7 +27,7 @@ import { OwnerAttachments } from '../attachments/owner-attachments';
 import { ContractFulfillmentEvents } from './contract-fulfillment-events';
 import { ContractAmendments } from './contract-amendments';
 import { ContractScheduleSection } from './contract-schedule-section';
-import { ContractPaymentReconciliationPanel } from './contract-payment-reconciliation-panel';
+import { ContractPaymentReconciliationPanel, ContractReconciliationDetail } from './contract-payment-reconciliation-panel';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -199,6 +199,9 @@ export function ContractsPage() {
                 </div>
               </div>
             </section>
+
+            {/* 合同-付款对账:从列表页迁入的单合同对账明细 */}
+            <ContractReconciliationDetail contract={c} />
 
             {/* 行项与付款计划 / 履约事件 / 变更 / 附件:详情页常驻分区 */}
             {c.id && <ContractScheduleSection contractId={c.id} />}
@@ -444,7 +447,7 @@ export function ContractsPage() {
       ) : (
         <>
           <div className="mb-4">
-            <ContractPaymentReconciliationPanel contracts={contracts} />
+            <ContractPaymentReconciliationPanel contracts={contracts} summaryOnly />
           </div>
           <ResponsiveTableFrame
             mobileCards={pageItems.map((c, i) => (

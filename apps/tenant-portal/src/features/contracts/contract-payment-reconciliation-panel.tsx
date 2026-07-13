@@ -229,7 +229,14 @@ function ContractReconciliationCard({
   );
 }
 
-export function ContractPaymentReconciliationPanel({ contracts }: { contracts: ContractResponse[] }) {
+export function ContractPaymentReconciliationPanel({
+  contracts,
+  summaryOnly = false,
+}: {
+  contracts: ContractResponse[];
+  /** true=仅渲染汇总指标条(用于列表页);逐合同对账卡见详情页 ContractReconciliationDetail。 */
+  summaryOnly?: boolean;
+}) {
   const [activeFilter, setActiveFilter] = useState<ReconciliationFilter>('全部');
   const requests = useBuyerFinanceActionPaymentRequests();
   const batches = useBuyerFinanceActionPaymentBatches();
@@ -298,24 +305,81 @@ export function ContractPaymentReconciliationPanel({ contracts }: { contracts: C
       ) : (
         <>
           <SummaryGrid rows={rows.map((row) => row.result)} />
-          <FilterBar active={activeFilter} rows={rows.map((row) => row.result)} onChange={setActiveFilter} />
-          <div className="mt-3 space-y-3">
-            {visibleRows.length === 0 ? (
-              <FeedbackNotice tone="info" message="当前筛选下暂无合同。" />
-            ) : (
-              visibleRows.map(({ contract, result }) => (
-                <ContractReconciliationCard
-                  key={contract.id}
-                  contract={contract}
-                  result={result}
-                  milestonesLoading={milestonesLoading}
-                  executionRecords={executionRecords}
-                />
-              ))
-            )}
-          </div>
+          {summaryOnly ? (
+            <p className="mt-2 text-[11px] font-bold text-emerald-700">
+              逐合同的付款对账明细已并入合同详情页(点击行内「详情」查看)。
+            </p>
+          ) : (
+            <>
+              <FilterBar active={activeFilter} rows={rows.map((row) => row.result)} onChange={setActiveFilter} />
+              <div className="mt-3 space-y-3">
+                {visibleRows.length === 0 ? (
+                  <FeedbackNotice tone="info" message="当前筛选下暂无合同。" />
+                ) : (
+                  visibleRows.map(({ contract, result }) => (
+                    <ContractReconciliationCard
+                      key={contract.id}
+                      contract={contract}
+                      result={result}
+                      milestonesLoading={milestonesLoading}
+                      executionRecords={executionRecords}
+                    />
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
+    </div>
+  );
+}
+
+
+// 单合同付款对账:合同详情页分区(数据口径与列表汇总一致)。
+export function ContractReconciliationDetail({ contract }: { contract: ContractResponse }) {
+  const requests = useBuyerFinanceActionPaymentRequests();
+  const batches = useBuyerFinanceActionPaymentBatches();
+  const executions = useBuyerFinanceActionPaymentExecutionRecords();
+  const milestoneQueries = useQueries({
+    queries: [
+      {
+        ...getContractScheduleMilestonesQueryOptions(contract.id ?? ''),
+        enabled: Boolean(contract.id),
+      },
+    ],
+  });
+  const loading =
+    requests.isLoading || batches.isLoading || executions.isLoading || milestoneQueries[0]?.isLoading;
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-emerald-100 bg-emerald-50/30 p-4">
+        <FeedbackNotice tone="info" message="正在加载付款对账数据…" />
+      </div>
+    );
+  }
+  const executionRecords = executions.data?.data ?? [];
+  const result = buildContractPaymentReconciliation({
+    contract,
+    milestones: (milestoneQueries[0]?.data?.data ?? []) as ContractPaymentMilestoneResponse[],
+    paymentRequests: requests.data?.data ?? [],
+    paymentBatches: batches.data?.data ?? [],
+    executionRecords,
+  });
+  return (
+    <div className="rounded-lg border border-emerald-100 bg-emerald-50/30 p-4">
+      <div className="flex items-center gap-2">
+        <Link2 size={16} className="text-emerald-700" />
+        <p className="text-sm font-black text-emerald-900">合同-付款对账</p>
+      </div>
+      <div className="mt-3">
+        <ContractReconciliationCard
+          contract={contract}
+          result={result}
+          milestonesLoading={false}
+          executionRecords={executionRecords}
+        />
+      </div>
     </div>
   );
 }
