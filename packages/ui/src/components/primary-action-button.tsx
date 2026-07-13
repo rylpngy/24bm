@@ -49,7 +49,7 @@ export function PrimaryActionButton({
       data-testid={testId}
       aria-busy={busy || undefined}
       className={cn(
-        'inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg text-center font-black leading-4 text-white shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-blue-200 disabled:text-white disabled:shadow-none',
+        'inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg text-center font-black leading-4 text-white shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white disabled:shadow-none',
         flushTop ? '' : 'mt-3',
         fullWidth && 'w-full',
         sizeClasses[size],

@@ -186,7 +186,7 @@ export function RfqsPage() {
         />
         <button
           type="button"
-          onClick={() => { setResumeDraft(null); setShowForm(true); }}
+          onClick={() => { setResumeDraft(null); void approvedDemands.refetch(); setShowForm(true); }}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
         >
           <Plus size={14} /> 发起询价立项

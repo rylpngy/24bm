@@ -114,8 +114,9 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
           : false,
     },
   });
-  const demandsQuery = usePurchaseDemandList();
-  const suppliersQuery = useBuyerSupplierList();
+  // 立项候选:仅「已通过」审批的需求;供应商仅「已准入」(后端邀请守卫同口径,未准入选了也会被拒)。
+  const demandsQuery = usePurchaseDemandList({ status: '已通过' });
+  const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
   const open = useRfqOpen();
   const abort = useRfqAbort();
 
@@ -544,7 +545,11 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
           />
           <button
             type="button"
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              // 打开向导前强制刷新需求候选,避免展示已被其他项目绑定的需求。
+              void demandsQuery.refetch();
+              setShowForm(true);
+            }}
             className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
           >
             <Plus size={14} /> 发起竞价立项
