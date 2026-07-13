@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Info, Truck } from 'lucide-react';
 import {
   useBuyerDeliveryList,
-  useBuyerReceiptCreate,
   useBuyerReceiptList,
   useBuyerSupplierList,
   usePurchaseOrderList,
@@ -25,19 +23,6 @@ const currency = (v?: number) =>
 
 const PAGE_SIZE = 8;
 
-// 验收表单是否存在不合格(行项任一合格<收货,或抬头合格<收货)。
-type ReceiveFormState = {
-  received: string;
-  qualified: string;
-  lines: { received: string; qualified: string }[];
-};
-const receiveHasUnqualified = (f: ReceiveFormState): boolean => {
-  if ((f.lines ?? []).length > 0) {
-    return f.lines.some((l) => (Number(l.qualified) || 0) < (Number(l.received) || 0));
-  }
-  return (Number(f.qualified) || 0) < (Number(f.received) || 0);
-};
-
 // 验收结论配色。
 const conclusionCls = (c?: string | null) => {
   if (c === '全部合格') return 'bg-emerald-100 text-emerald-700';
@@ -47,9 +32,7 @@ const conclusionCls = (c?: string | null) => {
 };
 
 // S5b:采购订单履约。表格列表 → 详情页(抬头/行项/物流/收货验收),对齐采购需求页面规范。
-export function OrdersPage() {
-  const queryClient = useQueryClient();
-  const [feedback, setFeedback] = useState<string | null>(null);
+export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => void }) {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
@@ -59,25 +42,8 @@ export function OrdersPage() {
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
   const receiptsQuery = useBuyerReceiptList();
   const deliveriesQuery = useBuyerDeliveryList();
-  const receipt = useBuyerReceiptCreate();
   const allOrders = query.data?.data ?? [];
 
-  // 收货验收的录入表单(仅详情页展开)。lines 非空时按行验收,否则退化为抬头数量。
-  const [receiveForm, setReceiveForm] = useState<{
-    orderId: string;
-    received: string;
-    qualified: string;
-    note: string;
-    disposition: string;
-    lines: {
-      orderLineId: string;
-      description: string;
-      unit?: string;
-      ordered?: number;
-      received: string;
-      qualified: string;
-    }[];
-  } | null>(null);
 
   const supplierNames = useMemo(() => {
     const map: Record<string, string> = {};
@@ -120,62 +86,6 @@ export function OrdersPage() {
   const safePage = Math.min(page, pageCount);
   const pageItems = orders.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const refresh = () =>
-    queryClient.invalidateQueries({
-      predicate: (q) =>
-        typeof q.queryKey[0] === 'string' &&
-        /\/buyer\/(orders|receipts)/.test(q.queryKey[0] as string),
-    });
-
-  const handleReceive = (orderId: string) => {
-    const form = receiveForm?.orderId === orderId ? receiveForm : null;
-    const hasLines = (form?.lines ?? []).length > 0;
-    let data;
-    let unqualified = false;
-    if (hasLines && form) {
-      const lineItems = form.lines.map((r) => ({
-        orderLineId: r.orderLineId,
-        receivedQuantity: Number(r.received) || 0,
-        qualifiedQuantity: Number(r.qualified) || 0,
-      }));
-      unqualified = lineItems.some((li) => li.qualifiedQuantity < li.receivedQuantity);
-      // 抬头数量取行项汇总,供后端判定结论与处置门槛。
-      const totalReceived = lineItems.reduce((s, li) => s + li.receivedQuantity, 0);
-      const totalQualified = lineItems.reduce((s, li) => s + li.qualifiedQuantity, 0);
-      data = {
-        result: unqualified ? '部分合格' : '验收合格',
-        receivedQuantity: totalReceived,
-        qualifiedQuantity: totalQualified,
-        qualityNote: form.note || '',
-        lineItems,
-      };
-    } else {
-      const received = form ? Number(form.received) || 0 : 0;
-      const qualified = form ? Number(form.qualified) || 0 : 0;
-      unqualified = qualified < received;
-      data = {
-        result: unqualified ? '部分合格' : '验收合格',
-        receivedQuantity: received,
-        qualifiedQuantity: qualified,
-        qualityNote: form?.note || '',
-      };
-    }
-    if (unqualified) {
-      (data as Record<string, unknown>).disposition = form?.disposition ?? '退货换货';
-      (data as Record<string, unknown>).dispositionNote = form?.note ?? '';
-    }
-    receipt.mutate(
-      { orderId, data },
-      {
-        onSuccess: () => {
-          setFeedback(`订单 ${orderId} 收货验收完成`);
-          setReceiveForm(null);
-          refresh();
-        },
-      },
-    );
-  };
-
   const ratePct = (q?: number, r?: number) =>
     r && r > 0 && q != null ? `${Math.round((q / r) * 100)}%` : '—';
 
@@ -193,10 +103,7 @@ export function OrdersPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => {
-                setSelectedId(null);
-                setReceiveForm(null);
-              }}
+              onClick={() => setSelectedId(null)}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
               aria-label="返回订单列表"
             >
@@ -214,8 +121,6 @@ export function OrdersPage() {
             <p className="shrink-0 font-mono text-xl font-black text-slate-950">{currency(o.amount)}</p>
           </div>
         </div>
-
-        {feedback && <FeedbackNotice tone="success" message={feedback} />}
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
@@ -355,157 +260,19 @@ export function OrdersPage() {
               </section>
             )}
 
-            {/* 收货验收登记(已发货) */}
-            {o.status === '已发货' && o.id && (
-              <section>
-                {receiveForm?.orderId === o.id ? (
-                  <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-4">
-                    <p className="text-xs font-black text-blue-800">收货验收登记</p>
-                    {receiveForm.lines.length > 0 ? (
-                      <div className="mt-2 overflow-hidden rounded-lg border border-blue-100 bg-white">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-blue-50 text-[11px] font-black text-blue-700">
-                            <tr>
-                              <th className="px-3 py-1.5">品名/规格</th>
-                              <th className="px-3 py-1.5 text-right">订购</th>
-                              <th className="w-20 px-2 py-1.5">收货</th>
-                              <th className="w-20 px-2 py-1.5">合格</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-blue-50">
-                            {receiveForm.lines.map((r, idx) => (
-                              <tr key={r.orderLineId} className="font-bold text-slate-700">
-                                <td className="px-3 py-1.5">{r.description}</td>
-                                <td className="px-3 py-1.5 text-right">
-                                  {r.ordered}
-                                  {r.unit ? ` ${r.unit}` : ''}
-                                </td>
-                                <td className="px-2 py-1.5">
-                                  <input type="number" min={0}
-                                    className="w-full rounded border border-slate-200 px-2 py-1 text-xs font-semibold outline-none focus:border-blue-300"
-                                    value={r.received}
-                                    onChange={(e) =>
-                                      setReceiveForm((f) => {
-                                        if (!f) return f;
-                                        const lines = f.lines.map((x, i) => (i === idx ? { ...x, received: e.target.value } : x));
-                                        return { ...f, lines };
-                                      })
-                                    } />
-                                </td>
-                                <td className="px-2 py-1.5">
-                                  <input type="number" min={0}
-                                    className="w-full rounded border border-slate-200 px-2 py-1 text-xs font-semibold outline-none focus:border-blue-300"
-                                    value={r.qualified}
-                                    onChange={(e) =>
-                                      setReceiveForm((f) => {
-                                        if (!f) return f;
-                                        const lines = f.lines.map((x, i) => (i === idx ? { ...x, qualified: e.target.value } : x));
-                                        return { ...f, lines };
-                                      })
-                                    } />
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                        <div>
-                          <label className="text-[11px] font-black text-slate-500">收货数量</label>
-                          <input
-                            type="number"
-                            min={0}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                            value={receiveForm.received}
-                            onChange={(e) => setReceiveForm((f) => f && { ...f, received: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] font-black text-slate-500">合格数量</label>
-                          <input
-                            type="number"
-                            min={0}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                            value={receiveForm.qualified}
-                            onChange={(e) => setReceiveForm((f) => f && { ...f, qualified: e.target.value })}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <div className="mt-2">
-                      <label className="text-[11px] font-black text-slate-500">验收说明</label>
-                      <input
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                        placeholder="如:抽检结果、外观与数量核对情况"
-                        value={receiveForm.note}
-                        onChange={(e) => setReceiveForm((f) => f && { ...f, note: e.target.value })}
-                      />
-                    </div>
-                    {receiveHasUnqualified(receiveForm) && (
-                      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/60 p-2.5">
-                        <label className="text-[11px] font-black text-amber-700">存在不合格,须选择处置方式</label>
-                        <div className="mt-1.5 flex gap-2">
-                          {['退货换货', '让步接收'].map((d) => (
-                            <button
-                              key={d}
-                              type="button"
-                              onClick={() => setReceiveForm((f) => f && { ...f, disposition: d })}
-                              className={
-                                receiveForm.disposition === d
-                                  ? 'h-8 rounded-md border border-amber-400 bg-amber-100 px-3 text-xs font-black text-amber-800'
-                                  : 'h-8 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50'
-                              }
-                            >
-                              {d}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleReceive(o.id!)}
-                        disabled={receipt.isPending && receipt.variables?.orderId === o.id}
-                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700 disabled:bg-slate-400"
-                      >
-                        {receipt.isPending && receipt.variables?.orderId === o.id ? '提交中' : '提交验收'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setReceiveForm(null)}
-                        className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50"
-                      >
-                        取消
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setReceiveForm({
-                        orderId: o.id!,
-                        received: '',
-                        qualified: '',
-                        note: '',
-                        disposition: '退货换货',
-                        lines: (o.lineItems ?? []).map((l) => ({
-                          orderLineId: l.id!,
-                          description: l.description ?? '',
-                          unit: l.unit,
-                          ordered: l.quantity,
-                          received: String(l.quantity ?? ''),
-                          qualified: String(l.quantity ?? ''),
-                        })),
-                      })
-                    }
-                    className="inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-5 text-sm font-black text-white transition hover:bg-blue-700"
-                  >
-                    确认收货
-                  </button>
-                )}
+            {/* 收货验收动作已迁至「收货验收」工作台,此处保留引导 */}
+            {o.status === '已发货' && (
+              <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3">
+                <p className="text-xs font-black text-blue-800">
+                  货物已发出,待收货验收。数量核对、质检结论与不合格处置请在「收货验收」工作台完成。
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('receipts')}
+                  className="inline-flex h-9 items-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700"
+                >
+                  去收货验收
+                </button>
               </section>
             )}
           </div>
@@ -589,12 +356,6 @@ export function OrdersPage() {
         />
       </div>
 
-      {feedback && (
-        <div className="mb-4">
-          <FeedbackNotice tone="success" message={feedback} />
-        </div>
-      )}
-
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载采购订单…" />
       ) : orders.length === 0 ? (
@@ -631,7 +392,7 @@ export function OrdersPage() {
                   onClick={() => o.id && setSelectedId(o.id)}
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                 >
-                  {o.status === '已发货' ? '收货验收' : '查看详情'}
+                  '查看详情'
                 </button>
               </div>
             ))}
@@ -673,10 +434,10 @@ export function OrdersPage() {
                         {o.status === '已发货' && (
                           <button
                             type="button"
-                            onClick={() => o.id && setSelectedId(o.id)}
+                            onClick={() => onNavigate('receipts')}
                             className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
                           >
-                            收货验收
+                            去验收
                           </button>
                         )}
                         <button

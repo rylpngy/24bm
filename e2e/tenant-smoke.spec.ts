@@ -244,3 +244,25 @@ test('门户供应商入驻:注册入口 + 申请表单 + 提交成功', async (
   await page.getByRole('button', { name: /提交入驻申请/ }).click();
   await expect(page.getByText('入驻申请已提交')).toBeVisible();
 });
+
+test('收货验收工作台:双页签 + 验收登记独立页', async ({ page }) => {
+  await loginAsBuyer(page);
+  await navButton(page, /收货验收/).click();
+  await expect(page.getByRole('heading', { name: '收货验收', level: 3 })).toBeVisible();
+  await expect(page.getByText('待验收订单')).toBeVisible();
+  await expect(page.getByText('累计合格率')).toBeVisible();
+
+  // 验收登记独立页(有待验收数据时)
+  // ResponsiveTableFrame 移动卡片里有同名隐藏按钮,限定桌面表格作用域。
+  const receiveBtn = page.locator('table').getByRole('button', { name: '验收登记' });
+  if ((await receiveBtn.count()) > 0) {
+    await receiveBtn.first().click();
+    await expect(page.getByRole('heading', { name: '数量核对' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '质检结论' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /提交验收/ })).toBeVisible();
+    await page.getByRole('button', { name: '返回待验收列表' }).click();
+  }
+  // 验收记录页签
+  await page.getByRole('tab', { name: /验收记录/ }).click();
+  await expect(page.getByRole('heading', { name: '收货验收', level: 3 })).toBeVisible();
+});
