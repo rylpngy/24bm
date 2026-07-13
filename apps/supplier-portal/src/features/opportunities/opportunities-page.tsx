@@ -362,7 +362,9 @@ export function OpportunitiesPage() {
                     <Gavel size={13} className="shrink-0" />
                     <span>
                       竞价项目:起拍价 ¥{r.auctionStartPrice?.toLocaleString('zh-CN') ?? '—'}
-                      {' · '}当前最低报价 {r.auctionLowestAmount != null ? `¥${r.auctionLowestAmount.toLocaleString('zh-CN')}` : '暂无出价'}
+                      {' · '}当前最低报价 {r.auctionLowestAmount != null
+                        ? `¥${r.auctionLowestAmount.toLocaleString('zh-CN')}`
+                        : r.auctionShowLowest === false ? '采购方未公开' : '暂无出价'}
                       {' · '}本次出价上限 ¥{(
                         r.auctionLowestAmount != null
                           ? r.auctionLowestAmount - (r.auctionMinDecrement ?? 0)
@@ -370,7 +372,12 @@ export function OpportunitiesPage() {
                       ).toLocaleString('zh-CN')}
                       {' · '}剩余 {remainingText}(临近截止的出价将自动顺延)
                     </span>
-                    {myBid?.amount != null && (
+                    {r.auctionMyRank != null && (
+                      <span className={`rounded-md px-2 py-0.5 font-black ${r.auctionMyRank === 1 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}`}>
+                        当前第 {r.auctionMyRank} 名
+                      </span>
+                    )}
+                    {myBid?.amount != null && r.auctionLowestAmount != null && (
                       <span
                         className={`rounded-md px-2 py-0.5 font-black ${
                           leading ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'

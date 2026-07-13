@@ -71,6 +71,20 @@ export function RfqCreateWizard({
   const [auctionMinDecrement, setAuctionMinDecrement] = useState(
     resumeDraft?.auctionMinDecrement != null ? String(resumeDraft.auctionMinDecrement) : '',
   );
+  // 竞价规则配置(V176):计划开始+时长(替代日期截止)、保留价、软关闭参数、可见性开关。
+  const [auctionPlannedStart, setAuctionPlannedStart] = useState(
+    resumeDraft?.auctionPlannedStart?.slice(0, 16) ?? '',
+  );
+  const [auctionDurationMinutes, setAuctionDurationMinutes] = useState('30');
+  const [auctionReservePrice, setAuctionReservePrice] = useState(
+    resumeDraft?.auctionReservePrice != null ? String(resumeDraft.auctionReservePrice) : '',
+  );
+  const [softCloseEnabled, setSoftCloseEnabled] = useState(true);
+  const [softCloseTrigger, setSoftCloseTrigger] = useState('5');
+  const [softCloseExtend, setSoftCloseExtend] = useState('5');
+  const [showRank, setShowRank] = useState(true);
+  const [showLowest, setShowLowest] = useState(true);
+  const [showCompetitorNames, setShowCompetitorNames] = useState(false);
   const [singleSourceReason, setSingleSourceReason] = useState(resumeDraft?.singleSourceReason ?? '');
 
   const [supplierIds, setSupplierIds] = useState<string[]>(resumeDraft?.invitedSupplierIds ?? []);
@@ -117,7 +131,7 @@ export function RfqCreateWizard({
   const step1Valid =
     !!title &&
     (isDirect ? directValid : !!demandId) &&
-    !!deadline &&
+    (method === '竞价' ? !!auctionPlannedStart && Number(auctionDurationMinutes) > 0 : !!deadline) &&
     (method !== '竞价' || Number(auctionStartPrice) > 0) &&
     (!isSingleSource || singleSourceReason.trim().length > 0);
   const supplierFloorMet = isSingleSource
@@ -146,12 +160,26 @@ export function RfqCreateWizard({
               }
             : {}),
           invitedSupplierIds: [],
-          deadlineAt: `${deadline}T18:00:00+08:00`,
-          evaluationMethod,
+          deadlineAt:
+            method === '竞价'
+              ? new Date(new Date(auctionPlannedStart).getTime() + Number(auctionDurationMinutes) * 60_000).toISOString()
+              : `${deadline}T18:00:00+08:00`,
+          evaluationMethod: method === '竞价' ? '最低价' : evaluationMethod,
           method,
           auctionStartPrice: method === '竞价' ? Number(auctionStartPrice) : undefined,
           auctionMinDecrement:
             method === '竞价' && auctionMinDecrement ? Number(auctionMinDecrement) : undefined,
+          ...(method === '竞价'
+            ? {
+                auctionPlannedStart: new Date(auctionPlannedStart).toISOString(),
+                auctionReservePrice: auctionReservePrice ? Number(auctionReservePrice) : undefined,
+                auctionSoftCloseTriggerMinutes: softCloseEnabled ? Number(softCloseTrigger) || 5 : 0,
+                auctionSoftCloseExtendMinutes: softCloseEnabled ? Number(softCloseExtend) || 5 : 0,
+                auctionShowRank: showRank,
+                auctionShowLowest: showLowest,
+                auctionShowCompetitorNames: showCompetitorNames,
+              }
+            : {}),
           singleSourceReason: isSingleSource ? singleSourceReason.trim() : undefined,
           quoteRequirement: quoteRequirement || undefined,
           deliveryRequirement: deliveryRequirement || undefined,
@@ -280,10 +308,19 @@ export function RfqCreateWizard({
             </div>
             <div>
               <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>评选方式</label>
-              <select className={inputCls} value={evaluationMethod} onChange={(e) => setEvaluationMethod(e.target.value)}>
-                <option value="最低价">最低价</option>
-                <option value="综合评分">综合评分</option>
-              </select>
+              {method === '竞价' ? (
+                <>
+                  <select className={inputCls} value="最低价" disabled>
+                    <option value="最低价">最低价</option>
+                  </select>
+                  <p className="mt-1 text-[11px] font-bold text-slate-400">竞价方式按出价直接竞争,评选固定为最低价。</p>
+                </>
+              ) : (
+                <select className={inputCls} value={evaluationMethod} onChange={(e) => setEvaluationMethod(e.target.value)}>
+                  <option value="最低价">最低价</option>
+                  <option value="综合评分">综合评分</option>
+                </select>
+              )}
             </div>
           </div>
 
@@ -353,10 +390,12 @@ export function RfqCreateWizard({
           <div className="mt-4">
             <p className="text-sm font-black text-slate-950">截止时间与商务要求</p>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>报价截止</label>
-                <input className={inputCls} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-              </div>
+              {method !== '竞价' && (
+                <div>
+                  <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>报价截止</label>
+                  <input className={inputCls} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+                </div>
+              )}
               <div>
                 <label className="text-xs font-black text-slate-500">商务特殊条款(选填)</label>
                 <textarea
@@ -379,14 +418,86 @@ export function RfqCreateWizard({
           </div>
 
           {method === '竞价' && (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>起拍价(元)</label>
-                <input className={inputCls} type="number" min="0" value={auctionStartPrice} onChange={(e) => setAuctionStartPrice(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs font-black text-slate-500">最小降价步长(元,选填)</label>
-                <input className={inputCls} type="number" min="0" value={auctionMinDecrement} onChange={(e) => setAuctionMinDecrement(e.target.value)} />
+            <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/30 p-4">
+              <p className="text-sm font-black text-blue-900">竞价规则配置</p>
+              <div className="mt-3 grid gap-4 lg:grid-cols-2">
+                {/* 时间安排 */}
+                <div className="rounded-lg border border-slate-100 bg-white p-3.5">
+                  <p className="text-xs font-black text-slate-600">时间安排</p>
+                  <label className="mt-2.5 block">
+                    <span className="text-[11px] font-black text-slate-500"><span className="mr-1 text-red-500">*</span>计划开始时间</span>
+                    <input className={cn(inputCls, 'mt-1')} type="datetime-local" value={auctionPlannedStart} onChange={(e) => setAuctionPlannedStart(e.target.value)} />
+                  </label>
+                  <label className="mt-2.5 block">
+                    <span className="text-[11px] font-black text-slate-500"><span className="mr-1 text-red-500">*</span>竞价时长(分钟)</span>
+                    <input className={cn(inputCls, 'mt-1')} type="number" min="1" value={auctionDurationMinutes} onChange={(e) => setAuctionDurationMinutes(e.target.value)} />
+                    <span className="mt-1 block text-[11px] font-bold text-slate-400">截止时间 = 计划开始 + 时长,自动计算。</span>
+                  </label>
+                </div>
+                {/* 价格规则 */}
+                <div className="rounded-lg border border-slate-100 bg-white p-3.5">
+                  <p className="text-xs font-black text-slate-600">价格规则</p>
+                  <label className="mt-2.5 block">
+                    <span className="text-[11px] font-black text-slate-500"><span className="mr-1 text-red-500">*</span>起拍价(最高限价,元)</span>
+                    <input className={cn(inputCls, 'mt-1')} type="number" min="0" value={auctionStartPrice} onChange={(e) => setAuctionStartPrice(e.target.value)} />
+                  </label>
+                  <label className="mt-2.5 block">
+                    <span className="text-[11px] font-black text-slate-500">保留价(底价 · 仅内部可见,选填)</span>
+                    <input className={cn(inputCls, 'mt-1')} type="number" min="0" value={auctionReservePrice} onChange={(e) => setAuctionReservePrice(e.target.value)} />
+                  </label>
+                  <label className="mt-2.5 block">
+                    <span className="text-[11px] font-black text-slate-500">最小降价幅度(步长,元,选填)</span>
+                    <input className={cn(inputCls, 'mt-1')} type="number" min="0" value={auctionMinDecrement} onChange={(e) => setAuctionMinDecrement(e.target.value)} />
+                  </label>
+                </div>
+                {/* 延时机制 */}
+                <div className="rounded-lg border border-slate-100 bg-white p-3.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black text-slate-600">延时机制(防狙击)</p>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={softCloseEnabled}
+                      onClick={() => setSoftCloseEnabled((v) => !v)}
+                      className={cn('relative h-6 w-11 rounded-full transition', softCloseEnabled ? 'bg-blue-600' : 'bg-slate-300')}
+                    >
+                      <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all', softCloseEnabled ? 'left-[22px]' : 'left-0.5')} />
+                    </button>
+                  </div>
+                  {softCloseEnabled ? (
+                    <div className="mt-2.5 grid grid-cols-2 gap-3">
+                      <label className="block">
+                        <span className="text-[11px] font-black text-slate-500">触发时间(最后N分钟)</span>
+                        <input className={cn(inputCls, 'mt-1')} type="number" min="1" value={softCloseTrigger} onChange={(e) => setSoftCloseTrigger(e.target.value)} />
+                      </label>
+                      <label className="block">
+                        <span className="text-[11px] font-black text-slate-500">延长周期(分钟)</span>
+                        <input className={cn(inputCls, 'mt-1')} type="number" min="1" value={softCloseExtend} onChange={(e) => setSoftCloseExtend(e.target.value)} />
+                      </label>
+                    </div>
+                  ) : (
+                    <p className="mt-2.5 text-[11px] font-bold text-slate-400">已关闭:临近截止的出价不再自动顺延。</p>
+                  )}
+                </div>
+                {/* 供应商可见性 */}
+                <div className="rounded-lg border border-slate-100 bg-white p-3.5">
+                  <p className="text-xs font-black text-slate-600">供应商可见性</p>
+                  <div className="mt-2.5 space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-blue-600" checked={showRank} onChange={(e) => setShowRank(e.target.checked)} />
+                      显示当前排名
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-blue-600" checked={showLowest} onChange={(e) => setShowLowest(e.target.checked)} />
+                      显示当前最低价
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-blue-600" checked={showCompetitorNames} onChange={(e) => setShowCompetitorNames(e.target.checked)} />
+                      显示竞争对手名称(通常不勾选)
+                    </label>
+                    <p className="text-[11px] font-bold text-slate-400">当前版本供应商界面不披露对手名称,该开关先行留存配置。</p>
+                  </div>
+                </div>
               </div>
             </div>
           )}

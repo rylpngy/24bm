@@ -230,9 +230,9 @@ class RfqUpdateQuotingTests {
         OffsetDateTime.parse("2026-06-20T18:00:00+08:00"), "buyer-user", null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
         OffsetDateTime.parse("2026-06-21T09:00:00+08:00"), "", "", "最低价",
-        OffsetDateTime.parse("2026-06-21T09:00:00+08:00"), 1, false, "询价", null, null, null, null, null);
+        OffsetDateTime.parse("2026-06-21T09:00:00+08:00"), 1, false, "询价", null, null, null, null, null, null, null, null, null, null, null, null);
     Rfq round2 = new Rfq("rfq-1", "tenant-1", "办公电脑询价", "报价中", newDeadline, "buyer-user", null,
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), newDeadline, "", "", "最低价", null, 2, true, "询价", null, null, null, null, null);
+        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), newDeadline, "", "", "最低价", null, 2, true, "询价", null, null, null, null, null, null, null, null, null, null, null, null);
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(opened).thenReturn(round2);
     when(rfqMapper.startNewRound("tenant-1", "rfq-1", newDeadline, true)).thenReturn(1);
 
@@ -271,7 +271,7 @@ class RfqUpdateQuotingTests {
         "buyer-user",
         null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null, null, null, null, null);
+        OffsetDateTime.parse("2026-06-15T11:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null, null, null, null, null, null, null, null, null, null, null, null);
   }
 
   private SupplierQualification qualification(String id, String supplierId) {

@@ -436,7 +436,7 @@ class ApprovalTaskInboxTests {
         "owner-1",
         null,
         OffsetDateTime.parse("2026-06-15T09:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null, null, null, null, null);
+        OffsetDateTime.parse("2026-06-15T09:00:00+08:00"), "", "", "最低价", null, 1, false, "询价", null, null, null, null, null, null, null, null, null, null, null, null);
   }
 
   private BuyerUser user(String id, String name) {

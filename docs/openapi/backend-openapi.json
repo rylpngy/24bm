@@ -13697,6 +13697,34 @@
           "resultAnnouncedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "auctionReservePrice": {
+            "type": "number"
+          },
+          "auctionPlannedStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "auctionSoftCloseTriggerMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "auctionSoftCloseExtendMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "auctionShowRank": {
+            "type": "boolean"
+          },
+          "auctionShowLowest": {
+            "type": "boolean"
+          },
+          "auctionShowCompetitorNames": {
+            "type": "boolean"
+          },
+          "auctionMyRank": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -16438,6 +16466,30 @@
           },
           "directBudget": {
             "type": "number"
+          },
+          "auctionReservePrice": {
+            "type": "number"
+          },
+          "auctionPlannedStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "auctionSoftCloseTriggerMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "auctionSoftCloseExtendMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "auctionShowRank": {
+            "type": "boolean"
+          },
+          "auctionShowLowest": {
+            "type": "boolean"
+          },
+          "auctionShowCompetitorNames": {
+            "type": "boolean"
           }
         }
       },

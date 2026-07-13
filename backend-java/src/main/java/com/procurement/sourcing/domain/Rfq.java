@@ -24,6 +24,14 @@ public record Rfq(
     BigDecimal auctionStartPrice,
     BigDecimal auctionMinDecrement,
     String singleSourceReason,
-    OffsetDateTime resultAnnouncedAt) {
+    OffsetDateTime resultAnnouncedAt,
+    // 竞价规则配置(V176):保留价(仅内部)/计划开始/软关闭触发与延长(分钟)/供应商可见性。
+    BigDecimal auctionReservePrice,
+    OffsetDateTime auctionPlannedStart,
+    Integer auctionSoftCloseTriggerMinutes,
+    Integer auctionSoftCloseExtendMinutes,
+    Boolean auctionShowRank,
+    Boolean auctionShowLowest,
+    Boolean auctionShowCompetitorNames) {
   // 单一(规范)构造器:避免 MyBatis 在多构造器间按 join 查询误选,丢失 currentRound 等新列。
 }

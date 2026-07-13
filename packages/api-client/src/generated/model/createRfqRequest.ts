@@ -23,4 +23,11 @@ export interface CreateRfqRequest {
   directItems?: DirectRfqItemRequest[];
   directDepartmentId?: string;
   directBudget?: number;
+  auctionReservePrice?: number;
+  auctionPlannedStart?: string;
+  auctionSoftCloseTriggerMinutes?: number;
+  auctionSoftCloseExtendMinutes?: number;
+  auctionShowRank?: boolean;
+  auctionShowLowest?: boolean;
+  auctionShowCompetitorNames?: boolean;
 }

@@ -288,7 +288,14 @@ public class RfqApplicationService {
         method,
         request.auctionStartPrice(),
         request.auctionMinDecrement(),
-        blankToNull(request.singleSourceReason()));
+        blankToNull(request.singleSourceReason()),
+        request.auctionReservePrice(),
+        request.auctionPlannedStart(),
+        request.auctionSoftCloseTriggerMinutes(),
+        request.auctionSoftCloseExtendMinutes(),
+        request.auctionShowRank(),
+        request.auctionShowLowest(),
+        request.auctionShowCompetitorNames());
 
     insertRfqDemandLinks(tenantId, rfqId, demandIds);
 
@@ -544,6 +551,13 @@ public class RfqApplicationService {
         RfqMethod.MALL,
         null,
         null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null);
     rfqMapper.updateAward(tenantId, rfqId, RfqStatus.AWARDED, RfqStatus.AWARDED, supplierId);
     return rfqId;
@@ -581,7 +595,15 @@ public class RfqApplicationService {
             .map(inv -> new com.procurement.sourcing.api.RfqInvitationResponse(
                 inv.supplierId(), inv.inviteStatus(), inv.viewedAt(), inv.declineReason()))
             .toList(),
-        rfq.resultAnnouncedAt());
+        rfq.resultAnnouncedAt(),
+        rfq.auctionReservePrice(),
+        rfq.auctionPlannedStart(),
+        rfq.auctionSoftCloseTriggerMinutes(),
+        rfq.auctionSoftCloseExtendMinutes(),
+        rfq.auctionShowRank(),
+        rfq.auctionShowLowest(),
+        rfq.auctionShowCompetitorNames(),
+        null);
   }
 
   // 仅竞价方式回传当前轮最低已提交报价,供买卖双方观察价格竞争进度。
