@@ -32,6 +32,39 @@ public interface AuditLogMapper {
       """)
   List<AuditLog> listByTenant(@Param("tenantId") String tenantId, @Param("limit") int limit);
 
+  // 条件查询:关键字(对象/操作人/动作/明细模糊)、对象类型、创建日期区间(dateTo 为闭区间日)。
+  @Select("""
+      <script>
+      select id, tenant_id, actor_id, action, target_type, target_id, detail, created_at
+      from audit_logs
+      where tenant_id = #{tenantId}
+        <if test="keyword != null and keyword != ''">
+        and (target_id ilike '%' || #{keyword} || '%'
+          or actor_id ilike '%' || #{keyword} || '%'
+          or action ilike '%' || #{keyword} || '%'
+          or detail ilike '%' || #{keyword} || '%')
+        </if>
+        <if test="targetType != null and targetType != ''">
+        and target_type = #{targetType}
+        </if>
+        <if test="dateFrom != null and dateFrom != ''">
+        and created_at &gt;= #{dateFrom}::date
+        </if>
+        <if test="dateTo != null and dateTo != ''">
+        and created_at &lt; #{dateTo}::date + 1
+        </if>
+      order by created_at desc
+      limit #{limit}
+      </script>
+      """)
+  List<AuditLog> searchByTenant(
+      @Param("tenantId") String tenantId,
+      @Param("keyword") String keyword,
+      @Param("targetType") String targetType,
+      @Param("dateFrom") String dateFrom,
+      @Param("dateTo") String dateTo,
+      @Param("limit") int limit);
+
   @Select("""
       <script>
       select id, tenant_id, actor_id, action, target_type, target_id, detail, created_at

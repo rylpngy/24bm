@@ -16,7 +16,6 @@ import { OrdersPage } from './features/orders/orders-page';
 import { ReceiptsPage } from './features/receipts/receipts-page';
 import { AuctionsPage } from './features/auctions/auctions-page';
 import { InvoicesPage } from './features/finance/invoices-page';
-import { PaymentBatchesPage } from './features/finance/payment-batches-page';
 import { ContractsPage } from './features/contracts/contracts-page';
 import { DashboardPage } from './features/dashboard/dashboard-page';
 import { AnalyticsPage } from './features/analytics/analytics-page';
@@ -117,8 +116,6 @@ export function App() {
         <OrdersPage onNavigate={selectModule} />
       ) : activeModuleId === 'invoices' ? (
         <InvoicesPage />
-      ) : activeModuleId === 'payment-batches' ? (
-        <PaymentBatchesPage />
       ) : activeModuleId === 'process-engine' ? (
         <ProcessEnginePage />
       ) : activeModuleId === 'org' ? (

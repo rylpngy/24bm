@@ -21,8 +21,14 @@ public class AuditLogController {
   }
 
   @GetMapping
-  public ApiResponse<List<AuditLogResponse>> list(@RequestParam(defaultValue = "" + DEFAULT_LIMIT) int limit) {
-    return ApiResponse.ok(auditLogApplicationService.listCurrentTenantAuditLogs(limit));
+  public ApiResponse<List<AuditLogResponse>> list(
+      @RequestParam(defaultValue = "" + DEFAULT_LIMIT) int limit,
+      @RequestParam(defaultValue = "") String keyword,
+      @RequestParam(defaultValue = "") String targetType,
+      @RequestParam(defaultValue = "") String dateFrom,
+      @RequestParam(defaultValue = "") String dateTo) {
+    return ApiResponse.ok(auditLogApplicationService.listCurrentTenantAuditLogs(
+        limit, keyword, targetType, dateFrom, dateTo));
   }
 
   @GetMapping("/target")

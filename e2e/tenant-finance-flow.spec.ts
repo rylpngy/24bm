@@ -4,10 +4,12 @@ import { expect, test, type Page } from '@playwright/test';
 // 演示数据基线:PB-2026-0001(待执行,付款申请未全通过)、PB-2026-0002(存在阻断)。
 // 用例设计为可重复执行:负向守卫不产生状态变更;状态推进用例对已推进状态做容忍。
 
+// 付款批次已并入发票付款:从发票台账右上入口进入二级页。
 async function openPaymentBatches(page: Page) {
-  await page.goto('/?module=payment-batches');
+  await page.goto('/?module=invoices');
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
   await page.getByRole('button', { name: /登录系统/ }).click();
+  await page.getByRole('button', { name: '付款批次', exact: true }).click();
   await expect(page.getByText('执行记录明细').first()).toBeVisible();
 }
 

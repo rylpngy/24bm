@@ -40,11 +40,24 @@ public class AuditLogApplicationService {
   }
 
   public List<AuditLogResponse> listCurrentTenantAuditLogs(int limit) {
+    return listCurrentTenantAuditLogs(limit, null, null, null, null);
+  }
+
+  // 条件查询:keyword 模糊匹配对象/操作人/动作/明细;targetType 精确;日期为闭区间(含 dateTo 当日)。
+  public List<AuditLogResponse> listCurrentTenantAuditLogs(
+      int limit, String keyword, String targetType, String dateFrom, String dateTo) {
     String tenantId = TenantAccessGuard.requireTenantId("audit log APIs");
     int safeLimit = Math.max(1, Math.min(limit, 200));
-    return auditLogMapper.listByTenant(tenantId, safeLimit).stream()
+    return auditLogMapper
+        .searchByTenant(tenantId, blankToNull(keyword), blankToNull(targetType),
+            blankToNull(dateFrom), blankToNull(dateTo), safeLimit)
+        .stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  private static String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
   }
 
   public List<AuditLogResponse> listCurrentTenantTargetActions(

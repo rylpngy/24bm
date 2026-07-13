@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Scale } from 'lucide-react';
 import {
   useBuyerFinanceActionApproveVarianceHandling,
   useBuyerFinanceActionCreateVarianceHandlingFromThreeWayMatch,
@@ -8,13 +7,14 @@ import {
   useBuyerFinanceActionUpdateVarianceHandlingStatus,
   useBuyerFinanceActionVarianceHandlings,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
 
 // 对账差异处理:三单匹配金额差异 → 登记差异处理 → 标记已处理(解除付款阻断)。
-export function ReconciliationVariancePanel() {
+// 作为发票对账详情的二级视图渲染(标题/返回由宿主页提供);focusInvoiceId 限定只看当前发票。
+export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId?: string }) {
   const queryClient = useQueryClient();
   const matches = useBuyerFinanceActionThreeWayMatches();
   const handlings = useBuyerFinanceActionVarianceHandlings();
@@ -23,11 +23,15 @@ export function ReconciliationVariancePanel() {
   const approve = useBuyerFinanceActionApproveVarianceHandling();
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const varianceMatches = (matches.data?.data ?? []).filter((m) => m.matchStatus === '金额差异');
+  const varianceMatches = (matches.data?.data ?? []).filter(
+    (m) => m.matchStatus === '金额差异' && (!focusInvoiceId || m.invoiceId === focusInvoiceId),
+  );
   const handlingList = handlings.data?.data ?? [];
   const handlingByInvoice = new Map(handlingList.map((h) => [h.invoiceId, h]));
   // 行级差异处理:由被标记的发票行项发起(带 orderLineId),抬头可能并无金额差异。
-  const lineHandlings = handlingList.filter((h) => h.orderLineId);
+  const lineHandlings = handlingList.filter(
+    (h) => h.orderLineId && (!focusInvoiceId || h.invoiceId === focusInvoiceId),
+  );
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -98,10 +102,13 @@ export function ReconciliationVariancePanel() {
     );
   };
 
-  if (varianceMatches.length === 0 && handlingList.length === 0) return null;
-
   return (
-    <Panel title="对账差异处理" icon={Scale} subtitle="三单金额差异 · 登记 · 核实闭环">
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <h3 className="text-base font-black text-slate-950">三单金额差异 · 登记 · 核实闭环</h3>
+      <p className="mt-1 text-xs font-bold text-slate-400">
+        差异核实后标记已处理即可解除付款阻断;超 ¥10,000 的差异需财务经理签核。
+      </p>
+      <div className="mt-3" />
       {feedback && (
         <div className="mb-3">
           <FeedbackNotice tone="success" message={feedback} />
@@ -109,7 +116,14 @@ export function ReconciliationVariancePanel() {
       )}
 
       {varianceMatches.length === 0 ? (
-        <FeedbackNotice tone="info" message="当前无未处理的金额差异。" />
+        <FeedbackNotice
+          tone="info"
+          message={
+            focusInvoiceId
+              ? '本发票暂无待处理的金额差异,可返回对账详情继续付款登记。'
+              : '当前无未处理的金额差异。'
+          }
+        />
       ) : (
         <div className="space-y-3">
           {varianceMatches.map((m) => {
@@ -178,6 +192,6 @@ export function ReconciliationVariancePanel() {
           </div>
         </div>
       )}
-    </Panel>
+    </section>
   );
 }
