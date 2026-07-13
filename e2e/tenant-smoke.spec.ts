@@ -76,6 +76,9 @@ test('合同页显示合同-付款对账视图', async ({ page }) => {
   await expect(page.getByText('合同-付款对账视图')).toBeVisible();
   await expect(page.getByText('待核差额')).toBeVisible();
   await page.getByRole('button', { name: '详情', exact: true }).first().click();
+  // 合同信息页签(默认)含电子签章区:在线签章入口 + 签署留痕说明。
+  await expect(page.getByText('电子签章', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /在线签章|重新签章/ })).toBeVisible();
   // 详情页按业务操作类型拆分 TAB:付款对账内容在「付款对账」页签下。
   await page.getByRole('button', { name: '付款对账' }).click();
   await expect(page.getByText('合同-付款对账', { exact: true })).toBeVisible();
