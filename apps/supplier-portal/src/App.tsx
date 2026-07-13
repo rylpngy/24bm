@@ -40,6 +40,7 @@ export function App() {
       modules={supplierNavigation.modules}
       activeModuleId={activeModuleId}
       onSelectModule={selectModule}
+      portalUrl={import.meta.env.VITE_PORTAL_URL ?? 'http://localhost:5173'}
       title={activeModule?.label ?? '供应商门户'}
       accountLabel={`${session.displayName} · ${session.supplierId}`}
     >
