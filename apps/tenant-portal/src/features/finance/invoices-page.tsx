@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ArrowLeft, Info, Receipt, Scale } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Banknote, Info, Receipt, Scale } from 'lucide-react';
 import {
   useBuyerPaymentList,
   useBuyerPaymentPaymentAuditLogs,
@@ -16,10 +16,9 @@ import {
   ResponsiveTableFrame,
   SearchInput,
   StatusPill,
-  Tabs,
 } from '@24bid/ui';
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
-import { ReportExportBar } from './report-export-bar';
+import { PaymentBatchesPage } from './payment-batches-page';
 import { InvoiceLineMatchPanel } from './invoice-line-match-panel';
 
 const currency = (v?: number) =>
@@ -64,10 +63,11 @@ function PaymentExecutionTimeline({ invoiceId }: { invoiceId: string }) {
   );
 }
 
-// S6:发票付款 + 三单匹配。表格台账 → 详情页(发票信息/三单匹配/行级对账/付款流水),差异处理引导闭环。
+// S6:发票付款 + 三单匹配。表格台账 → 对账详情页(发票信息/三单匹配/行级对账/付款流水)。
+// 二级页:对账差异处理(从对账详情进入,返回详情)、付款批次(从台账进入,返回台账)。
 export function InvoicesPage() {
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<'invoices' | 'variance'>('invoices');
+  const [subpage, setSubpage] = useState<'none' | 'variance' | 'batches'>('none');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
@@ -130,8 +130,64 @@ export function InvoicesPage() {
 
   const selected = selectedId ? allInvoices.find((inv) => inv.id === selectedId) : undefined;
 
-  // ── 发票详情页 ─────────────────────────────────────────────
-  if (tab === 'invoices' && selected) {
+  // ── 二级页:付款批次(发票付款的批量执行工作台) ─────────────
+  if (subpage === 'batches') {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSubpage('none')}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
+              aria-label="返回发票台账"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <Banknote size={18} className="shrink-0 text-blue-600" />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg font-black text-slate-950">付款批次</h1>
+              <p className="mt-0.5 text-xs font-bold text-slate-500">
+                已通过的付款申请按批次汇总执行 · 属于发票付款的批量执行环节
+              </p>
+            </div>
+          </div>
+        </div>
+        <PaymentBatchesPage />
+      </div>
+    );
+  }
+
+  // ── 二级页:对账差异处理(从对账详情进入,返回详情) ─────────
+  if (selected && subpage === 'variance') {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSubpage('none')}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
+              aria-label="返回对账详情"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <Scale size={18} className="shrink-0 text-amber-600" />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg font-black text-slate-950">对账差异处理</h1>
+              <p className="mt-0.5 font-mono text-xs font-bold text-slate-500">
+                发票 {selected.invoiceNo ?? selected.id} · 处理完成后返回对账详情继续付款登记
+              </p>
+            </div>
+          </div>
+        </div>
+        <ReconciliationVariancePanel focusInvoiceId={selected.id} />
+      </div>
+    );
+  }
+
+  // ── 对账详情页 ─────────────────────────────────────────────
+  if (selected) {
     const inv = selected;
     const variance = inv.varianceAmount ?? 0;
     const matched = variance === 0;
@@ -263,10 +319,7 @@ export function InvoicesPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedId(null);
-                    setTab('variance');
-                  }}
+                  onClick={() => setSubpage('variance')}
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-amber-600 px-4 text-xs font-black text-white transition hover:bg-amber-700"
                 >
                   <Scale size={13} /> 去处理差异
@@ -357,26 +410,7 @@ export function InvoicesPage() {
   // ── 台账列表 ─────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="rounded-lg border border-slate-200 bg-white px-2 shadow-sm shadow-slate-200/50">
-          <Tabs
-            items={[
-              { id: 'invoices', label: '发票付款管理', icon: Receipt },
-              { id: 'variance', label: '对账差异处理', icon: Scale },
-            ]}
-            value={tab}
-            onChange={(t) => setTab(t as 'invoices' | 'variance')}
-          />
-        </div>
-        <div className="ml-auto">
-          <ReportExportBar compact />
-        </div>
-      </div>
-
-      {tab === 'variance' ? (
-        <ReconciliationVariancePanel />
-      ) : (
-        <Panel title="发票付款" icon={Receipt} subtitle="发票台账 · 三单匹配 · 付款登记">
+      <Panel title="发票付款" icon={Receipt} subtitle="发票台账 · 三单匹配 · 付款登记">
           <div className="mb-4 grid gap-2 sm:grid-cols-4">
             <MiniFact label="发票总数" value={String(allInvoices.length)} />
             <MiniFact label="待付款" value={String(statusCount('待付款'))} />
@@ -401,6 +435,13 @@ export function InvoicesPage() {
                 setPage(1);
               }}
             />
+            <button
+              type="button"
+              onClick={() => setSubpage('batches')}
+              className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+            >
+              <Banknote size={15} className="text-blue-600" /> 付款批次
+            </button>
           </div>
 
           {feedback && (
@@ -532,8 +573,7 @@ export function InvoicesPage() {
               <Pagination page={safePage} pageSize={PAGE_SIZE} total={invoices.length} onPageChange={setPage} />
             </>
           )}
-        </Panel>
-      )}
+      </Panel>
     </div>
   );
 }

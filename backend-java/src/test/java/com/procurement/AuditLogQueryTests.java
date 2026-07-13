@@ -25,7 +25,7 @@ class AuditLogQueryTests {
   @Test
   void listsAuditLogsOnlyForCurrentBuyerTenant() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(auditLogMapper.listByTenant("tenant-1", 50))
+    when(auditLogMapper.searchByTenant("tenant-1", null, null, null, null, 50))
         .thenReturn(List.of(new AuditLog(
             "audit-1",
             "tenant-1",

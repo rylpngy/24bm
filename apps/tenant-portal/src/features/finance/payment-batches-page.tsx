@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Banknote } from 'lucide-react';
 import {
   useBuyerFinanceActionPaymentBatches,
   useBuyerFinanceActionPaymentBlockResolutions,
@@ -9,7 +8,7 @@ import {
   useBuyerFinanceActionUpdatePaymentBatchStatus,
   useBuyerFinanceActionUpdatePaymentBlockResolutionStatus,
 } from '@24bid/api-client';
-import { CountTag, FeedbackNotice, MiniFact, Panel, StatusPill } from '@24bid/ui';
+import { CountTag, FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
 import { FinanceExceptionDashboardPanel } from './finance-exception-dashboard-panel';
 import {
   buildPaymentBatchExecutionSummaries,
@@ -154,6 +153,7 @@ function PaymentBatchExecutionDetails({
 }
 
 // 付款批次:把已通过的付款申请按批次汇总,展示批次财务口径与执行登记进度。
+// 作为发票付款的二级视图渲染,标题/返回由宿主页(发票付款)提供。
 export function PaymentBatchesPage() {
   const queryClient = useQueryClient();
   const query = useBuyerFinanceActionPaymentBatches();
@@ -192,8 +192,9 @@ export function PaymentBatchesPage() {
   const busy = registerPayment.isPending || resolveBlock.isPending || updateBatchStatus.isPending;
 
   return (
-    <Panel title="付款批次" icon={Banknote} subtitle="批量付款计划 · 执行登记 · 阻断汇总">
-      <div className="mb-4">
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-base font-black text-slate-950">批量付款计划 · 执行登记 · 阻断汇总</h3>
         <CountTag>共 {batches.length} 条</CountTag>
       </div>
 
@@ -345,6 +346,6 @@ export function PaymentBatchesPage() {
           })}
         </div>
       )}
-    </Panel>
+    </section>
   );
 }

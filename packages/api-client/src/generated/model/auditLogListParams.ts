@@ -8,4 +8,8 @@
 
 export type AuditLogListParams = {
 limit?: number;
+keyword?: string;
+targetType?: string;
+dateFrom?: string;
+dateTo?: string;
 };

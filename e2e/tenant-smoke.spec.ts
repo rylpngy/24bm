@@ -81,11 +81,13 @@ test('合同页显示合同-付款对账视图', async ({ page }) => {
   await expect(page.getByText(/付款链路/).first()).toBeVisible();
 });
 
-test('付款批次页显示财务异常看板', async ({ page }) => {
-  await page.goto('/?module=payment-batches');
+test('付款批次为发票付款二级页,显示财务异常看板', async ({ page }) => {
+  await page.goto('/?module=invoices');
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
   await page.getByRole('button', { name: /登录系统/ }).click();
+  await page.getByRole('button', { name: '付款批次', exact: true }).click();
 
+  await expect(page.getByRole('button', { name: '返回发票台账' })).toBeVisible();
   await expect(page.getByText('财务异常看板')).toBeVisible();
   await expect(page.getByText('待处理异常')).toBeVisible();
   await expect(page.getByText('阻断金额')).toBeVisible();
@@ -115,7 +117,8 @@ test('财务专员显示合同与付款菜单但不显示采购需求', async ({
 
   await expect(navButton(page, /合同管理/)).toBeVisible();
   await expect(navButton(page, /发票付款/)).toBeVisible();
-  await expect(navButton(page, /付款批次/)).toBeVisible();
+  // 付款批次已并入发票付款,不再是独立菜单。
+  await expect(navButton(page, /付款批次/)).toHaveCount(0);
   await expect(navButton(page, /采购需求/)).toHaveCount(0);
   await expect(navButton(page, /团队与权限/)).toHaveCount(0);
 });

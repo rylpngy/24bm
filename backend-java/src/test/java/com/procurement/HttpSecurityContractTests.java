@@ -1143,7 +1143,7 @@ class HttpSecurityContractTests {
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isForbidden());
 
-    when(auditLogApplicationService.listCurrentTenantAuditLogs(50)).thenReturn(List.of(
+    when(auditLogApplicationService.listCurrentTenantAuditLogs(50, "", "", "", "")).thenReturn(List.of(
         new AuditLogResponse(
             "audit-demo",
             "tenant-acme",
