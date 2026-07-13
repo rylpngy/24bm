@@ -320,7 +320,11 @@ public class QuoteApplicationService {
       return;
     }
     java.time.OffsetDateTime extended =
-        RfqAuctionPolicy.extendedDeadline(rfq.deadlineAt(), java.time.OffsetDateTime.now());
+        RfqAuctionPolicy.extendedDeadline(
+            rfq.deadlineAt(),
+            java.time.OffsetDateTime.now(),
+            rfq.auctionSoftCloseTriggerMinutes(),
+            rfq.auctionSoftCloseExtendMinutes());
     if (extended == null) {
       return;
     }
@@ -360,10 +364,45 @@ public class QuoteApplicationService {
         rfq.closeReason(),
         rfq.auctionStartPrice(),
         rfq.auctionMinDecrement(),
-        auctionLowestAmount(rfq),
+        // 可见性开关:关闭「显示当前最低价」时对供应商隐藏(采购方侧不受影响)。
+        Boolean.FALSE.equals(rfq.auctionShowLowest()) ? null : auctionLowestAmount(rfq),
         rfq.singleSourceReason(),
         ownInvitation(rfq, supplierId),
-        rfq.resultAnnouncedAt());
+        rfq.resultAnnouncedAt(),
+        // 保留价仅采购方内部可见。
+        null,
+        rfq.auctionPlannedStart(),
+        rfq.auctionSoftCloseTriggerMinutes(),
+        rfq.auctionSoftCloseExtendMinutes(),
+        rfq.auctionShowRank(),
+        rfq.auctionShowLowest(),
+        rfq.auctionShowCompetitorNames(),
+        auctionMyRank(rfq, supplierId));
+  }
+
+  // 供应商本方名次:开启「显示当前排名」时,按各家最新有效报价升序计算(1=领先)。
+  private Integer auctionMyRank(Rfq rfq, String supplierId) {
+    if (!RfqAuctionPolicy.isAuction(rfq.method()) || Boolean.FALSE.equals(rfq.auctionShowRank())) {
+      return null;
+    }
+    var quotes = quoteMapper.listByTenantAndRfqAndRound(rfq.tenantId(), rfq.id(), rfq.currentRound());
+    java.util.Map<String, java.math.BigDecimal> latest = new java.util.LinkedHashMap<>();
+    for (Quote q : quotes) {
+      if (q.supplierId() != null && q.amount() != null) {
+        latest.put(q.supplierId(), q.amount());
+      }
+    }
+    java.math.BigDecimal mine = latest.get(supplierId);
+    if (mine == null) {
+      return null;
+    }
+    int rank = 1;
+    for (var entry : latest.entrySet()) {
+      if (!entry.getKey().equals(supplierId) && entry.getValue().compareTo(mine) < 0) {
+        rank += 1;
+      }
+    }
+    return rank;
   }
 
   // 供应商视角仅返回本方邀请记录(已读/拒绝状态),不暴露其他受邀方。

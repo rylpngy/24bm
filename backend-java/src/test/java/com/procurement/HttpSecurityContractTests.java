@@ -830,7 +830,7 @@ class HttpSecurityContractTests {
             "user-buyer-owner", null,
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
             OffsetDateTime.parse("2026-06-21T09:00:00+08:00"),
-            List.of(), List.of(), List.of(), "", "", "最低价", null, 2, true, "询价", null, null, null, null, null, java.util.List.of(), null));
+            List.of(), List.of(), List.of(), "", "", "最低价", null, 2, true, "询价", null, null, null, null, null, java.util.List.of(), null, null, null, null, null, null, null, null, null));
 
     mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/new-round")
             .header("Authorization", "Bearer " + buyerToken)
@@ -879,7 +879,7 @@ class HttpSecurityContractTests {
             "user-buyer-owner", null,
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
             OffsetDateTime.parse("2026-06-21T09:00:00+08:00"),
-            List.of(), List.of(), List.of(), "", "", "最低价", null, 1, false, "询价", "不足法定家数", null, null, null, null, java.util.List.of(), null));
+            List.of(), List.of(), List.of(), "", "", "最低价", null, 1, false, "询价", "不足法定家数", null, null, null, null, java.util.List.of(), null, null, null, null, null, null, null, null, null));
 
     mockMvc.perform(post("/api/v1/buyer/rfqs/rfq-demo/abort")
             .header("Authorization", "Bearer " + buyerToken)

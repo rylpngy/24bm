@@ -35,4 +35,12 @@ export interface RfqResponse {
   singleSourceReason?: string;
   invitations?: RfqInvitationResponse[];
   resultAnnouncedAt?: string;
+  auctionReservePrice?: number;
+  auctionPlannedStart?: string;
+  auctionSoftCloseTriggerMinutes?: number;
+  auctionSoftCloseExtendMinutes?: number;
+  auctionShowRank?: boolean;
+  auctionShowLowest?: boolean;
+  auctionShowCompetitorNames?: boolean;
+  auctionMyRank?: number;
 }

@@ -1,6 +1,7 @@
 package com.procurement.sourcing.infrastructure;
 
 import com.procurement.sourcing.domain.Rfq;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
@@ -13,7 +14,7 @@ import org.apache.ibatis.annotations.Update;
 public interface RfqMapper {
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement, single_source_reason, result_announced_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement, single_source_reason, result_announced_at, auction_reserve_price, auction_planned_start, auction_soft_close_trigger_minutes, auction_soft_close_extend_minutes, auction_show_rank, auction_show_lowest, auction_show_competitor_names
       from rfqs
       where tenant_id = #{tenantId}
       order by created_at desc
@@ -22,7 +23,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement, single_source_reason, result_announced_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement, single_source_reason, result_announced_at, auction_reserve_price, auction_planned_start, auction_soft_close_trigger_minutes, auction_soft_close_extend_minutes, auction_show_rank, auction_show_lowest, auction_show_competitor_names
       from rfqs
       where tenant_id = #{tenantId}
         <if test="status != null and status != ''">
@@ -58,14 +59,14 @@ public interface RfqMapper {
       @Param("requesterId") String requesterId);
 
   @Select("""
-      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement, single_source_reason, result_announced_at
+      select id, tenant_id, title, status, deadline_at, owner_id, awarded_supplier_id, created_at, updated_at, quote_requirement, delivery_requirement, evaluation_method, opened_at, current_round, final_round, method, close_reason, auction_start_price, auction_min_decrement, single_source_reason, result_announced_at, auction_reserve_price, auction_planned_start, auction_soft_close_trigger_minutes, auction_soft_close_extend_minutes, auction_show_rank, auction_show_lowest, auction_show_competitor_names
       from rfqs
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Rfq findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason, r.result_announced_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason, r.result_announced_at, r.auction_reserve_price, r.auction_planned_start, r.auction_soft_close_trigger_minutes, r.auction_soft_close_extend_minutes, r.auction_show_rank, r.auction_show_lowest, r.auction_show_competitor_names
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where r.id = #{rfqId}
@@ -76,7 +77,7 @@ public interface RfqMapper {
   Rfq findBySupplierInvite(@Param("rfqId") String rfqId, @Param("supplierId") String supplierId);
 
   @Select("""
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason, r.result_announced_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason, r.result_announced_at, r.auction_reserve_price, r.auction_planned_start, r.auction_soft_close_trigger_minutes, r.auction_soft_close_extend_minutes, r.auction_show_rank, r.auction_show_lowest, r.auction_show_competitor_names
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -88,7 +89,7 @@ public interface RfqMapper {
 
   @Select("""
       <script>
-      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason, r.result_announced_at
+      select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason, r.result_announced_at, r.auction_reserve_price, r.auction_planned_start, r.auction_soft_close_trigger_minutes, r.auction_soft_close_extend_minutes, r.auction_show_rank, r.auction_show_lowest, r.auction_show_competitor_names
       from rfqs r
       join rfq_invites i on i.tenant_id = r.tenant_id and i.rfq_id = r.id
       where i.supplier_id = #{supplierId}
@@ -111,10 +112,17 @@ public interface RfqMapper {
   @Insert("""
       insert into rfqs (id, tenant_id, title, status, deadline_at, owner_id,
                         quote_requirement, delivery_requirement, evaluation_method, method,
-                        auction_start_price, auction_min_decrement, single_source_reason)
+                        auction_start_price, auction_min_decrement, single_source_reason,
+                        auction_reserve_price, auction_planned_start,
+                        auction_soft_close_trigger_minutes, auction_soft_close_extend_minutes,
+                        auction_show_rank, auction_show_lowest, auction_show_competitor_names)
       values (#{id}, #{tenantId}, #{title}, #{status}, #{deadlineAt}, #{ownerId},
               #{quoteRequirement}, #{deliveryRequirement}, #{evaluationMethod}, #{method},
-              #{auctionStartPrice}, #{auctionMinDecrement}, #{singleSourceReason})
+              #{auctionStartPrice}, #{auctionMinDecrement}, #{singleSourceReason},
+              #{auctionReservePrice}, #{auctionPlannedStart},
+              #{auctionSoftCloseTriggerMinutes}, #{auctionSoftCloseExtendMinutes},
+              coalesce(#{auctionShowRank}, true), coalesce(#{auctionShowLowest}, true),
+              coalesce(#{auctionShowCompetitorNames}, false))
       """)
   void insert(
       @Param("id") String id,
@@ -129,7 +137,14 @@ public interface RfqMapper {
       @Param("method") String method,
       @Param("auctionStartPrice") java.math.BigDecimal auctionStartPrice,
       @Param("auctionMinDecrement") java.math.BigDecimal auctionMinDecrement,
-      @Param("singleSourceReason") String singleSourceReason);
+      @Param("singleSourceReason") String singleSourceReason,
+      @Param("auctionReservePrice") BigDecimal auctionReservePrice,
+      @Param("auctionPlannedStart") OffsetDateTime auctionPlannedStart,
+      @Param("auctionSoftCloseTriggerMinutes") Integer auctionSoftCloseTriggerMinutes,
+      @Param("auctionSoftCloseExtendMinutes") Integer auctionSoftCloseExtendMinutes,
+      @Param("auctionShowRank") Boolean auctionShowRank,
+      @Param("auctionShowLowest") Boolean auctionShowLowest,
+      @Param("auctionShowCompetitorNames") Boolean auctionShowCompetitorNames);
 
   @Update("""
       update rfqs

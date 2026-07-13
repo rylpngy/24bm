@@ -2,6 +2,7 @@ package com.procurement.sourcing.api;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -10,7 +11,7 @@ public record CreateRfqRequest(
     @NotBlank String title,
     List<String> demandIds,
     List<String> invitedSupplierIds,
-    @Future OffsetDateTime deadlineAt,
+    @Future(message = "报价/竞价截止时间须晚于当前时间") OffsetDateTime deadlineAt,
     String quoteRequirement,
     String deliveryRequirement,
     String evaluationMethod,
@@ -25,5 +26,13 @@ public record CreateRfqRequest(
     // 直录模式:不基于既有需求,直接录入采购内容;系统反向登记「直录登记」需求并挂链。
     List<DirectRfqItemRequest> directItems,
     String directDepartmentId,
-    java.math.BigDecimal directBudget) {
+    java.math.BigDecimal directBudget,
+    // 竞价规则配置(可选,仅竞价方式使用)
+    BigDecimal auctionReservePrice,
+    OffsetDateTime auctionPlannedStart,
+    Integer auctionSoftCloseTriggerMinutes,
+    Integer auctionSoftCloseExtendMinutes,
+    Boolean auctionShowRank,
+    Boolean auctionShowLowest,
+    Boolean auctionShowCompetitorNames) {
 }

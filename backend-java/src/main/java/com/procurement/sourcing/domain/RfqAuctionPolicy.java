@@ -16,13 +16,24 @@ public final class RfqAuctionPolicy {
 
   /** 软关闭:出价落在截止窗口内时返回顺延后的新截止时间,否则返回 null(不顺延)。 */
   public static OffsetDateTime extendedDeadline(OffsetDateTime deadlineAt, OffsetDateTime now) {
+    return extendedDeadline(deadlineAt, now, null, null);
+  }
+
+  /** 软关闭(可配置):triggerMinutes/extendMinutes 为空时用默认 5/5;<=0 视为关闭自动延时。 */
+  public static OffsetDateTime extendedDeadline(
+      OffsetDateTime deadlineAt, OffsetDateTime now, Integer triggerMinutes, Integer extendMinutes) {
     if (deadlineAt == null || now == null || now.isAfter(deadlineAt)) {
       return null;
     }
-    if (Duration.between(now, deadlineAt).compareTo(SOFT_CLOSE_WINDOW) > 0) {
+    Duration window = triggerMinutes == null ? SOFT_CLOSE_WINDOW : Duration.ofMinutes(triggerMinutes);
+    Duration extension = extendMinutes == null ? SOFT_CLOSE_EXTENSION : Duration.ofMinutes(extendMinutes);
+    if (window.isZero() || window.isNegative() || extension.isZero() || extension.isNegative()) {
       return null;
     }
-    return now.plus(SOFT_CLOSE_EXTENSION);
+    if (Duration.between(now, deadlineAt).compareTo(window) > 0) {
+      return null;
+    }
+    return now.plus(extension);
   }
 
   public static boolean isAuction(String method) {

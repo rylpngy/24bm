@@ -340,7 +340,10 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
           )}
           <div className="ml-auto rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2 text-[11px] font-bold text-amber-800">
             规则:起拍价 {currency(r.auctionStartPrice)} · 最小降幅 {currency(r.auctionMinDecrement ?? 0)}
-            {' '}· 防狙击:截止前 5 分钟出价自动顺延 5 分钟
+            {r.auctionPlannedStart && ` · 计划开始 ${r.auctionPlannedStart.slice(0, 16).replace('T', ' ')}`}
+            {(r.auctionSoftCloseTriggerMinutes ?? 5) > 0
+              ? ` · 防狙击:截止前 ${r.auctionSoftCloseTriggerMinutes ?? 5} 分钟出价顺延 ${r.auctionSoftCloseExtendMinutes ?? 5} 分钟`
+              : ' · 自动延时已关闭'}
           </div>
         </div>
 
@@ -453,7 +456,7 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
               <div className="mt-3">
                 <PriceTrend points={trend} />
               </div>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              <div className="mt-2 grid gap-2 sm:grid-cols-4">
                 <MiniFact label="起拍价" value={currency(r.auctionStartPrice)} />
                 <MiniFact label="当前最低" value={currency(lowest)} />
                 <MiniFact
@@ -464,7 +467,15 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
                       : '—'
                   }
                 />
+                <MiniFact label="保留价(内部)" value={currency(r.auctionReservePrice)} />
               </div>
+              {r.auctionReservePrice != null && lowest != null && (
+                <p className={cn('mt-2 text-[11px] font-black', Number(lowest) <= Number(r.auctionReservePrice) ? 'text-emerald-700' : 'text-amber-700')}>
+                  {Number(lowest) <= Number(r.auctionReservePrice)
+                    ? '当前最低价已达到保留价(底价)以内,可放心定标。'
+                    : `当前最低价仍高于保留价 ${currency(Number(lowest) - Number(r.auctionReservePrice))},可视情况继续竞价或谈判。`}
+                </p>
+              )}
             </section>
           </div>
         </div>

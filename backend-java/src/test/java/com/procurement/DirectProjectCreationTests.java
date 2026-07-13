@@ -76,7 +76,7 @@ class DirectProjectCreationTests {
     return new CreateRfqRequest(
         "机房耗材紧急采购", List.of(), List.of(),
         OffsetDateTime.now().plusDays(3), "", "", "最低价", "询比", null, null, null, true,
-        items, "dept-it", BigDecimal.valueOf(30000));
+        items, "dept-it", BigDecimal.valueOf(30000), null, null, null, null, null, null, null);
   }
 
   @Test
@@ -93,7 +93,7 @@ class DirectProjectCreationTests {
         "rfq-1", "tenant-1", "机房耗材紧急采购", "草稿",
         OffsetDateTime.now().plusDays(3), "buyer-user", null,
         OffsetDateTime.now(), OffsetDateTime.now(), "", "", "最低价",
-        null, 1, false, "询比", null, null, null, null, null));
+        null, 1, false, "询比", null, null, null, null, null, null, null, null, null, null, null, null));
     when(rfqInviteMapper.listByRfq(eq("tenant-1"), anyString())).thenReturn(List.of());
 
     rfqApplicationService.create(directRequest(List.of(new DirectRfqItemRequest("mat-cable", 10))));

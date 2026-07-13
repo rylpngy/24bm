@@ -76,7 +76,7 @@ class RfqDraftLifecycleTests {
         "rfq-1", "tenant-1", "行政车辆维保询价", status,
         OffsetDateTime.now().plusDays(3), "buyer-user", null,
         OffsetDateTime.now(), OffsetDateTime.now(), "", "", "最低价",
-        null, 1, false, "询比", null, null, null, null, null);
+        null, 1, false, "询比", null, null, null, null, null, null, null, null, null, null, null, null);
   }
 
   @Test
@@ -93,11 +93,11 @@ class RfqDraftLifecycleTests {
 
     rfqApplicationService.create(new CreateRfqRequest(
         "行政车辆维保询价", List.of("demand-1"), List.of(),
-        OffsetDateTime.now().plusDays(3), "", "", "最低价", "询比", null, null, null, true, null, null, null));
+        OffsetDateTime.now().plusDays(3), "", "", "最低价", "询比", null, null, null, true, null, null, null, null, null, null, null, null, null, null));
 
     // 草稿:不校验 3 家下限、不通知供应商。
     verify(rfqMapper).insert(anyString(), eq("tenant-1"), anyString(), eq("草稿"), any(),
-        anyString(), anyString(), anyString(), anyString(), anyString(), any(), any(), any());
+        anyString(), anyString(), anyString(), anyString(), anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     verify(notificationApplicationService, never())
         .notifyActiveSupplierUsers(anyString(), anyString(), anyString(), anyString());
   }
@@ -162,7 +162,7 @@ class RfqDraftLifecycleTests {
         "rfq-1", "tenant-1", "行政车辆维保询价", "已定标",
         OffsetDateTime.now(), "buyer-user", "supplier-1",
         OffsetDateTime.now(), OffsetDateTime.now(), "", "", "最低价",
-        null, 1, false, "询比", null, null, null, null, null);
+        null, 1, false, "询比", null, null, null, null, null, null, null, null, null, null, null, null);
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(awarded);
     when(rfqMapper.markResultAnnounced("tenant-1", "rfq-1")).thenReturn(1);
     when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1"))
