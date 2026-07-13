@@ -32,12 +32,15 @@ export function RfqCreateWizard({
   demands,
   suppliers,
   resumeDraft,
+  initialMethod,
   onDone,
   onCancel,
 }: {
   demands: PurchaseDemandResponse[];
   suppliers: BuyerSupplierResponse[];
   resumeDraft?: RfqResponse;
+  /** 预设采购方式(如竞价采购模块发起立项时锁定「竞价」)。 */
+  initialMethod?: string;
   onDone: (message: string) => void;
   onCancel: () => void;
 }) {
@@ -57,7 +60,7 @@ export function RfqCreateWizard({
   // 直录模式:不基于既有需求,直接录入采购内容(系统反登「直录登记」需求保闭环)。
   const [directRows, setDirectRows] = useState<Array<{ materialId: string; quantity: number }>>([]);
   const [directDepartmentId, setDirectDepartmentId] = useState('');
-  const [method, setMethod] = useState(resumeDraft?.method ?? '询比');
+  const [method, setMethod] = useState(resumeDraft?.method ?? initialMethod ?? '询比');
   const [deadline, setDeadline] = useState(resumeDraft?.deadlineAt?.slice(0, 10) ?? '');
   const [evaluationMethod, setEvaluationMethod] = useState(resumeDraft?.evaluationMethod ?? '最低价');
   const [quoteRequirement, setQuoteRequirement] = useState(resumeDraft?.quoteRequirement ?? '');

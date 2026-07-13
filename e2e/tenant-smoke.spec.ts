@@ -266,3 +266,22 @@ test('收货验收工作台:双页签 + 验收登记独立页', async ({ page })
   await page.getByRole('tab', { name: /验收记录/ }).click();
   await expect(page.getByRole('heading', { name: '收货验收', level: 3 })).toBeVisible();
 });
+
+test('竞价采购:台账 + 竞价台(实时出价流/排行榜/趋势)', async ({ page }) => {
+  await loginAsBuyer(page);
+  await navButton(page, /竞价采购/).click();
+  await expect(page.getByRole('heading', { name: '竞价采购', level: 3 })).toBeVisible();
+  await expect(page.getByText('竞价进行中')).toBeVisible();
+  await expect(page.getByRole('button', { name: /发起竞价立项/ })).toBeVisible();
+
+  const detailBtn = page.locator('table').getByRole('button', { name: '查看详情' });
+  if ((await detailBtn.count()) > 0) {
+    await detailBtn.first().click();
+    await expect(page.getByText('实时出价流')).toBeVisible();
+    await expect(page.getByText('实时竞价排行榜')).toBeVisible();
+    await expect(page.getByText('价格趋势图')).toBeVisible();
+    await expect(page.getByText('Current Lowest')).toBeVisible();
+    await page.getByRole('button', { name: '返回竞价列表' }).click();
+    await expect(page.getByRole('heading', { name: '竞价采购', level: 3 })).toBeVisible();
+  }
+});
