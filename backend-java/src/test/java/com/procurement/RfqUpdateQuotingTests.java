@@ -224,7 +224,8 @@ class RfqUpdateQuotingTests {
   @Test
   void startsNewRoundFromOpenedRfqBumpingRoundAndReSealing() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    var newDeadline = OffsetDateTime.parse("2026-07-12T18:00:00+08:00");
+    // 勿写死日期:requireFutureDeadline 会随时间翻车,动态取 now+7 天。
+    var newDeadline = OffsetDateTime.now().plusDays(7).withNano(0);
     Rfq opened = new Rfq("rfq-1", "tenant-1", "办公电脑询价", "已开标",
         OffsetDateTime.parse("2026-06-20T18:00:00+08:00"), "buyer-user", null,
         OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
@@ -250,7 +251,7 @@ class RfqUpdateQuotingTests {
         .thenReturn(rfq("rfq-1", "报价中", OffsetDateTime.parse("2026-08-01T18:00:00+08:00")));
 
     assertThatThrownBy(() -> rfqApplicationService.startNewRound(
-        "rfq-1", OffsetDateTime.parse("2026-07-12T18:00:00+08:00"), false, null))
+        "rfq-1", OffsetDateTime.now().plusDays(7), false, null))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Only opened RFQs can start a new round");
     verify(rfqMapper, never()).startNewRound(

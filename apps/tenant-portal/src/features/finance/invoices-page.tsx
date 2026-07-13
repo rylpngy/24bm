@@ -1,12 +1,23 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Receipt, Scale } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Info, Receipt, Scale } from 'lucide-react';
 import {
   useBuyerPaymentList,
   useBuyerPaymentPaymentAuditLogs,
   useBuyerPaymentUpdate,
+  useBuyerSupplierList,
 } from '@24bid/api-client';
-import { FeedbackNotice, MiniFact, Pagination, Panel, SearchInput, StatusPill, Tabs, cn } from '@24bid/ui';
+import {
+  FeedbackNotice,
+  FilterTabs,
+  MiniFact,
+  Pagination,
+  Panel,
+  ResponsiveTableFrame,
+  SearchInput,
+  StatusPill,
+  Tabs,
+} from '@24bid/ui';
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
 import { ReportExportBar } from './report-export-bar';
 import { InvoiceLineMatchPanel } from './invoice-line-match-panel';
@@ -21,52 +32,61 @@ const PAYMENT_ACTION_LABELS: Record<string, string> = {
   'invoice.partial_paid': '登记部分付款',
 };
 
-// 付款执行记录：展开某张发票的付款审计流水(谁、何时、登记了什么)。
+// 付款执行记录:发票的付款审计流水(谁、何时、登记了什么)。
 function PaymentExecutionTimeline({ invoiceId }: { invoiceId: string }) {
   const audit = useBuyerPaymentPaymentAuditLogs(invoiceId);
   const logs = audit.data?.data ?? [];
   return (
-    <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
-      <p className="text-xs font-black text-slate-500">付款执行记录</p>
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <h3 className="text-base font-black text-slate-950">付款执行记录</h3>
       {audit.isLoading ? (
         <p className="mt-2 text-xs font-bold text-slate-400">加载付款流水…</p>
       ) : logs.length === 0 ? (
         <p className="mt-2 text-xs font-bold text-slate-400">尚无付款登记记录。</p>
       ) : (
-        <div className="mt-2 space-y-2">
+        <div className="mt-3 space-y-2">
           {logs.map((l) => (
             <div
               key={l.id}
-              className="flex items-center justify-between rounded-md border border-slate-100 bg-white px-3 py-2"
+              className="flex items-center justify-between rounded-md border border-slate-100 bg-slate-50 px-3 py-2"
             >
               <span className="text-xs font-black text-slate-700">
                 {PAYMENT_ACTION_LABELS[l.action ?? ''] ?? l.action}
               </span>
-              <span className="text-xs font-bold text-slate-400">
+              <span className="font-mono text-xs font-bold text-slate-400">
                 {l.actorId} · {l.createdAt?.slice(0, 16).replace('T', ' ')}
               </span>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
-// S6：发票付款 + 三单匹配。发票列表 + 付款登记(待付款→部分付款→已付款)。
+// S6:发票付款 + 三单匹配。表格台账 → 详情页(发票信息/三单匹配/行级对账/付款流水),差异处理引导闭环。
 export function InvoicesPage() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<'invoices' | 'variance'>('invoices');
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [lineMatchId, setLineMatchId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
 
   const query = useBuyerPaymentList();
+  const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
   const pay = useBuyerPaymentUpdate();
   const allInvoices = query.data?.data ?? [];
+
+  const supplierNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    (suppliersQuery.data?.data ?? []).forEach((s) => {
+      if (s.supplierId) map[s.supplierId] = s.supplierName ?? s.supplierId;
+    });
+    return map;
+  }, [suppliersQuery.data]);
+
   const statuses = [
     '全部',
     ...Array.from(new Set(allInvoices.map((inv) => inv.paymentStatus).filter(Boolean) as string[])),
@@ -84,6 +104,7 @@ export function InvoicesPage() {
   const statusCount = (s: string) =>
     s === '全部' ? allInvoices.length : allInvoices.filter((inv) => inv.paymentStatus === s).length;
   const totalAmount = allInvoices.reduce((sum, inv) => sum + (inv.amount ?? 0), 0);
+  const varianceCount = allInvoices.filter((inv) => (inv.varianceAmount ?? 0) !== 0).length;
   const pageCount = Math.max(1, Math.ceil(invoices.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
   const pageItems = invoices.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
@@ -102,11 +123,238 @@ export function InvoicesPage() {
           setFeedback(`发票 ${invoiceId} 已登记为「${paymentStatus}」`);
           refresh();
         },
-        onError: () => setFeedback('付款登记失败：可能存在三单差异或金额不一致。'),
+        onError: () => setFeedback('付款登记失败:可能存在三单差异或金额不一致。'),
       },
     );
   };
 
+  const selected = selectedId ? allInvoices.find((inv) => inv.id === selectedId) : undefined;
+
+  // ── 发票详情页 ─────────────────────────────────────────────
+  if (tab === 'invoices' && selected) {
+    const inv = selected;
+    const variance = inv.varianceAmount ?? 0;
+    const matched = variance === 0;
+    const busy = pay.isPending && pay.variables?.invoiceId === inv.id;
+    const payable = inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款';
+    const supplierName = inv.supplierId ? (supplierNames[inv.supplierId] ?? inv.supplierId) : '—';
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedId(null)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
+              aria-label="返回发票台账"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="break-words font-mono text-lg font-black text-slate-950">{inv.invoiceNo ?? inv.id}</h1>
+                {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
+                {inv.overdue && (
+                  <span className="rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-black text-red-700">
+                    逾期 {inv.overdueDays} 天
+                  </span>
+                )}
+                {!matched && (
+                  <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-700">
+                    对账差异 {currency(variance)}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 font-mono text-xs font-bold text-slate-500">
+                订单 {inv.orderId ?? '—'} · 开票日期 {inv.invoiceDate ?? '—'}
+              </p>
+            </div>
+            <p className="shrink-0 font-mono text-xl font-black text-slate-950">{currency(inv.amount)}</p>
+          </div>
+        </div>
+
+        {feedback && <FeedbackNotice tone="success" message={feedback} />}
+
+        <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
+          <div className="min-w-0 space-y-4">
+            {/* 发票信息 */}
+            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+              <h3 className="text-base font-black text-slate-950">发票信息(增值税专用发票)</h3>
+              <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                <MiniFact label="发票代码" value={inv.invoiceCode || '—'} />
+                <MiniFact label="发票号码" value={inv.invoiceNo ?? '—'} />
+                <MiniFact label="开票日期" value={inv.invoiceDate ?? '—'} />
+                <MiniFact label="税率" value={inv.taxRate != null ? `${inv.taxRate}%` : '—'} />
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                <MiniFact label="不含税金额" value={currency(inv.netAmount)} />
+                <MiniFact label="税额" value={currency(inv.taxAmount)} />
+                <MiniFact label="价税合计" value={currency(inv.amount)} />
+              </div>
+              {(inv.lineItems ?? []).length > 0 && (
+                <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+                  <p className="bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                    发票行项明细({(inv.lineItems ?? []).length} 项 · 源自订单)
+                  </p>
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                      <tr>
+                        <th className="px-3 py-1.5">品名/规格</th>
+                        <th className="px-3 py-1.5 text-right">数量</th>
+                        <th className="px-3 py-1.5 text-right">单价</th>
+                        <th className="px-3 py-1.5 text-right">行金额</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(inv.lineItems ?? []).map((l) => (
+                        <tr key={l.id} className="font-bold text-slate-700">
+                          <td className="px-3 py-1.5">{l.description}</td>
+                          <td className="px-3 py-1.5 text-right">
+                            {l.quantity}
+                            {l.unit ? ` ${l.unit}` : ''}
+                          </td>
+                          <td className="px-3 py-1.5 text-right">{currency(l.unitPrice)}</td>
+                          <td className="px-3 py-1.5 text-right font-black text-slate-900">{currency(l.lineAmount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            {/* 三单匹配 */}
+            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+              <h3 className="text-base font-black text-slate-950">三单匹配</h3>
+              <p className="mt-3 text-xs font-black text-slate-500">金额维度</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                <MiniFact label="发票金额" value={currency(inv.amount)} />
+                <MiniFact label="订单金额" value={currency(inv.orderAmount)} />
+                <MiniFact label="收货状态" value={inv.receiptStatus ?? '—'} />
+                <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                  <span className="text-[11px] font-black text-slate-400">匹配</span>
+                  <StatusPill label={matched ? '已匹配' : `差异 ${currency(variance)}`} />
+                </div>
+              </div>
+              <p className="mt-3 text-xs font-black text-slate-500">数量维度</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                <MiniFact label="收货数量" value={inv.receivedQuantity != null ? String(inv.receivedQuantity) : '—'} />
+                <MiniFact label="合格数量" value={inv.qualifiedQuantity != null ? String(inv.qualifiedQuantity) : '—'} />
+                <MiniFact label="合格率" value={inv.qualifiedRate != null ? `${inv.qualifiedRate}%` : '—'} />
+                <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                  <span className="text-[11px] font-black text-slate-400">数量</span>
+                  <StatusPill label={inv.quantityMatchStatus ?? '待收货'} />
+                </div>
+              </div>
+              {inv.id && (
+                <div className="mt-3">
+                  <p className="text-xs font-black text-slate-500">行级对账(逐行匹配)</p>
+                  <InvoiceLineMatchPanel invoiceId={inv.id} />
+                </div>
+              )}
+            </section>
+
+            {/* 对账差异处理引导 */}
+            {!matched && (
+              <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3">
+                <p className="flex items-center gap-2 text-xs font-black text-amber-800">
+                  <AlertTriangle size={14} className="shrink-0" />
+                  本发票与订单存在 {currency(variance)} 对账差异,建议先在「对账差异处理」完成核对与处置,再登记付款。
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setTab('variance');
+                  }}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-amber-600 px-4 text-xs font-black text-white transition hover:bg-amber-700"
+                >
+                  <Scale size={13} /> 去处理差异
+                </button>
+              </section>
+            )}
+
+            {/* 付款执行记录 */}
+            {inv.id && <PaymentExecutionTimeline invoiceId={inv.id} />}
+          </div>
+
+          {/* 右栏:关键信息 */}
+          <div className="space-y-4">
+            <section className="rounded-lg bg-slate-900 p-5 text-white shadow-sm">
+              <p className="flex items-center gap-2 text-sm font-black">
+                <Info size={15} className="text-blue-400" /> 关键信息
+              </p>
+              <dl className="mt-4 space-y-3.5">
+                {[
+                  ['供应商', supplierName],
+                  ['价税合计', currency(inv.amount)],
+                  ['付款状态', inv.paymentStatus ?? '—'],
+                  ['付款到期日', inv.dueDate ?? '—'],
+                  ['对账阶段', inv.reconciliationStatus ?? '—'],
+                ].map(([k, v]) => (
+                  <div key={k}>
+                    <dt className="text-[11px] font-bold text-slate-400">{k}</dt>
+                    <dd className="mt-0.5 break-words text-sm font-black">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+            {inv.overdue && (
+              <section className="rounded-lg border border-red-200 bg-red-50/60 p-4">
+                <p className="flex items-center gap-1.5 text-xs font-black text-red-700">
+                  <AlertTriangle size={13} /> 该发票已逾期 {inv.overdueDays} 天
+                </p>
+                <p className="mt-1 text-[11px] font-bold text-slate-600">请尽快完成付款登记,避免影响供应商合作关系。</p>
+              </section>
+            )}
+          </div>
+        </div>
+
+        {/* 底部悬浮操作条:付款登记 */}
+        <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <Receipt size={14} className="shrink-0 text-blue-600" />
+              <span>
+                当前状态 <StatusPill label={inv.paymentStatus ?? '—'} />
+                <span className="ml-2">
+                  {!payable
+                    ? '本发票已完成付款登记。'
+                    : matched
+                      ? '三单匹配无差异,可登记付款。'
+                      : '存在对账差异,登记付款前建议先完成差异处置。'}
+                </span>
+              </span>
+            </div>
+            {payable && inv.id && (
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {inv.paymentStatus === '待付款' && (
+                  <button
+                    type="button"
+                    onClick={() => register(inv.id!, '部分付款')}
+                    disabled={busy}
+                    className="inline-flex h-10 items-center rounded-lg border border-amber-200 bg-white px-4 text-sm font-black text-amber-700 transition hover:bg-amber-50 disabled:opacity-50"
+                  >
+                    登记部分付款
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => register(inv.id!, '已付款')}
+                  disabled={busy}
+                  className="inline-flex h-10 items-center rounded-lg bg-emerald-600 px-5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-300"
+                >
+                  {busy ? '登记中…' : '登记已付款'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 台账列表 ─────────────────────────────────────────────
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -128,218 +376,163 @@ export function InvoicesPage() {
       {tab === 'variance' ? (
         <ReconciliationVariancePanel />
       ) : (
-    <Panel title="发票付款" icon={Receipt} subtitle="发票 · 三单匹配 · 付款登记">
-      <div className="mb-4 grid gap-2 sm:grid-cols-4">
-        <MiniFact label="发票总数" value={String(allInvoices.length)} />
-        <MiniFact label="待付款" value={String(statusCount('待付款'))} />
-        <MiniFact label="已付款" value={String(statusCount('已付款'))} />
-        <MiniFact label="发票总额" value={currency(totalAmount)} />
-      </div>
+        <Panel title="发票付款" icon={Receipt} subtitle="发票台账 · 三单匹配 · 付款登记">
+          <div className="mb-4 grid gap-2 sm:grid-cols-4">
+            <MiniFact label="发票总数" value={String(allInvoices.length)} />
+            <MiniFact label="待付款" value={String(statusCount('待付款'))} />
+            <MiniFact label="存在对账差异" value={`${varianceCount} 张`} />
+            <MiniFact label="发票总额" value={currency(totalAmount)} />
+          </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap gap-2">
-          {statuses.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setStatusFilter(s);
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <FilterTabs
+              items={statuses.map((s) => ({ id: s, label: s, count: s === '全部' ? undefined : statusCount(s) }))}
+              value={statusFilter}
+              onChange={(id) => {
+                setStatusFilter(id);
                 setPage(1);
               }}
-              className={cn(
-                'h-8 rounded-md border px-3 text-xs font-black transition',
-                s === statusFilter
-                  ? 'border-blue-200 bg-blue-50 text-blue-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
-              )}
-            >
-              {s}
-              {s !== '全部' && statusCount(s) > 0 && <span className="ml-1 text-slate-400">{statusCount(s)}</span>}
-            </button>
-          ))}
-        </div>
-        <SearchInput
-          className="mb-0 ml-auto"
-          placeholder="按发票号 / 发票代码 / 订单号搜索"
-          onSearch={(k) => {
-            setKeyword(k);
-            setPage(1);
-          }}
-        />
-      </div>
+            />
+            <SearchInput
+              className="mb-0 ml-auto"
+              placeholder="按发票号 / 发票代码 / 订单号搜索"
+              onSearch={(k) => {
+                setKeyword(k);
+                setPage(1);
+              }}
+            />
+          </div>
 
-      {feedback && (
-        <div className="mb-4">
-          <FeedbackNotice tone="success" message={feedback} />
-        </div>
-      )}
+          {feedback && (
+            <div className="mb-4">
+              <FeedbackNotice tone="success" message={feedback} />
+            </div>
+          )}
 
-      {query.isLoading ? (
-        <FeedbackNotice tone="info" message="正在加载发票…" />
-      ) : invoices.length === 0 ? (
-        <FeedbackNotice
-          tone="info"
-          message={
-            keyword || statusFilter !== '全部'
-              ? '没有符合条件的发票。'
-              : '暂无发票。供应商对已收货订单开票后出现。'
-          }
-        />
-      ) : (
-        <>
-        <div className="space-y-3">
-          {pageItems.map((inv, i) => {
-            const variance = inv.varianceAmount ?? 0;
-            const matched = variance === 0;
-            const busy = pay.isPending && pay.variables?.invoiceId === inv.id;
-            return (
-              <div
-                key={inv.id}
-                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50"
+          {query.isLoading ? (
+            <FeedbackNotice tone="info" message="正在加载发票…" />
+          ) : invoices.length === 0 ? (
+            <FeedbackNotice
+              tone="info"
+              message={
+                keyword || statusFilter !== '全部'
+                  ? '没有符合条件的发票。'
+                  : '暂无发票。供应商对已收货订单开票后出现。'
+              }
+            />
+          ) : (
+            <>
+              <ResponsiveTableFrame
+                mobileCards={pageItems.map((inv, i) => (
+                  <div key={inv.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words font-mono font-black text-slate-950">
+                          <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
+                          {inv.invoiceNo ?? inv.id}
+                        </p>
+                        <p className="mt-1 text-xs font-bold text-slate-500">订单 {inv.orderId}</p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
+                        <span className="font-mono text-sm font-black text-slate-900">{currency(inv.amount)}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => inv.id && setSelectedId(inv.id)}
+                      className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
+                    >
+                      查看详情
+                    </button>
+                  </div>
+                ))}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="break-words font-black text-slate-950">
-                      <span className="mr-1.5 font-mono text-slate-400">
-                        {(safePage - 1) * PAGE_SIZE + i + 1}.
-                      </span>
-                      {inv.invoiceNo ?? inv.id}
-                    </p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">订单 {inv.orderId}</p>
-                  </div>
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                    {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
-                    {(inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款') && inv.id && (
-                      <>
-                        {inv.paymentStatus === '待付款' && (
-                          <button
-                            type="button"
-                            onClick={() => register(inv.id!, '部分付款')}
-                            disabled={busy}
-                            className="inline-flex h-8 items-center rounded-md border border-amber-200 bg-white px-3 text-xs font-black text-amber-700 transition hover:bg-amber-50 disabled:opacity-50"
-                          >
-                            登记部分付款
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => register(inv.id!, '已付款')}
-                          disabled={busy}
-                          className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-400"
-                        >
-                          {busy ? '登记中' : '登记已付款'}
-                        </button>
-                      </>
-                    )}
-                    {inv.id && (
-                      <button
-                        type="button"
-                        onClick={() => setOpenId(openId === inv.id ? null : inv.id!)}
-                        className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50"
-                      >
-                        付款执行记录
-                        <ChevronDown
-                          size={13}
-                          className={`transition-transform ${openId === inv.id ? 'rotate-180' : ''}`}
-                        />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-xs font-black text-slate-500">发票信息（增值税专用发票）</p>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-4">
-                    <MiniFact label="发票代码" value={inv.invoiceCode || '—'} />
-                    <MiniFact label="发票号码" value={inv.invoiceNo ?? '—'} />
-                    <MiniFact label="开票日期" value={inv.invoiceDate ?? '—'} />
-                    <MiniFact
-                      label="税率"
-                      value={inv.taxRate != null ? `${inv.taxRate}%` : '—'}
-                    />
-                  </div>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                    <MiniFact label="不含税金额" value={currency(inv.netAmount)} />
-                    <MiniFact label="税额" value={currency(inv.taxAmount)} />
-                    <MiniFact label="价税合计" value={currency(inv.amount)} />
-                  </div>
-                  {(inv.lineItems ?? []).length > 0 && (
-                    <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                      <p className="bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                        发票行项明细（{(inv.lineItems ?? []).length} 项 · 源自订单）
-                      </p>
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
-                          <tr>
-                            <th className="px-3 py-1.5">品名/规格</th>
-                            <th className="px-3 py-1.5 text-right">数量</th>
-                            <th className="px-3 py-1.5 text-right">单价</th>
-                            <th className="px-3 py-1.5 text-right">行金额</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {(inv.lineItems ?? []).map((l) => (
-                            <tr key={l.id} className="font-bold text-slate-700">
-                              <td className="px-3 py-1.5">{l.description}</td>
-                              <td className="px-3 py-1.5 text-right">
-                                {l.quantity}
-                                {l.unit ? ` ${l.unit}` : ''}
-                              </td>
-                              <td className="px-3 py-1.5 text-right">{currency(l.unitPrice)}</td>
-                              <td className="px-3 py-1.5 text-right font-black text-slate-900">{currency(l.lineAmount)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-xs font-black text-slate-500">三单匹配 · 金额维度</p>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-4">
-                    <MiniFact label="发票金额" value={currency(inv.amount)} />
-                    <MiniFact label="订单金额" value={currency(inv.orderAmount)} />
-                    <MiniFact label="收货状态" value={inv.receiptStatus ?? '—'} />
-                    <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white/80 px-3 py-2">
-                      <span className="text-[11px] font-black text-slate-400">匹配</span>
-                      <StatusPill label={matched ? '已匹配' : `差异 ${currency(variance)}`} />
-                    </div>
-                  </div>
-                  <p className="mt-3 text-xs font-black text-slate-500">三单匹配 · 数量维度</p>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-4">
-                    <MiniFact label="收货数量" value={inv.receivedQuantity != null ? String(inv.receivedQuantity) : '—'} />
-                    <MiniFact label="合格数量" value={inv.qualifiedQuantity != null ? String(inv.qualifiedQuantity) : '—'} />
-                    <MiniFact label="合格率" value={inv.qualifiedRate != null ? `${inv.qualifiedRate}%` : '—'} />
-                    <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white/80 px-3 py-2">
-                      <span className="text-[11px] font-black text-slate-400">数量</span>
-                      <StatusPill label={inv.quantityMatchStatus ?? '待收货'} />
-                    </div>
-                  </div>
-
-                  {inv.id && (
-                    <div className="mt-3">
-                      <button
-                        type="button"
-                        onClick={() => setLineMatchId((cur) => (cur === inv.id ? null : inv.id!))}
-                        className="text-xs font-black text-blue-600 hover:text-blue-700"
-                      >
-                        {lineMatchId === inv.id ? '收起行级对账 ▲' : '查看行级对账（逐行匹配）▾'}
-                      </button>
-                      {lineMatchId === inv.id && <InvoiceLineMatchPanel invoiceId={inv.id} />}
-                    </div>
-                  )}
-                </div>
-
-                {openId === inv.id && inv.id && <PaymentExecutionTimeline invoiceId={inv.id} />}
-              </div>
-            );
-          })}
-        </div>
-        <Pagination page={safePage} pageSize={PAGE_SIZE} total={invoices.length} onPageChange={setPage} />
-        </>
-      )}
-    </Panel>
+                <table className="w-full min-w-[920px] text-left text-sm">
+                  <thead className="bg-slate-50 text-xs font-black text-slate-500">
+                    <tr>
+                      <th className="w-12 px-2 py-4 text-center">序号</th>
+                      <th className="px-5 py-4">发票</th>
+                      <th className="px-5 py-4">关联订单</th>
+                      <th className="px-5 py-4">开票日期</th>
+                      <th className="px-5 py-4">三单匹配</th>
+                      <th className="px-5 py-4">付款状态</th>
+                      <th className="px-5 py-4 text-right">价税合计</th>
+                      <th className="px-5 py-4 text-right">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pageItems.map((inv, i) => {
+                      const variance = inv.varianceAmount ?? 0;
+                      const matched = variance === 0;
+                      const payable = inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款';
+                      return (
+                        <tr key={inv.id} className="hover:bg-blue-50/30">
+                          <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
+                            {(safePage - 1) * PAGE_SIZE + i + 1}
+                          </td>
+                          <td className="px-5 py-5">
+                            <p className="w-40 truncate font-mono text-xs font-black text-slate-900" title={inv.invoiceNo ?? undefined}>
+                              {inv.invoiceNo ?? inv.id}
+                            </p>
+                            <p className="mt-1 w-40 truncate font-mono text-[11px] font-bold text-slate-400" title={inv.invoiceCode ?? undefined}>
+                              {inv.invoiceCode || '代码未填'}
+                            </p>
+                          </td>
+                          <td className="px-5 py-5">
+                            <p className="w-36 truncate font-mono text-xs font-black text-slate-500" title={inv.orderId ?? undefined}>
+                              {inv.orderId ?? '—'}
+                            </p>
+                          </td>
+                          <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">{inv.invoiceDate ?? '—'}</td>
+                          <td className="px-5 py-5">
+                            {matched ? (
+                              <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">已匹配</span>
+                            ) : (
+                              <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-700">
+                                差异 {currency(variance)}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-5">
+                            <div className="flex flex-col gap-1">
+                              {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
+                              {inv.overdue && (
+                                <span className="text-[11px] font-black text-red-600">· 逾期 {inv.overdueDays} 天</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(inv.amount)}</td>
+                          <td className="px-5 py-5 text-right">
+                            <div className="flex justify-end gap-2">
+                              {payable && (
+                                <button
+                                  type="button"
+                                  onClick={() => inv.id && setSelectedId(inv.id)}
+                                  className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                                >
+                                  去付款
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => inv.id && setSelectedId(inv.id)}
+                                className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                              >
+                                详情
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </ResponsiveTableFrame>
+              <Pagination page={safePage} pageSize={PAGE_SIZE} total={invoices.length} onPageChange={setPage} />
+            </>
+          )}
+        </Panel>
       )}
     </div>
   );
