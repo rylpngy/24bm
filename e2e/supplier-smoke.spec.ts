@@ -88,3 +88,27 @@ test('配套功能页:发货管理 / 对账单 / 资质认证 / 员工管理', a
   await page.getByRole('button', { name: '取消' }).click();
   await expect(page.getByRole('heading', { name: '员工管理', level: 3 })).toBeVisible();
 });
+
+test('项目邀请:询比/竞价邀请函台账与邀请状态', async ({ page }) => {
+  await loginViaKeycloak(page);
+
+  await openModule(page, /项目邀请/);
+  await expect(page.getByRole('heading', { name: '项目邀请', level: 3 })).toBeVisible();
+  await expect(page.getByText('全部邀请')).toBeVisible();
+  await expect(page.getByRole('tab', { name: /竞价/ })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '邀请状态' })).toBeVisible();
+  // 深链:查看项目直达询比邀请详情(URL 带 rfq 参数)。
+  await page.locator('table').getByRole('button', { name: '查看项目' }).first().click();
+  await expect(page.getByText(/关键信息|项目进度/).first()).toBeVisible();
+});
+
+test('项目管理:询比/竞价/商城直采项目总览', async ({ page }) => {
+  await loginViaKeycloak(page);
+
+  await openModule(page, /项目管理/);
+  await expect(page.getByRole('heading', { name: '项目管理', level: 3 })).toBeVisible();
+  await expect(page.getByText('询比 · 竞价 · 商城直采项目总览')).toBeVisible();
+  await expect(page.getByRole('tab', { name: /商城直采/ })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '项目阶段' })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '关联订单' })).toBeVisible();
+});

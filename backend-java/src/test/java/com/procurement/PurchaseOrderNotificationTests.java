@@ -51,7 +51,8 @@ class PurchaseOrderNotificationTests {
       notificationApplicationService,
       tenantFeatureApplicationService,
       new PurchaseOrderStatusTransition(),
-          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class),
+          org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class));
 
   @AfterEach
   void clearTenantContext() {

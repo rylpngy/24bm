@@ -17,6 +17,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
+import com.procurement.sourcing.application.RfqDemandLinkQueryService;
 import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
@@ -36,6 +37,7 @@ public class PurchaseOrderApplicationService {
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final PurchaseOrderStatusTransition purchaseOrderStatusTransition;
   private final OrderLineItemApplicationService orderLineItemApplicationService;
+  private final RfqDemandLinkQueryService rfqDemandLinkQueryService;
 
   public PurchaseOrderApplicationService(
       AwardDecisionMapper awardDecisionMapper,
@@ -45,7 +47,8 @@ public class PurchaseOrderApplicationService {
       NotificationApplicationService notificationApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       PurchaseOrderStatusTransition purchaseOrderStatusTransition,
-      OrderLineItemApplicationService orderLineItemApplicationService) {
+      OrderLineItemApplicationService orderLineItemApplicationService,
+      RfqDemandLinkQueryService rfqDemandLinkQueryService) {
     this.awardDecisionMapper = awardDecisionMapper;
     this.rfqMapper = rfqMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
@@ -54,6 +57,7 @@ public class PurchaseOrderApplicationService {
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.purchaseOrderStatusTransition = purchaseOrderStatusTransition;
     this.orderLineItemApplicationService = orderLineItemApplicationService;
+    this.rfqDemandLinkQueryService = rfqDemandLinkQueryService;
   }
 
   public List<PurchaseOrderResponse> listCurrentTenantOrders() {
@@ -285,7 +289,16 @@ public class PurchaseOrderApplicationService {
         order.contactName(),
         order.contactPhone(),
         order.paymentTerms(),
-        orderLineItemApplicationService.listForOrder(order.tenantId(), order.id()));
+        orderLineItemApplicationService.listForOrder(order.tenantId(), order.id()),
+        sourceMethod(order));
+  }
+
+  // 订单来源采购方式:回查关联 RFQ 的 method(商城直采/询比/竞价等);无关联或已删除时为 null。
+  private String sourceMethod(PurchaseOrder order) {
+    if (order.rfqId() == null || order.rfqId().isBlank()) {
+      return null;
+    }
+    return rfqDemandLinkQueryService.findRfqMethod(order.tenantId(), order.rfqId());
   }
 
   private void requireFinalizedRfqAward(String tenantId, AwardDecision award) {

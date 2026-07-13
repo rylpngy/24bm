@@ -22,4 +22,5 @@ export interface PurchaseOrderResponse {
   contactPhone?: string;
   paymentTerms?: string;
   lineItems?: OrderLineItemResponse[];
+  sourceMethod?: string;
 }

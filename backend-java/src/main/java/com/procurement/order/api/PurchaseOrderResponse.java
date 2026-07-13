@@ -19,5 +19,7 @@ public record PurchaseOrderResponse(
     String contactName,
     String contactPhone,
     String paymentTerms,
-    List<OrderLineItemResponse> lineItems) {
+    List<OrderLineItemResponse> lineItems,
+    // 订单来源的采购方式(询比/竞价/商城/单一来源等,来自关联 RFQ;无关联时为 null)。
+    String sourceMethod) {
 }

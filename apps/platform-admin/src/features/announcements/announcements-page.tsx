@@ -14,8 +14,11 @@ import {
   Pagination,
   Panel,
   PrimaryActionButton,
+  RichTextEditor,
+  RichTextView,
   SearchInput,
   StatusPill,
+  richTextToPlain,
 } from '@24bid/ui';
 
 const AUDIENCE_LABELS: Record<string, string> = { all: '全部', buyer: '采购方', supplier: '供应商' };
@@ -43,7 +46,7 @@ export function AnnouncementsPage() {
     return items.filter((a) => {
       if (statusFilter === 'active' && a.status !== 'active') return false;
       if (statusFilter === 'withdrawn' && a.status === 'active') return false;
-      if (kw && ![a.title, a.content].filter(Boolean).join(' ').toLowerCase().includes(kw)) return false;
+      if (kw && ![a.title, richTextToPlain(a.content ?? '')].filter(Boolean).join(' ').toLowerCase().includes(kw)) return false;
       return true;
     });
   }, [items, statusFilter, keyword]);
@@ -130,10 +133,9 @@ export function AnnouncementsPage() {
           </div>
           <div className="mt-3">
             <label className="text-xs font-black text-slate-500">正文</label>
-            <textarea className={`${inputCls} min-h-[80px] resize-y`} value={content}
-              onChange={(e) => setContent(e.target.value)} placeholder="公告正文…" />
+            <RichTextEditor value={content} onChange={setContent} placeholder="公告正文:支持小标题、加粗、列表、引用等富文本排版。" minHeight={140} />
           </div>
-          <PrimaryActionButton onClick={submit} busy={publish.isPending} pendingLabel="发布中" disabled={!title || !content}>
+          <PrimaryActionButton onClick={submit} busy={publish.isPending} pendingLabel="发布中" disabled={!title || !richTextToPlain(content)}>
             发布公告
           </PrimaryActionButton>
         </div>
@@ -160,7 +162,7 @@ export function AnnouncementsPage() {
                   </div>
                   <StatusPill label={active ? '已发布' : '已撤回'} />
                 </div>
-                <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-700">{a.content}</p>
+                <RichTextView html={a.content ?? ''} className="mt-2 text-xs leading-5" />
                 {active && a.id && (
                   <div className="mt-3">
                     <button type="button" onClick={() => onWithdraw(a.id!)} disabled={busy}

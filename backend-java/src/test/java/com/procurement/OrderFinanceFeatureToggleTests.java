@@ -61,7 +61,8 @@ class OrderFinanceFeatureToggleTests {
       notificationApplicationService,
       tenantFeatureApplicationService,
       new PurchaseOrderStatusTransition(),
-          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class));
+          org.mockito.Mockito.mock(com.procurement.order.application.OrderLineItemApplicationService.class),
+          org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class));
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
         org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
