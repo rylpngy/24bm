@@ -31,9 +31,9 @@ class OrderLineItemCopyTests {
     when(quoteLineItemMapper.listByQuote("tenant-1", "quote-1"))
         .thenReturn(List.of(
             new QuoteLineItem("qli-a", "tenant-1", "quote-1", "服务器", "台",
-                BigDecimal.valueOf(10), BigDecimal.valueOf(9800), BigDecimal.valueOf(98000), 0),
+                BigDecimal.valueOf(10), BigDecimal.valueOf(9800), BigDecimal.valueOf(98000), 0, null),
             new QuoteLineItem("qli-b", "tenant-1", "quote-1", "交换机", "台",
-                BigDecimal.valueOf(8), BigDecimal.valueOf(2500), BigDecimal.valueOf(20000), 1)));
+                BigDecimal.valueOf(8), BigDecimal.valueOf(2500), BigDecimal.valueOf(20000), 1, null)));
 
     service.copyFromQuote("tenant-1", "po-1", "quote-1");
 

@@ -301,6 +301,17 @@ public class PurchaseDemandApplicationService {
         reviewedTask.createdAt());
   }
 
+  // 跨模块查询入口:按指定租户与需求批量取物资明细(供询比装配采购清单)。
+  public List<com.procurement.demand.domain.PurchaseDemandItem> findItemsByTenantAndDemands(
+      String tenantId, java.util.List<String> demandIds) {
+    if (demandIds == null || demandIds.isEmpty()) {
+      return List.of();
+    }
+    return demandIds.stream()
+        .flatMap(demandId -> purchaseDemandItemMapper.listByDemand(tenantId, demandId).stream())
+        .toList();
+  }
+
   private PurchaseDemandResponse toResponse(PurchaseDemand demand) {
     List<PurchaseDemandLineItemResponse> lineItems = purchaseDemandItemMapper
         .listByDemand(demand.tenantId(), demand.id())

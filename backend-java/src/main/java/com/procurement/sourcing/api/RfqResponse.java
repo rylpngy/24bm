@@ -42,7 +42,9 @@ public record RfqResponse(
     Boolean auctionShowLowest,
     Boolean auctionShowCompetitorNames,
     // 供应商视角:开启显示排名时返回本方当前名次(1=领先);其余场景为 null。
-    Integer auctionMyRank) {
+    Integer auctionMyRank,
+    // 采购清单(源自关联需求的物资明细):买卖双方同一份,供应商按此逐行报价。
+    List<RfqItemResponse> items) {
 
   public RfqResponse(
       String id,
@@ -90,6 +92,7 @@ public record RfqResponse(
         null,
         null,
         null,
-        null);
+        null,
+        List.of());
   }
 }

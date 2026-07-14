@@ -11,4 +11,5 @@ export interface QuoteLineItemRequest {
   unit?: string;
   quantity?: number;
   unitPrice?: number;
+  demandItemId?: string;
 }

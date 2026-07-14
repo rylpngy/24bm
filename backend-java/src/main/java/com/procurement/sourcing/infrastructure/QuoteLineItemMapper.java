@@ -14,10 +14,10 @@ public interface QuoteLineItemMapper {
 
   @Insert("""
       insert into quote_line_items
-        (id, tenant_id, quote_id, description, unit, quantity, unit_price, line_amount, sort_no)
+        (id, tenant_id, quote_id, description, unit, quantity, unit_price, line_amount, sort_no, demand_item_id)
       values
         (#{id}, #{tenantId}, #{quoteId}, #{description}, #{unit}, #{quantity}, #{unitPrice},
-         #{lineAmount}, #{sortNo})
+         #{lineAmount}, #{sortNo}, #{demandItemId})
       """)
   void insert(
       @Param("id") String id,
@@ -28,7 +28,8 @@ public interface QuoteLineItemMapper {
       @Param("quantity") BigDecimal quantity,
       @Param("unitPrice") BigDecimal unitPrice,
       @Param("lineAmount") BigDecimal lineAmount,
-      @Param("sortNo") int sortNo);
+      @Param("sortNo") int sortNo,
+      @Param("demandItemId") String demandItemId);
 
   @Delete("""
       delete from quote_line_items
@@ -37,7 +38,7 @@ public interface QuoteLineItemMapper {
   void deleteByQuote(@Param("tenantId") String tenantId, @Param("quoteId") String quoteId);
 
   @Select("""
-      select id, tenant_id, quote_id, description, unit, quantity, unit_price, line_amount, sort_no
+      select id, tenant_id, quote_id, description, unit, quantity, unit_price, line_amount, sort_no, demand_item_id
       from quote_line_items
       where tenant_id = #{tenantId} and quote_id = #{quoteId}
       order by sort_no asc, id asc

@@ -7,12 +7,11 @@ import {
   FileText,
   Gavel,
   Info,
-  Plus,
   Send,
-  Trash2,
 } from 'lucide-react';
 import {
   type QuoteResponse,
+  type RfqItemResponse,
   type RfqResponse,
   useSupplierQuoteDecline,
   useSupplierQuoteListList,
@@ -41,8 +40,11 @@ import { RfqClarificationsSupplier } from './rfq-clarifications-supplier';
 import { RfqResultSupplier } from './rfq-result-supplier';
 import { useAuthStore } from '../../lib/auth-store';
 
+// 报价行由采购清单驱动:品名/规格/单位/数量取自清单(采购方给定,不可改),供应商只填单价。
 interface LineRow {
+  demandItemId: string;
   description: string;
+  specification?: string;
   unit: string;
   quantity: string;
   unitPrice: string;
@@ -54,8 +56,18 @@ interface QuoteForm {
   lines: LineRow[];
 }
 
-const emptyLine = (): LineRow => ({ description: '', unit: '台', quantity: '', unitPrice: '' });
-const defaultForm = (): QuoteForm => ({ taxRate: '13', deliveryDays: '7', lines: [emptyLine()] });
+const defaultForm = (): QuoteForm => ({ taxRate: '13', deliveryDays: '7', lines: [] });
+
+// 按项目采购清单生成报价行(保留已填单价,清单变更时以清单为准)。
+const linesFromRfqItems = (items: RfqItemResponse[] | undefined, previous?: LineRow[]): LineRow[] =>
+  (items ?? []).map((item) => ({
+    demandItemId: item.demandItemId ?? '',
+    description: item.materialName ?? item.materialId ?? '',
+    specification: item.specification ?? undefined,
+    unit: item.unit ?? '项',
+    quantity: String(item.quantity ?? ''),
+    unitPrice: previous?.find((l) => l.demandItemId === item.demandItemId)?.unitPrice ?? '',
+  }));
 
 const currency = (v: number) => `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
 const lineAmount = (l: LineRow) => (Number(l.quantity) || 0) * (Number(l.unitPrice) || 0);
@@ -167,6 +179,28 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rfqData.length]);
 
+  // 报价行按采购清单播种:清单到达或行数变化时重建(保留已填单价),
+  // 保证品名/规格/单位/数量恒等于采购方清单,供应商只补单价。
+  useEffect(() => {
+    setForms((current) => {
+      let changed = false;
+      const next = { ...current };
+      rfqData.forEach((r) => {
+        const items = r.items ?? [];
+        if (!r.id || items.length === 0) return;
+        const form = current[r.id] ?? defaultForm();
+        if (form.lines.length === items.length
+            && form.lines.every((l, i) => l.demandItemId === items[i].demandItemId)) {
+          return;
+        }
+        next[r.id] = { ...form, lines: linesFromRfqItems(items, form.lines) };
+        changed = true;
+      });
+      return changed ? next : current;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rfqData]);
+
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [forms, setForms] = useState<Record<string, QuoteForm>>({});
@@ -201,11 +235,6 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
     const lines = f.lines.map((l, i) => (i === idx ? { ...l, ...patch } : l));
     setForm(id, { lines });
   };
-  const addLine = (id: string) => setForm(id, { lines: [...formFor(id).lines, emptyLine()] });
-  const removeLine = (id: string, idx: number) => {
-    const lines = formFor(id).lines.filter((_, i) => i !== idx);
-    setForm(id, { lines: lines.length ? lines : [emptyLine()] });
-  };
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -213,12 +242,19 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
         typeof q.queryKey[0] === 'string' && /\/supplier\/(rfqs|quotes|esign-records)/.test(q.queryKey[0] as string),
     });
 
+  // 有效行:清单给定数量 + 供应商已填单价(品名/数量不由供应商决定)。
   const validLines = (f: QuoteForm) =>
-    f.lines.filter((l) => l.description.trim() && Number(l.quantity) > 0 && Number(l.unitPrice) > 0);
+    f.lines.filter((l) => Number(l.quantity) > 0 && Number(l.unitPrice) > 0);
+  // 清单全部行都报了价才可提交(按采购清单报价,不可漏行)。
+  const allLinesPriced = (f: QuoteForm) => f.lines.length > 0 && validLines(f).length === f.lines.length;
 
   const onSubmit = (rfqId: string, requireSign: boolean) => {
     const f = formFor(rfqId);
     const lines = validLines(f);
+    if (!allLinesPriced(f)) {
+      setError('请对采购清单的全部行项填写单价后再提交。');
+      return;
+    }
     const signature = signatures[rfqId] ?? null;
     if (requireSign && !signature) {
       setError('请先在签名板上手写签名——报价单须电子签署后提交。');
@@ -236,6 +272,7 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
             unit: l.unit.trim() || '项',
             quantity: Number(l.quantity),
             unitPrice: Number(l.unitPrice),
+            demandItemId: l.demandItemId,
           })),
         },
       },
@@ -512,52 +549,68 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
             {/* 按行报价:报价中开放(竞价多轮可再次出价) */}
             {quoting && (!myQuote || r.method === '竞价') && (
               <section className="rounded-lg border border-emerald-100 bg-emerald-50/40 p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-black text-emerald-800">{myQuote ? '再次出价' : '按行报价'}</p>
-                  <button type="button" onClick={() => addLine(r.id ?? '')}
-                    className="inline-flex h-7 items-center gap-1 rounded-md border border-emerald-200 bg-white px-2 text-[11px] font-black text-emerald-700 hover:bg-emerald-50">
-                    <Plus size={13} /> 添加行
-                  </button>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-black text-emerald-800">
+                    {myQuote ? '再次出价' : '按采购清单报价'}
+                  </p>
+                  <span className="rounded-md bg-white px-2 py-0.5 text-[11px] font-black text-emerald-700">
+                    清单共 {f.lines.length} 行 · 已报 {validLines(f).length} 行
+                  </span>
                 </div>
+                <p className="mt-1 text-[11px] font-bold text-slate-500">
+                  品名、规格、单位与数量由采购方在采购清单中给定,不可修改;请对每一行填写您的单价。
+                </p>
 
-                <div className="mt-2 space-y-2">
-                  {f.lines.map((l, idx) => (
-                    <div key={idx} className="grid grid-cols-12 items-end gap-2">
-                      <div className="col-span-12 sm:col-span-4">
-                        {idx === 0 && <label className="text-[10px] font-black text-slate-500">品名/规格</label>}
-                        <input className={inputCls} value={l.description} placeholder="如:机架式服务器"
-                          onChange={(e) => setLine(r.id ?? '', idx, { description: e.target.value })} />
-                      </div>
-                      <div className="col-span-3 sm:col-span-1">
-                        {idx === 0 && <label className="text-[10px] font-black text-slate-500">单位</label>}
-                        <input className={inputCls} value={l.unit}
-                          onChange={(e) => setLine(r.id ?? '', idx, { unit: e.target.value })} />
-                      </div>
-                      <div className="col-span-3 sm:col-span-2">
-                        {idx === 0 && <label className="text-[10px] font-black text-slate-500">数量</label>}
-                        <input className={inputCls} type="number" value={l.quantity} placeholder="0"
-                          onChange={(e) => setLine(r.id ?? '', idx, { quantity: e.target.value })} />
-                      </div>
-                      <div className="col-span-3 sm:col-span-2">
-                        {idx === 0 && <label className="text-[10px] font-black text-slate-500">单价</label>}
-                        <input className={inputCls} type="number" value={l.unitPrice} placeholder="0.00"
-                          onChange={(e) => setLine(r.id ?? '', idx, { unitPrice: e.target.value })} />
-                      </div>
-                      <div className="col-span-2 sm:col-span-2">
-                        {idx === 0 && <label className="text-[10px] font-black text-slate-500">行金额</label>}
-                        <p className="truncate py-2 text-right text-xs font-black text-slate-700">
-                          {currency(lineAmount(l))}
-                        </p>
-                      </div>
-                      <div className="col-span-1 flex justify-end pb-1">
-                        <button type="button" onClick={() => removeLine(r.id ?? '', idx)}
-                          className="text-slate-300 hover:text-red-500" aria-label="删除行">
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {f.lines.length === 0 ? (
+                  <FeedbackNotice
+                    tone="info"
+                    message="本项目未提供采购清单明细,请通过澄清答疑向采购方确认后再报价。"
+                  />
+                ) : (
+                  <div className="mt-2 overflow-hidden rounded-lg border border-emerald-100">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-white/70 text-[11px] font-black text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2">采购清单行(采购方给定)</th>
+                          <th className="w-24 px-3 py-2 text-right">数量</th>
+                          <th className="w-32 px-3 py-2 text-right">
+                            <span className="mr-1 text-red-500">*</span>我方单价
+                          </th>
+                          <th className="w-28 px-3 py-2 text-right">行金额</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-emerald-100/70 bg-white">
+                        {f.lines.map((l, idx) => (
+                          <tr key={l.demandItemId || idx}>
+                            <td className="px-3 py-2">
+                              <p className="font-black text-slate-900">{l.description}</p>
+                              {l.specification && (
+                                <p className="mt-0.5 text-[11px] font-bold text-slate-400">{l.specification}</p>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono font-black text-slate-700">
+                              {l.quantity} {l.unit}
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
+                                className={cn(inputCls, 'text-right')}
+                                type="number"
+                                min="0"
+                                value={l.unitPrice}
+                                placeholder="0.00"
+                                aria-label={`${l.description} 单价`}
+                                onChange={(e) => setLine(r.id ?? '', idx, { unitPrice: e.target.value })}
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono font-black text-slate-900">
+                              {currency(lineAmount(l))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
                   <div>
@@ -588,7 +641,7 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
                   </div>
                 )}
                 <PrimaryActionButton onClick={() => r.id && onSubmit(r.id, r.method !== '竞价')} busy={busy} pendingLabel="提交中"
-                  disabled={validLines(f).length === 0 || (r.method !== '竞价' && !signatures[r.id ?? ''])}>
+                  disabled={!allLinesPriced(f) || (r.method !== '竞价' && !signatures[r.id ?? ''])}>
                   {r.method !== '竞价' ? '签署并提交报价' : '提交报价'}
                 </PrimaryActionButton>
               </section>

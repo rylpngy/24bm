@@ -37,6 +37,7 @@ class SupplierRfqListFilterTests {
           quoteMapper,
           quoteLineItemMapper,
           new RfqSourcingStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqItemQueryService.class),
           auditLogApplicationService,
           notificationApplicationService);
 

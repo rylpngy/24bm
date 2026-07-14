@@ -71,6 +71,7 @@ class RfqCreationCollaborationTests {
       supplierQualificationMapper,
       tenantFeatureApplicationService,
       new RfqSourcingStatusTransition(),
+      org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqItemQueryService.class),
       auditLogApplicationService,
       notificationApplicationService, null);
 

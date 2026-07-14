@@ -13,4 +13,5 @@ export interface QuoteLineItemResponse {
   quantity?: number;
   unitPrice?: number;
   lineAmount?: number;
+  demandItemId?: string;
 }

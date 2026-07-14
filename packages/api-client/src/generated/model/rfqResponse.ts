@@ -7,6 +7,7 @@
  */
 import type { QuoteResponse } from './quoteResponse';
 import type { RfqInvitationResponse } from './rfqInvitationResponse';
+import type { RfqItemResponse } from './rfqItemResponse';
 
 export interface RfqResponse {
   id?: string;
@@ -43,4 +44,5 @@ export interface RfqResponse {
   auctionShowLowest?: boolean;
   auctionShowCompetitorNames?: boolean;
   auctionMyRank?: number;
+  items?: RfqItemResponse[];
 }
