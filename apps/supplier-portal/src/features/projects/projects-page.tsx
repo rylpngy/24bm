@@ -27,6 +27,19 @@ const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
 const shortTime = (v?: string | null) => (v ? `${v.slice(0, 10)} ${v.slice(11, 16)}` : '—');
 
+// 邀请函状态:以邀请记录真实字段推导(已拒绝 > 已读(有 viewedAt) > 待查看);商城直采无邀请环节。
+function inviteState(inv?: { inviteStatus?: string; viewedAt?: string | null }) {
+  if (inv?.inviteStatus === '已拒绝') return '已拒绝';
+  if (inv?.viewedAt) return '已读';
+  return '待查看';
+}
+
+const inviteTone: Record<string, string> = {
+  待查看: 'bg-amber-50 text-amber-700',
+  已读: 'bg-emerald-50 text-emerald-700',
+  已拒绝: 'bg-red-50 text-red-600',
+};
+
 // 统一项目行:询比/竞价来自受邀 RFQ;商城直采来自协议价直购销售订单(供应商侧无独立项目单据)。
 interface ProjectRow {
   key: string;
@@ -36,13 +49,17 @@ interface ProjectRow {
   method: string;
   stage: string;
   stageResult?: '我方中标' | '未中标';
+  inviteState?: string;
+  inviteTime?: string | null;
+  declineReason?: string;
   amount?: number;
   timeText: string;
   orderCount: number;
   rfqId?: string;
 }
 
-// 项目管理:询比 / 竞价 / 商城直采项目总览——阶段、我方结果、关联订单,一览到底。
+// 项目管理:询比 / 竞价 / 商城直采项目总览——邀请状态、阶段、我方结果、关联订单一览到底;
+// 「查看项目」在模块内进入参与详情(报价/签署/出价/澄清)。
 export function ProjectsPage({
   onOpenProject,
   onOpenOrders,
@@ -69,6 +86,7 @@ export function ProjectsPage({
     const rfqRows: ProjectRow[] = (rfqs.data?.data ?? []).map((r) => {
       const awarded = r.status === '已定标';
       const myQuote = quoteList.find((q) => q.rfqId === r.id);
+      const invitation = (r.invitations ?? [])[0];
       return {
         key: `rfq-${r.id}`,
         kind: 'rfq',
@@ -77,6 +95,9 @@ export function ProjectsPage({
         method: r.method ?? '询比',
         stage: r.status ?? '—',
         stageResult: awarded ? (r.awardedSupplierId === supplierId ? '我方中标' : '未中标') : undefined,
+        inviteState: inviteState(invitation),
+        inviteTime: invitation?.viewedAt ?? null,
+        declineReason: invitation?.declineReason,
         amount: myQuote?.amount,
         timeText: shortTime(r.deadlineAt),
         orderCount: r.id ? (ordersByRfq.get(r.id) ?? 0) : 0,
@@ -107,7 +128,13 @@ export function ProjectsPage({
 
   const kw = keyword.trim().toLowerCase();
   const filtered = rows.filter((row) => {
-    if (filter !== '全部' && row.method !== filter) return false;
+    if (filter !== '全部') {
+      if (filter === '待查看' || filter === '已拒绝') {
+        if (row.inviteState !== filter) return false;
+      } else if (row.method !== filter) {
+        return false;
+      }
+    }
     return !kw || [row.title, row.refId].join(' ').toLowerCase().includes(kw);
   });
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -115,25 +142,31 @@ export function ProjectsPage({
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const countBy = (m: string) => rows.filter((r) => r.method === m).length;
+  const countInvite = (state: string) => rows.filter((r) => r.inviteState === state).length;
   const awardedCount = rows.filter((r) => r.stageResult === '我方中标').length;
 
   const loading = rfqs.isLoading || orders.isLoading;
 
   return (
-    <Panel title="项目管理" icon={FolderKanban} subtitle="询比 · 竞价 · 商城直采项目总览">
+    <Panel title="项目管理" icon={FolderKanban} subtitle="询比 · 竞价 · 商城直采项目总览 · 邀请回执与参与状态">
       <div className="mb-4 grid gap-2 sm:grid-cols-4">
         <MiniFact label="全部项目" value={String(rows.length)} />
-        <MiniFact label="询比 / 竞价" value={`${countBy('询比') + countBy('单一来源')} / ${countBy('竞价')}`} />
+        <MiniFact label="待查看邀请" value={String(countInvite('待查看'))} />
         <MiniFact label="商城直采" value={String(countBy('商城直采'))} />
         <MiniFact label="我方中标" value={String(awardedCount)} />
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterTabs
-          items={['全部', '询比', '竞价', '商城直采', '单一来源'].map((id) => ({
+          items={['全部', '询比', '竞价', '商城直采', '单一来源', '待查看', '已拒绝'].map((id) => ({
             id,
             label: id,
-            count: id === '全部' ? undefined : countBy(id),
+            count:
+              id === '全部'
+                ? undefined
+                : id === '待查看' || id === '已拒绝'
+                  ? countInvite(id)
+                  : countBy(id),
           }))}
           value={filter}
           onChange={(id) => {
@@ -188,12 +221,13 @@ export function ProjectsPage({
               </div>
             ))}
           >
-            <table className="w-full min-w-[960px] text-left text-sm">
+            <table className="w-full min-w-[1040px] text-left text-sm">
               <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="w-12 px-2 py-4 text-center">序号</th>
                   <th className="px-5 py-4">项目</th>
                   <th className="px-5 py-4">采购方式</th>
+                  <th className="px-5 py-4">邀请状态</th>
                   <th className="px-5 py-4">项目阶段</th>
                   <th className="px-5 py-4 text-right">我方金额</th>
                   <th className="px-5 py-4">截止 / 下单时间</th>
@@ -215,6 +249,23 @@ export function ProjectsPage({
                       <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black', methodTone[row.method] ?? methodTone['询比'])}>
                         {row.method}
                       </span>
+                    </td>
+                    <td className="px-5 py-5">
+                      {row.kind === 'rfq' && row.inviteState ? (
+                        <div>
+                          <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black', inviteTone[row.inviteState] ?? 'bg-slate-100 text-slate-600')}>
+                            {row.inviteState}
+                          </span>
+                          {row.inviteState === '已读' && row.inviteTime && (
+                            <p className="mt-1 font-mono text-[11px] font-bold text-slate-400">{shortTime(row.inviteTime)}</p>
+                          )}
+                          {row.inviteState === '已拒绝' && row.declineReason && (
+                            <p className="mt-1 w-32 truncate text-[11px] font-bold text-slate-400" title={row.declineReason}>{row.declineReason}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs font-bold text-slate-300">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-5">
                       <div className="flex flex-col items-start gap-1">

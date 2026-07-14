@@ -312,7 +312,7 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
               type="button"
               onClick={() => (onExitDetail ? onExitDetail() : setSelectedId(null))}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
-              aria-label="返回项目邀请"
+              aria-label="返回项目管理"
             >
               <ArrowLeft size={18} />
             </button>
