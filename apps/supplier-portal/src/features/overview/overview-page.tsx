@@ -153,7 +153,7 @@ export function OverviewPage({ onNavigate }: { onNavigate: (moduleId: string) =>
         desc: `报价中 · 已有 ${(r.quotes ?? []).length} 家报价`,
         time: `截止 ${shortDate(r.deadlineAt)}`,
         tone: 'bg-blue-50 text-blue-600',
-        module: 'invitations',
+        module: 'projects',
       })),
       ...((todo?.pendingOrderConfirmationCount ?? 0) > 0
         ? [{
@@ -242,7 +242,7 @@ export function OverviewPage({ onNavigate }: { onNavigate: (moduleId: string) =>
           <div className="flex shrink-0 flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => onNavigate('invitations')}
+              onClick={() => onNavigate('projects')}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
             >
               <Send size={14} /> 参与报价 ({view.pendingQuoteCount})
@@ -276,7 +276,7 @@ export function OverviewPage({ onNavigate }: { onNavigate: (moduleId: string) =>
       {/* 快捷入口:高频业务直达(布局对齐采购人看板右侧动作列) */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         {[
-          { icon: Send, title: '项目邀请', desc: '查看邀请并参与报价', module: 'invitations', tone: 'bg-blue-50 text-blue-600' },
+          { icon: Send, title: '项目管理', desc: '查看邀请并参与报价', module: 'projects', tone: 'bg-blue-50 text-blue-600' },
           { icon: Truck, title: '销售订单', desc: '确认、发货、开票', module: 'orders', tone: 'bg-orange-50 text-orange-600' },
           { icon: Store, title: '商城货架', desc: '协议价商品管理', module: 'shelf', tone: 'bg-violet-50 text-violet-600' },
           { icon: Banknote, title: '发票应收', desc: '开票与回款跟踪', module: 'invoices', tone: 'bg-emerald-50 text-emerald-600' },
