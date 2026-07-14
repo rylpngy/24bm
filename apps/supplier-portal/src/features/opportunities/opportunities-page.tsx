@@ -131,7 +131,7 @@ function QuoteEsignRecords({ quoteId }: { quoteId: string }) {
 }
 
 // 询比邀请:列表(商机卡片) → 详情(报价单/要求/澄清 + 关键信息/项目进度)双层结构。
-export function OpportunitiesPage() {
+export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void } = {}) {
   const queryClient = useQueryClient();
   const supplierId = useAuthStore((s) => s.session?.supplierId ?? '');
   // 竞价进行中时自动轮询(5s),让当前最低价/截止顺延即时可见;无在场竞价则不轮询。
@@ -310,9 +310,9 @@ export function OpportunitiesPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setSelectedId(null)}
+              onClick={() => (onExitDetail ? onExitDetail() : setSelectedId(null))}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
-              aria-label="返回商机列表"
+              aria-label="返回项目邀请"
             >
               <ArrowLeft size={18} />
             </button>
