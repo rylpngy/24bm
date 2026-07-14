@@ -13216,6 +13216,9 @@
           },
           "unitPrice": {
             "type": "number"
+          },
+          "demandItemId": {
+            "type": "string"
           }
         }
       },
@@ -13274,6 +13277,9 @@
           },
           "lineAmount": {
             "type": "number"
+          },
+          "demandItemId": {
+            "type": "string"
           }
         }
       },
@@ -13847,6 +13853,29 @@
           }
         }
       },
+      "RfqItemResponse": {
+        "type": "object",
+        "properties": {
+          "demandItemId": {
+            "type": "string"
+          },
+          "materialId": {
+            "type": "string"
+          },
+          "materialName": {
+            "type": "string"
+          },
+          "specification": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        }
+      },
       "RfqResponse": {
         "type": "object",
         "properties": {
@@ -13973,6 +14002,12 @@
           "auctionMyRank": {
             "type": "integer",
             "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RfqItemResponse"
+            }
           }
         }
       },

@@ -355,6 +355,40 @@ export function RfqProjectDetail({
         </div>
       </div>
 
+      {/* 采购清单:项目要采购什么(源自关联需求),供应商按此逐行报价——买卖双方同一份 */}
+      {(rfq.items ?? []).length > 0 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-base font-black text-slate-950">采购清单</h3>
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
+              共 {(rfq.items ?? []).length} 行 · 供应商按此逐行报价
+            </span>
+          </div>
+          <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                <tr>
+                  <th className="px-3 py-2">物资名称</th>
+                  <th className="px-3 py-2">规格</th>
+                  <th className="px-3 py-2 text-right">数量</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(rfq.items ?? []).map((item) => (
+                  <tr key={item.demandItemId} className="font-bold text-slate-700">
+                    <td className="px-3 py-2 font-black text-slate-900">{item.materialName}</td>
+                    <td className="px-3 py-2 text-slate-500">{item.specification || '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {item.quantity} {item.unit}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {rfq.id && <RfqClarificationsBuyer rfqId={rfq.id} canBulletin={quoting} />}
 
       {/* 公告记录:发布/补遗/再次报价/定标/终止时自动生成,同步门户公告中心公示 */}

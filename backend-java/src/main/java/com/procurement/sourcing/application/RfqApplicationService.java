@@ -59,6 +59,7 @@ public class RfqApplicationService {
   private final SupplierQualificationMapper supplierQualificationMapper;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final RfqSourcingStatusTransition rfqSourcingStatusTransition;
+  private final RfqItemQueryService rfqItemQueryService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final RfqAnnouncementService rfqAnnouncementService;
@@ -76,6 +77,7 @@ public class RfqApplicationService {
       SupplierQualificationMapper supplierQualificationMapper,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       RfqSourcingStatusTransition rfqSourcingStatusTransition,
+      RfqItemQueryService rfqItemQueryService,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       RfqAnnouncementService rfqAnnouncementService) {
@@ -91,6 +93,7 @@ public class RfqApplicationService {
     this.supplierQualificationMapper = supplierQualificationMapper;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.rfqSourcingStatusTransition = rfqSourcingStatusTransition;
+    this.rfqItemQueryService = rfqItemQueryService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.rfqAnnouncementService = rfqAnnouncementService;
@@ -603,7 +606,8 @@ public class RfqApplicationService {
         rfq.auctionShowRank(),
         rfq.auctionShowLowest(),
         rfq.auctionShowCompetitorNames(),
-        null);
+        null,
+        rfqItemQueryService.listItems(rfq.tenantId(), rfq.id()));
   }
 
   // 仅竞价方式回传当前轮最低已提交报价,供买卖双方观察价格竞争进度。
@@ -636,7 +640,8 @@ public class RfqApplicationService {
                             l.unit(),
                             l.quantity(),
                             l.unitPrice(),
-                            l.lineAmount()))
+                            l.lineAmount(),
+                            l.demandItemId()))
                 .toList();
     return new QuoteResponse(
         quote.id(),

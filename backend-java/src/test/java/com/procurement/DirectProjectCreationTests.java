@@ -58,6 +58,7 @@ class DirectProjectCreationTests {
       mock(SupplierQualificationMapper.class),
       mock(TenantFeatureApplicationService.class),
       new RfqSourcingStatusTransition(),
+      org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqItemQueryService.class),
       mock(AuditLogApplicationService.class),
       mock(NotificationApplicationService.class), null);
 

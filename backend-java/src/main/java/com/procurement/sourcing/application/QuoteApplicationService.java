@@ -17,6 +17,7 @@ import com.procurement.sourcing.domain.QuoteLineItem;
 import com.procurement.sourcing.domain.QuoteStatus;
 import com.procurement.sourcing.domain.Rfq;
 import com.procurement.sourcing.domain.RfqAuctionPolicy;
+import com.procurement.sourcing.domain.RfqQuoteLinePolicy;
 import com.procurement.sourcing.domain.RfqMethod;
 import com.procurement.sourcing.domain.RfqQuoteInvitationPolicy;
 import com.procurement.sourcing.domain.RfqQuoteSubmissionPolicy;
@@ -41,6 +42,7 @@ public class QuoteApplicationService {
   private final QuoteMapper quoteMapper;
   private final QuoteLineItemMapper quoteLineItemMapper;
   private final RfqSourcingStatusTransition rfqSourcingStatusTransition;
+  private final RfqItemQueryService rfqItemQueryService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
 
@@ -51,6 +53,7 @@ public class QuoteApplicationService {
       QuoteMapper quoteMapper,
       QuoteLineItemMapper quoteLineItemMapper,
       RfqSourcingStatusTransition rfqSourcingStatusTransition,
+      RfqItemQueryService rfqItemQueryService,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService) {
     this.rfqMapper = rfqMapper;
@@ -59,6 +62,7 @@ public class QuoteApplicationService {
     this.quoteMapper = quoteMapper;
     this.quoteLineItemMapper = quoteLineItemMapper;
     this.rfqSourcingStatusTransition = rfqSourcingStatusTransition;
+    this.rfqItemQueryService = rfqItemQueryService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
   }
@@ -124,6 +128,7 @@ public class QuoteApplicationService {
     RfqQuoteSubmissionPolicy.requireNoSubmittedQuote(submittedCount, rfqId);
 
     String quoteId = newId("quote");
+    requireQuoteFollowsRfqItems(rfq, request.lineItems());
     BigDecimal amount = effectiveAmount(request.amount(), request.lineItems());
     RfqAuctionPolicy.requireValidBid(
         rfq.method(),
@@ -179,6 +184,7 @@ public class QuoteApplicationService {
     rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfq.id());
     rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfq.id());
 
+    requireQuoteFollowsRfqItems(rfq, request.lineItems());
     BigDecimal amount = effectiveAmount(request.amount(), request.lineItems());
     RfqAuctionPolicy.requireValidBid(
         rfq.method(),
@@ -296,7 +302,8 @@ public class QuoteApplicationService {
           line.quantity(),
           line.unitPrice(),
           lineAmount,
-          sortNo++);
+          sortNo++,
+          line.demandItemId());
     }
   }
 
@@ -309,8 +316,21 @@ public class QuoteApplicationService {
         .map(
             l ->
                 new QuoteLineItemResponse(
-                    l.id(), l.description(), l.unit(), l.quantity(), l.unitPrice(), l.lineAmount()))
+                    l.id(), l.description(), l.unit(), l.quantity(), l.unitPrice(), l.lineAmount(),
+                    l.demandItemId()))
         .toList();
+  }
+
+  // 出价须依据采购清单:逐行对应清单行、数量以清单为准(清单为空的存量项目不施加)。
+  private void requireQuoteFollowsRfqItems(Rfq rfq, List<QuoteLineItemRequest> lineItems) {
+    RfqQuoteLinePolicy.requireQuoteMatchesRfqItems(
+        rfqItemQueryService.itemQuantities(rfq.tenantId(), rfq.id()),
+        lineItems == null
+            ? List.of()
+            : lineItems.stream()
+                .map(l -> new RfqQuoteLinePolicy.QuotedLine(l.demandItemId(), l.quantity()))
+                .toList(),
+        rfq.id());
   }
 
   // 提供行项时按行汇总覆盖报价头金额(头/明细一致);否则沿用供应商填写的 amount。
@@ -386,7 +406,8 @@ public class QuoteApplicationService {
         rfq.auctionShowRank(),
         rfq.auctionShowLowest(),
         rfq.auctionShowCompetitorNames(),
-        auctionMyRank(rfq, supplierId));
+        auctionMyRank(rfq, supplierId),
+        rfqItemQueryService.listItems(rfq.tenantId(), rfq.id()));
   }
 
   // 供应商本方名次:开启「显示当前排名」时,按各家最新有效报价升序计算(1=领先)。

@@ -12,5 +12,7 @@ public record QuoteLineItem(
     BigDecimal quantity,
     BigDecimal unitPrice,
     BigDecimal lineAmount,
-    Integer sortNo) {
+    Integer sortNo,
+    // 对应的采购清单行(需求物资明细 ID);历史自由报价行为空。
+    String demandItemId) {
 }

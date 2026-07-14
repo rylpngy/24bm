@@ -337,6 +337,7 @@ export * from './rfqClarificationResponse';
 export * from './rfqEnrollmentResponse';
 export * from './rfqEvaluationParams';
 export * from './rfqInvitationResponse';
+export * from './rfqItemResponse';
 export * from './rfqListParams';
 export * from './rfqResponse';
 export * from './rfqResultResponse';

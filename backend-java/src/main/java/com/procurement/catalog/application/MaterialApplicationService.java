@@ -27,6 +27,20 @@ public class MaterialApplicationService {
     this.eventPublisher = eventPublisher;
   }
 
+  // 跨模块查询入口:按指定租户与物料 ID 批量取主数据(供询比装配采购清单)。
+  // 显式传租户而非取上下文——供应商上下文无 tenantId,租户由其受邀的 RFQ 推导。
+  public List<com.procurement.catalog.domain.Material> findMaterialsByTenantAndIds(
+      String tenantId, java.util.Collection<String> materialIds) {
+    if (materialIds == null || materialIds.isEmpty()) {
+      return List.of();
+    }
+    return materialIds.stream()
+        .distinct()
+        .map(id -> materialMapper.findByTenantAndId(tenantId, id))
+        .filter(java.util.Objects::nonNull)
+        .toList();
+  }
+
   public List<MaterialResponse> listCurrentTenantMaterials() {
     return listCurrentTenantMaterials(null, null);
   }

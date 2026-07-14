@@ -56,6 +56,7 @@ class SupplierQuoteAuditLogTests {
           quoteMapper,
           quoteLineItemMapper,
           new RfqSourcingStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqItemQueryService.class),
           auditLogApplicationService,
           notificationApplicationService);
 
@@ -101,9 +102,9 @@ class SupplierQuoteAuditLogTests {
     when(quoteLineItemMapper.listByQuote(eq("tenant-1"), anyString()))
         .thenReturn(List.of(
             new QuoteLineItem("qli-a", "tenant-1", "quote-x", "服务器", "台",
-                BigDecimal.valueOf(10), BigDecimal.valueOf(9800), BigDecimal.valueOf(98000), 0),
+                BigDecimal.valueOf(10), BigDecimal.valueOf(9800), BigDecimal.valueOf(98000), 0, null),
             new QuoteLineItem("qli-b", "tenant-1", "quote-x", "交换机", "台",
-                BigDecimal.valueOf(8), BigDecimal.valueOf(2500), BigDecimal.valueOf(20000), 1)));
+                BigDecimal.valueOf(8), BigDecimal.valueOf(2500), BigDecimal.valueOf(20000), 1, null)));
 
     // 头金额故意填 1,验证服务端按行汇总(98000 + 20000 = 118000)覆盖。
     var response = quoteApplicationService.submit("rfq-1", new SubmitQuoteRequest(
@@ -111,8 +112,8 @@ class SupplierQuoteAuditLogTests {
         BigDecimal.valueOf(13),
         7,
         List.of(
-            new QuoteLineItemRequest("服务器", "台", BigDecimal.valueOf(10), BigDecimal.valueOf(9800)),
-            new QuoteLineItemRequest("交换机", "台", BigDecimal.valueOf(8), BigDecimal.valueOf(2500)))));
+            new QuoteLineItemRequest("服务器", "台", BigDecimal.valueOf(10), BigDecimal.valueOf(9800), null),
+            new QuoteLineItemRequest("交换机", "台", BigDecimal.valueOf(8), BigDecimal.valueOf(2500), null))));
 
     verify(quoteMapper).insert(
         anyString(), eq("tenant-1"), eq("rfq-1"), eq("ent-supplier-sunrise"),
@@ -122,7 +123,8 @@ class SupplierQuoteAuditLogTests {
     verify(quoteLineItemMapper, org.mockito.Mockito.times(2))
         .insert(anyString(), eq("tenant-1"), anyString(), anyString(), eq("台"),
             org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt());
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt(),
+            org.mockito.ArgumentMatchers.any());
     assertThat(response.lineItems()).hasSize(2);
     assertThat(response.lineItems().get(0).lineAmount()).isEqualByComparingTo("98000");
   }
