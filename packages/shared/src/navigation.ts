@@ -60,8 +60,7 @@ export const platformAdminModules: AdminNavigationModule[] = [
 
 export const supplierAdminModules: AdminNavigationModule[] = [
   { id: 'overview', label: '供应商看板', desc: '合作采购方、商机、订单' },
-  { id: 'opportunities', label: '询比邀请', desc: '可报价商机与截止时间' },
-  { id: 'invitations', label: '项目邀请', desc: '询比 / 竞价邀请函与回执' },
+  { id: 'invitations', label: '项目邀请', desc: '询比 / 竞价邀请函与参与报价' },
   { id: 'projects', label: '项目管理', desc: '询比 / 竞价 / 商城直采总览' },
   { id: 'orders', label: '销售订单', desc: '确认、发货、开票入口' },
   { id: 'deliveries', label: '发货管理', desc: '发货单与物流跟踪' },

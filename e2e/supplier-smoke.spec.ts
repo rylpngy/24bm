@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { loginViaKeycloak, openModule, expectLoggedIn } from './helpers';
 
-// 供应商门户冒烟:登录 → 询比邀请 / 销售订单 / 发票应收 / 商城货架。报价记录已并入询比详情(我的报价单)。
+// 供应商门户冒烟:登录 → 项目邀请 / 销售订单 / 发票应收 / 商城货架。询比邀请已并入项目邀请(台账 → 参与详情)。
 test('供应商端登录后可进入门户', async ({ page }) => {
   await loginViaKeycloak(page);
-  await expectLoggedIn(page, /询比邀请/);
+  await expectLoggedIn(page, /项目邀请/);
   await expect(page.getByRole('complementary').getByRole('button', { name: /销售订单/ })).toBeVisible();
 });
 
@@ -18,21 +18,20 @@ test('销售订单列表:状态筛选 + 搜索 + 分页', async ({ page }) => {
 
 });
 
-test('询比邀请:列表 → 详情(关键信息 + 项目进度)', async ({ page }) => {
+test('项目邀请:台账 → 参与详情(关键信息 + 项目进度) → 返回台账', async ({ page }) => {
   await loginViaKeycloak(page);
-  await openModule(page, /询比邀请/);
-  await expect(page.getByRole('heading', { name: '询比邀请', level: 3 })).toBeVisible();
-  await expect(page.getByText(/共\s*\d+\s*条/).first()).toBeVisible();
+  await openModule(page, /项目邀请/);
+  await expect(page.getByRole('heading', { name: '项目邀请', level: 3 })).toBeVisible();
 
-  const detailButtons = page.getByRole('button', { name: '详情', exact: true });
-  if ((await detailButtons.count()) === 0) return; // 无商机数据时仅冒烟列表
-  await detailButtons.first().click();
+  const openButtons = page.locator('table').getByRole('button', { name: '查看项目' });
+  if ((await openButtons.count()) === 0) return; // 无邀请数据时仅冒烟台账
+  await openButtons.first().click();
   await expect(page.getByText('关键信息')).toBeVisible();
   await expect(page.getByText('项目进度')).toBeVisible();
   await expect(page.getByText('收到邀请')).toBeVisible();
-  // 返回列表
-  await page.getByRole('button', { name: '返回商机列表' }).click();
-  await expect(page.getByText(/共\s*\d+\s*条/).first()).toBeVisible();
+  // 返回项目邀请台账(而非旧询比商机列表)
+  await page.getByRole('button', { name: '返回项目邀请' }).click();
+  await expect(page.getByRole('heading', { name: '项目邀请', level: 3 })).toBeVisible();
 });
 
 test('供应商看板:欢迎横幅 + 经营指标 + 待办', async ({ page }) => {

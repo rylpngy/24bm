@@ -30,11 +30,18 @@ export function App() {
     url.searchParams.delete('rfq');
     window.history.replaceState(null, '', url.toString());
   };
-  // 从项目邀请 / 项目管理直达具体项目:写入 ?rfq= 后整页进入询比邀请详情。
+  // 从项目邀请 / 项目管理直达具体项目:写入 ?rfq= 后在项目邀请模块内进入参与详情。
+  const rfqParam = new URLSearchParams(window.location.search).get('rfq');
   const openProject = (rfqId: string) => {
     const url = new URL(window.location.href);
-    url.searchParams.set('module', 'opportunities');
+    url.searchParams.set('module', 'invitations');
     url.searchParams.set('rfq', rfqId);
+    window.location.href = url.toString();
+  };
+  const exitProjectDetail = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('module', 'invitations');
+    url.searchParams.delete('rfq');
     window.location.href = url.toString();
   };
   const activeModule = supplierNavigation.modules.find((m) => m.id === activeModuleId);
@@ -46,7 +53,7 @@ export function App() {
   return (
     <AppShell
       brandSubtitle={supplierNavigation.label}
-      mainlineHint="询比邀请 - 报价 - 订单履约 - 发票应收"
+      mainlineHint="项目邀请 - 报价 - 订单履约 - 发票应收"
       modules={supplierNavigation.modules}
       activeModuleId={activeModuleId}
       onSelectModule={selectModule}
@@ -56,10 +63,12 @@ export function App() {
     >
       {activeModuleId === 'overview' ? (
         <OverviewPage onNavigate={selectModule} />
-      ) : activeModuleId === 'opportunities' ? (
-        <OpportunitiesPage />
       ) : activeModuleId === 'invitations' ? (
-        <InvitationsPage onOpenProject={openProject} />
+        rfqParam ? (
+          <OpportunitiesPage onExitDetail={exitProjectDetail} />
+        ) : (
+          <InvitationsPage onOpenProject={openProject} />
+        )
       ) : activeModuleId === 'projects' ? (
         <ProjectsPage onOpenProject={openProject} onOpenOrders={() => selectModule('orders')} />
       ) : activeModuleId === 'orders' ? (
