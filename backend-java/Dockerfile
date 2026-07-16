@@ -12,8 +12,8 @@ WORKDIR /app
 # 复制可执行 jar(排除 *.original)。
 COPY --from=build /workspace/target/*.jar /app/app.jar
 EXPOSE 8080
-# 容器内默认连同 compose 的 postgres;演示数据走 db/demo。
-ENV SPRING_FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/demo
+# 容器内默认连同 compose 的 postgres;演示种子走独立链(flyway_seed_history)。
+ENV APP_SEED_LOCATIONS=classpath:db/demo
 # 健康检查走 Actuator readiness 探针。
 HEALTHCHECK --interval=15s --timeout=3s --start-period=40s --retries=5 \
   CMD wget -qO- http://localhost:8080/actuator/health/readiness || exit 1

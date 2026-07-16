@@ -4,4 +4,8 @@ spring:
     username: ${DB_USERNAME:procurement}
     password: ${DB_PASSWORD:procurement}
   flyway:
-    locations: classpath:db/migration,classpath:db/dev
+    locations: classpath:db/migration
+
+app:
+  seed:
+    locations: ${APP_SEED_LOCATIONS:classpath:db/dev}

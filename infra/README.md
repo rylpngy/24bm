@@ -34,7 +34,7 @@ docker compose --profile app --profile portals up -d --build
 1. **改默认凭据**:`.env` 中 `DB_PASSWORD` / `MINIO_ROOT_PASSWORD` / `GRAFANA_ADMIN_PASSWORD`,以及 Keycloak 管理员密码(首次登录管理台修改)。
 2. **安全基线**:`ALLOW_DEMO_JWT_SECRET=false`、`SELF_LOGIN_ENABLED=false`、`VITE_SELF_LOGIN=false`,`CORS_ALLOWED_ORIGINS` 改为实际访问地址。
 3. **对外地址**:`PUBLIC_API_URL` / `PUBLIC_KEYCLOAK_URL` 必须是浏览器可达的地址(如 `https://api.example.com`),前端为构建期注入,改后需 `--build` 重建前端镜像。
-4. **干净数据库**:`SPRING_FLYWAY_LOCATIONS=classpath:db/migration`(去掉 demo 种子);基础数据用三端内置的 Excel 批量导入(物料/部门/供应商邀请)初始化。
+4. **干净数据库**:`APP_SEED_LOCATIONS=`(留空即不灌任何种子;业务迁移链 flyway_schema_history 与种子链 flyway_seed_history 相互独立,业务迁移永不 out-of-order);基础数据用三端内置的 Excel 批量导入(物料/部门/供应商邀请)初始化。
 5. **备份**:数据卷为 `24bid-postgres-data` / `24bid-minio-data`。PostgreSQL 逻辑备份:
    ```bash
    docker exec 24bid-postgres pg_dump -U procurement procurement_saas | gzip > backup-$(date +%F).sql.gz
