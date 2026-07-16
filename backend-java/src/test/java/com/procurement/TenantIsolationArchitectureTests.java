@@ -21,6 +21,8 @@ class TenantIsolationArchitectureTests {
       "platform/infrastructure/PlatformTenantMapper.java",
       "platform/infrastructure/PlatformEnterpriseMapper.java",
       "supplier/infrastructure/SupplierProfileMapper.java",
+      // 招标:公开招标发售清单为平台级公开数据;领取记录按 supplier 维度跨租户读取。
+      "tender/infrastructure/TenderAcquisitionMapper.java",
       "tenant/infrastructure/TenantFeatureMapper.java",
       "tenant/infrastructure/TenantEntitlementMapper.java",
       // 身份/安全的跨切面映射:权限按用户解析(用户本身归属租户),非租户业务表。

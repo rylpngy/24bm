@@ -16,6 +16,12 @@ public class SupplierProfileApplicationService {
   private final SupplierProfileMapper supplierProfileMapper;
   private final AuditLogApplicationService auditLogApplicationService;
 
+  // 跨模块名称解析入口:按企业 ID 取显示名(招标领取记录等展示用),不存在回退 ID。
+  public String findSupplierDisplayName(String supplierId) {
+    var profile = supplierProfileMapper.findBySupplierId(supplierId);
+    return profile == null || profile.name() == null ? supplierId : profile.name();
+  }
+
   public SupplierProfileApplicationService(
       SupplierProfileMapper supplierProfileMapper,
       AuditLogApplicationService auditLogApplicationService) {

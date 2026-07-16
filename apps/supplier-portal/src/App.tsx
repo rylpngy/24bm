@@ -9,6 +9,7 @@ import { OpportunitiesPage } from './features/opportunities/opportunities-page';
 import { RfqProjectsPage } from './features/projects/rfq-projects-page';
 import { AuctionProjectsPage } from './features/projects/auction-projects-page';
 import { MallProjectsPage } from './features/projects/mall-projects-page';
+import { TenderProjectsPage } from './features/projects/tender-projects-page';
 import { OrdersPage } from './features/orders/orders-page';
 import { ShelfPage } from './features/shelf/shelf-page';
 import { ReceivablesPage } from './features/receivables/receivables-page';
@@ -76,6 +77,8 @@ export function App() {
         )
       ) : activeModuleId === 'mall-projects' ? (
         <MallProjectsPage onOpenOrders={() => selectModule('orders')} />
+      ) : activeModuleId === 'tender-projects' ? (
+        <TenderProjectsPage />
       ) : activeModuleId === 'orders' ? (
         <OrdersPage />
       ) : activeModuleId === 'deliveries' ? (
