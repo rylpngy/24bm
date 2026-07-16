@@ -1963,7 +1963,7 @@ class HttpSecurityContractTests {
             "ent-supplier-sunrise",
             "营业执照",
             "Q-2026-001",
-            LocalDate.parse("2027-12-31"),
+            LocalDate.now().plusYears(1),
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "active",
@@ -1976,7 +1976,7 @@ class HttpSecurityContractTests {
             "ent-supplier-sunrise",
             "营业执照",
             "Q-2026-001",
-            LocalDate.parse("2027-12-31"),
+            LocalDate.now().plusYears(1),
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "inactive",
@@ -1988,7 +1988,7 @@ class HttpSecurityContractTests {
             "ent-supplier-sunrise",
             "营业执照",
             "Q-2026-001",
-            LocalDate.parse("2027-12-31"),
+            LocalDate.now().plusYears(1),
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "active",
@@ -2001,7 +2001,7 @@ class HttpSecurityContractTests {
             "ent-supplier-sunrise",
             "营业执照",
             "Q-2026-001",
-            LocalDate.parse("2027-12-31"),
+            LocalDate.now().plusYears(1),
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "inactive",
@@ -2257,11 +2257,11 @@ class HttpSecurityContractTests {
                 {
                   "qualificationType": "营业执照",
                   "certificateNo": "Q-2026-001",
-                  "expiresAt": "2027-12-31",
+                  "expiresAt": "%s",
                   "fileName": "license.pdf",
                   "storageKey": "suppliers/ent-supplier-sunrise/license.pdf"
                 }
-                """))
+                """.formatted(java.time.LocalDate.now().plusYears(1))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.supplierId").value("ent-supplier-sunrise"));
     mockMvc.perform(post("/api/v1/supplier/qualifications/qual-demo/status")
@@ -3495,7 +3495,7 @@ class HttpSecurityContractTests {
             "ent-supplier-ocean",
             "营业执照",
             "Q-2026-001",
-            LocalDate.parse("2027-12-31"),
+            LocalDate.now().plusYears(1),
             "营业执照.pdf",
             "supplier/qualifications/business-license.pdf",
             "active",
@@ -4752,7 +4752,7 @@ class HttpSecurityContractTests {
         "已收货验收",
         LocalDate.parse("2026-06-15"),
         OffsetDateTime.parse("2026-06-15T12:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), java.time.LocalDate.parse("2026-06-01"), java.time.LocalDate.parse("2027-06-01"), "验收后30天内电汇", "质保2年，逾期交付按日0.5%计违约金", null);
+        OffsetDateTime.parse("2026-06-15T12:05:00+08:00"), java.time.LocalDate.parse("2026-06-01"), java.time.LocalDate.now().plusMonths(11), "验收后30天内电汇", "质保2年，逾期交付按日0.5%计违约金", null);
   }
 
   private InvoiceReconciliationResponse invoiceReconciliationResponse(String id, String invoiceId, String stage) {

@@ -133,7 +133,7 @@ class PurchaseDemandDepartmentValidationTests {
         "dept-it",
         BigDecimal.valueOf(240000),
         List.of(new PurchaseDemandLineItemRequest("mat-server", BigDecimal.valueOf(4))),
-        java.time.LocalDate.parse("2026-07-30"),
+        java.time.LocalDate.now().plusDays(14),
         "高",
         "生产环境扩容"));
 

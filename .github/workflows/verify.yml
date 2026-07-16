@@ -40,6 +40,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Typecheck (all packages + apps)
         run: pnpm typecheck:all
+      - name: 测试日期定时炸弹检查(禁止未来日期字面量)
+        run: node scripts/check-test-dates.mjs
       - name: Unit tests (Vitest)
         run: pnpm test
 

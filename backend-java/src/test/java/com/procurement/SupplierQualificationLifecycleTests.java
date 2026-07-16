@@ -41,7 +41,7 @@ class SupplierQualificationLifecycleTests {
         new CreateSupplierQualificationRequest(
             "营业执照",
             "Q-2026-001",
-            LocalDate.parse("2027-12-31"),
+            LocalDate.now().plusYears(1),
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf"));
 
@@ -50,7 +50,7 @@ class SupplierQualificationLifecycleTests {
         org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
         org.mockito.ArgumentMatchers.eq("营业执照"),
         org.mockito.ArgumentMatchers.eq("Q-2026-001"),
-        org.mockito.ArgumentMatchers.eq(LocalDate.parse("2027-12-31")),
+        org.mockito.ArgumentMatchers.eq(LocalDate.now().plusYears(1)),
         org.mockito.ArgumentMatchers.eq("license.pdf"),
         org.mockito.ArgumentMatchers.eq("suppliers/ent-supplier-sunrise/license.pdf"),
         org.mockito.ArgumentMatchers.eq("active"));
@@ -99,7 +99,7 @@ class SupplierQualificationLifecycleTests {
         "ent-supplier-sunrise",
         "营业执照",
         "Q-2026-001",
-        LocalDate.parse("2027-12-31"),
+        LocalDate.now().plusYears(1),
         "license.pdf",
         "suppliers/ent-supplier-sunrise/license.pdf",
         "active",
