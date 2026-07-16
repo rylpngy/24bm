@@ -23,13 +23,14 @@ export function LoginGate() {
     setKcBusy(true);
     setKcError(false);
     try {
-      const { token, claims } = await keycloakPasswordLogin({
+      const { token, claims, refreshToken } = await keycloakPasswordLogin({
         keycloakUrl: KEYCLOAK_URL,
         username: 'platform.admin@example.com',
         password: 'demo123456',
       });
       signIn({
         token,
+        refreshToken,
         userId: (claims.userId as string) ?? '',
         displayName: `${(claims.displayName as string) ?? '平台管理员'}（Keycloak）`,
       });
