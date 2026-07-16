@@ -44,7 +44,7 @@ class ContractExpiryScanTests {
     when(contractMapper.listExpiringWithin(
         org.mockito.ArgumentMatchers.eq("tenant-1"),
         org.mockito.ArgumentMatchers.any(LocalDate.class)))
-        .thenReturn(List.of(contract("contract-1", "测试采购合同", LocalDate.parse("2026-07-20"))));
+        .thenReturn(List.of(contract("contract-1", "测试采购合同", LocalDate.now().plusDays(4))));
 
     var response = contractApplicationService.scanExpiringContracts(30);
 
@@ -57,7 +57,7 @@ class ContractExpiryScanTests {
     verify(notificationApplicationService).notifyActiveTenantUsers(
         "tenant-1",
         "合同到期提醒",
-        "合同「测试采购合同」将于 2026-07-20 到期,请及时安排续签或归档。");
+        "合同「测试采购合同」将于 " + LocalDate.now().plusDays(4) + " 到期,请及时安排续签或归档。");
     verify(auditLogApplicationService).recordTenantAction(
         "tenant-1",
         "contract.expiry_scanned",

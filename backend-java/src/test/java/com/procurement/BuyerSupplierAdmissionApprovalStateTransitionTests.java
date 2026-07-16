@@ -332,7 +332,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
         supplierId,
         "营业执照",
         "Q-2026-001",
-        LocalDate.parse("2027-12-31"),
+        LocalDate.now().plusYears(1),
         "营业执照.pdf",
         "supplier/qualifications/business-license.pdf",
         "active",
