@@ -38,7 +38,7 @@ pnpm java:dev
 `pnpm java:dev` starts Spring Boot from `backend-java/` with the local Flyway locations pinned:
 
 ```bash
-SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev'
+APP_SEED_LOCATIONS='classpath:db/dev'
 ```
 
 Use this npm script for local demos and Java smoke checks. It keeps the regular migrations and the `db/dev` demo seed path together, which avoids the local Flyway validation mismatch that can happen when the database already has the V100 dev seed migration recorded but the backend is started with only `db/migration`.
@@ -47,7 +47,7 @@ If you need to run the Maven command directly, keep the same Flyway location ove
 
 ```bash
 cd backend-java
-SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev' mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn spring-boot:run -Dspring-boot.run.profiles=local  # local profile 默认种子链=db/dev
 ```
 
 The default backend URL is:

@@ -43,9 +43,15 @@ SUPRES=$(post /platform/suppliers "$PLAT" '{
 echo "$SUPRES" | jqget "['data']['adminUserId']" >/dev/null && ok "供应商已开通: $(echo "$SUPRES" | jqget "['data']['adminUserId']")"
 
 step "2) Keycloak 为两位管理员建号(带 claim 属性)"
-KCADM="${KCADM:-docker compose -f infra/docker-compose.yml exec -T keycloak /opt/keycloak/bin/kcadm.sh}"
+KCADM="${KCADM:-docker exec -i 24bid-keycloak /opt/keycloak/bin/kcadm.sh}"
 cd "$DRYRUN_DIR"
 $KCADM config credentials --server http://localhost:8081 --realm master --user admin --password ${KC_ADMIN_PASSWORD:-admin} >/dev/null
+# 守护:unmanagedAttributePolicy 必须为 ENABLED,否则自定义属性(tenantId 等)被丢弃、claim 全空 → 全线 403。
+UAP=$($KCADM get realms/24bid/users/profile 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin).get('unmanagedAttributePolicy') or 'DISABLED')")
+if [ "$UAP" != "ENABLED" ]; then
+  echo "  ✗ realm unmanagedAttributePolicy=$UAP:自定义属性会被丢弃,请先跑 scripts/keycloak-setup.sh 修正"; exit 1
+fi
+ok "realm 属性策略 ENABLED"
 $KCADM create users -r 24bid -s username=owner@pilot.example.com -s enabled=true -s email=owner@pilot.example.com \
   -s emailVerified=true -s firstName=试点 -s lastName=采购管理员 -s 'requiredActions=[]' \
   -s 'attributes.userId=user-tenant-pilot-owner' -s 'attributes.tenantId=tenant-pilot' \
@@ -97,9 +103,19 @@ put "/buyer/rfqs/$RFQ/invitations" "$BUYER" '{"supplierIds":["ent-pilot-supplier
 PUB=$(postp "/buyer/rfqs/$RFQ/publish" "$BUYER")
 echo "$PUB" | grep -q '"success":true' && ok "RFQ $RFQ 已发布" || { echo "发布失败: $PUB"; exit 1; }
 
-step "7) 供应商报价 → 买方开标 → 定标 → 订单"
-post "/supplier/rfqs/$RFQ/quotes" "$SUP" '{"amount":48000,"taxRate":13,"deliveryDays":7}' >/dev/null
-ok "报价已提交(截止前对买方封存)"
+step "7) 供应商报价(按采购清单逐行)→ 买方开标 → 定标 → 订单"
+# V179 起报价须依据采购清单:取供应商视角清单行,逐行绑定 demandItemId,数量以清单为准。
+QUOTE_BODY=$(get /supplier/rfqs "$SUP" | python3 -c "$PY
+d=json.load(sys.stdin)['data']
+r=[x for x in d if x['id']=='$RFQ'][0]
+items=r.get('items') or []
+assert items, '采购清单未下发到供应商(items 为空)'
+lines=[{'description':i['materialName'],'unit':i.get('unit') or '项','quantity':i['quantity'],'unitPrice':4800,'demandItemId':i['demandItemId']} for i in items]
+total=sum(l['quantity']*l['unitPrice'] for l in lines)
+print(json.dumps({'amount':total,'taxRate':13,'deliveryDays':7,'lineItems':lines}))")
+QRES=$(post "/supplier/rfqs/$RFQ/quotes" "$SUP" "$QUOTE_BODY")
+echo "$QRES" | grep -q '"success":true' || { echo "报价失败: $QRES"; exit 1; }
+ok "报价已按清单提交(截止前对买方封存)"
 post "/buyer/rfqs/$RFQ/open" "$BUYER" '{"force":true}' >/dev/null
 ok "已开标(force,预演提前开标)"
 QID=$(get /buyer/rfqs "$BUYER" | python3 -c "$PY

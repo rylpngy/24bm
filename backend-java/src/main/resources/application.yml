@@ -11,9 +11,15 @@ spring:
     driver-class-name: org.postgresql.Driver
   flyway:
     enabled: true
+    # 业务迁移链:只跑 db/migration。种子(demo/dev)走独立链,见 app.seed.locations。
     locations: classpath:db/migration
   jackson:
     time-zone: Asia/Shanghai
+
+# 种子数据独立迁移链(flyway_seed_history):演示环境=classpath:db/demo;干净库留空。
+app:
+  seed:
+    locations: ${APP_SEED_LOCATIONS:}
 
 mybatis:
   mapper-locations: classpath*:mapper/**/*.xml
