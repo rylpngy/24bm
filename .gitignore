@@ -34,3 +34,5 @@ backend-java/target
 
 # Local cleanup archives (contain browser profile data, never commit)
 /cleaned_docs/
+scripts/dept.xlsx
+scripts/mat.xlsx
