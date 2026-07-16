@@ -26,4 +26,5 @@ export interface TenderResponse {
   createdAt?: string;
   acquisitions?: TenderAcquisitionResponse[];
   bids?: TenderBidResponse[];
+  openedAt?: string;
 }

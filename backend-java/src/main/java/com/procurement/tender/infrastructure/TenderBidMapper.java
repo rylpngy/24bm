@@ -54,6 +54,13 @@ public interface TenderBidMapper {
       @Param("supplierId") String supplierId,
       @Param("withdrawnAt") OffsetDateTime withdrawnAt);
 
+  // 开标解封:在案密封投标批量转「已开启」;已撤回的保持撤回留痕不解封。
+  @Update("""
+      update tender_bids set sealed_status = '已开启'
+      where tenant_id = #{tenantId} and tender_id = #{tenderId} and sealed_status = '已密封'
+      """)
+  int markAllOpened(@Param("tenantId") String tenantId, @Param("tenderId") String tenderId);
+
   @Select("select " + COLUMNS + " from tender_bids where tenant_id = #{tenantId} and tender_id = #{tenderId} order by submitted_at")
   List<TenderBid> listByTender(@Param("tenantId") String tenantId, @Param("tenderId") String tenderId);
 

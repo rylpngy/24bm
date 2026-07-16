@@ -358,7 +358,12 @@ class FinancePaymentStateTransitionTests {
 
     org.assertj.core.api.Assertions.assertThat(response.reconciliationNote()).isEqualTo("已与采购方确认 6 月底付尾款");
     org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("部分付款");
-    org.assertj.core.api.Assertions.assertThat(response.dueDate()).isEqualTo(LocalDate.now().plusDays(25));
+    // dueDate 按业务时区(Asia/Shanghai)折算 createdAt(now-5d)+30 天;测试机/CI 时区不同,断言须同口径。
+    org.assertj.core.api.Assertions.assertThat(response.dueDate()).isEqualTo(
+        OffsetDateTime.now().minusDays(5)
+            .atZoneSameInstant(java.time.ZoneId.of("Asia/Shanghai"))
+            .toLocalDate()
+            .plusDays(30));
     org.assertj.core.api.Assertions.assertThat(response.overdue()).isFalse();
     org.assertj.core.api.Assertions.assertThat(response.overdueDays()).isZero();
     org.assertj.core.api.Assertions.assertThat(response.orderAmount()).isEqualByComparingTo("100");

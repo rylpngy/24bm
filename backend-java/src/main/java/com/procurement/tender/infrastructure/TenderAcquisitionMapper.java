@@ -48,7 +48,7 @@ public interface TenderAcquisitionMapper {
   @Select("""
       select t.id, t.tenant_id, t.tender_no, t.title, t.tender_type, t.budget, t.status,
              t.document_html, t.evaluation_method, t.bid_bond_amount, t.acquisition_deadline,
-             t.submission_deadline, t.opening_at, t.owner_id, t.published_at, t.created_at, t.updated_at
+             t.submission_deadline, t.opening_at, t.owner_id, t.published_at, t.created_at, t.updated_at, t.opened_at
       from tenders t
       join tender_acquisitions a on a.tenant_id = t.tenant_id and a.tender_id = t.id
       where a.supplier_id = #{supplierId}
@@ -60,7 +60,7 @@ public interface TenderAcquisitionMapper {
   @Select("""
       select id, tenant_id, tender_no, title, tender_type, budget, status, document_html,
              evaluation_method, bid_bond_amount, acquisition_deadline, submission_deadline,
-             opening_at, owner_id, published_at, created_at, updated_at
+             opening_at, owner_id, published_at, created_at, updated_at, opened_at
       from tenders
       where tender_type = '公开招标' and status = '发售中'
       order by created_at desc

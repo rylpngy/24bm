@@ -33,6 +33,8 @@ test('招标项目:公开招标自助领取 → 正文解锁', async ({ page, re
   await expectLoggedIn(page, /招标项目/);
   await openModule(page, /招标项目/);
   await expect(page.getByRole('heading', { name: '招标项目', level: 3 })).toBeVisible();
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
 
   const row = page.locator('table tr', { hasText: title }).first();
   await expect(row).toBeVisible();
@@ -51,6 +53,8 @@ test('投标加密递交:签署密封 → 凭证 → 撤回重投', async ({ pag
   await loginViaKeycloak(page);
   await expectLoggedIn(page, /招标项目/);
   await openModule(page, /招标项目/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
   const row = page.locator('table tr', { hasText: title }).first();
   await row.getByRole('button', { name: '领取文件' }).click();
   await expect(page.getByText(/招标文件已领取/)).toBeVisible();
@@ -80,4 +84,46 @@ test('投标加密递交:签署密封 → 凭证 → 撤回重投', async ({ pag
   await page.getByRole('button', { name: /撤回投标/ }).click();
   await expect(page.getByText(/此前投标已于/)).toBeVisible();
   await expect(page.getByRole('button', { name: /签署并密封递交/ })).toBeVisible();
+});
+
+// C-3 行为级(供应商侧):开标后唱标公示可见——本方高亮、报价公示、核验通过。
+test('唱标公示:开标后供应商可见公示与核验', async ({ page, request }) => {
+  const login = await request.post(`${API}/auth/login`, {
+    data: { account: 'buyer.owner@example.com', password: 'demo123456', scope: 'BUYER', tenantId: 'tenant-acme' },
+  });
+  const buyer = (await login.json()).data.accessToken as string;
+  const supLogin = await request.post(`${API}/auth/login`, {
+    data: { account: 'supplier.sales@example.com', password: 'demo123456', scope: 'SUPPLIER', supplierId: 'ent-supplier-sunrise' },
+  });
+  const sup = (await supLogin.json()).data.accessToken as string;
+  const title = `E2E供方唱标-${Date.now()}`;
+  const iso = (s: number) => new Date(Date.now() + s * 1000).toISOString();
+  const created = await request.post(`${API}/buyer/tenders`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: {
+      title, tenderType: '公开招标', budget: 300000, evaluationMethod: '最低评标价法',
+      documentHtml: '<p>E2E 供方唱标正文。</p>',
+      acquisitionDeadline: iso(6), submissionDeadline: iso(8), openingAt: iso(10),
+    },
+  });
+  const id = (await created.json()).data.id as string;
+  await request.post(`${API}/buyer/tenders/${id}/publish`, { headers: { Authorization: `Bearer ${buyer}` } });
+  await request.post(`${API}/supplier/tenders/${id}/acquire`, { headers: { Authorization: `Bearer ${sup}` } });
+  await request.post(`${API}/supplier/tenders/${id}/bids`, {
+    headers: { Authorization: `Bearer ${sup}` },
+    data: { bidAmount: 199000, documentHtml: '<p>E2E 供方投标函。</p>' },
+  });
+  await new Promise((r) => setTimeout(r, 11_000));
+  expect((await request.post(`${API}/buyer/tenders/${id}/open`, { headers: { Authorization: `Bearer ${buyer}` } })).ok()).toBeTruthy();
+
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /招标项目/);
+  await openModule(page, /招标项目/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '查看招标' }).click();
+  await expect(page.getByText('开标唱标公示')).toBeVisible();
+  await expect(page.getByText('¥199,000.00')).toBeVisible();
+  await expect(page.getByText('核验通过', { exact: true })).toBeVisible();
+  await expect(page.getByText('本方', { exact: true })).toBeVisible();
 });

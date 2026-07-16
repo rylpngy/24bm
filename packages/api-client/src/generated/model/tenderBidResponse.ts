@@ -17,4 +17,5 @@ export interface TenderBidResponse {
   sealedStatus?: string;
   submittedAt?: string;
   withdrawnAt?: string;
+  digestVerified?: boolean;
 }

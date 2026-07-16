@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
 import { expectLoggedIn, loginViaKeycloak, openModule } from './helpers';
 
 // Track C C-1 行为级:招标文件编制(富文本)→ 发布发售 → 台账与详情状态推进。唯一标题可重复执行。
@@ -30,4 +30,63 @@ test('招标管理:编制(富文本)→ 发布发售 → 详情要素与领取�
   await expect(page.getByText(/E2E 行为验证公开招标/)).toBeVisible();
   await expect(page.getByText('发售与领取记录')).toBeVisible();
   await expect(page.getByText(/公开招标发售中,供应商在其门户自助领取/)).toBeVisible();
+});
+
+const API = 'http://localhost:8080/api/v1';
+
+// 前置安排:API 造一单已投标、已到开标时间的公开招标(唯一标题)。
+async function seedOpenedReadyTender(request: APIRequestContext) {
+  const buyerLogin = await request.post(`${API}/auth/login`, {
+    data: { account: 'buyer.owner@example.com', password: 'demo123456', scope: 'BUYER', tenantId: 'tenant-acme' },
+  });
+  const buyer = (await buyerLogin.json()).data.accessToken as string;
+  const supLogin = await request.post(`${API}/auth/login`, {
+    data: { account: 'supplier.sales@example.com', password: 'demo123456', scope: 'SUPPLIER', supplierId: 'ent-supplier-sunrise' },
+  });
+  const sup = (await supLogin.json()).data.accessToken as string;
+
+  const title = `E2E定时解封-${Date.now()}`;
+  const iso = (s: number) => new Date(Date.now() + s * 1000).toISOString();
+  const created = await request.post(`${API}/buyer/tenders`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: {
+      title, tenderType: '公开招标', budget: 300000, evaluationMethod: '最低评标价法',
+      documentHtml: '<p>E2E 开标唱标验证正文。</p>',
+      acquisitionDeadline: iso(6), submissionDeadline: iso(8), openingAt: iso(10),
+    },
+  });
+  const id = (await created.json()).data.id as string;
+  expect((await request.post(`${API}/buyer/tenders/${id}/publish`, { headers: { Authorization: `Bearer ${buyer}` } })).ok()).toBeTruthy();
+  expect((await request.post(`${API}/supplier/tenders/${id}/acquire`, { headers: { Authorization: `Bearer ${sup}` } })).ok()).toBeTruthy();
+  expect((await request.post(`${API}/supplier/tenders/${id}/bids`, {
+    headers: { Authorization: `Bearer ${sup}` },
+    data: { bidAmount: 258000, documentHtml: '<p>E2E 密封投标函。</p>' },
+  })).ok()).toBeTruthy();
+  // 等到约定开标时间(定时开标:提前开标会被规则拒绝)
+  await new Promise((r) => setTimeout(r, 11_000));
+  return { title, id, buyer };
+}
+
+// C-3 行为级:密封投标 → 到时开标唱标 → 报价解封公示 + 指纹核验通过。
+test('开标唱标:定时开标 → 解封报价 → 指纹核验', async ({ page, request }) => {
+  const { title } = await seedOpenedReadyTender(request);
+
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /招标管理/);
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+
+  // 开标前:递交登记密封在案,底部出现开标入口
+  await expect(page.getByText('投标递交情况')).toBeVisible();
+  await expect(page.getByText(/密封在案 1 份/)).toBeVisible();
+  await page.getByRole('button', { name: /开标唱标/ }).click();
+
+  // 开标后:金额解封公示 + 指纹核验通过
+  await expect(page.getByText(/已开标:密封投标解封唱标/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: '开标唱标', exact: true })).toBeVisible();
+  await expect(page.getByText('¥258,000.00')).toBeVisible();
+  await expect(page.getByText('核验通过', { exact: true })).toBeVisible();
+  await expect(page.getByText(/有效投标 1 份/)).toBeVisible();
 });

@@ -15,6 +15,7 @@ public final class TenderPolicy {
   public static final String STATUS_DRAFTING = "编制中";
   public static final String STATUS_ON_SALE = "发售中";
   public static final String STATUS_CLOSED = "已截止";
+  public static final String STATUS_OPENED = "已开标";
 
   private TenderPolicy() {}
 
@@ -49,6 +50,16 @@ public final class TenderPolicy {
     }
     if (!STATUS_ON_SALE.equals(tender.status())) {
       throw new IllegalStateException("招标文件发售中方可发放: " + tender.id());
+    }
+  }
+
+  // 定时开标:到达约定开标时间后方可执行,且仅发售中的招标可开标(幂等重开抛错)。
+  public static void requireOpenable(Tender tender, OffsetDateTime now) {
+    if (!STATUS_ON_SALE.equals(tender.status())) {
+      throw new IllegalStateException("仅发售中的招标项目可执行开标: " + tender.id());
+    }
+    if (tender.openingAt() == null || now.isBefore(tender.openingAt())) {
+      throw new IllegalStateException("尚未到达约定开标时间,不能提前开标: " + tender.id());
     }
   }
 

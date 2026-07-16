@@ -16,7 +16,7 @@ class TenderPolicyTests {
       OffsetDateTime acq, OffsetDateTime sub, OffsetDateTime open) {
     return new Tender("tender-1", "tenant-1", "ZB20260716001", "测试招标", type,
         BigDecimal.valueOf(100000), status, doc, "综合评分法", null,
-        acq, sub, open, "user-1", null, OffsetDateTime.now(), OffsetDateTime.now());
+        acq, sub, open, "user-1", null, OffsetDateTime.now(), OffsetDateTime.now(), null);
   }
 
   @Test
@@ -65,6 +65,21 @@ class TenderPolicyTests {
     assertThatThrownBy(() -> TenderPolicy.requireOpenAcquirable(
         tender("公开招标", "发售中", "<p>x</p>", now.minusHours(1), now.plusDays(2), now.plusDays(3)), now))
         .hasMessageContaining("已截止");
+  }
+
+  // ── C-3 定时开标 ─────────────────────────────────────────────
+  @Test
+  void openingOnlyAfterScheduledTimeAndWhileOnSale() {
+    var now = OffsetDateTime.now();
+    assertThatCode(() -> TenderPolicy.requireOpenable(
+        tender("公开招标", "发售中", "<p>x</p>", now.minusDays(3), now.minusDays(1), now.minusHours(1)), now))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> TenderPolicy.requireOpenable(
+        tender("公开招标", "发售中", "<p>x</p>", now.plusDays(1), now.plusDays(2), now.plusDays(3)), now))
+        .hasMessageContaining("尚未到达约定开标时间");
+    assertThatThrownBy(() -> TenderPolicy.requireOpenable(
+        tender("公开招标", "已开标", "<p>x</p>", now.minusDays(3), now.minusDays(1), now.minusHours(1)), now))
+        .hasMessageContaining("仅发售中");
   }
 
   // ── C-2 投标递交规则 ─────────────────────────────────────────

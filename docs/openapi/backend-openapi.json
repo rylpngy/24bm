@@ -4747,6 +4747,56 @@
         }
       }
     },
+    "/api/v1/buyer/tenders/{tenderId}/open": {
+      "post": {
+        "tags": [
+          "buyer-tender-controller"
+        ],
+        "operationId": "BuyerTender_open",
+        "parameters": [
+          {
+            "name": "tenderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTenderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/tenders/{tenderId}/distribute": {
       "post": {
         "tags": [
@@ -14353,6 +14403,9 @@
           "withdrawnAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "digestVerified": {
+            "type": "boolean"
           }
         }
       },
@@ -14420,6 +14473,10 @@
             "items": {
               "$ref": "#/components/schemas/TenderBidResponse"
             }
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

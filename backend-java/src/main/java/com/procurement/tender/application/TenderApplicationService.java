@@ -128,6 +128,24 @@ public class TenderApplicationService {
     return toResponse(tender, acquisitionMapper.listByTender(tenantId, tenderId), true);
   }
 
+  // ── 买方:定时开标 + 解密唱标 ────────────────────────────────
+  @Transactional
+  public TenderResponse openTender(String tenderId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    Tender tender = requireTender(tenantId, tenderId);
+    OffsetDateTime now = OffsetDateTime.now();
+    TenderPolicy.requireOpenable(tender, now);
+    tenderMapper.markOpened(tenantId, tenderId, TenderPolicy.STATUS_OPENED, now);
+    int unsealed = bidMapper.markAllOpened(tenantId, tenderId);
+    auditLogApplicationService.recordCurrentTenantAction(
+        "tender.opened", AUDIT_TARGET, tenderId,
+        "「" + tender.title() + "」开标,解封密封投标 " + unsealed + " 份");
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId, "开标唱标", tender.title() + " 已开标,投标报价与指纹核验结果已公示。");
+    return toResponse(requireTender(tenantId, tenderId),
+        acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
   // ── 供应商:可见清单 / 领取 ──────────────────────────────────
   public List<TenderResponse> listSupplierTenders() {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier tender APIs");
@@ -180,9 +198,8 @@ public class TenderApplicationService {
     TenderBidPolicy.requireSubmissionWindow(tender, now);
     TenderBidPolicy.requireAcquired(myAcquisition(tenderId, supplierId), tenderId);
     TenderBidPolicy.requireValidBid(request.bidAmount(), request.documentHtml(), tenderId);
-    String digest = sha256(
-        "tender-bid|tender:" + tenderId + "|supplier:" + supplierId
-            + "|amount:" + request.bidAmount() + "|doc:" + request.documentHtml());
+    String digest = sha256(bidDigestPayload(
+        tenderId, supplierId, request.bidAmount(), request.documentHtml()));
     bidMapper.upsert(
         "tbid-" + UUID.randomUUID(), tender.tenantId(), tenderId, supplierId,
         request.bidAmount(), request.documentHtml(), digest, now);
@@ -233,7 +250,7 @@ public class TenderApplicationService {
     if (bid == null) return null;
     return new TenderBidResponse(
         bid.id(), bid.tenderId(), bid.supplierId(), null, bid.bidAmount(), bid.documentHtml(),
-        bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt());
+        bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt(), null);
   }
 
   // 买方封存视图:开标(C-3)前只回递交登记——供应商名/时间/密封状态/指纹,金额与正文置空。
@@ -241,7 +258,46 @@ public class TenderApplicationService {
     return new TenderBidResponse(
         bid.id(), bid.tenderId(), bid.supplierId(),
         supplierProfileApplicationService.findSupplierDisplayName(bid.supplierId()),
-        null, null, bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt());
+        null, null, bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt(),
+        null);
+  }
+
+  // 唱标视图(开标后):金额与核验结果公示;投标函正文仅买方或本方可见,他方不下发。
+  // 已撤回的投标保留登记但不解封内容(金额/正文均不公示)。
+  private TenderBidResponse openedBidView(TenderBid bid, boolean withDocument) {
+    boolean withdrawn = TenderBidPolicy.WITHDRAWN.equals(bid.sealedStatus());
+    return new TenderBidResponse(
+        bid.id(), bid.tenderId(), bid.supplierId(),
+        supplierProfileApplicationService.findSupplierDisplayName(bid.supplierId()),
+        withdrawn ? null : bid.bidAmount(),
+        withdrawn || !withDocument ? null : bid.documentHtml(),
+        bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt(),
+        withdrawn ? null : verifyBidDigest(bid));
+  }
+
+  // 唱标排序:有效投标按报价升序;已撤回的殿后留痕。
+  private List<TenderBidResponse> openingRoll(Tender tender, java.util.function.Predicate<TenderBid> withDocument) {
+    return bidMapper.listByTender(tender.tenantId(), tender.id()).stream()
+        .map(b -> openedBidView(b, withDocument.test(b)))
+        .sorted(java.util.Comparator
+            .comparing((TenderBidResponse r) -> r.bidAmount() == null)
+            .thenComparing(TenderBidResponse::bidAmount,
+                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+        .toList();
+  }
+
+  // 解封核验:按当前存储内容复算 SHA-256,与递交时密封指纹比对。
+  private boolean verifyBidDigest(TenderBid bid) {
+    return sha256(bidDigestPayload(bid.tenderId(), bid.supplierId(), bid.bidAmount(), bid.documentHtml()))
+        .equals(bid.contentDigest());
+  }
+
+  // 金额入摘要前规格化(去尾零),避免 numeric 回读尾零(188000.00)与递交原文(188000)不一致。
+  private static String bidDigestPayload(
+      String tenderId, String supplierId, java.math.BigDecimal amount, String documentHtml) {
+    String amountKey = amount == null ? "" : amount.stripTrailingZeros().toPlainString();
+    return "tender-bid|tender:" + tenderId + "|supplier:" + supplierId
+        + "|amount:" + amountKey + "|doc:" + documentHtml;
   }
 
   private static String sha256(String content) {
@@ -264,24 +320,33 @@ public class TenderApplicationService {
   }
 
   // 供应商视角:未领取(无 acquired_at)时不下发招标文件正文;领取记录仅含本方。
+  // 开标前投标仅本方完整视图;开标后为唱标公示(各家名称/金额/核验),他方正文不下发。
   private TenderResponse supplierView(Tender tender, TenderAcquisition mine) {
     boolean acquired = mine != null && mine.acquiredAt() != null;
+    String mySupplierId = mine == null ? "" : mine.supplierId();
     List<TenderAcquisitionResponse> acquisitions = mine == null
         ? List.of()
         : List.of(new TenderAcquisitionResponse(
             mine.supplierId(), null, mine.source(), mine.acquiredAt()));
+    List<TenderBidResponse> bids = tender.openedAt() != null
+        ? openingRoll(tender, b -> b.supplierId().equals(mySupplierId))
+        : java.util.stream.Stream.of(supplierBidView(myBid(tender.id(), mySupplierId)))
+            .filter(java.util.Objects::nonNull)
+            .toList();
     return new TenderResponse(
         tender.id(), tender.tenantId(), tender.tenderNo(), tender.title(), tender.tenderType(),
         tender.budget(), tender.status(), acquired ? tender.documentHtml() : null,
         tender.evaluationMethod(), tender.bidBondAmount(), tender.acquisitionDeadline(),
         tender.submissionDeadline(), tender.openingAt(), tender.publishedAt(), tender.createdAt(),
-        acquisitions,
-        java.util.stream.Stream.of(supplierBidView(myBid(tender.id(), mine == null ? "" : mine.supplierId())))
-            .filter(java.util.Objects::nonNull)
-            .toList());
+        acquisitions, bids, tender.openedAt());
   }
 
   private TenderResponse toResponse(Tender tender, List<TenderAcquisition> acquisitions, boolean withNames) {
+    List<TenderBidResponse> bids = tender.openedAt() != null
+        ? openingRoll(tender, b -> true)
+        : bidMapper.listByTender(tender.tenantId(), tender.id()).stream()
+            .map(this::sealedBidView)
+            .toList();
     return new TenderResponse(
         tender.id(), tender.tenantId(), tender.tenderNo(), tender.title(), tender.tenderType(),
         tender.budget(), tender.status(), tender.documentHtml(), tender.evaluationMethod(),
@@ -294,9 +359,7 @@ public class TenderApplicationService {
                 a.source(),
                 a.acquiredAt()))
             .toList(),
-        bidMapper.listByTender(tender.tenantId(), tender.id()).stream()
-            .map(this::sealedBidView)
-            .toList());
+        bids, tender.openedAt());
   }
 
   private Tender requireTender(String tenantId, String tenderId) {

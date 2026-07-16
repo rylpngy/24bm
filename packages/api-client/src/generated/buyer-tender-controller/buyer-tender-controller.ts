@@ -296,6 +296,62 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerTenderOpen = (
+    tenderId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseTenderResponse>(
+      {url: `/api/v1/buyer/tenders/${tenderId}/open`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerTenderOpenMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderOpen>>, TError,{tenderId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerTenderOpen>>, TError,{tenderId: string}, TContext> => {
+
+const mutationKey = ['buyerTenderOpen'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderOpen>>, {tenderId: string}> = (props) => {
+          const {tenderId} = props ?? {};
+
+          return  buyerTenderOpen(tenderId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerTenderOpenMutationResult = NonNullable<Awaited<ReturnType<typeof buyerTenderOpen>>>
+    
+    export type BuyerTenderOpenMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerTenderOpen = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderOpen>>, TError,{tenderId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerTenderOpen>>,
+        TError,
+        {tenderId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerTenderOpenMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const buyerTenderDistribute = (
     tenderId: string,
     distributeTenderRequest: BodyType<DistributeTenderRequest>,

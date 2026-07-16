@@ -42,6 +42,11 @@ public class BuyerTenderController {
     return ApiResponse.ok(tenderApplicationService.publish(tenderId));
   }
 
+  @PostMapping("/{tenderId}/open")
+  public ApiResponse<TenderResponse> open(@PathVariable String tenderId) {
+    return ApiResponse.ok(tenderApplicationService.openTender(tenderId));
+  }
+
   @PostMapping("/{tenderId}/distribute")
   public ApiResponse<TenderResponse> distribute(
       @PathVariable String tenderId, @Valid @RequestBody DistributeTenderRequest request) {

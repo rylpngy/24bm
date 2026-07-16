@@ -20,5 +20,6 @@ public record Tender(
     String ownerId,
     OffsetDateTime publishedAt,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    OffsetDateTime openedAt) {
 }

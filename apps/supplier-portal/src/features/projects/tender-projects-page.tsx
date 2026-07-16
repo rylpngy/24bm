@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, FileBadge, Info, Lock, Undo2 } from 'lucide-react';
+import { ArrowLeft, FileBadge, Gavel, Info, Lock, Undo2 } from 'lucide-react';
 import {
   useSupplierEsignList,
   useSupplierEsignSign,
@@ -208,6 +208,72 @@ function BidSubmissionSection({
   );
 }
 
+// C-3 开标唱标公示:各家投标人/报价升序/指纹核验结果公开;本方投标高亮,他方投标函正文不下发。
+function OpeningRollSection({ tender }: { tender: TenderResponse }) {
+  const mySupplierId = (tender.acquisitions ?? [])[0]?.supplierId;
+  const bids = tender.bids ?? [];
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+          <Gavel size={15} className="text-blue-600" /> 开标唱标公示
+        </h3>
+        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
+          已开标 {shortTime(tender.openedAt)} · 有效投标 {bids.filter((b) => b.sealedStatus === '已开启').length} 份
+        </span>
+      </div>
+      <p className="mt-1 text-[11px] font-bold text-slate-400">
+        投标报价按金额升序公示;指纹核验=开标解封时按内容复算 SHA-256 与递交时密封指纹比对(通过=内容未被篡改)。
+      </p>
+      {bids.length === 0 ? (
+        <p className="mt-3 text-xs font-bold text-slate-400">本项目开标时无有效投标。</p>
+      ) : (
+        <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+              <tr>
+                <th className="w-10 px-3 py-2 text-center">名次</th>
+                <th className="px-3 py-2">投标人</th>
+                <th className="px-3 py-2 text-right">投标报价</th>
+                <th className="px-3 py-2">指纹核验</th>
+                <th className="px-3 py-2 text-right">递交时间</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {bids.map((b, i) => (
+                <tr key={b.id} className={cn('font-bold text-slate-700', b.supplierId === mySupplierId && 'bg-blue-50/40')}>
+                  <td className="px-3 py-2 text-center font-mono font-black text-slate-400">
+                    {b.sealedStatus === '已开启' ? i + 1 : '—'}
+                  </td>
+                  <td className="px-3 py-2 font-black text-slate-900">
+                    {b.supplierName ?? b.supplierId}
+                    {b.supplierId === mySupplierId && (
+                      <span className="ml-1.5 rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-black text-blue-700">本方</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono font-black text-slate-900">
+                    {b.sealedStatus === '已撤回' ? '已撤回' : b.bidAmount != null ? currency(b.bidAmount) : '—'}
+                  </td>
+                  <td className="px-3 py-2">
+                    {b.digestVerified == null ? (
+                      <span className="text-[11px] font-black text-slate-400">未解封</span>
+                    ) : b.digestVerified ? (
+                      <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">核验通过</span>
+                    ) : (
+                      <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-black text-red-600">指纹异常</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono">{shortTime(b.submittedAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // 招标项目(供应商侧,Track C C-1/C-2):领取文件后阅读正文并加密递交投标。
 export function TenderProjectsPage() {
   const queryClient = useQueryClient();
@@ -308,10 +374,12 @@ export function TenderProjectsPage() {
                 </div>
               )}
             </section>
-            {/* C-2 投标递交:领取后开放;递交即密封,开标前对招标人不可见 */}
-            {state === '已领取' && (
+            {/* C-2 投标递交:领取后、开标前开放;递交即密封,开标前对招标人不可见 */}
+            {state === '已领取' && !t.openedAt && (
               <BidSubmissionSection tender={t} onFeedback={setFeedback} onError={setError} />
             )}
+            {/* C-3 开标后:唱标公示替代递交区 */}
+            {t.openedAt && <OpeningRollSection tender={t} />}
 
           </div>
 
@@ -335,7 +403,9 @@ export function TenderProjectsPage() {
                 ))}
               </dl>
             </section>
-            <FeedbackNotice tone="info" message="递交即密封:开标前招标人不可见投标内容;截止前可撤回并重投(重投覆盖为新密封)。" />
+            <FeedbackNotice tone="info" message={t.openedAt
+              ? '本项目已开标唱标:各家报价与指纹核验结果公示如左;评标与中标结果请留意后续通知。'
+              : '递交即密封:开标前招标人不可见投标内容;截止前可撤回并重投(重投覆盖为新密封)。'} />
           </div>
         </div>
       </div>

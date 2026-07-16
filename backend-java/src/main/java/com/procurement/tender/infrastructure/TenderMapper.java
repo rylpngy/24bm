@@ -16,7 +16,7 @@ public interface TenderMapper {
   String COLUMNS = """
       id, tenant_id, tender_no, title, tender_type, budget, status, document_html,
       evaluation_method, bid_bond_amount, acquisition_deadline, submission_deadline,
-      opening_at, owner_id, published_at, created_at, updated_at
+      opening_at, owner_id, published_at, created_at, updated_at, opened_at
       """;
 
   @Insert("""
@@ -81,6 +81,16 @@ public interface TenderMapper {
       @Param("id") String id,
       @Param("status") String status,
       @Param("publishedAt") OffsetDateTime publishedAt);
+
+  @Update("""
+      update tenders set status = #{status}, opened_at = #{openedAt}, updated_at = now()
+      where tenant_id = #{tenantId} and id = #{id}
+      """)
+  int markOpened(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("status") String status,
+      @Param("openedAt") OffsetDateTime openedAt);
 
   @Select("select count(1) from tenders where tenant_id = #{tenantId} and tender_no like #{prefix} || '%'")
   int countByTenantAndNoPrefix(@Param("tenantId") String tenantId, @Param("prefix") String prefix);
