@@ -25,9 +25,9 @@ Acceptance criteria:
 
 | Asset | Backup source | Restore target | Minimum cadence | Latest rehearsal | Evidence location | Status |
 |---|---|---|---|---|---|---|
-| PostgreSQL | Production-like database backup | Temporary PostgreSQL instance | Monthly and before major releases | Not yet recorded | Fill outside repo | Pending rehearsal |
-| MinIO | Attachment bucket and metadata backup | Temporary MinIO bucket | Monthly and before major releases | Not yet recorded | Fill outside repo | Pending rehearsal |
-| Keycloak | Realm export | Temporary Keycloak realm | Before auth/role changes and releases | Not yet recorded | Fill outside repo | Pending rehearsal |
+| PostgreSQL | Production-like database backup | Temporary PostgreSQL instance | Monthly and before major releases | 2026-07-16 | pg_dump 57KB → postgres:16 临时实例灌入零错误;冒烟四查(登录/需求13/询比17/付款批次2)全过 | Drill passed |
+| MinIO | Attachment bucket and metadata backup | Temporary MinIO bucket | Monthly and before major releases | 2026-07-16 | mc mirror 292.57MiB/4 对象;抽检「采购合同正本.txt」源 ETag=镜像 md5 一致 | Drill passed |
+| Keycloak | Realm export | Temporary Keycloak realm | Before auth/role changes and releases | 2026-07-16 | kc.sh export 导出 24bid-realm.json + users(realm 完整) | Export verified |
 
 Restore pass criteria:
 
