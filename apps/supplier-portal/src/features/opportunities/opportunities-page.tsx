@@ -349,7 +349,7 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
               type="button"
               onClick={() => (onExitDetail ? onExitDetail() : setSelectedId(null))}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
-              aria-label="返回项目管理"
+              aria-label="返回项目列表"
             >
               <ArrowLeft size={18} />
             </button>
@@ -431,37 +431,64 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
                     : remainingMs < 3_600_000
                       ? `${Math.ceil(remainingMs / 60_000)} 分钟`
                       : `${Math.floor(remainingMs / 3_600_000)} 小时`;
+              const live = r.status === '报价中' && (remainingMs == null || remainingMs > 0);
+              const cap = r.auctionLowestAmount != null
+                ? r.auctionLowestAmount - (r.auctionMinDecrement ?? 0)
+                : r.auctionStartPrice ?? 0;
               return (
-                <section className="rounded-lg border border-amber-100 bg-amber-50/60 px-4 py-3 text-[11px] font-bold text-amber-800">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Gavel size={13} className="shrink-0" />
-                    <span>
-                      竞价项目:起拍价 ¥{r.auctionStartPrice?.toLocaleString('zh-CN') ?? '—'}
-                      {' · '}当前最低报价 {r.auctionLowestAmount != null
-                        ? `¥${r.auctionLowestAmount.toLocaleString('zh-CN')}`
-                        : r.auctionShowLowest === false ? '采购方未公开' : '暂无出价'}
-                      {' · '}本次出价上限 ¥{(
-                        r.auctionLowestAmount != null
-                          ? r.auctionLowestAmount - (r.auctionMinDecrement ?? 0)
-                          : r.auctionStartPrice ?? 0
-                      ).toLocaleString('zh-CN')}
-                      {' · '}剩余 {remainingText}(临近截止的出价将自动顺延)
-                    </span>
-                    {r.auctionMyRank != null && (
-                      <span className={`rounded-md px-2 py-0.5 font-black ${r.auctionMyRank === 1 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}`}>
-                        当前第 {r.auctionMyRank} 名
-                      </span>
-                    )}
-                    {myBid?.amount != null && r.auctionLowestAmount != null && (
-                      <span
-                        className={`rounded-md px-2 py-0.5 font-black ${
-                          leading ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                        }`}
-                      >
-                        {leading ? '当前领先' : '已被超越'}
-                      </span>
-                    )}
+                /* 竞价大厅:与采购端实时竞价台同气质的深色 hero——倒计时/当前最低/我的排名/出价上限 */
+                <section className="overflow-hidden rounded-lg bg-slate-900 p-5 text-white shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="flex items-center gap-2 text-sm font-black">
+                      <Gavel size={15} className="text-amber-400" /> 竞价大厅
+                      {live ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-red-500/20 px-2 py-0.5 text-[11px] font-black text-red-300">
+                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" /> LIVE
+                        </span>
+                      ) : (
+                        <span className="rounded-md bg-white/10 px-2 py-0.5 text-[11px] font-black text-slate-300">
+                          {r.status === '报价中' ? '已截止' : r.status}
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black">
+                      {r.auctionMyRank != null && (
+                        <span className={`rounded-md px-2 py-0.5 ${r.auctionMyRank === 1 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                          {r.auctionMyRank === 1 ? '当前领先' : `当前第 ${r.auctionMyRank} 名`}
+                        </span>
+                      )}
+                      {myBid?.amount != null && r.auctionLowestAmount != null && !leading && (
+                        <span className="rounded-md bg-red-500/20 px-2 py-0.5 text-red-300">已被超越</span>
+                      )}
+                    </div>
                   </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-400">当前最低报价</p>
+                      <p className="mt-0.5 font-mono text-xl font-black text-amber-300">
+                        {r.auctionLowestAmount != null
+                          ? `¥${r.auctionLowestAmount.toLocaleString('zh-CN')}`
+                          : r.auctionShowLowest === false ? '未公开' : '暂无出价'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-400">剩余时间</p>
+                      <p className="mt-0.5 font-mono text-xl font-black">{remainingText}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-400">起拍价(最高限价)</p>
+                      <p className="mt-0.5 font-mono text-sm font-black text-slate-200">
+                        ¥{r.auctionStartPrice?.toLocaleString('zh-CN') ?? '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-400">本次出价上限</p>
+                      <p className="mt-0.5 font-mono text-sm font-black text-slate-200">¥{cap.toLocaleString('zh-CN')}</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 border-t border-white/10 pt-2 text-[11px] font-bold text-slate-400">
+                    最小降价步长 ¥{(r.auctionMinDecrement ?? 0).toLocaleString('zh-CN')} · 临近截止的出价将自动顺延(防狙击) · 每 5 秒自动刷新
+                  </p>
                 </section>
               );
             })()}
@@ -648,6 +675,62 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
             )}
             {!quoting && !myQuote && !declined && (
               <FeedbackNotice tone="info" message={`当前状态「${r.status}」,报价入口仅在报价中开放。`} />
+            )}
+
+            {/* 开标大厅:开标后唱标公开——各家报价按金额升序公示,他方匿名、我方高亮 */}
+            {r.openedAt && (r.quotes ?? []).length > 0 && (
+              <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <SectionTitle icon={Gavel} title={r.method === '竞价' ? '开标大厅 · 竞价成交排序' : '开标大厅 · 唱标记录'} />
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
+                    开标时间 {shortTime(r.openedAt)}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] font-bold text-slate-400">
+                  开标后各受邀方报价对全体参与人公示(仅公开报价总额,他方身份与明细不披露)。
+                </p>
+                <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                      <tr>
+                        <th className="w-16 px-3 py-2 text-center">名次</th>
+                        <th className="px-3 py-2">参与方</th>
+                        <th className="px-3 py-2 text-right">报价金额(含税)</th>
+                        <th className="px-3 py-2 text-right">报价时间</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(r.quotes ?? []).map((q, i) => {
+                        const mine = q.supplierId === supplierId;
+                        return (
+                          <tr key={q.id} className={mine ? 'bg-emerald-50/60' : undefined}>
+                            <td className="px-3 py-2 text-center">
+                              <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full font-mono text-[11px] font-black ${
+                                i === 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
+                              }`}>
+                                {i + 1}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 font-black">
+                              {mine ? (
+                                <span className="text-emerald-700">我方报价</span>
+                              ) : (
+                                <span className="text-slate-500">参与供应商 {i + 1}</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono font-black text-slate-900">
+                              {q.amount != null ? currency(q.amount) : '—'}
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono font-bold text-slate-400">
+                              {shortTime(q.submittedAt)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             )}
 
             {/* 定标结果 */}

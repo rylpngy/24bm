@@ -368,7 +368,32 @@ public class QuoteApplicationService {
     }
   }
 
-  // 供应商侧:不回传其它供应商报价明细(封存),但需带上轮次/开标态供前端展示。
+  // 供应商侧:报价中封存(不回传任何他方报价);开标后唱标公开——
+  // 各家报价头(金额/轮次/时间)对全体受邀方可见,他方 supplierId 匿名化、行项明细不下发,本方保留完整。
+  private List<QuoteResponse> openedQuotesForSupplier(Rfq rfq, String supplierId) {
+    if (rfq.openedAt() == null) {
+      return List.of();
+    }
+    return quoteMapper.listByTenantAndRfqAndRound(rfq.tenantId(), rfq.id(), rfq.currentRound()).stream()
+        .sorted(java.util.Comparator.comparing(
+            Quote::amount, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+        .map(quote -> {
+          boolean mine = supplierId.equals(quote.supplierId());
+          return new QuoteResponse(
+              quote.id(),
+              null,
+              quote.rfqId(),
+              mine ? quote.supplierId() : null,
+              quote.amount(),
+              quote.taxRate(),
+              quote.deliveryDays(),
+              quote.status(),
+              quote.submittedAt(),
+              mine ? lineItemResponses(rfq.tenantId(), quote.id()) : List.of());
+        })
+        .toList();
+  }
+
   private RfqResponse toRfqResponse(Rfq rfq, String supplierId) {
     return new RfqResponse(
         rfq.id(),
@@ -382,7 +407,7 @@ public class QuoteApplicationService {
         rfq.updatedAt(),
         rfqDemandMapper.listDemandIds(rfq.tenantId(), rfq.id()),
         rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()),
-        java.util.List.of(),
+        openedQuotesForSupplier(rfq, supplierId),
         rfq.quoteRequirement(),
         rfq.deliveryRequirement(),
         rfq.evaluationMethod(),
