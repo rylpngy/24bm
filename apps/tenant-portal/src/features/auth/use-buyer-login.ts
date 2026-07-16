@@ -28,13 +28,14 @@ export function useBuyerLogin() {
     setKcBusy(true);
     setKcError(false);
     try {
-      const { token, claims } = await keycloakPasswordLogin({
+      const { token, claims, refreshToken } = await keycloakPasswordLogin({
         keycloakUrl: KEYCLOAK_URL,
         username,
         password,
       });
       signIn({
         token,
+        refreshToken,
         userId: (claims.userId as string) ?? '',
         displayName: `${(claims.displayName as string) ?? '采购负责人'}（Keycloak）`,
         tenantId: (claims.tenantId as string) ?? 'tenant-acme',
