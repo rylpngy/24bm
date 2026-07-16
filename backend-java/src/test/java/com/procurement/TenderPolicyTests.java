@@ -115,4 +115,45 @@ class TenderPolicyTests {
     assertThatThrownBy(() -> com.procurement.tender.domain.TenderBidPolicy.requireSealed(null, "tender-1"))
         .hasMessageContaining("无密封在案");
   }
+
+  // ── C-4 评标规则 ─────────────────────────────────────────────
+  @Test
+  void committeeRequiresOpenedTenderAndOddSizeAtLeastThree() {
+    var now = OffsetDateTime.now();
+    var opened = tender("公开招标", "已开标", "<p>x</p>", now.minusDays(3), now.minusDays(1), now.minusHours(2));
+    assertThatCode(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireCommitteeFormable(
+        opened, java.util.List.of("张三", "李四", "王五"), false)).doesNotThrowAnyException();
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireCommitteeFormable(
+        tender("公开招标", "发售中", "<p>x</p>", now, now, now), java.util.List.of("张三", "李四", "王五"), false))
+        .hasMessageContaining("仅开标后");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireCommitteeFormable(
+        opened, java.util.List.of("张三", "李四"), false)).hasMessageContaining("3 人及以上且为单数");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireCommitteeFormable(
+        opened, java.util.List.of("张三", "李四", "王五", "赵六"), false)).hasMessageContaining("单数");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireCommitteeFormable(
+        opened, java.util.List.of("张三", "张三", "王五"), false)).hasMessageContaining("重复");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireCommitteeFormable(
+        opened, java.util.List.of("张三", "李四", "王五"), true)).hasMessageContaining("评分留痕");
+  }
+
+  @Test
+  void scoringRequiresEvaluatingStatusUnsealedBidAndRange() {
+    var now = OffsetDateTime.now();
+    var evaluating = tender("公开招标", "评标中", "<p>x</p>", now.minusDays(3), now.minusDays(1), now.minusHours(2));
+    var openedBid = new com.procurement.tender.domain.TenderBid(
+        "tbid-1", "t", "tender-1", "s", BigDecimal.TEN, "<p>doc</p>", "digest", "已开启", now, null);
+    assertThatCode(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireScorable(evaluating, openedBid))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireScorable(
+        tender("公开招标", "已开标", "<p>x</p>", now, now, now), openedBid))
+        .hasMessageContaining("评标中");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireScorable(
+        evaluating, new com.procurement.tender.domain.TenderBid(
+            "tbid-2", "t", "tender-1", "s", BigDecimal.TEN, null, "digest", "已撤回", now, now)))
+        .hasMessageContaining("已解封的有效投标");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireValidScore(
+        BigDecimal.valueOf(101), BigDecimal.TEN, "tbid-1")).hasMessageContaining("技术分");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireValidScore(
+        BigDecimal.TEN, BigDecimal.valueOf(-1), "tbid-1")).hasMessageContaining("商务分");
+  }
 }

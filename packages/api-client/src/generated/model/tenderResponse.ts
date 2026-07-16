@@ -7,6 +7,9 @@
  */
 import type { TenderAcquisitionResponse } from './tenderAcquisitionResponse';
 import type { TenderBidResponse } from './tenderBidResponse';
+import type { TenderEvaluatorResponse } from './tenderEvaluatorResponse';
+import type { TenderScoreResponse } from './tenderScoreResponse';
+import type { TenderBidEvaluationSummary } from './tenderBidEvaluationSummary';
 
 export interface TenderResponse {
   id?: string;
@@ -27,4 +30,7 @@ export interface TenderResponse {
   acquisitions?: TenderAcquisitionResponse[];
   bids?: TenderBidResponse[];
   openedAt?: string;
+  evaluators?: TenderEvaluatorResponse[];
+  scores?: TenderScoreResponse[];
+  evaluationSummary?: TenderBidEvaluationSummary[];
 }

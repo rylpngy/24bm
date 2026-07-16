@@ -26,5 +26,9 @@ public record TenderResponse(
     // 投标递交:买方开标前仅递交登记(内容封存);供应商仅本方完整视图。
     // 开标后双端均为唱标视图(金额升序公示+指纹核验),投标函正文仍仅买方与本方可见。
     List<TenderBidResponse> bids,
-    OffsetDateTime openedAt) {
+    OffsetDateTime openedAt,
+    // C-4 评标(买方视角;供应商侧定标公示前不下发):委员会、评分明细、汇总排名。
+    List<TenderEvaluatorResponse> evaluators,
+    List<TenderScoreResponse> scores,
+    List<TenderBidEvaluationSummary> evaluationSummary) {
 }

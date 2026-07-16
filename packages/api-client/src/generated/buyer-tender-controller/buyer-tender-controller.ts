@@ -29,7 +29,9 @@ import type {
   ApiResponseTenderResponse,
   ApiResponseVoid,
   DistributeTenderRequest,
-  SaveTenderRequest
+  FormCommitteeRequest,
+  SaveTenderRequest,
+  SubmitScoresRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -240,6 +242,65 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerTenderSubmitScores = (
+    tenderId: string,
+    submitScoresRequest: BodyType<SubmitScoresRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseTenderResponse>(
+      {url: `/api/v1/buyer/tenders/${tenderId}/scores`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: submitScoresRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerTenderSubmitScoresMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderSubmitScores>>, TError,{tenderId: string;data: BodyType<SubmitScoresRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerTenderSubmitScores>>, TError,{tenderId: string;data: BodyType<SubmitScoresRequest>}, TContext> => {
+
+const mutationKey = ['buyerTenderSubmitScores'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderSubmitScores>>, {tenderId: string;data: BodyType<SubmitScoresRequest>}> = (props) => {
+          const {tenderId,data} = props ?? {};
+
+          return  buyerTenderSubmitScores(tenderId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerTenderSubmitScoresMutationResult = NonNullable<Awaited<ReturnType<typeof buyerTenderSubmitScores>>>
+    export type BuyerTenderSubmitScoresMutationBody = BodyType<SubmitScoresRequest>
+    export type BuyerTenderSubmitScoresMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerTenderSubmitScores = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderSubmitScores>>, TError,{tenderId: string;data: BodyType<SubmitScoresRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerTenderSubmitScores>>,
+        TError,
+        {tenderId: string;data: BodyType<SubmitScoresRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerTenderSubmitScoresMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const buyerTenderPublish = (
     tenderId: string,
  signal?: AbortSignal
@@ -408,6 +469,65 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerTenderDistributeMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerTenderFormCommittee = (
+    tenderId: string,
+    formCommitteeRequest: BodyType<FormCommitteeRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseTenderResponse>(
+      {url: `/api/v1/buyer/tenders/${tenderId}/committee`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: formCommitteeRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerTenderFormCommitteeMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderFormCommittee>>, TError,{tenderId: string;data: BodyType<FormCommitteeRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerTenderFormCommittee>>, TError,{tenderId: string;data: BodyType<FormCommitteeRequest>}, TContext> => {
+
+const mutationKey = ['buyerTenderFormCommittee'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderFormCommittee>>, {tenderId: string;data: BodyType<FormCommitteeRequest>}> = (props) => {
+          const {tenderId,data} = props ?? {};
+
+          return  buyerTenderFormCommittee(tenderId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerTenderFormCommitteeMutationResult = NonNullable<Awaited<ReturnType<typeof buyerTenderFormCommittee>>>
+    export type BuyerTenderFormCommitteeMutationBody = BodyType<FormCommitteeRequest>
+    export type BuyerTenderFormCommitteeMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerTenderFormCommittee = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderFormCommittee>>, TError,{tenderId: string;data: BodyType<FormCommitteeRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerTenderFormCommittee>>,
+        TError,
+        {tenderId: string;data: BodyType<FormCommitteeRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerTenderFormCommitteeMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

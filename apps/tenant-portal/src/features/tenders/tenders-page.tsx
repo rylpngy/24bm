@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, FileBadge, Gavel, Info, Megaphone, Plus, Send } from 'lucide-react';
+import { ArrowLeft, ClipboardCheck, FileBadge, Gavel, Info, Megaphone, Plus, Send, Users } from 'lucide-react';
 import {
   useBuyerSupplierList,
   useBuyerTenderCreate,
   useBuyerTenderDistribute,
+  useBuyerTenderFormCommittee,
   useBuyerTenderList,
   useBuyerTenderOpen,
   useBuyerTenderPublish,
+  useBuyerTenderSubmitScores,
   useBuyerTenderUpdate,
   type SaveTenderRequest,
   type TenderResponse,
@@ -74,6 +76,259 @@ const emptyForm = (): DraftForm => ({
 
 const toLocal = (v?: string | null) => (v ? v.slice(0, 16) : '');
 const toIso = (v: string) => (v ? new Date(v).toISOString() : undefined);
+
+// C-4 评标委员会与评分表:开标后组建(≥3 单数)→ 逐评委评分(技术/商务 0-100)→
+// 汇总排名(价格分自动折算),全员交卷后标记推荐中标人。
+function EvaluationSection({
+  tender: t,
+  onFeedback,
+  onError,
+  refresh,
+}: {
+  tender: TenderResponse;
+  onFeedback: (m: string) => void;
+  onError: (m: string | null) => void;
+  refresh: () => void;
+}) {
+  const formCommittee = useBuyerTenderFormCommittee();
+  const submitScores = useBuyerTenderSubmitScores();
+  const [members, setMembers] = useState<{ name: string; role: string }[]>([
+    { name: '', role: '组长' }, { name: '', role: '成员' }, { name: '', role: '成员' },
+  ]);
+  const [activeEvaluator, setActiveEvaluator] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<Record<string, { technical: string; commercial: string; comment: string }>>({});
+
+  const evaluators = t.evaluators ?? [];
+  const scores = t.scores ?? [];
+  const summary = t.evaluationSummary ?? [];
+  const validBids = (t.bids ?? []).filter((b) => b.sealedStatus === '已开启');
+  const reportApiError = (e: unknown) =>
+    onError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '操作失败,请稍后重试');
+
+  const currentEvaluator = evaluators.find((e) => e.id === activeEvaluator) ?? evaluators[0];
+  const sheetFor = (bidId: string) => {
+    if (sheet[bidId]) return sheet[bidId];
+    const existing = scores.find((s) => s.evaluatorId === currentEvaluator?.id && s.bidId === bidId);
+    return {
+      technical: existing?.technicalScore != null ? String(existing.technicalScore) : '',
+      commercial: existing?.commercialScore != null ? String(existing.commercialScore) : '',
+      comment: existing?.comment ?? '',
+    };
+  };
+  const sheetComplete = validBids.every((b) => {
+    const v = sheetFor(b.id ?? '');
+    return v.technical !== '' && v.commercial !== '';
+  });
+
+  const doFormCommittee = () => {
+    if (!t.id) return;
+    onError(null);
+    formCommittee.mutate(
+      { tenderId: t.id, data: { members: members.filter((m) => m.name.trim()).map((m) => ({ name: m.name.trim(), role: m.role })) } },
+      {
+        onSuccess: () => { onFeedback('评标委员会已组建,项目进入评标。'); refresh(); },
+        onError: reportApiError,
+      },
+    );
+  };
+
+  const doSubmitScores = () => {
+    if (!t.id || !currentEvaluator?.id) return;
+    onError(null);
+    submitScores.mutate(
+      {
+        tenderId: t.id,
+        data: {
+          evaluatorId: currentEvaluator.id,
+          lines: validBids.map((b) => {
+            const v = sheetFor(b.id ?? '');
+            return {
+              bidId: b.id ?? '',
+              technicalScore: Number(v.technical),
+              commercialScore: Number(v.commercial),
+              comment: v.comment || undefined,
+            };
+          }),
+        },
+      },
+      {
+        onSuccess: () => {
+          onFeedback(`评委「${currentEvaluator.evaluatorName}」评分已提交。`);
+          setSheet({});
+          refresh();
+        },
+        onError: reportApiError,
+      },
+    );
+  };
+
+  const scoreInputCls =
+    'w-20 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-xs font-black text-slate-800 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+          <Users size={15} className="text-blue-600" /> 评标委员会与评分
+        </h3>
+        {evaluators.length > 0 && (
+          <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
+            委员会 {evaluators.length} 人 · 已交卷 {evaluators.filter((e) => (e.scoredCount ?? 0) >= validBids.length && validBids.length > 0).length} 人
+          </span>
+        )}
+      </div>
+
+      {evaluators.length === 0 ? (
+        <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
+          <p className="text-xs font-black text-blue-900">组建评标委员会(3 人及以上且为单数)</p>
+          <div className="mt-2 space-y-2">
+            {members.map((m, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  className="h-9 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
+                  placeholder={`评委 ${i + 1} 姓名`} aria-label={`评委${i + 1}姓名`} value={m.name}
+                  onChange={(e) => setMembers((cur) => cur.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
+                <select
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-600"
+                  value={m.role}
+                  onChange={(e) => setMembers((cur) => cur.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}>
+                  <option value="组长">组长</option>
+                  <option value="成员">成员</option>
+                </select>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <button type="button" onClick={() => setMembers((cur) => [...cur, { name: '', role: '成员' }, { name: '', role: '成员' }])}
+              className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50">
+              + 增加 2 名评委
+            </button>
+            <PrimaryActionButton size="sm" onClick={doFormCommittee} busy={formCommittee.isPending} pendingLabel="组建中"
+              disabled={members.filter((m) => m.name.trim()).length < 3}>
+              组建委员会并进入评标
+            </PrimaryActionButton>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {evaluators.map((e) => (
+              <button key={e.id} type="button" onClick={() => { setActiveEvaluator(e.id ?? null); setSheet({}); }}
+                className={cn('rounded-lg border px-3 py-1.5 text-xs font-black transition',
+                  (currentEvaluator?.id === e.id)
+                    ? 'border-blue-300 bg-blue-50 text-blue-800'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')}>
+                {e.evaluatorName}{e.evaluatorRole === '组长' ? '(组长)' : ''}
+                <span className={cn('ml-1.5 rounded px-1 text-[10px]',
+                  (e.scoredCount ?? 0) >= validBids.length && validBids.length > 0
+                    ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400')}>
+                  {(e.scoredCount ?? 0) >= validBids.length && validBids.length > 0 ? '已交卷' : `${e.scoredCount ?? 0}/${validBids.length}`}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {t.status === '评标中' && currentEvaluator && (
+            <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                  <tr>
+                    <th className="px-3 py-2">投标人</th>
+                    <th className="px-3 py-2 text-right">投标报价</th>
+                    <th className="px-3 py-2 text-right">技术分(0-100)</th>
+                    <th className="px-3 py-2 text-right">商务分(0-100)</th>
+                    <th className="px-3 py-2">评审意见</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {validBids.map((b) => {
+                    const v = sheetFor(b.id ?? '');
+                    const set = (patch: Partial<typeof v>) =>
+                      setSheet((cur) => ({ ...cur, [b.id ?? '']: { ...v, ...patch } }));
+                    return (
+                      <tr key={b.id} className="font-bold text-slate-700">
+                        <td className="px-3 py-2 font-black text-slate-900">{b.supplierName ?? b.supplierId}</td>
+                        <td className="px-3 py-2 text-right font-mono">{currency(b.bidAmount)}</td>
+                        <td className="px-3 py-2 text-right">
+                          <input className={scoreInputCls} type="number" min="0" max="100" value={v.technical}
+                            aria-label={`技术分-${b.supplierName ?? b.id}`}
+                            onChange={(e) => set({ technical: e.target.value })} />
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <input className={scoreInputCls} type="number" min="0" max="100" value={v.commercial}
+                            aria-label={`商务分-${b.supplierName ?? b.id}`}
+                            onChange={(e) => set({ commercial: e.target.value })} />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
+                            placeholder="选填" value={v.comment}
+                            onChange={(e) => set({ comment: e.target.value })} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/60 px-3 py-2.5">
+                <p className="text-[11px] font-bold text-slate-400">
+                  价格分由系统按最低有效报价自动折算;{t.evaluationMethod === '最低评标价法' ? '本项目按最低评标价法以报价升序排名。' : '综合得分 = 技术×50% + 商务×20% + 价格×30%。'}
+                </p>
+                <PrimaryActionButton size="sm" onClick={doSubmitScores} busy={submitScores.isPending}
+                  pendingLabel="提交中" disabled={!sheetComplete || validBids.length === 0}>
+                  <ClipboardCheck size={13} /> 提交「{currentEvaluator.evaluatorName}」评分
+                </PrimaryActionButton>
+              </div>
+            </div>
+          )}
+
+          {summary.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-black text-slate-500">评标汇总排名</p>
+              <div className="mt-2 overflow-hidden rounded-lg border border-slate-100">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                    <tr>
+                      <th className="w-10 px-3 py-2 text-center">名次</th>
+                      <th className="px-3 py-2">投标人</th>
+                      <th className="px-3 py-2 text-right">报价</th>
+                      <th className="px-3 py-2 text-right">技术均分</th>
+                      <th className="px-3 py-2 text-right">商务均分</th>
+                      <th className="px-3 py-2 text-right">价格分</th>
+                      <th className="px-3 py-2 text-right">综合得分</th>
+                      <th className="px-3 py-2 text-center">推荐</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {summary.map((r) => (
+                      <tr key={r.bidId} className={cn('font-bold text-slate-700', r.recommended && 'bg-emerald-50/50')}>
+                        <td className="px-3 py-2 text-center font-mono font-black text-slate-400">{r.rank}</td>
+                        <td className="px-3 py-2 font-black text-slate-900">{r.supplierName}</td>
+                        <td className="px-3 py-2 text-right font-mono">{currency(r.bidAmount)}</td>
+                        <td className="px-3 py-2 text-right font-mono">{r.avgTechnicalScore ?? '—'}</td>
+                        <td className="px-3 py-2 text-right font-mono">{r.avgCommercialScore ?? '—'}</td>
+                        <td className="px-3 py-2 text-right font-mono">{r.priceScore ?? '—'}</td>
+                        <td className="px-3 py-2 text-right font-mono font-black text-slate-900">{r.compositeScore ?? '—'}</td>
+                        <td className="px-3 py-2 text-center">
+                          {r.recommended && (
+                            <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-black text-emerald-700">推荐中标</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!summary.some((r) => r.recommended) && (
+                <p className="mt-1.5 text-[11px] font-bold text-slate-400">全体评委对全部有效投标交卷后,系统标记推荐中标人。</p>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
 
 // 招标管理(Track C C-1):文件编制(富文本)→ 发布发售 → 邀请发放 / 领取记录。
 export function TendersPage() {
@@ -484,6 +739,11 @@ export function TendersPage() {
                 </div>
               )}
             </section>
+
+            {/* C-4 评标:开标后组建委员会并逐评委评分 */}
+            {t.openedAt && (
+              <EvaluationSection tender={t} onFeedback={setFeedback} onError={setError} refresh={refresh} />
+            )}
           </div>
 
           <div className="space-y-4">
@@ -522,8 +782,10 @@ export function TendersPage() {
                         ? '已到达约定开标时间,可执行开标唱标(解封密封投标并核验指纹)。'
                         : t.tenderType === '邀请招标' ? '可继续定向发放招标文件。' : '公开发售中,供应商自助领取。'
                       : t.status === '已开标'
-                        ? '投标已解封唱标,评标环节(下一版本)据此推进。'
-                        : '发售已截止。'}
+                        ? '投标已解封唱标,可组建评标委员会进入评标。'
+                        : t.status === '评标中'
+                          ? '评标进行中:全体评委交卷后产生推荐中标人,定标(下一版本)据此签发通知书。'
+                          : '发售已截止。'}
                 </span>
               </span>
             </div>
@@ -570,7 +832,7 @@ export function TendersPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterTabs
-          items={['全部', '编制中', '发售中', '已开标'].map((id) => ({
+          items={['全部', '编制中', '发售中', '已开标', '评标中'].map((id) => ({
             id, label: id, count: id === '全部' ? undefined : countBy(id),
           }))}
           value={statusFilter}

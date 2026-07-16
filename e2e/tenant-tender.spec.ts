@@ -90,3 +90,53 @@ test('开标唱标:定时开标 → 解封报价 → 指纹核验', async ({ pag
   await expect(page.getByText('核验通过', { exact: true })).toBeVisible();
   await expect(page.getByText(/有效投标 1 份/)).toBeVisible();
 });
+
+// C-4 行为级:开标 → 组建委员会(3 人)→ 评委交卷(UI 一人 + API 两人)→ 推荐中标标记。
+test('评标:组建委员会 → 评分交卷 → 汇总排名与推荐中标', async ({ page, request }) => {
+  const { title, id, buyer } = await seedOpenedReadyTender(request);
+  expect((await request.post(`${API}/buyer/tenders/${id}/open`, { headers: { Authorization: `Bearer ${buyer}` } })).ok()).toBeTruthy();
+
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /招标管理/);
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+
+  // 组建委员会
+  await expect(page.getByText('评标委员会与评分')).toBeVisible();
+  await page.getByLabel('评委1姓名').fill('张评委');
+  await page.getByLabel('评委2姓名').fill('李评委');
+  await page.getByLabel('评委3姓名').fill('王评委');
+  await page.getByRole('button', { name: /组建委员会并进入评标/ }).click();
+  await expect(page.getByText('评标委员会已组建')).toBeVisible();
+  await expect(page.getByText('张评委(组长)')).toBeVisible();
+
+  // 评委1 UI 交卷(显式点选组长,避免默认选中依赖排序)
+  await page.getByRole('button', { name: '张评委(组长)' }).click();
+  await page.getByLabel(/技术分-/).fill('90');
+  await page.getByLabel(/商务分-/).fill('85');
+  await page.getByRole('button', { name: /提交「张评委」评分/ }).click();
+  await expect(page.getByText(/评委「张评委」评分已提交/)).toBeVisible();
+
+  // 评委2/3 API 交卷
+  const listRes = await request.get(`${API}/buyer/tenders`, { headers: { Authorization: `Bearer ${buyer}` } });
+  const detail = ((await listRes.json()).data as Array<{ id?: string; evaluators?: Array<{ id?: string }>; bids?: Array<{ id?: string }> }>).find((x) => x.id === id);
+  const bidId = detail?.bids?.[0]?.id ?? '';
+  for (const ev of (detail?.evaluators ?? []).slice(1)) {
+    expect((await request.post(`${API}/buyer/tenders/${id}/scores`, {
+      headers: { Authorization: `Bearer ${buyer}` },
+      data: { evaluatorId: ev.id, lines: [{ bidId, technicalScore: 88, commercialScore: 80 }] },
+    })).ok()).toBeTruthy();
+  }
+
+  // 刷新页面(绕过前端查询缓存)再进详情,推荐中标已标记
+  await page.reload();
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+  await expect(page.getByText('评标汇总排名')).toBeVisible();
+  await expect(page.getByText('推荐中标', { exact: true })).toBeVisible();
+  await expect(page.getByText('已交卷').first()).toBeVisible();
+});

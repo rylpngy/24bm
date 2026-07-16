@@ -16,6 +16,7 @@ public final class TenderPolicy {
   public static final String STATUS_ON_SALE = "发售中";
   public static final String STATUS_CLOSED = "已截止";
   public static final String STATUS_OPENED = "已开标";
+  public static final String STATUS_EVALUATING = "评标中";
 
   private TenderPolicy() {}
 
