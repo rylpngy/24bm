@@ -82,7 +82,8 @@ jobs:
       - name: Start backend (demo 种子) in background
         working-directory: backend-java
         env:
-          SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/demo
+          # 种子走独立链(flyway_seed_history);显式指向 db/demo,覆盖 local profile 默认的 db/dev。
+          APP_SEED_LOCATIONS: classpath:db/demo
         run: |
           nohup mvn -B -ntp spring-boot:run -Dspring-boot.run.profiles=local > /tmp/backend.log 2>&1 &
           for i in $(seq 1 60); do
