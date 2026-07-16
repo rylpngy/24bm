@@ -358,7 +358,7 @@ class FinancePaymentStateTransitionTests {
 
     org.assertj.core.api.Assertions.assertThat(response.reconciliationNote()).isEqualTo("已与采购方确认 6 月底付尾款");
     org.assertj.core.api.Assertions.assertThat(response.paymentStatus()).isEqualTo("部分付款");
-    org.assertj.core.api.Assertions.assertThat(response.dueDate()).isEqualTo(LocalDate.parse("2026-07-15"));
+    org.assertj.core.api.Assertions.assertThat(response.dueDate()).isEqualTo(LocalDate.now().plusDays(25));
     org.assertj.core.api.Assertions.assertThat(response.overdue()).isFalse();
     org.assertj.core.api.Assertions.assertThat(response.overdueDays()).isZero();
     org.assertj.core.api.Assertions.assertThat(response.orderAmount()).isEqualByComparingTo("100");
@@ -394,8 +394,9 @@ class FinancePaymentStateTransitionTests {
         "INV-001",
         paymentStatus,
         reconciliationNote,
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
-        OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), "144031909110", java.time.LocalDate.parse("2026-06-01"), new java.math.BigDecimal("13.00"));
+        // 相对时间:写死日期会随现实时间流逝翻车(dueDate=createdAt+30,须恒在未来)。
+        OffsetDateTime.now().minusDays(5),
+        OffsetDateTime.now().minusDays(5), "144031909110", java.time.LocalDate.now().minusDays(14), new java.math.BigDecimal("13.00"));
   }
 
   private PurchaseOrder order(BigDecimal amount) {

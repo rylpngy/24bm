@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { loginViaKeycloak, openModule, expectLoggedIn } from './helpers';
 
-// 供应商门户冒烟:登录 → 项目管理 / 销售订单 / 发票应收 / 商城货架。询比邀请与项目邀请均已并入项目管理(台账 → 参与详情)。
+// 供应商门户冒烟:登录 → 询价/竞价/商城项目 / 销售订单 / 发票应收 / 商城货架。项目按采购方式拆为三个台账页。
 test('供应商端登录后可进入门户', async ({ page }) => {
   await loginViaKeycloak(page);
-  await expectLoggedIn(page, /项目管理/);
+  await expectLoggedIn(page, /询价项目/);
   await expect(page.getByRole('complementary').getByRole('button', { name: /销售订单/ })).toBeVisible();
 });
 
@@ -18,20 +18,21 @@ test('销售订单列表:状态筛选 + 搜索 + 分页', async ({ page }) => {
 
 });
 
-test('项目管理:台账 → 参与详情(关键信息 + 项目进度) → 返回台账', async ({ page }) => {
+test('询价项目:台账 → 参与详情(项目进度流程) → 返回台账', async ({ page }) => {
   await loginViaKeycloak(page);
-  await openModule(page, /项目管理/);
-  await expect(page.getByRole('heading', { name: '项目管理', level: 3 })).toBeVisible();
+  await openModule(page, /询价项目/);
+  await expect(page.getByRole('heading', { name: '询价项目', level: 3 })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '流程进度' })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '邀请状态' })).toBeVisible();
 
-  const openButtons = page.locator('table').getByRole('button', { name: '查看项目' });
+  const openButtons = page.locator('table').getByRole('button', { name: /去报价|开标大厅|查看项目/ });
   if ((await openButtons.count()) === 0) return; // 无项目数据时仅冒烟台账
   await openButtons.first().click();
   await expect(page.getByText('关键信息')).toBeVisible();
   await expect(page.getByText('项目进度')).toBeVisible();
   await expect(page.getByText('收到邀请')).toBeVisible();
-  // 返回项目管理台账(而非旧询比商机列表)
-  await page.getByRole('button', { name: '返回项目管理' }).click();
-  await expect(page.getByRole('heading', { name: '项目管理', level: 3 })).toBeVisible();
+  await page.getByRole('button', { name: '返回项目列表' }).click();
+  await expect(page.getByRole('heading', { name: '询价项目', level: 3 })).toBeVisible();
 });
 
 test('供应商看板:欢迎横幅 + 经营指标 + 待办', async ({ page }) => {
@@ -88,15 +89,21 @@ test('配套功能页:发货管理 / 对账单 / 资质认证 / 员工管理', a
   await expect(page.getByRole('heading', { name: '员工管理', level: 3 })).toBeVisible();
 });
 
-test('项目管理:总览含邀请状态维度(方式/邀请双维筛选)', async ({ page }) => {
+test('竞价项目:排名/最低价列与竞价大厅入口', async ({ page }) => {
   await loginViaKeycloak(page);
 
-  await openModule(page, /项目管理/);
-  await expect(page.getByRole('heading', { name: '项目管理', level: 3 })).toBeVisible();
-  await expect(page.getByText('待查看邀请')).toBeVisible();
-  await expect(page.getByRole('tab', { name: /商城直采/ })).toBeVisible();
-  await expect(page.getByRole('tab', { name: /待查看/ })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: '邀请状态' })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: '项目阶段' })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: '关联订单' })).toBeVisible();
+  await openModule(page, /竞价项目/);
+  await expect(page.getByRole('heading', { name: '竞价项目', level: 3 })).toBeVisible();
+  await expect(page.getByText('当前领先')).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '我的排名' })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '当前最低' })).toBeVisible();
+});
+
+test('商城项目:直采订单台账与履约流程列', async ({ page }) => {
+  await loginViaKeycloak(page);
+
+  await openModule(page, /商城项目/);
+  await expect(page.getByRole('heading', { name: '商城项目', level: 3 })).toBeVisible();
+  await expect(page.getByText('直采订单', { exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /已发货/ })).toBeVisible();
 });
