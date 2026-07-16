@@ -47,6 +47,12 @@ public class BuyerTenderController {
     return ApiResponse.ok(tenderApplicationService.openTender(tenderId));
   }
 
+  @PostMapping("/{tenderId}/award")
+  public ApiResponse<TenderResponse> award(
+      @PathVariable String tenderId, @Valid @RequestBody AwardTenderRequest request) {
+    return ApiResponse.ok(tenderApplicationService.awardTender(tenderId, request));
+  }
+
   @PostMapping("/{tenderId}/committee")
   public ApiResponse<TenderResponse> formCommittee(
       @PathVariable String tenderId, @Valid @RequestBody FormCommitteeRequest request) {

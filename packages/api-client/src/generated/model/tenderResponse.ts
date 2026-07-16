@@ -33,4 +33,7 @@ export interface TenderResponse {
   evaluators?: TenderEvaluatorResponse[];
   scores?: TenderScoreResponse[];
   evaluationSummary?: TenderBidEvaluationSummary[];
+  awardedBidId?: string;
+  awardedAt?: string;
+  awardNoticeHtml?: string;
 }

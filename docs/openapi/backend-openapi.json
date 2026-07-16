@@ -4977,6 +4977,66 @@
         }
       }
     },
+    "/api/v1/buyer/tenders/{tenderId}/award": {
+      "post": {
+        "tags": [
+          "buyer-tender-controller"
+        ],
+        "operationId": "BuyerTender_award",
+        "parameters": [
+          {
+            "name": "tenderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AwardTenderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTenderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/suppliers": {
       "get": {
         "tags": [
@@ -14666,6 +14726,16 @@
             "items": {
               "$ref": "#/components/schemas/TenderBidEvaluationSummary"
             }
+          },
+          "awardedBidId": {
+            "type": "string"
+          },
+          "awardedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "awardNoticeHtml": {
+            "type": "string"
           }
         }
       },
@@ -17260,6 +17330,21 @@
             "type": "string"
           },
           "role": {
+            "type": "string"
+          }
+        }
+      },
+      "AwardTenderRequest": {
+        "required": [
+          "awardNoticeHtml",
+          "bidId"
+        ],
+        "type": "object",
+        "properties": {
+          "bidId": {
+            "type": "string"
+          },
+          "awardNoticeHtml": {
             "type": "string"
           }
         }

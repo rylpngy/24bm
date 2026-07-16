@@ -127,3 +127,60 @@ test('唱标公示:开标后供应商可见公示与核验', async ({ page, requ
   await expect(page.getByText('核验通过', { exact: true })).toBeVisible();
   await expect(page.getByText('本方', { exact: true })).toBeVisible();
 });
+
+// C-5 行为级(供应商侧):定标后中标人可见结果公示与签章通知书全文。
+test('中标公示:中标人可读签章通知书', async ({ page, request }) => {
+  const login = await request.post(`${API}/auth/login`, {
+    data: { account: 'buyer.owner@example.com', password: 'demo123456', scope: 'BUYER', tenantId: 'tenant-acme' },
+  });
+  const buyer = (await login.json()).data.accessToken as string;
+  const supLogin = await request.post(`${API}/auth/login`, {
+    data: { account: 'supplier.sales@example.com', password: 'demo123456', scope: 'SUPPLIER', supplierId: 'ent-supplier-sunrise' },
+  });
+  const sup = (await supLogin.json()).data.accessToken as string;
+  const title = `E2E中标公示-${Date.now()}`;
+  const iso = (s: number) => new Date(Date.now() + s * 1000).toISOString();
+  const created = await request.post(`${API}/buyer/tenders`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: {
+      title, tenderType: '公开招标', budget: 300000, evaluationMethod: '综合评分法',
+      documentHtml: '<p>E2E 中标公示正文。</p>',
+      acquisitionDeadline: iso(6), submissionDeadline: iso(8), openingAt: iso(10),
+    },
+  });
+  const id = (await created.json()).data.id as string;
+  await request.post(`${API}/buyer/tenders/${id}/publish`, { headers: { Authorization: `Bearer ${buyer}` } });
+  await request.post(`${API}/supplier/tenders/${id}/acquire`, { headers: { Authorization: `Bearer ${sup}` } });
+  await request.post(`${API}/supplier/tenders/${id}/bids`, {
+    headers: { Authorization: `Bearer ${sup}` },
+    data: { bidAmount: 268000, documentHtml: '<p>E2E 投标函。</p>' },
+  });
+  await new Promise((r) => setTimeout(r, 11_000));
+  await request.post(`${API}/buyer/tenders/${id}/open`, { headers: { Authorization: `Bearer ${buyer}` } });
+  const committee = await request.post(`${API}/buyer/tenders/${id}/committee`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: { members: [{ name: '甲', role: '组长' }, { name: '乙', role: '成员' }, { name: '丙', role: '成员' }] },
+  });
+  const detail = (await committee.json()).data as { evaluators?: Array<{ id?: string }>; bids?: Array<{ id?: string }> };
+  const bidId = detail.bids?.[0]?.id ?? '';
+  for (const ev of detail.evaluators ?? []) {
+    await request.post(`${API}/buyer/tenders/${id}/scores`, {
+      headers: { Authorization: `Bearer ${buyer}` },
+      data: { evaluatorId: ev.id, lines: [{ bidId, technicalScore: 88, commercialScore: 82 }] },
+    });
+  }
+  expect((await request.post(`${API}/buyer/tenders/${id}/award`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: { bidId, awardNoticeHtml: '<p>E2E 中标通知:恭喜贵方中标。</p>' },
+  })).ok()).toBeTruthy();
+
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /招标项目/);
+  await openModule(page, /招标项目/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '查看招标' }).click();
+  await expect(page.getByRole('heading', { name: '中标结果公示' })).toBeVisible();
+  await expect(page.getByText(/贵方为本项目中标人/)).toBeVisible();
+  await expect(page.getByText(/E2E 中标通知:恭喜贵方中标/)).toBeVisible();
+});

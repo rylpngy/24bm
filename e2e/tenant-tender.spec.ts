@@ -140,3 +140,47 @@ test('评标:组建委员会 → 评分交卷 → 汇总排名与推荐中标', 
   await expect(page.getByText('推荐中标', { exact: true })).toBeVisible();
   await expect(page.getByText('已交卷').first()).toBeVisible();
 });
+
+// C-5 行为级:评标完成 → 定标(默认推荐)+ 手写签章通知书 → 结果卡与签章留痕。
+test('定标:签章中标通知书 → 结果公示与留痕', async ({ page, request }) => {
+  const { title, id, buyer } = await seedOpenedReadyTender(request);
+  expect((await request.post(`${API}/buyer/tenders/${id}/open`, { headers: { Authorization: `Bearer ${buyer}` } })).ok()).toBeTruthy();
+  const committee = await request.post(`${API}/buyer/tenders/${id}/committee`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: { members: [{ name: '张评委', role: '组长' }, { name: '李评委', role: '成员' }, { name: '王评委', role: '成员' }] },
+  });
+  const detail = (await committee.json()).data as { evaluators?: Array<{ id?: string }>; bids?: Array<{ id?: string }> };
+  const bidId = detail.bids?.[0]?.id ?? '';
+  for (const ev of detail.evaluators ?? []) {
+    await request.post(`${API}/buyer/tenders/${id}/scores`, {
+      headers: { Authorization: `Bearer ${buyer}` },
+      data: { evaluatorId: ev.id, lines: [{ bidId, technicalScore: 90, commercialScore: 85 }] },
+    });
+  }
+
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /招标管理/);
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+
+  await expect(page.getByText('定标与中标通知书')).toBeVisible();
+  await expect(page.getByRole('button', { name: /(推荐)/ })).toBeVisible();
+  const submit = page.getByRole('button', { name: /定标并签章中标通知书/ });
+  await expect(submit).toBeDisabled(); // 未签章禁用
+  const canvas = page.getByTestId('signature-canvas');
+  await canvas.scrollIntoViewIfNeeded();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('canvas missing');
+  await page.mouse.move(box.x + 40, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 150, box.y + box.height / 2 - 10, { steps: 8 });
+  await page.mouse.up();
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect(page.getByText(/已定标并签章中标通知书/)).toBeVisible();
+  await expect(page.getByText('定标结果与中标通知书')).toBeVisible();
+  await expect(page.getByText('中标人', { exact: true })).toBeVisible();
+  await expect(page.getByText('招标人签章留痕')).toBeVisible();
+});

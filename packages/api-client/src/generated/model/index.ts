@@ -168,6 +168,7 @@ export * from './awardDecisionResponse';
 export * from './awardNoticeResponse';
 export * from './awardNoticeVerifyResponse';
 export * from './awardRfqRequest';
+export * from './awardTenderRequest';
 export * from './bidEvaluationResponse';
 export * from './bidEvaluationRowResponse';
 export * from './billingStatementResponse';

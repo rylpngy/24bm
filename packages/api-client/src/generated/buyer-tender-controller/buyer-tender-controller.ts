@@ -28,6 +28,7 @@ import type {
   ApiResponseListTenderResponse,
   ApiResponseTenderResponse,
   ApiResponseVoid,
+  AwardTenderRequest,
   DistributeTenderRequest,
   FormCommitteeRequest,
   SaveTenderRequest,
@@ -528,6 +529,65 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerTenderFormCommitteeMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerTenderAward = (
+    tenderId: string,
+    awardTenderRequest: BodyType<AwardTenderRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseTenderResponse>(
+      {url: `/api/v1/buyer/tenders/${tenderId}/award`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: awardTenderRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerTenderAwardMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderAward>>, TError,{tenderId: string;data: BodyType<AwardTenderRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerTenderAward>>, TError,{tenderId: string;data: BodyType<AwardTenderRequest>}, TContext> => {
+
+const mutationKey = ['buyerTenderAward'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderAward>>, {tenderId: string;data: BodyType<AwardTenderRequest>}> = (props) => {
+          const {tenderId,data} = props ?? {};
+
+          return  buyerTenderAward(tenderId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerTenderAwardMutationResult = NonNullable<Awaited<ReturnType<typeof buyerTenderAward>>>
+    export type BuyerTenderAwardMutationBody = BodyType<AwardTenderRequest>
+    export type BuyerTenderAwardMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerTenderAward = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderAward>>, TError,{tenderId: string;data: BodyType<AwardTenderRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerTenderAward>>,
+        TError,
+        {tenderId: string;data: BodyType<AwardTenderRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerTenderAwardMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

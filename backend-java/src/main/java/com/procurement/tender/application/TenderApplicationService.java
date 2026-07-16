@@ -4,6 +4,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
+import com.procurement.tender.api.AwardTenderRequest;
 import com.procurement.tender.api.DistributeTenderRequest;
 import com.procurement.tender.api.FormCommitteeRequest;
 import com.procurement.tender.api.SaveTenderRequest;
@@ -158,6 +159,46 @@ public class TenderApplicationService {
         tenantId, "开标唱标", tender.title() + " 已开标,投标报价与指纹核验结果已公示。");
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
+  // ── 买方:定标 + 中标通知书(C-5) ───────────────────────────
+  @Transactional
+  public TenderResponse awardTender(String tenderId, AwardTenderRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    Tender tender = requireTender(tenantId, tenderId);
+    TenderBid bid = bidMapper.listByTender(tenantId, tenderId).stream()
+        .filter(b -> b.id().equals(request.bidId()))
+        .findFirst()
+        .orElse(null);
+    TenderPolicy.requireAwardable(tender, bid, request.awardNoticeHtml());
+    tenderMapper.markAwarded(
+        tenantId, tenderId, TenderPolicy.STATUS_AWARDED, bid.id(),
+        OffsetDateTime.now(), request.awardNoticeHtml());
+    String winnerName = supplierProfileApplicationService.findSupplierDisplayName(bid.supplierId());
+    auditLogApplicationService.recordCurrentTenantAction(
+        "tender.awarded", AUDIT_TARGET, tenderId,
+        "定标:中标人「" + winnerName + "」,中标价 " + bid.bidAmount());
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId, "招标定标", tender.title() + " 已定标,中标人「" + winnerName + "」,请签章中标通知书。");
+    return toResponse(requireTender(tenantId, tenderId),
+        acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
+  // 电子签章入口(esign 模块经应用层访问):取本租户已定标招标及其中标投标。
+  public Tender findCurrentTenantAwardedTender(String tenderId) {
+    String tenantId = TenantAccessGuard.requireTenantId("esign APIs");
+    Tender tender = requireTender(tenantId, tenderId);
+    if (tender.awardedBidId() == null) {
+      throw new IllegalStateException("招标项目尚未定标,不能签章中标通知书: " + tenderId);
+    }
+    return tender;
+  }
+
+  public TenderBid findAwardedBid(Tender tender) {
+    return bidMapper.listByTender(tender.tenantId(), tender.id()).stream()
+        .filter(b -> b.id().equals(tender.awardedBidId()))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("中标投标不存在: " + tender.awardedBidId()));
   }
 
   // ── 买方:评标委员会与评分表(C-4) ──────────────────────────
@@ -399,14 +440,18 @@ public class TenderApplicationService {
         : java.util.stream.Stream.of(supplierBidView(myBid(tender.id(), mySupplierId)))
             .filter(java.util.Objects::nonNull)
             .toList();
+    // 中标通知书正文仅中标人可见;中标投标与定标时间对全体可见方公示。
+    boolean isWinner = tender.awardedBidId() != null && bids.stream()
+        .anyMatch(b -> b.id().equals(tender.awardedBidId()) && b.supplierId().equals(mySupplierId));
     return new TenderResponse(
         tender.id(), tender.tenantId(), tender.tenderNo(), tender.title(), tender.tenderType(),
         tender.budget(), tender.status(), acquired ? tender.documentHtml() : null,
         tender.evaluationMethod(), tender.bidBondAmount(), tender.acquisitionDeadline(),
         tender.submissionDeadline(), tender.openingAt(), tender.publishedAt(), tender.createdAt(),
         acquisitions, bids, tender.openedAt(),
-        // 评标过程对供应商不下发(定标公示见 C-5)。
-        List.of(), List.of(), List.of());
+        // 评标过程对供应商不下发(定标结果按上方规则公示)。
+        List.of(), List.of(), List.of(),
+        tender.awardedBidId(), tender.awardedAt(), isWinner ? tender.awardNoticeHtml() : null);
   }
 
   private TenderResponse toResponse(Tender tender, List<TenderAcquisition> acquisitions, boolean withNames) {
@@ -440,7 +485,8 @@ public class TenderApplicationService {
                 s.evaluatorId(), s.bidId(), s.technicalScore(), s.commercialScore(),
                 s.comment(), s.scoredAt()))
             .toList(),
-        evaluationSummary(tender, evaluators, scores));
+        evaluationSummary(tender, evaluators, scores),
+        tender.awardedBidId(), tender.awardedAt(), tender.awardNoticeHtml());
   }
 
   // 评标汇总(实时计算):价格分=最低有效报价/本报价×100;

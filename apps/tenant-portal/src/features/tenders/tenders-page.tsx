@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ClipboardCheck, FileBadge, Gavel, Info, Megaphone, Plus, Send, Users } from 'lucide-react';
+import { ArrowLeft, Award, ClipboardCheck, FileBadge, Gavel, Info, Megaphone, Plus, Send, Users } from 'lucide-react';
 import {
+  useBuyerEsignList,
+  useBuyerEsignSign,
   useBuyerSupplierList,
+  useBuyerTenderAward,
   useBuyerTenderCreate,
   useBuyerTenderDistribute,
   useBuyerTenderFormCommittee,
@@ -15,6 +18,7 @@ import {
   type TenderResponse,
 } from '@24bid/api-client';
 import {
+  EsignRecordList,
   FeedbackNotice,
   FilterTabs,
   MiniFact,
@@ -25,9 +29,11 @@ import {
   RichTextEditor,
   RichTextView,
   SearchInput,
+  SignaturePad,
   StatusPill,
   cn,
 } from '@24bid/ui';
+import { useAuthStore } from '../../lib/auth-store';
 import { OwnerAttachments } from '../attachments/owner-attachments';
 
 const PAGE_SIZE = 8;
@@ -326,6 +332,139 @@ function EvaluationSection({
           )}
         </>
       )}
+    </section>
+  );
+}
+
+// C-5 定标 + 中标通知书:评标全员交卷产生推荐后,定标(默认推荐人)并签章中标通知书;
+// 签章指纹绑定中标投标密封凭证与通知书正文,开标链路可核验。
+function AwardSection({
+  tender: t,
+  onFeedback,
+  onError,
+  refresh,
+}: {
+  tender: TenderResponse;
+  onFeedback: (m: string) => void;
+  onError: (m: string | null) => void;
+  refresh: () => void;
+}) {
+  const displayName = useAuthStore((s) => s.session?.displayName ?? '');
+  const award = useBuyerTenderAward();
+  const esign = useBuyerEsignSign();
+  const records = useBuyerEsignList(
+    { targetType: 'tender-award', targetId: t.id ?? '' },
+    { query: { enabled: !!t.awardedBidId && !!t.id } },
+  );
+  const summary = t.evaluationSummary ?? [];
+  const recommended = summary.find((r) => r.recommended);
+  const [bidId, setBidId] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
+  const [signature, setSignature] = useState<string | null>(null);
+
+  const reportApiError = (e: unknown) =>
+    onError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '操作失败,请稍后重试');
+
+  // 已定标:结果卡 + 通知书 + 签章留痕
+  if (t.awardedBidId) {
+    const winner = (t.bids ?? []).find((b) => b.id === t.awardedBidId);
+    return (
+      <section className="rounded-lg border border-emerald-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+        <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+          <Award size={15} className="text-emerald-600" /> 定标结果与中标通知书
+        </h3>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <MiniFact label="中标人" value={winner?.supplierName ?? '—'} />
+          <MiniFact label="中标价" value={currency(winner?.bidAmount)} />
+          <MiniFact label="定标时间" value={shortTime(t.awardedAt)} />
+        </div>
+        {t.awardNoticeHtml && (
+          <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4">
+            <p className="text-xs font-black text-slate-500">中标通知书</p>
+            <RichTextView html={t.awardNoticeHtml} className="mt-2" />
+          </div>
+        )}
+        <div className="mt-3">
+          <p className="text-xs font-black text-slate-500">招标人签章留痕</p>
+          <div className="mt-2">
+            <EsignRecordList records={records.data?.data ?? []} />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!recommended) return null;
+  const selectedBidId = bidId ?? recommended.bidId ?? null;
+  const selected = summary.find((r) => r.bidId === selectedBidId);
+  const noticeTemplate = () =>
+    `<p><strong>${selected?.supplierName ?? ''}:</strong></p>` +
+    `<p>贵方参加本项目「${t.title ?? ''}」(招标编号 ${t.tenderNo ?? ''})的投标,经评标委员会评审,` +
+    `贵方为中标人,中标价 ${selected?.bidAmount != null ? `¥${selected.bidAmount.toLocaleString('zh-CN')}` : ''}。` +
+    `请在收到本通知书后按招标文件约定与我方签订合同。</p>`;
+
+  const doAward = () => {
+    if (!t.id || !selectedBidId) return;
+    onError(null);
+    const noticeHtml = notice || noticeTemplate();
+    award.mutate(
+      { tenderId: t.id, data: { bidId: selectedBidId, awardNoticeHtml: noticeHtml } },
+      {
+        onSuccess: () => {
+          if (signature && t.id) {
+            esign.mutate(
+              { data: { targetType: 'tender-award', targetId: t.id, signatureImage: signature, signerName: displayName } },
+              { onSettled: refresh },
+            );
+          }
+          onFeedback('已定标并签章中标通知书,结果已公示至投标各方。');
+          refresh();
+        },
+        onError: reportApiError,
+      },
+    );
+  };
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+        <Award size={15} className="text-emerald-600" /> 定标与中标通知书
+      </h3>
+      <p className="mt-1 text-[11px] font-bold text-slate-400">
+        默认按评标推荐定标;签发须招标人手写签章,签章指纹绑定中标投标密封凭证与通知书正文。
+      </p>
+      <div className="mt-3 space-y-3">
+        <div>
+          <p className="text-xs font-black text-slate-500">中标人(默认评标第一名)</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {summary.map((r) => (
+              <button key={r.bidId} type="button" onClick={() => setBidId(r.bidId ?? null)}
+                className={cn('rounded-lg border px-3 py-1.5 text-xs font-black transition',
+                  selectedBidId === r.bidId
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')}>
+                {r.rank}. {r.supplierName} · {currency(r.bidAmount)}{r.recommended ? '(推荐)' : ''}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-black text-slate-500">中标通知书正文(留空按模板签发)</p>
+          <div className="mt-1.5">
+            <RichTextEditor value={notice} onChange={setNotice} minHeight={140} placeholder={`将按模板签发:经评标委员会评审,确定 ${selected?.supplierName ?? ''} 为中标人……`} />
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-black text-slate-500">
+            <span className="mr-1 text-red-500">*</span>招标人电子签章(手写签名)
+          </p>
+          <SignaturePad className="mt-1.5" onChange={setSignature} />
+        </div>
+        <PrimaryActionButton onClick={doAward} busy={award.isPending || esign.isPending}
+          pendingLabel="定标签章中" disabled={!selectedBidId || !signature}>
+          <Award size={14} /> 定标并签章中标通知书
+        </PrimaryActionButton>
+      </div>
     </section>
   );
 }
@@ -744,6 +883,10 @@ export function TendersPage() {
             {t.openedAt && (
               <EvaluationSection tender={t} onFeedback={setFeedback} onError={setError} refresh={refresh} />
             )}
+            {/* C-5 定标:推荐产生后可定标签章;已定标显示结果与通知书 */}
+            {t.openedAt && (
+              <AwardSection tender={t} onFeedback={setFeedback} onError={setError} refresh={refresh} />
+            )}
           </div>
 
           <div className="space-y-4">
@@ -784,8 +927,10 @@ export function TendersPage() {
                       : t.status === '已开标'
                         ? '投标已解封唱标,可组建评标委员会进入评标。'
                         : t.status === '评标中'
-                          ? '评标进行中:全体评委交卷后产生推荐中标人,定标(下一版本)据此签发通知书。'
-                          : '发售已截止。'}
+                          ? '评标进行中:全体评委交卷后产生推荐中标人,即可定标并签章中标通知书。'
+                          : t.status === '已定标'
+                            ? '已定标:中标通知书已签发,结果已公示至投标各方。'
+                            : '发售已截止。'}
                 </span>
               </span>
             </div>
@@ -832,7 +977,7 @@ export function TendersPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterTabs
-          items={['全部', '编制中', '发售中', '已开标', '评标中'].map((id) => ({
+          items={['全部', '编制中', '发售中', '评标中', '已定标'].map((id) => ({
             id, label: id, count: id === '全部' ? undefined : countBy(id),
           }))}
           value={statusFilter}

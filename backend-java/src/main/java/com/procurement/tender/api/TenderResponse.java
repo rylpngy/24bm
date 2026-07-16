@@ -30,5 +30,9 @@ public record TenderResponse(
     // C-4 评标(买方视角;供应商侧定标公示前不下发):委员会、评分明细、汇总排名。
     List<TenderEvaluatorResponse> evaluators,
     List<TenderScoreResponse> scores,
-    List<TenderBidEvaluationSummary> evaluationSummary) {
+    List<TenderBidEvaluationSummary> evaluationSummary,
+    // C-5 定标:中标投标/时间公示双端;中标通知书正文仅买方与中标人可见。
+    String awardedBidId,
+    OffsetDateTime awardedAt,
+    String awardNoticeHtml) {
 }

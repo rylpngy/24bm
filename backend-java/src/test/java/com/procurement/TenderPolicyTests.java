@@ -16,7 +16,7 @@ class TenderPolicyTests {
       OffsetDateTime acq, OffsetDateTime sub, OffsetDateTime open) {
     return new Tender("tender-1", "tenant-1", "ZB20260716001", "测试招标", type,
         BigDecimal.valueOf(100000), status, doc, "综合评分法", null,
-        acq, sub, open, "user-1", null, OffsetDateTime.now(), OffsetDateTime.now(), null);
+        acq, sub, open, "user-1", null, OffsetDateTime.now(), OffsetDateTime.now(), null, null, null, null);
   }
 
   @Test
@@ -155,5 +155,25 @@ class TenderPolicyTests {
         BigDecimal.valueOf(101), BigDecimal.TEN, "tbid-1")).hasMessageContaining("技术分");
     assertThatThrownBy(() -> com.procurement.tender.domain.TenderEvaluationPolicy.requireValidScore(
         BigDecimal.TEN, BigDecimal.valueOf(-1), "tbid-1")).hasMessageContaining("商务分");
+  }
+
+  // ── C-5 定标规则 ─────────────────────────────────────────────
+  @Test
+  void awardOnlyDuringEvaluationForUnsealedBidWithNotice() {
+    var now = OffsetDateTime.now();
+    var evaluating = tender("公开招标", "评标中", "<p>x</p>", now.minusDays(3), now.minusDays(1), now.minusHours(2));
+    var openedBid = new com.procurement.tender.domain.TenderBid(
+        "tbid-1", "t", "tender-1", "s", BigDecimal.TEN, "<p>doc</p>", "digest", "已开启", now, null);
+    assertThatCode(() -> TenderPolicy.requireAwardable(evaluating, openedBid, "<p>中标通知书</p>"))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> TenderPolicy.requireAwardable(
+        tender("公开招标", "已开标", "<p>x</p>", now, now, now), openedBid, "<p>n</p>"))
+        .hasMessageContaining("评标中");
+    assertThatThrownBy(() -> TenderPolicy.requireAwardable(
+        evaluating, new com.procurement.tender.domain.TenderBid(
+            "tbid-2", "t", "tender-1", "s", BigDecimal.TEN, null, "digest", "已撤回", now, now), "<p>n</p>"))
+        .hasMessageContaining("已解封的有效投标");
+    assertThatThrownBy(() -> TenderPolicy.requireAwardable(evaluating, openedBid, " "))
+        .hasMessageContaining("通知书正文");
   }
 }

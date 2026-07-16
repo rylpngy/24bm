@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, FileBadge, Gavel, Info, Lock, Undo2 } from 'lucide-react';
+import { ArrowLeft, Award, FileBadge, Gavel, Info, Lock, Undo2 } from 'lucide-react';
 import {
   useSupplierEsignList,
   useSupplierEsignSign,
@@ -274,6 +274,39 @@ function OpeningRollSection({ tender }: { tender: TenderResponse }) {
   );
 }
 
+// C-5 中标结果:定标后全体可见方公示中标人;中标人可读中标通知书全文(招标人已签章)。
+function AwardResultSection({ tender }: { tender: TenderResponse }) {
+  const mySupplierId = (tender.acquisitions ?? [])[0]?.supplierId;
+  const winner = (tender.bids ?? []).find((b) => b.id === tender.awardedBidId);
+  const isWinner = !!winner && winner.supplierId === mySupplierId;
+  return (
+    <section className={cn('rounded-lg border bg-white p-4 shadow-sm shadow-slate-200/50',
+      isWinner ? 'border-emerald-200' : 'border-slate-200')}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+          <Award size={15} className="text-emerald-600" /> 中标结果公示
+        </h3>
+        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
+          定标时间 {shortTime(tender.awardedAt)}
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <MiniFact label="中标人" value={winner?.supplierName ?? '—'} />
+        <MiniFact label="中标价" value={currency(winner?.bidAmount)} />
+      </div>
+      {isWinner ? (
+        <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/40 p-4">
+          <p className="text-xs font-black text-emerald-800">恭喜,贵方为本项目中标人。中标通知书(招标人已电子签章):</p>
+          {tender.awardNoticeHtml && <RichTextView html={tender.awardNoticeHtml} className="mt-2" />}
+          <p className="mt-2 text-[11px] font-bold text-slate-500">请按招标文件约定与招标人签订合同;通知书签章指纹与贵方投标密封凭证绑定,可核验。</p>
+        </div>
+      ) : (
+        <FeedbackNotice tone="info" message="感谢贵方参与本项目投标。本项目已定标,未中标投标文件按规定留档。" />
+      )}
+    </section>
+  );
+}
+
 // 招标项目(供应商侧,Track C C-1/C-2):领取文件后阅读正文并加密递交投标。
 export function TenderProjectsPage() {
   const queryClient = useQueryClient();
@@ -380,6 +413,8 @@ export function TenderProjectsPage() {
             )}
             {/* C-3 开标后:唱标公示替代递交区 */}
             {t.openedAt && <OpeningRollSection tender={t} />}
+            {/* C-5 定标后:中标结果公示(中标人可读签章通知书) */}
+            {t.awardedBidId && <AwardResultSection tender={t} />}
 
           </div>
 
@@ -403,9 +438,11 @@ export function TenderProjectsPage() {
                 ))}
               </dl>
             </section>
-            <FeedbackNotice tone="info" message={t.openedAt
-              ? '本项目已开标唱标:各家报价与指纹核验结果公示如左;评标与中标结果请留意后续通知。'
-              : '递交即密封:开标前招标人不可见投标内容;截止前可撤回并重投(重投覆盖为新密封)。'} />
+            <FeedbackNotice tone="info" message={t.awardedBidId
+              ? '本项目已定标:中标结果公示如左,中标人可查阅招标人签章的中标通知书。'
+              : t.openedAt
+                ? '本项目已开标唱标:各家报价与指纹核验结果公示如左;评标与中标结果请留意后续通知。'
+                : '递交即密封:开标前招标人不可见投标内容;截止前可撤回并重投(重投覆盖为新密封)。'} />
           </div>
         </div>
       </div>

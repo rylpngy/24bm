@@ -12,6 +12,7 @@ import com.procurement.esign.infrastructure.EsignRecordMapper;
 import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.tender.application.TenderApplicationService;
+import com.procurement.tender.domain.Tender;
 import com.procurement.tender.domain.TenderBid;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -53,8 +54,11 @@ public class EsignApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("esign APIs");
     String userId = TenantAccessGuard.requireUserId("esign APIs");
     requireSignature(request.signatureImage());
+    if ("tender-award".equals(request.targetType())) {
+      return buyerSignTenderAward(request, tenantId, userId);
+    }
     if (!"contract".equals(request.targetType())) {
-      throw new IllegalArgumentException("采购方当前仅支持合同电子签章: " + request.targetType());
+      throw new IllegalArgumentException("采购方当前仅支持合同/中标通知书电子签章: " + request.targetType());
     }
     ContractLedger contract =
         contractApplicationService.findCurrentTenantContractForEsign(request.targetId());
@@ -69,6 +73,22 @@ public class EsignApplicationService {
         request.signerName(), tenantId, digest, request.signatureImage(), request.remark());
     auditLogApplicationService.recordCurrentTenantAction(
         "contract.esigned", AuditTargetType.CONTRACT, contract.id(), "采购方电子签章");
+    return toResponse(record);
+  }
+
+  // 中标通知书签章:指纹绑定 通知书正文 + 中标投标密封凭证(sealedDigest),开标链路可核验。
+  private EsignRecordResponse buyerSignTenderAward(
+      CreateEsignRequest request, String tenantId, String userId) {
+    Tender tender = tenderApplicationService.findCurrentTenantAwardedTender(request.targetId());
+    TenderBid awarded = tenderApplicationService.findAwardedBid(tender);
+    String digest = sha256(
+        "tender-award:" + tender.id() + "|bid:" + awarded.id() + "|supplier:" + awarded.supplierId()
+            + "|sealedDigest:" + awarded.contentDigest() + "|notice:" + sha256(tender.awardNoticeHtml()));
+    EsignRecord record = insert(
+        tenantId, "tender-award", tender.id(), "BUYER", userId,
+        request.signerName(), tenantId, digest, request.signatureImage(), request.remark());
+    auditLogApplicationService.recordCurrentTenantAction(
+        "tender.award_esigned", "tender", tender.id(), "招标人签章中标通知书");
     return toResponse(record);
   }
 

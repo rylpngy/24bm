@@ -17,6 +17,7 @@ public final class TenderPolicy {
   public static final String STATUS_CLOSED = "已截止";
   public static final String STATUS_OPENED = "已开标";
   public static final String STATUS_EVALUATING = "评标中";
+  public static final String STATUS_AWARDED = "已定标";
 
   private TenderPolicy() {}
 
@@ -61,6 +62,19 @@ public final class TenderPolicy {
     }
     if (tender.openingAt() == null || now.isBefore(tender.openingAt())) {
       throw new IllegalStateException("尚未到达约定开标时间,不能提前开标: " + tender.id());
+    }
+  }
+
+  // 定标(C-5):仅评标中可定标;定标对象须为已解封的有效投标;通知书正文必备。
+  public static void requireAwardable(Tender tender, TenderBid bid, String noticeHtml) {
+    if (!STATUS_EVALUATING.equals(tender.status())) {
+      throw new IllegalStateException("仅「评标中」的招标项目可定标: " + tender.id());
+    }
+    if (bid == null || !"已开启".equals(bid.sealedStatus())) {
+      throw new IllegalArgumentException("定标对象须为已解封的有效投标: " + tender.id());
+    }
+    if (noticeHtml == null || noticeHtml.isBlank()) {
+      throw new IllegalArgumentException("中标通知书正文不能为空: " + tender.id());
     }
   }
 
