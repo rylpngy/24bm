@@ -36,3 +36,4 @@ backend-java/target
 /cleaned_docs/
 scripts/dept.xlsx
 scripts/mat.xlsx
+infra/observability/secrets/

@@ -9,10 +9,10 @@ This document is the handoff ledger for the remaining Track A productionization 
 
 | Severity | Route | Owner role | Primary channel | Escalation window | Evidence location | Status |
 |---|---|---|---|---|---|---|
-| Critical | `BackendInstanceDown` | Platform on-call | Fill in production receiver outside repo | 15 minutes | Link to incident platform / Alertmanager receiver config | Pending environment binding |
-| Warning | `HighHttp5xxRate` | Backend owner | Fill in production receiver outside repo | 30 minutes | Link to incident platform / Alertmanager receiver config | Pending environment binding |
-| Warning | `HighRequestLatencyP95` | Backend owner | Fill in production receiver outside repo | 30 minutes | Link to incident platform / Alertmanager receiver config | Pending environment binding |
-| Warning | `HighJvmHeapUsage` | Backend owner | Fill in production receiver outside repo | 30 minutes | Link to incident platform / Alertmanager receiver config | Pending environment binding |
+| Critical | `BackendInstanceDown` | Platform on-call | Email 408167116@qq.com(alertmanager.yml pilot-oncall-mail) | 15 minutes | infra/observability/alertmanager.yml + 2026-07-16 合成告警 PilotSyntheticTest 路由投递日志 | Bound 2026-07-16;待填 SMTP 授权码后邮件闭环 |
+| Warning | `HighHttp5xxRate` | Backend owner | Email 408167116@qq.com(同一 receiver) | 30 minutes | 同上 | Bound 2026-07-16;待填 SMTP 授权码后邮件闭环 |
+| Warning | `HighRequestLatencyP95` | Backend owner | Email 408167116@qq.com(同一 receiver) | 30 minutes | 同上 | Bound 2026-07-16;待填 SMTP 授权码后邮件闭环 |
+| Warning | `HighJvmHeapUsage` | Backend owner | Email 408167116@qq.com(同一 receiver) | 30 minutes | 同上 | Bound 2026-07-16;待填 SMTP 授权码后邮件闭环 |
 
 Acceptance criteria:
 
@@ -25,9 +25,9 @@ Acceptance criteria:
 
 | Asset | Backup source | Restore target | Minimum cadence | Latest rehearsal | Evidence location | Status |
 |---|---|---|---|---|---|---|
-| PostgreSQL | Production-like database backup | Temporary PostgreSQL instance | Monthly and before major releases | Not yet recorded | Fill outside repo | Pending rehearsal |
-| MinIO | Attachment bucket and metadata backup | Temporary MinIO bucket | Monthly and before major releases | Not yet recorded | Fill outside repo | Pending rehearsal |
-| Keycloak | Realm export | Temporary Keycloak realm | Before auth/role changes and releases | Not yet recorded | Fill outside repo | Pending rehearsal |
+| PostgreSQL | Production-like database backup | Temporary PostgreSQL instance | Monthly and before major releases | 2026-07-16 | pg_dump 57KB → postgres:16 临时实例灌入零错误;冒烟四查(登录/需求13/询比17/付款批次2)全过 | Drill passed |
+| MinIO | Attachment bucket and metadata backup | Temporary MinIO bucket | Monthly and before major releases | 2026-07-16 | mc mirror 292.57MiB/4 对象;抽检「采购合同正本.txt」源 ETag=镜像 md5 一致 | Drill passed |
+| Keycloak | Realm export | Temporary Keycloak realm | Before auth/role changes and releases | 2026-07-16 | kc.sh export 导出 24bid-realm.json + users(realm 完整) | Export verified |
 
 Restore pass criteria:
 
