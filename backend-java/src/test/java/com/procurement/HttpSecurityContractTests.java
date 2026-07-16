@@ -269,7 +269,9 @@ import org.springframework.test.web.servlet.MvcResult;
     com.procurement.mall.api.BuyerMallController.class,
     com.procurement.mall.api.SupplierMallController.class,
     com.procurement.esign.api.BuyerEsignController.class,
-    com.procurement.esign.api.SupplierEsignController.class
+    com.procurement.esign.api.SupplierEsignController.class,
+    com.procurement.tender.api.BuyerTenderController.class,
+    com.procurement.tender.api.SupplierTenderController.class
 })
 @Import({
     SecurityConfig.class,
@@ -453,6 +455,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.esign.application.EsignApplicationService esignApplicationService;
+
+  @MockBean
+  private com.procurement.tender.application.TenderApplicationService tenderApplicationService;
 
   @MockBean
   private AuthenticationUserMapper authenticationUserMapper;

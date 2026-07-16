@@ -15,6 +15,7 @@ import { RfqsPage } from './features/rfqs/rfqs-page';
 import { OrdersPage } from './features/orders/orders-page';
 import { ReceiptsPage } from './features/receipts/receipts-page';
 import { AuctionsPage } from './features/auctions/auctions-page';
+import { TendersPage } from './features/tenders/tenders-page';
 import { InvoicesPage } from './features/finance/invoices-page';
 import { ContractsPage } from './features/contracts/contracts-page';
 import { DashboardPage } from './features/dashboard/dashboard-page';
@@ -110,6 +111,8 @@ export function App() {
         <RfqsPage />
       ) : activeModuleId === 'auctions' ? (
         <AuctionsPage onNavigate={selectModule} />
+      ) : activeModuleId === 'tenders' ? (
+        <TendersPage />
       ) : activeModuleId === 'receipts' ? (
         <ReceiptsPage />
       ) : activeModuleId === 'orders' ? (
