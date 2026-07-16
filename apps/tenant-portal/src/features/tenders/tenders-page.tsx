@@ -8,7 +8,9 @@ import {
   useBuyerTenderAward,
   useBuyerTenderCreate,
   useBuyerTenderDistribute,
+  useBuyerTenderFail,
   useBuyerTenderFormCommittee,
+  useBuyerTenderRebid,
   useBuyerTenderList,
   useBuyerTenderOpen,
   useBuyerTenderPublish,
@@ -479,6 +481,10 @@ export function TendersPage() {
   const publish = useBuyerTenderPublish();
   const distribute = useBuyerTenderDistribute();
   const openTender = useBuyerTenderOpen();
+  const failTender = useBuyerTenderFail();
+  const rebidTender = useBuyerTenderRebid();
+  const [failReason, setFailReason] = useState('');
+  const [failing, setFailing] = useState(false);
 
   const [view, setView] = useState<'list' | 'edit' | 'detail'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -879,12 +885,37 @@ export function TendersPage() {
               )}
             </section>
 
+            {/* C-6 已流标:留痕卡 + 重新招标(评标/定标区隐藏) */}
+            {t.status === '已流标' && (
+              <section className="rounded-lg border border-amber-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                <h3 className="text-base font-black text-slate-950">流标留痕</h3>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <MiniFact label="流标时间" value={shortTime(t.failedAt)} />
+                  <MiniFact label="流标原因" value={t.failureReason ?? '—'} />
+                </div>
+                <p className="mt-2 text-[11px] font-bold text-slate-400">
+                  发放/投标/评分记录保留在本项目备查;重新招标将复制标的要素与正文新建草稿(时间节点须重新设定)。
+                </p>
+                <PrimaryActionButton size="sm" onClick={() =>
+                  t.id && rebidTender.mutate({ tenderId: t.id }, {
+                    onSuccess: (r) => {
+                      setFeedback(`已按流标项目重新立项:「${r.data?.title}」(${r.data?.tenderNo}),请补齐时间节点后发布。`);
+                      refresh();
+                      if (r.data) openEdit(r.data);
+                    },
+                    onError: reportError,
+                  })}
+                  busy={rebidTender.isPending} pendingLabel="立项中">
+                  重新招标
+                </PrimaryActionButton>
+              </section>
+            )}
             {/* C-4 评标:开标后组建委员会并逐评委评分 */}
-            {t.openedAt && (
+            {t.openedAt && t.status !== '已流标' && (
               <EvaluationSection tender={t} onFeedback={setFeedback} onError={setError} refresh={refresh} />
             )}
             {/* C-5 定标:推荐产生后可定标签章;已定标显示结果与通知书 */}
-            {t.openedAt && (
+            {t.openedAt && t.status !== '已流标' && (
               <AwardSection tender={t} onFeedback={setFeedback} onError={setError} refresh={refresh} />
             )}
           </div>
@@ -930,7 +961,9 @@ export function TendersPage() {
                           ? '评标进行中:全体评委交卷后产生推荐中标人,即可定标并签章中标通知书。'
                           : t.status === '已定标'
                             ? '已定标:中标通知书已签发,结果已公示至投标各方。'
-                            : '发售已截止。'}
+                            : t.status === '已流标'
+                              ? '已流标:留痕在案,可一键重新招标。'
+                              : '发售已截止。'}
                 </span>
               </span>
             </div>
@@ -956,6 +989,35 @@ export function TendersPage() {
                 <Gavel size={14} /> 开标唱标
               </PrimaryActionButton>
             )}
+            {(t.status === '已开标' || t.status === '评标中') && (
+              failing ? (
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <input
+                    className="h-10 w-64 rounded-lg border border-amber-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"
+                    placeholder="流标原因(必填留痕)" aria-label="流标原因" value={failReason}
+                    onChange={(e) => setFailReason(e.target.value)} />
+                  <button type="button" disabled={!failReason.trim() || failTender.isPending}
+                    onClick={() => t.id && failTender.mutate(
+                      { tenderId: t.id, data: { reason: failReason.trim() } },
+                      {
+                        onSuccess: () => { setFeedback('已宣布流标(留痕在案),可重新招标。'); setFailing(false); setFailReason(''); refresh(); },
+                        onError: reportError,
+                      })}
+                    className="inline-flex h-10 items-center rounded-lg bg-amber-600 px-4 text-sm font-black text-white hover:bg-amber-700 disabled:opacity-50">
+                    {failTender.isPending ? '流标中…' : '确认流标'}
+                  </button>
+                  <button type="button" onClick={() => { setFailing(false); setFailReason(''); }}
+                    className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 hover:bg-slate-50">
+                    取消
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setFailing(true)}
+                  className="inline-flex h-10 shrink-0 items-center rounded-lg border border-amber-200 bg-white px-4 text-sm font-black text-amber-700 hover:bg-amber-50">
+                  宣布流标
+                </button>
+              )
+            )}
           </div>
         </div>
       </div>
@@ -977,7 +1039,7 @@ export function TendersPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterTabs
-          items={['全部', '编制中', '发售中', '评标中', '已定标'].map((id) => ({
+          items={['全部', '编制中', '发售中', '评标中', '已定标', '已流标'].map((id) => ({
             id, label: id, count: id === '全部' ? undefined : countBy(id),
           }))}
           value={statusFilter}

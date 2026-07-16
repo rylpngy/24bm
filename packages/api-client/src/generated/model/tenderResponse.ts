@@ -36,4 +36,7 @@ export interface TenderResponse {
   awardedBidId?: string;
   awardedAt?: string;
   awardNoticeHtml?: string;
+  failedAt?: string;
+  failureReason?: string;
+  rebidOfTenderId?: string;
 }

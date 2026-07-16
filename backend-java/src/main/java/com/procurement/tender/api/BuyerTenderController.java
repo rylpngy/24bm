@@ -47,6 +47,17 @@ public class BuyerTenderController {
     return ApiResponse.ok(tenderApplicationService.openTender(tenderId));
   }
 
+  @PostMapping("/{tenderId}/fail")
+  public ApiResponse<TenderResponse> fail(
+      @PathVariable String tenderId, @Valid @RequestBody FailTenderRequest request) {
+    return ApiResponse.ok(tenderApplicationService.failTender(tenderId, request));
+  }
+
+  @PostMapping("/{tenderId}/rebid")
+  public ApiResponse<TenderResponse> rebid(@PathVariable String tenderId) {
+    return ApiResponse.ok(tenderApplicationService.rebidTender(tenderId));
+  }
+
   @PostMapping("/{tenderId}/award")
   public ApiResponse<TenderResponse> award(
       @PathVariable String tenderId, @Valid @RequestBody AwardTenderRequest request) {

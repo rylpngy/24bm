@@ -17,7 +17,7 @@ public interface TenderMapper {
       id, tenant_id, tender_no, title, tender_type, budget, status, document_html,
       evaluation_method, bid_bond_amount, acquisition_deadline, submission_deadline,
       opening_at, owner_id, published_at, created_at, updated_at, opened_at,
-      awarded_bid_id, awarded_at, award_notice_html
+      awarded_bid_id, awarded_at, award_notice_html, failed_at, failure_reason, rebid_of_tender_id
       """;
 
   @Insert("""
@@ -105,6 +105,27 @@ public interface TenderMapper {
       @Param("awardedBidId") String awardedBidId,
       @Param("awardedAt") OffsetDateTime awardedAt,
       @Param("awardNoticeHtml") String awardNoticeHtml);
+
+  @Update("""
+      update tenders set status = #{status}, failed_at = #{failedAt}, failure_reason = #{failureReason},
+        updated_at = now()
+      where tenant_id = #{tenantId} and id = #{id}
+      """)
+  int markFailed(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("status") String status,
+      @Param("failedAt") OffsetDateTime failedAt,
+      @Param("failureReason") String failureReason);
+
+  @Update("""
+      update tenders set rebid_of_tender_id = #{rebidOfTenderId}, updated_at = now()
+      where tenant_id = #{tenantId} and id = #{id}
+      """)
+  int markRebidOf(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("rebidOfTenderId") String rebidOfTenderId);
 
   @Select("select count(1) from tenders where tenant_id = #{tenantId} and tender_no like #{prefix} || '%'")
   int countByTenantAndNoPrefix(@Param("tenantId") String tenantId, @Param("prefix") String prefix);

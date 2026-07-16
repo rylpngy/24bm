@@ -16,7 +16,7 @@ class TenderPolicyTests {
       OffsetDateTime acq, OffsetDateTime sub, OffsetDateTime open) {
     return new Tender("tender-1", "tenant-1", "ZB20260716001", "测试招标", type,
         BigDecimal.valueOf(100000), status, doc, "综合评分法", null,
-        acq, sub, open, "user-1", null, OffsetDateTime.now(), OffsetDateTime.now(), null, null, null, null);
+        acq, sub, open, "user-1", null, OffsetDateTime.now(), OffsetDateTime.now(), null, null, null, null, null, null, null);
   }
 
   @Test
@@ -175,5 +175,26 @@ class TenderPolicyTests {
         .hasMessageContaining("已解封的有效投标");
     assertThatThrownBy(() -> TenderPolicy.requireAwardable(evaluating, openedBid, " "))
         .hasMessageContaining("通知书正文");
+  }
+
+  // ── C-6 流标与重新招标 ───────────────────────────────────────
+  @Test
+  void failureOnlyAfterOpeningBeforeAwardWithReason() {
+    var now = OffsetDateTime.now();
+    assertThatCode(() -> TenderPolicy.requireFailable(
+        tender("公开招标", "已开标", "<p>x</p>", now, now, now), "无有效投标")).doesNotThrowAnyException();
+    assertThatCode(() -> TenderPolicy.requireFailable(
+        tender("公开招标", "评标中", "<p>x</p>", now, now, now), "评审全部不合格")).doesNotThrowAnyException();
+    assertThatThrownBy(() -> TenderPolicy.requireFailable(
+        tender("公开招标", "发售中", "<p>x</p>", now, now, now), "r")).hasMessageContaining("开标后、定标前");
+    assertThatThrownBy(() -> TenderPolicy.requireFailable(
+        tender("公开招标", "已定标", "<p>x</p>", now, now, now), "r")).hasMessageContaining("开标后、定标前");
+    assertThatThrownBy(() -> TenderPolicy.requireFailable(
+        tender("公开招标", "已开标", "<p>x</p>", now, now, now), " ")).hasMessageContaining("流标原因");
+
+    assertThatCode(() -> TenderPolicy.requireRebiddable(
+        tender("公开招标", "已流标", "<p>x</p>", now, now, now))).doesNotThrowAnyException();
+    assertThatThrownBy(() -> TenderPolicy.requireRebiddable(
+        tender("公开招标", "已开标", "<p>x</p>", now, now, now))).hasMessageContaining("仅已流标");
   }
 }

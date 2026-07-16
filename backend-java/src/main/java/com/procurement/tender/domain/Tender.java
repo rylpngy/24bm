@@ -24,5 +24,8 @@ public record Tender(
     OffsetDateTime openedAt,
     String awardedBidId,
     OffsetDateTime awardedAt,
-    String awardNoticeHtml) {
+    String awardNoticeHtml,
+    OffsetDateTime failedAt,
+    String failureReason,
+    String rebidOfTenderId) {
 }

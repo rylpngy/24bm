@@ -6,6 +6,7 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
 import com.procurement.tender.api.AwardTenderRequest;
 import com.procurement.tender.api.DistributeTenderRequest;
+import com.procurement.tender.api.FailTenderRequest;
 import com.procurement.tender.api.FormCommitteeRequest;
 import com.procurement.tender.api.SaveTenderRequest;
 import com.procurement.tender.api.SubmitScoresRequest;
@@ -159,6 +160,44 @@ public class TenderApplicationService {
         tenantId, "开标唱标", tender.title() + " 已开标,投标报价与指纹核验结果已公示。");
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
+  // ── 买方:流标 + 重新招标(C-6) ─────────────────────────────
+  @Transactional
+  public TenderResponse failTender(String tenderId, FailTenderRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    Tender tender = requireTender(tenantId, tenderId);
+    TenderPolicy.requireFailable(tender, request.reason());
+    tenderMapper.markFailed(
+        tenantId, tenderId, TenderPolicy.STATUS_FAILED, OffsetDateTime.now(), request.reason().trim());
+    auditLogApplicationService.recordCurrentTenantAction(
+        "tender.failed", AUDIT_TARGET, tenderId, "宣布流标:" + request.reason().trim());
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId, "招标流标", tender.title() + " 已宣布流标,可复用要素重新招标。");
+    return toResponse(requireTender(tenantId, tenderId),
+        acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
+  // 重新招标:复制标的要素与招标文件正文新建「编制中」草稿(新编号);
+  // 时间节点不复制(须按新周期重设),发放/投标/评标记录不迁移(留在原流标项目备查)。
+  @Transactional
+  public TenderResponse rebidTender(String tenderId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    String userId = TenantAccessGuard.requireUserId("buyer tender APIs");
+    Tender origin = requireTender(tenantId, tenderId);
+    TenderPolicy.requireRebiddable(origin);
+    String id = "tender-" + UUID.randomUUID();
+    String prefix = "ZB" + LocalDate.now().format(NO_DATE);
+    String tenderNo = prefix
+        + String.format(Locale.ROOT, "%03d", tenderMapper.countByTenantAndNoPrefix(tenantId, prefix) + 1);
+    tenderMapper.insert(
+        id, tenantId, tenderNo, origin.title() + "(重招)", origin.tenderType(), origin.budget(),
+        TenderPolicy.STATUS_DRAFTING, origin.documentHtml(), origin.evaluationMethod(),
+        origin.bidBondAmount(), null, null, null, userId);
+    tenderMapper.markRebidOf(tenantId, id, origin.id());
+    auditLogApplicationService.recordCurrentTenantAction(
+        "tender.rebid", AUDIT_TARGET, id, "由流标项目「" + origin.title() + "」(" + origin.tenderNo() + ")重新招标");
+    return toResponse(requireTender(tenantId, id), List.of(), true);
   }
 
   // ── 买方:定标 + 中标通知书(C-5) ───────────────────────────
@@ -451,7 +490,8 @@ public class TenderApplicationService {
         acquisitions, bids, tender.openedAt(),
         // 评标过程对供应商不下发(定标结果按上方规则公示)。
         List.of(), List.of(), List.of(),
-        tender.awardedBidId(), tender.awardedAt(), isWinner ? tender.awardNoticeHtml() : null);
+        tender.awardedBidId(), tender.awardedAt(), isWinner ? tender.awardNoticeHtml() : null,
+        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId());
   }
 
   private TenderResponse toResponse(Tender tender, List<TenderAcquisition> acquisitions, boolean withNames) {
@@ -486,7 +526,8 @@ public class TenderApplicationService {
                 s.comment(), s.scoredAt()))
             .toList(),
         evaluationSummary(tender, evaluators, scores),
-        tender.awardedBidId(), tender.awardedAt(), tender.awardNoticeHtml());
+        tender.awardedBidId(), tender.awardedAt(), tender.awardNoticeHtml(),
+        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId());
   }
 
   // 评标汇总(实时计算):价格分=最低有效报价/本报价×100;

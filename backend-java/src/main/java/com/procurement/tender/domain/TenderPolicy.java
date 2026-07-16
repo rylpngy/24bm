@@ -18,6 +18,7 @@ public final class TenderPolicy {
   public static final String STATUS_OPENED = "已开标";
   public static final String STATUS_EVALUATING = "评标中";
   public static final String STATUS_AWARDED = "已定标";
+  public static final String STATUS_FAILED = "已流标";
 
   private TenderPolicy() {}
 
@@ -75,6 +76,23 @@ public final class TenderPolicy {
     }
     if (noticeHtml == null || noticeHtml.isBlank()) {
       throw new IllegalArgumentException("中标通知书正文不能为空: " + tender.id());
+    }
+  }
+
+  // 流标(C-6):开标后、定标前可宣布流标(无有效投标或评审全部不合格等),原因必填留痕。
+  public static void requireFailable(Tender tender, String reason) {
+    if (!STATUS_OPENED.equals(tender.status()) && !STATUS_EVALUATING.equals(tender.status())) {
+      throw new IllegalStateException("仅开标后、定标前的招标项目可宣布流标: " + tender.id());
+    }
+    if (reason == null || reason.isBlank()) {
+      throw new IllegalArgumentException("流标原因不能为空(留痕要求): " + tender.id());
+    }
+  }
+
+  // 重新招标:仅已流标项目可发起;复制标的要素与正文,新草稿时间节点须重新设定。
+  public static void requireRebiddable(Tender tender) {
+    if (!STATUS_FAILED.equals(tender.status())) {
+      throw new IllegalStateException("仅已流标的招标项目可重新招标: " + tender.id());
     }
   }
 

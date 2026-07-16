@@ -438,7 +438,9 @@ export function TenderProjectsPage() {
                 ))}
               </dl>
             </section>
-            <FeedbackNotice tone="info" message={t.awardedBidId
+            <FeedbackNotice tone="info" message={t.status === '已流标'
+              ? `本项目已流标(${t.failureReason ?? '原因见招标人公告'});如重新招标将另行发布,请留意新项目。`
+              : t.awardedBidId
               ? '本项目已定标:中标结果公示如左,中标人可查阅招标人签章的中标通知书。'
               : t.openedAt
                 ? '本项目已开标唱标:各家报价与指纹核验结果公示如左;评标与中标结果请留意后续通知。'

@@ -49,7 +49,7 @@ public interface TenderAcquisitionMapper {
       select t.id, t.tenant_id, t.tender_no, t.title, t.tender_type, t.budget, t.status,
              t.document_html, t.evaluation_method, t.bid_bond_amount, t.acquisition_deadline,
              t.submission_deadline, t.opening_at, t.owner_id, t.published_at, t.created_at, t.updated_at, t.opened_at,
-             t.awarded_bid_id, t.awarded_at, t.award_notice_html
+             t.awarded_bid_id, t.awarded_at, t.award_notice_html, t.failed_at, t.failure_reason, t.rebid_of_tender_id
       from tenders t
       join tender_acquisitions a on a.tenant_id = t.tenant_id and a.tender_id = t.id
       where a.supplier_id = #{supplierId}
@@ -62,7 +62,7 @@ public interface TenderAcquisitionMapper {
       select id, tenant_id, tender_no, title, tender_type, budget, status, document_html,
              evaluation_method, bid_bond_amount, acquisition_deadline, submission_deadline,
              opening_at, owner_id, published_at, created_at, updated_at, opened_at,
-             awarded_bid_id, awarded_at, award_notice_html
+             awarded_bid_id, awarded_at, award_notice_html, failed_at, failure_reason, rebid_of_tender_id
       from tenders
       where tender_type = '公开招标' and status = '发售中'
       order by created_at desc

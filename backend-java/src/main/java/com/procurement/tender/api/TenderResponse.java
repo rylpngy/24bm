@@ -34,5 +34,9 @@ public record TenderResponse(
     // C-5 定标:中标投标/时间公示双端;中标通知书正文仅买方与中标人可见。
     String awardedBidId,
     OffsetDateTime awardedAt,
-    String awardNoticeHtml) {
+    String awardNoticeHtml,
+    // C-6 流标留痕与重新招标溯源(双端可见)。
+    OffsetDateTime failedAt,
+    String failureReason,
+    String rebidOfTenderId) {
 }
