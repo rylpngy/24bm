@@ -11,6 +11,8 @@ import com.procurement.esign.domain.EsignRecord;
 import com.procurement.esign.infrastructure.EsignRecordMapper;
 import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.domain.Quote;
+import com.procurement.tender.application.TenderApplicationService;
+import com.procurement.tender.domain.TenderBid;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
@@ -30,16 +32,19 @@ public class EsignApplicationService {
   private final EsignRecordMapper esignRecordMapper;
   private final ContractApplicationService contractApplicationService;
   private final QuoteApplicationService quoteApplicationService;
+  private final TenderApplicationService tenderApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
 
   public EsignApplicationService(
       EsignRecordMapper esignRecordMapper,
       ContractApplicationService contractApplicationService,
       QuoteApplicationService quoteApplicationService,
+      TenderApplicationService tenderApplicationService,
       AuditLogApplicationService auditLogApplicationService) {
     this.esignRecordMapper = esignRecordMapper;
     this.contractApplicationService = contractApplicationService;
     this.quoteApplicationService = quoteApplicationService;
+    this.tenderApplicationService = tenderApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
   }
 
@@ -79,8 +84,11 @@ public class EsignApplicationService {
     String supplierId = TenantAccessGuard.requireSupplierId("esign APIs");
     String userId = TenantAccessGuard.requireUserId("esign APIs");
     requireSignature(request.signatureImage());
+    if ("tender-bid".equals(request.targetType())) {
+      return supplierSignTenderBid(request, supplierId, userId);
+    }
     if (!"quote".equals(request.targetType())) {
-      throw new IllegalArgumentException("供应商当前仅支持报价单电子签署: " + request.targetType());
+      throw new IllegalArgumentException("供应商当前仅支持报价单/投标函电子签署: " + request.targetType());
     }
     Quote quote = quoteApplicationService.findSupplierOwnQuote(request.targetId());
     String digest = sha256(
@@ -97,9 +105,30 @@ public class EsignApplicationService {
     return toResponse(record);
   }
 
+  // 投标函签署:绑定密封投标(内容指纹与投标密封凭证同源),开标后可核验。
+  private EsignRecordResponse supplierSignTenderBid(
+      CreateEsignRequest request, String supplierId, String userId) {
+    TenderBid bid = tenderApplicationService.findSupplierOwnBid(request.targetId());
+    String digest = sha256(
+        "tender-bid:" + bid.id() + "|tender:" + bid.tenderId() + "|supplier:" + bid.supplierId()
+            + "|sealedDigest:" + bid.contentDigest());
+    EsignRecord record = insert(
+        bid.tenantId(), "tender-bid", bid.id(), "SUPPLIER", userId,
+        request.signerName(), supplierId, digest, request.signatureImage(), request.remark());
+    auditLogApplicationService.recordTenantAction(
+        bid.tenantId(), "tender.bid_esigned", "tender", bid.tenderId(), "供应商投标函电子签署");
+    return toResponse(record);
+  }
+
   public List<EsignRecordResponse> listForSupplier(String targetType, String targetId) {
+    if ("tender-bid".equals(targetType)) {
+      TenderBid bid = tenderApplicationService.findSupplierOwnBid(targetId);
+      return esignRecordMapper.listByTarget(bid.tenantId(), "tender-bid", bid.id()).stream()
+          .map(this::toResponse)
+          .toList();
+    }
     if (!"quote".equals(targetType)) {
-      throw new IllegalArgumentException("供应商当前仅支持查询报价单签署记录: " + targetType);
+      throw new IllegalArgumentException("供应商当前仅支持查询报价单/投标函签署记录: " + targetType);
     }
     Quote quote = quoteApplicationService.findSupplierOwnQuote(targetId);
     return esignRecordMapper.listByTarget(quote.tenantId(), "quote", quote.id()).stream()

@@ -6,6 +6,7 @@
  * OpenAPI spec version: v1
  */
 import type { TenderAcquisitionResponse } from './tenderAcquisitionResponse';
+import type { TenderBidResponse } from './tenderBidResponse';
 
 export interface TenderResponse {
   id?: string;
@@ -24,4 +25,5 @@ export interface TenderResponse {
   publishedAt?: string;
   createdAt?: string;
   acquisitions?: TenderAcquisitionResponse[];
+  bids?: TenderBidResponse[];
 }

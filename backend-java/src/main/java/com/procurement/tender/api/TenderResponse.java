@@ -22,5 +22,7 @@ public record TenderResponse(
     OffsetDateTime publishedAt,
     OffsetDateTime createdAt,
     // 领取记录:买方视角全量;供应商视角仅本方一条。
-    List<TenderAcquisitionResponse> acquisitions) {
+    List<TenderAcquisitionResponse> acquisitions,
+    // 投标递交:买方开标前仅递交登记(内容封存);供应商仅本方完整视图。
+    List<TenderBidResponse> bids) {
 }

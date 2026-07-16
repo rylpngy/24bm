@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, FileBadge, Info } from 'lucide-react';
-import { useSupplierTenderAcquire, useSupplierTenderList, type TenderResponse } from '@24bid/api-client';
+import { ArrowLeft, FileBadge, Info, Lock, Undo2 } from 'lucide-react';
 import {
+  useSupplierEsignList,
+  useSupplierEsignSign,
+  useSupplierTenderAcquire,
+  useSupplierTenderList,
+  useSupplierTenderSubmitBid,
+  useSupplierTenderWithdrawBid,
+  type TenderResponse,
+} from '@24bid/api-client';
+import {
+  EsignRecordList,
   FeedbackNotice,
   FilterTabs,
   MiniFact,
@@ -10,11 +19,14 @@ import {
   Panel,
   PrimaryActionButton,
   ResponsiveTableFrame,
+  RichTextEditor,
   RichTextView,
   SearchInput,
+  SignaturePad,
   StatusPill,
   cn,
 } from '@24bid/ui';
+import { useAuthStore } from '../../lib/auth-store';
 import { currency, shortTime } from './shared';
 
 const PAGE_SIZE = 10;
@@ -37,7 +49,166 @@ const acqTone: Record<string, string> = {
   未领取: 'bg-slate-100 text-slate-500',
 };
 
-// 招标项目(供应商侧,Track C C-1):受邀发放 + 公开发售中的招标;领取文件后可阅读招标文件正文。
+// 投标函电子签署留痕(密封凭证配套)。
+function BidEsignRecords({ bidId }: { bidId: string }) {
+  const records = useSupplierEsignList({ targetType: 'tender-bid', targetId: bidId });
+  const list = records.data?.data ?? [];
+  if (list.length === 0) return null;
+  return <div className="mt-3"><EsignRecordList records={list} /></div>;
+}
+
+
+// C-2 投标递交区:报价+投标函(富文本)+手写签名(必签)→ 密封递交;
+// 已密封显示密封凭证(指纹/时间/签署留痕)与撤回;撤回后可在截止前重投(覆盖为新密封)。
+function BidSubmissionSection({
+  tender,
+  onFeedback,
+  onError,
+}: {
+  tender: TenderResponse;
+  onFeedback: (m: string) => void;
+  onError: (m: string | null) => void;
+}) {
+  const queryClient = useQueryClient();
+  const displayName = useAuthStore((st) => st.session?.displayName ?? '');
+  const submitBid = useSupplierTenderSubmitBid();
+  const withdrawBid = useSupplierTenderWithdrawBid();
+  const esign = useSupplierEsignSign();
+  const [amount, setAmount] = useState('');
+  const [doc, setDoc] = useState('');
+  const [signature, setSignature] = useState<string | null>(null);
+
+  const myBid = (tender.bids ?? [])[0];
+  const sealed = myBid?.sealedStatus === '已密封';
+  const deadlinePassed = tender.submissionDeadline
+    ? new Date(tender.submissionDeadline).getTime() <= Date.now()
+    : false;
+
+  const refresh = () =>
+    queryClient.invalidateQueries({
+      predicate: (q) =>
+        typeof q.queryKey[0] === 'string' && /\/supplier\/(tenders|esign-records)/.test(q.queryKey[0] as string),
+    });
+
+  const doSubmit = () => {
+    if (!tender.id) return;
+    onError(null);
+    submitBid.mutate(
+      { tenderId: tender.id, data: { bidAmount: Number(amount), documentHtml: doc } },
+      {
+        onSuccess: (res) => {
+          const bid = res.data;
+          if (signature && bid?.id) {
+            esign.mutate(
+              { data: { targetType: 'tender-bid', targetId: bid.id, signatureImage: signature, signerName: displayName } },
+              { onSettled: refresh },
+            );
+          }
+          onFeedback('投标已密封递交并完成电子签署。开标前招标人不可见内容,密封指纹已归档。');
+          setAmount('');
+          setDoc('');
+          setSignature(null);
+          refresh();
+        },
+        onError: (e) =>
+          onError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '递交失败,请稍后重试'),
+      },
+    );
+  };
+
+  const doWithdraw = () => {
+    if (!tender.id) return;
+    onError(null);
+    withdrawBid.mutate(
+      { tenderId: tender.id },
+      {
+        onSuccess: () => {
+          onFeedback('投标已撤回(留痕)。截止前可重新递交,重投将覆盖为新密封。');
+          refresh();
+        },
+        onError: (e) =>
+          onError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '撤回失败,请稍后重试'),
+      },
+    );
+  };
+
+  const canSubmit = Number(amount) > 0 && doc.trim().length > 0 && !!signature && !deadlinePassed;
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+          <Lock size={15} className="text-blue-600" /> 投标递交(加密密封)
+        </h3>
+        {myBid && (
+          <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
+            sealed ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500')}>
+            {myBid.sealedStatus}
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-[11px] font-bold text-slate-400">
+        递交即密封:开标前招标人不可见投标内容;递交时生成 SHA-256 密封指纹,开标后可核验未被篡改。
+      </p>
+
+      {sealed && myBid ? (
+        <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/40 p-4">
+          <p className="text-xs font-black text-emerald-800">本方投标已密封在案</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <MiniFact label="投标报价(仅本方可见)" value={currency(myBid.bidAmount)} />
+            <MiniFact label="递交时间" value={shortTime(myBid.submittedAt)} />
+            <MiniFact label="密封指纹" value={(myBid.contentDigest ?? '').slice(0, 16) + '…'} />
+          </div>
+          {myBid.id && <BidEsignRecords bidId={myBid.id} />}
+          {!deadlinePassed && (
+            <button type="button" onClick={doWithdraw} disabled={withdrawBid.isPending}
+              className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-4 text-xs font-black text-amber-700 hover:bg-amber-50 disabled:opacity-50">
+              <Undo2 size={14} /> {withdrawBid.isPending ? '撤回中…' : '撤回投标(截止前可重投)'}
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3">
+          {myBid?.sealedStatus === '已撤回' && (
+            <FeedbackNotice tone="info" message={`此前投标已于 ${shortTime(myBid.withdrawnAt)} 撤回;重新递交将覆盖为新密封。`} />
+          )}
+          {deadlinePassed ? (
+            <FeedbackNotice tone="info" message="投标递交已截止。" />
+          ) : (
+            <>
+              <label className="block sm:w-64">
+                <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>投标报价(元,含税)</span>
+                <input
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  type="number" min="0" value={amount} placeholder="0.00" aria-label="投标报价"
+                  onChange={(e) => setAmount(e.target.value)} />
+              </label>
+              <div>
+                <p className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>投标函正文</p>
+                <div className="mt-1">
+                  <RichTextEditor value={doc} onChange={setDoc} minHeight={180}
+                    placeholder="响应条款、报价说明、供货与服务承诺……(附件在上方招标附件区对照准备)" />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-black text-slate-500">
+                  <span className="mr-1 text-red-500">*</span>投标函电子签署(递交前须手写签名,与密封指纹绑定)
+                </p>
+                <SignaturePad className="mt-1.5" onChange={setSignature} />
+              </div>
+              <PrimaryActionButton onClick={doSubmit} busy={submitBid.isPending} pendingLabel="密封递交中"
+                disabled={!canSubmit}>
+                <Lock size={14} /> 签署并密封递交
+              </PrimaryActionButton>
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// 招标项目(供应商侧,Track C C-1/C-2):领取文件后阅读正文并加密递交投标。
 export function TenderProjectsPage() {
   const queryClient = useQueryClient();
   const tenders = useSupplierTenderList();
@@ -137,6 +308,11 @@ export function TenderProjectsPage() {
                 </div>
               )}
             </section>
+            {/* C-2 投标递交:领取后开放;递交即密封,开标前对招标人不可见 */}
+            {state === '已领取' && (
+              <BidSubmissionSection tender={t} onFeedback={setFeedback} onError={setError} />
+            )}
+
           </div>
 
           <div className="space-y-4">
@@ -159,7 +335,7 @@ export function TenderProjectsPage() {
                 ))}
               </dl>
             </section>
-            <FeedbackNotice tone="info" message="投标文件加密递交将在下一版本开放;当前阶段请完成文件领取与投标准备。" />
+            <FeedbackNotice tone="info" message="递交即密封:开标前招标人不可见投标内容;截止前可撤回并重投(重投覆盖为新密封)。" />
           </div>
         </div>
       </div>

@@ -66,4 +66,38 @@ class TenderPolicyTests {
         tender("公开招标", "发售中", "<p>x</p>", now.minusHours(1), now.plusDays(2), now.plusDays(3)), now))
         .hasMessageContaining("已截止");
   }
+
+  // ── C-2 投标递交规则 ─────────────────────────────────────────
+  @Test
+  void bidSubmissionRequiresOnSaleWindowAndAcquisition() {
+    var now = OffsetDateTime.now();
+    var onSale = tender("公开招标", "发售中", "<p>x</p>", now.plusDays(1), now.plusDays(2), now.plusDays(3));
+    assertThatCode(() -> com.procurement.tender.domain.TenderBidPolicy.requireSubmissionWindow(onSale, now))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderBidPolicy.requireSubmissionWindow(
+        tender("公开招标", "编制中", "<p>x</p>", now.plusDays(1), now.plusDays(2), now.plusDays(3)), now))
+        .hasMessageContaining("不在发售期");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderBidPolicy.requireSubmissionWindow(
+        tender("公开招标", "发售中", "<p>x</p>", now.minusDays(2), now.minusHours(1), now.plusDays(1)), now))
+        .hasMessageContaining("已截止");
+
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderBidPolicy.requireAcquired(null, "tender-1"))
+        .hasMessageContaining("须先领取招标文件");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderBidPolicy.requireAcquired(
+        new com.procurement.tender.domain.TenderAcquisition("a", "t", "tender-1", "s", "邀请发放", null, now), "tender-1"))
+        .hasMessageContaining("须先领取招标文件");
+    assertThatCode(() -> com.procurement.tender.domain.TenderBidPolicy.requireAcquired(
+        new com.procurement.tender.domain.TenderAcquisition("a", "t", "tender-1", "s", "公开领取", now, now), "tender-1"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void bidContentAndWithdrawGuards() {
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderBidPolicy.requireValidBid(
+        BigDecimal.ZERO, "<p>x</p>", "tender-1")).hasMessageContaining("正数");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderBidPolicy.requireValidBid(
+        BigDecimal.ONE, " ", "tender-1")).hasMessageContaining("投标函正文");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderBidPolicy.requireSealed(null, "tender-1"))
+        .hasMessageContaining("无密封在案");
+  }
 }

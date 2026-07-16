@@ -26,17 +26,134 @@ import type {
 
 import type {
   ApiResponseListTenderResponse,
+  ApiResponseTenderBidResponse,
   ApiResponseTenderResponse,
-  ApiResponseVoid
+  ApiResponseVoid,
+  SubmitTenderBidRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
-import type { ErrorType } from '../../http-client';
+import type { ErrorType , BodyType } from '../../http-client';
 
 
 
 
-export const supplierTenderAcquire = (
+export const supplierTenderSubmitBid = (
+    tenderId: string,
+    submitTenderBidRequest: BodyType<SubmitTenderBidRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseTenderBidResponse>(
+      {url: `/api/v1/supplier/tenders/${tenderId}/bids`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: submitTenderBidRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierTenderSubmitBidMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierTenderSubmitBid>>, TError,{tenderId: string;data: BodyType<SubmitTenderBidRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierTenderSubmitBid>>, TError,{tenderId: string;data: BodyType<SubmitTenderBidRequest>}, TContext> => {
+
+const mutationKey = ['supplierTenderSubmitBid'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierTenderSubmitBid>>, {tenderId: string;data: BodyType<SubmitTenderBidRequest>}> = (props) => {
+          const {tenderId,data} = props ?? {};
+
+          return  supplierTenderSubmitBid(tenderId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierTenderSubmitBidMutationResult = NonNullable<Awaited<ReturnType<typeof supplierTenderSubmitBid>>>
+    export type SupplierTenderSubmitBidMutationBody = BodyType<SubmitTenderBidRequest>
+    export type SupplierTenderSubmitBidMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierTenderSubmitBid = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierTenderSubmitBid>>, TError,{tenderId: string;data: BodyType<SubmitTenderBidRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierTenderSubmitBid>>,
+        TError,
+        {tenderId: string;data: BodyType<SubmitTenderBidRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierTenderSubmitBidMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierTenderWithdrawBid = (
+    tenderId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseTenderBidResponse>(
+      {url: `/api/v1/supplier/tenders/${tenderId}/bids/withdraw`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierTenderWithdrawBidMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierTenderWithdrawBid>>, TError,{tenderId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierTenderWithdrawBid>>, TError,{tenderId: string}, TContext> => {
+
+const mutationKey = ['supplierTenderWithdrawBid'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierTenderWithdrawBid>>, {tenderId: string}> = (props) => {
+          const {tenderId} = props ?? {};
+
+          return  supplierTenderWithdrawBid(tenderId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierTenderWithdrawBidMutationResult = NonNullable<Awaited<ReturnType<typeof supplierTenderWithdrawBid>>>
+    
+    export type SupplierTenderWithdrawBidMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierTenderWithdrawBid = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierTenderWithdrawBid>>, TError,{tenderId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierTenderWithdrawBid>>,
+        TError,
+        {tenderId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierTenderWithdrawBidMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierTenderAcquire = (
     tenderId: string,
  signal?: AbortSignal
 ) => {

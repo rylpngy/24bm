@@ -7,11 +7,16 @@ import com.procurement.supplier.application.SupplierProfileApplicationService;
 import com.procurement.tender.api.DistributeTenderRequest;
 import com.procurement.tender.api.SaveTenderRequest;
 import com.procurement.tender.api.TenderAcquisitionResponse;
+import com.procurement.tender.api.SubmitTenderBidRequest;
+import com.procurement.tender.api.TenderBidResponse;
 import com.procurement.tender.api.TenderResponse;
 import com.procurement.tender.domain.Tender;
 import com.procurement.tender.domain.TenderAcquisition;
+import com.procurement.tender.domain.TenderBid;
+import com.procurement.tender.domain.TenderBidPolicy;
 import com.procurement.tender.domain.TenderPolicy;
 import com.procurement.tender.infrastructure.TenderAcquisitionMapper;
+import com.procurement.tender.infrastructure.TenderBidMapper;
 import com.procurement.tender.infrastructure.TenderMapper;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -33,6 +38,7 @@ public class TenderApplicationService {
 
   private final TenderMapper tenderMapper;
   private final TenderAcquisitionMapper acquisitionMapper;
+  private final TenderBidMapper bidMapper;
   private final SupplierProfileApplicationService supplierProfileApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -40,11 +46,13 @@ public class TenderApplicationService {
   public TenderApplicationService(
       TenderMapper tenderMapper,
       TenderAcquisitionMapper acquisitionMapper,
+      TenderBidMapper bidMapper,
       SupplierProfileApplicationService supplierProfileApplicationService,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService) {
     this.tenderMapper = tenderMapper;
     this.acquisitionMapper = acquisitionMapper;
+    this.bidMapper = bidMapper;
     this.supplierProfileApplicationService = supplierProfileApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -163,6 +171,88 @@ public class TenderApplicationService {
             .orElse(null));
   }
 
+  // ── 供应商:投标递交(密封)/ 撤回 ─────────────────────────────
+  @Transactional
+  public TenderBidResponse submitBid(String tenderId, SubmitTenderBidRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier tender APIs");
+    Tender tender = findTenderForSupplier(tenderId, supplierId);
+    OffsetDateTime now = OffsetDateTime.now();
+    TenderBidPolicy.requireSubmissionWindow(tender, now);
+    TenderBidPolicy.requireAcquired(myAcquisition(tenderId, supplierId), tenderId);
+    TenderBidPolicy.requireValidBid(request.bidAmount(), request.documentHtml(), tenderId);
+    String digest = sha256(
+        "tender-bid|tender:" + tenderId + "|supplier:" + supplierId
+            + "|amount:" + request.bidAmount() + "|doc:" + request.documentHtml());
+    bidMapper.upsert(
+        "tbid-" + UUID.randomUUID(), tender.tenantId(), tenderId, supplierId,
+        request.bidAmount(), request.documentHtml(), digest, now);
+    auditLogApplicationService.recordTenantAction(
+        tender.tenantId(), "tender.bid_submitted", AUDIT_TARGET, tenderId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        tender.tenantId(), "收到密封投标", tender.title() + " 收到一份密封投标(开标前内容不可见)。");
+    return supplierBidView(myBid(tenderId, supplierId));
+  }
+
+  @Transactional
+  public TenderBidResponse withdrawBid(String tenderId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier tender APIs");
+    Tender tender = findTenderForSupplier(tenderId, supplierId);
+    OffsetDateTime now = OffsetDateTime.now();
+    TenderBidPolicy.requireSubmissionWindow(tender, now);
+    TenderBidPolicy.requireSealed(myBid(tenderId, supplierId), tenderId);
+    bidMapper.withdraw(tender.tenantId(), tenderId, supplierId, now);
+    auditLogApplicationService.recordTenantAction(
+        tender.tenantId(), "tender.bid_withdrawn", AUDIT_TARGET, tenderId);
+    return supplierBidView(myBid(tenderId, supplierId));
+  }
+
+  // 电子签署入口:取本方投标(esign 计算内容指纹用),非本方或不存在即抛错。
+  public TenderBid findSupplierOwnBid(String bidId) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier tender APIs");
+    return bidMapper.listBySupplier(supplierId).stream()
+        .filter(b -> b.id().equals(bidId))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Tender bid not found for supplier: " + bidId));
+  }
+
+  private TenderBid myBid(String tenderId, String supplierId) {
+    return bidMapper.listBySupplier(supplierId).stream()
+        .filter(b -> b.tenderId().equals(tenderId))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private TenderAcquisition myAcquisition(String tenderId, String supplierId) {
+    return acquisitionMapper.listBySupplier(supplierId).stream()
+        .filter(a -> a.tenderId().equals(tenderId))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private TenderBidResponse supplierBidView(TenderBid bid) {
+    if (bid == null) return null;
+    return new TenderBidResponse(
+        bid.id(), bid.tenderId(), bid.supplierId(), null, bid.bidAmount(), bid.documentHtml(),
+        bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt());
+  }
+
+  // 买方封存视图:开标(C-3)前只回递交登记——供应商名/时间/密封状态/指纹,金额与正文置空。
+  private TenderBidResponse sealedBidView(TenderBid bid) {
+    return new TenderBidResponse(
+        bid.id(), bid.tenderId(), bid.supplierId(),
+        supplierProfileApplicationService.findSupplierDisplayName(bid.supplierId()),
+        null, null, bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt());
+  }
+
+  private static String sha256(String content) {
+    try {
+      var md = java.security.MessageDigest.getInstance("SHA-256");
+      return java.util.HexFormat.of().formatHex(md.digest(content.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    } catch (Exception e) {
+      throw new IllegalStateException("Content digest failed", e);
+    }
+  }
+
   private Tender findTenderForSupplier(String tenderId, String supplierId) {
     return acquisitionMapper.listTendersBySupplier(supplierId).stream()
         .filter(t -> t.id().equals(tenderId))
@@ -185,7 +275,10 @@ public class TenderApplicationService {
         tender.budget(), tender.status(), acquired ? tender.documentHtml() : null,
         tender.evaluationMethod(), tender.bidBondAmount(), tender.acquisitionDeadline(),
         tender.submissionDeadline(), tender.openingAt(), tender.publishedAt(), tender.createdAt(),
-        acquisitions);
+        acquisitions,
+        java.util.stream.Stream.of(supplierBidView(myBid(tender.id(), mine == null ? "" : mine.supplierId())))
+            .filter(java.util.Objects::nonNull)
+            .toList());
   }
 
   private TenderResponse toResponse(Tender tender, List<TenderAcquisition> acquisitions, boolean withNames) {
@@ -200,6 +293,9 @@ public class TenderApplicationService {
                 withNames ? supplierProfileApplicationService.findSupplierDisplayName(a.supplierId()) : null,
                 a.source(),
                 a.acquiredAt()))
+            .toList(),
+        bidMapper.listByTender(tender.tenantId(), tender.id()).stream()
+            .map(this::sealedBidView)
             .toList());
   }
 

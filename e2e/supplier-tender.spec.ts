@@ -43,3 +43,41 @@ test('招标项目:公开招标自助领取 → 正文解锁', async ({ page, re
   await expect(page.getByText(/招标文件已领取/)).toBeVisible();
   await expect(page.getByText(/E2E 公开招标正文:领取后可见/)).toBeVisible();
 });
+
+// C-2 行为级:领取 → 密封递交(签名必签)→ 密封凭证 → 撤回 → 重投覆盖为新密封。
+test('投标加密递交:签署密封 → 凭证 → 撤回重投', async ({ page, request }) => {
+  const title = await seedOpenTender(request);
+
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /招标项目/);
+  await openModule(page, /招标项目/);
+  const row = page.locator('table tr', { hasText: title }).first();
+  await row.getByRole('button', { name: '领取文件' }).click();
+  await expect(page.getByText(/招标文件已领取/)).toBeVisible();
+  await row.getByRole('button', { name: '查看招标' }).click();
+  await expect(page.getByText('投标递交(加密密封)')).toBeVisible();
+
+  const submit = page.getByRole('button', { name: /签署并密封递交/ });
+  await expect(submit).toBeDisabled();
+  await page.locator('input[aria-label="投标报价"]').fill('188000');
+  await page.locator('[contenteditable="true"]').last().click();
+  await page.keyboard.type('E2E 投标函:全面响应招标文件条款。');
+  await expect(submit).toBeDisabled(); // 未签名仍禁用
+  const canvas = page.getByTestId('signature-canvas');
+  await canvas.scrollIntoViewIfNeeded();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('canvas missing');
+  await page.mouse.move(box.x + 40, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 150, box.y + box.height / 2 - 12, { steps: 8 });
+  await page.mouse.up();
+  await expect(submit).toBeEnabled();
+  await submit.click();
+
+  await expect(page.getByText('本方投标已密封在案')).toBeVisible();
+  await expect(page.getByText('密封指纹', { exact: true })).toBeVisible();
+  // 撤回 → 重投窗口开放
+  await page.getByRole('button', { name: /撤回投标/ }).click();
+  await expect(page.getByText(/此前投标已于/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /签署并密封递交/ })).toBeVisible();
+});
