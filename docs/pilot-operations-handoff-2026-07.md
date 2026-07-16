@@ -9,10 +9,10 @@ This document is the handoff ledger for the remaining Track A productionization 
 
 | Severity | Route | Owner role | Primary channel | Escalation window | Evidence location | Status |
 |---|---|---|---|---|---|---|
-| Critical | `BackendInstanceDown` | Platform on-call | Fill in production receiver outside repo | 15 minutes | Link to incident platform / Alertmanager receiver config | Pending environment binding |
-| Warning | `HighHttp5xxRate` | Backend owner | Fill in production receiver outside repo | 30 minutes | Link to incident platform / Alertmanager receiver config | Pending environment binding |
-| Warning | `HighRequestLatencyP95` | Backend owner | Fill in production receiver outside repo | 30 minutes | Link to incident platform / Alertmanager receiver config | Pending environment binding |
-| Warning | `HighJvmHeapUsage` | Backend owner | Fill in production receiver outside repo | 30 minutes | Link to incident platform / Alertmanager receiver config | Pending environment binding |
+| Critical | `BackendInstanceDown` | Platform on-call | Email 408167116@qq.com(alertmanager.yml pilot-oncall-mail) | 15 minutes | infra/observability/alertmanager.yml + 2026-07-16 合成告警 PilotSyntheticTest 路由投递日志 | Bound 2026-07-16;待填 SMTP 授权码后邮件闭环 |
+| Warning | `HighHttp5xxRate` | Backend owner | Email 408167116@qq.com(同一 receiver) | 30 minutes | 同上 | Bound 2026-07-16;待填 SMTP 授权码后邮件闭环 |
+| Warning | `HighRequestLatencyP95` | Backend owner | Email 408167116@qq.com(同一 receiver) | 30 minutes | 同上 | Bound 2026-07-16;待填 SMTP 授权码后邮件闭环 |
+| Warning | `HighJvmHeapUsage` | Backend owner | Email 408167116@qq.com(同一 receiver) | 30 minutes | 同上 | Bound 2026-07-16;待填 SMTP 授权码后邮件闭环 |
 
 Acceptance criteria:
 

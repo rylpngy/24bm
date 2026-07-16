@@ -163,6 +163,8 @@ services:
     profiles: ["observability"]
     volumes:
       - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      # SMTP 授权码(单行文件,不入库):infra/observability/secrets/smtp_password
+      - ./observability/secrets:/etc/alertmanager/secrets:ro
       - 24bid-alertmanager-data:/alertmanager
     ports:
       - "9093:9093"

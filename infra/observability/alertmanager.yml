@@ -1,11 +1,17 @@
-# Alertmanager 示例配置。
-# 本地默认把告警投递到 host.docker.internal:9094,可用任意 webhook receiver 临时接收。
-# 生产环境请替换为企业邮件、钉钉/企微 adapter 或内部值班平台地址,不要提交真实 webhook 密钥。
+# Alertmanager 配置:试点告警通过邮件送达值班接收人。
+# SMTP 授权码不入库:放在 infra/observability/secrets/smtp_password(单行,已 gitignore),
+# compose 只读挂载到容器内 /etc/alertmanager/secrets/smtp_password。
+# QQ 邮箱需在邮箱设置中开启 SMTP 并生成「授权码」(非登录密码)。
 global:
   resolve_timeout: 5m
+  smtp_smarthost: smtp.qq.com:465
+  smtp_from: 408167116@qq.com
+  smtp_auth_username: 408167116@qq.com
+  smtp_auth_password_file: /etc/alertmanager/secrets/smtp_password
+  smtp_require_tls: false   # 465 为 SMTPS(隐式 TLS)
 
 route:
-  receiver: local-webhook
+  receiver: pilot-oncall-mail
   group_by: ['alertname', 'severity']
   group_wait: 30s
   group_interval: 5m
@@ -13,16 +19,13 @@ route:
   routes:
     - matchers:
         - severity="critical"
-      receiver: oncall-webhook
+      receiver: pilot-oncall-mail
       repeat_interval: 1h
 
 receivers:
-  - name: local-webhook
-    webhook_configs:
-      - url: http://host.docker.internal:9094/alertmanager/local
+  - name: pilot-oncall-mail
+    email_configs:
+      - to: 408167116@qq.com
         send_resolved: true
-
-  - name: oncall-webhook
-    webhook_configs:
-      - url: http://host.docker.internal:9094/alertmanager/oncall
-        send_resolved: true
+        headers:
+          Subject: '【24Bid 试点告警】{{ .CommonLabels.alertname }} ({{ .CommonLabels.severity }})'
