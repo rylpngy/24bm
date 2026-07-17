@@ -211,7 +211,13 @@ test('商机大厅:公开列表 + 详情 + 报名参与', async ({ page }) => {
   await expect(page.getByRole('button', { name: '搜索' })).toBeVisible();
   await expect(page.getByText('物资分类:')).toBeVisible();
   await expect(page.getByText('预算金额').first()).toBeVisible();
-  // 进入一个报名期内的商机详情。
+  // 进入一个报名期内的商机详情(分页后目标可能不在第一页,最多翻 8 页查找)。
+  for (let i = 0; i < 8; i++) {
+    if (await page.locator('main').getByText('报名与报价中').first().isVisible({ timeout: 1500 }).catch(() => false)) break;
+    const next = page.getByRole('button', { name: '下一页' });
+    if (!(await next.isEnabled().catch(() => false))) break;
+    await next.click();
+  }
   await page.locator('main').getByText('报名与报价中').first().click();
   await expect(page.getByText('返回大厅')).toBeVisible();
   await expect(page.getByText('1. 采购内容与报价要求')).toBeVisible();

@@ -348,14 +348,20 @@ public class TenderApplicationService {
     var mineByTender = new java.util.HashMap<String, TenderAcquisition>();
     mine.forEach(a -> mineByTender.put(a.tenderId(), a));
 
-    var result = new java.util.LinkedHashMap<String, TenderResponse>();
+    // 受邀/已领取 ∪ 公开发售,去重后统一按发布时间倒序——新发售的公开招标不被
+    // 本方存量记录挤到后页(供应商第一眼应看到最新商机)。
+    var merged = new java.util.LinkedHashMap<String, Tender>();
     for (Tender t : acquisitionMapper.listTendersBySupplier(supplierId)) {
-      result.put(t.id(), supplierView(t, mineByTender.get(t.id())));
+      merged.put(t.id(), t);
     }
     for (Tender t : acquisitionMapper.listOpenOnSale()) {
-      result.putIfAbsent(t.id(), supplierView(t, mineByTender.get(t.id())));
+      merged.putIfAbsent(t.id(), t);
     }
-    return List.copyOf(result.values());
+    return merged.values().stream()
+        .sorted(java.util.Comparator.comparing(
+            Tender::createdAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+        .map(t -> supplierView(t, mineByTender.get(t.id())))
+        .toList();
   }
 
   @Transactional

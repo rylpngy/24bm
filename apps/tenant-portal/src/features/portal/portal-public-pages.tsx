@@ -13,7 +13,7 @@ import {
   type PublicProcurementAnnouncementResponse,
   usePublicPortalListSuppliers,
 } from '@24bid/api-client';
-import { FeedbackNotice, FilterTabs, RichTextView, cn, richTextToPlain } from '@24bid/ui';
+import { FeedbackNotice, FilterTabs, Pagination, RichTextView, cn, richTextToPlain } from '@24bid/ui';
 
 const AUDIENCE_LABELS: Record<string, string> = { all: '全部用户', buyer: '采购方', supplier: '供应商' };
 const AUDIENCE_TONE: Record<string, string> = {
@@ -295,6 +295,8 @@ export function PortalAnnouncementsPage({ embedded = false }: { embedded?: boole
   const [keyword, setKeyword] = useState('');
   const [selected, setSelected] = useState<PublicAnnouncementResponse | null>(null);
   const [selectedProc, setSelectedProc] = useState<PublicProcurementAnnouncementResponse | null>(null);
+  const [annPage, setAnnPage] = useState(1);
+  const ANN_PAGE_SIZE = 10;
 
   const list = announcements.data?.data ?? [];
   const filtered = list.filter((a) => {
@@ -341,7 +343,7 @@ export function PortalAnnouncementsPage({ embedded = false }: { embedded?: boole
             <button
               key={id}
               type="button"
-              onClick={() => setTab(id)}
+              onClick={() => { setTab(id); setAnnPage(1); }}
               className={cn(
                 'rounded-md px-4 py-2 text-sm font-black transition',
                 tab === id ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50',
@@ -368,55 +370,67 @@ export function PortalAnnouncementsPage({ embedded = false }: { embedded?: boole
         ) : procList.length === 0 ? (
           <FeedbackNotice tone="info" message={keyword ? '没有符合条件的采购公告。' : '暂无采购公告。采购人发布询价/定标后自动生成并公示在此。'} />
         ) : (
+          <>
           <div className="space-y-3">
-            {procList.map((a) => (
+            {procList.slice((annPage - 1) * ANN_PAGE_SIZE, annPage * ANN_PAGE_SIZE).map((a) => (
               <button
                 key={a.id}
                 type="button"
                 onClick={() => setSelectedProc(a)}
-                className="w-full rounded-lg border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50/20"
+                className={cn('w-full rounded-xl border-l-4 border border-slate-200 bg-white px-6 py-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md',
+                  a.type === '定标公告' ? 'border-l-emerald-400' : a.type === '终止公告' ? 'border-l-red-300' : a.type === '变更公告' ? 'border-l-amber-300' : 'border-l-blue-400')}
               >
                 <div className="flex flex-wrap items-center gap-3">
                   <span className={cn('shrink-0 rounded-md px-2.5 py-1 text-xs font-black', PROC_ANN_TONE[a.type ?? ''] ?? 'bg-slate-100 text-slate-600')}>
                     {a.type}
                   </span>
-                  <p className="min-w-0 flex-1 truncate text-base font-black text-slate-950">{a.title}</p>
-                  <span className="shrink-0 text-xs font-bold text-slate-500">{a.buyerName}</span>
-                  <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-slate-400">
-                    <CalendarDays size={14} /> {dateText(a.publishedAt)}
-                  </span>
+                  {a.method && <span className="shrink-0 rounded-md bg-violet-50 px-2 py-1 text-[11px] font-black text-violet-600">{a.method}</span>}
+                  <p className="min-w-0 flex-1 truncate text-lg font-black leading-snug text-slate-950">{a.title}</p>
                 </div>
-                <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-slate-500">{a.summary}</p>
+                <p className="mt-2.5 line-clamp-2 text-[13px] font-semibold leading-6 text-slate-500">{a.summary}</p>
+                <p className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-slate-50 pt-3 text-xs font-bold text-slate-400">
+                  <span className="inline-flex items-center gap-1.5"><Users size={13} />{a.buyerName}</span>
+                  <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} />发布于 {dateText(a.publishedAt)}</span>
+                </p>
               </button>
             ))}
           </div>
+          <div className="mt-4">
+            <Pagination page={annPage} pageSize={ANN_PAGE_SIZE} total={procList.length} onPageChange={setAnnPage} />
+          </div>
+          </>
         )
       ) : announcements.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载平台公告…" />
       ) : filtered.length === 0 ? (
         <FeedbackNotice tone="info" message={keyword ? '没有符合条件的公告。' : '暂无生效公告。'} />
       ) : (
+        <>
         <div className="space-y-3">
-          {filtered.map((a) => (
+          {filtered.slice((annPage - 1) * ANN_PAGE_SIZE, annPage * ANN_PAGE_SIZE).map((a) => (
             <button
               key={a.id}
               type="button"
               onClick={() => setSelected(a)}
-              className="w-full rounded-lg border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50/20"
+              className="w-full rounded-xl border-l-4 border-l-violet-400 border border-slate-200 bg-white px-6 py-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
             >
               <div className="flex flex-wrap items-center gap-3">
                 <span className={cn('rounded-md px-2.5 py-1 text-xs font-black', AUDIENCE_TONE[a.audience ?? ''] ?? 'bg-slate-100 text-slate-600')}>
                   {AUDIENCE_LABELS[a.audience ?? ''] ?? a.audience}
                 </span>
-                <p className="min-w-0 flex-1 truncate text-base font-black text-slate-950">{a.title}</p>
-                <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-slate-400">
-                  <CalendarDays size={14} /> {dateText(a.createdAt)}
-                </span>
+                <p className="min-w-0 flex-1 truncate text-lg font-black leading-snug text-slate-950">{a.title}</p>
               </div>
-              <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-slate-500">{richTextToPlain(a.content ?? '')}</p>
+              <p className="mt-2.5 line-clamp-2 text-[13px] font-semibold leading-6 text-slate-500">{richTextToPlain(a.content ?? '')}</p>
+              <p className="mt-3 flex items-center gap-1.5 border-t border-slate-50 pt-3 text-xs font-bold text-slate-400">
+                <CalendarDays size={13} /> 发布于 {dateText(a.createdAt)}
+              </p>
             </button>
           ))}
         </div>
+        <div className="mt-4">
+          <Pagination page={annPage} pageSize={ANN_PAGE_SIZE} total={filtered.length} onPageChange={setAnnPage} />
+        </div>
+        </>
       )}
     </>
   );
@@ -651,6 +665,8 @@ export function PortalOpportunitiesPage({ initialTab }: { initialTab?: string } 
   const [methodFilter, setMethodFilter] = useState(initialTab ?? 'all');
   const [categoryFilter, setCategoryFilter] = useState('全部');
   const [selected, setSelected] = useState<PublicOpportunityResponse | null>(null);
+  const [oppPage, setOppPage] = useState(1);
+  const OPP_PAGE_SIZE = 10;
 
   const list = opportunities.data?.data ?? [];
   const methods = Array.from(new Set(list.map((o) => o.method).filter(Boolean) as string[]));
@@ -687,7 +703,7 @@ export function PortalOpportunitiesPage({ initialTab }: { initialTab?: string } 
               { id: 'ann', label: '公告中心' },
             ]}
             value={methodFilter}
-            onChange={setMethodFilter}
+            onChange={(id) => { setMethodFilter(id); setOppPage(1); }}
           />
         </div>
         {methodFilter !== 'ann' && (<>
@@ -696,6 +712,7 @@ export function PortalOpportunitiesPage({ initialTab }: { initialTab?: string } 
           onSubmit={(e) => {
             e.preventDefault();
             setKeyword(searchDraft);
+            setOppPage(1);
           }}
         >
           <div className="relative flex-1">
@@ -720,7 +737,7 @@ export function PortalOpportunitiesPage({ initialTab }: { initialTab?: string } 
             <button
               key={c}
               type="button"
-              onClick={() => setCategoryFilter(c)}
+              onClick={() => { setCategoryFilter(c); setOppPage(1); }}
               className={cn(
                 'h-8 rounded-md border px-3 text-xs font-black transition',
                 c === categoryFilter
@@ -746,41 +763,47 @@ export function PortalOpportunitiesPage({ initialTab }: { initialTab?: string } 
         ) : filtered.length === 0 ? (
           <FeedbackNotice tone="info" message={keyword || methodFilter !== 'all' || categoryFilter !== '全部' ? '没有符合条件的商机。' : '暂无公开商机,采购人发布项目后展示在此。'} />
         ) : (
-          <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
-            {filtered.map((o) => (
+          <>
+          <div className="space-y-3">
+            {filtered.slice((oppPage - 1) * OPP_PAGE_SIZE, oppPage * OPP_PAGE_SIZE).map((o) => (
               <button
                 key={o.id}
                 type="button"
                 onClick={() => setSelected(o)}
-                className="flex w-full items-center gap-4 px-5 py-5 text-left transition hover:bg-blue-50/30"
+                className={cn('flex w-full items-center gap-5 rounded-xl border-l-4 border border-slate-200 bg-white px-6 py-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md',
+                  o.method === '招标' ? 'border-l-blue-500' : o.method === '竞价' ? 'border-l-amber-400' : 'border-l-emerald-400')}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <span className={cn('shrink-0 rounded-md px-2 py-1 text-[11px] font-black', OPPORTUNITY_STATUS_TONE[o.status ?? ''] ?? 'bg-slate-100 text-slate-600')}>
+                    <span className={cn('shrink-0 rounded-md px-2.5 py-1 text-xs font-black', OPPORTUNITY_STATUS_TONE[o.status ?? ''] ?? 'bg-slate-100 text-slate-600')}>
                       {opportunityStatusLabel(o)}
                     </span>
-                    <span className="shrink-0 rounded-md bg-violet-50 px-2 py-1 text-[11px] font-black text-violet-600">{o.method}采购</span>
-                    <p className="min-w-0 truncate text-base font-black text-slate-950">{o.title}</p>
+                    <span className="shrink-0 rounded-md bg-violet-50 px-2.5 py-1 text-xs font-black text-violet-600">{o.method}采购</span>
                   </div>
-                  <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold text-slate-400">
+                  <p className="mt-2.5 truncate text-xl font-black leading-snug text-slate-950">{o.title}</p>
+                  <p className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-slate-50 pt-3 text-xs font-bold text-slate-400">
                     <span className="inline-flex items-center gap-1.5"><Users size={13} />{o.buyerName}</span>
                     {o.categories && <span>{o.categories}</span>}
                     <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} />发布于 {dateText(o.createdAt)}</span>
                     {(o.status === '报价中' || o.status === '发售中') && <span className="font-black text-amber-600">{deadlineText(o.deadlineAt)}</span>}
                   </p>
                 </div>
-                <div className="shrink-0 text-right">
+                <div className="shrink-0 border-l border-slate-100 pl-5 text-right">
                   <p className="text-[11px] font-black text-slate-400">预算金额</p>
-                  <p className="mt-0.5 font-mono text-lg font-black text-slate-950">
+                  <p className="mt-1 font-mono text-2xl font-black tracking-tight text-slate-950">
                     {(o.budget ?? 0) > 0 ? `¥${Math.round((o.budget ?? 0) / 10000).toLocaleString('zh-CN')}万` : '公开'}
                   </p>
                 </div>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                  <ArrowLeft size={16} className="rotate-180" />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <ArrowLeft size={17} className="rotate-180" />
                 </span>
               </button>
             ))}
           </div>
+          <div className="mt-4">
+            <Pagination page={oppPage} pageSize={OPP_PAGE_SIZE} total={filtered.length} onPageChange={setOppPage} />
+          </div>
+          </>
         )}
       </div>
       )}
