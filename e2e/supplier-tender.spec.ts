@@ -42,7 +42,7 @@ test('招标项目:公开招标自助领取 → 正文解锁', async ({ page, re
   // 领取前:正文不可见,提示领取
   await expect(page.getByText('领取招标文件后方可查阅正文。')).toBeVisible();
   await page.getByRole('button', { name: '领取招标文件' }).click();
-  await expect(page.getByText(/招标文件已领取/)).toBeVisible();
+  await expect(page.getByText(/招标文件已领取/).first()).toBeVisible();
   await expect(page.getByText(/E2E 公开招标正文:领取后可见/)).toBeVisible();
 });
 
@@ -57,7 +57,7 @@ test('投标加密递交:签署密封 → 凭证 → 撤回重投', async ({ pag
   await page.getByRole('button', { name: '搜索' }).click();
   const row = page.locator('table tr', { hasText: title }).first();
   await row.getByRole('button', { name: '领取文件' }).click();
-  await expect(page.getByText(/招标文件已领取/)).toBeVisible();
+  await expect(page.getByText(/招标文件已领取/).first()).toBeVisible();
   await row.getByRole('button', { name: '查看招标' }).click();
   await expect(page.getByText('投标递交(加密密封)')).toBeVisible();
 

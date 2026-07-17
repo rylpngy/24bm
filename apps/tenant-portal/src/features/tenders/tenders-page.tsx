@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, ClipboardCheck, FileBadge, Gavel, Info, Megaphone, Plus, Send, Users } from 'lucide-react';
+import { ArrowLeft, Award, CheckCircle2, ClipboardCheck, FileBadge, Gavel, Info, Megaphone, Plus, Send, Timer, Trophy, Users } from 'lucide-react';
 import {
   useBuyerEsignList,
   useBuyerEsignSign,
@@ -506,6 +506,72 @@ function AwardSection({
   );
 }
 
+
+// ── 招标组织五阶段步进器(与询比项目详情/供应商端参与视图同口径) ──────
+// 编制(文件)→ 发售(发放/领取)→ 开标(解封唱标)→ 评标(委员会)→ 定标(签章/转执行);流标即时终止。
+const BUYER_TENDER_STAGES = ['编制', '发售', '开标', '评标', '定标'] as const;
+
+function buyerTenderStageIndex(t: TenderResponse): number {
+  if (t.status === '已定标') return 4;
+  if (t.status === '评标中') return 3;
+  if (t.status === '已开标' || t.status === '已流标') return 2;
+  if (t.status === '发售中') return 1;
+  return 0;
+}
+
+function BuyerTenderStepper({ tender: t }: { tender: TenderResponse }) {
+  const currentIndex = buyerTenderStageIndex(t);
+  const failed = t.status === '已流标';
+  const acquisitions = t.acquisitions ?? [];
+  const sealedCount = (t.bids ?? []).filter((b) => b.sealedStatus === '已密封').length;
+  const validCount = (t.bids ?? []).filter((b) => b.sealedStatus === '已开启').length;
+  const evaluators = t.evaluators ?? [];
+  const doneEvaluators = evaluators.filter((e) => (e.scoredCount ?? 0) >= validCount && validCount > 0).length;
+  const winner = (t.bids ?? []).find((b) => b.id === t.awardedBidId);
+  const captions: string[] = [
+    '文件与时间节点',
+    `发放 ${acquisitions.length} · 领取 ${acquisitions.filter((a) => a.acquiredAt).length} · 密封 ${sealedCount}`,
+    t.openedAt ? `有效投标 ${validCount} 份` : `开标 ${shortTime(t.openingAt)}`,
+    evaluators.length > 0 ? `评委交卷 ${doneEvaluators}/${evaluators.length}` : '待组建委员会',
+    t.status === '已定标'
+      ? `${winner?.supplierName ?? '已定标'}${t.executionOrderId ? ' · 已转执行' : ''}`
+      : '待定标',
+  ];
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
+      {failed && (
+        <div className="mb-4 rounded-lg border border-red-100 bg-red-50/60 px-3 py-2 text-xs font-black text-red-700">
+          本项目已流标{t.failureReason ? `:${t.failureReason}` : ''},可在下方留痕卡一键重新招标。
+        </div>
+      )}
+      <div className="grid grid-cols-5 items-start gap-2">
+        {BUYER_TENDER_STAGES.map((stage, index) => {
+          const done = !failed && index < currentIndex;
+          const current = !failed && index === currentIndex;
+          const deadHere = failed && index === 2;
+          return (
+            <div key={stage} className="relative text-center">
+              {index < BUYER_TENDER_STAGES.length - 1 && <div className="absolute left-1/2 top-5 h-1 w-full bg-slate-100" />}
+              <span className={cn(
+                'relative z-10 mx-auto flex h-10 w-10 items-center justify-center rounded-full border-4 bg-white',
+                deadHere ? 'border-red-100 bg-red-500 text-white'
+                  : done ? 'border-emerald-100 bg-emerald-500 text-white'
+                    : current ? 'border-blue-100 bg-blue-600 text-white' : 'border-slate-200 text-slate-300',
+              )}>
+                {done ? <CheckCircle2 size={17} /> : current ? <Timer size={17} /> : index === 4 ? <Trophy size={16} /> : <i className="h-2 w-2 rounded-full bg-current" />}
+              </span>
+              <p className={cn('mt-2 text-xs font-black', done || current ? 'text-blue-700' : deadHere ? 'text-red-600' : 'text-slate-500')}>{stage}</p>
+              <p className="mt-0.5 text-[11px] font-bold text-slate-400">
+                {deadHere ? '已流标' : failed && index > 2 ? '流程终止' : done || current ? captions[index] : '待开始'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // C-8 公告记录:发售(公开招标)/中标公示/流标公告由业务节点自动生成,与询比共用门户公告中心。
 function TenderAnnouncements({ tenderId }: { tenderId: string }) {
   const anns = useRfqListAnnouncements(tenderId, { query: { enabled: !!tenderId } });
@@ -792,6 +858,9 @@ export function TendersPage() {
 
         {feedback && <FeedbackNotice tone="success" message={feedback} />}
         {error && <FeedbackNotice tone="error" message={error} />}
+
+        {/* 组织流程步进器:编制→发售→开标→评标→定标(与供应商端参与视图同口径) */}
+        <BuyerTenderStepper tender={t} />
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">

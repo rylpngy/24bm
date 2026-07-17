@@ -88,7 +88,7 @@ test('开标唱标:定时开标 → 解封报价 → 指纹核验', async ({ pag
   await expect(page.getByRole('heading', { name: '开标唱标', exact: true })).toBeVisible();
   await expect(page.getByText('¥258,000.00')).toBeVisible();
   await expect(page.getByText('核验通过', { exact: true })).toBeVisible();
-  await expect(page.getByText(/有效投标 1 份/)).toBeVisible();
+  await expect(page.getByText(/有效投标 1 份/).first()).toBeVisible();
 });
 
 // C-4 行为级:开标 → 组建委员会(3 人)→ 评委交卷(UI 一人 + API 两人)→ 推荐中标标记。

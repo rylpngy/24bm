@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, FileBadge, Gavel, Info, Lock, Undo2 } from 'lucide-react';
+import { ArrowLeft, Award, CheckCircle2, FileBadge, Gavel, Info, Lock, Megaphone, Timer, Trophy, Undo2 } from 'lucide-react';
 import {
   useSupplierEsignList,
   useSupplierEsignSign,
@@ -8,6 +8,7 @@ import {
   useSupplierTenderList,
   useSupplierTenderSubmitBid,
   useSupplierTenderWithdrawBid,
+  usePublicProcurementAnnouncementList,
   type TenderResponse,
 } from '@24bid/api-client';
 import {
@@ -48,6 +49,96 @@ const acqTone: Record<string, string> = {
   已发放待领取: 'bg-amber-50 text-amber-700',
   未领取: 'bg-slate-100 text-slate-500',
 };
+
+
+// ── 招标参与六阶段(与采购端项目详情步进器同口径) ─────────────────
+// 招标(公告/领取)→ 投标(制作/报价/签章/加密递交)→ 开标(解封唱标/核验)
+// → 评标(委员会评审,过程保密)→ 定标(结果/通知书)→ 标后(执行订单履约)。
+const TENDER_STAGES = ['招标', '投标', '开标', '评标', '定标', '标后'] as const;
+
+function tenderStageIndex(t: TenderResponse): number {
+  if (t.executionOrderId) return 5;
+  if (t.status === '已定标') return 4;
+  if (t.status === '评标中') return 3;
+  if (t.status === '已开标' || t.status === '已流标') return 2;
+  if (acquisitionState(t) === '已领取') return 1;
+  return 0;
+}
+
+function TenderStageStepper({ tender: t }: { tender: TenderResponse }) {
+  const currentIndex = tenderStageIndex(t);
+  const failed = t.status === '已流标';
+  const myBid = (t.bids ?? []).find((b) => b.supplierId === (t.acquisitions ?? [])[0]?.supplierId) ?? (t.bids ?? [])[0];
+  const captions: string[] = [
+    acquisitionState(t) === '已领取' ? '文件已领取' : acquisitionState(t) === '已发放待领取' ? '已发放 · 待领取' : '公告可查 · 待领取',
+    t.openedAt ? '递交已截止' : myBid?.sealedStatus === '已密封' ? '本方已密封在案' : myBid?.sealedStatus === '已撤回' ? '已撤回 · 可重投' : '待密封递交',
+    t.openedAt ? '已解封唱标' : `开标 ${shortTime(t.openingAt)}`,
+    t.status === '已定标' || t.executionOrderId ? '评审已完成' : t.status === '评标中' ? '评审中(过程保密)' : '待评标',
+    t.status === '已定标' ? '结果已公示' : '待定标',
+    t.executionOrderId ? '执行订单已生成' : '待转执行',
+  ];
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
+      {failed && (
+        <div className="mb-4 rounded-lg border border-red-100 bg-red-50/60 px-3 py-2 text-xs font-black text-red-700">
+          本项目已流标{t.failureReason ? `:${t.failureReason}` : ''};如重新招标将另行发布公告。
+        </div>
+      )}
+      <div className="grid grid-cols-6 items-start gap-2">
+        {TENDER_STAGES.map((stage, index) => {
+          const done = !failed && index < currentIndex;
+          const current = !failed && index === currentIndex;
+          const deadHere = failed && index === 2;
+          return (
+            <div key={stage} className="relative text-center">
+              {index < TENDER_STAGES.length - 1 && <div className="absolute left-1/2 top-5 h-1 w-full bg-slate-100" />}
+              <span className={cn(
+                'relative z-10 mx-auto flex h-10 w-10 items-center justify-center rounded-full border-4 bg-white',
+                deadHere ? 'border-red-100 bg-red-500 text-white'
+                  : done ? 'border-emerald-100 bg-emerald-500 text-white'
+                    : current ? 'border-blue-100 bg-blue-600 text-white' : 'border-slate-200 text-slate-300',
+              )}>
+                {done ? <CheckCircle2 size={17} /> : current ? <Timer size={17} /> : index === 5 ? <Trophy size={16} /> : <i className="h-2 w-2 rounded-full bg-current" />}
+              </span>
+              <p className={cn('mt-2 text-xs font-black', done || current ? 'text-blue-700' : deadHere ? 'text-red-600' : 'text-slate-500')}>{stage}</p>
+              <p className="mt-0.5 text-[11px] font-bold text-slate-400">
+                {deadHere ? '已流标' : failed && index > 2 ? '流程终止' : done || current ? captions[index] : '待开始'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// 招标阶段:本项目公告(招标/中标公示/流标,与门户公告中心同源)。
+function TenderAnnouncementsCard({ tenderId }: { tenderId: string }) {
+  const anns = usePublicProcurementAnnouncementList();
+  const list = (anns.data?.data ?? []).filter((a) => a.rfqId === tenderId);
+  if (list.length === 0) return null;
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+        <Megaphone size={15} className="text-blue-600" /> 项目公告
+      </h3>
+      <div className="mt-3 divide-y divide-slate-100">
+        {list.map((a) => (
+          <div key={a.id} className="py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
+                a.type === '定标公告' ? 'bg-emerald-50 text-emerald-700'
+                  : a.type === '终止公告' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-700')}>{a.type}</span>
+              <p className="min-w-0 flex-1 truncate text-sm font-black text-slate-950">{a.title}</p>
+              <span className="shrink-0 font-mono text-[11px] font-bold text-slate-400">{shortTime(a.publishedAt)}</span>
+            </div>
+            <p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-slate-500">{a.summary}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 // 投标函电子签署留痕(密封凭证配套)。
 function BidEsignRecords({ bidId }: { bidId: string }) {
@@ -392,10 +483,18 @@ export function TenderProjectsPage() {
         {feedback && <FeedbackNotice tone="success" message={feedback} />}
         {error && <FeedbackNotice tone="error" message={error} />}
 
+        {/* 参与流程步进器:招标→投标→开标→评标→定标→标后(与采购端同口径) */}
+        <TenderStageStepper tender={t} />
+
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
+            {/* ── 阶段一 · 招标:查看公告 + 领取招标文件 ── */}
+            {t.id && <TenderAnnouncementsCard tenderId={t.id} />}
             <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
-              <h3 className="text-base font-black text-slate-950">招标文件正文</h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-base font-black text-slate-950">招标文件正文</h3>
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">阶段一 · 招标</span>
+              </div>
               {t.documentHtml ? (
                 <RichTextView html={t.documentHtml} className="mt-3" />
               ) : (
@@ -412,15 +511,49 @@ export function TenderProjectsPage() {
                 </div>
               )}
             </section>
-            {/* C-2 投标递交:领取后、开标前开放;递交即密封,开标前对招标人不可见 */}
+            {/* ── 阶段二 · 投标:制作投标函 + 报价 + 电子签章 + 加密密封递交 ── */}
             {state === '已领取' && !t.openedAt && (
               <BidSubmissionSection tender={t} onFeedback={setFeedback} onError={setError} />
             )}
-            {/* C-3 开标后:唱标公示替代递交区 */}
+            {/* ── 阶段三 · 开标:定时解封 + 唱标公示 + 密封指纹核验 ── */}
             {t.openedAt && <OpeningRollSection tender={t} />}
-            {/* C-5 定标后:中标结果公示(中标人可读签章通知书) */}
+            {/* ── 阶段四 · 评标:委员会评审(过程对投标人保密) ── */}
+            {t.openedAt && t.status !== '已流标' && (
+              <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-base font-black text-slate-950">评标评审</h3>
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">阶段四 · 评标</span>
+                </div>
+                <p className="mt-2 text-xs font-bold leading-6 text-slate-500">
+                  {t.status === '评标中'
+                    ? '评标委员会正按招标文件载明的评标办法(' + (t.evaluationMethod ?? '—') + ')评审,评审过程与评分对投标人保密;评审结论以定标公示为准。'
+                    : t.status === '已定标' || t.executionOrderId
+                      ? '评标已完成,评审结论已体现在定标结果中。'
+                      : '开标唱标完成后,招标人将组建评标委员会进行评审。'}
+                </p>
+              </section>
+            )}
+            {/* ── 阶段五 · 定标:中标结果公示 + 签章通知书 ── */}
             {t.awardedBidId && <AwardResultSection tender={t} />}
-
+            {/* ── 阶段六 · 标后:成交确认与执行订单履约 ── */}
+            {t.awardedBidId && (
+              <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-base font-black text-slate-950">标后执行</h3>
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">阶段六 · 标后</span>
+                </div>
+                {t.executionOrderId ? (
+                  <p className="mt-2 text-xs font-bold leading-6 text-slate-600">
+                    执行采购订单 <span className="font-mono font-black text-blue-700">{t.executionOrderId}</span> 已按中标结果生成。
+                    中标人请前往「销售订单」<span className="font-black">确认订单(成交确认)</span>,并沿 发货 → 验收 → 开票 → 回款 链履约。
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs font-bold leading-6 text-slate-500">
+                    招标人正在办理中标转执行;执行采购订单生成后将通知中标人在「销售订单」确认并履约。
+                  </p>
+                )}
+              </section>
+            )}
           </div>
 
           <div className="space-y-4">
