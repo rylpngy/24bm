@@ -220,28 +220,3 @@ test('流标:留痕 → 重新招标复制要素', async ({ page, request }) => 
 });
 
 // C-6 行为级:开标(无投标)→ 宣布流标(原因必填)→ 留痕卡 → 一键重新招标进入编制页。
-test('流标:留痕 → 重新招标复制要素', async ({ page, request }) => {
-  const { title, id, buyer } = await seedOpenedReadyTender(request);
-  expect((await request.post(`${API}/buyer/tenders/${id}/open`, { headers: { Authorization: `Bearer ${buyer}` } })).ok()).toBeTruthy();
-
-  await loginViaKeycloak(page);
-  await expectLoggedIn(page, /招标管理/);
-  await openModule(page, /招标管理/);
-  await page.getByPlaceholder(/按项目名称/).fill(title);
-  await page.getByRole('button', { name: '搜索' }).click();
-  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
-
-  await page.getByRole('button', { name: '宣布流标' }).click();
-  const confirm = page.getByRole('button', { name: '确认流标' });
-  await expect(confirm).toBeDisabled(); // 原因未填禁用
-  await page.getByLabel('流标原因').fill('E2E:评审全部不合格');
-  await confirm.click();
-  await expect(page.getByText(/已宣布流标/)).toBeVisible();
-  await expect(page.getByText('流标留痕')).toBeVisible();
-  await expect(page.getByText('E2E:评审全部不合格')).toBeVisible();
-
-  await page.getByRole('button', { name: '重新招标', exact: true }).click();
-  // 直接跳入新草稿编制页,标题带(重招)、正文继承
-  await expect(page.getByRole('heading', { name: '编辑招标项目' })).toBeVisible();
-  await expect(page.locator('input').first()).toHaveValue(new RegExp('重招'));
-});
