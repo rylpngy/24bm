@@ -190,6 +190,10 @@ test('定标:签章中标通知书 → 结果公示与留痕', async ({ page, re
   await page.getByRole('button', { name: '生成执行采购订单' }).click();
   await expect(page.getByText(/中标转执行:采购订单 po-/)).toBeVisible();
   await expect(page.getByText('执行订单已生成:')).toBeVisible();
+
+  // C-8 公告记录:发布与定标节点自动生成并同步门户
+  await expect(page.getByText('公告记录')).toBeVisible();
+  await expect(page.getByText(/中标公示/).first()).toBeVisible();
 });
 
 // C-6 行为级:开标(无投标)→ 宣布流标(原因必填)→ 留痕卡 → 一键重新招标进入编制页。
@@ -211,7 +215,8 @@ test('流标:留痕 → 重新招标复制要素', async ({ page, request }) => 
   await confirm.click();
   await expect(page.getByText(/已宣布流标/)).toBeVisible();
   await expect(page.getByText('流标留痕')).toBeVisible();
-  await expect(page.getByText('E2E:评审全部不合格')).toBeVisible();
+  await expect(page.getByText(/流标公告/).first()).toBeVisible();
+  await expect(page.getByText('E2E:评审全部不合格', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: '重新招标', exact: true }).click();
   // 直接跳入新草稿编制页,标题带(重招)、正文继承

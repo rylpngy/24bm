@@ -5,6 +5,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
 import com.procurement.order.application.PurchaseOrderApplicationService;
+import com.procurement.sourcing.application.RfqAnnouncementService;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.tender.api.AwardTenderRequest;
 import com.procurement.tender.api.DistributeTenderRequest;
@@ -61,6 +62,7 @@ public class TenderApplicationService {
   private final NotificationApplicationService notificationApplicationService;
   private final RfqApplicationService rfqApplicationService;
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
+  private final RfqAnnouncementService rfqAnnouncementService;
 
   public TenderApplicationService(
       TenderMapper tenderMapper,
@@ -71,7 +73,8 @@ public class TenderApplicationService {
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       RfqApplicationService rfqApplicationService,
-      PurchaseOrderApplicationService purchaseOrderApplicationService) {
+      PurchaseOrderApplicationService purchaseOrderApplicationService,
+      RfqAnnouncementService rfqAnnouncementService) {
     this.tenderMapper = tenderMapper;
     this.acquisitionMapper = acquisitionMapper;
     this.bidMapper = bidMapper;
@@ -81,6 +84,7 @@ public class TenderApplicationService {
     this.notificationApplicationService = notificationApplicationService;
     this.rfqApplicationService = rfqApplicationService;
     this.purchaseOrderApplicationService = purchaseOrderApplicationService;
+    this.rfqAnnouncementService = rfqAnnouncementService;
   }
 
   // ── 买方:编制 / 发布 / 发放 ─────────────────────────────────
@@ -133,6 +137,12 @@ public class TenderApplicationService {
     auditLogApplicationService.recordCurrentTenantAction(
         "tender.published", AUDIT_TARGET, tenderId,
         tender.tenderType() + "「" + tender.title() + "」招标文件开始发售");
+    // 公开招标同步门户招标公告;邀请招标定向发放不公开立项公告。
+    if (TenderPolicy.TYPE_OPEN.equals(tender.tenderType())) {
+      rfqAnnouncementService.onTenderPublished(
+          tenantId, tenderId, tender.title(), tender.tenderType(),
+          tender.submissionDeadline(), tender.evaluationMethod());
+    }
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
   }
@@ -209,6 +219,8 @@ public class TenderApplicationService {
         "tender.failed", AUDIT_TARGET, tenderId, "宣布流标:" + request.reason().trim());
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId, "招标流标", tender.title() + " 已宣布流标,可复用要素重新招标。");
+    rfqAnnouncementService.onTenderFailed(
+        tenantId, tenderId, tender.title(), tender.tenderType(), request.reason().trim());
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
   }
@@ -254,6 +266,8 @@ public class TenderApplicationService {
         "定标:中标人「" + winnerName + "」,中标价 " + bid.bidAmount());
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId, "招标定标", tender.title() + " 已定标,中标人「" + winnerName + "」,请签章中标通知书。");
+    rfqAnnouncementService.onTenderAwarded(
+        tenantId, tenderId, tender.title(), tender.tenderType(), winnerName, bid.bidAmount());
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
   }

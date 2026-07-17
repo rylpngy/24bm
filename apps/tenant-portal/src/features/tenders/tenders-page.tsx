@@ -17,6 +17,7 @@ import {
   useBuyerTenderPublish,
   useBuyerTenderSubmitScores,
   useBuyerTenderUpdate,
+  useRfqListAnnouncements,
   type SaveTenderRequest,
   type TenderResponse,
 } from '@24bid/api-client';
@@ -505,6 +506,38 @@ function AwardSection({
   );
 }
 
+// C-8 公告记录:发售(公开招标)/中标公示/流标公告由业务节点自动生成,与询比共用门户公告中心。
+function TenderAnnouncements({ tenderId }: { tenderId: string }) {
+  const anns = useRfqListAnnouncements(tenderId, { query: { enabled: !!tenderId } });
+  const list = anns.data?.data ?? [];
+  if (list.length === 0) return null;
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="text-base font-black text-slate-950">公告记录</h3>
+        <span className="text-xs font-bold text-slate-400">由业务节点自动生成,已同步门户「公告中心」公示。</span>
+      </div>
+      <div className="mt-3 divide-y divide-slate-100">
+        {list.map((ann) => (
+          <div key={ann.id} className="py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
+                ann.type === '采购公告' ? 'bg-blue-50 text-blue-700'
+                  : ann.type === '定标公告' ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-red-50 text-red-600')}>{ann.type}</span>
+              <p className="min-w-0 flex-1 truncate text-sm font-black text-slate-950">{ann.title}</p>
+              <span className="shrink-0 font-mono text-[11px] font-bold text-slate-400">
+                {ann.publishedAt?.slice(0, 16).replace('T', ' ')}
+              </span>
+            </div>
+            <p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-slate-500">{ann.summary}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // 招标管理(Track C C-1):文件编制(富文本)→ 发布发售 → 邀请发放 / 领取记录。
 export function TendersPage() {
   const queryClient = useQueryClient();
@@ -536,7 +569,9 @@ export function TendersPage() {
 
   const refresh = () =>
     queryClient.invalidateQueries({
-      predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/tenders'),
+      // 公告记录(/buyer/rfqs/{tenderId}/announcements)随业务节点新增,须一并失效。
+      predicate: (q) => typeof q.queryKey[0] === 'string'
+        && /\/buyer\/(tenders|rfqs\/[^/]+\/announcements)/.test(q.queryKey[0] as string),
     });
 
   const reportError = (e: unknown) =>
@@ -952,6 +987,8 @@ export function TendersPage() {
             {t.openedAt && t.status !== '已流标' && (
               <AwardSection tender={t} onFeedback={setFeedback} onError={setError} refresh={refresh} />
             )}
+            {/* C-8 公告记录:发售/中标公示/流标自动同步门户 */}
+            {t.id && <TenderAnnouncements tenderId={t.id} />}
           </div>
 
           <div className="space-y-4">

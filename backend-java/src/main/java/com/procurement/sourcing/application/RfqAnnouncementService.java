@@ -66,6 +66,36 @@ public class RfqAnnouncementService {
         null, null, kind + (reason == null || reason.isBlank() ? "" : ":" + reason));
   }
 
+  // ── 招标(2.0)事件登记:与询比共用公告台账与门户面(rfq_id 存招标项目 id) ──
+
+  public void onTenderPublished(
+      String tenantId, String tenderId, String title, String tenderType,
+      java.time.OffsetDateTime submissionDeadline, String evaluationMethod) {
+    insertRaw(tenantId, tenderId, "采购公告", title + " 招标公告",
+        "现对「" + title + "」进行" + tenderType + ",欢迎符合条件的供应商领取招标文件并递交投标。"
+            + (submissionDeadline == null ? "" : "投标递交截止 " + submissionDeadline.toLocalDate() + "。"),
+        tenderType, submissionDeadline, evaluationMethod, null, null, null, null, null);
+  }
+
+  public void onTenderAwarded(
+      String tenantId, String tenderId, String title, String tenderType,
+      String supplierName, BigDecimal awardAmount) {
+    insertRaw(tenantId, tenderId, "定标公告", title + " 中标公示",
+        "「" + title + "」" + tenderType + "已定标,中标人:" + supplierName
+            + (awardAmount == null ? "" : ",中标价 ¥" + awardAmount.toPlainString())
+            + "。中标通知书已电子签章送达,特此公示。",
+        tenderType, null, null, null, null, supplierName, awardAmount, null);
+  }
+
+  public void onTenderFailed(
+      String tenantId, String tenderId, String title, String tenderType, String reason) {
+    insertRaw(tenantId, tenderId, "终止公告", title + " 流标公告",
+        "「" + title + "」" + tenderType + "已流标"
+            + (reason == null || reason.isBlank() ? "" : ",原因:" + reason)
+            + "。如重新招标将另行公告。",
+        tenderType, null, null, null, null, null, null, "流标" + (reason == null || reason.isBlank() ? "" : ":" + reason));
+  }
+
   // ── 查询 ─────────────────────────────────────────────
 
   public List<RfqAnnouncementResponse> listForRfq(String rfqId) {
@@ -97,18 +127,37 @@ public class RfqAnnouncementService {
       String awardedSupplierName,
       BigDecimal awardAmount,
       String closeReason) {
+    insertRaw(tenantId, rfq.id(), type, title, summary, method(rfq), rfq.deadlineAt(),
+        rfq.evaluationMethod(), rfq.quoteRequirement(), rfq.deliveryRequirement(),
+        awardedSupplierName, awardAmount, closeReason);
+  }
+
+  private void insertRaw(
+      String tenantId,
+      String projectId,
+      String type,
+      String title,
+      String summary,
+      String method,
+      java.time.OffsetDateTime deadlineAt,
+      String evaluationMethod,
+      String quoteRequirement,
+      String deliveryRequirement,
+      String awardedSupplierName,
+      BigDecimal awardAmount,
+      String closeReason) {
     rfqAnnouncementMapper.insert(
         "rfq-ann-" + UUID.randomUUID(),
         tenantId,
-        rfq.id(),
+        projectId,
         type,
         title,
         summary,
-        method(rfq),
-        rfq.deadlineAt(),
-        rfq.evaluationMethod(),
-        rfq.quoteRequirement(),
-        rfq.deliveryRequirement(),
+        method,
+        deadlineAt,
+        evaluationMethod,
+        quoteRequirement,
+        deliveryRequirement,
         awardedSupplierName,
         awardAmount,
         closeReason);
