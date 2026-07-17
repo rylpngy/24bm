@@ -288,7 +288,7 @@ function ProcurementAnnouncementDetail({
   );
 }
 
-export function PortalAnnouncementsPage() {
+export function PortalAnnouncementsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const announcements = usePublicPortalListAnnouncements();
   const procAnnouncements = usePublicProcurementAnnouncementList();
   const [tab, setTab] = useState<'procurement' | 'platform'>('procurement');
@@ -333,8 +333,8 @@ export function PortalAnnouncementsPage() {
     );
   }
 
-  return (
-    <PageShell icon={Megaphone} title="公告中心" subtitle="采购公告 · 变更公告 · 定标公告 · 平台公告,全部实时数据">
+  const body = (
+    <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-1">
           {([['procurement', `采购公告 ${procList.length ? `(${procList.length})` : ''}`], ['platform', `平台公告 ${filtered.length ? `(${filtered.length})` : ''}`]] as const).map(([id, label]) => (
@@ -418,6 +418,15 @@ export function PortalAnnouncementsPage() {
           ))}
         </div>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return body;
+  }
+  return (
+    <PageShell icon={Megaphone} title="公告中心" subtitle="采购公告 · 变更公告 · 定标公告 · 平台公告,全部实时数据">
+      {body}
     </PageShell>
   );
 }
@@ -529,13 +538,17 @@ export function HomeAnnouncementsStrip({ onOpenAll }: { onOpenAll: () => void })
 
 const OPPORTUNITY_STATUS_TONE: Record<string, string> = {
   报价中: 'bg-emerald-50 text-emerald-700',
+  发售中: 'bg-emerald-50 text-emerald-700',
   已开标: 'bg-blue-50 text-blue-700',
+  评标中: 'bg-amber-50 text-amber-700',
   定标审批中: 'bg-amber-50 text-amber-700',
   已定标: 'bg-slate-100 text-slate-600',
+  已流标: 'bg-red-50 text-red-600',
 };
 
 function opportunityStatusLabel(o: PublicOpportunityResponse) {
   if (o.status === '报价中') return '报名与报价中';
+  if (o.status === '发售中') return '招标文件发售中';
   if (o.status === '已定标') return o.resultAnnouncedAt ? '结果已公示' : '已定标';
   return o.status ?? '—';
 }
@@ -631,11 +644,11 @@ function EnrollForm({ rfqId }: { rfqId: string }) {
 
 // 商机大厅:平台上采购人发布项目的公开列表(真实数据)+ 二级详情(含报名参与)。
 // 布局参考验收提供的原型;组件规范(按钮/边框/间距)与系统统一。
-export function PortalOpportunitiesPage() {
+export function PortalOpportunitiesPage({ initialTab }: { initialTab?: string } = {}) {
   const opportunities = usePublicOpportunityList();
   const [keyword, setKeyword] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
-  const [methodFilter, setMethodFilter] = useState('all');
+  const [methodFilter, setMethodFilter] = useState(initialTab ?? 'all');
   const [categoryFilter, setCategoryFilter] = useState('全部');
   const [selected, setSelected] = useState<PublicOpportunityResponse | null>(null);
 
@@ -663,18 +676,21 @@ export function PortalOpportunitiesPage() {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50">
         <h1 className="flex items-center gap-2.5 text-2xl font-black text-slate-950">
           <PackageSearch size={24} className="text-blue-600" />
-          商机大厅
+          商机与公告
         </h1>
+        <p className="mt-1.5 text-sm font-bold text-slate-500">询比 · 竞价 · 招标项目公开信息与采购/平台公告,全部实时数据</p>
         <div className="mt-5">
           <FilterTabs
             items={[
               { id: 'all', label: '全部商机', count: list.length },
               ...methods.map((m) => ({ id: m, label: `${m}采购`, count: list.filter((o) => o.method === m).length })),
+              { id: 'ann', label: '公告中心' },
             ]}
             value={methodFilter}
             onChange={setMethodFilter}
           />
         </div>
+        {methodFilter !== 'ann' && (<>
         <form
           className="mt-4 flex gap-2"
           onSubmit={(e) => {
@@ -716,9 +732,14 @@ export function PortalOpportunitiesPage() {
             </button>
           ))}
         </div>
+        </>)}
       </section>
 
-      {/* 商机列表:单列行式布局 */}
+      {methodFilter === 'ann' ? (
+        <div className="mt-5">
+          <PortalAnnouncementsPage embedded />
+        </div>
+      ) : (
       <div className="mt-5">
         {opportunities.isLoading ? (
           <FeedbackNotice tone="info" message="正在加载商机…" />
@@ -745,7 +766,7 @@ export function PortalOpportunitiesPage() {
                     <span className="inline-flex items-center gap-1.5"><Users size={13} />{o.buyerName}</span>
                     {o.categories && <span>{o.categories}</span>}
                     <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} />发布于 {dateText(o.createdAt)}</span>
-                    {o.status === '报价中' && <span className="font-black text-amber-600">{deadlineText(o.deadlineAt)}</span>}
+                    {(o.status === '报价中' || o.status === '发售中') && <span className="font-black text-amber-600">{deadlineText(o.deadlineAt)}</span>}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
@@ -762,6 +783,7 @@ export function PortalOpportunitiesPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -775,7 +797,8 @@ function OpportunityDetail({
   onBack: () => void;
 }) {
   const [enrollOpen, setEnrollOpen] = useState(false);
-  const enrollable = o.status === '报价中';
+  const isTender = o.method === '招标';
+  const enrollable = !isTender && o.status === '报价中';
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
@@ -799,6 +822,20 @@ function OpportunityDetail({
           </div>
           <h1 className="mt-4 break-words text-2xl font-black leading-snug text-slate-950 sm:text-3xl">{o.title}</h1>
 
+          {isTender ? (
+            <>
+              <DetailSection index={1} title="招标文件获取">
+                {'招标文件正文须在供应商工作台「招标项目」中领取后查阅(公开招标发售期内可自助领取)。'}
+              </DetailSection>
+              <DetailSection index={2} title="投标与开标">
+                {'投标递交即加密密封(SHA-256 指纹凭证),开标前招标人不可见内容;到达约定开标时间后统一解封唱标并公示指纹核验结果。'}
+              </DetailSection>
+              <DetailSection index={3} title="参与须知">
+                {`3.1 本项目评标办法为「${o.evaluationMethod ?? '—'}」。\n3.2 已入驻并通过平台认证的供应商,登录供应商工作台即可领取文件并在递交截止前完成投标。\n3.3 尚未入驻的企业,请先完成供应商入驻与认证。`}
+              </DetailSection>
+            </>
+          ) : (
+            <>
           <DetailSection index={1} title="采购内容与报价要求">
             {o.quoteRequirement || '详见报价邀请;受理报名后可在供应商门户查看完整要求。'}
           </DetailSection>
@@ -808,6 +845,8 @@ function OpportunityDetail({
           <DetailSection index={3} title="报名与参与须知">
             {`3.1 本项目评选方式为「${o.evaluationMethod ?? '—'}」。\n3.2 已入驻并通过平台认证的供应商,报名经采购方受理后将收到正式询价邀请,可在供应商门户直接报价。\n3.3 尚未入驻的企业,报名后由采购方引导完成入驻与准入,再进入报价环节。`}
           </DetailSection>
+            </>
+          )}
         </section>
 
         {/* 侧栏:关键信息 + 报名 */}
@@ -827,6 +866,9 @@ function OpportunityDetail({
               {enrollable && (
                 <SideFact icon={Timer} label="报价截止" value={`${dateText(o.deadlineAt)} · ${deadlineText(o.deadlineAt)}`} />
               )}
+              {isTender && o.status === '发售中' && (
+                <SideFact icon={Timer} label="投标递交截止" value={`${dateText(o.deadlineAt)} · ${deadlineText(o.deadlineAt)}`} />
+              )}
             </dl>
             <div className="mt-5 border-t border-slate-100 pt-4">
               {enrollable ? (
@@ -837,6 +879,10 @@ function OpportunityDetail({
                 >
                   <Send size={15} /> {enrollOpen ? '收起报名表' : '立即报名'}
                 </button>
+              ) : isTender ? (
+                <FeedbackNotice tone="info" message={o.status === '发售中'
+                  ? '公开招标项目:请登录供应商工作台,在「招标项目」中领取招标文件并在递交截止前完成加密投标。'
+                  : `该招标项目当前为「${opportunityStatusLabel(o)}」。`} />
               ) : (
                 <FeedbackNotice tone="info" message={`该项目当前为「${opportunityStatusLabel(o)}」,报名已结束。`} />
               )}

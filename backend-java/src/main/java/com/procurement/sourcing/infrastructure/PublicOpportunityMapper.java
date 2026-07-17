@@ -57,6 +57,38 @@ public interface PublicOpportunityMapper {
       """)
   String findEnrollableTenantId(@Param("rfqId") String rfqId);
 
+  // 公开招标项目商机(Track C):发售起全流程公示;method 固定「招标」,
+  // 递交截止映射 deadline_at,定标时间映射 result_announced_at;正文领取后可见故不下发。
+  String TENDER_COLUMNS = """
+      t2.id, t2.title, '招标' as method, t2.evaluation_method, t2.status,
+      t2.submission_deadline as deadline_at, t2.created_at, t2.awarded_at as result_announced_at,
+      null as quote_requirement, null as delivery_requirement,
+      tn.name as buyer_name, t2.budget, null as categories
+      """;
+
+  @Select("""
+      select
+      """ + TENDER_COLUMNS + """
+      from tenders t2
+      join tenants tn on tn.id = t2.tenant_id
+      where t2.tender_type = '公开招标'
+        and t2.status in ('发售中', '已开标', '评标中', '已定标', '已流标')
+      order by t2.created_at desc
+      limit 200
+      """)
+  List<PublicOpportunityResponse> listPublicTenderOpportunities();
+
+  @Select("""
+      select
+      """ + TENDER_COLUMNS + """
+      from tenders t2
+      join tenants tn on tn.id = t2.tenant_id
+      where t2.id = #{tenderId}
+        and t2.tender_type = '公开招标'
+        and t2.status in ('发售中', '已开标', '评标中', '已定标', '已流标')
+      """)
+  PublicOpportunityResponse findPublicTenderOpportunityById(@Param("tenderId") String tenderId);
+
   @Select("""
       select e.id
       from enterprises e

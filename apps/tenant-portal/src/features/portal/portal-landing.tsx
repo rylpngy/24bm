@@ -22,7 +22,6 @@ import {
   HomeAnnouncementsStrip,
   HomeOpportunitiesSection,
   HomeSuppliersSection,
-  PortalAnnouncementsPage,
   PortalMallPage,
   PortalSupplierRegisterPage,
   PortalOpportunitiesPage,
@@ -292,10 +291,9 @@ export function PortalLanding() {
           <LogoMark />
           <nav className="hidden items-center gap-8 text-sm font-black text-slate-600 md:flex">
             <button type="button" onClick={() => setPage('home')} className={page === 'home' ? 'text-blue-600' : 'hover:text-blue-600'}>首页</button>
-            <button type="button" onClick={() => setPage('opportunities')} className={page === 'opportunities' ? 'text-blue-600' : 'hover:text-blue-600'}>商机大厅</button>
+            <button type="button" onClick={() => setPage('opportunities')} className={page === 'opportunities' || page === 'announcements' ? 'text-blue-600' : 'hover:text-blue-600'}>商机与公告</button>
             <button type="button" onClick={() => setPage('mall')} className={page === 'mall' ? 'text-blue-600' : 'hover:text-blue-600'}>采购商城</button>
             <button type="button" onClick={() => setPage('suppliers')} className={page === 'suppliers' ? 'text-blue-600' : 'hover:text-blue-600'}>供应商名录</button>
-            <button type="button" onClick={() => setPage('announcements')} className={page === 'announcements' ? 'text-blue-600' : 'hover:text-blue-600'}>平台公告</button>
             <button type="button" onClick={() => setPage('supplier-register')} className={page === 'supplier-register' ? 'text-blue-600' : 'hover:text-blue-600'}>供应商入驻</button>
             <a href="#help" onClick={() => setPage('home')} className="hover:text-blue-600">帮助中心</a>
           </nav>
@@ -330,7 +328,7 @@ export function PortalLanding() {
         </main>
       ) : page === 'announcements' ? (
         <main className="min-h-[60vh] bg-slate-50">
-          <PortalAnnouncementsPage />
+          <PortalOpportunitiesPage initialTab="ann" />
         </main>
       ) : (
       <main id="home">

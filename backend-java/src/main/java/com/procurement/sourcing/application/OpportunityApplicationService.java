@@ -41,12 +41,22 @@ public class OpportunityApplicationService {
 
   // ====== 公开侧(无租户上下文)======
 
+  // 询比/竞价等 RFQ 商机与公开招标项目商机合并,按发布时间倒序。
   public List<PublicOpportunityResponse> listPublicOpportunities() {
-    return publicOpportunityMapper.listPublicOpportunities();
+    var merged = new java.util.ArrayList<PublicOpportunityResponse>();
+    merged.addAll(publicOpportunityMapper.listPublicOpportunities());
+    merged.addAll(publicOpportunityMapper.listPublicTenderOpportunities());
+    merged.sort(java.util.Comparator.comparing(
+        PublicOpportunityResponse::createdAt,
+        java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())));
+    return List.copyOf(merged);
   }
 
   public PublicOpportunityResponse getPublicOpportunity(String rfqId) {
     PublicOpportunityResponse opportunity = publicOpportunityMapper.findPublicOpportunityById(rfqId);
+    if (opportunity == null) {
+      opportunity = publicOpportunityMapper.findPublicTenderOpportunityById(rfqId);
+    }
     if (opportunity == null) {
       throw new IllegalArgumentException("商机不存在或未公开: " + rfqId);
     }
