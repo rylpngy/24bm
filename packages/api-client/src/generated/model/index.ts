@@ -262,6 +262,7 @@ export * from './enterpriseReviewEventResponse';
 export * from './enterpriseReviewRequest';
 export * from './enterpriseReviewResponse';
 export * from './esignRecordResponse';
+export * from './executeTenderRequest';
 export * from './failTenderRequest';
 export * from './failure';
 export * from './featureToggleRequest';

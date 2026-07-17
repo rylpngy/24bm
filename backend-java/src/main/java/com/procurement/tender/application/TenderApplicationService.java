@@ -4,8 +4,11 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
+import com.procurement.order.application.PurchaseOrderApplicationService;
+import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.tender.api.AwardTenderRequest;
 import com.procurement.tender.api.DistributeTenderRequest;
+import com.procurement.tender.api.ExecuteTenderRequest;
 import com.procurement.tender.api.FailTenderRequest;
 import com.procurement.tender.api.FormCommitteeRequest;
 import com.procurement.tender.api.SaveTenderRequest;
@@ -56,6 +59,8 @@ public class TenderApplicationService {
   private final SupplierProfileApplicationService supplierProfileApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final RfqApplicationService rfqApplicationService;
+  private final PurchaseOrderApplicationService purchaseOrderApplicationService;
 
   public TenderApplicationService(
       TenderMapper tenderMapper,
@@ -64,7 +69,9 @@ public class TenderApplicationService {
       TenderEvaluationMapper evaluationMapper,
       SupplierProfileApplicationService supplierProfileApplicationService,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      RfqApplicationService rfqApplicationService,
+      PurchaseOrderApplicationService purchaseOrderApplicationService) {
     this.tenderMapper = tenderMapper;
     this.acquisitionMapper = acquisitionMapper;
     this.bidMapper = bidMapper;
@@ -72,6 +79,8 @@ public class TenderApplicationService {
     this.supplierProfileApplicationService = supplierProfileApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.rfqApplicationService = rfqApplicationService;
+    this.purchaseOrderApplicationService = purchaseOrderApplicationService;
   }
 
   // ── 买方:编制 / 发布 / 发放 ─────────────────────────────────
@@ -158,6 +167,32 @@ public class TenderApplicationService {
         "「" + tender.title() + "」开标,解封密封投标 " + unsealed + " 份");
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId, "开标唱标", tender.title() + " 已开标,投标报价与指纹核验结果已公示。");
+    return toResponse(requireTender(tenantId, tenderId),
+        acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
+  // ── 买方:中标转执行订单(C-7) ──────────────────────────────
+  // 经「招标」锚点 RFQ 生成执行采购订单(单行=中标标的总价),供应商确认后
+  // 沿既有 发货→验收→发票→付款→合同 链履约;每个招标项目仅生成一张(幂等)。
+  @Transactional
+  public TenderResponse executeTender(String tenderId, ExecuteTenderRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    Tender tender = requireTender(tenantId, tenderId);
+    TenderPolicy.requireExecutable(tender);
+    TenderBid awarded = findAwardedBid(tender);
+    String anchorRfqId = rfqApplicationService.createTenderAnchor(
+        tender.title() + "(招标转执行)", awarded.supplierId());
+    String orderId = purchaseOrderApplicationService.createTenderOrder(
+        anchorRfqId, awarded.supplierId(), awarded.bidAmount(),
+        request.expectedReceiptDate(),
+        tender.title() + " 中标标的(" + tender.tenderNo() + ")");
+    int updated = tenderMapper.markExecuted(tenantId, tenderId, orderId);
+    if (updated == 0) {
+      throw new IllegalStateException("执行订单已由其他操作生成,请刷新查看: " + tenderId);
+    }
+    auditLogApplicationService.recordCurrentTenantAction(
+        "tender.executed", AUDIT_TARGET, tenderId,
+        "中标转执行:采购订单 " + orderId + "(中标价 " + awarded.bidAmount() + ")");
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
   }
@@ -491,7 +526,7 @@ public class TenderApplicationService {
         // 评标过程对供应商不下发(定标结果按上方规则公示)。
         List.of(), List.of(), List.of(),
         tender.awardedBidId(), tender.awardedAt(), isWinner ? tender.awardNoticeHtml() : null,
-        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId());
+        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId(), tender.executionOrderId());
   }
 
   private TenderResponse toResponse(Tender tender, List<TenderAcquisition> acquisitions, boolean withNames) {
@@ -527,7 +562,7 @@ public class TenderApplicationService {
             .toList(),
         evaluationSummary(tender, evaluators, scores),
         tender.awardedBidId(), tender.awardedAt(), tender.awardNoticeHtml(),
-        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId());
+        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId(), tender.executionOrderId());
   }
 
   // 评标汇总(实时计算):价格分=最低有效报价/本报价×100;

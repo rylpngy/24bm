@@ -274,6 +274,40 @@ public class PurchaseOrderApplicationService {
     return orderId;
   }
 
+  // 招标定标转执行(C-7):中标结果经锚点 RFQ 生成执行订单(单行=中标标的总价),
+  // 供应商确认后沿既有 发货→验收→发票→付款→合同 链履约。
+  @Transactional
+  public String createTenderOrder(
+      String rfqId,
+      String supplierId,
+      java.math.BigDecimal amount,
+      java.time.LocalDate expectedReceiptDate,
+      String lineDescription) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
+    String orderId = newId("po");
+    purchaseOrderMapper.insert(
+        orderId,
+        tenantId,
+        rfqId,
+        supplierId,
+        amount,
+        PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
+        expectedReceiptDate);
+    orderLineItemApplicationService.addDirectLine(
+        tenantId, orderId, lineDescription, "项", java.math.BigDecimal.ONE, amount);
+    auditLogApplicationService.recordTenantAction(
+        PurchaseOrderAuditAction.CREATED,
+        AuditTargetType.PURCHASE_ORDER,
+        orderId);
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId,
+        supplierId,
+        NotificationTitle.PURCHASE_ORDER_PENDING_CONFIRMATION,
+        "中标执行订单 " + orderId + " 已生成(依据中标通知书),请及时确认订单。");
+    return orderId;
+  }
+
   private PurchaseOrderResponse toResponse(PurchaseOrder order) {
     return new PurchaseOrderResponse(
         order.id(),

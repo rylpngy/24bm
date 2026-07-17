@@ -38,5 +38,7 @@ public record TenderResponse(
     // C-6 流标留痕与重新招标溯源(双端可见)。
     OffsetDateTime failedAt,
     String failureReason,
-    String rebidOfTenderId) {
+    String rebidOfTenderId,
+    // C-7 定标转执行:生成的采购订单号(买方订单模块/供应商销售订单接续履约)。
+    String executionOrderId) {
 }

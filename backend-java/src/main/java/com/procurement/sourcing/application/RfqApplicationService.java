@@ -566,6 +566,37 @@ public class RfqApplicationService {
     return rfqId;
   }
 
+  // 招标定标转执行锚点:方式=招标、直接已定标的 RFQ 记录,使执行订单挂入既有履约/财务链。
+  @Transactional
+  public String createTenderAnchor(String title, String supplierId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    String userId = TenantAccessGuard.requireUserId("buyer RFQ APIs");
+    String rfqId = newId("rfq");
+    rfqMapper.insert(
+        rfqId,
+        tenantId,
+        title,
+        RfqStatus.AWARDED,
+        java.time.OffsetDateTime.now(),
+        userId,
+        "",
+        "招标定标转执行",
+        "中标价",
+        RfqMethod.TENDER,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
+    rfqMapper.updateAward(tenantId, rfqId, RfqStatus.AWARDED, RfqStatus.AWARDED, supplierId);
+    return rfqId;
+  }
+
   private RfqResponse toResponse(Rfq rfq) {
     return new RfqResponse(
         rfq.id(),

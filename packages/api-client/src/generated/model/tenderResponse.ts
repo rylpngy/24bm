@@ -39,4 +39,5 @@ export interface TenderResponse {
   failedAt?: string;
   failureReason?: string;
   rebidOfTenderId?: string;
+  executionOrderId?: string;
 }

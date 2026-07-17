@@ -8,6 +8,7 @@ import {
   useBuyerTenderAward,
   useBuyerTenderCreate,
   useBuyerTenderDistribute,
+  useBuyerTenderExecute,
   useBuyerTenderFail,
   useBuyerTenderFormCommittee,
   useBuyerTenderRebid,
@@ -353,7 +354,9 @@ function AwardSection({
 }) {
   const displayName = useAuthStore((s) => s.session?.displayName ?? '');
   const award = useBuyerTenderAward();
+  const execute = useBuyerTenderExecute();
   const esign = useBuyerEsignSign();
+  const [receiptDate, setReceiptDate] = useState('');
   const records = useBuyerEsignList(
     { targetType: 'tender-award', targetId: t.id ?? '' },
     { query: { enabled: !!t.awardedBidId && !!t.id } },
@@ -391,6 +394,37 @@ function AwardSection({
           <div className="mt-2">
             <EsignRecordList records={records.data?.data ?? []} />
           </div>
+        </div>
+
+        {/* C-7 中标转执行:一键生成采购订单接入既有履约/财务/合同链 */}
+        <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/40 p-3">
+          {t.executionOrderId ? (
+            <p className="text-xs font-bold text-slate-600">
+              <span className="font-black text-blue-800">执行订单已生成:</span>
+              <span className="ml-1 font-mono">{t.executionOrderId}</span>
+              <span className="ml-2 text-slate-400">供应商确认后在「采购订单」沿 发货 → 验收 → 发票 → 付款 → 合同 链继续履约。</span>
+            </p>
+          ) : (
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="block">
+                <span className="text-xs font-black text-slate-500">预计到货日期</span>
+                <input type="date" aria-label="预计到货日期" value={receiptDate}
+                  onChange={(e) => setReceiptDate(e.target.value)}
+                  className="mt-1 block h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-blue-300" />
+              </label>
+              <PrimaryActionButton size="sm" disabled={!receiptDate}
+                busy={execute.isPending} pendingLabel="生成订单中"
+                onClick={() => t.id && execute.mutate(
+                  { tenderId: t.id, data: { expectedReceiptDate: receiptDate } },
+                  {
+                    onSuccess: (r) => { onFeedback(`中标转执行:采购订单 ${r.data?.executionOrderId ?? ''} 已生成并通知中标人确认。`); refresh(); },
+                    onError: reportApiError,
+                  })}>
+                生成执行采购订单
+              </PrimaryActionButton>
+              <p className="text-[11px] font-bold text-slate-400">按中标价生成单行订单,进入既有履约与财务链。</p>
+            </div>
+          )}
         </div>
       </section>
     );

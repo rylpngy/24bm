@@ -8,9 +8,11 @@ public final class RfqMethod {
   public static final String AUCTION = "竞价";
   public static final String MALL = "商城";
   public static final String SINGLE_SOURCE = "单一来源";
+  // 招标(2.0):仅作为定标转执行的锚点 RFQ 方式,不开放询价向导创建。
+  public static final String TENDER = "招标";
 
   private static final Set<String> ALL =
-      Set.of(COMPARE, AUCTION, MALL, SINGLE_SOURCE);
+      Set.of(COMPARE, AUCTION, MALL, SINGLE_SOURCE, TENDER);
 
   private static final Set<String> LEGACY_COMPARE =
       Set.of("询价", "公开招标", "邀请招标", "竞争性谈判");

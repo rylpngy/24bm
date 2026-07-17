@@ -4967,6 +4967,66 @@
         }
       }
     },
+    "/api/v1/buyer/tenders/{tenderId}/execute": {
+      "post": {
+        "tags": [
+          "buyer-tender-controller"
+        ],
+        "operationId": "BuyerTender_execute",
+        "parameters": [
+          {
+            "name": "tenderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecuteTenderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTenderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/tenders/{tenderId}/distribute": {
       "post": {
         "tags": [
@@ -14856,6 +14916,9 @@
           },
           "rebidOfTenderId": {
             "type": "string"
+          },
+          "executionOrderId": {
+            "type": "string"
           }
         }
       },
@@ -17420,6 +17483,18 @@
         "properties": {
           "reason": {
             "type": "string"
+          }
+        }
+      },
+      "ExecuteTenderRequest": {
+        "required": [
+          "expectedReceiptDate"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedReceiptDate": {
+            "type": "string",
+            "format": "date"
           }
         }
       },

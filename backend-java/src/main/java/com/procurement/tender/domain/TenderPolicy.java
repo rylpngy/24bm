@@ -79,6 +79,16 @@ public final class TenderPolicy {
     }
   }
 
+  // 转执行(C-7):仅已定标且尚未生成执行订单的招标项目可一键生成采购订单(幂等)。
+  public static void requireExecutable(Tender tender) {
+    if (!STATUS_AWARDED.equals(tender.status())) {
+      throw new IllegalStateException("仅已定标的招标项目可生成执行订单: " + tender.id());
+    }
+    if (tender.executionOrderId() != null) {
+      throw new IllegalStateException("执行订单已生成,不可重复生成: " + tender.executionOrderId());
+    }
+  }
+
   // 流标(C-6):开标后、定标前可宣布流标(无有效投标或评审全部不合格等),原因必填留痕。
   public static void requireFailable(Tender tender, String reason) {
     if (!STATUS_OPENED.equals(tender.status()) && !STATUS_EVALUATING.equals(tender.status())) {

@@ -47,6 +47,12 @@ public class BuyerTenderController {
     return ApiResponse.ok(tenderApplicationService.openTender(tenderId));
   }
 
+  @PostMapping("/{tenderId}/execute")
+  public ApiResponse<TenderResponse> execute(
+      @PathVariable String tenderId, @Valid @RequestBody ExecuteTenderRequest request) {
+    return ApiResponse.ok(tenderApplicationService.executeTender(tenderId, request));
+  }
+
   @PostMapping("/{tenderId}/fail")
   public ApiResponse<TenderResponse> fail(
       @PathVariable String tenderId, @Valid @RequestBody FailTenderRequest request) {

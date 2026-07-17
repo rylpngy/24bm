@@ -299,6 +299,11 @@ function AwardResultSection({ tender }: { tender: TenderResponse }) {
           <p className="text-xs font-black text-emerald-800">恭喜,贵方为本项目中标人。中标通知书(招标人已电子签章):</p>
           {tender.awardNoticeHtml && <RichTextView html={tender.awardNoticeHtml} className="mt-2" />}
           <p className="mt-2 text-[11px] font-bold text-slate-500">请按招标文件约定与招标人签订合同;通知书签章指纹与贵方投标密封凭证绑定,可核验。</p>
+          {tender.executionOrderId && (
+            <p className="mt-1.5 text-[11px] font-black text-blue-800">
+              执行采购订单 <span className="font-mono">{tender.executionOrderId}</span> 已生成,请前往「销售订单」确认并按交期履约。
+            </p>
+          )}
         </div>
       ) : (
         <FeedbackNotice tone="info" message="感谢贵方参与本项目投标。本项目已定标,未中标投标文件按规定留档。" />
