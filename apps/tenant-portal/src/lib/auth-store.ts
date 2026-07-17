@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { setAuthToken, setTokenRefresher } from '@24bid/api-client';
+import { setAuthExpiredHandler, setAuthToken, setTokenRefresher } from '@24bid/api-client';
 import { clearPersistedSession, loadPersistedSession, persistSession, refreshKeycloakToken } from '@24bid/shared';
 
 interface BuyerSession {
@@ -52,6 +52,14 @@ if (restoredSession) {
   setAuthToken(restoredSession.token);
   installRefresher(!!restoredSession.refreshToken);
 }
+
+// 会话彻底过期(401 且续签失败):清会话回登录门,避免整页请求持续报错。
+setAuthExpiredHandler(() => {
+  setAuthToken(null);
+  setTokenRefresher(null);
+  clearPersistedSession(STORAGE_KEY);
+  useAuthStore.setState({ session: null });
+});
 
 // 客户端鉴权状态(Zustand)。token 同时写入 api-client 的请求拦截器。
 export const useAuthStore = create<AuthState>((set) => ({

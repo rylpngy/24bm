@@ -9,6 +9,7 @@ export const axiosInstance = Axios.create({
 
 let authToken: string | null = null;
 let tokenRefresher: (() => Promise<string | null>) | null = null;
+let authExpiredHandler: (() => void) | null = null;
 let refreshing: Promise<string | null> | null = null;
 
 /** 应用启动时配置后端地址。 */
@@ -28,6 +29,11 @@ export function setAuthToken(token: string | null): void {
  * 401 响应再兜底续签一次并重放。续签器成功须自行更新存储并返回新 token;失败返回 null
  * (回落为原有「登录态过期」提示)。登出传 null 卸载。
  */
+/** 会话彻底过期(401 且续签失败)时回调:通常清会话回登录门,避免页面持续报错。 */
+export function setAuthExpiredHandler(handler: (() => void) | null): void {
+  authExpiredHandler = handler;
+}
+
 export function setTokenRefresher(refresher: (() => Promise<string | null>) | null): void {
   tokenRefresher = refresher;
   refreshing = null;
@@ -69,11 +75,17 @@ axiosInstance.interceptors.request.use(async (config) => {
 // 401 兜底:时钟偏差或续签窗口错过时,续签一次并重放原请求(仅一次,防循环)。
 axiosInstance.interceptors.response.use(undefined, async (error: AxiosError) => {
   const config = error.config as (AxiosRequestConfig & { _retried?: boolean }) | undefined;
-  if (error.response?.status === 401 && config && !config._retried && tokenRefresher) {
-    const next = await refreshOnce();
-    if (next) {
-      config._retried = true;
-      return axiosInstance(config);
+  if (error.response?.status === 401 && config && !config._retried) {
+    if (tokenRefresher) {
+      const next = await refreshOnce();
+      if (next) {
+        config._retried = true;
+        return axiosInstance(config);
+      }
+    }
+    // 无续签器或续签失败:会话彻底过期,交回登录门。
+    if (authToken && authExpiredHandler) {
+      authExpiredHandler();
     }
   }
   return Promise.reject(error);

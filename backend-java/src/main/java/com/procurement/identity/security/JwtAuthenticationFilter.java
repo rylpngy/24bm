@@ -44,8 +44,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       FilterChain filterChain) throws ServletException, IOException {
     String authorization = request.getHeader("Authorization");
     if (authorization != null && authorization.startsWith("Bearer ")) {
+      AuthenticatedPrincipal principal;
       try {
-        AuthenticatedPrincipal principal = authenticate(authorization.substring(7));
+        principal = authenticate(authorization.substring(7));
+      } catch (RuntimeException invalidToken) {
+        // 过期/无效令牌 → 标准 401(而非 500):前端据此走静默续签或回登录门。
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"success\":false,\"data\":null,\"message\":\"登录已过期,请重新登录\"}");
+        return;
+      }
+      try {
         List<SimpleGrantedAuthority> authorities = principal.roles().stream()
             .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
             .toList();
