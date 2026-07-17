@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 // 公开商机查询:跨租户只读(共享范围 mapper,已登记 TenantIsolationArchitectureTests 白名单)。
-// 仅暴露公开安全字段;草稿不可见,商城锚点不属于商机。
+// 仅暴露公开安全字段;草稿不可见,商城/招标锚点 RFQ(内部记账用)不属于商机。
 @Mapper
 public interface PublicOpportunityMapper {
 
@@ -33,7 +33,7 @@ public interface PublicOpportunityMapper {
       from rfqs r
       join tenants t on t.id = r.tenant_id
       where r.status in ('报价中', '已开标', '定标审批中', '已定标')
-        and r.method <> '商城'
+        and r.method not in ('商城', '招标')
       order by r.created_at desc
       limit 200
       """)
@@ -46,14 +46,14 @@ public interface PublicOpportunityMapper {
       join tenants t on t.id = r.tenant_id
       where r.id = #{rfqId}
         and r.status in ('报价中', '已开标', '定标审批中', '已定标')
-        and r.method <> '商城'
+        and r.method not in ('商城', '招标')
       """)
   PublicOpportunityResponse findPublicOpportunityById(@Param("rfqId") String rfqId);
 
   @Select("""
       select r.tenant_id
       from rfqs r
-      where r.id = #{rfqId} and r.status = '报价中' and r.method <> '商城'
+      where r.id = #{rfqId} and r.status = '报价中' and r.method not in ('商城', '招标')
       """)
   String findEnrollableTenantId(@Param("rfqId") String rfqId);
 

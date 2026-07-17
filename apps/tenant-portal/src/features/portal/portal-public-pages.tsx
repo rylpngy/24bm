@@ -464,11 +464,32 @@ export function HomeSuppliersSection({
   );
 }
 
-// 首页「平台公告」真实数据条:最新 3 条生效公告。
+// 首页「最新公告」真实数据条:采购公告(招标/询比等业务公告)与平台公告按时间混排取最新 3 条。
 export function HomeAnnouncementsStrip({ onOpenAll }: { onOpenAll: () => void }) {
   const announcements = usePublicPortalListAnnouncements();
-  const list = (announcements.data?.data ?? []).slice(0, 3);
-  if (list.length === 0) return null;
+  const procAnnouncements = usePublicProcurementAnnouncementList();
+  const merged = [
+    ...(procAnnouncements.data?.data ?? []).map((a) => ({
+      id: a.id ?? '',
+      title: a.title ?? '',
+      tag: a.type ?? '采购公告',
+      tagCls: a.type === '定标公告' ? 'bg-emerald-50 text-emerald-700'
+        : a.type === '终止公告' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-700',
+      meta: `${a.buyerName ?? ''}`,
+      at: a.publishedAt ?? '',
+    })),
+    ...(announcements.data?.data ?? []).map((a) => ({
+      id: a.id ?? '',
+      title: a.title ?? '',
+      tag: '平台公告',
+      tagCls: 'bg-violet-50 text-violet-700',
+      meta: AUDIENCE_LABELS[a.audience ?? ''] ?? a.audience ?? '',
+      at: a.createdAt ?? '',
+    })),
+  ]
+    .sort((x, y) => (y.at || '').localeCompare(x.at || ''))
+    .slice(0, 3);
+  if (merged.length === 0) return null;
 
   return (
     <section className="bg-white py-10">
@@ -476,23 +497,26 @@ export function HomeAnnouncementsStrip({ onOpenAll }: { onOpenAll: () => void })
         <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <p className="flex items-center gap-2 text-sm font-black text-slate-950">
-              <Megaphone size={16} className="text-blue-600" /> 平台公告
+              <Megaphone size={16} className="text-blue-600" /> 最新公告
             </p>
             <button type="button" onClick={onOpenAll} className="text-xs font-black text-blue-600 hover:text-blue-700">
               查看全部 →
             </button>
           </div>
           <div className="grid gap-2 md:grid-cols-3">
-            {list.map((a) => (
+            {merged.map((a) => (
               <button
                 key={a.id}
                 type="button"
                 onClick={onOpenAll}
                 className="rounded-lg border border-white bg-white p-3 text-left shadow-sm transition hover:border-blue-200"
               >
-                <p className="truncate text-sm font-black text-slate-900">{a.title}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-black ${a.tagCls}`}>{a.tag}</span>
+                  <p className="min-w-0 truncate text-sm font-black text-slate-900">{a.title}</p>
+                </div>
                 <p className="mt-1 text-[11px] font-bold text-slate-400">
-                  {AUDIENCE_LABELS[a.audience ?? ''] ?? a.audience} · {dateText(a.createdAt)}
+                  {a.meta} · {dateText(a.at)}
                 </p>
               </button>
             ))}
