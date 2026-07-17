@@ -139,6 +139,33 @@ test('评标:组建委员会 → 评分交卷 → 汇总排名与推荐中标', 
   await expect(page.getByText('评标汇总排名')).toBeVisible();
   await expect(page.getByText('推荐中标', { exact: true })).toBeVisible();
   await expect(page.getByText('已交卷').first()).toBeVisible();
+
+  // C-9 评标问询:UI 发出二次报价 → API 以供应商身份答复修订价 → 汇总显示修订价与「二次」标记
+  await page.getByLabel('问询内容').fill('报价高于预算,请给出修订报价');
+  await page.getByLabel('问询类别').selectOption('二次报价');
+  await page.getByRole('button', { name: '发出问询' }).click();
+  await expect(page.getByText(/已向投标人发出二次报价/)).toBeVisible();
+
+  const supLogin = await request.post(`${API}/auth/login`, {
+    data: { account: 'supplier.sales@example.com', password: 'demo123456', scope: 'SUPPLIER', supplierId: 'ent-supplier-sunrise' },
+  });
+  const sup = (await supLogin.json()).data.accessToken as string;
+  const svList = await request.get(`${API}/supplier/tenders`, { headers: { Authorization: `Bearer ${sup}` } });
+  const sv = ((await svList.json()).data as Array<{ id?: string; inquiries?: Array<{ id?: string; kind?: string }> }>).find((x) => x.id === id);
+  const inq = sv?.inquiries?.find((i) => i.kind === '二次报价');
+  expect((await request.post(`${API}/supplier/tenders/${id}/inquiries/${inq?.id}/answer`, {
+    headers: { Authorization: `Bearer ${sup}` },
+    data: { answer: 'E2E 同意下调', revisedAmount: 168000 },
+  })).ok()).toBeTruthy();
+
+  await page.reload();
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+  await expect(page.getByText('E2E 同意下调')).toBeVisible();
+  await expect(page.getByText('¥168,000.00').first()).toBeVisible();
+  await expect(page.getByText('二次', { exact: true }).first()).toBeVisible();
 });
 
 // C-5 行为级:评标完成 → 定标(默认推荐)+ 手写签章通知书 → 结果卡与签章留痕。

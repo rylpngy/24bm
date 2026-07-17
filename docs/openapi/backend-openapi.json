@@ -1754,6 +1754,74 @@
         }
       }
     },
+    "/api/v1/supplier/tenders/{tenderId}/inquiries/{inquiryId}/answer": {
+      "post": {
+        "tags": [
+          "supplier-tender-controller"
+        ],
+        "operationId": "SupplierTender_answerInquiry",
+        "parameters": [
+          {
+            "name": "tenderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "inquiryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerTenderInquiryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTenderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/tenders/{tenderId}/bids": {
       "post": {
         "tags": [
@@ -4873,6 +4941,66 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTenderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/tenders/{tenderId}/inquiries": {
+      "post": {
+        "tags": [
+          "buyer-tender-controller"
+        ],
+        "operationId": "BuyerTender_sendInquiry",
+        "parameters": [
+          {
+            "name": "tenderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTenderInquiryRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -14749,6 +14877,9 @@
           },
           "recommended": {
             "type": "boolean"
+          },
+          "effectiveAmount": {
+            "type": "number"
           }
         }
       },
@@ -14807,6 +14938,40 @@
           "scoredCount": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "TenderInquiryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "bidId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "askedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "revisedAmount": {
+            "type": "number"
+          },
+          "answeredAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -14919,6 +15084,12 @@
           },
           "executionOrderId": {
             "type": "string"
+          },
+          "inquiries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenderInquiryResponse"
+            }
           }
         }
       },
@@ -16117,6 +16288,20 @@
         "properties": {
           "newPassword": {
             "type": "string"
+          }
+        }
+      },
+      "AnswerTenderInquiryRequest": {
+        "required": [
+          "answer"
+        ],
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "revisedAmount": {
+            "type": "number"
           }
         }
       },
@@ -17472,6 +17657,25 @@
             "items": {
               "$ref": "#/components/schemas/Line"
             }
+          }
+        }
+      },
+      "SendTenderInquiryRequest": {
+        "required": [
+          "bidId",
+          "kind",
+          "question"
+        ],
+        "type": "object",
+        "properties": {
+          "bidId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
           }
         }
       },

@@ -40,5 +40,7 @@ public record TenderResponse(
     String failureReason,
     String rebidOfTenderId,
     // C-7 定标转执行:生成的采购订单号(买方订单模块/供应商销售订单接续履约)。
-    String executionOrderId) {
+    String executionOrderId,
+    // C-9 评标问询与二次报价:买方全量;供应商仅本方投标的问询。
+    List<TenderInquiryResponse> inquiries) {
 }

@@ -5,6 +5,7 @@ import {
   useSupplierEsignList,
   useSupplierEsignSign,
   useSupplierTenderAcquire,
+  useSupplierTenderAnswerInquiry,
   useSupplierTenderList,
   useSupplierTenderSubmitBid,
   useSupplierTenderWithdrawBid,
@@ -365,6 +366,77 @@ function OpeningRollSection({ tender }: { tender: TenderResponse }) {
   );
 }
 
+
+// C-9 评标问询答复:澄清问询在线答复;二次报价须给出修订报价(不改密封原件,评分按最新有效报价)。
+function InquiryAnswerCard({
+  tender: t,
+  onFeedback,
+  onError,
+}: {
+  tender: TenderResponse;
+  onFeedback: (m: string) => void;
+  onError: (m: string | null) => void;
+}) {
+  const queryClient = useQueryClient();
+  const answer = useSupplierTenderAnswerInquiry();
+  const [drafts, setDrafts] = useState<Record<string, { answer: string; amount: string }>>({});
+  const inquiries = t.inquiries ?? [];
+  if (inquiries.length === 0) return null;
+  const refresh = () =>
+    queryClient.invalidateQueries({
+      predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/supplier/tenders'),
+    });
+  return (
+    <div className="mt-3 space-y-3">
+      {inquiries.map((q) => {
+        const d = drafts[q.id ?? ''] ?? { answer: '', amount: '' };
+        const set = (patch: Partial<typeof d>) => setDrafts((cur) => ({ ...cur, [q.id ?? '']: { ...d, ...patch } }));
+        const isRequote = q.kind === '二次报价';
+        return (
+          <div key={q.id} className={cn('rounded-lg border p-3', q.answeredAt ? 'border-slate-100 bg-slate-50/50' : 'border-amber-200 bg-amber-50/40')}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
+                isRequote ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700')}>{q.kind}</span>
+              <p className="min-w-0 flex-1 text-xs font-black text-slate-900">{q.question}</p>
+              <span className="shrink-0 font-mono text-[11px] font-bold text-slate-400">{shortTime(q.askedAt)}</span>
+            </div>
+            {q.answeredAt ? (
+              <p className="mt-2 text-xs font-bold text-slate-600">
+                已答复:{q.answer}
+                {q.revisedAmount != null && <span className="ml-2 font-mono font-black text-amber-700">修订报价 {currency(q.revisedAmount)}</span>}
+                <span className="ml-2 font-mono text-[11px] text-slate-400">{shortTime(q.answeredAt)}</span>
+              </p>
+            ) : t.status === '评标中' ? (
+              <div className="mt-2 flex flex-wrap items-end gap-2">
+                <input className="h-9 min-w-52 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
+                  placeholder="答复内容(必填)" aria-label={`答复-${q.kind}`} value={d.answer}
+                  onChange={(e) => set({ answer: e.target.value })} />
+                {isRequote && (
+                  <input className="h-9 w-40 rounded-lg border border-amber-200 bg-white px-3 text-right text-xs font-black text-slate-800 outline-none focus:border-amber-400"
+                    type="number" min="0" placeholder="修订报价(元)" aria-label="修订报价" value={d.amount}
+                    onChange={(e) => set({ amount: e.target.value })} />
+                )}
+                <PrimaryActionButton size="sm" busy={answer.isPending} pendingLabel="提交中"
+                  disabled={!d.answer.trim() || (isRequote && !(Number(d.amount) > 0))}
+                  onClick={() => t.id && q.id && answer.mutate(
+                    { tenderId: t.id, inquiryId: q.id, data: { answer: d.answer.trim(), revisedAmount: isRequote ? Number(d.amount) : undefined } },
+                    {
+                      onSuccess: () => { onFeedback(isRequote ? '二次报价已提交,评标将按修订报价计算价格分。' : '澄清答复已提交。'); refresh(); },
+                      onError: (e) => onError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '提交失败,请稍后重试'),
+                    })}>
+                  提交答复
+                </PrimaryActionButton>
+              </div>
+            ) : (
+              <p className="mt-2 text-[11px] font-bold text-slate-400">评标已结束,本问询未在受理期内答复。</p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // C-5 中标结果:定标后全体可见方公示中标人;中标人可读中标通知书全文(招标人已签章)。
 function AwardResultSection({ tender }: { tender: TenderResponse }) {
   const mySupplierId = (tender.acquisitions ?? [])[0]?.supplierId;
@@ -531,6 +603,8 @@ export function TenderProjectsPage() {
                       ? '评标已完成,评审结论已体现在定标结果中。'
                       : '开标唱标完成后,招标人将组建评标委员会进行评审。'}
                 </p>
+                {/* C-9 问询答复:澄清 / 二次报价 */}
+                <InquiryAnswerCard tender={t} onFeedback={setFeedback} onError={setError} />
               </section>
             )}
             {/* ── 阶段五 · 定标:中标结果公示 + 签章通知书 ── */}

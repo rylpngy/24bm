@@ -212,4 +212,46 @@ class TenderPolicyTests {
     assertThatThrownBy(() -> TenderPolicy.requireExecutable(executed))
         .hasMessageContaining("不可重复生成");
   }
+
+  // ── C-9 评标问询与二次报价 ───────────────────────────────────
+  @Test
+  void inquiryOnlyDuringEvaluationForUnsealedBid() {
+    var now = OffsetDateTime.now();
+    var evaluating = tender("公开招标", "评标中", "<p>x</p>", now, now, now);
+    var openedBid = new com.procurement.tender.domain.TenderBid(
+        "tbid-1", "t", "tender-1", "s", BigDecimal.TEN, "<p>doc</p>", "digest", "已开启", now, null);
+    assertThatCode(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireInquiryOpen(
+        evaluating, openedBid, "澄清问询")).doesNotThrowAnyException();
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireInquiryOpen(
+        tender("公开招标", "已开标", "<p>x</p>", now, now, now), openedBid, "澄清问询"))
+        .hasMessageContaining("评标中");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireInquiryOpen(
+        evaluating, null, "澄清问询")).hasMessageContaining("已解封的有效投标");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireInquiryOpen(
+        evaluating, openedBid, "闲聊")).hasMessageContaining("澄清问询 或 二次报价");
+  }
+
+  @Test
+  void inquiryAnswerRules() {
+    var now = OffsetDateTime.now();
+    var evaluating = tender("公开招标", "评标中", "<p>x</p>", now, now, now);
+    var open = new com.procurement.tender.domain.TenderInquiry(
+        "tinq-1", "t", "tender-1", "tbid-1", "二次报价", "请重新报价", now, null, null, null);
+    assertThatCode(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireAnswerable(evaluating, open))
+        .doesNotThrowAnyException();
+    var answered = new com.procurement.tender.domain.TenderInquiry(
+        "tinq-1", "t", "tender-1", "tbid-1", "二次报价", "请重新报价", now, "ok", BigDecimal.TEN, now);
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireAnswerable(evaluating, answered))
+        .hasMessageContaining("已答复");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireAnswerable(
+        tender("公开招标", "已定标", "<p>x</p>", now, now, now), open))
+        .hasMessageContaining("评标已结束");
+
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireValidAnswer(
+        "二次报价", "同意下调", null)).hasMessageContaining("正数修订报价");
+    assertThatThrownBy(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireValidAnswer(
+        "澄清问询", "说明如下", BigDecimal.TEN)).hasMessageContaining("不得修改报价");
+    assertThatCode(() -> com.procurement.tender.domain.TenderInquiryPolicy.requireValidAnswer(
+        "二次报价", "下调至十万", BigDecimal.TEN)).doesNotThrowAnyException();
+  }
 }

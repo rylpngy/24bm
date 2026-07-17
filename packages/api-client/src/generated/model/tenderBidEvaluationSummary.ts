@@ -16,4 +16,5 @@ export interface TenderBidEvaluationSummary {
   compositeScore?: number;
   rank?: number;
   recommended?: boolean;
+  effectiveAmount?: number;
 }

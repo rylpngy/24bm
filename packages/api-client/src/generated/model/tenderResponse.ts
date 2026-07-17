@@ -10,6 +10,7 @@ import type { TenderBidResponse } from './tenderBidResponse';
 import type { TenderEvaluatorResponse } from './tenderEvaluatorResponse';
 import type { TenderScoreResponse } from './tenderScoreResponse';
 import type { TenderBidEvaluationSummary } from './tenderBidEvaluationSummary';
+import type { TenderInquiryResponse } from './tenderInquiryResponse';
 
 export interface TenderResponse {
   id?: string;
@@ -40,4 +41,5 @@ export interface TenderResponse {
   failureReason?: string;
   rebidOfTenderId?: string;
   executionOrderId?: string;
+  inquiries?: TenderInquiryResponse[];
 }

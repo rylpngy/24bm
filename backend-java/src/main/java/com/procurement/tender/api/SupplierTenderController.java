@@ -36,6 +36,14 @@ public class SupplierTenderController {
     return ApiResponse.ok(tenderApplicationService.submitBid(tenderId, request));
   }
 
+  @PostMapping("/{tenderId}/inquiries/{inquiryId}/answer")
+  public ApiResponse<TenderResponse> answerInquiry(
+      @PathVariable String tenderId,
+      @PathVariable String inquiryId,
+      @Valid @RequestBody AnswerTenderInquiryRequest request) {
+    return ApiResponse.ok(tenderApplicationService.answerInquiry(tenderId, inquiryId, request));
+  }
+
   @PostMapping("/{tenderId}/bids/withdraw")
   public ApiResponse<TenderBidResponse> withdrawBid(@PathVariable String tenderId) {
     return ApiResponse.ok(tenderApplicationService.withdrawBid(tenderId));

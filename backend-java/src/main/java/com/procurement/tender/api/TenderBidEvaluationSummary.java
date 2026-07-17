@@ -16,5 +16,7 @@ public record TenderBidEvaluationSummary(
     BigDecimal priceScore,
     BigDecimal compositeScore,
     int rank,
-    boolean recommended) {
+    boolean recommended,
+    // 最新有效报价:最近一次已答复的二次报价修订价,无则为原投标价;价格分与排名按此计算。
+    BigDecimal effectiveAmount) {
 }

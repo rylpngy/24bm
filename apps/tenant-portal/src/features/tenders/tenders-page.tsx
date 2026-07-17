@@ -15,6 +15,7 @@ import {
   useBuyerTenderList,
   useBuyerTenderOpen,
   useBuyerTenderPublish,
+  useBuyerTenderSendInquiry,
   useBuyerTenderSubmitScores,
   useBuyerTenderUpdate,
   useRfqListAnnouncements,
@@ -102,6 +103,10 @@ function EvaluationSection({
 }) {
   const formCommittee = useBuyerTenderFormCommittee();
   const submitScores = useBuyerTenderSubmitScores();
+  const sendInquiry = useBuyerTenderSendInquiry();
+  const [inqBidId, setInqBidId] = useState<string | null>(null);
+  const [inqKind, setInqKind] = useState('澄清问询');
+  const [inqQuestion, setInqQuestion] = useState('');
   const [members, setMembers] = useState<{ name: string; role: string }[]>([
     { name: '', role: '组长' }, { name: '', role: '成员' }, { name: '', role: '成员' },
   ]);
@@ -292,6 +297,73 @@ function EvaluationSection({
             </div>
           )}
 
+
+          {/* C-9 评标问询与二次报价:发起 + 留痕 */}
+          {t.status === '评标中' && validBids.length > 0 && (
+            <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/30 p-3">
+              <p className="text-xs font-black text-blue-900">评标问询 / 二次报价(以评标委员会名义发出,定向投标人)</p>
+              <div className="mt-2 flex flex-wrap items-end gap-2">
+                <label className="block">
+                  <span className="text-[11px] font-black text-slate-500">投标人</span>
+                  <select className="mt-1 block h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700"
+                    aria-label="问询投标人" value={inqBidId ?? validBids[0]?.id ?? ''}
+                    onChange={(e) => setInqBidId(e.target.value)}>
+                    {validBids.map((b) => <option key={b.id} value={b.id}>{b.supplierName ?? b.supplierId}</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-[11px] font-black text-slate-500">类别</span>
+                  <select className="mt-1 block h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700"
+                    aria-label="问询类别" value={inqKind} onChange={(e) => setInqKind(e.target.value)}>
+                    <option value="澄清问询">澄清问询</option>
+                    <option value="二次报价">二次报价</option>
+                  </select>
+                </label>
+                <input className="h-9 min-w-56 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
+                  placeholder={inqKind === '二次报价' ? '如:报价高于预算,请给出修订报价' : '如:请澄清质保期与到货周期'}
+                  aria-label="问询内容" value={inqQuestion} onChange={(e) => setInqQuestion(e.target.value)} />
+                <PrimaryActionButton size="sm" busy={sendInquiry.isPending} pendingLabel="发出中"
+                  disabled={!inqQuestion.trim()}
+                  onClick={() => t.id && sendInquiry.mutate(
+                    { tenderId: t.id, data: { bidId: inqBidId ?? validBids[0]?.id ?? '', kind: inqKind, question: inqQuestion.trim() } },
+                    {
+                      onSuccess: () => { onFeedback(`已向投标人发出${inqKind},待其答复。`); setInqQuestion(''); refresh(); },
+                      onError: reportApiError,
+                    })}>
+                  发出问询
+                </PrimaryActionButton>
+              </div>
+            </div>
+          )}
+          {(t.inquiries ?? []).length > 0 && (
+            <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                  <tr>
+                    <th className="px-3 py-2">类别</th>
+                    <th className="px-3 py-2">投标人</th>
+                    <th className="px-3 py-2">问询内容</th>
+                    <th className="px-3 py-2">答复</th>
+                    <th className="px-3 py-2 text-right">修订报价</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {(t.inquiries ?? []).map((q) => (
+                    <tr key={q.id} className="font-bold text-slate-700">
+                      <td className="px-3 py-2">
+                        <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
+                          q.kind === '二次报价' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700')}>{q.kind}</span>
+                      </td>
+                      <td className="px-3 py-2 font-black text-slate-900">{q.supplierName ?? '—'}</td>
+                      <td className="px-3 py-2">{q.question}</td>
+                      <td className="px-3 py-2">{q.answer ?? <span className="text-slate-400">待答复</span>}</td>
+                      <td className="px-3 py-2 text-right font-mono">{q.revisedAmount != null ? currency(q.revisedAmount) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           {summary.length > 0 && (
             <div className="mt-4">
               <p className="text-xs font-black text-slate-500">评标汇总排名</p>
@@ -314,7 +386,12 @@ function EvaluationSection({
                       <tr key={r.bidId} className={cn('font-bold text-slate-700', r.recommended && 'bg-emerald-50/50')}>
                         <td className="px-3 py-2 text-center font-mono font-black text-slate-400">{r.rank}</td>
                         <td className="px-3 py-2 font-black text-slate-900">{r.supplierName}</td>
-                        <td className="px-3 py-2 text-right font-mono">{currency(r.bidAmount)}</td>
+                        <td className="px-3 py-2 text-right font-mono">
+                          {currency(r.effectiveAmount ?? r.bidAmount)}
+                          {r.effectiveAmount != null && r.bidAmount != null && r.effectiveAmount !== r.bidAmount && (
+                            <span className="ml-1 rounded bg-amber-50 px-1 text-[10px] font-black text-amber-700" title={`原报价 ${currency(r.bidAmount)}`}>二次</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2 text-right font-mono">{r.avgTechnicalScore ?? '—'}</td>
                         <td className="px-3 py-2 text-right font-mono">{r.avgCommercialScore ?? '—'}</td>
                         <td className="px-3 py-2 text-right font-mono">{r.priceScore ?? '—'}</td>

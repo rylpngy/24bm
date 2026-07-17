@@ -7,18 +7,21 @@ import com.procurement.supplier.application.SupplierProfileApplicationService;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.application.RfqAnnouncementService;
 import com.procurement.sourcing.application.RfqApplicationService;
+import com.procurement.tender.api.AnswerTenderInquiryRequest;
 import com.procurement.tender.api.AwardTenderRequest;
 import com.procurement.tender.api.DistributeTenderRequest;
 import com.procurement.tender.api.ExecuteTenderRequest;
 import com.procurement.tender.api.FailTenderRequest;
 import com.procurement.tender.api.FormCommitteeRequest;
 import com.procurement.tender.api.SaveTenderRequest;
+import com.procurement.tender.api.SendTenderInquiryRequest;
 import com.procurement.tender.api.SubmitScoresRequest;
 import com.procurement.tender.api.SubmitTenderBidRequest;
 import com.procurement.tender.api.TenderAcquisitionResponse;
 import com.procurement.tender.api.TenderBidEvaluationSummary;
 import com.procurement.tender.api.TenderBidResponse;
 import com.procurement.tender.api.TenderEvaluatorResponse;
+import com.procurement.tender.api.TenderInquiryResponse;
 import com.procurement.tender.api.TenderResponse;
 import com.procurement.tender.api.TenderScoreResponse;
 import com.procurement.tender.domain.Tender;
@@ -27,11 +30,14 @@ import com.procurement.tender.domain.TenderBid;
 import com.procurement.tender.domain.TenderBidPolicy;
 import com.procurement.tender.domain.TenderEvaluationPolicy;
 import com.procurement.tender.domain.TenderEvaluator;
+import com.procurement.tender.domain.TenderInquiry;
+import com.procurement.tender.domain.TenderInquiryPolicy;
 import com.procurement.tender.domain.TenderPolicy;
 import com.procurement.tender.domain.TenderScore;
 import com.procurement.tender.infrastructure.TenderAcquisitionMapper;
 import com.procurement.tender.infrastructure.TenderBidMapper;
 import com.procurement.tender.infrastructure.TenderEvaluationMapper;
+import com.procurement.tender.infrastructure.TenderInquiryMapper;
 import com.procurement.tender.infrastructure.TenderMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -57,6 +63,7 @@ public class TenderApplicationService {
   private final TenderAcquisitionMapper acquisitionMapper;
   private final TenderBidMapper bidMapper;
   private final TenderEvaluationMapper evaluationMapper;
+  private final TenderInquiryMapper inquiryMapper;
   private final SupplierProfileApplicationService supplierProfileApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -69,6 +76,7 @@ public class TenderApplicationService {
       TenderAcquisitionMapper acquisitionMapper,
       TenderBidMapper bidMapper,
       TenderEvaluationMapper evaluationMapper,
+      TenderInquiryMapper inquiryMapper,
       SupplierProfileApplicationService supplierProfileApplicationService,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
@@ -79,6 +87,7 @@ public class TenderApplicationService {
     this.acquisitionMapper = acquisitionMapper;
     this.bidMapper = bidMapper;
     this.evaluationMapper = evaluationMapper;
+    this.inquiryMapper = inquiryMapper;
     this.supplierProfileApplicationService = supplierProfileApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -190,10 +199,11 @@ public class TenderApplicationService {
     Tender tender = requireTender(tenantId, tenderId);
     TenderPolicy.requireExecutable(tender);
     TenderBid awarded = findAwardedBid(tender);
+    BigDecimal executionAmount = effectiveAmount(awarded, inquiryMapper.listByTender(tenantId, tenderId));
     String anchorRfqId = rfqApplicationService.createTenderAnchor(
         tender.title() + "(招标转执行)", awarded.supplierId());
     String orderId = purchaseOrderApplicationService.createTenderOrder(
-        anchorRfqId, awarded.supplierId(), awarded.bidAmount(),
+        anchorRfqId, awarded.supplierId(), executionAmount,
         request.expectedReceiptDate(),
         tender.title() + " 中标标的(" + tender.tenderNo() + ")");
     int updated = tenderMapper.markExecuted(tenantId, tenderId, orderId);
@@ -247,6 +257,67 @@ public class TenderApplicationService {
     return toResponse(requireTender(tenantId, id), List.of(), true);
   }
 
+
+  // ── 评标问询与二次报价(C-9) ────────────────────────────────
+  @Transactional
+  public TenderResponse sendInquiry(String tenderId, SendTenderInquiryRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    Tender tender = requireTender(tenantId, tenderId);
+    TenderBid bid = bidMapper.listByTender(tenantId, tenderId).stream()
+        .filter(b -> b.id().equals(request.bidId()))
+        .findFirst()
+        .orElse(null);
+    TenderInquiryPolicy.requireInquiryOpen(tender, bid, request.kind());
+    inquiryMapper.insert(
+        "tinq-" + UUID.randomUUID(), tenantId, tenderId, bid.id(), request.kind(), request.question().trim());
+    String supplierName = supplierProfileApplicationService.findSupplierDisplayName(bid.supplierId());
+    auditLogApplicationService.recordCurrentTenantAction(
+        "tender.inquiry_sent", AUDIT_TARGET, tenderId,
+        request.kind() + " → " + supplierName + ":" + request.question().trim());
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId, bid.supplierId(), "评标" + request.kind(),
+        tender.title() + " 评标委员会向贵方发出" + request.kind() + ",请在招标项目详情的评标阶段及时答复。");
+    return toResponse(requireTender(tenantId, tenderId),
+        acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
+  @Transactional
+  public TenderResponse answerInquiry(String tenderId, String inquiryId, AnswerTenderInquiryRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier tender APIs");
+    Tender tender = findTenderForSupplier(tenderId, supplierId);
+    TenderBid myBid = myBid(tenderId, supplierId);
+    TenderInquiry inquiry = inquiryMapper.listByTender(tender.tenantId(), tenderId).stream()
+        .filter(i -> i.id().equals(inquiryId))
+        .filter(i -> myBid != null && i.bidId().equals(myBid.id()))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("问询不存在或不属于本方投标: " + inquiryId));
+    TenderInquiryPolicy.requireAnswerable(tender, inquiry);
+    TenderInquiryPolicy.requireValidAnswer(inquiry.kind(), request.answer(), request.revisedAmount());
+    int updated = inquiryMapper.answer(
+        inquiryId, tender.tenantId(), request.answer().trim(), request.revisedAmount(), OffsetDateTime.now());
+    if (updated == 0) {
+      throw new IllegalStateException("该问询已答复,不可重复提交: " + inquiryId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        tender.tenantId(), "tender.inquiry_answered", AUDIT_TARGET, tenderId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        tender.tenantId(), "问询已答复",
+        tender.title() + " 投标人已答复" + inquiry.kind()
+            + (request.revisedAmount() != null ? ",修订报价 " + request.revisedAmount() : "") + "。");
+    return supplierView(tender, myAcquisition(tenderId, supplierId));
+  }
+
+  // 最新有效报价:最近一次已答复的二次报价修订价;无则为原投标价。
+  private BigDecimal effectiveAmount(TenderBid bid, List<TenderInquiry> inquiries) {
+    return inquiries.stream()
+        .filter(i -> i.bidId().equals(bid.id()))
+        .filter(i -> TenderInquiryPolicy.KIND_REQUOTE.equals(i.kind()) && i.answeredAt() != null
+            && i.revisedAmount() != null)
+        .max(java.util.Comparator.comparing(TenderInquiry::answeredAt))
+        .map(TenderInquiry::revisedAmount)
+        .orElse(bid.bidAmount());
+  }
+
   // ── 买方:定标 + 中标通知书(C-5) ───────────────────────────
   @Transactional
   public TenderResponse awardTender(String tenderId, AwardTenderRequest request) {
@@ -257,17 +328,18 @@ public class TenderApplicationService {
         .findFirst()
         .orElse(null);
     TenderPolicy.requireAwardable(tender, bid, request.awardNoticeHtml());
+    BigDecimal awardAmount = effectiveAmount(bid, inquiryMapper.listByTender(tenantId, tenderId));
     tenderMapper.markAwarded(
         tenantId, tenderId, TenderPolicy.STATUS_AWARDED, bid.id(),
         OffsetDateTime.now(), request.awardNoticeHtml());
     String winnerName = supplierProfileApplicationService.findSupplierDisplayName(bid.supplierId());
     auditLogApplicationService.recordCurrentTenantAction(
         "tender.awarded", AUDIT_TARGET, tenderId,
-        "定标:中标人「" + winnerName + "」,中标价 " + bid.bidAmount());
+        "定标:中标人「" + winnerName + "」,中标价 " + awardAmount + "(含二次报价修订)");
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId, "招标定标", tender.title() + " 已定标,中标人「" + winnerName + "」,请签章中标通知书。");
     rfqAnnouncementService.onTenderAwarded(
-        tenantId, tenderId, tender.title(), tender.tenderType(), winnerName, bid.bidAmount());
+        tenantId, tenderId, tender.title(), tender.tenderType(), winnerName, awardAmount);
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
   }
@@ -537,6 +609,14 @@ public class TenderApplicationService {
     // 中标通知书正文仅中标人可见;中标投标与定标时间对全体可见方公示。
     boolean isWinner = tender.awardedBidId() != null && bids.stream()
         .anyMatch(b -> b.id().equals(tender.awardedBidId()) && b.supplierId().equals(mySupplierId));
+    // 本方投标的问询(澄清/二次报价):供应商在评标阶段答复。
+    TenderBid ownBid = myBid(tender.id(), mySupplierId);
+    List<TenderInquiryResponse> myInquiries = ownBid == null
+        ? List.of()
+        : inquiryMapper.listByTender(tender.tenantId(), tender.id()).stream()
+            .filter(i -> i.bidId().equals(ownBid.id()))
+            .map(i -> toInquiryResponse(i, null))
+            .toList();
     return new TenderResponse(
         tender.id(), tender.tenantId(), tender.tenderNo(), tender.title(), tender.tenderType(),
         tender.budget(), tender.status(), acquired ? tender.documentHtml() : null,
@@ -546,7 +626,14 @@ public class TenderApplicationService {
         // 评标过程对供应商不下发(定标结果按上方规则公示)。
         List.of(), List.of(), List.of(),
         tender.awardedBidId(), tender.awardedAt(), isWinner ? tender.awardNoticeHtml() : null,
-        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId(), tender.executionOrderId());
+        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId(), tender.executionOrderId(),
+        myInquiries);
+  }
+
+  private TenderInquiryResponse toInquiryResponse(TenderInquiry i, String supplierName) {
+    return new TenderInquiryResponse(
+        i.id(), i.bidId(), supplierName, i.kind(), i.question(), i.askedAt(),
+        i.answer(), i.revisedAmount(), i.answeredAt());
   }
 
   private TenderResponse toResponse(Tender tender, List<TenderAcquisition> acquisitions, boolean withNames) {
@@ -557,6 +644,13 @@ public class TenderApplicationService {
             .toList();
     List<TenderEvaluator> evaluators = evaluationMapper.listEvaluators(tender.tenantId(), tender.id());
     List<TenderScore> scores = evaluationMapper.listScores(tender.tenantId(), tender.id());
+    var bidsById = new java.util.HashMap<String, TenderBid>();
+    bidMapper.listByTender(tender.tenantId(), tender.id()).forEach(b -> bidsById.put(b.id(), b));
+    List<TenderInquiryResponse> inquiries = inquiryMapper.listByTender(tender.tenantId(), tender.id()).stream()
+        .map(i -> toInquiryResponse(i, java.util.Optional.ofNullable(bidsById.get(i.bidId()))
+            .map(b -> supplierProfileApplicationService.findSupplierDisplayName(b.supplierId()))
+            .orElse(null)))
+        .toList();
     return new TenderResponse(
         tender.id(), tender.tenantId(), tender.tenderNo(), tender.title(), tender.tenderType(),
         tender.budget(), tender.status(), tender.documentHtml(), tender.evaluationMethod(),
@@ -582,7 +676,8 @@ public class TenderApplicationService {
             .toList(),
         evaluationSummary(tender, evaluators, scores),
         tender.awardedBidId(), tender.awardedAt(), tender.awardNoticeHtml(),
-        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId(), tender.executionOrderId());
+        tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId(), tender.executionOrderId(),
+        inquiries);
   }
 
   // 评标汇总(实时计算):价格分=最低有效报价/本报价×100;
@@ -596,33 +691,37 @@ public class TenderApplicationService {
     if (validBids.isEmpty() || evaluators.isEmpty()) {
       return List.of();
     }
-    BigDecimal lowest = validBids.stream()
-        .map(TenderBid::bidAmount)
+    List<TenderInquiry> allInquiries = inquiryMapper.listByTender(tender.tenantId(), tender.id());
+    var effectiveByBid = new java.util.HashMap<String, BigDecimal>();
+    validBids.forEach(b -> effectiveByBid.put(b.id(), effectiveAmount(b, allInquiries)));
+    BigDecimal lowest = effectiveByBid.values().stream()
+        .filter(java.util.Objects::nonNull)
         .min(java.util.Comparator.naturalOrder())
         .orElse(null);
     boolean complete = validBids.stream().allMatch(b -> evaluators.stream().allMatch(e ->
         scores.stream().anyMatch(s -> s.bidId().equals(b.id()) && s.evaluatorId().equals(e.id()))));
 
-    record Row(TenderBid bid, BigDecimal avgTech, BigDecimal avgComm, BigDecimal priceScore, BigDecimal composite) {}
+    record Row(TenderBid bid, BigDecimal avgTech, BigDecimal avgComm, BigDecimal priceScore, BigDecimal composite, BigDecimal effective) {}
     List<Row> rows = validBids.stream().map(b -> {
       List<TenderScore> mine = scores.stream().filter(s -> s.bidId().equals(b.id())).toList();
       BigDecimal avgTech = average(mine.stream().map(TenderScore::technicalScore).toList());
       BigDecimal avgComm = average(mine.stream().map(TenderScore::commercialScore).toList());
-      BigDecimal priceScore = lowest == null || b.bidAmount() == null || b.bidAmount().signum() <= 0
+      BigDecimal effective = effectiveByBid.get(b.id());
+      BigDecimal priceScore = lowest == null || effective == null || effective.signum() <= 0
           ? null
-          : lowest.multiply(BigDecimal.valueOf(100)).divide(b.bidAmount(), 2, RoundingMode.HALF_UP);
+          : lowest.multiply(BigDecimal.valueOf(100)).divide(effective, 2, RoundingMode.HALF_UP);
       BigDecimal composite = avgTech == null || avgComm == null || priceScore == null
           ? null
           : avgTech.multiply(new BigDecimal("0.5"))
               .add(avgComm.multiply(new BigDecimal("0.2")))
               .add(priceScore.multiply(new BigDecimal("0.3")))
               .setScale(2, RoundingMode.HALF_UP);
-      return new Row(b, avgTech, avgComm, priceScore, composite);
+      return new Row(b, avgTech, avgComm, priceScore, composite, effective);
     }).toList();
 
     boolean lowestPriceMethod = "最低评标价法".equals(tender.evaluationMethod());
     java.util.Comparator<Row> ranking = lowestPriceMethod
-        ? java.util.Comparator.comparing(r -> r.bid().bidAmount(),
+        ? java.util.Comparator.comparing(Row::effective,
             java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
         : java.util.Comparator.comparing(Row::composite,
             java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()));
@@ -635,7 +734,7 @@ public class TenderApplicationService {
           r.bid().id(),
           supplierProfileApplicationService.findSupplierDisplayName(r.bid().supplierId()),
           r.bid().bidAmount(), r.avgTech(), r.avgComm(), r.priceScore(), r.composite(),
-          i + 1, complete && i == 0));
+          i + 1, complete && i == 0, r.effective()));
     }
     return List.copyOf(result);
   }
