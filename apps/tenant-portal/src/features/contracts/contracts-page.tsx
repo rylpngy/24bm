@@ -164,7 +164,7 @@ export function ContractsPage() {
             </button>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="break-words text-lg font-black text-slate-950">{c.contractName}</h1>
+                <h1 className="break-words text-xl font-black text-slate-950">{c.contractName}</h1>
                 {c.status && <StatusPill label={c.status} />}
                 {c.archiveStatus === '已归档' && <StatusPill label="已归档" />}
                 <ExpiryChip expiryDate={c.expiryDate} archived={c.archiveStatus === '已归档'} />

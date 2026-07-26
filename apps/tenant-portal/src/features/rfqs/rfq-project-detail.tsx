@@ -144,7 +144,7 @@ export function RfqProjectDetail({
             </button>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="break-words text-lg font-black text-slate-950">{rfq.title}</h2>
+                <h2 className="break-words text-xl font-black text-slate-950">{rfq.title}</h2>
                 {rfq.status && <StatusPill label={rfq.status} />}
                 {(rfq.currentRound ?? 1) > 1 && (
                   <span className="rounded-md bg-violet-50 px-2 py-1 text-[11px] font-black text-violet-700">

@@ -91,7 +91,7 @@ export function SupplierDetailPage({
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="break-words text-lg font-black tracking-normal text-slate-950">
+                <h1 className="break-words text-xl font-black tracking-normal text-slate-950">
                   {supplier.supplierName ?? '未命名供应商'}
                 </h1>
                 <StatusPill label={supplier.status ?? '待维护'} />
@@ -415,7 +415,7 @@ function OrdersTab({ orders, loading }: { orders: PurchaseOrderResponse[]; loadi
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-slate-950">历史采购交易记录</h2>
+        <h3 className="text-base font-black text-slate-950">历史采购交易记录</h3>
       </div>
       {loading ? (
         <p className="mt-6 rounded-lg bg-slate-50 p-4 text-sm font-bold text-slate-500">正在加载订单...</p>
@@ -459,7 +459,7 @@ function FinanceTab({ orders }: { orders: PurchaseOrderResponse[] }) {
     .reduce((sum, order) => sum + (order.amount ?? 0), 0);
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-base font-black text-slate-950">财务结算概览</h2>
+      <h3 className="text-base font-black text-slate-950">财务结算概览</h3>
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         <MetricTile label="累计应付" value={currency(total)} strong />
         <MetricTile label="已结算" value={currency(paid)} strong />
@@ -487,7 +487,7 @@ function ProductsTab({ supplier }: { supplier: BuyerSupplierResponse }) {
   const categories = supplier.categories?.length ? supplier.categories : ['未维护品类'];
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-base font-black text-slate-950">供应产品与能力范围</h2>
+      <h3 className="text-base font-black text-slate-950">供应产品与能力范围</h3>
       <div className="mt-4 flex flex-wrap gap-2">
         {categories.map((category) => (
           <span
@@ -508,9 +508,9 @@ function ProductsTab({ supplier }: { supplier: BuyerSupplierResponse }) {
 
 function PanelTitle({ icon: Icon, title }: { icon: typeof Gauge; title: string }) {
   return (
-    <h2 className="inline-flex items-center gap-2 text-base font-black text-slate-950">
+    <h3 className="inline-flex items-center gap-2 text-base font-black text-slate-950">
       <Icon size={18} className="text-blue-600" /> {title}
-    </h2>
+    </h3>
   );
 }
 

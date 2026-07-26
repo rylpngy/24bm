@@ -150,7 +150,7 @@ function ProgressTracker({ demand }: { demand: PurchaseDemandResponse }) {
   const next = nextActionFor(status);
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50">
-      <div className="mb-8 flex items-center gap-2">
+      <div className="mb-5 flex items-center gap-2">
         <Timer size={18} className="text-blue-600" />
         <h3 className="text-base font-black text-slate-950">需求流转进度</h3>
       </div>
@@ -477,41 +477,20 @@ export function DemandDetail({
               <StatusPill label={demand.status ?? '草稿'} />
             </div>
 
-            <div className="space-y-0 border-l border-slate-200 pl-5">
+            <div className="space-y-5 border-l border-slate-100 pl-5">
               {approvalSteps.map((step, index) => {
                 const meta = approvalStepMeta(demand.status, index);
                 return (
-                  <div key={step} className="relative pb-5 last:pb-0">
-                    <span
-                      className={cn(
-                        'absolute -left-[1.65rem] top-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 bg-white',
-                        meta.done
-                          ? 'border-emerald-500 text-emerald-600'
-                          : meta.current
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-slate-300 text-slate-300',
-                      )}
-                    >
-                      <i className="h-1.5 w-1.5 rounded-full bg-current" />
-                    </span>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-black text-slate-950">{step}</p>
-                      <span
-                        className={cn(
-                          'rounded-md px-2 py-1 text-[11px] font-black',
-                          meta.done
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : meta.current
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'bg-slate-100 text-slate-500',
-                        )}
-                      >
-                        {meta.label}
-                      </span>
-                    </div>
-                    <p className="mt-1.5 text-xs font-bold leading-5 text-slate-500">
-                      {approvalStepDetail(demand.status, index)}
+                  <div key={step} className="relative">
+                    <i className={cn('absolute -left-[1.45rem] top-1 h-2 w-2 rounded-full',
+                      meta.done ? 'bg-emerald-500' : meta.current ? 'bg-blue-600' : 'bg-slate-300')} />
+                    <p className="text-sm font-black text-slate-950">{step}</p>
+                    <p className="mt-1 break-words text-xs font-bold text-slate-500">
+                      {meta.label} · {approvalStepDetail(demand.status, index)}
                     </p>
+                    {meta.current && (
+                      <span className="mt-2 inline-flex rounded bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">当前节点</span>
+                    )}
                   </div>
                 );
               })}
@@ -542,37 +521,28 @@ export function DemandDetail({
               ) : history.length === 0 ? (
                 <ShellState variant="empty" title="暂无操作记录" desc="对该需求的操作将留痕于此。" />
               ) : (
-                <div className="space-y-0 border-l border-slate-200 pl-5">
+                <div className="space-y-5 border-l border-slate-100 pl-5">
                   {history.map((a, index) => {
                     const latest = index === 0;
                     return (
-                      <div key={a.id} className="relative pb-5 last:pb-0">
-                        <span
-                          className={cn(
-                            'absolute -left-[1.65rem] top-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 bg-white',
-                            latest ? 'border-blue-600 text-blue-600' : 'border-slate-300 text-slate-300',
-                          )}
-                        >
-                          <i className="h-1.5 w-1.5 rounded-full bg-current" />
-                        </span>
+                      <div key={a.id} className="relative">
+                        <i className={cn('absolute -left-[1.45rem] top-1 h-2 w-2 rounded-full', latest ? 'bg-blue-600' : 'bg-slate-300')} />
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="text-sm font-black text-slate-950">{ACTION_LABELS[a.action ?? ''] ?? a.action}</p>
                           <span className="font-mono text-[11px] font-black text-slate-400">
                             {dateTimeText(a.createdAt)}
                           </span>
                         </div>
-                        <p className="mt-1.5 truncate text-xs font-bold text-slate-500">
+                        <p className="mt-1 truncate text-xs font-bold text-slate-500">
                           操作人：{a.actorId ?? '--'}
                         </p>
                       </div>
                     );
                   })}
-                  <div className="relative pb-1">
-                    <span className="absolute -left-[1.65rem] top-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-slate-300">
-                      <i className="h-1.5 w-1.5 rounded-full bg-current" />
-                    </span>
+                  <div className="relative">
+                    <i className="absolute -left-[1.45rem] top-1 h-2 w-2 rounded-full bg-slate-200" />
                     <p className="text-xs font-bold text-slate-400">
-                    系统将继续记录提交、审批、驳回、计划合并等关键动作。
+                      系统将继续记录提交、审批、驳回、计划合并等关键动作。
                     </p>
                   </div>
                 </div>

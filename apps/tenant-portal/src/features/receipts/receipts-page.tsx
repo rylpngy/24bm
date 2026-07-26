@@ -212,7 +212,7 @@ export function ReceiptsPage() {
             </button>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="break-words font-mono text-lg font-black text-slate-950">{o.id}</h1>
+                <h1 className="break-words font-mono text-xl font-black text-slate-950">{o.id}</h1>
                 <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-black text-blue-700">验收登记</span>
               </div>
               <p className="mt-1 text-xs font-bold text-slate-500">

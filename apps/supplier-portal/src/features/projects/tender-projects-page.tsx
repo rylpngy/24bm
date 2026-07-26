@@ -121,7 +121,7 @@ function TenderAnnouncementsCard({ tenderId }: { tenderId: string }) {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
       <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
-        <Megaphone size={15} className="text-blue-600" /> 项目公告
+        <Megaphone size={18} className="text-blue-600" /> 项目公告
       </h3>
       <div className="mt-3 divide-y divide-slate-100">
         {list.map((a) => (
@@ -230,7 +230,7 @@ function BidSubmissionSection({
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
-          <Lock size={15} className="text-blue-600" /> 投标递交(加密密封)
+          <Lock size={18} className="text-blue-600" /> 投标递交(加密密封)
         </h3>
         {myBid && (
           <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
@@ -308,7 +308,7 @@ function OpeningRollSection({ tender }: { tender: TenderResponse }) {
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
-          <Gavel size={15} className="text-blue-600" /> 开标唱标公示
+          <Gavel size={18} className="text-blue-600" /> 开标唱标公示
         </h3>
         <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
           已开标 {shortTime(tender.openedAt)} · 有效投标 {bids.filter((b) => b.sealedStatus === '已开启').length} 份
@@ -447,7 +447,7 @@ function AwardResultSection({ tender }: { tender: TenderResponse }) {
       isWinner ? 'border-emerald-200' : 'border-slate-200')}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
-          <Award size={15} className="text-emerald-600" /> 中标结果公示
+          <Award size={18} className="text-blue-600" /> 中标结果公示
         </h3>
         <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
           定标时间 {shortTime(tender.awardedAt)}
@@ -541,7 +541,7 @@ export function TenderProjectsPage() {
                 <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black', typeTone[t.tenderType ?? ''] ?? 'bg-slate-100 text-slate-600')}>
                   {t.tenderType}
                 </span>
-                <h1 className="break-words text-lg font-black text-slate-950">{t.title}</h1>
+                <h1 className="break-words text-xl font-black text-slate-950">{t.title}</h1>
                 {t.status && <StatusPill label={t.status} />}
                 <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black', acqTone[state])}>{state}</span>
               </div>

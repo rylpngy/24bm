@@ -229,7 +229,7 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
             </button>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="break-words text-lg font-black text-slate-950">{r.title}</h1>
+                <h1 className="break-words text-xl font-black text-slate-950">{r.title}</h1>
                 {r.status && <StatusPill label={r.status} />}
                 <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black', stage.tone)}>{stage.label}</span>
               </div>
@@ -282,7 +282,7 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
         <div className="rounded-lg bg-slate-900 p-5 text-white shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
-              <p className="break-words text-lg font-black">{r.title}</p>
+              <p className="break-words text-xl font-black">{r.title}</p>
               <p className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400">
                 <span
                   className={cn(
@@ -352,9 +352,9 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
           {/* 实时出价流 */}
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
             <div className="flex items-center justify-between">
-              <p className="flex items-center gap-2 text-sm font-black text-slate-950">
-                <Zap size={15} className="text-amber-500" /> 实时出价流
-              </p>
+              <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+                <Zap size={18} className="text-blue-600" /> 实时出价流
+              </h3>
               <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
                 {quotes.length} 记录
               </span>
@@ -406,9 +406,9 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
           <div className="min-w-0 space-y-4">
             {/* 实时排行榜 */}
             <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
-              <p className="flex items-center gap-2 text-sm font-black text-slate-950">
-                <Trophy size={15} className="text-amber-500" /> 实时竞价排行榜
-              </p>
+              <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+                <Trophy size={18} className="text-blue-600" /> 实时竞价排行榜
+              </h3>
               <div className="mt-3 space-y-2.5">
                 {ranked.length === 0 && waiting.length === 0 && (
                   <FeedbackNotice tone="info" message="尚无受邀供应商。" />

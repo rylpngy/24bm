@@ -111,7 +111,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
             </button>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="break-words font-mono text-lg font-black text-slate-950">{o.id}</h1>
+                <h1 className="break-words font-mono text-xl font-black text-slate-950">{o.id}</h1>
                 {o.status && <StatusPill label={o.status} />}
               </div>
               <p className="mt-1 text-xs font-bold text-slate-500">
@@ -300,7 +300,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
             </section>
 
             <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-              <p className="text-sm font-black text-slate-950">履约进度</p>
+              <h3 className="text-base font-black text-slate-950">履约进度</h3>
               <div className="mt-4 space-y-0">
                 {[
                   { label: '订单创建', time: o.createdAt?.slice(0, 10) ?? null, done: true },
@@ -315,7 +315,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                         step.done ? 'border-blue-600 bg-blue-600' : 'border-slate-300 bg-white',
                       )}
                     />
-                    <p className={cn('text-xs font-black', step.done ? 'text-slate-900' : 'text-slate-400')}>{step.label}</p>
+                    <p className={cn('text-sm font-black', step.done ? 'text-slate-950' : 'text-slate-400')}>{step.label}</p>
                     <p className="mt-0.5 pb-3 font-mono text-[11px] font-bold text-slate-400">{step.time ?? '待进行'}</p>
                   </div>
                 ))}

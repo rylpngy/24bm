@@ -6,7 +6,6 @@ import {
   ClipboardCheck,
   FileText,
   Plus,
-  ShieldCheck,
   Timer,
 } from 'lucide-react';
 import {
@@ -24,7 +23,7 @@ import {
   useRfqCreate,
   useRfqList,
 } from '@24bid/api-client';
-import { FeedbackNotice, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
+import { ApprovalTimeline, FeedbackNotice, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
 import { ProcurementPlanMergePage } from '../demands/demands-page';
 
 const currency = (value?: number) =>
@@ -326,7 +325,7 @@ function PlanDetail({
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-8 flex items-center gap-2">
+            <div className="mb-5 flex items-center gap-2">
               <Timer size={18} className="text-blue-600" />
               <h3 className="text-base font-black text-slate-950">执行进度跟踪</h3>
             </div>
@@ -449,13 +448,8 @@ function PlanDetail({
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-center gap-2">
-              <ShieldCheck size={18} className="text-blue-600" />
-              <h3 className="text-base font-black text-slate-950">审批流转</h3>
-            </div>
-            <div className="space-y-5 border-l border-slate-100 pl-5">
-              {[
+          <ApprovalTimeline
+            nodes={[
                 {
                   label: '需求整合',
                   desc: `已整合 ${linked.length} 条已通过需求`,
@@ -480,16 +474,8 @@ function PlanDetail({
                   done: plan.status === '已定标' || awardApproval?.status === '已通过',
                   active: plan.status === '定标审批中' || awardApproval?.status === '待审批',
                 },
-              ].map((node) => (
-                <div key={node.label} className="relative">
-                  <i className={cn('absolute -left-[1.45rem] top-1 h-2 w-2 rounded-full', node.done ? 'bg-emerald-500' : node.active ? 'bg-blue-600' : 'bg-slate-300')} />
-                  <p className="text-sm font-black text-slate-950">{node.label}</p>
-                  <p className="mt-1 break-words text-xs font-bold text-slate-500">{node.desc}</p>
-                  {node.active && <span className="mt-2 inline-flex rounded bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">当前节点</span>}
-                </div>
-              ))}
-            </div>
-          </div>
+            ]}
+          />
 
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-base font-black text-slate-950">邀请供应商</h3>

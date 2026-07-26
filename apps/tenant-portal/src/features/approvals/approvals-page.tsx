@@ -267,7 +267,7 @@ export function ApprovalsPage() {
       <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-base font-black text-slate-950">智能审批中心</h1>
+            <h1 className="text-xl font-black text-slate-950">智能审批中心</h1>
             <p className="mt-2 text-sm font-bold text-slate-500">
               集中处理供应商入驻、资料变更、风险申诉及考核申诉等全流程审批业务
             </p>
@@ -471,7 +471,7 @@ function ApprovalDetailPage({
                   {displayStatus(task)}
                 </span>
               </div>
-              <p className="mt-1 text-sm font-bold text-slate-500">
+              <p className="mt-1 text-xs font-bold text-slate-500">
                 单号: {task.id ?? task.bizId ?? 'AP-2023102801'} · 提交人: {task.submittedByName ?? '外部提交'} · {dateText(task.createdAt)}
               </p>
             </div>
@@ -518,15 +518,15 @@ function ApprovalDetailPage({
 
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
             <SectionTitle icon={Clock3} title="审批流转日志" />
-            <div className="mt-6 space-y-7 border-l border-slate-200 pl-5">
+            <div className="mt-6 space-y-5 border-l border-slate-100 pl-5">
               {[
                 ['提交申请', `${task.submittedByName ?? '外部提交'} · ${dateText(task.createdAt)}`, '已提交待审', 'bg-emerald-500'],
                 ['待您处理', '当前节点', '等待人工复核', 'bg-blue-600'],
               ].map(([title, desc, tag, dot]) => (
                 <div key={title} className="relative">
-                  <span className={cn('absolute -left-[25px] top-1 h-2 w-2 rounded-full', dot)} />
-                  <p className="font-black text-slate-950">{title}</p>
-                  <p className="mt-1 text-sm font-bold text-slate-500">{desc}</p>
+                  <span className={cn('absolute -left-[1.45rem] top-1 h-2 w-2 rounded-full', dot)} />
+                  <p className="text-sm font-black text-slate-950">{title}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">{desc}</p>
                   <span className="mt-2 inline-flex rounded-lg bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600">{tag}</span>
                 </div>
               ))}
@@ -604,7 +604,7 @@ function SectionTitle({ icon: Icon, title }: { icon: typeof FileText; title: str
   return (
     <div className="flex items-center gap-2">
       <Icon size={18} className="text-blue-600" />
-      <h2 className="text-base font-black text-slate-950">{title}</h2>
+      <h3 className="text-base font-black text-slate-950">{title}</h3>
     </div>
   );
 }

@@ -97,8 +97,8 @@ function MethodChip({ method }: { method?: string }) {
 function SectionTitle({ icon: Icon, title }: { icon: ElementType; title: string }) {
   return (
     <div className="flex items-center gap-2">
-      <Icon size={15} className="text-blue-600" />
-      <h2 className="text-sm font-black text-slate-950">{title}</h2>
+      <Icon size={18} className="text-blue-600" />
+      <h3 className="text-base font-black text-slate-950">{title}</h3>
     </div>
   );
 }
@@ -120,12 +120,12 @@ function ProgressNode({
       {!last && <span className="absolute left-[5px] top-4 h-full w-px bg-slate-200" />}
       <span
         className={cn(
-          'absolute left-0 top-1 h-2.5 w-2.5 rounded-full border-2',
-          done ? 'border-blue-600 bg-blue-600' : 'border-slate-300 bg-white',
+          'absolute left-0 top-1.5 h-2 w-2 rounded-full',
+          done ? 'bg-emerald-500' : 'bg-slate-300',
         )}
       />
-      <p className={cn('text-xs font-black', done ? 'text-slate-900' : 'text-slate-400')}>{label}</p>
-      <p className="mt-0.5 pb-3 font-mono text-[11px] font-bold text-slate-400">{time ?? '待进行'}</p>
+      <p className={cn('text-sm font-black', done ? 'text-slate-950' : 'text-slate-400')}>{label}</p>
+      <p className="mt-1 pb-3 font-mono text-xs font-bold text-slate-400">{time ?? '待进行'}</p>
     </div>
   );
 }
@@ -361,7 +361,7 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
                     第{r.currentRound}轮{r.finalRound ? '·最终' : ''}
                   </span>
                 )}
-                <h1 className="text-lg font-black text-slate-950">{r.title}</h1>
+                <h1 className="text-xl font-black text-slate-950">{r.title}</h1>
                 {r.status && <StatusPill label={r.status} />}
               </div>
               <p className="mt-1 font-mono text-xs font-bold text-slate-500">

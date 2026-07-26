@@ -184,7 +184,7 @@ function EvaluationSection({
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
-          <Users size={15} className="text-blue-600" /> 评标委员会与评分
+          <Users size={18} className="text-blue-600" /> 评标委员会与评分
         </h3>
         {evaluators.length > 0 && (
           <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
@@ -454,7 +454,7 @@ function AwardSection({
     return (
       <section className="rounded-lg border border-emerald-200 bg-white p-4 shadow-sm shadow-slate-200/50">
         <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
-          <Award size={15} className="text-emerald-600" /> 定标结果与中标通知书
+          <Award size={18} className="text-blue-600" /> 定标结果与中标通知书
         </h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           <MiniFact label="中标人" value={winner?.supplierName ?? '—'} />
@@ -542,7 +542,7 @@ function AwardSection({
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
       <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
-        <Award size={15} className="text-emerald-600" /> 定标与中标通知书
+        <Award size={18} className="text-blue-600" /> 定标与中标通知书
       </h3>
       <p className="mt-1 text-[11px] font-bold text-slate-400">
         默认按评标推荐定标;签发须招标人手写签章,签章指纹绑定中标投标密封凭证与通知书正文。
@@ -808,7 +808,7 @@ export function TendersPage() {
               <ArrowLeft size={18} />
             </button>
             <div>
-              <h1 className="text-lg font-black text-slate-950">{editingId ? '编辑招标项目' : '新建招标项目'}</h1>
+              <h1 className="text-xl font-black text-slate-950">{editingId ? '编辑招标项目' : '新建招标项目'}</h1>
               <p className="mt-0.5 text-xs font-bold text-slate-500">编制招标文件 → 发布后进入发售期,供应商领取文件</p>
             </div>
           </div>
@@ -817,7 +817,7 @@ export function TendersPage() {
         {error && <FeedbackNotice tone="error" message={error} />}
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-          <h3 className="text-sm font-black text-slate-950">基本要素</h3>
+          <h3 className="text-base font-black text-slate-950">基本要素</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block sm:col-span-2">
               <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>招标项目名称</span>
@@ -869,7 +869,7 @@ export function TendersPage() {
         </section>
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-          <h3 className="text-sm font-black text-slate-950">招标文件正文(发布前必填)</h3>
+          <h3 className="text-base font-black text-slate-950">招标文件正文(发布前必填)</h3>
           <p className="mt-1 text-xs font-bold text-slate-400">支持小标题、加粗、列表等富文本排版;附件(图纸/清单等)在项目详情页上传。</p>
           <div className="mt-3">
             <RichTextEditor
@@ -922,7 +922,7 @@ export function TendersPage() {
                 <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black', typeTone[t.tenderType ?? ''] ?? 'bg-slate-100 text-slate-600')}>
                   {t.tenderType}
                 </span>
-                <h1 className="break-words text-lg font-black text-slate-950">{t.title}</h1>
+                <h1 className="break-words text-xl font-black text-slate-950">{t.title}</h1>
                 {t.status && <StatusPill label={t.status} />}
               </div>
               <p className="mt-1 font-mono text-xs font-bold text-slate-500">

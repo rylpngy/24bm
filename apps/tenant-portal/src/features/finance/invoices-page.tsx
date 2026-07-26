@@ -146,7 +146,7 @@ export function InvoicesPage() {
             </button>
             <Banknote size={18} className="shrink-0 text-blue-600" />
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-black text-slate-950">付款批次</h1>
+              <h1 className="text-xl font-black text-slate-950">付款批次</h1>
               <p className="mt-0.5 text-xs font-bold text-slate-500">
                 已通过的付款申请按批次汇总执行 · 属于发票付款的批量执行环节
               </p>
@@ -174,7 +174,7 @@ export function InvoicesPage() {
             </button>
             <Scale size={18} className="shrink-0 text-amber-600" />
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-black text-slate-950">对账差异处理</h1>
+              <h1 className="text-xl font-black text-slate-950">对账差异处理</h1>
               <p className="mt-0.5 font-mono text-xs font-bold text-slate-500">
                 发票 {selected.invoiceNo ?? selected.id} · 处理完成后返回对账详情继续付款登记
               </p>
@@ -208,7 +208,7 @@ export function InvoicesPage() {
             </button>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="break-words font-mono text-lg font-black text-slate-950">{inv.invoiceNo ?? inv.id}</h1>
+                <h1 className="break-words font-mono text-xl font-black text-slate-950">{inv.invoiceNo ?? inv.id}</h1>
                 {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
                 {inv.overdue && (
                   <span className="rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-black text-red-700">
