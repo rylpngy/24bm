@@ -21,7 +21,8 @@ export function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className={cn('rounded-lg border border-slate-200 bg-white p-6 shadow-sm', className)}>
+    // min-w-0:栅格子项默认 min-width:auto,长文本会撑破所在列(小屏横向滚动的主因)。
+    <section className={cn('min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm', className)}>
       <div className="mb-5 flex flex-wrap items-center gap-2">
         {Icon && <Icon size={18} className="text-blue-600" />}
         <h3 className="text-base font-black text-slate-950">{title}</h3>

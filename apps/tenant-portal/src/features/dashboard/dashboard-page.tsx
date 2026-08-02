@@ -45,7 +45,8 @@ function Card({
   className?: string;
 }) {
   return (
-    <section className={cn('rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50', className)}>
+    // min-w-0:栅格子项默认 min-width:auto,长编号/长标题会把整列撑破(移动端横向滚动的主因)。
+    <section className={cn('min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50', className)}>
       {children}
     </section>
   );

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ElementType, ReactNode } from 'react';
-import { Globe, Sparkles, Languages, ChevronDown,
+import { Globe, Sparkles, Languages, ChevronDown, Menu, X,
   BadgeCheck,
   BarChart3,
   Banknote,
@@ -81,20 +81,64 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const [langOpen, setLangOpen] = useState(false);
+  // 移动端导航抽屉:lg 以下没有常驻侧栏,靠顶栏汉堡键唤出。
+  const [navOpen, setNavOpen] = useState(false);
+
+  // 抽屉打开时锁滚动 + Esc 关闭(移动端手势易误触,给一个确定的退出路径)。
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setNavOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [navOpen]);
+
+  const selectModule = (id: string) => {
+    onSelectModule(id);
+    setNavOpen(false);
+  };
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden overflow-x-hidden bg-slate-100/70 text-slate-900 lg:flex-row">
-      <aside className="hidden min-h-0 shrink-0 flex-col bg-slate-950 text-white lg:flex lg:w-72">
+      {/* 移动端遮罩:点击关闭抽屉。 */}
+      {navOpen && (
+        <button
+          type="button"
+          aria-label="关闭导航"
+          onClick={() => setNavOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden"
+        />
+      )}
+      <aside
+        data-testid="app-nav"
+        className={cn(
+          'min-h-0 shrink-0 flex-col bg-slate-950 text-white lg:flex lg:w-72',
+          // 移动端为覆盖式抽屉;lg 起恢复常驻列。
+          navOpen
+            ? 'fixed inset-y-0 left-0 z-50 flex w-[17rem] max-w-[85vw] shadow-2xl shadow-slate-950/50 lg:static lg:z-auto lg:w-72 lg:shadow-none'
+            : 'hidden lg:flex',
+        )}
+      >
         <div className="border-b border-white/10 p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-lg font-black shadow-lg shadow-blue-950/40">
               24
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-lg font-black leading-none">24Bid</p>
               <p className="mt-1 text-xs font-bold uppercase tracking-widest text-blue-300">
                 {brandSubtitle}
               </p>
             </div>
+            <button
+              type="button"
+              aria-label="收起导航"
+              onClick={() => setNavOpen(false)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 lg:hidden"
+            >
+              <X size={18} />
+            </button>
           </div>
           {mainlineHint && (
             <div className="mt-5 rounded-lg border border-blue-400/20 bg-blue-500/10 p-3">
@@ -112,7 +156,7 @@ export function AppShell({
               <button
                 key={module.id}
                 type="button"
-                onClick={() => onSelectModule(module.id)}
+                onClick={() => selectModule(module.id)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition',
                   active ? 'bg-white shadow-sm shadow-slate-900/20' : 'hover:bg-white/5',
@@ -157,8 +201,17 @@ export function AppShell({
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm shadow-slate-200/70 backdrop-blur lg:flex-row lg:items-center lg:justify-between lg:px-6">
-          <div className="flex min-w-0 items-center gap-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">当前工作区</p>
+          <div className="flex min-w-0 items-center gap-3 lg:gap-4">
+            <button
+              type="button"
+              aria-label="打开导航"
+              aria-expanded={navOpen}
+              onClick={() => setNavOpen(true)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden"
+            >
+              <Menu size={18} />
+            </button>
+            <p className="hidden text-xs font-bold uppercase tracking-widest text-slate-400 sm:block">当前工作区</p>
             <h1 className="max-w-[220px] truncate text-lg font-black text-slate-900 sm:max-w-none">
               {title}
             </h1>
