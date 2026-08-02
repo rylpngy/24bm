@@ -56,7 +56,9 @@ export const platformAdminModules: AdminNavigationModule[] = [
   { id: 'overview', label: '平台看板', desc: '租户、供应商、审核概览' },
   { id: 'tenants', label: '租户列表', desc: '采购企业与套餐状态' },
   { id: 'reviews', label: '企业审核', desc: '入驻审核与认证状态' },
+  { id: 'supplier-credit', label: '供应商信用', desc: '跨租户履约表现与信用分' },
   { id: 'announcements', label: '平台公告', desc: '平台侧通知与运营信息' },
+  { id: 'settings', label: '运营配置', desc: '全局字典与业务枚举维护' },
 ];
 
 export const supplierAdminModules: AdminNavigationModule[] = [

@@ -45,6 +45,7 @@ import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.demand.api.PurchaseDemandResponse;
 import com.procurement.demand.application.PurchaseDemandApplicationService;
 import com.procurement.dictionary.api.DictionaryController;
+import com.procurement.dictionary.api.PlatformDictionaryController;
 import com.procurement.dictionary.api.DictionaryEntryResponse;
 import com.procurement.dictionary.application.DictionaryApplicationService;
 import com.procurement.identity.SecurityConfig;
@@ -141,6 +142,7 @@ import com.procurement.platform.application.PlatformEnterpriseApplicationService
 import com.procurement.platform.application.PlatformAnnouncementApplicationService;
 import com.procurement.platform.application.PlatformOverviewApplicationService;
 import com.procurement.platform.application.PlatformTenantApplicationService;
+import com.procurement.platform.application.SupplierCreditApplicationService;
 import com.procurement.platform.application.PlatformWorkspaceApplicationService;
 import com.procurement.sourcing.api.QuoteResponse;
 import com.procurement.sourcing.api.AwardDecisionResponse;
@@ -209,6 +211,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @WebMvcTest(controllers = {
     HealthController.class,
     DictionaryController.class,
+    PlatformDictionaryController.class,
     AuthController.class,
     ApprovalInboxController.class,
     PurchaseDemandController.class,
@@ -368,6 +371,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private PlatformTenantApplicationService platformTenantApplicationService;
+
+  @MockBean
+  private SupplierCreditApplicationService supplierCreditApplicationService;
 
   @MockBean
   private com.procurement.platform.application.BillingApplicationService billingApplicationService;

@@ -31,6 +31,7 @@ export * from './health-controller/health-controller';
 export * from './material-controller/material-controller';
 export * from './platform-announcement-controller/platform-announcement-controller';
 export * from './platform-billing-controller/platform-billing-controller';
+export * from './platform-dictionary-controller/platform-dictionary-controller';
 export * from './platform-enterprise-controller/platform-enterprise-controller';
 export * from './platform-overview-controller/platform-overview-controller';
 export * from './platform-supplier-controller/platform-supplier-controller';

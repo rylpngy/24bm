@@ -21,6 +21,35 @@ test('平台工作台:经营看板指标与趋势/方式分布', async ({ page }
   await expect(page.getByRole('heading', { name: '采购方式分布' })).toBeVisible();
 });
 
+// D-3 供应商信用画像:榜单恒定渲染 + 进入画像详情(数值随环境,不硬断言)。
+test('供应商信用:信用榜与画像详情', async ({ page }) => {
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /租户列表/);
+  await openModule(page, /供应商信用/);
+  await expect(page.getByRole('heading', { name: '供应商信用', level: 3 })).toBeVisible();
+  await expect(page.getByText('平均信用分')).toBeVisible();
+  await expect(page.getByRole('tab', { name: /全部/ })).toBeVisible();
+  const rows = page.locator('table tbody tr');
+  if ((await rows.count()) > 0) {
+    await rows.first().getByRole('button', { name: '画像' }).click();
+    await expect(page.getByRole('heading', { name: '信用分构成' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '履约表现' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '结算合规' })).toBeVisible();
+  }
+});
+
+// D-4 平台运营配置:字典类型/条目维护(恒定元素断言)。
+test('运营配置:字典类型与条目维护', async ({ page }) => {
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /租户列表/);
+  await openModule(page, /运营配置/);
+  await expect(page.getByRole('heading', { name: '运营配置', level: 3 })).toBeVisible();
+  await expect(page.getByText('字典类型').first()).toBeVisible();
+  await expect(page.getByText('条目总数')).toBeVisible();
+  await expect(page.getByRole('button', { name: /新增条目/ })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '编码' })).toBeVisible();
+});
+
 test('租户列表 / 企业审核 / 公告 渲染', async ({ page }) => {
   await loginViaKeycloak(page);
 

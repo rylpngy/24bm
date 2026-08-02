@@ -7,6 +7,8 @@ import { LoginGate } from './features/login-gate';
 import { OverviewPage } from './features/overview/overview-page';
 import { TenantsPage } from './features/tenants/tenants-page';
 import { EnterpriseReviewsPage } from './features/reviews/enterprise-reviews-page';
+import { SupplierCreditPage } from './features/suppliers/supplier-credit-page';
+import { DictionariesPage } from './features/settings/dictionaries-page';
 import { AnnouncementsPage } from './features/announcements/announcements-page';
 
 export function App() {
@@ -44,8 +46,12 @@ export function App() {
         <TenantsPage />
       ) : activeModuleId === 'reviews' ? (
         <EnterpriseReviewsPage />
+      ) : activeModuleId === 'supplier-credit' ? (
+        <SupplierCreditPage />
       ) : activeModuleId === 'announcements' ? (
         <AnnouncementsPage />
+      ) : activeModuleId === 'settings' ? (
+        <DictionariesPage />
       ) : (
         <Panel title={activeModule?.label ?? '模块'} icon={Construction} subtitle="后续切片实现">
           <FeedbackNotice

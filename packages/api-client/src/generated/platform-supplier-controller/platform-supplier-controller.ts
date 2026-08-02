@@ -6,16 +6,27 @@
  * OpenAPI spec version: v1
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
-  UseMutationResult
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseListSupplierCreditProfileResponse,
+  ApiResponseSupplierCreditProfileResponse,
   ApiResponseSupplierEnterpriseResponse,
   ApiResponseVoid,
   CreateSupplierEnterpriseRequest
@@ -85,4 +96,175 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const platformSupplierCreditProfile = (
+    supplierId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseSupplierCreditProfileResponse>(
+      {url: `/api/v1/platform/suppliers/${supplierId}/credit-profile`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getPlatformSupplierCreditProfileQueryKey = (supplierId?: string,) => {
+    return [
+    `/api/v1/platform/suppliers/${supplierId}/credit-profile`
+    ] as const;
+    }
+
     
+export const getPlatformSupplierCreditProfileQueryOptions = <TData = Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError = ErrorType<ApiResponseVoid>>(supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformSupplierCreditProfileQueryKey(supplierId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformSupplierCreditProfile>>> = ({ signal }) => platformSupplierCreditProfile(supplierId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(supplierId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformSupplierCreditProfileQueryResult = NonNullable<Awaited<ReturnType<typeof platformSupplierCreditProfile>>>
+export type PlatformSupplierCreditProfileQueryError = ErrorType<ApiResponseVoid>
+
+
+export function usePlatformSupplierCreditProfile<TData = Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError = ErrorType<ApiResponseVoid>>(
+ supplierId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformSupplierCreditProfile>>,
+          TError,
+          Awaited<ReturnType<typeof platformSupplierCreditProfile>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformSupplierCreditProfile<TData = Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError = ErrorType<ApiResponseVoid>>(
+ supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformSupplierCreditProfile>>,
+          TError,
+          Awaited<ReturnType<typeof platformSupplierCreditProfile>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformSupplierCreditProfile<TData = Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError = ErrorType<ApiResponseVoid>>(
+ supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformSupplierCreditProfile<TData = Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError = ErrorType<ApiResponseVoid>>(
+ supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformSupplierCreditProfileQueryOptions(supplierId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const platformSupplierCreditProfiles = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListSupplierCreditProfileResponse>(
+      {url: `/api/v1/platform/suppliers/credit-profiles`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getPlatformSupplierCreditProfilesQueryKey = () => {
+    return [
+    `/api/v1/platform/suppliers/credit-profiles`
+    ] as const;
+    }
+
+    
+export const getPlatformSupplierCreditProfilesQueryOptions = <TData = Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformSupplierCreditProfilesQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>> = ({ signal }) => platformSupplierCreditProfiles(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformSupplierCreditProfilesQueryResult = NonNullable<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>>
+export type PlatformSupplierCreditProfilesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function usePlatformSupplierCreditProfiles<TData = Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformSupplierCreditProfiles>>,
+          TError,
+          Awaited<ReturnType<typeof platformSupplierCreditProfiles>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformSupplierCreditProfiles<TData = Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformSupplierCreditProfiles>>,
+          TError,
+          Awaited<ReturnType<typeof platformSupplierCreditProfiles>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformSupplierCreditProfiles<TData = Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformSupplierCreditProfiles<TData = Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformSupplierCreditProfilesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+

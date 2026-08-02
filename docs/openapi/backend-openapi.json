@@ -312,6 +312,74 @@
         }
       }
     },
+    "/api/v1/platform/dictionaries/{type}/entries/{code}": {
+      "put": {
+        "tags": [
+          "platform-dictionary-controller"
+        ],
+        "operationId": "PlatformDictionary_update",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDictionaryEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDictionaryAdminEntryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/platform/announcements/{announcementId}": {
       "put": {
         "tags": [
@@ -3710,6 +3778,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseEnterpriseReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/dictionaries/entries": {
+      "post": {
+        "tags": [
+          "platform-dictionary-controller"
+        ],
+        "operationId": "PlatformDictionary_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDictionaryEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDictionaryAdminEntryResponse"
                 }
               }
             }
@@ -11564,6 +11682,96 @@
         }
       }
     },
+    "/api/v1/platform/suppliers/{supplierId}/credit-profile": {
+      "get": {
+        "tags": [
+          "platform-supplier-controller"
+        ],
+        "operationId": "PlatformSupplier_creditProfile",
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierCreditProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/suppliers/credit-profiles": {
+      "get": {
+        "tags": [
+          "platform-supplier-controller"
+        ],
+        "operationId": "PlatformSupplier_creditProfiles",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListSupplierCreditProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/platform/overview": {
       "get": {
         "tags": [
@@ -11667,6 +11875,96 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListEnterpriseReviewEventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/dictionaries": {
+      "get": {
+        "tags": [
+          "platform-dictionary-controller"
+        ],
+        "operationId": "PlatformDictionary_types",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListDictionaryTypeSummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/dictionaries/{type}/entries": {
+      "get": {
+        "tags": [
+          "platform-dictionary-controller"
+        ],
+        "operationId": "PlatformDictionary_entries",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListDictionaryAdminEntryResponse"
                 }
               }
             }
@@ -14672,6 +14970,67 @@
             "format": "date"
           },
           "logisticsNote": {
+            "type": "string"
+          }
+        }
+      },
+      "SaveDictionaryEntryRequest": {
+        "required": [
+          "code",
+          "label",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseDictionaryAdminEntryResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DictionaryAdminEntryResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "DictionaryAdminEntryResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
             "type": "string"
           }
         }
@@ -21260,6 +21619,107 @@
           }
         }
       },
+      "ApiResponseSupplierCreditProfileResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SupplierCreditProfileResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierCreditProfileResponse": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "participatedProjects": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "awardedProjects": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "winRate": {
+            "type": "number"
+          },
+          "orderCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completedOrderCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completionRate": {
+            "type": "number"
+          },
+          "onTimeReceiptCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "onTimeRate": {
+            "type": "number"
+          },
+          "invoiceCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cleanReconciliationCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reconciliationPassRate": {
+            "type": "number"
+          },
+          "servedTenantCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalOrderAmount": {
+            "type": "number"
+          },
+          "scoreable": {
+            "type": "boolean"
+          },
+          "creditScore": {
+            "type": "number"
+          },
+          "creditLevel": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListSupplierCreditProfileResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierCreditProfileResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "ApiResponsePlatformOverviewResponse": {
         "type": "object",
         "properties": {
@@ -21338,6 +21798,56 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseListDictionaryTypeSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DictionaryTypeSummaryResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "DictionaryTypeSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "entryCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "activeCount": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApiResponseListDictionaryAdminEntryResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DictionaryAdminEntryResponse"
+            }
+          },
+          "message": {
+            "type": "string"
           }
         }
       },

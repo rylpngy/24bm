@@ -22,6 +22,8 @@ class TenantIsolationArchitectureTests {
       "platform/infrastructure/PlatformEnterpriseMapper.java",
       // 平台经营看板:跨租户只读聚合(仅数值,不下发租户明细)。
       "platform/infrastructure/PlatformMetricsMapper.java",
+      // 供应商信用画像:按 supplier 维度跨租户聚合履约计数(不下发单据明细)。
+      "platform/infrastructure/SupplierCreditMapper.java",
       "supplier/infrastructure/SupplierProfileMapper.java",
       // 招标:公开招标发售清单为平台级公开数据;领取记录按 supplier 维度跨租户读取。
       "tender/infrastructure/TenderAcquisitionMapper.java",

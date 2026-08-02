@@ -18,7 +18,7 @@ class DictionaryListingTests {
   @Test
   void listActiveDictionaryEntriesByType() {
     when(dictionaryMapper.listActiveByType("payment_status")).thenReturn(List.of(
-        new DictionaryEntry("payment_status", "pending", "待付款", 10)));
+        new DictionaryEntry("payment_status", "pending", "待付款", 10, "active")));
 
     org.assertj.core.api.Assertions.assertThat(
             dictionaryApplicationService.listByType("payment_status"))
