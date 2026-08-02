@@ -12,6 +12,8 @@ import {
   useBuyerTenderFail,
   useBuyerTenderFormCommittee,
   useBuyerTenderRebid,
+  useBuyerTenderReviewPrequalification,
+  useBuyerTenderSetPrequalificationRequired,
   useBuyerTenderList,
   useBuyerTenderOpen,
   useBuyerTenderPublish,
@@ -693,6 +695,9 @@ export function TendersPage() {
   const openTender = useBuyerTenderOpen();
   const failTender = useBuyerTenderFail();
   const rebidTender = useBuyerTenderRebid();
+  const setPrequalRequired = useBuyerTenderSetPrequalificationRequired();
+  const reviewPrequal = useBuyerTenderReviewPrequalification();
+  const [prequalComments, setPrequalComments] = useState<Record<string, string>>({});
   const [failReason, setFailReason] = useState('');
   const [failing, setFailing] = useState(false);
 
@@ -954,6 +959,117 @@ export function TendersPage() {
               <OwnerAttachments ownerType="tender" ownerId={t.id} title="招标文件附件"
                 emptyHint="上传图纸、工程量清单、资格审查表等附件。" />
             )}
+
+            {/* F-1 资格预审:编制阶段设定开关,发售阶段审查申请(通过方可领取招标文件) */}
+            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-base font-black text-slate-950">资格预审</h3>
+                <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
+                  t.prequalificationRequired ? 'bg-violet-50 text-violet-700' : 'bg-slate-100 text-slate-500')}>
+                  {t.prequalificationRequired ? '实行资格预审' : '不实行资格预审'}
+                </span>
+              </div>
+              {t.status === '编制中' ? (
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <p className="min-w-56 flex-1 text-xs font-bold text-slate-500">
+                    开启后,供应商须先提交资格声明并经审查通过,方可领取招标文件与投标。发布发售后不得再变更。
+                  </p>
+                  <PrimaryActionButton size="sm" busy={setPrequalRequired.isPending} pendingLabel="保存中"
+                    onClick={() => t.id && setPrequalRequired.mutate(
+                      { tenderId: t.id, data: { required: !t.prequalificationRequired } },
+                      {
+                        onSuccess: () => {
+                          setFeedback(t.prequalificationRequired ? '已取消资格预审要求。' : '已开启资格预审要求。');
+                          refresh();
+                        },
+                        onError: reportError,
+                      })}>
+                    {t.prequalificationRequired ? '取消资格预审' : '开启资格预审'}
+                  </PrimaryActionButton>
+                </div>
+              ) : (
+                <p className="mt-2 text-xs font-bold text-slate-400">
+                  {t.prequalificationRequired
+                    ? '本项目实行资格预审,预审通过的供应商方可领取招标文件。'
+                    : '本项目不实行资格预审,供应商可直接领取招标文件。'}
+                </p>
+              )}
+
+              {t.prequalificationRequired && (
+                (t.prequalifications ?? []).length === 0 ? (
+                  <p className="mt-3 text-xs font-bold text-slate-400">尚无供应商提交资格预审申请。</p>
+                ) : (
+                  <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                        <tr>
+                          <th className="px-3 py-2">供应商</th>
+                          <th className="px-3 py-2">资格声明</th>
+                          <th className="px-3 py-2">状态 / 审查意见</th>
+                          <th className="px-3 py-2 text-right">审查</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {(t.prequalifications ?? []).map((q) => {
+                          const pending = q.status === '待审查';
+                          const comment = prequalComments[q.id ?? ''] ?? '';
+                          const doReview = (status: string) => t.id && q.id && reviewPrequal.mutate(
+                            { tenderId: t.id, applicationId: q.id, data: { status, reviewComment: comment.trim() } },
+                            {
+                              onSuccess: () => {
+                                setFeedback(`已完成资格预审:${q.supplierName ?? q.supplierId} ${status}。`);
+                                setPrequalComments((cur) => ({ ...cur, [q.id ?? '']: '' }));
+                                refresh();
+                              },
+                              onError: reportError,
+                            });
+                          return (
+                            <tr key={q.id} className="align-top font-bold text-slate-700">
+                              <td className="px-3 py-2 font-black text-slate-900">{q.supplierName ?? q.supplierId}</td>
+                              <td className="px-3 py-2 whitespace-pre-wrap">{q.application}</td>
+                              <td className="px-3 py-2">
+                                <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
+                                  q.status === '已通过' ? 'bg-emerald-50 text-emerald-700'
+                                    : q.status === '未通过' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700')}>
+                                  {q.status}
+                                </span>
+                                {q.reviewComment && <p className="mt-1 text-[11px] font-bold text-slate-500">{q.reviewComment}</p>}
+                              </td>
+                              <td className="px-3 py-2">
+                                {pending && t.status === '发售中' ? (
+                                  <div className="flex flex-col items-end gap-2">
+                                    <input
+                                      className="h-8 w-full min-w-40 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
+                                      placeholder="审查意见(必填)" aria-label={`审查意见 ${q.supplierName ?? q.supplierId}`}
+                                      value={comment}
+                                      onChange={(e) => setPrequalComments((cur) => ({ ...cur, [q.id ?? '']: e.target.value }))} />
+                                    <div className="flex gap-2">
+                                      <button type="button" disabled={!comment.trim() || reviewPrequal.isPending}
+                                        onClick={() => doReview('未通过')}
+                                        className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50">
+                                        不通过
+                                      </button>
+                                      <PrimaryActionButton size="sm" busy={reviewPrequal.isPending} pendingLabel="提交中"
+                                        disabled={!comment.trim()} onClick={() => doReview('已通过')}>
+                                        通过
+                                      </PrimaryActionButton>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-right text-[11px] font-bold text-slate-400">
+                                    {pending ? '发售中方可审查' : '已审查'}
+                                  </p>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              )}
+            </section>
 
             <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <div className="flex flex-wrap items-center justify-between gap-2">

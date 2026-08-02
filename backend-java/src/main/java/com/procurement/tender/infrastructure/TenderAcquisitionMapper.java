@@ -50,7 +50,7 @@ public interface TenderAcquisitionMapper {
              t.document_html, t.evaluation_method, t.bid_bond_amount, t.acquisition_deadline,
              t.submission_deadline, t.opening_at, t.owner_id, t.published_at, t.created_at, t.updated_at, t.opened_at,
              t.awarded_bid_id, t.awarded_at, t.award_notice_html, t.failed_at, t.failure_reason, t.rebid_of_tender_id,
-             t.execution_order_id
+             t.execution_order_id, t.prequalification_required
       from tenders t
       join tender_acquisitions a on a.tenant_id = t.tenant_id and a.tender_id = t.id
       where a.supplier_id = #{supplierId}
@@ -64,7 +64,7 @@ public interface TenderAcquisitionMapper {
              evaluation_method, bid_bond_amount, acquisition_deadline, submission_deadline,
              opening_at, owner_id, published_at, created_at, updated_at, opened_at,
              awarded_bid_id, awarded_at, award_notice_html, failed_at, failure_reason, rebid_of_tender_id,
-             execution_order_id
+             execution_order_id, prequalification_required
       from tenders
       where tender_type = '公开招标' and status = '发售中'
       order by created_at desc

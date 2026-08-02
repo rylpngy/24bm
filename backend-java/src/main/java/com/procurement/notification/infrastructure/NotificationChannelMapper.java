@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface NotificationChannelMapper {
@@ -40,10 +41,10 @@ public interface NotificationChannelMapper {
 
   @Insert("""
       insert into notification_deliveries
-        (id, tenant_id, channel, target, title, content, status, detail)
+        (id, tenant_id, channel, target, title, content, status, detail, attempt_count, last_error)
       values
         (#{id}, #{tenantId}, #{channel}, #{target,jdbcType=VARCHAR}, #{title}, #{content},
-         #{status}, #{detail,jdbcType=VARCHAR})
+         #{status}, #{detail,jdbcType=VARCHAR}, 1, #{lastError,jdbcType=VARCHAR})
       """)
   void insertDelivery(
       @Param("id") String id,
@@ -53,14 +54,39 @@ public interface NotificationChannelMapper {
       @Param("title") String title,
       @Param("content") String content,
       @Param("status") String status,
-      @Param("detail") String detail);
+      @Param("detail") String detail,
+      @Param("lastError") String lastError);
 
   @Select("""
-      select id, tenant_id, channel, target, title, content, status, detail, dispatched_at
+      select id, tenant_id, channel, target, title, content, status, detail, dispatched_at,
+             attempt_count, last_error
       from notification_deliveries
       where tenant_id = #{tenantId}
       order by dispatched_at desc
       limit 30
       """)
   List<NotificationDelivery> listDeliveries(@Param("tenantId") String tenantId);
+
+  @Select("""
+      select id, tenant_id, channel, target, title, content, status, detail, dispatched_at,
+             attempt_count, last_error
+      from notification_deliveries
+      where tenant_id = #{tenantId} and id = #{id}
+      """)
+  NotificationDelivery findDelivery(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  // 重试:累加尝试次数并覆盖最新结果(投递记录本身不重复插入,便于排障看清历次)。
+  @Update("""
+      update notification_deliveries
+         set status = #{status}, detail = #{detail,jdbcType=VARCHAR},
+             last_error = #{lastError,jdbcType=VARCHAR},
+             attempt_count = attempt_count + 1, dispatched_at = now()
+       where tenant_id = #{tenantId} and id = #{id}
+      """)
+  int updateDeliveryResult(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("status") String status,
+      @Param("detail") String detail,
+      @Param("lastError") String lastError);
 }

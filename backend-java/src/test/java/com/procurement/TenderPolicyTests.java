@@ -16,7 +16,7 @@ class TenderPolicyTests {
       OffsetDateTime acq, OffsetDateTime sub, OffsetDateTime open) {
     return new Tender("tender-1", "tenant-1", "ZB20260716001", "测试招标", type,
         BigDecimal.valueOf(100000), status, doc, "综合评分法", null,
-        acq, sub, open, "user-1", null, OffsetDateTime.now(), OffsetDateTime.now(), null, null, null, null, null, null, null, null);
+        acq, sub, open, "user-1", null, OffsetDateTime.now(), OffsetDateTime.now(), null, null, null, null, null, null, null, null, false);
   }
 
   @Test
@@ -208,7 +208,7 @@ class TenderPolicyTests {
         tender("公开招标", "评标中", "<p>x</p>", now, now, now))).hasMessageContaining("仅已定标");
     var executed = new Tender("tender-1", "tenant-1", "ZB20260716001", "测试招标", "公开招标",
         BigDecimal.valueOf(100000), "已定标", "<p>x</p>", "综合评分法", null,
-        now, now, now, "user-1", null, now, now, null, "tbid-1", now, "<p>n</p>", null, null, null, "po-1");
+        now, now, now, "user-1", null, now, now, null, "tbid-1", now, "<p>n</p>", null, null, null, "po-1", false);
     assertThatThrownBy(() -> TenderPolicy.requireExecutable(executed))
         .hasMessageContaining("不可重复生成");
   }

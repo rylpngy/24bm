@@ -40,4 +40,11 @@ public class BuyerNotificationChannelController {
   public ApiResponse<List<NotificationDeliveryResponse>> test() {
     return ApiResponse.ok(notificationChannelService.dispatchTest());
   }
+
+  /** 失败/未配置的投递重试(E-2)。 */
+  @PostMapping("/deliveries/{deliveryId}/retry")
+  public ApiResponse<List<NotificationDeliveryResponse>> retry(
+      @org.springframework.web.bind.annotation.PathVariable String deliveryId) {
+    return ApiResponse.ok(notificationChannelService.retryDelivery(deliveryId));
+  }
 }

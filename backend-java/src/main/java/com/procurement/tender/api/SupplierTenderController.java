@@ -30,6 +30,13 @@ public class SupplierTenderController {
     return ApiResponse.ok(tenderApplicationService.acquire(tenderId));
   }
 
+  /** F-1:提交资格预审申请(驳回后可修改重新提交)。 */
+  @PostMapping("/{tenderId}/prequalification")
+  public ApiResponse<TenderResponse> applyPrequalification(
+      @PathVariable String tenderId, @Valid @RequestBody ApplyPrequalificationRequest request) {
+    return ApiResponse.ok(tenderApplicationService.applyPrequalification(tenderId, request));
+  }
+
   @PostMapping("/{tenderId}/bids")
   public ApiResponse<TenderBidResponse> submitBid(
       @PathVariable String tenderId, @Valid @RequestBody SubmitTenderBidRequest request) {

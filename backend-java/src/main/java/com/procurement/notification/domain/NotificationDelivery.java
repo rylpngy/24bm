@@ -11,5 +11,7 @@ public record NotificationDelivery(
     String content,
     String status,
     String detail,
-    OffsetDateTime dispatchedAt) {
+    OffsetDateTime dispatchedAt,
+    int attemptCount,
+    String lastError) {
 }

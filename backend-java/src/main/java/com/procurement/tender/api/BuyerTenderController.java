@@ -76,6 +76,23 @@ public class BuyerTenderController {
     return ApiResponse.ok(tenderApplicationService.formCommittee(tenderId, request));
   }
 
+  /** F-1:编制阶段设定是否实行资格预审。 */
+  @PutMapping("/{tenderId}/prequalification")
+  public ApiResponse<TenderResponse> setPrequalificationRequired(
+      @PathVariable String tenderId, @Valid @RequestBody SetPrequalificationRequest request) {
+    return ApiResponse.ok(tenderApplicationService.setPrequalificationRequired(tenderId, request));
+  }
+
+  /** F-1:审查供应商资格预审申请。 */
+  @PostMapping("/{tenderId}/prequalifications/{applicationId}/review")
+  public ApiResponse<TenderResponse> reviewPrequalification(
+      @PathVariable String tenderId,
+      @PathVariable String applicationId,
+      @Valid @RequestBody ReviewPrequalificationRequest request) {
+    return ApiResponse.ok(
+        tenderApplicationService.reviewPrequalification(tenderId, applicationId, request));
+  }
+
   @PostMapping("/{tenderId}/inquiries")
   public ApiResponse<TenderResponse> sendInquiry(
       @PathVariable String tenderId, @Valid @RequestBody SendTenderInquiryRequest request) {

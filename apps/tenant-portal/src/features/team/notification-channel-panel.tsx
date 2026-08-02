@@ -4,6 +4,7 @@ import { Bell } from 'lucide-react';
 import {
   useBuyerNotificationChannelDeliveries,
   useBuyerNotificationChannelSettings,
+  useBuyerNotificationChannelRetry,
   useBuyerNotificationChannelTest,
   useBuyerNotificationChannelUpdateSettings,
 } from '@24bid/api-client';
@@ -16,7 +17,9 @@ const CHANNEL_STYLE: Record<string, string> = {
 };
 const STATUS_STYLE: Record<string, string> = {
   已发送: 'bg-emerald-100 text-emerald-700',
+  已记录: 'bg-slate-200 text-slate-600',
   成功: 'bg-emerald-100 text-emerald-700',
+  未配置: 'bg-amber-100 text-amber-700',
   失败: 'bg-red-100 text-red-700',
 };
 
@@ -27,6 +30,7 @@ export function NotificationChannelPanel() {
   const deliveries = useBuyerNotificationChannelDeliveries();
   const update = useBuyerNotificationChannelUpdateSettings();
   const test = useBuyerNotificationChannelTest();
+  const retry = useBuyerNotificationChannelRetry();
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -120,6 +124,7 @@ export function NotificationChannelPanel() {
                 <th className="px-3 py-1.5">标题</th>
                 <th className="px-3 py-1.5">结果</th>
                 <th className="px-3 py-1.5">时间</th>
+                <th className="px-3 py-1.5 text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -137,8 +142,33 @@ export function NotificationChannelPanel() {
                       {d.status}
                     </span>
                     {d.detail ? <span className="ml-1 text-[11px] text-slate-400">{d.detail}</span> : null}
+                    {d.lastError ? <p className="mt-0.5 text-[11px] font-bold text-red-500">{d.lastError}</p> : null}
                   </td>
-                  <td className="px-3 py-1.5 text-[11px] text-slate-400">{d.dispatchedAt?.slice(0, 19).replace('T', ' ')}</td>
+                  <td className="px-3 py-1.5 text-[11px] text-slate-400">
+                    {d.dispatchedAt?.slice(0, 19).replace('T', ' ')}
+                    {(d.attemptCount ?? 1) > 1 && (
+                      <span className="ml-1 rounded bg-slate-100 px-1 py-0.5 font-black text-slate-500">第 {d.attemptCount} 次</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-1.5 text-right">
+                    {(d.status === '失败' || d.status === '未配置') && d.id && (
+                      <button
+                        type="button"
+                        disabled={retry.isPending}
+                        onClick={() => retry.mutate({ deliveryId: d.id! }, {
+                          onSuccess: () => {
+                            void queryClient.invalidateQueries({
+                              predicate: (q) => typeof q.queryKey[0] === 'string'
+                                && (q.queryKey[0] as string).includes('/buyer/notification-channels'),
+                            });
+                          },
+                        })}
+                        className="inline-flex h-6 items-center rounded border border-slate-200 bg-white px-2 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        重试
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

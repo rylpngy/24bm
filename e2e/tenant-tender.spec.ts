@@ -25,6 +25,11 @@ test('招标管理:编制(富文本)→ 发布发售 → 详情要素与领取�
   await page.getByRole('button', { name: /保存并发布发售/ }).click();
   await expect(page.getByText(/已发布,招标文件开始发售/)).toBeVisible();
 
+  // 台账刷新后按标题检索再进详情:绕开前端查询缓存并避免存量数据把本单挤出首页(与本文件其余用例同口径)。
+  await page.reload();
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
   await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
   await expect(page.getByText('招标文件正文')).toBeVisible();
   await expect(page.getByText(/E2E 行为验证公开招标/)).toBeVisible();
@@ -252,3 +257,79 @@ test('流标:留痕 → 重新招标复制要素', async ({ page, request }) => 
 });
 
 // C-6 行为级:开标(无投标)→ 宣布流标(原因必填)→ 留痕卡 → 一键重新招标进入编制页。
+// F-1 行为级:编制期开启资格预审 → 供应商申请(API)→ 采购端审查通过/不通过 → 领取门槛生效。
+test('资格预审:开启 → 审查不通过拦截领取 → 复审通过后放行', async ({ page, request }) => {
+  const buyerLogin = await request.post(`${API}/auth/login`, {
+    data: { account: 'buyer.owner@example.com', password: 'demo123456', scope: 'BUYER', tenantId: 'tenant-acme' },
+  });
+  const buyer = (await buyerLogin.json()).data.accessToken as string;
+  const supLogin = await request.post(`${API}/auth/login`, {
+    data: { account: 'supplier.sales@example.com', password: 'demo123456', scope: 'SUPPLIER', supplierId: 'ent-supplier-sunrise' },
+  });
+  const sup = (await supLogin.json()).data.accessToken as string;
+
+  const title = `E2E资格预审-${Date.now()}`;
+  const iso = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
+  const created = await request.post(`${API}/buyer/tenders`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: {
+      title, tenderType: '公开招标', budget: 400000, evaluationMethod: '综合评分法',
+      documentHtml: '<p>E2E 资格预审验证正文。</p>',
+      acquisitionDeadline: iso(48), submissionDeadline: iso(96), openingAt: iso(97),
+    },
+  });
+  const id = (await created.json()).data.id as string;
+
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /招标管理/);
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+
+  // 编制期开启预审开关
+  await expect(page.getByRole('heading', { name: '资格预审', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '开启资格预审' }).click();
+  await expect(page.getByText('已开启资格预审要求。')).toBeVisible();
+  await expect(page.getByText('实行资格预审', { exact: true })).toBeVisible();
+
+  // 发布发售后:未申请不得领取;供应商提交申请
+  expect((await request.post(`${API}/buyer/tenders/${id}/publish`, { headers: { Authorization: `Bearer ${buyer}` } })).ok()).toBeTruthy();
+  const blocked = await request.post(`${API}/supplier/tenders/${id}/acquire`, { headers: { Authorization: `Bearer ${sup}` } });
+  expect(blocked.ok()).toBeFalsy();
+  expect((await request.post(`${API}/supplier/tenders/${id}/prequalification`, {
+    headers: { Authorization: `Bearer ${sup}` },
+    data: { application: 'E2E:具备二级资质与同类业绩。' },
+  })).ok()).toBeTruthy();
+
+  // 采购端审查:先不通过,领取仍被拦截
+  await page.reload();
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+  await expect(page.getByText('E2E:具备二级资质与同类业绩。')).toBeVisible();
+  const commentBox = page.getByLabel(/^审查意见 /);
+  await commentBox.fill('E2E:业绩证明缺件');
+  await page.getByRole('button', { name: '不通过' }).click();
+  await expect(page.getByText(/已完成资格预审/)).toBeVisible();
+  await expect(page.getByText('E2E:业绩证明缺件')).toBeVisible();
+  const stillBlocked = await request.post(`${API}/supplier/tenders/${id}/acquire`, { headers: { Authorization: `Bearer ${sup}` } });
+  expect(stillBlocked.ok()).toBeFalsy();
+
+  // 供应商补正重提 → 采购端通过 → 领取放行
+  expect((await request.post(`${API}/supplier/tenders/${id}/prequalification`, {
+    headers: { Authorization: `Bearer ${sup}` },
+    data: { application: 'E2E:已补充合同扫描件。' },
+  })).ok()).toBeTruthy();
+  await page.reload();
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+  await page.getByLabel(/^审查意见 /).fill('E2E:资质业绩满足要求');
+  await page.getByRole('button', { name: '通过', exact: true }).click();
+  await expect(page.getByText(/已完成资格预审/)).toBeVisible();
+  const allowed = await request.post(`${API}/supplier/tenders/${id}/acquire`, { headers: { Authorization: `Bearer ${sup}` } });
+  expect(allowed.ok()).toBeTruthy();
+});

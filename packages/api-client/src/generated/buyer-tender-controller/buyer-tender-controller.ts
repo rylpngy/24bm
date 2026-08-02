@@ -33,8 +33,10 @@ import type {
   ExecuteTenderRequest,
   FailTenderRequest,
   FormCommitteeRequest,
+  ReviewPrequalificationRequest,
   SaveTenderRequest,
   SendTenderInquiryRequest,
+  SetPrequalificationRequest,
   SubmitScoresRequest
 } from '.././model';
 
@@ -99,6 +101,64 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerTenderUpdateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerTenderSetPrequalificationRequired = (
+    tenderId: string,
+    setPrequalificationRequest: BodyType<SetPrequalificationRequest>,
+ ) => {
+      
+      
+      return customInstance<ApiResponseTenderResponse>(
+      {url: `/api/v1/buyer/tenders/${tenderId}/prequalification`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: setPrequalificationRequest
+    },
+      );
+    }
+  
+
+
+export const getBuyerTenderSetPrequalificationRequiredMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderSetPrequalificationRequired>>, TError,{tenderId: string;data: BodyType<SetPrequalificationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerTenderSetPrequalificationRequired>>, TError,{tenderId: string;data: BodyType<SetPrequalificationRequest>}, TContext> => {
+
+const mutationKey = ['buyerTenderSetPrequalificationRequired'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderSetPrequalificationRequired>>, {tenderId: string;data: BodyType<SetPrequalificationRequest>}> = (props) => {
+          const {tenderId,data} = props ?? {};
+
+          return  buyerTenderSetPrequalificationRequired(tenderId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerTenderSetPrequalificationRequiredMutationResult = NonNullable<Awaited<ReturnType<typeof buyerTenderSetPrequalificationRequired>>>
+    export type BuyerTenderSetPrequalificationRequiredMutationBody = BodyType<SetPrequalificationRequest>
+    export type BuyerTenderSetPrequalificationRequiredMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerTenderSetPrequalificationRequired = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderSetPrequalificationRequired>>, TError,{tenderId: string;data: BodyType<SetPrequalificationRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerTenderSetPrequalificationRequired>>,
+        TError,
+        {tenderId: string;data: BodyType<SetPrequalificationRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerTenderSetPrequalificationRequiredMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -414,6 +474,66 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerTenderPublishMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerTenderReviewPrequalification = (
+    tenderId: string,
+    applicationId: string,
+    reviewPrequalificationRequest: BodyType<ReviewPrequalificationRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseTenderResponse>(
+      {url: `/api/v1/buyer/tenders/${tenderId}/prequalifications/${applicationId}/review`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: reviewPrequalificationRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerTenderReviewPrequalificationMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderReviewPrequalification>>, TError,{tenderId: string;applicationId: string;data: BodyType<ReviewPrequalificationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerTenderReviewPrequalification>>, TError,{tenderId: string;applicationId: string;data: BodyType<ReviewPrequalificationRequest>}, TContext> => {
+
+const mutationKey = ['buyerTenderReviewPrequalification'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderReviewPrequalification>>, {tenderId: string;applicationId: string;data: BodyType<ReviewPrequalificationRequest>}> = (props) => {
+          const {tenderId,applicationId,data} = props ?? {};
+
+          return  buyerTenderReviewPrequalification(tenderId,applicationId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerTenderReviewPrequalificationMutationResult = NonNullable<Awaited<ReturnType<typeof buyerTenderReviewPrequalification>>>
+    export type BuyerTenderReviewPrequalificationMutationBody = BodyType<ReviewPrequalificationRequest>
+    export type BuyerTenderReviewPrequalificationMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerTenderReviewPrequalification = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerTenderReviewPrequalification>>, TError,{tenderId: string;applicationId: string;data: BodyType<ReviewPrequalificationRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerTenderReviewPrequalification>>,
+        TError,
+        {tenderId: string;applicationId: string;data: BodyType<ReviewPrequalificationRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerTenderReviewPrequalificationMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

@@ -5,6 +5,7 @@ import {
   useSupplierEsignList,
   useSupplierEsignSign,
   useSupplierTenderAcquire,
+  useSupplierTenderApplyPrequalification,
   useSupplierTenderAnswerInquiry,
   useSupplierTenderList,
   useSupplierTenderSubmitBid,
@@ -480,6 +481,8 @@ export function TenderProjectsPage() {
   const queryClient = useQueryClient();
   const tenders = useSupplierTenderList();
   const acquire = useSupplierTenderAcquire();
+  const applyPrequal = useSupplierTenderApplyPrequalification();
+  const [prequalText, setPrequalText] = useState('');
   const [filter, setFilter] = useState('全部');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
@@ -562,6 +565,69 @@ export function TenderProjectsPage() {
           <div className="min-w-0 space-y-4">
             {/* ── 阶段一 · 招标:查看公告 + 领取招标文件 ── */}
             {t.id && <TenderAnnouncementsCard tenderId={t.id} />}
+            {/* F-1 资格预审:实行预审的项目须先申请并通过审查,方可领取招标文件 */}
+            {t.prequalificationRequired && (() => {
+              const mine = (t.prequalifications ?? [])[0];
+              const canApply = t.status === '发售中' && (!mine || mine.status === '未通过');
+              return (
+                <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-base font-black text-slate-950">资格预审</h3>
+                    <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
+                      mine?.status === '已通过' ? 'bg-emerald-50 text-emerald-700'
+                        : mine?.status === '未通过' ? 'bg-red-50 text-red-600'
+                          : mine ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-700')}>
+                      {mine?.status ?? '待提交申请'}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs font-bold leading-6 text-slate-500">
+                    本项目实行资格预审,预审通过后方可领取招标文件并投标。
+                  </p>
+                  {mine && (
+                    <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
+                      <p className="text-[11px] font-black text-slate-500">本方资格声明</p>
+                      <p className="mt-1 whitespace-pre-wrap text-xs font-bold text-slate-700">{mine.application}</p>
+                      {mine.reviewComment && (
+                        <p className={cn('mt-2 text-xs font-black', mine.status === '已通过' ? 'text-emerald-700' : 'text-red-600')}>
+                          审查意见:{mine.reviewComment}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {canApply ? (
+                    <div className="mt-3 space-y-2">
+                      <textarea
+                        className="block min-h-24 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
+                        aria-label="资格声明" value={prequalText} onChange={(e) => setPrequalText(e.target.value)}
+                        placeholder="请说明企业资质等级、同类业绩、专业人员配备与履约能力……" />
+                      <PrimaryActionButton size="sm" busy={applyPrequal.isPending} pendingLabel="提交中"
+                        disabled={!prequalText.trim()}
+                        onClick={() => t.id && applyPrequal.mutate(
+                          { tenderId: t.id, data: { application: prequalText.trim() } },
+                          {
+                            onSuccess: () => {
+                              setFeedback('资格预审申请已提交,请等待招标人审查结果。');
+                              setPrequalText('');
+                              refresh();
+                            },
+                            onError: (e) => setError(
+                              (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+                              ?? '提交失败,请稍后重试'),
+                          })}>
+                        {mine?.status === '未通过' ? '修改后重新提交' : '提交资格预审申请'}
+                      </PrimaryActionButton>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-[11px] font-bold text-slate-400">
+                      {mine?.status === '待审查' ? '申请审查中,结果公布后可继续后续流程。'
+                        : mine?.status === '已通过' ? '资格预审已通过,可领取招标文件。'
+                          : '当前阶段不可提交资格预审申请。'}
+                    </p>
+                  )}
+                </section>
+              );
+            })()}
+
             <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-base font-black text-slate-950">招标文件正文</h3>
@@ -577,9 +643,16 @@ export function TenderProjectsPage() {
                       ? '招标人已定向发放,点击下方「确认领取」即可查阅并准备投标。'
                       : '公开招标发售期内可自助领取。'}
                   </p>
-                  <PrimaryActionButton size="sm" onClick={() => doAcquire(t.id)} busy={acquire.isPending} pendingLabel="领取中">
-                    {state === '已发放待领取' ? '确认领取招标文件' : '领取招标文件'}
-                  </PrimaryActionButton>
+                  {/* F-1:实行资格预审的项目,预审通过前不给出领取入口(后端同样拦截) */}
+                  {t.prequalificationRequired && (t.prequalifications ?? [])[0]?.status !== '已通过' ? (
+                    <p className="mt-2 text-xs font-black text-violet-700">
+                      本项目实行资格预审,请先在上方提交资格预审申请并通过审查。
+                    </p>
+                  ) : (
+                    <PrimaryActionButton size="sm" onClick={() => doAcquire(t.id)} busy={acquire.isPending} pendingLabel="领取中">
+                      {state === '已发放待领取' ? '确认领取招标文件' : '领取招标文件'}
+                    </PrimaryActionButton>
+                  )}
                 </div>
               )}
             </section>
@@ -761,7 +834,15 @@ export function TenderProjectsPage() {
                       <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">{shortTime(t.submissionDeadline)}</td>
                       <td className="px-5 py-5 text-right">
                         <div className="flex justify-end gap-2">
-                          {state !== '已领取' && t.status === '发售中' && (
+                          {/* F-1:实行资格预审的项目在台账页引导进详情申请,不给出直接领取 */}
+                          {state !== '已领取' && t.status === '发售中'
+                            && t.prequalificationRequired && (t.prequalifications ?? [])[0]?.status !== '已通过' && (
+                            <span className="inline-flex h-8 items-center rounded-md bg-violet-50 px-3 text-xs font-black text-violet-700">
+                              需资格预审
+                            </span>
+                          )}
+                          {state !== '已领取' && t.status === '发售中'
+                            && !(t.prequalificationRequired && (t.prequalifications ?? [])[0]?.status !== '已通过') && (
                             <button type="button" onClick={() => doAcquire(t.id)} disabled={acquire.isPending}
                               className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:bg-slate-300">
                               {state === '已发放待领取' ? '确认领取' : '领取文件'}

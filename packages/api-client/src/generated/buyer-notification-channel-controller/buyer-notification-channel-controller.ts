@@ -236,6 +236,62 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerNotificationChannelRetry = (
+    deliveryId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListNotificationDeliveryResponse>(
+      {url: `/api/v1/buyer/notification-channels/deliveries/${deliveryId}/retry`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerNotificationChannelRetryMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerNotificationChannelRetry>>, TError,{deliveryId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerNotificationChannelRetry>>, TError,{deliveryId: string}, TContext> => {
+
+const mutationKey = ['buyerNotificationChannelRetry'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerNotificationChannelRetry>>, {deliveryId: string}> = (props) => {
+          const {deliveryId} = props ?? {};
+
+          return  buyerNotificationChannelRetry(deliveryId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerNotificationChannelRetryMutationResult = NonNullable<Awaited<ReturnType<typeof buyerNotificationChannelRetry>>>
+    
+    export type BuyerNotificationChannelRetryMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerNotificationChannelRetry = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerNotificationChannelRetry>>, TError,{deliveryId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerNotificationChannelRetry>>,
+        TError,
+        {deliveryId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerNotificationChannelRetryMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const buyerNotificationChannelDeliveries = (
     
  signal?: AbortSignal

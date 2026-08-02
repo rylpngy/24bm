@@ -11,6 +11,7 @@ import type { TenderEvaluatorResponse } from './tenderEvaluatorResponse';
 import type { TenderScoreResponse } from './tenderScoreResponse';
 import type { TenderBidEvaluationSummary } from './tenderBidEvaluationSummary';
 import type { TenderInquiryResponse } from './tenderInquiryResponse';
+import type { TenderPrequalificationResponse } from './tenderPrequalificationResponse';
 
 export interface TenderResponse {
   id?: string;
@@ -42,4 +43,6 @@ export interface TenderResponse {
   rebidOfTenderId?: string;
   executionOrderId?: string;
   inquiries?: TenderInquiryResponse[];
+  prequalificationRequired?: boolean;
+  prequalifications?: TenderPrequalificationResponse[];
 }

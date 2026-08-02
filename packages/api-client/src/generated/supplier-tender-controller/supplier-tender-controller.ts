@@ -30,6 +30,7 @@ import type {
   ApiResponseTenderBidResponse,
   ApiResponseTenderResponse,
   ApiResponseVoid,
+  ApplyPrequalificationRequest,
   SubmitTenderBidRequest
 } from '.././model';
 
@@ -39,7 +40,66 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const supplierTenderAnswerInquiry = (
+export const supplierTenderApplyPrequalification = (
+    tenderId: string,
+    applyPrequalificationRequest: BodyType<ApplyPrequalificationRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseTenderResponse>(
+      {url: `/api/v1/supplier/tenders/${tenderId}/prequalification`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: applyPrequalificationRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierTenderApplyPrequalificationMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierTenderApplyPrequalification>>, TError,{tenderId: string;data: BodyType<ApplyPrequalificationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierTenderApplyPrequalification>>, TError,{tenderId: string;data: BodyType<ApplyPrequalificationRequest>}, TContext> => {
+
+const mutationKey = ['supplierTenderApplyPrequalification'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierTenderApplyPrequalification>>, {tenderId: string;data: BodyType<ApplyPrequalificationRequest>}> = (props) => {
+          const {tenderId,data} = props ?? {};
+
+          return  supplierTenderApplyPrequalification(tenderId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierTenderApplyPrequalificationMutationResult = NonNullable<Awaited<ReturnType<typeof supplierTenderApplyPrequalification>>>
+    export type SupplierTenderApplyPrequalificationMutationBody = BodyType<ApplyPrequalificationRequest>
+    export type SupplierTenderApplyPrequalificationMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierTenderApplyPrequalification = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierTenderApplyPrequalification>>, TError,{tenderId: string;data: BodyType<ApplyPrequalificationRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierTenderApplyPrequalification>>,
+        TError,
+        {tenderId: string;data: BodyType<ApplyPrequalificationRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierTenderApplyPrequalificationMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierTenderAnswerInquiry = (
     tenderId: string,
     inquiryId: string,
     answerTenderInquiryRequest: BodyType<AnswerTenderInquiryRequest>,

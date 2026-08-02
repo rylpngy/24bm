@@ -87,9 +87,14 @@ jobs:
           APP_SEED_LOCATIONS: classpath:db/demo
         run: |
           nohup mvn -B -ntp spring-boot:run -Dspring-boot.run.profiles=local > /tmp/backend.log 2>&1 &
-          for i in $(seq 1 60); do
-            curl -sf http://localhost:8080/api/v1/health && break || sleep 3
+          # 编译+迁移在冷缓存下可能超过 3 分钟;等不到就直接失败,避免 E2E 在后端未就绪时开跑。
+          for i in $(seq 1 150); do
+            curl -sf http://localhost:8080/api/v1/health && exit 0
+            sleep 3
           done
+          echo "backend did not become healthy within 450s" >&2
+          tail -80 /tmp/backend.log >&2
+          exit 1
       - name: Wait for Keycloak realm
         run: |
           for i in $(seq 1 60); do

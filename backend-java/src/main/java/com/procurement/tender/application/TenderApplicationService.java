@@ -8,6 +8,7 @@ import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.application.RfqAnnouncementService;
 import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.tender.api.AnswerTenderInquiryRequest;
+import com.procurement.tender.api.ApplyPrequalificationRequest;
 import com.procurement.tender.api.AwardTenderRequest;
 import com.procurement.tender.api.DistributeTenderRequest;
 import com.procurement.tender.api.ExecuteTenderRequest;
@@ -22,6 +23,9 @@ import com.procurement.tender.api.TenderBidEvaluationSummary;
 import com.procurement.tender.api.TenderBidResponse;
 import com.procurement.tender.api.TenderEvaluatorResponse;
 import com.procurement.tender.api.TenderInquiryResponse;
+import com.procurement.tender.api.TenderPrequalificationResponse;
+import com.procurement.tender.api.ReviewPrequalificationRequest;
+import com.procurement.tender.api.SetPrequalificationRequest;
 import com.procurement.tender.api.TenderResponse;
 import com.procurement.tender.api.TenderScoreResponse;
 import com.procurement.tender.domain.Tender;
@@ -33,11 +37,14 @@ import com.procurement.tender.domain.TenderEvaluator;
 import com.procurement.tender.domain.TenderInquiry;
 import com.procurement.tender.domain.TenderInquiryPolicy;
 import com.procurement.tender.domain.TenderPolicy;
+import com.procurement.tender.domain.TenderPrequalification;
+import com.procurement.tender.domain.TenderPrequalificationPolicy;
 import com.procurement.tender.domain.TenderScore;
 import com.procurement.tender.infrastructure.TenderAcquisitionMapper;
 import com.procurement.tender.infrastructure.TenderBidMapper;
 import com.procurement.tender.infrastructure.TenderEvaluationMapper;
 import com.procurement.tender.infrastructure.TenderInquiryMapper;
+import com.procurement.tender.infrastructure.TenderPrequalificationMapper;
 import com.procurement.tender.infrastructure.TenderMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -64,6 +71,7 @@ public class TenderApplicationService {
   private final TenderBidMapper bidMapper;
   private final TenderEvaluationMapper evaluationMapper;
   private final TenderInquiryMapper inquiryMapper;
+  private final TenderPrequalificationMapper prequalificationMapper;
   private final SupplierProfileApplicationService supplierProfileApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -77,6 +85,7 @@ public class TenderApplicationService {
       TenderBidMapper bidMapper,
       TenderEvaluationMapper evaluationMapper,
       TenderInquiryMapper inquiryMapper,
+      TenderPrequalificationMapper prequalificationMapper,
       SupplierProfileApplicationService supplierProfileApplicationService,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
@@ -88,6 +97,7 @@ public class TenderApplicationService {
     this.bidMapper = bidMapper;
     this.evaluationMapper = evaluationMapper;
     this.inquiryMapper = inquiryMapper;
+    this.prequalificationMapper = prequalificationMapper;
     this.supplierProfileApplicationService = supplierProfileApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -188,6 +198,82 @@ public class TenderApplicationService {
         tenantId, "开标唱标", tender.title() + " 已开标,投标报价与指纹核验结果已公示。");
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
+
+  // ── 资格预审(F-1) ──────────────────────────────────────────
+  /** 编制阶段设定是否实行资格预审(发布后不得变更)。 */
+  @Transactional
+  public TenderResponse setPrequalificationRequired(String tenderId, SetPrequalificationRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    Tender tender = requireTender(tenantId, tenderId);
+    TenderPrequalificationPolicy.requireToggleable(tender);
+    tenderMapper.updatePrequalificationRequired(tenantId, tenderId, request.required());
+    auditLogApplicationService.recordCurrentTenantAction(
+        "tender.prequalification_set", AUDIT_TARGET, tenderId,
+        request.required() ? "启用资格预审" : "取消资格预审");
+    return toResponse(requireTender(tenantId, tenderId),
+        acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
+  /** 招标人审查资格预审申请(通过/不通过,意见必填)。 */
+  @Transactional
+  public TenderResponse reviewPrequalification(
+      String tenderId, String applicationId, ReviewPrequalificationRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    Tender tender = requireTender(tenantId, tenderId);
+    TenderPrequalification application = prequalificationMapper.listByTender(tenantId, tenderId).stream()
+        .filter(a -> a.id().equals(applicationId))
+        .findFirst()
+        .orElse(null);
+    TenderPrequalificationPolicy.requireReviewable(
+        tender, application, request.status(), request.reviewComment());
+    int updated = prequalificationMapper.review(
+        tenantId, applicationId, request.status(), request.reviewComment().trim(), OffsetDateTime.now());
+    if (updated == 0) {
+      throw new IllegalStateException("该申请已被审查,请刷新查看: " + applicationId);
+    }
+    String supplierName = supplierProfileApplicationService.findSupplierDisplayName(application.supplierId());
+    auditLogApplicationService.recordCurrentTenantAction(
+        "tender.prequalification_reviewed", AUDIT_TARGET, tenderId,
+        "资格预审「" + supplierName + "」" + request.status() + ":" + request.reviewComment().trim());
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId, application.supplierId(), "资格预审结果",
+        tender.title() + " 资格预审" + request.status() + ":" + request.reviewComment().trim());
+    return toResponse(requireTender(tenantId, tenderId),
+        acquisitionMapper.listByTender(tenantId, tenderId), true);
+  }
+
+  /** 供应商提交资格预审申请(驳回后可修改重新提交)。 */
+  @Transactional
+  public TenderResponse applyPrequalification(String tenderId, ApplyPrequalificationRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier tender APIs");
+    Tender tender = findTenderForSupplier(tenderId, supplierId);
+    TenderPrequalification existing = myPrequalification(tender, supplierId);
+    TenderPrequalificationPolicy.requireApplicable(tender, existing, request.application());
+    prequalificationMapper.upsert(
+        "tpq-" + UUID.randomUUID(), tender.tenantId(), tenderId, supplierId,
+        request.application().trim(), OffsetDateTime.now());
+    auditLogApplicationService.recordTenantAction(
+        tender.tenantId(), "tender.prequalification_applied", AUDIT_TARGET, tenderId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        tender.tenantId(), "资格预审申请",
+        tender.title() + " 收到一份资格预审申请,请在招标详情中审查。");
+    return supplierView(tender, myAcquisition(tenderId, supplierId), supplierId);
+  }
+
+  private TenderPrequalification myPrequalification(Tender tender, String supplierId) {
+    return prequalificationMapper.listBySupplier(supplierId).stream()
+        .filter(a -> a.tenderId().equals(tender.id()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private TenderPrequalificationResponse toPrequalificationResponse(
+      TenderPrequalification a, String supplierName) {
+    return new TenderPrequalificationResponse(
+        a.id(), a.supplierId(), supplierName, a.application(), a.status(),
+        a.reviewComment(), a.appliedAt(), a.reviewedAt());
   }
 
   // ── 买方:中标转执行订单(C-7) ──────────────────────────────
@@ -304,7 +390,7 @@ public class TenderApplicationService {
         tender.tenantId(), "问询已答复",
         tender.title() + " 投标人已答复" + inquiry.kind()
             + (request.revisedAmount() != null ? ",修订报价 " + request.revisedAmount() : "") + "。");
-    return supplierView(tender, myAcquisition(tenderId, supplierId));
+    return supplierView(tender, myAcquisition(tenderId, supplierId), supplierId);
   }
 
   // 最新有效报价:最近一次已答复的二次报价修订价;无则为原投标价。
@@ -432,7 +518,7 @@ public class TenderApplicationService {
     return merged.values().stream()
         .sorted(java.util.Comparator.comparing(
             Tender::createdAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
-        .map(t -> supplierView(t, mineByTender.get(t.id())))
+        .map(t -> supplierView(t, mineByTender.get(t.id()), supplierId))
         .toList();
   }
 
@@ -445,6 +531,8 @@ public class TenderApplicationService {
         .findFirst()
         .orElse(null);
     OffsetDateTime now = OffsetDateTime.now();
+    // F-1:实行资格预审的项目,须预审通过方可领取招标文件(投标以已领取为前提)。
+    TenderPrequalificationPolicy.requirePrequalified(tender, myPrequalification(tender, supplierId));
     if (existing == null) {
       TenderPolicy.requireOpenAcquirable(tender, now);
       acquisitionMapper.insertIgnore(
@@ -459,7 +547,8 @@ public class TenderApplicationService {
         acquisitionMapper.listBySupplier(supplierId).stream()
             .filter(a -> a.tenderId().equals(tenderId))
             .findFirst()
-            .orElse(null));
+            .orElse(null),
+        supplierId);
   }
 
   // ── 供应商:投标递交(密封)/ 撤回 ─────────────────────────────
@@ -594,9 +683,8 @@ public class TenderApplicationService {
 
   // 供应商视角:未领取(无 acquired_at)时不下发招标文件正文;领取记录仅含本方。
   // 开标前投标仅本方完整视图;开标后为唱标公示(各家名称/金额/核验),他方正文不下发。
-  private TenderResponse supplierView(Tender tender, TenderAcquisition mine) {
+  private TenderResponse supplierView(Tender tender, TenderAcquisition mine, String mySupplierId) {
     boolean acquired = mine != null && mine.acquiredAt() != null;
-    String mySupplierId = mine == null ? "" : mine.supplierId();
     List<TenderAcquisitionResponse> acquisitions = mine == null
         ? List.of()
         : List.of(new TenderAcquisitionResponse(
@@ -627,7 +715,12 @@ public class TenderApplicationService {
         List.of(), List.of(), List.of(),
         tender.awardedBidId(), tender.awardedAt(), isWinner ? tender.awardNoticeHtml() : null,
         tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId(), tender.executionOrderId(),
-        myInquiries);
+        myInquiries,
+        tender.prequalificationRequired(),
+        java.util.stream.Stream.of(myPrequalification(tender, mySupplierId))
+            .filter(java.util.Objects::nonNull)
+            .map(a -> toPrequalificationResponse(a, null))
+            .toList());
   }
 
   private TenderInquiryResponse toInquiryResponse(TenderInquiry i, String supplierName) {
@@ -677,7 +770,12 @@ public class TenderApplicationService {
         evaluationSummary(tender, evaluators, scores),
         tender.awardedBidId(), tender.awardedAt(), tender.awardNoticeHtml(),
         tender.failedAt(), tender.failureReason(), tender.rebidOfTenderId(), tender.executionOrderId(),
-        inquiries);
+        inquiries,
+        tender.prequalificationRequired(),
+        prequalificationMapper.listByTender(tender.tenantId(), tender.id()).stream()
+            .map(a -> toPrequalificationResponse(
+                a, supplierProfileApplicationService.findSupplierDisplayName(a.supplierId())))
+            .toList());
   }
 
   // 评标汇总(实时计算):价格分=最低有效报价/本报价×100;

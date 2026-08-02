@@ -14,4 +14,6 @@ export interface NotificationDeliveryResponse {
   status?: string;
   detail?: string;
   dispatchedAt?: string;
+  attemptCount?: number;
+  lastError?: string;
 }

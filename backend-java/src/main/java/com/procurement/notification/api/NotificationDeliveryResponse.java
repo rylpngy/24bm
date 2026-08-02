@@ -9,5 +9,8 @@ public record NotificationDeliveryResponse(
     String title,
     String status,
     String detail,
-    OffsetDateTime dispatchedAt) {
+    OffsetDateTime dispatchedAt,
+    // E-2 排障:尝试次数与最近错误。
+    int attemptCount,
+    String lastError) {
 }

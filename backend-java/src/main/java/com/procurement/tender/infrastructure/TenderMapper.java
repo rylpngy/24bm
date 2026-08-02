@@ -18,7 +18,7 @@ public interface TenderMapper {
       evaluation_method, bid_bond_amount, acquisition_deadline, submission_deadline,
       opening_at, owner_id, published_at, created_at, updated_at, opened_at,
       awarded_bid_id, awarded_at, award_notice_html, failed_at, failure_reason, rebid_of_tender_id,
-      execution_order_id
+      execution_order_id, prequalification_required
       """;
 
   @Insert("""
@@ -136,6 +136,15 @@ public interface TenderMapper {
       @Param("tenantId") String tenantId,
       @Param("id") String id,
       @Param("executionOrderId") String executionOrderId);
+
+  @Update("""
+      update tenders set prequalification_required = #{required}, updated_at = now()
+      where tenant_id = #{tenantId} and id = #{id}
+      """)
+  int updatePrequalificationRequired(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("required") boolean required);
 
   @Select("select count(1) from tenders where tenant_id = #{tenantId} and tender_no like #{prefix} || '%'")
   int countByTenantAndNoPrefix(@Param("tenantId") String tenantId, @Param("prefix") String prefix);

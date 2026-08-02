@@ -28,5 +28,6 @@ public record Tender(
     OffsetDateTime failedAt,
     String failureReason,
     String rebidOfTenderId,
-    String executionOrderId) {
+    String executionOrderId,
+    boolean prequalificationRequired) {
 }

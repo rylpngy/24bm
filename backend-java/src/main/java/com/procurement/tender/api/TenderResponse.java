@@ -42,5 +42,8 @@ public record TenderResponse(
     // C-7 定标转执行:生成的采购订单号(买方订单模块/供应商销售订单接续履约)。
     String executionOrderId,
     // C-9 评标问询与二次报价:买方全量;供应商仅本方投标的问询。
-    List<TenderInquiryResponse> inquiries) {
+    List<TenderInquiryResponse> inquiries,
+    // F-1 资格预审:是否实行预审;买方见全部申请,供应商仅见本方。
+    boolean prequalificationRequired,
+    List<TenderPrequalificationResponse> prequalifications) {
 }
