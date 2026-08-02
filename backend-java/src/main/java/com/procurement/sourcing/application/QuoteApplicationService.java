@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +46,7 @@ public class QuoteApplicationService {
   private final RfqItemQueryService rfqItemQueryService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final ApplicationEventPublisher eventPublisher;
 
   public QuoteApplicationService(
       RfqMapper rfqMapper,
@@ -55,7 +57,8 @@ public class QuoteApplicationService {
       RfqSourcingStatusTransition rfqSourcingStatusTransition,
       RfqItemQueryService rfqItemQueryService,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      ApplicationEventPublisher eventPublisher) {
     this.rfqMapper = rfqMapper;
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
@@ -65,6 +68,7 @@ public class QuoteApplicationService {
     this.rfqItemQueryService = rfqItemQueryService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.eventPublisher = eventPublisher;
   }
 
   public List<RfqResponse> listSupplierRfqs() {
@@ -153,6 +157,7 @@ public class QuoteApplicationService {
       throw exception;
     }
     persistLineItems(rfq.tenantId(), quoteId, request.lineItems());
+    publishAuctionEvent(rfq, AuctionEvent.KIND_BID);
     maybeExtendAuctionDeadline(rfq);
 
     // 供应商无租户上下文,审计需显式落到 RFQ 所属租户(否则 requireTenantId 抛错)。
@@ -205,6 +210,7 @@ public class QuoteApplicationService {
       throw new IllegalStateException("Only submitted supplier quote can be updated: " + quoteId);
     }
     persistLineItems(quote.tenantId(), quoteId, request.lineItems());
+    publishAuctionEvent(rfq, AuctionEvent.KIND_BID);
     maybeExtendAuctionDeadline(rfq);
 
     auditLogApplicationService.recordTenantAction(
@@ -343,6 +349,18 @@ public class QuoteApplicationService {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
+  /**
+   * G-1 竞价实时推送:出价落库后向本租户与全部受邀供应商广播信号
+   * (仅 rfqId + 事件类型,不含金额),订阅端据此拉取自己有权看到的最新数据。
+   */
+  private void publishAuctionEvent(Rfq rfq, String kind) {
+    if (!RfqAuctionPolicy.isAuction(rfq.method())) {
+      return;
+    }
+    eventPublisher.publishEvent(new AuctionEvent(
+        rfq.tenantId(), rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()), rfq.id(), kind));
+  }
+
   // 竞价软关闭:临近截止的有效出价自动顺延截止时间,并通知买方与全部受邀供应商。
   private void maybeExtendAuctionDeadline(Rfq rfq) {
     if (!RfqAuctionPolicy.isAuction(rfq.method())) {
@@ -358,6 +376,7 @@ public class QuoteApplicationService {
       return;
     }
     rfqMapper.updateDeadline(rfq.tenantId(), rfq.id(), extended);
+    publishAuctionEvent(rfq, AuctionEvent.KIND_DEADLINE_EXTENDED);
     String message = rfq.title() + " 收到临近截止的新出价,竞价截止顺延至 "
         + extended.toLocalDateTime().toLocalTime().withNano(0) + "。";
     notificationApplicationService.notifyActiveTenantUsers(

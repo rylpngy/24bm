@@ -52,7 +52,8 @@ class SupplierQuoteListFilterTests {
           new RfqSourcingStatusTransition(),
           org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqItemQueryService.class),
           auditLogApplicationService,
-          notificationApplicationService);
+          notificationApplicationService,
+          org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class));
 
   @AfterEach
   void clearTenantContext() {

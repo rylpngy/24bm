@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Ban, CheckCircle2, Gavel, LockOpen, Plus, Timer, TrendingDown, Trophy, Zap } from 'lucide-react';
 import {
@@ -8,6 +8,7 @@ import {
   useRfqAbort,
   useRfqList,
   useRfqOpen,
+  useAuctionStream,
 } from '@24bid/api-client';
 import {
   ConfirmDialog,
@@ -22,6 +23,7 @@ import {
   cn,
 } from '@24bid/ui';
 import { RfqCreateWizard } from '../rfqs/rfq-create-wizard';
+import { useAuthStore } from '../../lib/auth-store';
 
 const currency = (v?: number | null) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -103,17 +105,33 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
   const [page, setPage] = useState(1);
   const [confirmAction, setConfirmAction] = useState<'open-early' | 'no-bid' | null>(null);
 
-  // 正式竞价中 5s 轮询,让出价流/最低价即时可见。
+  // G-1 竞价实时推送:SSE 通道畅通时由服务端事件驱动刷新;断流回落 5s 轮询(改造前行为)。
+  const token = useAuthStore((s) => s.session?.token);
+  const [live, setLive] = useState(false);
   const rfqsQuery = useRfqList(undefined, {
     query: {
       refetchInterval: (query) =>
-        ((query.state.data?.data ?? []) as RfqResponse[]).some(
+        !live
+        && ((query.state.data?.data ?? []) as RfqResponse[]).some(
           (r) => r.method === '竞价' && r.status === '报价中',
         )
           ? 5_000
           : false,
     },
   });
+  const hasLiveAuction = (rfqsQuery.data?.data ?? []).some(
+    (r) => r.method === '竞价' && r.status === '报价中',
+  );
+  const onAuctionEvent = useCallback(() => {
+    void queryClient.invalidateQueries({
+      predicate: (q) => typeof q.queryKey[0] === 'string'
+        && (q.queryKey[0] as string).includes('/buyer/rfqs'),
+    });
+  }, [queryClient]);
+  const stream = useAuctionStream({
+    scope: 'buyer', token, enabled: hasLiveAuction, onEvent: onAuctionEvent,
+  });
+  useEffect(() => setLive(stream.live), [stream.live]);
   // 立项候选:仅「已通过」审批的需求;供应商仅「已准入」(后端邀请守卫同口径,未准入选了也会被拒)。
   const demandsQuery = usePurchaseDemandList({ status: '已通过' });
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
@@ -518,6 +536,15 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
   // ── 竞价台账 ─────────────────────────────────────────────
   return (
     <Panel title="竞价采购" icon={Gavel} subtitle="在线竞价管理 · 实时出价与排行">
+      {hasLiveAuction && (
+        <div className="mb-3 flex items-center gap-2">
+          <span className={cn('inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-black',
+            live ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500')}>
+            <span className={cn('h-1.5 w-1.5 rounded-full', live ? 'animate-pulse bg-emerald-500' : 'bg-slate-400')} />
+            {live ? '实时推送已连接' : '实时推送重连中 · 每 5 秒刷新'}
+          </span>
+        </div>
+      )}
       <div className="mb-4 grid gap-2 sm:grid-cols-4">
         <MiniFact label="竞价项目" value={`${auctions.length} 个`} />
         <MiniFact label="竞价进行中" value={`${liveCount} 个`} />

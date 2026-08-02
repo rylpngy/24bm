@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ElementType } from 'react';
+import { useCallback, useEffect, useRef, useState, type ElementType } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
   type QuoteResponse,
   type RfqItemResponse,
   type RfqResponse,
+  useAuctionStream,
   useSupplierQuoteDecline,
   useSupplierQuoteListList,
   useSupplierQuoteListRfqs,
@@ -146,17 +147,33 @@ function QuoteEsignRecords({ quoteId }: { quoteId: string }) {
 export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void } = {}) {
   const queryClient = useQueryClient();
   const supplierId = useAuthStore((s) => s.session?.supplierId ?? '');
-  // 竞价进行中时自动轮询(5s),让当前最低价/截止顺延即时可见;无在场竞价则不轮询。
+  // G-1 竞价实时推送:SSE 通道畅通时由服务端事件驱动刷新;断流回落 5s 轮询(改造前行为)。
+  const token = useAuthStore((s) => s.session?.token);
+  const [live, setLive] = useState(false);
   const rfqs = useSupplierQuoteListRfqs(undefined, {
     query: {
       refetchInterval: (query) =>
-        ((query.state.data?.data ?? []) as RfqResponse[]).some(
+        !live
+        && ((query.state.data?.data ?? []) as RfqResponse[]).some(
           (r) => r.method === '竞价' && r.status === '报价中',
         )
           ? 5_000
           : false,
     },
   });
+  const hasLiveAuction = (rfqs.data?.data ?? []).some(
+    (r) => r.method === '竞价' && r.status === '报价中',
+  );
+  const onAuctionEvent = useCallback(() => {
+    void queryClient.invalidateQueries({
+      predicate: (q) => typeof q.queryKey[0] === 'string'
+        && (q.queryKey[0] as string).includes('/supplier/rfqs'),
+    });
+  }, [queryClient]);
+  const auctionStream = useAuctionStream({
+    scope: 'supplier', token, enabled: hasLiveAuction, onEvent: onAuctionEvent,
+  });
+  useEffect(() => setLive(auctionStream.live), [auctionStream.live]);
   const myQuotes = useSupplierQuoteListList();
   const submit = useSupplierQuoteSubmit();
   const esign = useSupplierEsignSign();

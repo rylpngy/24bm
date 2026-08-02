@@ -5,5 +5,10 @@ export { configureApiClient, setAuthToken, setAuthExpiredHandler, setTokenRefres
 export type { ImportResult, ImportRowError } from './http-client';
 export type { ErrorType, BodyType } from './http-client';
 
+// 竞价实时事件流(G-1):SSE 通道 + 订阅 hook(降级轮询由调用方按 live 控制)。
+export { subscribeAuctionStream } from './auction-stream';
+export type { AuctionStreamEvent, AuctionStreamHandlers } from './auction-stream';
+export { useAuctionStream } from './use-auction-stream';
+
 export * from './generated/model';
 export * from './generated/controllers';

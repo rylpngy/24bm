@@ -1,6 +1,7 @@
 // 自动汇总各 controller 的 orval 产物（generate 后由 build-controllers-barrel 重建）。
 export * from './approval-inbox-controller/approval-inbox-controller';
 export * from './attachment-controller/attachment-controller';
+export * from './auction-stream-controller/auction-stream-controller';
 export * from './audit-log-controller/audit-log-controller';
 export * from './auth-controller/auth-controller';
 export * from './buyer-analytics-controller/buyer-analytics-controller';

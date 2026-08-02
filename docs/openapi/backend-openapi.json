@@ -11460,6 +11460,46 @@
         }
       }
     },
+    "/api/v1/supplier/auction-stream": {
+      "get": {
+        "tags": [
+          "auction-stream-controller"
+        ],
+        "operationId": "AuctionStream_supplierStream",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SseEmitter"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/announcements": {
       "get": {
         "tags": [
@@ -14695,6 +14735,46 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListAuditLogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/auction-stream": {
+      "get": {
+        "tags": [
+          "auction-stream-controller"
+        ],
+        "operationId": "AuctionStream_buyerStream",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SseEmitter"
                 }
               }
             }
@@ -21673,6 +21753,15 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "SseEmitter": {
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

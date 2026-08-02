@@ -375,6 +375,7 @@ export * from './saveTenderRequest';
 export * from './scanExpiryResponse';
 export * from './sendTenderInquiryRequest';
 export * from './setPrequalificationRequest';
+export * from './sseEmitter';
 export * from './startProcessInstanceRequest';
 export * from './startProcessResponse';
 export * from './statusSliceResponse';
