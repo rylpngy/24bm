@@ -51,6 +51,7 @@ public class BuyerSupplierApplicationService {
   private final NotificationApplicationService notificationApplicationService;
   private final BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition;
   private final BuyerSupplierManualStatusTransition buyerSupplierManualStatusTransition;
+  private final SupplierQualificationApplicationService supplierQualificationApplicationService;
 
   public BuyerSupplierApplicationService(
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
@@ -63,7 +64,8 @@ public class BuyerSupplierApplicationService {
       NotificationApplicationService notificationApplicationService,
       BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition,
       BuyerSupplierManualStatusTransition buyerSupplierManualStatusTransition,
-      SupplierProfileMapper supplierProfileMapper) {
+      SupplierProfileMapper supplierProfileMapper,
+      SupplierQualificationApplicationService supplierQualificationApplicationService) {
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.supplierQualificationMapper = supplierQualificationMapper;
     this.objectMapper = objectMapper;
@@ -74,6 +76,7 @@ public class BuyerSupplierApplicationService {
     this.notificationApplicationService = notificationApplicationService;
     this.buyerSupplierAdmissionStatusTransition = buyerSupplierAdmissionStatusTransition;
     this.buyerSupplierManualStatusTransition = buyerSupplierManualStatusTransition;
+    this.supplierQualificationApplicationService = supplierQualificationApplicationService;
     this.supplierProfileMapper = supplierProfileMapper;
   }
 
@@ -96,6 +99,16 @@ public class BuyerSupplierApplicationService {
         .stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  /** 采购方核验下载:校验关系归属本租户后取证照原件(E-1)。 */
+  public com.procurement.common.storage.ObjectStorageService.StoredObject loadRelationQualificationObject(
+      String relationId, String qualificationId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
+    BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
+    com.procurement.supplier.domain.SupplierQualification qualification =
+        supplierQualificationApplicationService.findForBuyerReview(relation.supplierId(), qualificationId);
+    return supplierQualificationApplicationService.loadObject(qualification);
   }
 
   public List<SupplierQualificationResponse> listRelationQualifications(String relationId) {
@@ -337,6 +350,7 @@ public class BuyerSupplierApplicationService {
   }
 
   private SupplierQualificationResponse toQualificationResponse(SupplierQualification qualification) {
+    java.time.LocalDate today = java.time.LocalDate.now();
     return new SupplierQualificationResponse(
         qualification.id(),
         qualification.supplierId(),
@@ -346,7 +360,9 @@ public class BuyerSupplierApplicationService {
         qualification.fileName(),
         qualification.storageKey(),
         qualification.status(),
-        qualification.createdAt());
+        qualification.createdAt(),
+        com.procurement.supplier.domain.QualificationExpiryPolicy.expiryState(qualification.expiresAt(), today),
+        com.procurement.supplier.domain.QualificationExpiryPolicy.daysToExpiry(qualification.expiresAt(), today));
   }
 
   private BuyerSupplierRelation requireRelation(String tenantId, String relationId) {

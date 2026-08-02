@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { BadgeCheck } from 'lucide-react';
-import { useSupplierQualificationChangeStatus, useSupplierQualificationList } from '@24bid/api-client';
+import { BadgeCheck, Download, Upload } from 'lucide-react';
+import {
+  axiosInstance,
+  useSupplierQualificationChangeStatus,
+  useSupplierQualificationCreate,
+  useSupplierQualificationCreateUploadTicket,
+  useSupplierQualificationList,
+} from '@24bid/api-client';
 import {
   FilterTabs,
   FeedbackNotice,
   Pagination,
   Panel,
+  PrimaryActionButton,
   ResponsiveTableFrame,
   SearchInput,
   StatusPill,
@@ -17,11 +24,24 @@ const PAGE_SIZE = 8;
 
 const isExpired = (d?: string) => !!d && d < new Date().toISOString().slice(0, 10);
 
-// 资质认证:证照档案列表(类型/编号/有效期/文件)+ 状态管理;证照上传由采购方核验通道归档。
+// 到期状态徽标(后端按今天判定,前端只呈现)。
+const EXPIRY_TONE: Record<string, string> = {
+  已过期: 'bg-red-50 text-red-600',
+  临期: 'bg-amber-50 text-amber-700',
+  有效: 'bg-emerald-50 text-emerald-700',
+  长期有效: 'bg-slate-100 text-slate-500',
+};
+
+// 资质认证:证照档案(自助上传原件 + 到期提醒)+ 状态管理;采购方在准入核验时可下载原件。
 export function QualificationsPage() {
   const queryClient = useQueryClient();
   const quals = useSupplierQualificationList();
   const changeStatus = useSupplierQualificationChangeStatus();
+  const createTicket = useSupplierQualificationCreateUploadTicket();
+  const createQualification = useSupplierQualificationCreate();
+  const [uploading, setUploading] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [draft, setDraft] = useState({ qualificationType: '', certificateNo: '', expiresAt: '', fileName: '', storageKey: '' });
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
@@ -101,6 +121,103 @@ export function QualificationsPage() {
         </div>
       )}
 
+      {/* E-1 证照到期提醒:已过期/临期优先处理 */}
+      {(() => {
+        const expired = all.filter((q) => q.expiryState === '已过期');
+        const expiring = all.filter((q) => q.expiryState === '临期');
+        if (expired.length === 0 && expiring.length === 0) return null;
+        return (
+          <div className="mb-3">
+            <FeedbackNotice
+              tone={expired.length > 0 ? 'error' : 'info'}
+              message={[
+                expired.length > 0 ? `${expired.length} 项资质已过期,请尽快上传新证照续档` : '',
+                expiring.length > 0 ? `${expiring.length} 项资质将在 30 天内到期` : '',
+              ].filter(Boolean).join(';')}
+            />
+          </div>
+        );
+      })()}
+
+      {/* E-1 自助上传:先传原件拿到 storageKey,再建档 */}
+      <section className="mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+        <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
+          <Upload size={18} className="text-blue-600" /> 上传资质证照
+        </h3>
+        <p className="mt-1 text-[11px] font-bold text-slate-400">
+          支持营业执照、资质证书、认证报告等;上传原件后填写要素归档,采购方准入核验时可查阅原件。
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_10rem_auto]">
+          <input className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
+            placeholder="资质类型(必填)" aria-label="资质类型" value={draft.qualificationType}
+            onChange={(e) => setDraft({ ...draft, qualificationType: e.target.value })} />
+          <input className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
+            placeholder="证书编号(选填)" aria-label="证书编号" value={draft.certificateNo}
+            onChange={(e) => setDraft({ ...draft, certificateNo: e.target.value })} />
+          <input className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
+            type="date" aria-label="有效期至" value={draft.expiresAt}
+            onChange={(e) => setDraft({ ...draft, expiresAt: e.target.value })} />
+          <label className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50">
+            {uploading ? '上传中…' : draft.fileName || '选择证照文件'}
+            <input type="file" className="hidden" aria-label="证照文件"
+              onChange={async (ev) => {
+                const file = ev.target.files?.[0];
+                if (!file) return;
+                setError(null);
+                setUploading(true);
+                try {
+                  const ticket = await createTicket.mutateAsync({ data: { fileName: file.name } });
+                  const key = ticket.data?.storageKey ?? '';
+                  const buffer = await file.arrayBuffer();
+                  await axiosInstance.post(
+                    `/api/v1/supplier/qualifications/upload-sink?storageKey=${encodeURIComponent(key)}&contentType=${encodeURIComponent(file.type || 'application/octet-stream')}`,
+                    buffer,
+                    { headers: { 'Content-Type': 'application/octet-stream' } },
+                  );
+                  setDraft((d) => ({ ...d, fileName: file.name, storageKey: key }));
+                  setFeedback(`证照「${file.name}」已上传,填写要素后点击归档。`);
+                } catch (e) {
+                  setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '上传失败,请稍后重试');
+                } finally {
+                  setUploading(false);
+                  ev.target.value = '';
+                }
+              }} />
+          </label>
+        </div>
+        <div className="mt-3">
+          <PrimaryActionButton size="sm" busy={archiving} pendingLabel="归档中"
+            disabled={!draft.qualificationType.trim() || !draft.storageKey}
+            onClick={async () => {
+              setError(null);
+              setArchiving(true);
+              try {
+                await createQualification.mutateAsync({
+                  data: {
+                    qualificationType: draft.qualificationType.trim(),
+                    certificateNo: draft.certificateNo.trim() || undefined,
+                    expiresAt: draft.expiresAt || undefined,
+                    fileName: draft.fileName,
+                    storageKey: draft.storageKey,
+                  },
+                });
+                setFeedback(`资质「${draft.qualificationType.trim()}」已归档。`);
+                setDraft({ qualificationType: '', certificateNo: '', expiresAt: '', fileName: '', storageKey: '' });
+                void queryClient.invalidateQueries({
+                  predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/supplier/qualifications'),
+                });
+              } catch (e) {
+                setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '归档失败,请稍后重试');
+              } finally {
+                setArchiving(false);
+              }
+            }}>
+            归档资质
+          </PrimaryActionButton>
+          {!draft.storageKey && <span className="ml-2 text-[11px] font-bold text-slate-400">请先上传证照文件</span>}
+        </div>
+      </section>
+
       {quals.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载资质档案…" />
       ) : quals.isError ? (
@@ -111,7 +228,7 @@ export function QualificationsPage() {
           message={
             keyword || statusFilter !== '全部'
               ? '没有符合条件的资质。'
-              : '暂无资质档案。资质证照经采购方准入核验通道归档后展示在此;在线自助上传通道规划中。'
+              : '暂无资质档案。在上方「上传资质证照」自助上传原件并归档。'
           }
         />
       ) : (
@@ -157,11 +274,22 @@ export function QualificationsPage() {
                     </td>
                     <td className="px-5 py-5 font-black text-slate-950">{q.qualificationType}</td>
                     <td className="px-5 py-5 font-mono text-xs font-black text-slate-500">{q.certificateNo || '—'}</td>
-                    <td className="px-5 py-5 text-xs font-bold text-slate-600">{q.fileName || '—'}</td>
+                    <td className="px-5 py-5 text-xs font-bold text-slate-600">
+                      {q.fileName ? (
+                        <button type="button"
+                          onClick={() => window.open(`/api/v1/supplier/qualifications/${q.id}/download`, '_blank')}
+                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700">
+                          <Download size={13} /> {q.fileName}
+                        </button>
+                      ) : '—'}
+                    </td>
                     <td className={cn('px-5 py-5 font-mono text-xs font-black', isExpired(q.expiresAt) ? 'text-red-600' : 'text-slate-600')}>
                       {q.expiresAt ?? '长期'}
-                      {isExpired(q.expiresAt) && (
-                        <span className="ml-1.5 rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-black text-red-600">已过期</span>
+                      {q.expiryState && q.expiryState !== '有效' && (
+                        <span className={cn('ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-black', EXPIRY_TONE[q.expiryState] ?? 'bg-slate-100 text-slate-500')}>
+                          {q.expiryState}
+                          {q.expiryState === '临期' && q.daysToExpiry != null ? ` ${q.daysToExpiry} 天` : ''}
+                        </span>
                       )}
                     </td>
                     <td className="px-5 py-5 font-mono text-xs font-bold text-slate-500">{q.createdAt?.slice(0, 10) ?? '—'}</td>

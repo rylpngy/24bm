@@ -22,7 +22,8 @@ class SupplierQualificationLifecycleTests {
   private final SupplierQualificationApplicationService supplierQualificationApplicationService =
       new SupplierQualificationApplicationService(
           supplierQualificationMapper,
-          new SupplierQualificationStatusTransition());
+          new SupplierQualificationStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.common.storage.ObjectStorageService.class));
 
   @AfterEach
   void clearTenantContext() {

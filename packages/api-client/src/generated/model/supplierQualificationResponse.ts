@@ -16,4 +16,6 @@ export interface SupplierQualificationResponse {
   storageKey?: string;
   status?: string;
   createdAt?: string;
+  expiryState?: string;
+  daysToExpiry?: number;
 }

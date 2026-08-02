@@ -26,11 +26,14 @@ import type {
 
 import type {
   ApiResponseListSupplierQualificationResponse,
+  ApiResponseQualificationUploadTicketResponse,
   ApiResponseSupplierQualificationResponse,
   ApiResponseVoid,
   ChangeSupplierQualificationStatusRequest,
+  CreateQualificationUploadTicketRequest,
   CreateSupplierQualificationRequest,
-  SupplierQualificationListParams
+  SupplierQualificationListParams,
+  SupplierQualificationUploadSinkParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -243,4 +246,208 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const supplierQualificationCreateUploadTicket = (
+    createQualificationUploadTicketRequest: BodyType<CreateQualificationUploadTicketRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseQualificationUploadTicketResponse>(
+      {url: `/api/v1/supplier/qualifications/upload-ticket`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createQualificationUploadTicketRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierQualificationCreateUploadTicketMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationCreateUploadTicket>>, TError,{data: BodyType<CreateQualificationUploadTicketRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationCreateUploadTicket>>, TError,{data: BodyType<CreateQualificationUploadTicketRequest>}, TContext> => {
+
+const mutationKey = ['supplierQualificationCreateUploadTicket'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQualificationCreateUploadTicket>>, {data: BodyType<CreateQualificationUploadTicketRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  supplierQualificationCreateUploadTicket(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierQualificationCreateUploadTicketMutationResult = NonNullable<Awaited<ReturnType<typeof supplierQualificationCreateUploadTicket>>>
+    export type SupplierQualificationCreateUploadTicketMutationBody = BodyType<CreateQualificationUploadTicketRequest>
+    export type SupplierQualificationCreateUploadTicketMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierQualificationCreateUploadTicket = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationCreateUploadTicket>>, TError,{data: BodyType<CreateQualificationUploadTicketRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierQualificationCreateUploadTicket>>,
+        TError,
+        {data: BodyType<CreateQualificationUploadTicketRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierQualificationCreateUploadTicketMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierQualificationUploadSink = (
+    supplierQualificationUploadSinkBody: BodyType<string>,
+    params: SupplierQualificationUploadSinkParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseVoid>(
+      {url: `/api/v1/supplier/qualifications/upload-sink`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: supplierQualificationUploadSinkBody,
+        params, signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierQualificationUploadSinkMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationUploadSink>>, TError,{data: BodyType<string>;params: SupplierQualificationUploadSinkParams}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationUploadSink>>, TError,{data: BodyType<string>;params: SupplierQualificationUploadSinkParams}, TContext> => {
+
+const mutationKey = ['supplierQualificationUploadSink'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQualificationUploadSink>>, {data: BodyType<string>;params: SupplierQualificationUploadSinkParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  supplierQualificationUploadSink(data,params,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierQualificationUploadSinkMutationResult = NonNullable<Awaited<ReturnType<typeof supplierQualificationUploadSink>>>
+    export type SupplierQualificationUploadSinkMutationBody = BodyType<string>
+    export type SupplierQualificationUploadSinkMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierQualificationUploadSink = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierQualificationUploadSink>>, TError,{data: BodyType<string>;params: SupplierQualificationUploadSinkParams}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierQualificationUploadSink>>,
+        TError,
+        {data: BodyType<string>;params: SupplierQualificationUploadSinkParams},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierQualificationUploadSinkMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierQualificationDownload = (
+    qualificationId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<Blob>(
+      {url: `/api/v1/supplier/qualifications/${qualificationId}/download`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      );
+    }
+  
+
+
+
+export const getSupplierQualificationDownloadQueryKey = (qualificationId?: string,) => {
+    return [
+    `/api/v1/supplier/qualifications/${qualificationId}/download`
+    ] as const;
+    }
+
     
+export const getSupplierQualificationDownloadQueryOptions = <TData = Awaited<ReturnType<typeof supplierQualificationDownload>>, TError = ErrorType<ApiResponseVoid>>(qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationDownload>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierQualificationDownloadQueryKey(qualificationId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQualificationDownload>>> = ({ signal }) => supplierQualificationDownload(qualificationId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(qualificationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationDownload>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierQualificationDownloadQueryResult = NonNullable<Awaited<ReturnType<typeof supplierQualificationDownload>>>
+export type SupplierQualificationDownloadQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierQualificationDownload<TData = Awaited<ReturnType<typeof supplierQualificationDownload>>, TError = ErrorType<ApiResponseVoid>>(
+ qualificationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationDownload>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierQualificationDownload>>,
+          TError,
+          Awaited<ReturnType<typeof supplierQualificationDownload>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierQualificationDownload<TData = Awaited<ReturnType<typeof supplierQualificationDownload>>, TError = ErrorType<ApiResponseVoid>>(
+ qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationDownload>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierQualificationDownload>>,
+          TError,
+          Awaited<ReturnType<typeof supplierQualificationDownload>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierQualificationDownload<TData = Awaited<ReturnType<typeof supplierQualificationDownload>>, TError = ErrorType<ApiResponseVoid>>(
+ qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationDownload>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierQualificationDownload<TData = Awaited<ReturnType<typeof supplierQualificationDownload>>, TError = ErrorType<ApiResponseVoid>>(
+ qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationDownload>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierQualificationDownloadQueryOptions(qualificationId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+

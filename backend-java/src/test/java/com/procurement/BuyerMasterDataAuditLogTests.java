@@ -186,7 +186,8 @@ class BuyerMasterDataAuditLogTests {
             notificationApplicationService,
             new BuyerSupplierAdmissionStatusTransition(),
             new BuyerSupplierManualStatusTransition(),
-      org.mockito.Mockito.mock(com.procurement.supplier.infrastructure.SupplierProfileMapper.class));
+      org.mockito.Mockito.mock(com.procurement.supplier.infrastructure.SupplierProfileMapper.class),
+      org.mockito.Mockito.mock(com.procurement.supplier.application.SupplierQualificationApplicationService.class));
     when(buyerSupplierRelationMapper.findByTenantAndId(
             org.mockito.ArgumentMatchers.eq("tenant-1"),
             org.mockito.ArgumentMatchers.anyString()))

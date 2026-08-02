@@ -82,6 +82,11 @@ test('配套功能页:发货管理 / 对账单 / 资质认证 / 员工管理', a
 
   await openModule(page, /资质认证/);
   await expect(page.getByRole('heading', { name: '资质认证', level: 3 })).toBeVisible();
+  // E-1 自助上传:上传卡与要素表单恒定渲染(文件选择走系统对话框,不在冒烟内触发)。
+  await expect(page.getByRole('heading', { name: '上传资质证照' })).toBeVisible();
+  await expect(page.getByLabel('资质类型')).toBeVisible();
+  await expect(page.getByLabel('有效期至')).toBeVisible();
+  await expect(page.getByRole('button', { name: /归档资质/ })).toBeDisabled();
 
   await openModule(page, /员工管理/);
   await expect(page.getByRole('heading', { name: '员工管理', level: 3 })).toBeVisible();

@@ -1978,7 +1978,9 @@ class HttpSecurityContractTests {
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "active",
-            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            "有效",
+            365L)));
     when(supplierQualificationApplicationService.listCurrentSupplierQualifications(
         org.mockito.ArgumentMatchers.eq("inactive"),
         org.mockito.ArgumentMatchers.eq("营业")))
@@ -1991,7 +1993,9 @@ class HttpSecurityContractTests {
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "inactive",
-            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            "有效",
+            365L)));
     when(supplierQualificationApplicationService.createCurrentSupplierQualification(
         org.mockito.ArgumentMatchers.any(CreateSupplierQualificationRequest.class)))
         .thenReturn(new SupplierQualificationResponse(
@@ -2003,7 +2007,9 @@ class HttpSecurityContractTests {
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "active",
-            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            "有效",
+            365L));
     when(supplierQualificationApplicationService.changeQualificationStatus(
         org.mockito.ArgumentMatchers.eq("qual-demo"),
         org.mockito.ArgumentMatchers.any(ChangeSupplierQualificationStatusRequest.class)))
@@ -2016,7 +2022,9 @@ class HttpSecurityContractTests {
             "license.pdf",
             "suppliers/ent-supplier-sunrise/license.pdf",
             "inactive",
-            OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
+            OffsetDateTime.parse("2026-06-15T10:00:00+08:00"),
+            "有效",
+            365L));
     when(supplierUserApplicationService.listCurrentSupplierUsers(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.isNull()))
@@ -3510,7 +3518,9 @@ class HttpSecurityContractTests {
             "营业执照.pdf",
             "supplier/qualifications/business-license.pdf",
             "active",
-            OffsetDateTime.parse("2026-06-22T10:00:00+08:00"))));
+            OffsetDateTime.parse("2026-06-22T10:00:00+08:00"),
+            "有效",
+            365L)));
 
     mockMvc.perform(get("/api/v1/buyer/suppliers/rel-created/qualifications")
             .header("Authorization", "Bearer " + buyerToken))

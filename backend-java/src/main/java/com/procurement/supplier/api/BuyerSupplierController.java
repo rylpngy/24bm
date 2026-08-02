@@ -54,6 +54,15 @@ public class BuyerSupplierController {
     return ApiResponse.ok(buyerSupplierApplicationService.listRelationQualifications(relationId));
   }
 
+  /** 核验下载:采购方在准入审核中查阅供应商证照原件(E-1)。 */
+  @GetMapping("/{relationId}/qualifications/{qualificationId}/download")
+  public org.springframework.http.ResponseEntity<org.springframework.core.io.Resource> downloadQualification(
+      @PathVariable String relationId, @PathVariable String qualificationId) {
+    return SupplierQualificationController.streamed(
+        buyerSupplierApplicationService.loadRelationQualificationObject(relationId, qualificationId),
+        qualificationId);
+  }
+
   @PostMapping("/{relationId}/approval")
   public ApiResponse<ApprovalTaskResponse> reviewAdmission(
       @PathVariable String relationId,

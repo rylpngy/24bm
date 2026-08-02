@@ -567,3 +567,97 @@ export function useBuyerSupplierListRelationQualifications<TData = Awaited<Retur
 
 
 
+export const buyerSupplierDownloadQualification = (
+    relationId: string,
+    qualificationId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<Blob>(
+      {url: `/api/v1/buyer/suppliers/${relationId}/qualifications/${qualificationId}/download`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerSupplierDownloadQualificationQueryKey = (relationId?: string,
+    qualificationId?: string,) => {
+    return [
+    `/api/v1/buyer/suppliers/${relationId}/qualifications/${qualificationId}/download`
+    ] as const;
+    }
+
+    
+export const getBuyerSupplierDownloadQualificationQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError = ErrorType<ApiResponseVoid>>(relationId: string,
+    qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierDownloadQualificationQueryKey(relationId,qualificationId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>> = ({ signal }) => buyerSupplierDownloadQualification(relationId,qualificationId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(relationId && qualificationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerSupplierDownloadQualificationQueryResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>>
+export type BuyerSupplierDownloadQualificationQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerSupplierDownloadQualification<TData = Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string,
+    qualificationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierDownloadQualification<TData = Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string,
+    qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierDownloadQualification<TData = Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string,
+    qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerSupplierDownloadQualification<TData = Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string,
+    qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerSupplierDownloadQualificationQueryOptions(relationId,qualificationId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+

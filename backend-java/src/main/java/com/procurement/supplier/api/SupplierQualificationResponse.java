@@ -12,5 +12,8 @@ public record SupplierQualificationResponse(
     String fileName,
     String storageKey,
     String status,
-    OffsetDateTime createdAt) {
+    OffsetDateTime createdAt,
+    // E-1 有效期提醒:长期有效 / 有效 / 临期 / 已过期;daysToExpiry 已过期为负,无到期日为 null。
+    String expiryState,
+    Long daysToExpiry) {
 }
