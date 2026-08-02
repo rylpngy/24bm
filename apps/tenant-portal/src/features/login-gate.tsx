@@ -1,10 +1,11 @@
 import { KeyRound, LogIn } from 'lucide-react';
-import { FeedbackNotice, Panel, PrimaryActionButton } from '@24bid/ui';
+import { FeedbackNotice, Panel, PrimaryActionButton, useI18n } from '@24bid/ui';
 import { SELF_LOGIN_FALLBACK, useBuyerLogin } from './auth/use-buyer-login';
 
 // 自研 JWT 已退役为 CI/开发后备;生产登录走 Keycloak(OIDC)。
 // S1：采购方登录门。自研 JWT(/auth/login)与 Keycloak(OIDC direct-grant)双路径。
 export function LoginGate() {
+  const { t } = useI18n();
   const { demoAccounts, handleKeycloakLogin, handleLogin, kcBusy, kcError, login } = useBuyerLogin();
 
   return (
@@ -21,16 +22,16 @@ export function LoginGate() {
             </p>
           </div>
         </div>
-        <Panel title="登录" icon={LogIn} subtitle="采购方企业端 · tenant-acme">
+        <Panel title={t('登录')} icon={LogIn} subtitle="采购方企业端 · tenant-acme">
           <FeedbackNotice tone="info" message="生产登录走 Keycloak（OIDC 统一身份）。演示账号：采购负责人。" />
           <PrimaryActionButton
             onClick={() => handleKeycloakLogin()}
             busy={kcBusy}
-            pendingLabel="登录中"
+            pendingLabel={t('登录中')}
             icon={KeyRound}
             fullWidth
           >
-            用 Keycloak 登录
+            {t('用 Keycloak 登录')}
           </PrimaryActionButton>
           {kcError && (
             <div className="mt-3">

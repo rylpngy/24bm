@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { KeyRound, LogIn } from 'lucide-react';
 import { LoginRequestScope, useAuthLogin } from '@24bid/api-client';
 import { keycloakPasswordLogin } from '@24bid/shared';
-import { FeedbackNotice, Panel, PrimaryActionButton } from '@24bid/ui';
+import { FeedbackNotice, Panel, PrimaryActionButton, useI18n } from '@24bid/ui';
 import { useAuthStore } from '../lib/auth-store';
 
 // 自研 JWT 已退役为 CI/开发后备;生产登录走 Keycloak(OIDC)。
@@ -13,6 +13,7 @@ const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081
 
 // 平台运营登录门:自研 JWT 与 Keycloak(OIDC)双路径,PLATFORM scope。
 export function LoginGate() {
+  const { t } = useI18n();
   const signIn = useAuthStore((s) => s.signIn);
   const queryClient = useQueryClient();
   const login = useAuthLogin();
@@ -78,10 +79,10 @@ export function LoginGate() {
             <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Platform Admin</p>
           </div>
         </div>
-        <Panel title="登录" icon={LogIn} subtitle="平台运营端 · 企业审核 / 租户 / 公告">
+        <Panel title={t('登录')} icon={LogIn} subtitle="平台运营端 · 企业审核 / 租户 / 公告">
           <FeedbackNotice tone="info" message="生产登录走 Keycloak（OIDC 统一身份）。演示账号：平台管理员。" />
-          <PrimaryActionButton onClick={handleKeycloakLogin} busy={kcBusy} pendingLabel="登录中" icon={KeyRound} fullWidth>
-            用 Keycloak 登录
+          <PrimaryActionButton onClick={handleKeycloakLogin} busy={kcBusy} pendingLabel={t('登录中')} icon={KeyRound} fullWidth>
+            {t('用 Keycloak 登录')}
           </PrimaryActionButton>
           {kcError && (
             <div className="mt-3">

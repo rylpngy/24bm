@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { useI18n } from '../i18n/i18n';
 
 export interface PaginationProps {
   page: number; // 1-based
@@ -10,6 +11,7 @@ export interface PaginationProps {
 
 /** 列表分页条——计数 + 区间 + 上/下一页。受控,1 基页码。 */
 export function Pagination({ page, pageSize, total, onPageChange }: PaginationProps) {
+  const { t } = useI18n();
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const current = Math.min(Math.max(page, 1), pageCount);
   const from = total === 0 ? 0 : (current - 1) * pageSize + 1;
@@ -21,7 +23,7 @@ export function Pagination({ page, pageSize, total, onPageChange }: PaginationPr
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
       <p className="text-xs font-bold text-slate-500">
-        共 {total} 条{total > 0 && ` · 第 ${from}-${to} 条`}
+        {t('共')} {total} {t('条')}{total > 0 && ` · ${from}-${to}`}
       </p>
       <div className="flex items-center gap-1.5">
         <button
@@ -30,7 +32,7 @@ export function Pagination({ page, pageSize, total, onPageChange }: PaginationPr
           disabled={current <= 1}
           onClick={() => onPageChange(current - 1)}
         >
-          <ChevronLeft size={14} /> 上一页
+          <ChevronLeft size={14} /> {t('上一页')}
         </button>
         <span className="px-1 text-xs font-black text-slate-700">
           {current} <span className="text-slate-400">/ {pageCount}</span>
@@ -41,7 +43,7 @@ export function Pagination({ page, pageSize, total, onPageChange }: PaginationPr
           disabled={current >= pageCount}
           onClick={() => onPageChange(current + 1)}
         >
-          <ChevronRight size={14} /> 下一页
+          <ChevronRight size={14} /> {t('下一页')}
         </button>
       </div>
     </div>

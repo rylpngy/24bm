@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, ShieldQuestion } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { useI18n } from '../i18n/i18n';
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -33,13 +34,14 @@ export function ConfirmDialog({
   title,
   message,
   tone = 'primary',
-  confirmLabel = '确认',
-  cancelLabel = '取消',
+  confirmLabel,
+  cancelLabel,
   input,
   busy = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
   const [value, setValue] = useState('');
   useEffect(() => {
     if (open) setValue('');
@@ -105,7 +107,7 @@ export function ConfirmDialog({
             onClick={onCancel}
             className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
           >
-            {cancelLabel}
+            {cancelLabel ?? t('取消')}
           </button>
           <button
             type="button"
@@ -116,7 +118,7 @@ export function ConfirmDialog({
               danger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700',
             )}
           >
-            {busy ? '处理中…' : confirmLabel}
+            {busy ? t('处理中…') : confirmLabel ?? t('确定')}
           </button>
         </div>
       </div>

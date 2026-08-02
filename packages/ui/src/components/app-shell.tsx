@@ -22,6 +22,7 @@ import { Globe, Sparkles, Languages, ChevronDown, Menu, X,
 } from 'lucide-react';
 import type { AdminNavigationModule } from '@24bid/shared';
 import { cn } from '../lib/cn';
+import { useI18n } from '../i18n/i18n';
 
 // 模块 id → 菜单 icon。三端 id 复用同一映射;未命中用占位 icon。
 const MODULE_ICONS: Record<string, ElementType> = {
@@ -81,6 +82,7 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const [langOpen, setLangOpen] = useState(false);
+  const { locale, setLocale, t } = useI18n();
   // 移动端导航抽屉:lg 以下没有常驻侧栏,靠顶栏汉堡键唤出。
   const [navOpen, setNavOpen] = useState(false);
 
@@ -105,7 +107,7 @@ export function AppShell({
       {navOpen && (
         <button
           type="button"
-          aria-label="关闭导航"
+          aria-label={t('关闭导航')}
           onClick={() => setNavOpen(false)}
           className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden"
         />
@@ -128,12 +130,12 @@ export function AppShell({
             <div className="flex-1">
               <p className="text-lg font-black leading-none">24Bid</p>
               <p className="mt-1 text-xs font-bold uppercase tracking-widest text-blue-300">
-                {brandSubtitle}
+                {t(brandSubtitle)}
               </p>
             </div>
             <button
               type="button"
-              aria-label="收起导航"
+              aria-label={t('收起导航')}
               onClick={() => setNavOpen(false)}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 lg:hidden"
             >
@@ -142,8 +144,8 @@ export function AppShell({
           </div>
           {mainlineHint && (
             <div className="mt-5 rounded-lg border border-blue-400/20 bg-blue-500/10 p-3">
-              <p className="text-xs font-bold text-blue-200">采购主线</p>
-              <p className="mt-1 text-sm font-semibold text-white">{mainlineHint}</p>
+              <p className="text-xs font-bold text-blue-200">{t('采购主线')}</p>
+              <p className="mt-1 text-sm font-semibold text-white">{t(mainlineHint)}</p>
             </div>
           )}
         </div>
@@ -173,7 +175,7 @@ export function AppShell({
                       active ? 'text-slate-900' : 'text-white',
                     )}
                   >
-                    {module.label}
+                    {t(module.label)}
                   </span>
                   <span
                     className={cn(
@@ -181,7 +183,7 @@ export function AppShell({
                       active ? 'text-slate-500' : 'text-slate-400',
                     )}
                   >
-                    {module.desc}
+                    {t(module.desc)}
                   </span>
                 </span>
               </button>
@@ -191,9 +193,9 @@ export function AppShell({
 
         <div className="border-t border-white/10 p-4">
           <div className="rounded-lg bg-white/5 p-4">
-            <p className="text-xs font-bold text-slate-400">多租户隔离</p>
+            <p className="text-xs font-bold text-slate-400">{t('多租户隔离')}</p>
             <p className="mt-2 text-sm text-slate-300">
-              采购数据、供应商私域关系、订单和财务记录按企业隔离。
+              {t('采购数据、供应商私域关系、订单和财务记录按企业隔离。')}
             </p>
           </div>
         </div>
@@ -204,16 +206,16 @@ export function AppShell({
           <div className="flex min-w-0 items-center gap-3 lg:gap-4">
             <button
               type="button"
-              aria-label="打开导航"
+              aria-label={t('打开导航')}
               aria-expanded={navOpen}
               onClick={() => setNavOpen(true)}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden"
             >
               <Menu size={18} />
             </button>
-            <p className="hidden text-xs font-bold uppercase tracking-widest text-slate-400 sm:block">当前工作区</p>
+            <p className="hidden text-xs font-bold uppercase tracking-widest text-slate-400 sm:block">{t('当前工作区')}</p>
             <h1 className="max-w-[220px] truncate text-lg font-black text-slate-900 sm:max-w-none">
-              {title}
+              {t(title)}
             </h1>
             <p className="text-xs font-bold text-slate-500">{accountLabel}</p>
           </div>
@@ -227,7 +229,7 @@ export function AppShell({
                 rel="noreferrer"
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50"
               >
-                <Globe size={14} /> 门户首页
+                <Globe size={14} /> {t('门户首页')}
               </a>
             )}
             {aiModuleId && (
@@ -236,7 +238,7 @@ export function AppShell({
                 onClick={() => onSelectModule(aiModuleId)}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-black text-blue-700 transition hover:bg-blue-100"
               >
-                <Sparkles size={14} /> AI 分析
+                <Sparkles size={14} /> {t('AI 分析')}
               </button>
             )}
             <div className="relative">
@@ -245,23 +247,31 @@ export function AppShell({
                 onClick={() => setLangOpen((v: boolean) => !v)}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50"
               >
-                <Languages size={14} /> 简体中文 <ChevronDown size={13} className="text-slate-400" />
+                <Languages size={14} /> {locale === 'en-US' ? 'English' : '简体中文'}{' '}
+                <ChevronDown size={13} className="text-slate-400" />
               </button>
               {langOpen && (
                 <div
                   className="absolute right-0 top-full z-40 mt-1.5 w-44 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg"
                   onMouseLeave={() => setLangOpen(false)}
                 >
-                  <button
-                    type="button"
-                    onClick={() => setLangOpen(false)}
-                    className="flex w-full items-center justify-between rounded-md bg-blue-50 px-3 py-2 text-xs font-black text-blue-700"
-                  >
-                    简体中文 <span className="text-[10px]">当前</span>
-                  </button>
-                  <div className="flex w-full cursor-not-allowed items-center justify-between rounded-md px-3 py-2 text-xs font-bold text-slate-300">
-                    English <span className="text-[10px]">规划中</span>
-                  </div>
+                  {(['zh-CN', 'en-US'] as const).map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => {
+                        setLocale(code);
+                        setLangOpen(false);
+                      }}
+                      className={cn(
+                        'flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-black',
+                        locale === code ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50',
+                      )}
+                    >
+                      {code === 'zh-CN' ? '简体中文' : 'English'}
+                      {locale === code && <span className="text-[10px]">{t('当前')}</span>}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>

@@ -3,6 +3,11 @@
 
 export { cn } from './lib/cn';
 
+// i18n(G-3):以中文原文为 key、缺条目回落中文的轻量方案,详见 i18n/i18n.tsx。
+export { I18nProvider, useI18n } from './i18n/i18n';
+export type { Locale } from './i18n/i18n';
+export { EN_DICTIONARY } from './i18n/en';
+
 export { StatusPill } from './components/status-pill';
 export type { StatusPillProps } from './components/status-pill';
 
