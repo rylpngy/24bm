@@ -11694,6 +11694,46 @@
         }
       }
     },
+    "/api/v1/platform/business-metrics": {
+      "get": {
+        "tags": [
+          "platform-overview-controller"
+        ],
+        "operationId": "PlatformOverview_businessMetrics",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePlatformBusinessMetricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -21298,6 +21338,104 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ApiResponsePlatformBusinessMetricsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PlatformBusinessMetricsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MethodShare": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "projectCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderAmount": {
+            "type": "number"
+          }
+        }
+      },
+      "MonthlyTrend": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "orderCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderAmount": {
+            "type": "number"
+          },
+          "newTenantCount": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PlatformBusinessMetricsResponse": {
+        "type": "object",
+        "properties": {
+          "orderCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderAmount": {
+            "type": "number"
+          },
+          "contractCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contractAmount": {
+            "type": "number"
+          },
+          "recentOrderCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recentOrderAmount": {
+            "type": "number"
+          },
+          "activeTenantCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "verifiedSupplierCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recentSupplierCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "methodShares": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MethodShare"
+            }
+          },
+          "monthlyTrends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthlyTrend"
+            }
           }
         }
       },

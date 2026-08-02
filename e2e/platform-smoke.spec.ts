@@ -9,6 +9,18 @@ test('平台端登录后可进入运营后台', async ({ page }) => {
   await expect(page.getByRole('button', { name: /平台公告/ })).toBeVisible();
 });
 
+// D-1 平台经营看板:跨租户聚合指标与图表恒定渲染(数值随环境,不硬断言)。
+test('平台工作台:经营看板指标与趋势/方式分布', async ({ page }) => {
+  await loginViaKeycloak(page);
+  await expectLoggedIn(page, /租户列表/);
+  await expect(page.getByText('累计交易额')).toBeVisible();
+  await expect(page.getByText('近 30 天成交')).toBeVisible();
+  await expect(page.getByText('活跃租户')).toBeVisible();
+  await expect(page.getByText('认证供应商')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '近 6 个月成交趋势' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '采购方式分布' })).toBeVisible();
+});
+
 test('租户列表 / 企业审核 / 公告 渲染', async ({ page }) => {
   await loginViaKeycloak(page);
 

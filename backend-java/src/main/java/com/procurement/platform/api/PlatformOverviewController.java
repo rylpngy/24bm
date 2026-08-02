@@ -19,4 +19,9 @@ public class PlatformOverviewController {
   public ApiResponse<PlatformOverviewResponse> overview() {
     return ApiResponse.ok(platformOverviewApplicationService.overview());
   }
+
+  @GetMapping("/business-metrics")
+  public ApiResponse<PlatformBusinessMetricsResponse> businessMetrics() {
+    return ApiResponse.ok(platformOverviewApplicationService.businessMetrics());
+  }
 }

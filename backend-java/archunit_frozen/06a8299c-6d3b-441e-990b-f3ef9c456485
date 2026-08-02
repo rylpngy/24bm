@@ -375,6 +375,8 @@ Method <com.procurement.platform.api.PlatformEnterpriseController.listPendingRev
 Method <com.procurement.platform.api.PlatformEnterpriseController.listPendingReviews()> has return type <com.procurement.common.api.ApiResponse> in (PlatformEnterpriseController.java:0)
 Method <com.procurement.platform.api.PlatformEnterpriseController.review(java.lang.String, com.procurement.platform.api.EnterpriseReviewRequest)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (PlatformEnterpriseController.java:32)
 Method <com.procurement.platform.api.PlatformEnterpriseController.review(java.lang.String, com.procurement.platform.api.EnterpriseReviewRequest)> has return type <com.procurement.common.api.ApiResponse> in (PlatformEnterpriseController.java:0)
+Method <com.procurement.platform.api.PlatformOverviewController.businessMetrics()> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (PlatformOverviewController.java:25)
+Method <com.procurement.platform.api.PlatformOverviewController.businessMetrics()> has return type <com.procurement.common.api.ApiResponse> in (PlatformOverviewController.java:0)
 Method <com.procurement.platform.api.PlatformOverviewController.overview()> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (PlatformOverviewController.java:20)
 Method <com.procurement.platform.api.PlatformOverviewController.overview()> has return type <com.procurement.common.api.ApiResponse> in (PlatformOverviewController.java:0)
 Method <com.procurement.platform.api.PlatformSupplierController.create(com.procurement.platform.api.CreateSupplierEnterpriseRequest)> calls method <com.procurement.common.api.ApiResponse.ok(java.lang.Object)> in (PlatformSupplierController.java:27)

@@ -21,6 +21,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponsePlatformBusinessMetricsResponse,
   ApiResponsePlatformOverviewResponse,
   ApiResponseVoid
 } from '.././model';
@@ -106,6 +107,92 @@ export function usePlatformOverviewOverview<TData = Awaited<ReturnType<typeof pl
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformOverviewOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const platformOverviewBusinessMetrics = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponsePlatformBusinessMetricsResponse>(
+      {url: `/api/v1/platform/business-metrics`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getPlatformOverviewBusinessMetricsQueryKey = () => {
+    return [
+    `/api/v1/platform/business-metrics`
+    ] as const;
+    }
+
+    
+export const getPlatformOverviewBusinessMetricsQueryOptions = <TData = Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformOverviewBusinessMetricsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>> = ({ signal }) => platformOverviewBusinessMetrics(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformOverviewBusinessMetricsQueryResult = NonNullable<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>>
+export type PlatformOverviewBusinessMetricsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function usePlatformOverviewBusinessMetrics<TData = Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>,
+          TError,
+          Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformOverviewBusinessMetrics<TData = Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>,
+          TError,
+          Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformOverviewBusinessMetrics<TData = Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformOverviewBusinessMetrics<TData = Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformOverviewBusinessMetricsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
