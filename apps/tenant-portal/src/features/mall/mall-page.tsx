@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart, Store } from 'lucide-react';
 import {
   useBuyerMallCheckoutCart,
   useBuyerMallCreateOrder,
   useBuyerMallListings,
+  useBuyerMallProducts,
   useBuyerMallPublish,
   useBuyerMallUpdateStatus,
   useBuyerSupplierList,
@@ -21,19 +22,30 @@ const currency = (v?: number) =>
 
 function ListingCard({
   listing,
+  sku,
   busy,
   onOrder,
   onAddToCart,
   onToggleStatus,
 }: {
   listing: MallListingResponse;
+  /** M-1:该货架行对应的 SKU 明细(起订量/阶梯价/库存/交期);老数据可能为空。 */
+  sku?: {
+    minOrderQty?: number;
+    stepQty?: number;
+    stockQty?: number;
+    leadTimeDays?: number;
+    tierPrices?: { minQty?: number; price?: number }[];
+  };
   busy: boolean;
   onOrder: (listingId: string, quantity: number) => void;
   onAddToCart: (listingId: string, quantity: number) => void;
   onToggleStatus: (listingId: string, status: string) => void;
 }) {
-  const [quantity, setQuantity] = useState('1');
+  const minQty = sku?.minOrderQty ?? 1;
+  const [quantity, setQuantity] = useState(String(minQty));
   const onShelf = listing.status === '在架';
+  const tiers = (sku?.tierPrices ?? []).filter((t) => t.minQty != null && t.price != null);
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
       <div className="flex items-start justify-between gap-3">
@@ -47,15 +59,36 @@ function ListingCard({
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <MiniFact label="协议单价" value={`${currency(listing.price)} / ${listing.unit ?? '件'}`} />
-        <MiniFact label="最近更新" value={listing.updatedAt?.slice(0, 10) ?? '—'} />
+        <MiniFact
+          label="起订 / 步进"
+          value={`${minQty}${listing.unit ?? '件'} / ${sku?.stepQty ?? 1}${listing.unit ?? '件'}`}
+        />
+        <MiniFact
+          label="库存"
+          value={sku?.stockQty == null ? '不限量' : `${sku.stockQty}${listing.unit ?? '件'}`}
+        />
+        <MiniFact label="交期" value={`${sku?.leadTimeDays ?? 7} 天`} />
       </div>
+      {tiers.length > 0 && (
+        <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/60 p-2.5">
+          <p className="text-[11px] font-black text-emerald-800">阶梯价(按下单数量自动落档)</p>
+          <div className="mt-1 flex flex-wrap gap-3">
+            {tiers.map((t) => (
+              <span key={t.minQty} className="text-xs font-bold text-emerald-900">
+                ≥{t.minQty}{listing.unit ?? '件'} · {currency(t.price)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {onShelf && (
           <>
             <input
               className={cn(inputCls, 'h-9 w-24')}
               type="number"
-              min="1"
+              min={minQty}
+              step={sku?.stepQty ?? 1}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               aria-label={`数量 ${listing.materialName}`}
@@ -105,6 +138,25 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
   const [unit, setUnit] = useState('');
 
   const listings = useBuyerMallListings({ keyword: keyword.trim() || undefined });
+  // M-1:货架行 id 即 skuId;取商品详情把起订量/阶梯价/库存/交期贴回卡片。
+  const products = useBuyerMallProducts();
+  const skuById = useMemo(() => {
+    const map = new Map<string, NonNullable<Parameters<typeof ListingCard>[0]['sku']>>();
+    for (const product of products.data?.data ?? []) {
+      for (const sku of product.skus ?? []) {
+        if (sku.id) {
+          map.set(sku.id, {
+            minOrderQty: sku.minOrderQty,
+            stepQty: sku.stepQty,
+            stockQty: sku.stockQty,
+            leadTimeDays: sku.leadTimeDays,
+            tierPrices: sku.tierPrices,
+          });
+        }
+      }
+    }
+    return map;
+  }, [products.data]);
   const suppliers = useBuyerSupplierList({ status: '已准入' });
   const materials = useMaterialList();
   const publish = useBuyerMallPublish();
@@ -330,6 +382,7 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
               <ListingCard
                 key={l.id}
                 listing={l}
+                sku={l.id ? skuById.get(l.id) : undefined}
                 busy={busy}
                 onOrder={submitOrder}
                 onAddToCart={(listingId, quantity) =>

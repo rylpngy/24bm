@@ -26,12 +26,17 @@ import type {
 
 import type {
   ApiResponseListMallListingResponse,
+  ApiResponseListMallProductResponse,
   ApiResponseListSupplierMallMaterialResponse,
   ApiResponseMallListingResponse,
+  ApiResponseMallProductResponse,
   ApiResponseVoid,
+  SaveMallProductRequest,
+  SaveMallSkuRequest,
   SupplierPublishMallListingRequest,
   UpdateMallListingPriceRequest,
-  UpdateMallListingStatusRequest
+  UpdateMallListingStatusRequest,
+  UpdateMallProductStatusRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -40,7 +45,241 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const supplierMallUpdateStatus = (
+export const supplierMallUpdateProduct = (
+    productId: string,
+    saveMallProductRequest: BodyType<SaveMallProductRequest>,
+ ) => {
+      
+      
+      return customInstance<ApiResponseMallProductResponse>(
+      {url: `/api/v1/supplier/mall/products/${productId}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: saveMallProductRequest
+    },
+      );
+    }
+  
+
+
+export const getSupplierMallUpdateProductMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateProduct>>, TError,{productId: string;data: BodyType<SaveMallProductRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateProduct>>, TError,{productId: string;data: BodyType<SaveMallProductRequest>}, TContext> => {
+
+const mutationKey = ['supplierMallUpdateProduct'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdateProduct>>, {productId: string;data: BodyType<SaveMallProductRequest>}> = (props) => {
+          const {productId,data} = props ?? {};
+
+          return  supplierMallUpdateProduct(productId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierMallUpdateProductMutationResult = NonNullable<Awaited<ReturnType<typeof supplierMallUpdateProduct>>>
+    export type SupplierMallUpdateProductMutationBody = BodyType<SaveMallProductRequest>
+    export type SupplierMallUpdateProductMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierMallUpdateProduct = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateProduct>>, TError,{productId: string;data: BodyType<SaveMallProductRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierMallUpdateProduct>>,
+        TError,
+        {productId: string;data: BodyType<SaveMallProductRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierMallUpdateProductMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierMallUpdateProductStatus = (
+    productId: string,
+    updateMallProductStatusRequest: BodyType<UpdateMallProductStatusRequest>,
+ ) => {
+      
+      
+      return customInstance<ApiResponseMallProductResponse>(
+      {url: `/api/v1/supplier/mall/products/${productId}/status`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: updateMallProductStatusRequest
+    },
+      );
+    }
+  
+
+
+export const getSupplierMallUpdateProductStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateProductStatus>>, TError,{productId: string;data: BodyType<UpdateMallProductStatusRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateProductStatus>>, TError,{productId: string;data: BodyType<UpdateMallProductStatusRequest>}, TContext> => {
+
+const mutationKey = ['supplierMallUpdateProductStatus'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdateProductStatus>>, {productId: string;data: BodyType<UpdateMallProductStatusRequest>}> = (props) => {
+          const {productId,data} = props ?? {};
+
+          return  supplierMallUpdateProductStatus(productId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierMallUpdateProductStatusMutationResult = NonNullable<Awaited<ReturnType<typeof supplierMallUpdateProductStatus>>>
+    export type SupplierMallUpdateProductStatusMutationBody = BodyType<UpdateMallProductStatusRequest>
+    export type SupplierMallUpdateProductStatusMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierMallUpdateProductStatus = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateProductStatus>>, TError,{productId: string;data: BodyType<UpdateMallProductStatusRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierMallUpdateProductStatus>>,
+        TError,
+        {productId: string;data: BodyType<UpdateMallProductStatusRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierMallUpdateProductStatusMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierMallUpdateSku = (
+    productId: string,
+    skuId: string,
+    saveMallSkuRequest: BodyType<SaveMallSkuRequest>,
+ ) => {
+      
+      
+      return customInstance<ApiResponseMallProductResponse>(
+      {url: `/api/v1/supplier/mall/products/${productId}/skus/${skuId}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: saveMallSkuRequest
+    },
+      );
+    }
+  
+
+
+export const getSupplierMallUpdateSkuMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateSku>>, TError,{productId: string;skuId: string;data: BodyType<SaveMallSkuRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateSku>>, TError,{productId: string;skuId: string;data: BodyType<SaveMallSkuRequest>}, TContext> => {
+
+const mutationKey = ['supplierMallUpdateSku'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdateSku>>, {productId: string;skuId: string;data: BodyType<SaveMallSkuRequest>}> = (props) => {
+          const {productId,skuId,data} = props ?? {};
+
+          return  supplierMallUpdateSku(productId,skuId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierMallUpdateSkuMutationResult = NonNullable<Awaited<ReturnType<typeof supplierMallUpdateSku>>>
+    export type SupplierMallUpdateSkuMutationBody = BodyType<SaveMallSkuRequest>
+    export type SupplierMallUpdateSkuMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierMallUpdateSku = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateSku>>, TError,{productId: string;skuId: string;data: BodyType<SaveMallSkuRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierMallUpdateSku>>,
+        TError,
+        {productId: string;skuId: string;data: BodyType<SaveMallSkuRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierMallUpdateSkuMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierMallUpdateSkuStatus = (
+    productId: string,
+    skuId: string,
+    updateMallProductStatusRequest: BodyType<UpdateMallProductStatusRequest>,
+ ) => {
+      
+      
+      return customInstance<ApiResponseMallProductResponse>(
+      {url: `/api/v1/supplier/mall/products/${productId}/skus/${skuId}/status`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: updateMallProductStatusRequest
+    },
+      );
+    }
+  
+
+
+export const getSupplierMallUpdateSkuStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateSkuStatus>>, TError,{productId: string;skuId: string;data: BodyType<UpdateMallProductStatusRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateSkuStatus>>, TError,{productId: string;skuId: string;data: BodyType<UpdateMallProductStatusRequest>}, TContext> => {
+
+const mutationKey = ['supplierMallUpdateSkuStatus'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdateSkuStatus>>, {productId: string;skuId: string;data: BodyType<UpdateMallProductStatusRequest>}> = (props) => {
+          const {productId,skuId,data} = props ?? {};
+
+          return  supplierMallUpdateSkuStatus(productId,skuId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierMallUpdateSkuStatusMutationResult = NonNullable<Awaited<ReturnType<typeof supplierMallUpdateSkuStatus>>>
+    export type SupplierMallUpdateSkuStatusMutationBody = BodyType<UpdateMallProductStatusRequest>
+    export type SupplierMallUpdateSkuStatusMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierMallUpdateSkuStatus = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallUpdateSkuStatus>>, TError,{productId: string;skuId: string;data: BodyType<UpdateMallProductStatusRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierMallUpdateSkuStatus>>,
+        TError,
+        {productId: string;skuId: string;data: BodyType<UpdateMallProductStatusRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierMallUpdateSkuStatusMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierMallUpdateStatus = (
     listingId: string,
     updateMallListingStatusRequest: BodyType<UpdateMallListingStatusRequest>,
  ) => {
@@ -153,6 +392,209 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getSupplierMallUpdatePriceMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierMallProducts = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallProductResponse>(
+      {url: `/api/v1/supplier/mall/products`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getSupplierMallProductsQueryKey = () => {
+    return [
+    `/api/v1/supplier/mall/products`
+    ] as const;
+    }
+
+    
+export const getSupplierMallProductsQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallProducts>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallProducts>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierMallProductsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallProducts>>> = ({ signal }) => supplierMallProducts(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallProducts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierMallProductsQueryResult = NonNullable<Awaited<ReturnType<typeof supplierMallProducts>>>
+export type SupplierMallProductsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierMallProducts<TData = Awaited<ReturnType<typeof supplierMallProducts>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallProducts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallProducts>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallProducts>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallProducts<TData = Awaited<ReturnType<typeof supplierMallProducts>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallProducts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallProducts>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallProducts>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallProducts<TData = Awaited<ReturnType<typeof supplierMallProducts>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallProducts>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierMallProducts<TData = Awaited<ReturnType<typeof supplierMallProducts>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallProducts>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierMallProductsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierMallCreateProduct = (
+    saveMallProductRequest: BodyType<SaveMallProductRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseMallProductResponse>(
+      {url: `/api/v1/supplier/mall/products`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: saveMallProductRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierMallCreateProductMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallCreateProduct>>, TError,{data: BodyType<SaveMallProductRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierMallCreateProduct>>, TError,{data: BodyType<SaveMallProductRequest>}, TContext> => {
+
+const mutationKey = ['supplierMallCreateProduct'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallCreateProduct>>, {data: BodyType<SaveMallProductRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  supplierMallCreateProduct(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierMallCreateProductMutationResult = NonNullable<Awaited<ReturnType<typeof supplierMallCreateProduct>>>
+    export type SupplierMallCreateProductMutationBody = BodyType<SaveMallProductRequest>
+    export type SupplierMallCreateProductMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierMallCreateProduct = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallCreateProduct>>, TError,{data: BodyType<SaveMallProductRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierMallCreateProduct>>,
+        TError,
+        {data: BodyType<SaveMallProductRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierMallCreateProductMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierMallAddSku = (
+    productId: string,
+    saveMallSkuRequest: BodyType<SaveMallSkuRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseMallProductResponse>(
+      {url: `/api/v1/supplier/mall/products/${productId}/skus`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: saveMallSkuRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getSupplierMallAddSkuMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallAddSku>>, TError,{productId: string;data: BodyType<SaveMallSkuRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierMallAddSku>>, TError,{productId: string;data: BodyType<SaveMallSkuRequest>}, TContext> => {
+
+const mutationKey = ['supplierMallAddSku'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallAddSku>>, {productId: string;data: BodyType<SaveMallSkuRequest>}> = (props) => {
+          const {productId,data} = props ?? {};
+
+          return  supplierMallAddSku(productId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierMallAddSkuMutationResult = NonNullable<Awaited<ReturnType<typeof supplierMallAddSku>>>
+    export type SupplierMallAddSkuMutationBody = BodyType<SaveMallSkuRequest>
+    export type SupplierMallAddSkuMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierMallAddSku = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallAddSku>>, TError,{productId: string;data: BodyType<SaveMallSkuRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierMallAddSku>>,
+        TError,
+        {productId: string;data: BodyType<SaveMallSkuRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierMallAddSkuMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

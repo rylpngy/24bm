@@ -2,6 +2,7 @@ package com.procurement.mall.api;
 
 import com.procurement.common.api.ApiResponse;
 import com.procurement.mall.application.MallApplicationService;
+import com.procurement.mall.application.MallCatalogApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class SupplierMallController {
   private final MallApplicationService mallApplicationService;
 
-  public SupplierMallController(MallApplicationService mallApplicationService) {
+  private final MallCatalogApplicationService mallCatalogApplicationService;
+
+  public SupplierMallController(MallApplicationService mallApplicationService,
+      MallCatalogApplicationService mallCatalogApplicationService) {
+    this.mallCatalogApplicationService = mallCatalogApplicationService;
     this.mallApplicationService = mallApplicationService;
   }
 
@@ -50,5 +55,52 @@ public class SupplierMallController {
       @PathVariable String listingId,
       @Valid @RequestBody UpdateMallListingStatusRequest request) {
     return ApiResponse.ok(mallApplicationService.supplierUpdateStatus(listingId, request));
+  }
+
+  // ── M-1 商品与规格维护 ───────────────────────────────────
+  @GetMapping("/products")
+  public ApiResponse<List<MallProductResponse>> products() {
+    return ApiResponse.ok(mallCatalogApplicationService.listForSupplier());
+  }
+
+  @PostMapping("/products")
+  public ApiResponse<MallProductResponse> createProduct(
+      @Valid @RequestBody SaveMallProductRequest request) {
+    return ApiResponse.ok(mallCatalogApplicationService.createProduct(request));
+  }
+
+  @PutMapping("/products/{productId}")
+  public ApiResponse<MallProductResponse> updateProduct(
+      @PathVariable String productId, @Valid @RequestBody SaveMallProductRequest request) {
+    return ApiResponse.ok(mallCatalogApplicationService.updateProduct(productId, request));
+  }
+
+  @PutMapping("/products/{productId}/status")
+  public ApiResponse<MallProductResponse> updateProductStatus(
+      @PathVariable String productId, @Valid @RequestBody UpdateMallProductStatusRequest request) {
+    return ApiResponse.ok(mallCatalogApplicationService.updateProductStatus(productId, request));
+  }
+
+  @PostMapping("/products/{productId}/skus")
+  public ApiResponse<MallProductResponse> addSku(
+      @PathVariable String productId, @Valid @RequestBody SaveMallSkuRequest request) {
+    return ApiResponse.ok(mallCatalogApplicationService.addSku(productId, request));
+  }
+
+  @PutMapping("/products/{productId}/skus/{skuId}")
+  public ApiResponse<MallProductResponse> updateSku(
+      @PathVariable String productId,
+      @PathVariable String skuId,
+      @Valid @RequestBody SaveMallSkuRequest request) {
+    return ApiResponse.ok(mallCatalogApplicationService.updateSku(productId, skuId, request));
+  }
+
+  @PutMapping("/products/{productId}/skus/{skuId}/status")
+  public ApiResponse<MallProductResponse> updateSkuStatus(
+      @PathVariable String productId,
+      @PathVariable String skuId,
+      @Valid @RequestBody UpdateMallProductStatusRequest request) {
+    return ApiResponse.ok(
+        mallCatalogApplicationService.updateSkuStatus(productId, skuId, request.status()));
   }
 }

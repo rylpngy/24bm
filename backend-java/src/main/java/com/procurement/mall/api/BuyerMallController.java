@@ -3,6 +3,7 @@ package com.procurement.mall.api;
 import com.procurement.common.api.ApiResponse;
 import com.procurement.mall.api.CreateMallCartRequest;
 import com.procurement.mall.application.MallApplicationService;
+import com.procurement.mall.application.MallCatalogApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,8 +20,33 @@ import org.springframework.web.bind.annotation.RestController;
 public class BuyerMallController {
   private final MallApplicationService mallApplicationService;
 
-  public BuyerMallController(MallApplicationService mallApplicationService) {
+  private final MallCatalogApplicationService mallCatalogApplicationService;
+
+  public BuyerMallController(
+      MallApplicationService mallApplicationService,
+      MallCatalogApplicationService mallCatalogApplicationService) {
+    this.mallCatalogApplicationService = mallCatalogApplicationService;
     this.mallApplicationService = mallApplicationService;
+  }
+
+  // ── M-1 商品目录 ─────────────────────────────────────────
+  @GetMapping("/products")
+  public ApiResponse<List<MallProductResponse>> products(
+      @RequestParam(required = false) String categoryId,
+      @RequestParam(required = false) String keyword) {
+    return ApiResponse.ok(mallCatalogApplicationService.listForBuyer(categoryId, keyword));
+  }
+
+  @GetMapping("/products/{productId}")
+  public ApiResponse<MallProductResponse> product(@PathVariable String productId) {
+    return ApiResponse.ok(mallCatalogApplicationService.findForBuyer(productId));
+  }
+
+  @GetMapping("/categories")
+  public ApiResponse<List<MallCategoryResponse>> categories() {
+    return ApiResponse.ok(mallCatalogApplicationService.listCategories().stream()
+        .map(c -> new MallCategoryResponse(c.id(), c.parentId(), c.name(), c.tenantId() == null))
+        .toList());
   }
 
   @GetMapping("/analytics")

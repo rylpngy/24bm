@@ -25,13 +25,17 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseListMallCategoryResponse,
   ApiResponseListMallListingResponse,
   ApiResponseListMallOrderResponse,
+  ApiResponseListMallProductResponse,
   ApiResponseMallAnalyticsResponse,
   ApiResponseMallListingResponse,
   ApiResponseMallOrderResponse,
+  ApiResponseMallProductResponse,
   ApiResponseVoid,
   BuyerMallListingsParams,
+  BuyerMallProductsParams,
   CreateMallCartRequest,
   CreateMallListingRequest,
   CreateMallOrderRequest,
@@ -363,7 +367,266 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const buyerMallAnalytics = (
+    export const buyerMallProducts = (
+    params?: BuyerMallProductsParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallProductResponse>(
+      {url: `/api/v1/buyer/mall/products`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerMallProductsQueryKey = (params?: BuyerMallProductsParams,) => {
+    return [
+    `/api/v1/buyer/mall/products`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getBuyerMallProductsQueryOptions = <TData = Awaited<ReturnType<typeof buyerMallProducts>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerMallProductsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProducts>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerMallProductsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerMallProducts>>> = ({ signal }) => buyerMallProducts(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerMallProducts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerMallProductsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerMallProducts>>>
+export type BuyerMallProductsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerMallProducts<TData = Awaited<ReturnType<typeof buyerMallProducts>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  BuyerMallProductsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProducts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallProducts>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallProducts>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallProducts<TData = Awaited<ReturnType<typeof buyerMallProducts>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerMallProductsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProducts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallProducts>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallProducts>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallProducts<TData = Awaited<ReturnType<typeof buyerMallProducts>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerMallProductsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProducts>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerMallProducts<TData = Awaited<ReturnType<typeof buyerMallProducts>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: BuyerMallProductsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProducts>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerMallProductsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerMallProduct = (
+    productId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseMallProductResponse>(
+      {url: `/api/v1/buyer/mall/products/${productId}`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerMallProductQueryKey = (productId?: string,) => {
+    return [
+    `/api/v1/buyer/mall/products/${productId}`
+    ] as const;
+    }
+
+    
+export const getBuyerMallProductQueryOptions = <TData = Awaited<ReturnType<typeof buyerMallProduct>>, TError = ErrorType<ApiResponseVoid>>(productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProduct>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerMallProductQueryKey(productId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerMallProduct>>> = ({ signal }) => buyerMallProduct(productId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(productId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerMallProduct>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerMallProductQueryResult = NonNullable<Awaited<ReturnType<typeof buyerMallProduct>>>
+export type BuyerMallProductQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerMallProduct<TData = Awaited<ReturnType<typeof buyerMallProduct>>, TError = ErrorType<ApiResponseVoid>>(
+ productId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProduct>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallProduct>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallProduct>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallProduct<TData = Awaited<ReturnType<typeof buyerMallProduct>>, TError = ErrorType<ApiResponseVoid>>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProduct>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallProduct>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallProduct>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallProduct<TData = Awaited<ReturnType<typeof buyerMallProduct>>, TError = ErrorType<ApiResponseVoid>>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProduct>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerMallProduct<TData = Awaited<ReturnType<typeof buyerMallProduct>>, TError = ErrorType<ApiResponseVoid>>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProduct>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerMallProductQueryOptions(productId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerMallCategories = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallCategoryResponse>(
+      {url: `/api/v1/buyer/mall/categories`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerMallCategoriesQueryKey = () => {
+    return [
+    `/api/v1/buyer/mall/categories`
+    ] as const;
+    }
+
+    
+export const getBuyerMallCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof buyerMallCategories>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCategories>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerMallCategoriesQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerMallCategories>>> = ({ signal }) => buyerMallCategories(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerMallCategories>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerMallCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof buyerMallCategories>>>
+export type BuyerMallCategoriesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerMallCategories<TData = Awaited<ReturnType<typeof buyerMallCategories>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCategories>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallCategories>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallCategories>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallCategories<TData = Awaited<ReturnType<typeof buyerMallCategories>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCategories>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallCategories>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallCategories>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallCategories<TData = Awaited<ReturnType<typeof buyerMallCategories>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCategories>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerMallCategories<TData = Awaited<ReturnType<typeof buyerMallCategories>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCategories>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerMallCategoriesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerMallAnalytics = (
     
  signal?: AbortSignal
 ) => {

@@ -19,6 +19,11 @@ import com.procurement.mall.api.UpdateMallListingStatusRequest;
 import com.procurement.mall.domain.MallListing;
 import com.procurement.mall.domain.MallListingStatus;
 import com.procurement.mall.domain.MallPolicy;
+import com.procurement.mall.domain.MallCatalogPolicy;
+import com.procurement.mall.domain.MallProduct;
+import com.procurement.mall.domain.MallSku;
+import com.procurement.mall.domain.MallTierPrice;
+import com.procurement.mall.infrastructure.MallCatalogMapper;
 import com.procurement.mall.infrastructure.MallListingMapper;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.application.RfqApplicationService;
@@ -32,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MallApplicationService {
   private final MallListingMapper mallListingMapper;
+  private final MallCatalogMapper mallCatalogMapper;
   private final RfqApplicationService rfqApplicationService;
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -39,11 +45,13 @@ public class MallApplicationService {
 
   public MallApplicationService(
       MallListingMapper mallListingMapper,
+      MallCatalogMapper mallCatalogMapper,
       RfqApplicationService rfqApplicationService,
       PurchaseOrderApplicationService purchaseOrderApplicationService,
       AuditLogApplicationService auditLogApplicationService,
       TenantCapabilityApplicationService tenantCapabilityApplicationService) {
     this.mallListingMapper = mallListingMapper;
+    this.mallCatalogMapper = mallCatalogMapper;
     this.rfqApplicationService = rfqApplicationService;
     this.purchaseOrderApplicationService = purchaseOrderApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -52,10 +60,27 @@ public class MallApplicationService {
 
   public List<MallListingResponse> listCurrentTenantListings(String status, String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
-    return mallListingMapper.listByTenant(tenantId, blankToNull(status), blankToNull(keyword))
-        .stream()
-        .map(this::toResponse)
+    // M-1:货架由商品/SKU 投影而来(响应里的 id 即 skuId),与供应商侧维护的模型同源。
+    return mallCatalogMapper.listForTenant(tenantId, false, null, blankToNull(keyword)).stream()
+        .flatMap(product -> mallCatalogMapper.listSkusForTenant(tenantId, product.id()).stream()
+            .filter(sku -> status == null || status.isBlank() || status.equals(effectiveStatus(product, sku)))
+            .map(sku -> toListingResponse(product, sku)))
         .toList();
+  }
+
+  /** 规格的对外状态:商品未在架时,规格一律呈现为下架。 */
+  private static String effectiveStatus(MallProduct product, MallSku sku) {
+    return MallCatalogPolicy.STATUS_ON_SHELF.equals(product.status())
+        && MallCatalogPolicy.STATUS_ON_SHELF.equals(sku.status())
+        ? MallCatalogPolicy.STATUS_ON_SHELF
+        : MallCatalogPolicy.STATUS_OFF_SHELF;
+  }
+
+  private static MallListingResponse toListingResponse(MallProduct product, MallSku sku) {
+    return new MallListingResponse(
+        sku.id(), product.supplierId(), product.supplierName(), sku.materialId(),
+        product.name(), sku.skuCode(), product.categoryName(), sku.unit(), sku.price(),
+        effectiveStatus(product, sku), product.updatedAt(), product.tenantId(), null);
   }
 
   @Transactional
@@ -65,18 +90,26 @@ public class MallApplicationService {
     if (mallListingMapper.countAdmittedSupplier(tenantId, request.supplierId()) == 0) {
       throw new IllegalStateException("仅可为已准入供应商上架商品: " + request.supplierId());
     }
-    String listingId = "mall-" + UUID.randomUUID();
-    mallListingMapper.insert(
-        listingId,
-        tenantId,
-        request.supplierId(),
-        request.materialId(),
-        request.price(),
-        request.unit() == null || request.unit().isBlank() ? "件" : request.unit(),
-        MallListingStatus.ON_SHELF);
+    // M-1:采购方录入协议价同样落新模型——建单规格商品 + SKU。
+    MallCatalogMapper.MaterialBrief material =
+        mallCatalogMapper.findMaterialBrief(tenantId, request.materialId());
+    if (material == null) {
+      throw new IllegalArgumentException("物料不存在: " + request.materialId());
+    }
+    String productId = "mp-" + UUID.randomUUID();
+    mallCatalogMapper.insertProduct(
+        productId, "tenant", tenantId, request.supplierId(), null, material.name(),
+        "", "", null, MallCatalogPolicy.STATUS_ON_SHELF);
+    String skuId = "ms-" + UUID.randomUUID();
+    mallCatalogMapper.insertSkuForSupplier(
+        skuId, productId, request.supplierId(), material.code(), "{}", request.materialId(),
+        request.unit() == null || request.unit().isBlank() ? material.unit() : request.unit(),
+        request.price(), BigDecimal.ONE, BigDecimal.ONE, null, 7);
     auditLogApplicationService.recordTenantAction(
-        "mall_listing.published", AuditTargetType.MALL_LISTING, listingId);
-    return toResponse(mallListingMapper.findByTenantAndId(tenantId, listingId));
+        "mall_listing.published", AuditTargetType.MALL_LISTING, skuId);
+    return toListingResponse(
+        mallCatalogMapper.findProductForTenant(tenantId, productId),
+        mallCatalogMapper.findSkuForTenant(tenantId, skuId));
   }
 
   @Transactional
@@ -85,45 +118,55 @@ public class MallApplicationService {
     if (!MallListingStatus.isValid(request.status())) {
       throw new IllegalArgumentException("未知的货架状态: " + request.status());
     }
-    int updated = mallListingMapper.updateStatus(tenantId, listingId, request.status());
-    if (updated == 0) {
+    MallSku sku = mallCatalogMapper.findSkuForTenant(tenantId, listingId);
+    if (sku == null) {
       throw new IllegalArgumentException("商城商品不存在: " + listingId);
+    }
+    // 采购方对本租户私域商品的上下架:整个商品随之切换(单规格场景等价)。
+    if (mallCatalogMapper.updateProductStatusByTenant(
+        sku.productId(), tenantId, request.status()) == 0) {
+      throw new IllegalStateException("公开专区商品由供应商自管,采购方不可下架: " + listingId);
     }
     auditLogApplicationService.recordTenantAction(
         "mall_listing.status_changed", AuditTargetType.MALL_LISTING, listingId);
-    return toResponse(mallListingMapper.findByTenantAndId(tenantId, listingId));
+    return toListingResponse(
+        mallCatalogMapper.findProductForTenant(tenantId, sku.productId()),
+        mallCatalogMapper.findSkuForTenant(tenantId, listingId));
   }
 
   // 目录直购:在架商品 × 数量 → 商城锚点 RFQ(方式=商城,已定标) + 采购订单(含单行明细)。
   @Transactional
   public MallOrderResponse createDirectOrder(CreateMallOrderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
-    MallListing listing = mallListingMapper.findByTenantAndId(tenantId, request.listingId());
-    MallPolicy.requireOrderable(listing, request.quantity(), request.listingId());
+    tenantCapabilityApplicationService.requireMethodEnabled(
+        tenantId, ProcurementMethodCatalog.MALL.code());
+    CartLine line = resolveLine(tenantId, request.listingId(), request.quantity());
 
-    BigDecimal amount = listing.price().multiply(request.quantity());
+    BigDecimal amount = line.unitPrice().multiply(request.quantity());
     String rfqId = rfqApplicationService.createMallAnchor(
-        "商城直购:" + listing.materialName(), listing.supplierId());
+        "商城直购:" + line.product().name(), line.product().supplierId());
+    // 交期:未指定时按 SKU 承诺交期推算,而不是一律「下单 +7 天」。
     LocalDate expectedReceiptDate = request.expectedReceiptDate() == null
-        ? LocalDate.now().plusDays(7)
+        ? LocalDate.now().plusDays(line.sku().leadTimeDays())
         : request.expectedReceiptDate();
     String orderId = purchaseOrderApplicationService.createMallOrder(
         rfqId,
-        listing.supplierId(),
+        line.product().supplierId(),
         amount,
         expectedReceiptDate,
-        listing.materialName(),
-        listing.unit(),
+        line.product().name(),
+        line.sku().unit(),
         request.quantity(),
-        listing.price());
+        line.unitPrice());
+    deductStockIfTracked(tenantId, line);
     auditLogApplicationService.recordTenantAction(
         "mall_order.created", AuditTargetType.PURCHASE_ORDER, orderId);
     return new MallOrderResponse(
         orderId,
         rfqId,
-        listing.id(),
-        listing.supplierId(),
-        listing.materialName(),
+        line.sku().id(),
+        line.product().supplierId(),
+        line.product().name(),
         request.quantity(),
         amount);
   }
@@ -137,11 +180,11 @@ public class MallApplicationService {
         tenantId, ProcurementMethodCatalog.MALL.code());
     java.util.LinkedHashMap<String, java.util.List<CartLine>> bySupplier = new java.util.LinkedHashMap<>();
     for (CreateMallCartRequest.CartItem item : request.items()) {
-      MallListing listing = mallListingMapper.findByTenantAndId(tenantId, item.listingId());
-      MallPolicy.requireOrderable(listing, item.quantity(), item.listingId());
+      // 请求里的 listingId 即 skuId(货架由商品/SKU 投影)。
+      CartLine line = resolveLine(tenantId, item.listingId(), item.quantity());
       bySupplier
-          .computeIfAbsent(listing.supplierId(), key -> new java.util.ArrayList<>())
-          .add(new CartLine(listing, item.quantity()));
+          .computeIfAbsent(line.product().supplierId(), key -> new java.util.ArrayList<>())
+          .add(line);
     }
     LocalDate expectedReceiptDate = request.expectedReceiptDate() == null
         ? LocalDate.now().plusDays(7)
@@ -151,14 +194,14 @@ public class MallApplicationService {
     for (java.util.Map.Entry<String, java.util.List<CartLine>> entry : bySupplier.entrySet()) {
       java.util.List<CartLine> lines = entry.getValue();
       BigDecimal amount = lines.stream()
-          .map(l -> l.listing().price().multiply(l.quantity()))
+          .map(l -> l.unitPrice().multiply(l.quantity()))
           .reduce(BigDecimal.ZERO, BigDecimal::add);
       BigDecimal totalQuantity = lines.stream()
           .map(CartLine::quantity)
           .reduce(BigDecimal.ZERO, BigDecimal::add);
       String title = lines.size() == 1
-          ? "商城直购:" + lines.get(0).listing().materialName()
-          : "商城直购:" + lines.get(0).listing().materialName() + " 等 " + lines.size() + " 项";
+          ? "商城直购:" + lines.get(0).product().name()
+          : "商城直购:" + lines.get(0).product().name() + " 等 " + lines.size() + " 项";
       String rfqId = rfqApplicationService.createMallAnchor(title, entry.getKey());
       String orderId = purchaseOrderApplicationService.createMallOrder(
           rfqId,
@@ -167,14 +210,16 @@ public class MallApplicationService {
           expectedReceiptDate,
           lines.stream()
               .map(l -> new PurchaseOrderApplicationService.DirectOrderLine(
-                  l.listing().materialName(), l.listing().unit(), l.quantity(), l.listing().price()))
+                  l.product().name(), l.sku().unit(), l.quantity(), l.unitPrice()))
               .toList());
+      // 成单后再扣库存:失败即整单回滚,不会出现「订单已生成、库存没扣」。
+      lines.forEach(l -> deductStockIfTracked(tenantId, l));
       auditLogApplicationService.recordTenantAction(
           "mall_order.created", AuditTargetType.PURCHASE_ORDER, orderId);
       orders.add(new MallOrderResponse(
           orderId,
           rfqId,
-          lines.get(0).listing().id(),
+          lines.get(0).sku().id(),
           entry.getKey(),
           title.replace("商城直购:", ""),
           totalQuantity,
@@ -183,7 +228,30 @@ public class MallApplicationService {
     return orders;
   }
 
-  private record CartLine(MallListing listing, BigDecimal quantity) {
+  /** 结算行:单价由服务端按阶梯价重算,不取前端传值。 */
+  private record CartLine(
+      MallProduct product, MallSku sku, BigDecimal quantity, BigDecimal unitPrice) {
+  }
+
+  private CartLine resolveLine(String tenantId, String skuId, BigDecimal quantity) {
+    MallSku sku = mallCatalogMapper.findSkuForTenant(tenantId, skuId);
+    if (sku == null) {
+      throw new IllegalArgumentException("商品规格不存在或不在本企业可见范围: " + skuId);
+    }
+    MallProduct product = mallCatalogMapper.findProductForTenant(tenantId, sku.productId());
+    MallCatalogPolicy.requireOrderable(product, sku, quantity);
+    List<MallTierPrice> tiers = mallCatalogMapper.listTiersForTenant(tenantId, skuId);
+    return new CartLine(
+        product, sku, quantity, MallCatalogPolicy.effectivePrice(sku, tiers, quantity));
+  }
+
+  private void deductStockIfTracked(String tenantId, CartLine line) {
+    if (line.sku().stockQty() == null) {
+      return;
+    }
+    if (mallCatalogMapper.deductStock(tenantId, line.sku().id(), line.quantity()) == 0) {
+      throw new IllegalStateException("库存不足,请调整数量后重试:" + line.product().name());
+    }
   }
 
   // 商城消费分析:商城渠道订单量/金额与供应商集中度。
@@ -211,7 +279,11 @@ public class MallApplicationService {
 
   public List<MallListingResponse> listSupplierListings() {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier mall APIs");
-    return mallListingMapper.listBySupplier(supplierId).stream().map(this::toResponse).toList();
+    // M-1:同样由商品/SKU 投影,供应商在旧货架页与新商品页看到的是同一份数据。
+    return mallCatalogMapper.listBySupplier(supplierId).stream()
+        .flatMap(product -> mallCatalogMapper.listSkusForSupplier(supplierId, product.id()).stream()
+            .map(sku -> toListingResponse(product, sku)))
+        .toList();
   }
 
   public List<SupplierMallMaterialResponse> listSupplierMaterials() {
@@ -230,31 +302,42 @@ public class MallApplicationService {
     if (mallListingMapper.countAdmittedRelation(request.tenantId(), supplierId) == 0) {
       throw new IllegalStateException("仅可向已准入的采购方上架商品: " + request.tenantId());
     }
-    String listingId = "mall-" + UUID.randomUUID();
-    mallListingMapper.insert(
-        listingId,
-        request.tenantId(),
-        supplierId,
-        request.materialId(),
-        request.price(),
-        request.unit() == null || request.unit().isBlank() ? "件" : request.unit(),
-        MallListingStatus.ON_SHELF);
+    // M-1:一次上架 = 建一个单规格商品 + 一个 SKU,直接落新模型;旧 mall_listings 不再写入。
+    SupplierMallMaterialResponse material = listSupplierMaterials().stream()
+        .filter(m -> m.materialId().equals(request.materialId())
+            && m.tenantId().equals(request.tenantId()))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("物料不存在或不在该采购方目录内: " + request.materialId()));
+
+    String productId = "mp-" + UUID.randomUUID();
+    mallCatalogMapper.insertProduct(
+        productId, "tenant", request.tenantId(), supplierId, null, material.name(), "", "",
+        null, MallCatalogPolicy.STATUS_ON_SHELF);
+    String skuId = "ms-" + UUID.randomUUID();
+    mallCatalogMapper.insertSkuForSupplier(
+        skuId, productId, supplierId, material.code(), "{}", request.materialId(),
+        request.unit() == null || request.unit().isBlank() ? material.unit() : request.unit(),
+        request.price(), BigDecimal.ONE, BigDecimal.ONE, null, 7);
     auditLogApplicationService.recordTenantAction(
-        request.tenantId(), "mall_listing.supplier_published", AuditTargetType.MALL_LISTING, listingId);
-    return toResponse(mallListingMapper.findBySupplierAndId(supplierId, listingId));
+        request.tenantId(), "mall_listing.supplier_published", AuditTargetType.MALL_LISTING, skuId);
+    return toListingResponse(
+        mallCatalogMapper.findProductForSupplier(supplierId, productId),
+        mallCatalogMapper.findSkuForTenant(request.tenantId(), skuId));
   }
 
   @Transactional
   public MallListingResponse supplierUpdatePrice(String listingId, UpdateMallListingPriceRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier mall APIs");
     MallPolicy.requirePublishable(request.price());
-    if (mallListingMapper.updatePriceBySupplier(supplierId, listingId, request.price()) == 0) {
-      throw new IllegalArgumentException("商城商品不存在或不属于当前供应商: " + listingId);
-    }
-    MallListing listing = mallListingMapper.findBySupplierAndId(supplierId, listingId);
+    // listingId 即 skuId;沿用既有起订量/步进/库存/交期,仅改价。
+    MallSku sku = requireOwnSku(supplierId, listingId);
+    mallCatalogMapper.updateSkuForSupplier(
+        listingId, supplierId, request.price(), sku.minOrderQty(), sku.stepQty(),
+        sku.stockQty(), sku.leadTimeDays());
+    MallProduct product = mallCatalogMapper.findProductForSupplier(supplierId, sku.productId());
     auditLogApplicationService.recordTenantAction(
-        listing.tenantId(), "mall_listing.price_changed", AuditTargetType.MALL_LISTING, listingId);
-    return toResponse(listing);
+        product.tenantId(), "mall_listing.price_changed", AuditTargetType.MALL_LISTING, listingId);
+    return toListingResponse(product, mallCatalogMapper.findSkuForTenant(product.tenantId(), listingId));
   }
 
   @Transactional
@@ -263,14 +346,23 @@ public class MallApplicationService {
     if (!MallListingStatus.isValid(request.status())) {
       throw new IllegalArgumentException("未知的货架状态: " + request.status());
     }
-    if (mallListingMapper.updateStatusBySupplier(supplierId, listingId, request.status()) == 0) {
-      throw new IllegalArgumentException("商城商品不存在或不属于当前供应商: " + listingId);
-    }
-    MallListing listing = mallListingMapper.findBySupplierAndId(supplierId, listingId);
+    MallSku sku = requireOwnSku(supplierId, listingId);
+    mallCatalogMapper.updateSkuStatusForSupplier(listingId, supplierId, request.status());
+    MallProduct product = mallCatalogMapper.findProductForSupplier(supplierId, sku.productId());
     auditLogApplicationService.recordTenantAction(
-        listing.tenantId(), "mall_listing.status_changed", AuditTargetType.MALL_LISTING, listingId);
-    return toResponse(listing);
+        product.tenantId(), "mall_listing.status_changed", AuditTargetType.MALL_LISTING, listingId);
+    return toListingResponse(product, mallCatalogMapper.findSkuForTenant(product.tenantId(), listingId));
   }
+
+  private MallSku requireOwnSku(String supplierId, String skuId) {
+    return mallCatalogMapper.listBySupplier(supplierId).stream()
+        .flatMap(p -> mallCatalogMapper.listSkusForSupplier(supplierId, p.id()).stream())
+        .filter(s -> s.id().equals(skuId))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException(
+            "商城商品不存在或不属于当前供应商: " + skuId));
+  }
+
 
   private MallListingResponse toResponse(MallListing listing) {
     return new MallListingResponse(

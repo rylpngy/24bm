@@ -21,12 +21,99 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseListMallProductResponse,
   ApiResponsePublicMallOverviewResponse,
   ApiResponseVoid
 } from '.././model';
 
 import { customInstance } from '../../http-client';
 import type { ErrorType } from '../../http-client';
+
+
+
+
+export const publicMallPublicProducts = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallProductResponse>(
+      {url: `/api/v1/public/mall/products`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getPublicMallPublicProductsQueryKey = () => {
+    return [
+    `/api/v1/public/mall/products`
+    ] as const;
+    }
+
+    
+export const getPublicMallPublicProductsQueryOptions = <TData = Awaited<ReturnType<typeof publicMallPublicProducts>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicMallPublicProducts>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicMallPublicProductsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicMallPublicProducts>>> = ({ signal }) => publicMallPublicProducts(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicMallPublicProducts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PublicMallPublicProductsQueryResult = NonNullable<Awaited<ReturnType<typeof publicMallPublicProducts>>>
+export type PublicMallPublicProductsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function usePublicMallPublicProducts<TData = Awaited<ReturnType<typeof publicMallPublicProducts>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicMallPublicProducts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicMallPublicProducts>>,
+          TError,
+          Awaited<ReturnType<typeof publicMallPublicProducts>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicMallPublicProducts<TData = Awaited<ReturnType<typeof publicMallPublicProducts>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicMallPublicProducts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicMallPublicProducts>>,
+          TError,
+          Awaited<ReturnType<typeof publicMallPublicProducts>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicMallPublicProducts<TData = Awaited<ReturnType<typeof publicMallPublicProducts>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicMallPublicProducts>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePublicMallPublicProducts<TData = Awaited<ReturnType<typeof publicMallPublicProducts>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicMallPublicProducts>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPublicMallPublicProductsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
 
 
 
