@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { approveProduct } from './helpers';
 
 const API = 'http://localhost:8080/api/v1';
 
@@ -24,9 +25,11 @@ test('服务端购物车:实时计价 + 失效行拦截 + 结算落收货信息'
       tierPrices: [{ minQty: 10, price: 90 }],
     },
   });
+  // M-4:供应商只能提审,上架由采购方审核通过。
   await request.put(`${API}/supplier/mall/products/${productId}/status`, {
-    headers: sup, data: { status: '在架' },
+    headers: sup, data: { status: '待审核' },
   });
+  await approveProduct(request, productId);
   const skuId = (await (await request.get(`${API}/buyer/mall/products/${productId}`, { headers: buy })).json())
     .data.skus[0].id as string;
 

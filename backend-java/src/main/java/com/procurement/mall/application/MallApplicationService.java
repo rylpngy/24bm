@@ -385,6 +385,7 @@ public class MallApplicationService {
       throw new IllegalStateException("仅可向已准入的采购方上架商品: " + request.tenantId());
     }
     // M-1:一次上架 = 建一个单规格商品 + 一个 SKU,直接落新模型;旧 mall_listings 不再写入。
+    // M-4:供应商发起的上架一律进「待审核」,由采购方审核后才真正在架。
     SupplierMallMaterialResponse material = listSupplierMaterials().stream()
         .filter(m -> m.materialId().equals(request.materialId())
             && m.tenantId().equals(request.tenantId()))
@@ -394,7 +395,7 @@ public class MallApplicationService {
     String productId = "mp-" + UUID.randomUUID();
     mallCatalogMapper.insertProduct(
         productId, "tenant", request.tenantId(), supplierId, null, material.name(), "", "",
-        null, MallCatalogPolicy.STATUS_ON_SHELF);
+        null, MallCatalogPolicy.STATUS_PENDING);
     String skuId = "ms-" + UUID.randomUUID();
     mallCatalogMapper.insertSkuForSupplier(
         skuId, productId, supplierId, material.code(), "{}", request.materialId(),

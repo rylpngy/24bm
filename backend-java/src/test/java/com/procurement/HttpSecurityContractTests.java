@@ -296,6 +296,9 @@ class HttpSecurityContractTests {
   private MockMvc mockMvc;
 
   @MockBean
+  private com.procurement.mall.application.MallServiceApplicationService mallServiceApplicationService;
+
+  @MockBean
   private com.procurement.mall.application.MallCartApplicationService mallCartApplicationService;
 
   @MockBean

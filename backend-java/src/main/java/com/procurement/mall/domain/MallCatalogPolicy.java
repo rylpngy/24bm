@@ -109,6 +109,39 @@ public final class MallCatalogPolicy {
     }
   }
 
+  /**
+   * 供应商可发起的状态流转(M-4):提审与下架。
+   *
+   * <p>上架与否由采购方审核决定——供应商能自己把商品放上货架的话,审核就形同虚设。
+   */
+  public static void requireSupplierTransition(String current, String target) {
+    requireValidStatus(target);
+    if (STATUS_ON_SHELF.equals(target)) {
+      throw new IllegalStateException("上架需由采购方审核通过,请提交审核");
+    }
+    if (STATUS_PENDING.equals(target) && !STATUS_DRAFT.equals(current)
+        && !STATUS_OFF_SHELF.equals(current)) {
+      throw new IllegalStateException("当前状态「" + current + "」不可提交审核");
+    }
+  }
+
+  /** 采购方审核前置:仅「待审核」可审,结论必须带意见(驳回要让供应商知道改什么)。 */
+  public static void requireReviewable(MallProduct product, Boolean approved, String comment) {
+    if (product == null) {
+      throw new IllegalArgumentException("商品不存在或不在本企业可见范围");
+    }
+    if (!STATUS_PENDING.equals(product.status())) {
+      throw new IllegalStateException(
+          "仅「待审核」商品可审核,当前为「" + product.status() + "」");
+    }
+    if (approved == null) {
+      throw new IllegalArgumentException("请给出审核结论");
+    }
+    if (comment == null || comment.isBlank()) {
+      throw new IllegalArgumentException("审核意见不能为空(留痕要求)");
+    }
+  }
+
   /** 商品状态流转:草稿/待审核/在架/下架四态,只允许注册过的目标状态。 */
   public static void requireValidStatus(String status) {
     if (!STATUS_DRAFT.equals(status) && !STATUS_PENDING.equals(status)

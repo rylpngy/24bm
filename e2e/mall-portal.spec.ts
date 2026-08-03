@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { approveProduct } from './helpers';
 
 const API = 'http://localhost:8080/api/v1';
 
@@ -20,9 +21,11 @@ test('商城门户:登录 → 首页 → 商品详情阶梯价联动 → 加入�
       tierPrices: [{ minQty: 10, price: 250 }],
     },
   });
+  // M-4:供应商只能提审,上架由采购方审核通过。
   await request.put(`${API}/supplier/mall/products/${productId}/status`, {
-    headers: sup, data: { status: '在架' },
+    headers: sup, data: { status: '待审核' },
   });
+  await approveProduct(request, productId);
 
   // 未登录:先看到公开专区与登录卡,而不是空白墙。
   await page.goto('/');

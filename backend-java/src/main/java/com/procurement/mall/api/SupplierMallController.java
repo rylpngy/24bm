@@ -3,6 +3,7 @@ package com.procurement.mall.api;
 import com.procurement.common.api.ApiResponse;
 import com.procurement.mall.application.MallApplicationService;
 import com.procurement.mall.application.MallCatalogApplicationService;
+import com.procurement.mall.application.MallServiceApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,10 +21,13 @@ public class SupplierMallController {
   private final MallApplicationService mallApplicationService;
 
   private final MallCatalogApplicationService mallCatalogApplicationService;
+  private final MallServiceApplicationService mallServiceApplicationService;
 
   public SupplierMallController(MallApplicationService mallApplicationService,
-      MallCatalogApplicationService mallCatalogApplicationService) {
+      MallCatalogApplicationService mallCatalogApplicationService,
+      MallServiceApplicationService mallServiceApplicationService) {
     this.mallCatalogApplicationService = mallCatalogApplicationService;
+    this.mallServiceApplicationService = mallServiceApplicationService;
     this.mallApplicationService = mallApplicationService;
   }
 
@@ -102,5 +106,27 @@ public class SupplierMallController {
       @Valid @RequestBody UpdateMallProductStatusRequest request) {
     return ApiResponse.ok(
         mallCatalogApplicationService.updateSkuStatus(productId, skuId, request.status()));
+  }
+
+  // ── M-4 售后处理 ────────────────────────────────────────
+  @GetMapping("/after-sales")
+  public ApiResponse<List<MallAfterSalesResponse>> afterSales() {
+    return ApiResponse.ok(toAfterSales(mallServiceApplicationService.listAfterSalesForSupplier()));
+  }
+
+  @PutMapping("/after-sales/{afterSalesId}")
+  public ApiResponse<List<MallAfterSalesResponse>> handleAfterSales(
+      @PathVariable String afterSalesId, @Valid @RequestBody HandleAfterSalesRequest request) {
+    return ApiResponse.ok(
+        toAfterSales(mallServiceApplicationService.handleAfterSales(afterSalesId, request)));
+  }
+
+  private static List<MallAfterSalesResponse> toAfterSales(
+      List<com.procurement.mall.domain.MallAfterSales> rows) {
+    return rows.stream()
+        .map(a -> new MallAfterSalesResponse(
+            a.id(), a.orderId(), a.orderLineId(), a.supplierId(), a.supplierName(), a.type(),
+            a.quantity(), a.reason(), a.status(), a.supplierReply(), a.createdAt(), a.updatedAt()))
+        .toList();
   }
 }

@@ -120,6 +120,18 @@ public interface MallCatalogMapper {
   int updateProductStatusByTenant(
       @Param("id") String id, @Param("tenantId") String tenantId, @Param("status") String status);
 
+  /** 采购方审核:落状态、意见与审核时间。 */
+  @Update("""
+      update mall_products set status = #{status}, review_comment = #{comment},
+        reviewed_at = now(), updated_at = now()
+      where id = #{id} and tenant_id = #{tenantId} and status = '待审核'
+      """)
+  int reviewProductByTenant(
+      @Param("id") String id,
+      @Param("tenantId") String tenantId,
+      @Param("status") String status,
+      @Param("comment") String comment);
+
   String SKU_COLUMNS = """
       s.id, s.product_id, s.sku_code, s.spec::text as spec, s.material_id, s.unit, s.price,
       s.min_order_qty, s.step_qty, s.stock_qty, s.lead_time_days, s.status, s.created_at, s.updated_at

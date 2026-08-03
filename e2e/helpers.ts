@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
 // 通用:走各端登录门的 Keycloak 主登录路径。
 export async function loginViaKeycloak(page: Page) {
@@ -34,4 +34,21 @@ export async function openModule(page: Page, name: string | RegExp) {
 // 断言已离开登录门(进入工作台)。
 export async function expectLoggedIn(page: Page, anyNav: string | RegExp) {
   await expect(navButton(page, anyNav).first()).toBeVisible();
+}
+
+const MALL_API = 'http://localhost:8080/api/v1';
+
+/**
+ * 商城造数辅助(M-4 起):供应商提审后,商品需采购方审核通过才在架。
+ * 各用例只关心「有一个在架商品」,审核细节收在这里,避免每个文件重复三段请求。
+ */
+export async function approveProduct(request: APIRequestContext, productId: string) {
+  const buyer = (await (await request.post(`${MALL_API}/auth/login`, {
+    data: { account: 'buyer.owner@example.com', password: 'demo123456', scope: 'BUYER', tenantId: 'tenant-acme' },
+  })).json()).data.accessToken as string;
+  const res = await request.post(`${MALL_API}/buyer/mall/products/${productId}/review`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: { approved: true, comment: 'E2E 审核通过' },
+  });
+  expect(res.ok(), '商品审核未通过').toBeTruthy();
 }

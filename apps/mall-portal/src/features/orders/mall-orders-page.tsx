@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { PackageCheck, Truck } from 'lucide-react';
-import { usePurchaseOrderList } from '@24bid/api-client';
-import { FeedbackNotice, Pagination, StatusPill, cn } from '@24bid/ui';
+import {
+  useBuyerMallAfterSales,
+  useBuyerMallApplyAfterSales,
+  useBuyerMallReviews,
+  useBuyerMallSubmitReview,
+  usePurchaseOrderList,
+} from '@24bid/api-client';
+import { useQueryClient } from '@tanstack/react-query';
+import { FeedbackNotice, Pagination, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
 import { currency } from '../catalog/product-card';
 
 const PAGE_SIZE = 8;
@@ -13,9 +20,33 @@ const PAGE_SIZE = 8;
  * 避免同一动作两处实现导致状态口径分叉。
  */
 export function MallOrdersPage() {
+  const queryClient = useQueryClient();
   const orders = usePurchaseOrderList();
+  const afterSales = useBuyerMallAfterSales();
+  const reviews = useBuyerMallReviews();
+  const applyAfterSales = useBuyerMallApplyAfterSales();
+  const submitReview = useBuyerMallSubmitReview();
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // 每行独立的售后草稿与评分草稿:同一订单可能多行,共享状态会串。
+  const [asDraft, setAsDraft] = useState<Record<string, { type: string; reason: string }>>({});
+  const [reviewDraft, setReviewDraft] = useState<Record<string, { rating: number; content: string }>>({});
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = () =>
+    queryClient.invalidateQueries({
+      predicate: (q) => typeof q.queryKey[0] === 'string'
+        && (q.queryKey[0] as string).includes('/buyer/'),
+    });
+  const reportError = (e: unknown) =>
+    setError(
+      (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+      ?? '操作失败,请稍后重试',
+    );
+  const lineAfterSales = (lineId?: string) =>
+    (afterSales.data?.data ?? []).filter((a) => a.orderLineId === lineId);
+  const lineReview = (lineId?: string) =>
+    (reviews.data?.data ?? []).find((r) => r.orderLineId === lineId);
 
   // 按下单时间倒序:刚下的单必须在第一页第一条,否则用户下完单看不到自己的订单。
   const mallOrders = (orders.data?.data ?? [])
@@ -65,18 +96,138 @@ export function MallOrdersPage() {
 
                 {expanded === order.id && (
                   <div className="border-t border-slate-100 px-4 py-3">
-                    <ul className="space-y-1">
-                      {(order.lineItems ?? []).map((line, index) => (
-                        <li
-                          key={`${order.id}-${index}`}
-                          className="flex justify-between text-xs font-bold text-slate-600"
-                        >
-                          <span className="truncate">
-                            {line.description} × {line.quantity}{line.unit}
-                          </span>
-                          <span className="font-mono">{currency(line.lineAmount)}</span>
-                        </li>
-                      ))}
+                    {error && <div className="mb-2"><FeedbackNotice tone="error" message={error} /></div>}
+                    <ul className="space-y-2">
+                      {(order.lineItems ?? []).map((line, index) => {
+                        const canAfterSales = order.status === '已发货' || order.status === '已收货';
+                        const canReview = order.status === '已收货';
+                        const existingReview = lineReview(line.id);
+                        const draft = asDraft[line.id ?? ''] ?? { type: '退货', reason: '' };
+                        const rd = reviewDraft[line.id ?? ''] ?? { rating: 5, content: '' };
+                        return (
+                          <li key={`${order.id}-${index}`} className="rounded-md bg-slate-50/60 px-2.5 py-2">
+                            <div className="flex justify-between text-xs font-bold text-slate-600">
+                              <span className="truncate">
+                                {line.description} × {line.quantity}{line.unit}
+                              </span>
+                              <span className="font-mono">{currency(line.lineAmount)}</span>
+                            </div>
+
+                            {lineAfterSales(line.id).map((row) => (
+                              <p key={row.id} className="mt-1 text-[11px] font-bold text-amber-700">
+                                售后·{row.type} {row.status}
+                                {row.supplierReply ? `:${row.supplierReply}` : ''}
+                              </p>
+                            ))}
+                            {existingReview && (
+                              <p className="mt-1 text-[11px] font-bold text-emerald-700">
+                                已评价 {'★'.repeat(existingReview.rating ?? 0)}
+                                {existingReview.content ? ` · ${existingReview.content}` : ''}
+                              </p>
+                            )}
+
+                            {canAfterSales && lineAfterSales(line.id).length === 0 && (
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <select
+                                  aria-label={`售后类型 ${line.description}`}
+                                  className="h-8 rounded border border-slate-200 bg-white px-2 text-[11px] font-black text-slate-700"
+                                  value={draft.type}
+                                  onChange={(e) =>
+                                    setAsDraft((c) => ({ ...c, [line.id ?? '']: { ...draft, type: e.target.value } }))
+                                  }
+                                >
+                                  {['退货', '换货', '维修'].map((t) => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                                <input
+                                  aria-label={`售后原因 ${line.description}`}
+                                  className="h-8 min-w-40 flex-1 rounded border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-700"
+                                  placeholder="售后原因(必填)"
+                                  value={draft.reason}
+                                  onChange={(e) =>
+                                    setAsDraft((c) => ({ ...c, [line.id ?? '']: { ...draft, reason: e.target.value } }))
+                                  }
+                                />
+                                <PrimaryActionButton
+                                  size="sm"
+                                  busy={applyAfterSales.isPending}
+                                  pendingLabel="提交中"
+                                  disabled={!draft.reason.trim()}
+                                  onClick={() => {
+                                    setError(null);
+                                    order.id && line.id && applyAfterSales.mutate(
+                                      {
+                                        data: {
+                                          orderId: order.id,
+                                          orderLineId: line.id,
+                                          type: draft.type,
+                                          quantity: line.quantity ?? 1,
+                                          reason: draft.reason.trim(),
+                                        },
+                                      },
+                                      { onSuccess: refresh, onError: reportError },
+                                    );
+                                  }}
+                                >
+                                  申请售后
+                                </PrimaryActionButton>
+                              </div>
+                            )}
+
+                            {canReview && !existingReview && (
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <span className="flex items-center gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      aria-label={`${line.description} 评 ${star} 星`}
+                                      onClick={() =>
+                                        setReviewDraft((c) => ({ ...c, [line.id ?? '']: { ...rd, rating: star } }))
+                                      }
+                                      className={cn(
+                                        'text-base leading-none',
+                                        star <= rd.rating ? 'text-amber-500' : 'text-slate-300',
+                                      )}
+                                    >
+                                      ★
+                                    </button>
+                                  ))}
+                                </span>
+                                <input
+                                  aria-label={`评价内容 ${line.description}`}
+                                  className="h-8 min-w-40 flex-1 rounded border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-700"
+                                  placeholder="评价内容(选填)"
+                                  value={rd.content}
+                                  onChange={(e) =>
+                                    setReviewDraft((c) => ({ ...c, [line.id ?? '']: { ...rd, content: e.target.value } }))
+                                  }
+                                />
+                                <PrimaryActionButton
+                                  size="sm"
+                                  busy={submitReview.isPending}
+                                  pendingLabel="提交中"
+                                  onClick={() => {
+                                    setError(null);
+                                    order.id && line.id && submitReview.mutate(
+                                      {
+                                        data: {
+                                          orderId: order.id,
+                                          orderLineId: line.id,
+                                          rating: rd.rating,
+                                          content: rd.content.trim(),
+                                        },
+                                      },
+                                      { onSuccess: refresh, onError: reportError },
+                                    );
+                                  }}
+                                >
+                                  提交评价
+                                </PrimaryActionButton>
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                     <div className={cn(
                       'mt-3 grid gap-2 border-t border-slate-100 pt-3 text-xs font-bold text-slate-600',

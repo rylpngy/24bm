@@ -4,6 +4,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.mall.api.MallProductResponse;
 import com.procurement.mall.api.SaveMallProductRequest;
+import com.procurement.mall.api.ReviewMallProductRequest;
 import com.procurement.mall.api.SaveMallSkuRequest;
 import com.procurement.mall.api.UpdateMallProductStatusRequest;
 import com.procurement.mall.domain.MallCatalogPolicy;
@@ -35,16 +36,19 @@ public class MallCatalogApplicationService {
   private final PublicMallMapper publicMallMapper;
   private final MallListingMapper mallListingMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final com.procurement.notification.application.NotificationApplicationService notificationApplicationService;
 
   public MallCatalogApplicationService(
       MallCatalogMapper mallCatalogMapper,
       PublicMallMapper publicMallMapper,
       MallListingMapper mallListingMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      com.procurement.notification.application.NotificationApplicationService notificationApplicationService) {
     this.mallCatalogMapper = mallCatalogMapper;
     this.publicMallMapper = publicMallMapper;
     this.mallListingMapper = mallListingMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.notificationApplicationService = notificationApplicationService;
   }
 
   // ── 采购方浏览 ─────────────────────────────────────────────
@@ -136,17 +140,55 @@ public class MallCatalogApplicationService {
   public MallProductResponse updateProductStatus(
       String productId, UpdateMallProductStatusRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier mall APIs");
-    MallCatalogPolicy.requireValidStatus(request.status());
     MallProduct product = requireOwnProduct(supplierId, productId);
-    if (MallCatalogPolicy.STATUS_ON_SHELF.equals(request.status())
+    // M-4:供应商只能提审或下架——上架与否由采购方审核决定,不能自己把商品放上货架。
+    MallCatalogPolicy.requireSupplierTransition(product.status(), request.status());
+    if (MallCatalogPolicy.STATUS_PENDING.equals(request.status())
         && mallCatalogMapper.listSkusForSupplier(supplierId, productId).isEmpty()) {
-      throw new IllegalStateException("上架前请先添加至少一个规格并定价");
+      throw new IllegalStateException("提交审核前请先添加至少一个规格并定价");
     }
     mallCatalogMapper.updateProductStatusBySupplier(productId, supplierId, request.status());
     auditLogApplicationService.recordTenantAction(
         product.tenantId(), "mall_product.status_changed", AUDIT_TARGET,
         productId + " → " + request.status());
+    if (MallCatalogPolicy.STATUS_PENDING.equals(request.status())) {
+      notificationApplicationService.notifyActiveTenantUsers(
+          product.tenantId(), "商城商品待审核",
+          "供应商提交了商品「" + product.name() + "」的上架申请,请在企业商城中审核。");
+    }
     return findForSupplier(productId);
+  }
+
+  // ── 采购方:上架审核(M-4) ────────────────────────────────
+  /** 待审核商品清单:采购方的审核台。 */
+  public List<MallProductResponse> listPendingReview() {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
+    return mallCatalogMapper.listForTenant(tenantId, false, null, null).stream()
+        .filter(p -> MallCatalogPolicy.STATUS_PENDING.equals(p.status()))
+        .map(p -> toDetail(tenantId, p))
+        .toList();
+  }
+
+  @Transactional
+  public MallProductResponse reviewProduct(String productId, ReviewMallProductRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
+    MallProduct product = mallCatalogMapper.findProductForTenant(tenantId, productId);
+    MallCatalogPolicy.requireReviewable(product, request.approved(), request.comment());
+    String target = Boolean.TRUE.equals(request.approved())
+        ? MallCatalogPolicy.STATUS_ON_SHELF
+        : MallCatalogPolicy.STATUS_DRAFT;
+    if (mallCatalogMapper.reviewProductByTenant(
+        productId, tenantId, target, request.comment().trim()) == 0) {
+      throw new IllegalStateException("商品已被处理,请刷新审核台: " + productId);
+    }
+    auditLogApplicationService.recordTenantAction(
+        "mall_product.reviewed", AUDIT_TARGET,
+        productId + " → " + target + ":" + request.comment().trim());
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId, product.supplierId(), "商城商品审核结果",
+        "「" + product.name() + "」" + (Boolean.TRUE.equals(request.approved()) ? "已通过审核并上架" : "未通过审核")
+        + ":" + request.comment().trim());
+    return toDetail(tenantId, mallCatalogMapper.findProductForTenant(tenantId, productId));
   }
 
   @Transactional

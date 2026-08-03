@@ -12,6 +12,9 @@ import {
   useBuyerMallRemoveCartItem,
   useBuyerMallCheckoutServerCart,
   useBuyerMallAddresses,
+  useBuyerMallPendingReview,
+  useBuyerMallReviewProduct,
+  useBuyerMallAfterSales,
   useBuyerMallPublish,
   useBuyerMallUpdateStatus,
   useBuyerSupplierList,
@@ -176,6 +179,11 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
   const removeCartItem = useBuyerMallRemoveCartItem();
   const checkoutServerCart = useBuyerMallCheckoutServerCart();
   const addresses = useBuyerMallAddresses();
+  // M-4:上架审核台与售后台。
+  const pendingReview = useBuyerMallPendingReview();
+  const reviewProduct = useBuyerMallReviewProduct();
+  const afterSales = useBuyerMallAfterSales();
+  const [reviewComments, setReviewComments] = useState<Record<string, string>>({});
 
   const items = listings.data?.data ?? [];
   const onShelfCount = items.filter((l) => l.status === '在架').length;
@@ -265,6 +273,8 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
           items={[
             { id: 'shop', label: '商城选购' },
             { id: 'shelf', label: '货架维护' },
+            { id: 'review', label: `上架审核${(pendingReview.data?.data ?? []).length > 0 ? ` (${(pendingReview.data?.data ?? []).length})` : ''}` },
+            { id: 'after-sales', label: '售后处理' },
           ]}
           value={tab}
           onChange={setTab}
@@ -291,6 +301,135 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
       {error && (
         <div className="mb-3">
           <FeedbackNotice tone="error" message={error} />
+        </div>
+      )}
+
+      {tab === 'review' && (
+        <div className="space-y-3">
+          <FeedbackNotice
+            tone="info"
+            message="供应商提交的商品需审核通过后才会上架。驳回请写明原因,供应商据此补正后可重新提交。"
+          />
+          {(pendingReview.data?.data ?? []).length === 0 ? (
+            <FeedbackNotice tone="info" message="没有待审核的商品。" />
+          ) : (
+            (pendingReview.data?.data ?? []).map((product) => {
+              const comment = reviewComments[product.id ?? ''] ?? '';
+              const submit = (approved: boolean) =>
+                product.id && reviewProduct.mutate(
+                  { productId: product.id, data: { approved, comment: comment.trim() } },
+                  {
+                    onSuccess: () => {
+                      setFeedback(`已${approved ? '通过' : '驳回'}商品「${product.name}」。`);
+                      setReviewComments((cur) => ({ ...cur, [product.id ?? '']: '' }));
+                      void refreshCart();
+                      refresh();
+                    },
+                    onError: reportError,
+                  },
+                );
+              return (
+                <div key={product.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-black text-slate-950">{product.name}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">
+                        {product.brand || '—'} · {product.categoryName || '未分类'} · 供应商 {product.supplierName}
+                      </p>
+                    </div>
+                    <StatusPill label={product.status ?? '待审核'} />
+                  </div>
+                  <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                        <tr>
+                          <th className="px-3 py-2">规格</th>
+                          <th className="px-3 py-2 text-right">单价</th>
+                          <th className="px-3 py-2 text-right">起订 / 步进</th>
+                          <th className="px-3 py-2 text-right">库存</th>
+                          <th className="px-3 py-2 text-right">交期</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {(product.skus ?? []).map((sku) => (
+                          <tr key={sku.id} className="font-bold text-slate-700">
+                            <td className="px-3 py-2">{sku.skuCode || '默认规格'}</td>
+                            <td className="px-3 py-2 text-right font-mono">{currency(sku.price)}</td>
+                            <td className="px-3 py-2 text-right">{sku.minOrderQty} / {sku.stepQty}{sku.unit}</td>
+                            <td className="px-3 py-2 text-right">{sku.stockQty ?? '不限量'}</td>
+                            <td className="px-3 py-2 text-right">{sku.leadTimeDays} 天</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <input
+                      className={cn(inputCls, 'h-9 min-w-56 flex-1')}
+                      placeholder="审核意见(必填)"
+                      aria-label={`审核意见 ${product.name}`}
+                      value={comment}
+                      onChange={(e) =>
+                        setReviewComments((cur) => ({ ...cur, [product.id ?? '']: e.target.value }))
+                      }
+                    />
+                    <button
+                      type="button"
+                      disabled={!comment.trim() || reviewProduct.isPending}
+                      onClick={() => submit(false)}
+                      className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      驳回
+                    </button>
+                    <PrimaryActionButton
+                      size="sm"
+                      busy={reviewProduct.isPending}
+                      pendingLabel="提交中"
+                      disabled={!comment.trim()}
+                      onClick={() => submit(true)}
+                    >
+                      通过并上架
+                    </PrimaryActionButton>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {tab === 'after-sales' && (
+        <div className="space-y-3">
+          {(afterSales.data?.data ?? []).length === 0 ? (
+            <FeedbackNotice tone="info" message="暂无售后单。采购员可在商城门户的「我的订单」里发起售后。" />
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-slate-200">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
+                  <tr>
+                    <th className="px-3 py-2">类型</th>
+                    <th className="px-3 py-2">供应商</th>
+                    <th className="px-3 py-2 text-right">数量</th>
+                    <th className="px-3 py-2">原因</th>
+                    <th className="px-3 py-2">状态</th>
+                    <th className="px-3 py-2">供应商回复</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {(afterSales.data?.data ?? []).map((row) => (
+                    <tr key={row.id} className="font-bold text-slate-700">
+                      <td className="px-3 py-2 font-black text-slate-900">{row.type}</td>
+                      <td className="px-3 py-2">{row.supplierName}</td>
+                      <td className="px-3 py-2 text-right font-mono">{row.quantity}</td>
+                      <td className="px-3 py-2">{row.reason}</td>
+                      <td className="px-3 py-2"><StatusPill label={row.status ?? ''} /></td>
+                      <td className="px-3 py-2">{row.supplierReply || <span className="text-slate-400">—</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

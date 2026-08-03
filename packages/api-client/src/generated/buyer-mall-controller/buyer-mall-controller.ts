@@ -26,10 +26,12 @@ import type {
 
 import type {
   ApiResponseListMallAddressResponse,
+  ApiResponseListMallAfterSalesResponse,
   ApiResponseListMallCategoryResponse,
   ApiResponseListMallListingResponse,
   ApiResponseListMallOrderResponse,
   ApiResponseListMallProductResponse,
+  ApiResponseListMallReviewResponse,
   ApiResponseMallAnalyticsResponse,
   ApiResponseMallCartResponse,
   ApiResponseMallListingResponse,
@@ -39,9 +41,12 @@ import type {
   BuyerMallListingsParams,
   BuyerMallProductsParams,
   CheckoutCartRequest,
+  CreateAfterSalesRequest,
   CreateMallCartRequest,
   CreateMallListingRequest,
   CreateMallOrderRequest,
+  CreateMallReviewRequest,
+  ReviewMallProductRequest,
   SaveMallAddressRequest,
   SaveMallCartItemRequest,
   UpdateMallListingStatusRequest
@@ -278,6 +283,209 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerMallMarkDefaultAddressMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerMallReviews = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallReviewResponse>(
+      {url: `/api/v1/buyer/mall/reviews`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerMallReviewsQueryKey = () => {
+    return [
+    `/api/v1/buyer/mall/reviews`
+    ] as const;
+    }
+
+    
+export const getBuyerMallReviewsQueryOptions = <TData = Awaited<ReturnType<typeof buyerMallReviews>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallReviews>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerMallReviewsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerMallReviews>>> = ({ signal }) => buyerMallReviews(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerMallReviews>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerMallReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerMallReviews>>>
+export type BuyerMallReviewsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerMallReviews<TData = Awaited<ReturnType<typeof buyerMallReviews>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallReviews>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallReviews>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallReviews>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallReviews<TData = Awaited<ReturnType<typeof buyerMallReviews>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallReviews>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallReviews>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallReviews>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallReviews<TData = Awaited<ReturnType<typeof buyerMallReviews>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallReviews>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerMallReviews<TData = Awaited<ReturnType<typeof buyerMallReviews>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallReviews>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerMallReviewsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerMallSubmitReview = (
+    createMallReviewRequest: BodyType<CreateMallReviewRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallReviewResponse>(
+      {url: `/api/v1/buyer/mall/reviews`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createMallReviewRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallSubmitReviewMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallSubmitReview>>, TError,{data: BodyType<CreateMallReviewRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallSubmitReview>>, TError,{data: BodyType<CreateMallReviewRequest>}, TContext> => {
+
+const mutationKey = ['buyerMallSubmitReview'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallSubmitReview>>, {data: BodyType<CreateMallReviewRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerMallSubmitReview(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallSubmitReviewMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallSubmitReview>>>
+    export type BuyerMallSubmitReviewMutationBody = BodyType<CreateMallReviewRequest>
+    export type BuyerMallSubmitReviewMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallSubmitReview = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallSubmitReview>>, TError,{data: BodyType<CreateMallReviewRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallSubmitReview>>,
+        TError,
+        {data: BodyType<CreateMallReviewRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallSubmitReviewMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerMallReviewProduct = (
+    productId: string,
+    reviewMallProductRequest: BodyType<ReviewMallProductRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseMallProductResponse>(
+      {url: `/api/v1/buyer/mall/products/${productId}/review`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: reviewMallProductRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallReviewProductMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallReviewProduct>>, TError,{productId: string;data: BodyType<ReviewMallProductRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallReviewProduct>>, TError,{productId: string;data: BodyType<ReviewMallProductRequest>}, TContext> => {
+
+const mutationKey = ['buyerMallReviewProduct'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallReviewProduct>>, {productId: string;data: BodyType<ReviewMallProductRequest>}> = (props) => {
+          const {productId,data} = props ?? {};
+
+          return  buyerMallReviewProduct(productId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallReviewProductMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallReviewProduct>>>
+    export type BuyerMallReviewProductMutationBody = BodyType<ReviewMallProductRequest>
+    export type BuyerMallReviewProductMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallReviewProduct = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallReviewProduct>>, TError,{productId: string;data: BodyType<ReviewMallProductRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallReviewProduct>>,
+        TError,
+        {productId: string;data: BodyType<ReviewMallProductRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallReviewProductMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -600,6 +808,150 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerMallAfterSales = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallAfterSalesResponse>(
+      {url: `/api/v1/buyer/mall/after-sales`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerMallAfterSalesQueryKey = () => {
+    return [
+    `/api/v1/buyer/mall/after-sales`
+    ] as const;
+    }
+
+    
+export const getBuyerMallAfterSalesQueryOptions = <TData = Awaited<ReturnType<typeof buyerMallAfterSales>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAfterSales>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerMallAfterSalesQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerMallAfterSales>>> = ({ signal }) => buyerMallAfterSales(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerMallAfterSales>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerMallAfterSalesQueryResult = NonNullable<Awaited<ReturnType<typeof buyerMallAfterSales>>>
+export type BuyerMallAfterSalesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerMallAfterSales<TData = Awaited<ReturnType<typeof buyerMallAfterSales>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAfterSales>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallAfterSales>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallAfterSales>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallAfterSales<TData = Awaited<ReturnType<typeof buyerMallAfterSales>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAfterSales>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallAfterSales>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallAfterSales>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallAfterSales<TData = Awaited<ReturnType<typeof buyerMallAfterSales>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAfterSales>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerMallAfterSales<TData = Awaited<ReturnType<typeof buyerMallAfterSales>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAfterSales>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerMallAfterSalesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerMallApplyAfterSales = (
+    createAfterSalesRequest: BodyType<CreateAfterSalesRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallAfterSalesResponse>(
+      {url: `/api/v1/buyer/mall/after-sales`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createAfterSalesRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallApplyAfterSalesMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallApplyAfterSales>>, TError,{data: BodyType<CreateAfterSalesRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallApplyAfterSales>>, TError,{data: BodyType<CreateAfterSalesRequest>}, TContext> => {
+
+const mutationKey = ['buyerMallApplyAfterSales'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallApplyAfterSales>>, {data: BodyType<CreateAfterSalesRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerMallApplyAfterSales(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallApplyAfterSalesMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallApplyAfterSales>>>
+    export type BuyerMallApplyAfterSalesMutationBody = BodyType<CreateAfterSalesRequest>
+    export type BuyerMallApplyAfterSalesMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallApplyAfterSales = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallApplyAfterSales>>, TError,{data: BodyType<CreateAfterSalesRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallApplyAfterSales>>,
+        TError,
+        {data: BodyType<CreateAfterSalesRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallApplyAfterSalesMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const buyerMallAddresses = (
     
  signal?: AbortSignal
@@ -906,6 +1258,178 @@ export function useBuyerMallProduct<TData = Awaited<ReturnType<typeof buyerMallP
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerMallProductQueryOptions(productId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerMallProductReviews = (
+    productId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallReviewResponse>(
+      {url: `/api/v1/buyer/mall/products/${productId}/reviews`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerMallProductReviewsQueryKey = (productId?: string,) => {
+    return [
+    `/api/v1/buyer/mall/products/${productId}/reviews`
+    ] as const;
+    }
+
+    
+export const getBuyerMallProductReviewsQueryOptions = <TData = Awaited<ReturnType<typeof buyerMallProductReviews>>, TError = ErrorType<ApiResponseVoid>>(productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProductReviews>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerMallProductReviewsQueryKey(productId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerMallProductReviews>>> = ({ signal }) => buyerMallProductReviews(productId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(productId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerMallProductReviews>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerMallProductReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof buyerMallProductReviews>>>
+export type BuyerMallProductReviewsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerMallProductReviews<TData = Awaited<ReturnType<typeof buyerMallProductReviews>>, TError = ErrorType<ApiResponseVoid>>(
+ productId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProductReviews>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallProductReviews>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallProductReviews>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallProductReviews<TData = Awaited<ReturnType<typeof buyerMallProductReviews>>, TError = ErrorType<ApiResponseVoid>>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProductReviews>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallProductReviews>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallProductReviews>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallProductReviews<TData = Awaited<ReturnType<typeof buyerMallProductReviews>>, TError = ErrorType<ApiResponseVoid>>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProductReviews>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerMallProductReviews<TData = Awaited<ReturnType<typeof buyerMallProductReviews>>, TError = ErrorType<ApiResponseVoid>>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallProductReviews>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerMallProductReviewsQueryOptions(productId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerMallPendingReview = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallProductResponse>(
+      {url: `/api/v1/buyer/mall/products/pending-review`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerMallPendingReviewQueryKey = () => {
+    return [
+    `/api/v1/buyer/mall/products/pending-review`
+    ] as const;
+    }
+
+    
+export const getBuyerMallPendingReviewQueryOptions = <TData = Awaited<ReturnType<typeof buyerMallPendingReview>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallPendingReview>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerMallPendingReviewQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerMallPendingReview>>> = ({ signal }) => buyerMallPendingReview(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerMallPendingReview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerMallPendingReviewQueryResult = NonNullable<Awaited<ReturnType<typeof buyerMallPendingReview>>>
+export type BuyerMallPendingReviewQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerMallPendingReview<TData = Awaited<ReturnType<typeof buyerMallPendingReview>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallPendingReview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallPendingReview>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallPendingReview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallPendingReview<TData = Awaited<ReturnType<typeof buyerMallPendingReview>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallPendingReview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallPendingReview>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallPendingReview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallPendingReview<TData = Awaited<ReturnType<typeof buyerMallPendingReview>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallPendingReview>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerMallPendingReview<TData = Awaited<ReturnType<typeof buyerMallPendingReview>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallPendingReview>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerMallPendingReviewQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

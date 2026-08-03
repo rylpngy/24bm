@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
+import { approveProduct } from './helpers';
 
 const API = 'http://localhost:8080/api/v1';
 
@@ -14,9 +15,11 @@ async function seedProduct(request: APIRequestContext, name: string) {
     headers: sup,
     data: { unit: '箱', price: 120, minOrderQty: 1, stepQty: 1, stockQty: 60, leadTimeDays: 6 },
   });
+  // M-4:供应商只能提审,上架由采购方审核通过。
   await request.put(`${API}/supplier/mall/products/${productId}/status`, {
-    headers: sup, data: { status: '在架' },
+    headers: sup, data: { status: '待审核' },
   });
+  await approveProduct(request, productId);
   return productId;
 }
 

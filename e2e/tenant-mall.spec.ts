@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
+import { approveProduct } from './helpers';
 
 const API = 'http://localhost:8080/api/v1';
 
@@ -19,9 +20,9 @@ test('商城商品域:阶梯价与起订量在服务端生效', async ({ request
   });
   expect(created.ok()).toBeTruthy();
   const productId = (await created.json()).data.id as string;
-  // 新建即草稿:未加规格不得上架。
+  // 新建即草稿:未加规格不得提交审核。
   const tooEarly = await request.put(`${API}/supplier/mall/products/${productId}/status`, {
-    headers: sup, data: { status: '在架' },
+    headers: sup, data: { status: '待审核' },
   });
   expect(tooEarly.ok()).toBeFalsy();
 
@@ -33,9 +34,11 @@ test('商城商品域:阶梯价与起订量在服务端生效', async ({ request
       tierPrices: [{ minQty: 10, price: 180 }],
     },
   })).ok()).toBeTruthy();
-  expect((await request.put(`${API}/supplier/mall/products/${productId}/status`, {
-    headers: sup, data: { status: '在架' },
-  })).ok()).toBeTruthy();
+  // M-4:供应商只能提审,上架由采购方审核通过。
+  await request.put(`${API}/supplier/mall/products/${productId}/status`, {
+    headers: sup, data: { status: '待审核' },
+  });
+  await approveProduct(request, productId);
 
   const detail = await (await request.get(`${API}/buyer/mall/products/${productId}`, { headers: buy })).json();
   const skuId = detail.data.skus[0].id as string;

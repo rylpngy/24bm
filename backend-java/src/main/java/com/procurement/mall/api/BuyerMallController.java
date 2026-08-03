@@ -4,6 +4,7 @@ import com.procurement.common.api.ApiResponse;
 import com.procurement.mall.api.CreateMallCartRequest;
 import com.procurement.mall.application.MallApplicationService;
 import com.procurement.mall.application.MallCartApplicationService;
+import com.procurement.mall.application.MallServiceApplicationService;
 import com.procurement.mall.application.MallCatalogApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -24,11 +25,14 @@ public class BuyerMallController {
 
   private final MallCatalogApplicationService mallCatalogApplicationService;
   private final MallCartApplicationService mallCartApplicationService;
+  private final MallServiceApplicationService mallServiceApplicationService;
 
   public BuyerMallController(
       MallApplicationService mallApplicationService,
       MallCatalogApplicationService mallCatalogApplicationService,
-      MallCartApplicationService mallCartApplicationService) {
+      MallCartApplicationService mallCartApplicationService,
+      MallServiceApplicationService mallServiceApplicationService) {
+    this.mallServiceApplicationService = mallServiceApplicationService;
     this.mallCatalogApplicationService = mallCatalogApplicationService;
     this.mallCartApplicationService = mallCartApplicationService;
     this.mallApplicationService = mallApplicationService;
@@ -87,6 +91,63 @@ public class BuyerMallController {
   @PostMapping("/orders/batch")
   public ApiResponse<List<MallOrderResponse>> checkoutCart(@Valid @RequestBody CreateMallCartRequest request) {
     return ApiResponse.ok(mallApplicationService.checkoutCart(request));
+  }
+
+  // ── M-4 上架审核 / 售后 / 评价 ────────────────────────────
+  @GetMapping("/products/pending-review")
+  public ApiResponse<List<MallProductResponse>> pendingReview() {
+    return ApiResponse.ok(mallCatalogApplicationService.listPendingReview());
+  }
+
+  @PostMapping("/products/{productId}/review")
+  public ApiResponse<MallProductResponse> reviewProduct(
+      @PathVariable String productId, @Valid @RequestBody ReviewMallProductRequest request) {
+    return ApiResponse.ok(mallCatalogApplicationService.reviewProduct(productId, request));
+  }
+
+  @GetMapping("/after-sales")
+  public ApiResponse<List<MallAfterSalesResponse>> afterSales() {
+    return ApiResponse.ok(toAfterSales(mallServiceApplicationService.listAfterSalesForBuyer()));
+  }
+
+  @PostMapping("/after-sales")
+  public ApiResponse<List<MallAfterSalesResponse>> applyAfterSales(
+      @Valid @RequestBody CreateAfterSalesRequest request) {
+    return ApiResponse.ok(toAfterSales(mallServiceApplicationService.applyAfterSales(request)));
+  }
+
+  @GetMapping("/reviews")
+  public ApiResponse<List<MallReviewResponse>> reviews() {
+    return ApiResponse.ok(toReviews(mallServiceApplicationService.listReviewsForBuyer()));
+  }
+
+  @GetMapping("/products/{productId}/reviews")
+  public ApiResponse<List<MallReviewResponse>> productReviews(@PathVariable String productId) {
+    return ApiResponse.ok(toReviews(mallServiceApplicationService.listReviewsForProduct(productId)));
+  }
+
+  @PostMapping("/reviews")
+  public ApiResponse<List<MallReviewResponse>> submitReview(
+      @Valid @RequestBody CreateMallReviewRequest request) {
+    return ApiResponse.ok(toReviews(mallServiceApplicationService.submitReview(request)));
+  }
+
+  private static List<MallAfterSalesResponse> toAfterSales(
+      List<com.procurement.mall.domain.MallAfterSales> rows) {
+    return rows.stream()
+        .map(a -> new MallAfterSalesResponse(
+            a.id(), a.orderId(), a.orderLineId(), a.supplierId(), a.supplierName(), a.type(),
+            a.quantity(), a.reason(), a.status(), a.supplierReply(), a.createdAt(), a.updatedAt()))
+        .toList();
+  }
+
+  private static List<MallReviewResponse> toReviews(
+      List<com.procurement.mall.domain.MallReview> rows) {
+    return rows.stream()
+        .map(r -> new MallReviewResponse(
+            r.id(), r.orderId(), r.orderLineId(), r.productId(), r.supplierId(),
+            r.rating(), r.content(), r.createdAt()))
+        .toList();
   }
 
   // ── M-2 服务端购物车 ─────────────────────────────────────
