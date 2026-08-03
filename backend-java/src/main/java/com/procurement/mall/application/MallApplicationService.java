@@ -23,6 +23,9 @@ import com.procurement.mall.domain.MallCatalogPolicy;
 import com.procurement.mall.domain.MallProduct;
 import com.procurement.mall.domain.MallSku;
 import com.procurement.mall.domain.MallTierPrice;
+import com.procurement.mall.api.CheckoutCartRequest;
+import com.procurement.mall.domain.MallAddress;
+import com.procurement.mall.infrastructure.MallCartMapper;
 import com.procurement.mall.infrastructure.MallCatalogMapper;
 import com.procurement.mall.infrastructure.MallListingMapper;
 import com.procurement.order.application.PurchaseOrderApplicationService;
@@ -38,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MallApplicationService {
   private final MallListingMapper mallListingMapper;
   private final MallCatalogMapper mallCatalogMapper;
+  private final MallCartMapper mallCartMapper;
   private final RfqApplicationService rfqApplicationService;
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -46,12 +50,14 @@ public class MallApplicationService {
   public MallApplicationService(
       MallListingMapper mallListingMapper,
       MallCatalogMapper mallCatalogMapper,
+      MallCartMapper mallCartMapper,
       RfqApplicationService rfqApplicationService,
       PurchaseOrderApplicationService purchaseOrderApplicationService,
       AuditLogApplicationService auditLogApplicationService,
       TenantCapabilityApplicationService tenantCapabilityApplicationService) {
     this.mallListingMapper = mallListingMapper;
     this.mallCatalogMapper = mallCatalogMapper;
+    this.mallCartMapper = mallCartMapper;
     this.rfqApplicationService = rfqApplicationService;
     this.purchaseOrderApplicationService = purchaseOrderApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -171,6 +177,56 @@ public class MallApplicationService {
         amount);
   }
 
+  /**
+   * M-2 服务端购物车结算:以购物车为准下单,成功后清空购物车。
+   *
+   * <p>与旧的 /orders/batch 相比,清单来自服务端而非请求体——前端改不了要买什么、买多少价。
+   */
+  @Transactional
+  public List<MallOrderResponse> checkoutServerCart(CheckoutCartRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
+    String userId = TenantAccessGuard.requireUserId("buyer mall APIs");
+    List<com.procurement.mall.domain.MallCartItem> items =
+        mallCartMapper.listItems(tenantId, userId);
+    if (items.isEmpty()) {
+      throw new IllegalStateException("购物车是空的,先加购再结算");
+    }
+    MallAddress address = resolveAddress(tenantId, request.addressId());
+    List<MallOrderResponse> orders = placeOrders(
+        tenantId,
+        items.stream()
+            .map(i -> resolveLine(tenantId, i.skuId(), i.quantity()))
+            .toList(),
+        request.expectedReceiptDate(),
+        address);
+    mallCartMapper.clearCart(tenantId, userId);
+    return orders;
+  }
+
+  private MallAddress resolveAddress(String tenantId, String addressId) {
+    if (addressId != null && !addressId.isBlank()) {
+      MallAddress address = mallCartMapper.findAddress(tenantId, addressId);
+      if (address == null) {
+        throw new IllegalArgumentException("收货地址不存在: " + addressId);
+      }
+      return address;
+    }
+    // 未指定则用默认地址;一个地址都没有时不阻断下单(线下约定收货的场景仍可成单)。
+    return mallCartMapper.listAddresses(tenantId).stream().findFirst().orElse(null);
+  }
+
+  private static String formatAddress(MallAddress address) {
+    if (address == null) {
+      return null;
+    }
+    // 直辖市的省与市同名(上海市/上海市),拼接时去重,避免订单上出现「上海市上海市」。
+    String prefix = address.province();
+    if (!address.city().isBlank() && !address.city().equals(prefix)) {
+      prefix = prefix + address.city();
+    }
+    return (prefix + address.district() + address.detail()).trim();
+  }
+
   // 购物车结算:逐项校验在架与数量,按供应商合并成单(每供应商一张锚点 RFQ + 多行订单)。
   @Transactional
   public List<MallOrderResponse> checkoutCart(CreateMallCartRequest request) {
@@ -178,21 +234,44 @@ public class MallApplicationService {
     // M-0:商城直采未开通即拒绝下单。
     tenantCapabilityApplicationService.requireMethodEnabled(
         tenantId, ProcurementMethodCatalog.MALL.code());
-    java.util.LinkedHashMap<String, java.util.List<CartLine>> bySupplier = new java.util.LinkedHashMap<>();
-    for (CreateMallCartRequest.CartItem item : request.items()) {
-      // 请求里的 listingId 即 skuId(货架由商品/SKU 投影)。
-      CartLine line = resolveLine(tenantId, item.listingId(), item.quantity());
+    return placeOrders(
+        tenantId,
+        request.items().stream()
+            // 请求里的 listingId 即 skuId(货架由商品/SKU 投影)。
+            .map(item -> resolveLine(tenantId, item.listingId(), item.quantity()))
+            .toList(),
+        request.expectedReceiptDate(),
+        null);
+  }
+
+  /**
+   * 按供应商合并成单:每供应商一张锚点 RFQ + 一张多行订单。
+   *
+   * <p>交期未指定时取本单各 SKU 承诺交期的最大值——一单里最慢的那个决定到货日,
+   * 而不是一律「下单 +7 天」。
+   */
+  private List<MallOrderResponse> placeOrders(
+      String tenantId,
+      List<CartLine> allLines,
+      LocalDate requestedReceiptDate,
+      MallAddress address) {
+    java.util.LinkedHashMap<String, java.util.List<CartLine>> bySupplier =
+        new java.util.LinkedHashMap<>();
+    for (CartLine line : allLines) {
       bySupplier
           .computeIfAbsent(line.product().supplierId(), key -> new java.util.ArrayList<>())
           .add(line);
     }
-    LocalDate expectedReceiptDate = request.expectedReceiptDate() == null
-        ? LocalDate.now().plusDays(7)
-        : request.expectedReceiptDate();
 
     java.util.List<MallOrderResponse> orders = new java.util.ArrayList<>();
     for (java.util.Map.Entry<String, java.util.List<CartLine>> entry : bySupplier.entrySet()) {
       java.util.List<CartLine> lines = entry.getValue();
+      LocalDate expectedReceiptDate = requestedReceiptDate != null
+          ? requestedReceiptDate
+          : LocalDate.now().plusDays(lines.stream()
+              .mapToInt(l -> l.sku().leadTimeDays())
+              .max()
+              .orElse(7));
       BigDecimal amount = lines.stream()
           .map(l -> l.unitPrice().multiply(l.quantity()))
           .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -211,7 +290,10 @@ public class MallApplicationService {
           lines.stream()
               .map(l -> new PurchaseOrderApplicationService.DirectOrderLine(
                   l.product().name(), l.sku().unit(), l.quantity(), l.unitPrice()))
-              .toList());
+              .toList(),
+          formatAddress(address),
+          address == null ? null : address.receiver(),
+          address == null ? null : address.phone());
       // 成单后再扣库存:失败即整单回滚,不会出现「订单已生成、库存没扣」。
       lines.forEach(l -> deductStockIfTracked(tenantId, l));
       auditLogApplicationService.recordTenantAction(

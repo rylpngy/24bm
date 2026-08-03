@@ -1492,6 +1492,154 @@
         }
       }
     },
+    "/api/v1/buyer/mall/cart/items": {
+      "put": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_updateCartItem",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMallCartItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallCartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_addToCart",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMallCartItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallCartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/addresses/{addressId}/default": {
+      "put": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_markDefaultAddress",
+        "parameters": [
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallAddressResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/invoices/{invoiceId}": {
       "put": {
         "tags": [
@@ -9493,6 +9641,144 @@
         }
       }
     },
+    "/api/v1/buyer/mall/cart/checkout": {
+      "post": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_checkoutServerCart",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutCartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallOrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/addresses": {
+      "get": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_addresses",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallAddressResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_addAddress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMallAddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallAddressResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/invoices/{invoiceId}/payments": {
       "post": {
         "tags": [
@@ -14786,6 +15072,46 @@
         }
       }
     },
+    "/api/v1/buyer/mall/cart": {
+      "get": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_cart",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallCartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/mall/analytics": {
       "get": {
         "tags": [
@@ -15658,6 +15984,106 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseProcurementAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/cart/items/{skuId}": {
+      "delete": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_removeCartItem",
+        "parameters": [
+          {
+            "name": "skuId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallCartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/addresses/{addressId}": {
+      "delete": {
+        "tags": [
+          "buyer-mall-controller"
+        ],
+        "operationId": "BuyerMall_deleteAddress",
+        "parameters": [
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallAddressResponse"
                 }
               }
             }
@@ -17674,6 +18100,169 @@
           },
           "webhookUrl": {
             "type": "string"
+          }
+        }
+      },
+      "SaveMallCartItemRequest": {
+        "required": [
+          "skuId"
+        ],
+        "type": "object",
+        "properties": {
+          "skuId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        }
+      },
+      "ApiResponseMallCartResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MallCartResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "CartLineResponse": {
+        "type": "object",
+        "properties": {
+          "skuId": {
+            "type": "string"
+          },
+          "productId": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "skuCode": {
+            "type": "string"
+          },
+          "spec": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "lineTotal": {
+            "type": "number"
+          },
+          "minOrderQty": {
+            "type": "number"
+          },
+          "stepQty": {
+            "type": "number"
+          },
+          "stockQty": {
+            "type": "number"
+          },
+          "leadTimeDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "blockedReason": {
+            "type": "string"
+          }
+        }
+      },
+      "MallCartResponse": {
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierGroup"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "itemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasBlockedItems": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SupplierGroup": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "subtotal": {
+            "type": "number"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartLineResponse"
+            }
+          }
+        }
+      },
+      "ApiResponseListMallAddressResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MallAddressResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MallAddressResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "receiver": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "province": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
           }
         }
       },
@@ -21363,6 +21952,52 @@
           },
           "unit": {
             "type": "string"
+          }
+        }
+      },
+      "CheckoutCartRequest": {
+        "type": "object",
+        "properties": {
+          "addressId": {
+            "type": "string"
+          },
+          "expectedReceiptDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "remark": {
+            "type": "string"
+          }
+        }
+      },
+      "SaveMallAddressRequest": {
+        "required": [
+          "detail",
+          "phone",
+          "receiver"
+        ],
+        "type": "object",
+        "properties": {
+          "receiver": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "province": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
           }
         }
       },

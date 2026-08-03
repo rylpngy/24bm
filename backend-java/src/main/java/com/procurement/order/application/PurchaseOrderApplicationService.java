@@ -241,6 +241,25 @@ public class PurchaseOrderApplicationService {
 
   // 商城购物车结算:同一供应商的多个商品合并为一张订单(多行明细)。
   @Transactional
+  /** 商城结算(M-2):建单后把收货人信息一并写上,供应商发货即可看到收货地址。 */
+  public String createMallOrder(
+      String rfqId,
+      String supplierId,
+      java.math.BigDecimal amount,
+      java.time.LocalDate expectedReceiptDate,
+      java.util.List<DirectOrderLine> lines,
+      String deliveryAddress,
+      String contactName,
+      String contactPhone) {
+    String orderId = createMallOrder(rfqId, supplierId, amount, expectedReceiptDate, lines);
+    if (deliveryAddress != null && !deliveryAddress.isBlank()) {
+      purchaseOrderMapper.updateOrderDetails(
+          TenantAccessGuard.requireTenantId("buyer order APIs"), orderId,
+          deliveryAddress, contactName, contactPhone, null);
+    }
+    return orderId;
+  }
+
   public String createMallOrder(
       String rfqId,
       String supplierId,

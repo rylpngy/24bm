@@ -25,20 +25,25 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseListMallAddressResponse,
   ApiResponseListMallCategoryResponse,
   ApiResponseListMallListingResponse,
   ApiResponseListMallOrderResponse,
   ApiResponseListMallProductResponse,
   ApiResponseMallAnalyticsResponse,
+  ApiResponseMallCartResponse,
   ApiResponseMallListingResponse,
   ApiResponseMallOrderResponse,
   ApiResponseMallProductResponse,
   ApiResponseVoid,
   BuyerMallListingsParams,
   BuyerMallProductsParams,
+  CheckoutCartRequest,
   CreateMallCartRequest,
   CreateMallListingRequest,
   CreateMallOrderRequest,
+  SaveMallAddressRequest,
+  SaveMallCartItemRequest,
   UpdateMallListingStatusRequest
 } from '.././model';
 
@@ -103,6 +108,176 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getBuyerMallUpdateStatusMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerMallUpdateCartItem = (
+    saveMallCartItemRequest: BodyType<SaveMallCartItemRequest>,
+ ) => {
+      
+      
+      return customInstance<ApiResponseMallCartResponse>(
+      {url: `/api/v1/buyer/mall/cart/items`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: saveMallCartItemRequest
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallUpdateCartItemMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallUpdateCartItem>>, TError,{data: BodyType<SaveMallCartItemRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallUpdateCartItem>>, TError,{data: BodyType<SaveMallCartItemRequest>}, TContext> => {
+
+const mutationKey = ['buyerMallUpdateCartItem'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallUpdateCartItem>>, {data: BodyType<SaveMallCartItemRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerMallUpdateCartItem(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallUpdateCartItemMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallUpdateCartItem>>>
+    export type BuyerMallUpdateCartItemMutationBody = BodyType<SaveMallCartItemRequest>
+    export type BuyerMallUpdateCartItemMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallUpdateCartItem = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallUpdateCartItem>>, TError,{data: BodyType<SaveMallCartItemRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallUpdateCartItem>>,
+        TError,
+        {data: BodyType<SaveMallCartItemRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallUpdateCartItemMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerMallAddToCart = (
+    saveMallCartItemRequest: BodyType<SaveMallCartItemRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseMallCartResponse>(
+      {url: `/api/v1/buyer/mall/cart/items`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: saveMallCartItemRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallAddToCartMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallAddToCart>>, TError,{data: BodyType<SaveMallCartItemRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallAddToCart>>, TError,{data: BodyType<SaveMallCartItemRequest>}, TContext> => {
+
+const mutationKey = ['buyerMallAddToCart'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallAddToCart>>, {data: BodyType<SaveMallCartItemRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerMallAddToCart(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallAddToCartMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallAddToCart>>>
+    export type BuyerMallAddToCartMutationBody = BodyType<SaveMallCartItemRequest>
+    export type BuyerMallAddToCartMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallAddToCart = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallAddToCart>>, TError,{data: BodyType<SaveMallCartItemRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallAddToCart>>,
+        TError,
+        {data: BodyType<SaveMallCartItemRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallAddToCartMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerMallMarkDefaultAddress = (
+    addressId: string,
+ ) => {
+      
+      
+      return customInstance<ApiResponseListMallAddressResponse>(
+      {url: `/api/v1/buyer/mall/addresses/${addressId}/default`, method: 'PUT'
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallMarkDefaultAddressMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallMarkDefaultAddress>>, TError,{addressId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallMarkDefaultAddress>>, TError,{addressId: string}, TContext> => {
+
+const mutationKey = ['buyerMallMarkDefaultAddress'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallMarkDefaultAddress>>, {addressId: string}> = (props) => {
+          const {addressId} = props ?? {};
+
+          return  buyerMallMarkDefaultAddress(addressId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallMarkDefaultAddressMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallMarkDefaultAddress>>>
+    
+    export type BuyerMallMarkDefaultAddressMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallMarkDefaultAddress = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallMarkDefaultAddress>>, TError,{addressId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallMarkDefaultAddress>>,
+        TError,
+        {addressId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallMarkDefaultAddressMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -367,6 +542,208 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerMallCheckoutServerCart = (
+    checkoutCartRequest: BodyType<CheckoutCartRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallOrderResponse>(
+      {url: `/api/v1/buyer/mall/cart/checkout`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: checkoutCartRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallCheckoutServerCartMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallCheckoutServerCart>>, TError,{data: BodyType<CheckoutCartRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallCheckoutServerCart>>, TError,{data: BodyType<CheckoutCartRequest>}, TContext> => {
+
+const mutationKey = ['buyerMallCheckoutServerCart'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallCheckoutServerCart>>, {data: BodyType<CheckoutCartRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerMallCheckoutServerCart(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallCheckoutServerCartMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallCheckoutServerCart>>>
+    export type BuyerMallCheckoutServerCartMutationBody = BodyType<CheckoutCartRequest>
+    export type BuyerMallCheckoutServerCartMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallCheckoutServerCart = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallCheckoutServerCart>>, TError,{data: BodyType<CheckoutCartRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallCheckoutServerCart>>,
+        TError,
+        {data: BodyType<CheckoutCartRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallCheckoutServerCartMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerMallAddresses = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallAddressResponse>(
+      {url: `/api/v1/buyer/mall/addresses`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerMallAddressesQueryKey = () => {
+    return [
+    `/api/v1/buyer/mall/addresses`
+    ] as const;
+    }
+
+    
+export const getBuyerMallAddressesQueryOptions = <TData = Awaited<ReturnType<typeof buyerMallAddresses>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAddresses>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerMallAddressesQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerMallAddresses>>> = ({ signal }) => buyerMallAddresses(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerMallAddresses>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerMallAddressesQueryResult = NonNullable<Awaited<ReturnType<typeof buyerMallAddresses>>>
+export type BuyerMallAddressesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerMallAddresses<TData = Awaited<ReturnType<typeof buyerMallAddresses>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAddresses>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallAddresses>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallAddresses>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallAddresses<TData = Awaited<ReturnType<typeof buyerMallAddresses>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAddresses>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallAddresses>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallAddresses>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallAddresses<TData = Awaited<ReturnType<typeof buyerMallAddresses>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAddresses>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerMallAddresses<TData = Awaited<ReturnType<typeof buyerMallAddresses>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallAddresses>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerMallAddressesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerMallAddAddress = (
+    saveMallAddressRequest: BodyType<SaveMallAddressRequest>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseListMallAddressResponse>(
+      {url: `/api/v1/buyer/mall/addresses`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: saveMallAddressRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallAddAddressMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallAddAddress>>, TError,{data: BodyType<SaveMallAddressRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallAddAddress>>, TError,{data: BodyType<SaveMallAddressRequest>}, TContext> => {
+
+const mutationKey = ['buyerMallAddAddress'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallAddAddress>>, {data: BodyType<SaveMallAddressRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerMallAddAddress(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallAddAddressMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallAddAddress>>>
+    export type BuyerMallAddAddressMutationBody = BodyType<SaveMallAddressRequest>
+    export type BuyerMallAddAddressMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallAddAddress = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallAddAddress>>, TError,{data: BodyType<SaveMallAddressRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallAddAddress>>,
+        TError,
+        {data: BodyType<SaveMallAddressRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallAddAddressMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const buyerMallProducts = (
     params?: BuyerMallProductsParams,
  signal?: AbortSignal
@@ -626,6 +1003,92 @@ export function useBuyerMallCategories<TData = Awaited<ReturnType<typeof buyerMa
 
 
 
+export const buyerMallCart = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ApiResponseMallCartResponse>(
+      {url: `/api/v1/buyer/mall/cart`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getBuyerMallCartQueryKey = () => {
+    return [
+    `/api/v1/buyer/mall/cart`
+    ] as const;
+    }
+
+    
+export const getBuyerMallCartQueryOptions = <TData = Awaited<ReturnType<typeof buyerMallCart>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCart>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerMallCartQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerMallCart>>> = ({ signal }) => buyerMallCart(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerMallCart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerMallCartQueryResult = NonNullable<Awaited<ReturnType<typeof buyerMallCart>>>
+export type BuyerMallCartQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerMallCart<TData = Awaited<ReturnType<typeof buyerMallCart>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCart>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallCart>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallCart>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallCart<TData = Awaited<ReturnType<typeof buyerMallCart>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCart>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerMallCart>>,
+          TError,
+          Awaited<ReturnType<typeof buyerMallCart>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerMallCart<TData = Awaited<ReturnType<typeof buyerMallCart>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCart>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerMallCart<TData = Awaited<ReturnType<typeof buyerMallCart>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerMallCart>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerMallCartQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
 export const buyerMallAnalytics = (
     
  signal?: AbortSignal
@@ -712,3 +1175,114 @@ export function useBuyerMallAnalytics<TData = Awaited<ReturnType<typeof buyerMal
 
 
 
+export const buyerMallRemoveCartItem = (
+    skuId: string,
+ ) => {
+      
+      
+      return customInstance<ApiResponseMallCartResponse>(
+      {url: `/api/v1/buyer/mall/cart/items/${skuId}`, method: 'DELETE'
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallRemoveCartItemMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallRemoveCartItem>>, TError,{skuId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallRemoveCartItem>>, TError,{skuId: string}, TContext> => {
+
+const mutationKey = ['buyerMallRemoveCartItem'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallRemoveCartItem>>, {skuId: string}> = (props) => {
+          const {skuId} = props ?? {};
+
+          return  buyerMallRemoveCartItem(skuId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallRemoveCartItemMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallRemoveCartItem>>>
+    
+    export type BuyerMallRemoveCartItemMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallRemoveCartItem = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallRemoveCartItem>>, TError,{skuId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallRemoveCartItem>>,
+        TError,
+        {skuId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallRemoveCartItemMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const buyerMallDeleteAddress = (
+    addressId: string,
+ ) => {
+      
+      
+      return customInstance<ApiResponseListMallAddressResponse>(
+      {url: `/api/v1/buyer/mall/addresses/${addressId}`, method: 'DELETE'
+    },
+      );
+    }
+  
+
+
+export const getBuyerMallDeleteAddressMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallDeleteAddress>>, TError,{addressId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerMallDeleteAddress>>, TError,{addressId: string}, TContext> => {
+
+const mutationKey = ['buyerMallDeleteAddress'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerMallDeleteAddress>>, {addressId: string}> = (props) => {
+          const {addressId} = props ?? {};
+
+          return  buyerMallDeleteAddress(addressId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerMallDeleteAddressMutationResult = NonNullable<Awaited<ReturnType<typeof buyerMallDeleteAddress>>>
+    
+    export type BuyerMallDeleteAddressMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerMallDeleteAddress = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerMallDeleteAddress>>, TError,{addressId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerMallDeleteAddress>>,
+        TError,
+        {addressId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerMallDeleteAddressMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    

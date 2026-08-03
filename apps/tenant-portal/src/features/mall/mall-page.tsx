@@ -6,6 +6,12 @@ import {
   useBuyerMallCreateOrder,
   useBuyerMallListings,
   useBuyerMallProducts,
+  useBuyerMallCart,
+  useBuyerMallAddToCart,
+  useBuyerMallUpdateCartItem,
+  useBuyerMallRemoveCartItem,
+  useBuyerMallCheckoutServerCart,
+  useBuyerMallAddresses,
   useBuyerMallPublish,
   useBuyerMallUpdateStatus,
   useBuyerSupplierList,
@@ -163,8 +169,13 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
   const updateStatus = useBuyerMallUpdateStatus();
   const createOrder = useBuyerMallCreateOrder();
   const checkoutCart = useBuyerMallCheckoutCart();
-  // 购物车:listingId → 数量;跨供应商结算时后端按供应商合并成单。
-  const [cart, setCart] = useState<Record<string, number>>({});
+  // M-2:购物车改为服务端存储——换设备/刷新不丢,单价与可结算性由后端按当前阶梯价与库存实时判定。
+  const cart = useBuyerMallCart();
+  const addToCart = useBuyerMallAddToCart();
+  const updateCartItem = useBuyerMallUpdateCartItem();
+  const removeCartItem = useBuyerMallRemoveCartItem();
+  const checkoutServerCart = useBuyerMallCheckoutServerCart();
+  const addresses = useBuyerMallAddresses();
 
   const items = listings.data?.data ?? [];
   const onShelfCount = items.filter((l) => l.status === '在架').length;
@@ -216,24 +227,31 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
       },
     );
 
-  const cartEntries = Object.entries(cart).filter(([, qty]) => qty > 0);
-  const cartTotal = cartEntries.reduce((sum, [listingId, qty]) => {
-    const listing = items.find((l) => l.id === listingId);
-    return sum + (listing?.price ?? 0) * qty;
-  }, 0);
+  const cartView = cart.data?.data;
+  const cartLines = (cartView?.groups ?? []).flatMap((g) =>
+    (g.lines ?? []).map((line) => ({ ...line, supplierName: g.supplierName })),
+  );
+  const defaultAddress = (addresses.data?.data ?? []).find((a) => a.isDefault)
+    ?? (addresses.data?.data ?? [])[0];
+
+  const refreshCart = () =>
+    queryClient.invalidateQueries({
+      predicate: (q) => typeof q.queryKey[0] === 'string'
+        && (q.queryKey[0] as string).includes('/buyer/mall'),
+    });
 
   const submitCheckout = () =>
-    checkoutCart.mutate(
-      { data: { items: cartEntries.map(([listingId, quantity]) => ({ listingId, quantity })) } },
+    checkoutServerCart.mutate(
+      { data: { addressId: defaultAddress?.id } },
       {
         onSuccess: (res) => {
           const orders = res.data ?? [];
-          setCart({});
           setFeedback(
             `购物车结算完成:生成 ${orders.length} 张订单(按供应商合并),合计 ${currency(
               orders.reduce((sum, o) => sum + (o.amount ?? 0), 0),
-            )}。`,
+            )}${defaultAddress ? `,收货人 ${defaultAddress.receiver}` : ''}。`,
           );
+          void refreshCart();
           refresh();
         },
         onError: reportError,
@@ -322,23 +340,32 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
         </div>
       )}
 
-      {cartEntries.length > 0 && (
+      {cartLines.length > 0 && (
         <div className="mb-3 rounded-lg border border-blue-100 bg-blue-50/50 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-black text-blue-900">
-              购物车 {cartEntries.length} 项 · 预计合计 {currency(cartTotal)}(跨供应商自动拆单)
+              购物车 {cartLines.length} 项 · 合计 {currency(cartView?.total)}(跨供应商自动拆单)
+              {defaultAddress
+                ? ` · 收货 ${defaultAddress.receiver}(${defaultAddress.phone})`
+                : ' · 未设收货地址'}
             </p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setCart({})}
+                disabled={busy}
+                onClick={() =>
+                  cartLines.forEach((line) =>
+                    line.skuId
+                      && removeCartItem.mutate({ skuId: line.skuId }, { onSuccess: refreshCart }))
+                }
                 className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-500 hover:bg-slate-50"
               >
                 清空
               </button>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || cartView?.hasBlockedItems}
+                title={cartView?.hasBlockedItems ? '存在失效行,处理后才能结算' : undefined}
                 onClick={submitCheckout}
                 className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-700 disabled:bg-slate-300"
               >
@@ -346,22 +373,56 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
               </button>
             </div>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {cartEntries.map(([listingId, qty]) => {
-              const listing = items.find((l) => l.id === listingId);
-              return (
-                <span key={listingId} className="rounded-md bg-white px-2 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-blue-100">
-                  {listing?.materialName ?? listingId} × {qty}
+          <div className="mt-2 space-y-1.5">
+            {cartLines.map((line) => (
+              <div
+                key={line.skuId}
+                className="flex flex-wrap items-center gap-2 rounded-md bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 ring-1 ring-blue-100"
+              >
+                <span className="font-black text-slate-900">{line.productName}</span>
+                <span>{line.supplierName}</span>
+                <span>
+                  {line.quantity}
+                  {line.unit} × {currency(line.unitPrice)} = {currency(line.lineTotal)}
+                </span>
+                {line.blockedReason && (
+                  <span className="rounded bg-red-50 px-1.5 py-0.5 font-black text-red-600">
+                    {line.blockedReason}
+                  </span>
+                )}
+                <span className="ml-auto flex items-center gap-1">
+                  {[-1, 1].map((direction) => (
+                    <button
+                      key={direction}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        const step = line.stepQty ?? 1;
+                        const next = (line.quantity ?? 0) + direction * step;
+                        if (!line.skuId) return;
+                        updateCartItem.mutate(
+                          { data: { skuId: line.skuId, quantity: next } },
+                          { onSuccess: refreshCart, onError: reportError },
+                        );
+                      }}
+                      className="h-6 w-6 rounded border border-slate-200 font-black text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                    >
+                      {direction > 0 ? '+' : '−'}
+                    </button>
+                  ))}
                   <button
                     type="button"
-                    onClick={() => setCart((c) => ({ ...c, [listingId]: 0 }))}
-                    className="ml-1.5 font-black text-slate-400 hover:text-red-500"
+                    onClick={() =>
+                      line.skuId
+                        && removeCartItem.mutate({ skuId: line.skuId }, { onSuccess: refreshCart })
+                    }
+                    className="ml-1 font-black text-slate-400 hover:text-red-500"
                   >
-                    ×
+                    移除
                   </button>
                 </span>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -385,8 +446,11 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
                 sku={l.id ? skuById.get(l.id) : undefined}
                 busy={busy}
                 onOrder={submitOrder}
-                onAddToCart={(listingId, quantity) =>
-                  setCart((c) => ({ ...c, [listingId]: (c[listingId] ?? 0) + quantity }))
+                onAddToCart={(skuId, quantity) =>
+                  addToCart.mutate(
+                    { data: { skuId, quantity } },
+                    { onSuccess: refreshCart, onError: reportError },
+                  )
                 }
                 onToggleStatus={(listingId, status) =>
                   updateStatus.mutate(
