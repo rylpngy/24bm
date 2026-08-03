@@ -43,6 +43,9 @@ class RfqFeatureToggleTests {
   private final TenantFeatureMapper tenantFeatureMapper = org.mockito.Mockito.mock(TenantFeatureMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       new TenantFeatureApplicationService(tenantFeatureMapper, new ObjectMapper());
+  private final com.procurement.tenant.application.TenantCapabilityApplicationService tenantCapabilityApplicationService =
+      new com.procurement.tenant.application.TenantCapabilityApplicationService(
+          tenantFeatureMapper, new ObjectMapper());
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
@@ -59,6 +62,7 @@ class RfqFeatureToggleTests {
       buyerSupplierRelationMapper,
       supplierQualificationMapper,
       tenantFeatureApplicationService,
+      tenantCapabilityApplicationService,
       new RfqSourcingStatusTransition(),
       org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqItemQueryService.class),
       auditLogApplicationService,
@@ -83,7 +87,7 @@ class RfqFeatureToggleTests {
 
     assertThatThrownBy(() -> rfqApplicationService.create(request))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Feature is not enabled for tenant: rfq");
+        .hasMessageContaining("本企业未开通该功能模块(rfq)");
 
     verify(rfqMapper, never()).insert(
         org.mockito.ArgumentMatchers.anyString(),

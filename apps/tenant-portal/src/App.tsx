@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Construction, ShieldAlert } from 'lucide-react';
 import { buyerNavigation, hasPermission } from '@24bid/shared';
-import { useBuyerRoleMyPermissions } from '@24bid/api-client';
+import { useBuyerRoleMyPermissions, useBuyerCapabilityCapabilities } from '@24bid/api-client';
 import { AppShell, FeedbackNotice, Panel } from '@24bid/ui';
 import { useAuthStore } from './lib/auth-store';
 import { PortalLanding } from './features/portal/portal-landing';
@@ -38,20 +38,32 @@ export function App() {
   // 当前用户的有效权限点 → 菜单/路由门禁。仅登录后查询。
   const permsQuery = useBuyerRoleMyPermissions({ query: { enabled: !!session } });
   const grantedKey = (permsQuery.data?.data?.permissions ?? []).join(',');
+
+  // M-0 采购方式能力:未开通的方式,其模块不进导航(后端同口径拒绝,不是仅隐藏)。
+  const capabilityQuery = useBuyerCapabilityCapabilities({ query: { enabled: !!session } });
+  const capability = capabilityQuery.data?.data;
+  const enabledModuleKey = (capability?.moduleIds ?? []).join(',');
+  const gatedModuleKey = (capability?.methodGatedModuleIds ?? []).join(',');
+
   const visibleModules = useMemo(() => {
     const granted = grantedKey ? grantedKey.split(',') : [];
-    return buyerNavigation.modules.filter(
-      (m) => !m.requiredPermission || hasPermission(granted, m.requiredPermission),
-    );
-  }, [grantedKey]);
+    const enabled = enabledModuleKey ? enabledModuleKey.split(',') : [];
+    const gated = gatedModuleKey ? gatedModuleKey.split(',') : [];
+    return buyerNavigation.modules.filter((m) => {
+      if (m.requiredPermission && !hasPermission(granted, m.requiredPermission)) return false;
+      // 能力未加载完成前不误伤:只有拿到清单后才对「受方式管辖」的模块过滤。
+      if (gated.length > 0 && gated.includes(m.id) && !enabled.includes(m.id)) return false;
+      return true;
+    });
+  }, [grantedKey, enabledModuleKey, gatedModuleKey]);
 
   // 当前模块若因权限收紧而不可见,回落到首页看板。
   useEffect(() => {
-    if (!session || permsQuery.isLoading) return;
+    if (!session || permsQuery.isLoading || capabilityQuery.isLoading) return;
     if (activeModuleId !== 'dashboard' && !visibleModules.some((m) => m.id === activeModuleId)) {
       setActiveModuleId('dashboard');
     }
-  }, [visibleModules, activeModuleId, session, permsQuery.isLoading]);
+  }, [visibleModules, activeModuleId, session, permsQuery.isLoading, capabilityQuery.isLoading]);
 
   const selectModule = (moduleId: string) => {
     setActiveModuleId(moduleId);

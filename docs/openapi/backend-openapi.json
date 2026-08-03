@@ -14597,6 +14597,46 @@
         }
       }
     },
+    "/api/v1/buyer/capabilities": {
+      "get": {
+        "tags": [
+          "buyer-capability-controller"
+        ],
+        "operationId": "BuyerCapability_capabilities",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTenantCapabilityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/audit-logs": {
       "get": {
         "tags": [
@@ -23900,6 +23940,57 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseTenantCapabilityResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TenantCapabilityResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MethodCapability": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "inCreateWizard": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TenantCapabilityResponse": {
+        "type": "object",
+        "properties": {
+          "methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MethodCapability"
+            }
+          },
+          "moduleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "methodGatedModuleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

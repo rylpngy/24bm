@@ -10,6 +10,7 @@ import {
   useRfqCreate,
   useRfqPublish,
   useRfqUpdateInvitations,
+  useBuyerCapabilityCapabilities,
 } from '@24bid/api-client';
 import { FeedbackNotice, PrimaryActionButton, cn } from '@24bid/ui';
 import { MaterialLinePicker } from '../shared/material-line-picker';
@@ -26,7 +27,8 @@ const WIZARD_STEPS = [
   { id: 3, label: '发布询价单', icon: Megaphone },
 ] as const;
 
-const METHODS = ['询比', '竞价', '商城', '单一来源'];
+// 兜底方式清单:能力接口尚未返回时用,避免向导空白;真实可选项以能力接口为准。
+const FALLBACK_METHODS = ['询比', '竞价', '商城', '单一来源'];
 
 // 询比立项三步向导:建项(草稿)→ 选商(草稿改邀请)→ 发布(草稿→报价中,下发询价函)。
 export function RfqCreateWizard({
@@ -45,6 +47,13 @@ export function RfqCreateWizard({
   onDone: (message: string) => void;
   onCancel: () => void;
 }) {
+  // M-0:方式清单由租户能力决定——关掉的方式不出现在向导里(后端亦拒绝立项)。
+  const capabilityQuery = useBuyerCapabilityCapabilities();
+  const wizardMethods = (capabilityQuery.data?.data?.methods ?? [])
+    .filter((m) => m.inCreateWizard)
+    .map((m) => m.code ?? '')
+    .filter(Boolean);
+  const methodOptions = wizardMethods.length > 0 ? wizardMethods : FALLBACK_METHODS;
   const create = useRfqCreate();
   const updateInvitations = useRfqUpdateInvitations();
   const publish = useRfqPublish();
@@ -315,7 +324,7 @@ export function RfqCreateWizard({
             <div>
               <label className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>采购方式</label>
               <select className={inputCls} value={method} onChange={(e) => setMethod(e.target.value)}>
-                {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+                {methodOptions.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <div>

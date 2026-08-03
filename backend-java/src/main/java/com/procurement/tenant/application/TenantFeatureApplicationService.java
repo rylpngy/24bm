@@ -20,10 +20,12 @@ public class TenantFeatureApplicationService {
   public void requireEnabled(String tenantId, String featureKey) {
     String enabledFeaturesJson = tenantFeatureMapper.findEnabledFeaturesJson(tenantId);
     if (enabledFeaturesJson == null) {
-      throw new IllegalArgumentException("Tenant not found: " + tenantId);
+      throw new IllegalArgumentException("租户不存在: " + tenantId);
     }
     if (!readFeatures(enabledFeaturesJson).contains(featureKey)) {
-      throw new IllegalStateException("Feature is not enabled for tenant: " + featureKey);
+      // 只开商城的租户会正常撞到这里,给业务可读的提示而不是英文键名。
+      throw new IllegalStateException(
+          "本企业未开通该功能模块(" + featureKey + "),请联系平台运营开通。");
     }
   }
 

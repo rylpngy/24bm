@@ -46,6 +46,8 @@ class RfqDraftLifecycleTests {
       org.mockito.Mockito.mock(SupplierQualificationMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
+  private final com.procurement.tenant.application.TenantCapabilityApplicationService tenantCapabilityApplicationService =
+      org.mockito.Mockito.mock(com.procurement.tenant.application.TenantCapabilityApplicationService.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
@@ -62,6 +64,7 @@ class RfqDraftLifecycleTests {
       buyerSupplierRelationMapper,
       supplierQualificationMapper,
       tenantFeatureApplicationService,
+      tenantCapabilityApplicationService,
       new RfqSourcingStatusTransition(),
       org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqItemQueryService.class),
       auditLogApplicationService,

@@ -23,10 +23,21 @@ import { TenantUsagePanel } from './tenant-usage-panel';
 import { EnterpriseOnboardingPanel } from './enterprise-onboarding-panel';
 
 const PLAN_OPTIONS = ['MVP', '标准版', '企业版'];
+// 模块级开关(既有语义,勿改键名——后端 TenantFeatureKey 与之对应)。
 const FEATURE_DEFS = [
-  { key: 'rfq', label: '询比 RFQ' },
+  { key: 'rfq', label: '寻源立项' },
   { key: 'order', label: '订单履约' },
   { key: 'finance', label: '财务付款' },
+];
+
+// M-0 采购方式开关:键与后端 ProcurementMethodCatalog 的 featureKey 一一对应。
+// 一个 method:* 都不勾 = 未做精细配置 → 后端按「全部方式放行」处理(存量租户不减能力)。
+const METHOD_DEFS = [
+  { key: 'method:compare', label: '询比采购' },
+  { key: 'method:auction', label: '竞价采购' },
+  { key: 'method:mall', label: '商城直采' },
+  { key: 'method:single-source', label: '单一来源' },
+  { key: 'method:tender', label: '招标采购' },
 ];
 const PAGE_SIZE = 8;
 
@@ -282,6 +293,18 @@ export function TenantsPage() {
               <p className="text-[11px] font-black text-slate-500">功能开关</p>
               <div className="mt-2 flex flex-wrap gap-4">
                 {FEATURE_DEFS.map((f) => (
+                  <label key={f.key} className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
+                    <input type="checkbox" checked={draft.features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+                    {f.label}
+                  </label>
+                ))}
+              </div>
+              <p className="mt-4 text-[11px] font-black text-slate-500">采购方式(可自由组合)</p>
+              <p className="mt-1 text-[11px] font-bold text-slate-400">
+                一个都不勾表示不做限制(沿用全部方式);勾选后仅所选方式可用,工作台菜单与立项接口同步收紧。
+              </p>
+              <div className="mt-2 flex flex-wrap gap-4">
+                {METHOD_DEFS.map((f) => (
                   <label key={f.key} className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
                     <input type="checkbox" checked={draft.features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
                     {f.label}

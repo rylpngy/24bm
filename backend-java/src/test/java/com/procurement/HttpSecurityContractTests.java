@@ -274,7 +274,8 @@ import org.springframework.test.web.servlet.MvcResult;
     com.procurement.esign.api.BuyerEsignController.class,
     com.procurement.esign.api.SupplierEsignController.class,
     com.procurement.tender.api.BuyerTenderController.class,
-    com.procurement.tender.api.SupplierTenderController.class
+    com.procurement.tender.api.SupplierTenderController.class,
+    com.procurement.tenant.api.BuyerCapabilityController.class
 })
 @Import({
     SecurityConfig.class,
@@ -293,6 +294,9 @@ class HttpSecurityContractTests {
 
   @Autowired
   private MockMvc mockMvc;
+
+  @MockBean
+  private com.procurement.tenant.application.TenantCapabilityApplicationService tenantCapabilityApplicationService;
 
   @MockBean
   private com.procurement.workflow.application.FlowableDemandApprovalService flowableDemandApprovalService;

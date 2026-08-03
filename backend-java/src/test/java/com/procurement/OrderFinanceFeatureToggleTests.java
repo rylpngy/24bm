@@ -101,7 +101,7 @@ class OrderFinanceFeatureToggleTests {
     assertThatThrownBy(() -> purchaseOrderApplicationService.createFromAward(
         new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20"))))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Feature is not enabled for tenant: order");
+        .hasMessageContaining("本企业未开通该功能模块(order)");
 
     verify(purchaseOrderMapper, never()).insert(
         org.mockito.ArgumentMatchers.anyString(),
@@ -125,7 +125,7 @@ class OrderFinanceFeatureToggleTests {
         "po-1",
         new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-1", null, null, null)))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Feature is not enabled for tenant: finance");
+        .hasMessageContaining("本企业未开通该功能模块(finance)");
 
     verify(invoiceMapper, never()).insert(
         org.mockito.ArgumentMatchers.anyString(),
@@ -150,7 +150,7 @@ class OrderFinanceFeatureToggleTests {
         "invoice-1",
         new RegisterPaymentRequest("已付款")))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Feature is not enabled for tenant: finance");
+        .hasMessageContaining("本企业未开通该功能模块(finance)");
 
     verify(invoiceMapper, never()).findByTenantAndId(
         org.mockito.ArgumentMatchers.anyString(),

@@ -7,6 +7,7 @@ export * from './auth-controller/auth-controller';
 export * from './buyer-analytics-controller/buyer-analytics-controller';
 export * from './buyer-announcement-controller/buyer-announcement-controller';
 export * from './buyer-budget-controller/buyer-budget-controller';
+export * from './buyer-capability-controller/buyer-capability-controller';
 export * from './buyer-contract-controller/buyer-contract-controller';
 export * from './buyer-delivery-controller/buyer-delivery-controller';
 export * from './buyer-esign-controller/buyer-esign-controller';

@@ -3,6 +3,8 @@ package com.procurement.mall.application;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.tenant.application.TenantCapabilityApplicationService;
+import com.procurement.tenant.domain.ProcurementMethodCatalog;
 import com.procurement.mall.api.CreateMallCartRequest;
 import com.procurement.mall.api.CreateMallListingRequest;
 import com.procurement.mall.api.CreateMallOrderRequest;
@@ -33,16 +35,19 @@ public class MallApplicationService {
   private final RfqApplicationService rfqApplicationService;
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final TenantCapabilityApplicationService tenantCapabilityApplicationService;
 
   public MallApplicationService(
       MallListingMapper mallListingMapper,
       RfqApplicationService rfqApplicationService,
       PurchaseOrderApplicationService purchaseOrderApplicationService,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      TenantCapabilityApplicationService tenantCapabilityApplicationService) {
     this.mallListingMapper = mallListingMapper;
     this.rfqApplicationService = rfqApplicationService;
     this.purchaseOrderApplicationService = purchaseOrderApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.tenantCapabilityApplicationService = tenantCapabilityApplicationService;
   }
 
   public List<MallListingResponse> listCurrentTenantListings(String status, String keyword) {
@@ -127,6 +132,9 @@ public class MallApplicationService {
   @Transactional
   public List<MallOrderResponse> checkoutCart(CreateMallCartRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
+    // M-0:商城直采未开通即拒绝下单。
+    tenantCapabilityApplicationService.requireMethodEnabled(
+        tenantId, ProcurementMethodCatalog.MALL.code());
     java.util.LinkedHashMap<String, java.util.List<CartLine>> bySupplier = new java.util.LinkedHashMap<>();
     for (CreateMallCartRequest.CartItem item : request.items()) {
       MallListing listing = mallListingMapper.findByTenantAndId(tenantId, item.listingId());

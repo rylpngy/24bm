@@ -4,6 +4,8 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.supplier.application.SupplierProfileApplicationService;
+import com.procurement.tenant.application.TenantCapabilityApplicationService;
+import com.procurement.tenant.domain.ProcurementMethodCatalog;
 import com.procurement.order.application.PurchaseOrderApplicationService;
 import com.procurement.sourcing.application.RfqAnnouncementService;
 import com.procurement.sourcing.application.RfqApplicationService;
@@ -78,6 +80,7 @@ public class TenderApplicationService {
   private final RfqApplicationService rfqApplicationService;
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
   private final RfqAnnouncementService rfqAnnouncementService;
+  private final TenantCapabilityApplicationService tenantCapabilityApplicationService;
 
   public TenderApplicationService(
       TenderMapper tenderMapper,
@@ -91,7 +94,8 @@ public class TenderApplicationService {
       NotificationApplicationService notificationApplicationService,
       RfqApplicationService rfqApplicationService,
       PurchaseOrderApplicationService purchaseOrderApplicationService,
-      RfqAnnouncementService rfqAnnouncementService) {
+      RfqAnnouncementService rfqAnnouncementService,
+      TenantCapabilityApplicationService tenantCapabilityApplicationService) {
     this.tenderMapper = tenderMapper;
     this.acquisitionMapper = acquisitionMapper;
     this.bidMapper = bidMapper;
@@ -104,6 +108,7 @@ public class TenderApplicationService {
     this.rfqApplicationService = rfqApplicationService;
     this.purchaseOrderApplicationService = purchaseOrderApplicationService;
     this.rfqAnnouncementService = rfqAnnouncementService;
+    this.tenantCapabilityApplicationService = tenantCapabilityApplicationService;
   }
 
   // ── 买方:编制 / 发布 / 发放 ─────────────────────────────────
@@ -117,6 +122,9 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse create(SaveTenderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    // M-0:招标方式未开通即拒绝立项。
+    tenantCapabilityApplicationService.requireMethodEnabled(
+        tenantId, ProcurementMethodCatalog.TENDER.code());
     String userId = TenantAccessGuard.requireUserId("buyer tender APIs");
     requireTenderType(request.tenderType());
     String id = "tender-" + UUID.randomUUID();

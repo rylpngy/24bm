@@ -37,6 +37,7 @@ import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
+import com.procurement.tenant.application.TenantCapabilityApplicationService;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
@@ -58,6 +59,7 @@ public class RfqApplicationService {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
   private final SupplierQualificationMapper supplierQualificationMapper;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
+  private final TenantCapabilityApplicationService tenantCapabilityApplicationService;
   private final RfqSourcingStatusTransition rfqSourcingStatusTransition;
   private final RfqItemQueryService rfqItemQueryService;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -76,6 +78,7 @@ public class RfqApplicationService {
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       SupplierQualificationMapper supplierQualificationMapper,
       TenantFeatureApplicationService tenantFeatureApplicationService,
+      TenantCapabilityApplicationService tenantCapabilityApplicationService,
       RfqSourcingStatusTransition rfqSourcingStatusTransition,
       RfqItemQueryService rfqItemQueryService,
       AuditLogApplicationService auditLogApplicationService,
@@ -92,6 +95,7 @@ public class RfqApplicationService {
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.supplierQualificationMapper = supplierQualificationMapper;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
+    this.tenantCapabilityApplicationService = tenantCapabilityApplicationService;
     this.rfqSourcingStatusTransition = rfqSourcingStatusTransition;
     this.rfqItemQueryService = rfqItemQueryService;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -243,6 +247,9 @@ public class RfqApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
     String userId = TenantAccessGuard.requireUserId("buyer RFQ APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.RFQ);
+    // M-0:方式维度门禁——未开通的采购方式不可立项(前端不渲染,后端同样拒绝)。
+    tenantCapabilityApplicationService.requireMethodEnabled(
+        tenantId, RfqMethod.orDefault(request.method()));
     rfqSourcingStatusTransition.requireFutureDeadline(request.deadlineAt(), "new RFQ");
     // 立项来源二选一:基于既有需求合并,或采购部门直录(反向登记「直录登记」需求保闭环)。
     List<String> demandIds = request.demandIds() == null ? List.of() : request.demandIds();
