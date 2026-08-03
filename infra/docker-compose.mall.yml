@@ -2,7 +2,7 @@
 #
 # 与完整版 docker-compose.yml 同一份代码与同一个后端镜像,差别只在:
 #   1) 后端 APP_DEPLOYMENT_PROFILE=mall —— 寻源(询比/竞价)与招标接口面关闭;
-#   2) 只起商城门户与供应商门户,不起采购全功能端;
+#   2) 只起商城门户 / 供应商门户 / 采购方工作台,不起寻源与招标相关的功能面;
 #   3) 租户能力默认只开 method:mall —— 后端在立项入口按方式拒绝,不只是前端藏起来。
 #
 # 启动:
@@ -75,8 +75,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-}
       ALLOW_DEMO_JWT_SECRET: ${ALLOW_DEMO_JWT_SECRET:-true}
       SELF_LOGIN_ENABLED: ${SELF_LOGIN_ENABLED:-true}
-      # 商城版对外只有商城门户与供应商门户两个来源。
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5176,http://localhost:5175}
+      # 商城门户 / 供应商门户 / 采购方工作台(可选平台端 5174)。
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5176,http://localhost:5175,http://localhost:5173,http://localhost:5174}
       # 干净交付默认不灌演示数据;需要演示时置 classpath:db/demo。
       APP_SEED_LOCATIONS: ${APP_SEED_LOCATIONS:-}
     ports:
@@ -110,6 +110,22 @@ services:
     profiles: ["portals"]
     ports:
       - "5175:80"
+
+  # 采购方工作台:商城版仍需采购方做供应商准入、商品上架审核、收货验收、发票付款与售后处理。
+  # 菜单按租户能力过滤(M-0),只开商城直采时不会出现询比/竞价/招标入口。
+  tenant-portal:
+    build:
+      context: ..
+      dockerfile: infra/portal.Dockerfile
+      args:
+        APP: tenant-portal
+        VITE_JAVA_API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+        VITE_KEYCLOAK_URL: ${PUBLIC_KEYCLOAK_URL:-http://localhost:8081}
+        VITE_SELF_LOGIN: ${VITE_SELF_LOGIN:-false}
+    container_name: 24bid-mall-tenant-portal
+    profiles: ["portals"]
+    ports:
+      - "5173:80"
 
   # 平台运营端:开通租户、审核供应商企业、配置采购方式。
   # 商城版可选起(profile=admin);单企业私有部署时通常只在开通阶段用一次。

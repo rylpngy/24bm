@@ -20,4 +20,6 @@ export interface MallListingResponse {
   updatedAt?: string;
   tenantId?: string;
   tenantName?: string;
+  productId?: string;
+  productStatus?: string;
 }

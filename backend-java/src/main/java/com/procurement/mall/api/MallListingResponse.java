@@ -16,5 +16,8 @@ public record MallListingResponse(
     String status,
     OffsetDateTime updatedAt,
     String tenantId,
-    String tenantName) {
+    String tenantName,
+    // 货架行归属的商品:审核态下要能定位到商品去提交审核(M-4a)。
+    String productId,
+    String productStatus) {
 }

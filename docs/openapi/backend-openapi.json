@@ -16970,6 +16970,12 @@
           },
           "tenantName": {
             "type": "string"
+          },
+          "productId": {
+            "type": "string"
+          },
+          "productStatus": {
+            "type": "string"
           }
         }
       },

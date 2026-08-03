@@ -56,6 +56,44 @@ test('上架审核:供应商不能自行上架,驳回后可补正复审', async 
   expect((await approved.json()).data.status).toBe('在架');
 });
 
+// M-4a:旧货架入口同样落审核,且审核态在货架列表上如实呈现。
+// 回归的是「点上架 200 但状态纹丝不动」——供应商只会以为系统坏了。
+test('货架入口:上架进待审核,审核态可见且不可自行切上架', async ({ request }) => {
+  const { buy, sup } = await tokens(request);
+  const material = ((await (await request.get(`${API}/supplier/mall/materials`, { headers: sup })).json())
+    .data as Array<{ tenantId: string; materialId: string; unit: string }>)
+    .find((m) => m.tenantId === 'tenant-acme')!;
+  const published = (await (await request.post(`${API}/supplier/mall/listings`, {
+    headers: sup, data: { tenantId: 'tenant-acme', materialId: material.materialId, price: 88.5, unit: material.unit },
+  })).json()).data as { id: string; status: string; productId: string; productStatus: string };
+  expect(published.status).toBe('待审核');
+
+  const listings = (await (await request.get(`${API}/supplier/mall/listings`, { headers: sup })).json())
+    .data as Array<{ id: string; status: string; productId: string }>;
+  const row = listings.find((l) => l.id === published.id)!;
+  expect(row.status).toBe('待审核');
+  expect(row.productId).toBeTruthy();
+
+  const selfShelve = await request.put(`${API}/supplier/mall/listings/${row.id}/status`, {
+    headers: sup, data: { status: '在架' },
+  });
+  expect(selfShelve.ok()).toBeFalsy();
+  expect(await selfShelve.text()).toContain('审核');
+
+  // 审核通过后,上下架开关恢复为供应商自管。
+  await request.post(`${API}/buyer/mall/products/${row.productId}/review`, {
+    headers: buy, data: { approved: true, comment: '协议价无异议' },
+  });
+  const offShelf = await request.put(`${API}/supplier/mall/listings/${row.id}/status`, {
+    headers: sup, data: { status: '下架' },
+  });
+  expect(offShelf.ok()).toBeTruthy();
+  const reShelf = await request.put(`${API}/supplier/mall/listings/${row.id}/status`, {
+    headers: sup, data: { status: '在架' },
+  });
+  expect(reShelf.ok()).toBeTruthy();
+});
+
 // M-4 行为级:已收货订单行 → 申请售后 → 供应商处理 → 评价一次。
 test('售后与评价:发货后可申请售后,收货后可评价且只能评一次', async ({ request }) => {
   const { buy } = await tokens(request);

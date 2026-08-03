@@ -10,6 +10,7 @@ import {
   useSupplierMallPublish,
   useSupplierMallUpdatePrice,
   useSupplierMallUpdateStatus,
+  useSupplierMallUpdateProductStatus,
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
@@ -32,6 +33,8 @@ const currency = (v?: number) =>
 
 const statusTone: Record<string, string> = {
   在架: 'bg-emerald-50 text-emerald-700',
+  待审核: 'bg-amber-50 text-amber-700',
+  草稿: 'bg-slate-100 text-slate-500',
   下架: 'bg-slate-100 text-slate-500',
 };
 
@@ -234,7 +237,7 @@ function ListingPublishPage({
     publish.mutate(
       { data: { tenantId, materialId, price: Number(price), unit: selected?.unit ?? undefined } },
       {
-        onSuccess: () => onSaved('商品已上架,采购方可在企业商城直接下单。'),
+        onSuccess: () => onSaved('已提交采购方审核,审核通过后自动上架。'),
         onError: (e) =>
           setError(
             (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -444,6 +447,7 @@ export function ShelfPage() {
 
   const listings = useSupplierMallListings();
   const updateStatus = useSupplierMallUpdateStatus();
+  const submitForReview = useSupplierMallUpdateProductStatus();
 
   const items = listings.data?.data ?? [];
   const kw = keyword.toLowerCase();
@@ -498,7 +502,7 @@ export function ShelfPage() {
       <AfterSalesInbox />
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterTabs
-          items={['全部', '在架', '下架'].map((s) => ({
+          items={['全部', '在架', '待审核', '下架'].map((s) => ({
             id: s,
             label: s,
             count: s === '全部' ? undefined : statusCount(s),
@@ -605,6 +609,9 @@ export function ShelfPage() {
               <tbody className="divide-y divide-slate-100">
                 {pageItems.map((l, i) => {
                   const onShelf = l.status === '在架';
+                  // 商品未通过审核时,上下架开关无意义:该做的是提交审核 / 等审核结果(M-4a)。
+                  const approved = l.productStatus === '在架';
+                  const pendingReview = l.productStatus === '待审核';
                   return (
                     <tr key={l.id} className="hover:bg-blue-50/30">
                       <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
@@ -644,31 +651,58 @@ export function ShelfPage() {
                           >
                             <Pencil size={12} /> 编辑
                           </button>
-                          <button
-                            type="button"
-                            disabled={updateStatus.isPending}
-                            onClick={() =>
-                              l.id &&
-                              updateStatus.mutate(
-                                { listingId: l.id, data: { status: onShelf ? '下架' : '在架' } },
-                                {
-                                  onSuccess: () => {
-                                    setFeedback(onShelf ? '商品已下架。' : '商品已重新上架。');
-                                    refresh();
+                          {pendingReview ? (
+                            <span className="inline-flex h-8 items-center rounded-md border border-amber-200 bg-amber-50 px-2.5 text-[11px] font-black text-amber-700">
+                              待采购方审核
+                            </span>
+                          ) : approved ? (
+                            <button
+                              type="button"
+                              disabled={updateStatus.isPending}
+                              onClick={() =>
+                                l.id &&
+                                updateStatus.mutate(
+                                  { listingId: l.id, data: { status: onShelf ? '下架' : '在架' } },
+                                  {
+                                    onSuccess: () => {
+                                      setFeedback(onShelf ? '商品已下架。' : '商品已重新上架。');
+                                      refresh();
+                                    },
+                                    onError: reportError,
                                   },
-                                  onError: reportError,
-                                },
-                              )
-                            }
-                            className={cn(
-                              'inline-flex h-8 items-center rounded-md border px-2.5 text-[11px] font-black transition disabled:opacity-50',
-                              onShelf
-                                ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                                : 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50',
-                            )}
-                          >
-                            {onShelf ? '下架' : '上架'}
-                          </button>
+                                )
+                              }
+                              className={cn(
+                                'inline-flex h-8 items-center rounded-md border px-2.5 text-[11px] font-black transition disabled:opacity-50',
+                                onShelf
+                                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                                  : 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50',
+                              )}
+                            >
+                              {onShelf ? '下架' : '上架'}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={submitForReview.isPending || !l.productId}
+                              onClick={() =>
+                                l.productId &&
+                                submitForReview.mutate(
+                                  { productId: l.productId, data: { status: '待审核' } },
+                                  {
+                                    onSuccess: () => {
+                                      setFeedback('已提交采购方审核,通过后自动上架。');
+                                      refresh();
+                                    },
+                                    onError: reportError,
+                                  },
+                                )
+                              }
+                              className="inline-flex h-8 items-center rounded-md border border-blue-200 bg-white px-2.5 text-[11px] font-black text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
+                            >
+                              提交审核
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

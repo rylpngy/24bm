@@ -74,10 +74,17 @@ public class MallApplicationService {
         .toList();
   }
 
-  /** 规格的对外状态:商品未在架时,规格一律呈现为下架。 */
+  /**
+   * 规格的对外状态。
+   *
+   * <p>商品未在架时以**商品状态**呈现(草稿 / 待审核 / 下架):M-4 之后「待审核」是常态,
+   * 若一律显示为下架,供应商会以为是自己下架的、反复点上架却没有反应。
+   */
   private static String effectiveStatus(MallProduct product, MallSku sku) {
-    return MallCatalogPolicy.STATUS_ON_SHELF.equals(product.status())
-        && MallCatalogPolicy.STATUS_ON_SHELF.equals(sku.status())
+    if (!MallCatalogPolicy.STATUS_ON_SHELF.equals(product.status())) {
+      return product.status();
+    }
+    return MallCatalogPolicy.STATUS_ON_SHELF.equals(sku.status())
         ? MallCatalogPolicy.STATUS_ON_SHELF
         : MallCatalogPolicy.STATUS_OFF_SHELF;
   }
@@ -86,7 +93,8 @@ public class MallApplicationService {
     return new MallListingResponse(
         sku.id(), product.supplierId(), product.supplierName(), sku.materialId(),
         product.name(), sku.skuCode(), product.categoryName(), sku.unit(), sku.price(),
-        effectiveStatus(product, sku), product.updatedAt(), product.tenantId(), null);
+        effectiveStatus(product, sku), product.updatedAt(), product.tenantId(), null,
+        product.id(), product.status());
   }
 
   @Transactional
@@ -430,8 +438,15 @@ public class MallApplicationService {
       throw new IllegalArgumentException("未知的货架状态: " + request.status());
     }
     MallSku sku = requireOwnSku(supplierId, listingId);
-    mallCatalogMapper.updateSkuStatusForSupplier(listingId, supplierId, request.status());
     MallProduct product = mallCatalogMapper.findProductForSupplier(supplierId, sku.productId());
+    // 商品未通过审核时,把规格切到「在架」也不会真的可售(requireOrderable 两者都看)。
+    // 这里直接拦下并给出下一步,避免供应商反复点上架却看不出为什么没生效。
+    if (MallListingStatus.ON_SHELF.equals(request.status())
+        && !MallCatalogPolicy.STATUS_ON_SHELF.equals(product.status())) {
+      throw new IllegalStateException(
+          "商品当前为「" + product.status() + "」,上架需由采购方审核通过,请先提交审核");
+    }
+    mallCatalogMapper.updateSkuStatusForSupplier(listingId, supplierId, request.status());
     auditLogApplicationService.recordTenantAction(
         product.tenantId(), "mall_listing.status_changed", AuditTargetType.MALL_LISTING, listingId);
     return toListingResponse(product, mallCatalogMapper.findSkuForTenant(product.tenantId(), listingId));
@@ -446,23 +461,6 @@ public class MallApplicationService {
             "商城商品不存在或不属于当前供应商: " + skuId));
   }
 
-
-  private MallListingResponse toResponse(MallListing listing) {
-    return new MallListingResponse(
-        listing.id(),
-        listing.supplierId(),
-        listing.supplierName(),
-        listing.materialId(),
-        listing.materialName(),
-        listing.materialCode(),
-        listing.category(),
-        listing.unit(),
-        listing.price(),
-        listing.status(),
-        listing.updatedAt(),
-        listing.tenantId(),
-        listing.tenantName());
-  }
 
   private String blankToNull(String value) {
     return value == null || value.isBlank() ? null : value;
