@@ -25,9 +25,8 @@ test('招标管理:编制(富文本)→ 发布发售 → 详情要素与领取�
   await page.getByRole('button', { name: /保存并发布发售/ }).click();
   await expect(page.getByText(/已发布,招标文件开始发售/)).toBeVisible();
 
-  // 台账刷新后按标题检索再进详情:绕开前端查询缓存并避免存量数据把本单挤出首页(与本文件其余用例同口径)。
-  await page.reload();
-  await openModule(page, /招标管理/);
+  // 台账按标题检索后进详情(存量数据下本单未必落在首页);无需 reload——
+  // 发布后列表由失效驱动刷新,「首次加载在途导致失效被去重」已在 QueryClient 层修掉。
   await page.getByPlaceholder(/按项目名称/).fill(title);
   await page.getByRole('button', { name: '搜索' }).click();
   await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();

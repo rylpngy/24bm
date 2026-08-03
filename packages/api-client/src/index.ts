@@ -10,5 +10,8 @@ export { subscribeAuctionStream } from './auction-stream';
 export type { AuctionStreamEvent, AuctionStreamHandlers } from './auction-stream';
 export { useAuctionStream } from './use-auction-stream';
 
+// 三端共用 QueryClient 工厂:统一默认项 + 修「变更后首次加载在途导致失效被去重」。
+export { createAppQueryClient } from './query-client';
+
 export * from './generated/model';
 export * from './generated/controllers';
