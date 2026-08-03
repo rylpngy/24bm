@@ -7,16 +7,26 @@ import { MallHomePage } from './features/home/mall-home-page';
 import { MallCategoryPage } from './features/catalog/mall-category-page';
 import { MallProductDetailPage } from './features/catalog/mall-product-detail-page';
 import { MallLoginGate } from './features/login-gate';
+import { MallCartPage } from './features/cart/mall-cart-page';
+import { MallCheckoutPage } from './features/cart/mall-checkout-page';
+import { MallOrdersPage } from './features/orders/mall-orders-page';
 
 /** 商城门户路由:URL 参数驱动(无路由库),便于深链与独立部署。 */
 export type MallRoute =
   | { name: 'home' }
   | { name: 'category'; categoryId?: string; keyword?: string }
-  | { name: 'product'; productId: string };
+  | { name: 'product'; productId: string }
+  | { name: 'cart' }
+  | { name: 'checkout' }
+  | { name: 'orders' };
 
 function readRoute(): MallRoute {
   if (typeof window === 'undefined') return { name: 'home' };
   const params = new URLSearchParams(window.location.search);
+  const view = params.get('view');
+  if (view === 'cart') return { name: 'cart' };
+  if (view === 'checkout') return { name: 'checkout' };
+  if (view === 'orders') return { name: 'orders' };
   const productId = params.get('product');
   if (productId) return { name: 'product', productId };
   if (params.has('category') || params.has('q')) {
@@ -34,6 +44,10 @@ function writeRoute(route: MallRoute) {
   url.searchParams.delete('product');
   url.searchParams.delete('category');
   url.searchParams.delete('q');
+  url.searchParams.delete('view');
+  if (route.name === 'cart' || route.name === 'checkout' || route.name === 'orders') {
+    url.searchParams.set('view', route.name);
+  }
   if (route.name === 'product') url.searchParams.set('product', route.productId);
   if (route.name === 'category') {
     if (route.categoryId) url.searchParams.set('category', route.categoryId);
@@ -93,6 +107,7 @@ export function App() {
             {[
               { label: '首页', active: route.name === 'home', to: { name: 'home' } as MallRoute },
               { label: '全部商品', active: route.name === 'category', to: { name: 'category' } as MallRoute },
+              { label: '我的订单', active: route.name === 'orders', to: { name: 'orders' } as MallRoute },
             ].map((item) => (
               <button
                 key={item.label}
@@ -111,7 +126,7 @@ export function App() {
           <div className="ml-auto flex items-center gap-2">
             <button
               type="button"
-              onClick={() => navigate({ name: 'category' })}
+              onClick={() => navigate({ name: 'cart' })}
               className="relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
             >
               <ShoppingCart size={14} />
@@ -148,6 +163,9 @@ export function App() {
         {route.name === 'product' && (
           <MallProductDetailPage productId={route.productId} onNavigate={navigate} />
         )}
+        {route.name === 'cart' && <MallCartPage onNavigate={navigate} />}
+        {route.name === 'checkout' && <MallCheckoutPage onNavigate={navigate} />}
+        {route.name === 'orders' && <MallOrdersPage />}
       </main>
     </div>
   );
