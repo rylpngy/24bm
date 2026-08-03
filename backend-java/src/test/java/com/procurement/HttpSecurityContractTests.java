@@ -534,6 +534,18 @@ class HttpSecurityContractTests {
   }
 
   @Test
+  void mallPortalPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
+    // 商城门户是独立部署的第四端(5176);新端上线必须同步 CORS 白名单,否则预检 403。
+    mockMvc.perform(options("/api/v1/buyer/mall/products")
+            .header("Origin", "http://localhost:5176")
+            .header("Access-Control-Request-Method", "GET")
+            .header("Access-Control-Request-Headers", "authorization"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5176"))
+        .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
+  }
+
+  @Test
   void supplierPortalPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
     mockMvc.perform(options("/api/v1/buyer/workspace")
             .header("Origin", "http://127.0.0.1:5175")

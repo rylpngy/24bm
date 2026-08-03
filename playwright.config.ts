@@ -5,6 +5,8 @@ import { defineConfig, devices } from '@playwright/test';
 //   tenant-*.spec.ts   → :5173 采购方端
 //   platform-*.spec.ts → :5174 平台端
 //   supplier-*.spec.ts → :5175 供应商端
+//   mall-*.spec.ts     → :5176 商城门户(独立部署的第四端;正则锚定文件名开头,
+//                        否则 tenant-mall-*.spec.ts 会被两个 project 各跑一遍)
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
@@ -31,10 +33,16 @@ export default defineConfig({
       testMatch: /supplier-.*\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:5175' },
     },
+    {
+      name: 'mall',
+      testMatch: /(^|\/)mall-.*\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:5176' },
+    },
   ],
   webServer: [
     { command: 'npx -y pnpm@9.15.0 --filter @24bid/tenant-portal dev', port: 5173, reuseExistingServer: true, timeout: 120_000 },
     { command: 'npx -y pnpm@9.15.0 --filter @24bid/platform-admin dev', port: 5174, reuseExistingServer: true, timeout: 120_000 },
     { command: 'npx -y pnpm@9.15.0 --filter @24bid/supplier-portal dev', port: 5175, reuseExistingServer: true, timeout: 120_000 },
+    { command: 'npx -y pnpm@9.15.0 --filter @24bid/mall-portal dev', port: 5176, reuseExistingServer: true, timeout: 120_000 },
   ],
 });
