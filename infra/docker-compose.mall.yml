@@ -1,0 +1,132 @@
+# 智采云 · 商城直采版一键部署
+#
+# 与完整版 docker-compose.yml 同一份代码与同一个后端镜像,差别只在:
+#   1) 后端 APP_DEPLOYMENT_PROFILE=mall —— 寻源(询比/竞价)与招标接口面关闭;
+#   2) 只起商城门户与供应商门户,不起采购全功能端;
+#   3) 租户能力默认只开 method:mall —— 后端在立项入口按方式拒绝,不只是前端藏起来。
+#
+# 启动:
+#   cd infra && docker compose -f docker-compose.mall.yml --profile app --profile portals up -d --build
+# 首次部署后需在平台侧开通租户与账号(见 docs/mall-deployment.md)。
+
+name: 24bid-mall
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: 24bid-mall-db
+    environment:
+      POSTGRES_DB: procurement_saas
+      POSTGRES_USER: procurement
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-procurement}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - mall-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U procurement -d procurement_saas"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: 24bid-mall-keycloak
+    command: start-dev --http-port=8081 --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./keycloak/realm:/opt/keycloak/data/import:ro
+    ports:
+      - "8081:8081"
+
+  minio:
+    image: minio/minio:RELEASE.2024-09-13T20-26-02Z
+    container_name: 24bid-mall-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio12345}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - mall-minio:/data
+
+  app:
+    build:
+      context: ../backend-java
+    container_name: 24bid-mall-app
+    profiles: ["app"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # 形态开关:关闭寻源与招标接口面(详见 DeploymentSurfaceFilter)。
+      APP_DEPLOYMENT_PROFILE: mall
+      DB_URL: jdbc:postgresql://postgres:5432/procurement_saas
+      DB_USERNAME: procurement
+      DB_PASSWORD: ${DB_PASSWORD:-procurement}
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8081/realms/24bid/protocol/openid-connect/certs
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minio}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio12345}
+      JWT_SECRET: ${JWT_SECRET:-}
+      ALLOW_DEMO_JWT_SECRET: ${ALLOW_DEMO_JWT_SECRET:-true}
+      SELF_LOGIN_ENABLED: ${SELF_LOGIN_ENABLED:-true}
+      # 商城版对外只有商城门户与供应商门户两个来源。
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5176,http://localhost:5175}
+      # 干净交付默认不灌演示数据;需要演示时置 classpath:db/demo。
+      APP_SEED_LOCATIONS: ${APP_SEED_LOCATIONS:-}
+    ports:
+      - "8080:8080"
+
+  mall-portal:
+    build:
+      context: ..
+      dockerfile: infra/portal.Dockerfile
+      args:
+        APP: mall-portal
+        VITE_JAVA_API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+        VITE_KEYCLOAK_URL: ${PUBLIC_KEYCLOAK_URL:-http://localhost:8081}
+        VITE_SELF_LOGIN: ${VITE_SELF_LOGIN:-false}
+    container_name: 24bid-mall-portal
+    profiles: ["portals"]
+    ports:
+      - "5176:80"
+
+  # 供应商门户:商城版仍需供应商上架商品、发货与对账。
+  supplier-portal:
+    build:
+      context: ..
+      dockerfile: infra/portal.Dockerfile
+      args:
+        APP: supplier-portal
+        VITE_JAVA_API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+        VITE_KEYCLOAK_URL: ${PUBLIC_KEYCLOAK_URL:-http://localhost:8081}
+        VITE_SELF_LOGIN: ${VITE_SELF_LOGIN:-false}
+    container_name: 24bid-mall-supplier-portal
+    profiles: ["portals"]
+    ports:
+      - "5175:80"
+
+  # 平台运营端:开通租户、审核供应商企业、配置采购方式。
+  # 商城版可选起(profile=admin);单企业私有部署时通常只在开通阶段用一次。
+  platform-admin:
+    build:
+      context: ..
+      dockerfile: infra/portal.Dockerfile
+      args:
+        APP: platform-admin
+        VITE_JAVA_API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+        VITE_KEYCLOAK_URL: ${PUBLIC_KEYCLOAK_URL:-http://localhost:8081}
+        VITE_SELF_LOGIN: ${VITE_SELF_LOGIN:-false}
+    container_name: 24bid-mall-platform-admin
+    profiles: ["admin"]
+    ports:
+      - "5174:80"
+
+volumes:
+  mall-postgres:
+  mall-minio:

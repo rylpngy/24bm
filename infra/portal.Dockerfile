@@ -1,5 +1,5 @@
 # 三端前端通用镜像:pnpm 构建指定 app → nginx 静态托管(SPA 回退)。
-# 构建参数:APP=tenant-portal|supplier-portal|platform-admin,VITE_* 为构建期注入。
+# 构建参数:APP=tenant-portal|supplier-portal|platform-admin|mall-portal,VITE_* 为构建期注入。
 FROM node:22-alpine AS build
 ARG APP
 ARG VITE_JAVA_API_BASE_URL=http://localhost:8080

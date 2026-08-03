@@ -18,6 +18,10 @@ spring:
 
 # 种子数据独立迁移链(flyway_seed_history):演示环境=classpath:db/demo;干净库留空。
 app:
+  deployment:
+    # 部署形态:full=完整采购平台;mall=商城直采版(寻源/招标接口面关闭,见 DeploymentSurfaceFilter)。
+    # 同一份代码与镜像,按形态售卖与部署,不分叉第二套代码库。
+    profile: ${APP_DEPLOYMENT_PROFILE:full}
   seed:
     locations: ${APP_SEED_LOCATIONS:}
 
