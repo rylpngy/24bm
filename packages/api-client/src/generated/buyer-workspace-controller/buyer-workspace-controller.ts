@@ -32,17 +32,17 @@ import type { ErrorType } from '../../http-client';
 
 
 export const buyerWorkspaceLoad = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseBuyerWorkspaceResponse>(
       {url: `/api/v1/buyer/workspace`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -52,7 +52,7 @@ export const getBuyerWorkspaceLoadQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getBuyerWorkspaceLoadQueryOptions = <TData = Awaited<ReturnType<typeof buyerWorkspaceLoad>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerWorkspaceLoad>>, TError, TData>>, }
 ) => {
 
@@ -60,13 +60,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerWorkspaceLoadQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerWorkspaceLoad>>> = ({ signal }) => buyerWorkspaceLoad(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerWorkspaceLoad>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -102,7 +102,7 @@ export function useBuyerWorkspaceLoad<TData = Awaited<ReturnType<typeof buyerWor
 
 export function useBuyerWorkspaceLoad<TData = Awaited<ReturnType<typeof buyerWorkspaceLoad>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerWorkspaceLoad>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerWorkspaceLoadQueryOptions(options)

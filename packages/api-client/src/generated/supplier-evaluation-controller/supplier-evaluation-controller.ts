@@ -44,8 +44,8 @@ export const supplierEvaluationConfirmTier = (
     confirmCooperationTierRequest: BodyType<ConfirmCooperationTierRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVoid>(
       {url: `/api/v1/buyer/suppliers/${relationId}/tier`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -53,7 +53,7 @@ export const supplierEvaluationConfirmTier = (
     },
       );
     }
-  
+
 
 
 export const getSupplierEvaluationConfirmTierMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -67,7 +67,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierEvaluationConfirmTier>>, {relationId: string;data: BodyType<ConfirmCooperationTierRequest>}> = (props) => {
@@ -76,7 +76,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierEvaluationConfirmTier(relationId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -102,14 +102,14 @@ const {mutation: mutationOptions} = options ?
     relationId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListSupplierEvaluationResponse>(
       {url: `/api/v1/buyer/suppliers/${relationId}/evaluations`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -119,7 +119,7 @@ export const getSupplierEvaluationListEvaluationsQueryKey = (relationId?: string
     ] as const;
     }
 
-    
+
 export const getSupplierEvaluationListEvaluationsQueryOptions = <TData = Awaited<ReturnType<typeof supplierEvaluationListEvaluations>>, TError = ErrorType<ApiResponseVoid>>(relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationListEvaluations>>, TError, TData>>, }
 ) => {
 
@@ -127,13 +127,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierEvaluationListEvaluationsQueryKey(relationId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierEvaluationListEvaluations>>> = ({ signal }) => supplierEvaluationListEvaluations(relationId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(relationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationListEvaluations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -169,7 +169,7 @@ export function useSupplierEvaluationListEvaluations<TData = Awaited<ReturnType<
 
 export function useSupplierEvaluationListEvaluations<TData = Awaited<ReturnType<typeof supplierEvaluationListEvaluations>>, TError = ErrorType<ApiResponseVoid>>(
  relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationListEvaluations>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierEvaluationListEvaluationsQueryOptions(relationId,options)
@@ -189,8 +189,8 @@ export const supplierEvaluationCreateEvaluation = (
     createSupplierEvaluationRequest: BodyType<CreateSupplierEvaluationRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierEvaluationResponse>(
       {url: `/api/v1/buyer/suppliers/${relationId}/evaluations`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -198,7 +198,7 @@ export const supplierEvaluationCreateEvaluation = (
     },
       );
     }
-  
+
 
 
 export const getSupplierEvaluationCreateEvaluationMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -212,7 +212,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierEvaluationCreateEvaluation>>, {relationId: string;data: BodyType<CreateSupplierEvaluationRequest>}> = (props) => {
@@ -221,7 +221,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierEvaluationCreateEvaluation(relationId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -247,14 +247,14 @@ const {mutation: mutationOptions} = options ?
     relationId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseAutoScoreSuggestionResponse>(
       {url: `/api/v1/buyer/suppliers/${relationId}/auto-score`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -264,7 +264,7 @@ export const getSupplierEvaluationAutoScoreQueryKey = (relationId?: string,) => 
     ] as const;
     }
 
-    
+
 export const getSupplierEvaluationAutoScoreQueryOptions = <TData = Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError = ErrorType<ApiResponseVoid>>(relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError, TData>>, }
 ) => {
 
@@ -272,13 +272,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierEvaluationAutoScoreQueryKey(relationId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>> = ({ signal }) => supplierEvaluationAutoScore(relationId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(relationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -314,7 +314,7 @@ export function useSupplierEvaluationAutoScore<TData = Awaited<ReturnType<typeof
 
 export function useSupplierEvaluationAutoScore<TData = Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError = ErrorType<ApiResponseVoid>>(
  relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierEvaluationAutoScore>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierEvaluationAutoScoreQueryOptions(relationId,options)

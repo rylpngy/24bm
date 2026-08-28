@@ -10,4 +10,5 @@ export interface UpdateDepartmentRequest {
   name: string;
   description?: string;
   managerId?: string;
+  transferManagerToDepartment?: boolean;
 }

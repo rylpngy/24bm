@@ -12,7 +12,10 @@ export interface ProcessDefinitionResponse {
   description?: string;
   icon?: string;
   status?: string;
+  businessType?: string;
+  activeVersionId?: string;
   formSchema?: string;
   flowSchema?: string;
+  publishedAt?: string;
   updatedAt?: string;
 }

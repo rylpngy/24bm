@@ -42,8 +42,8 @@ export const publicOpportunityEnroll = (
     enrollOpportunityRequest: BodyType<EnrollOpportunityRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVoid>(
       {url: `/api/v1/public/opportunities/${rfqId}/enroll`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -51,7 +51,7 @@ export const publicOpportunityEnroll = (
     },
       );
     }
-  
+
 
 
 export const getPublicOpportunityEnrollMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -65,7 +65,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof publicOpportunityEnroll>>, {rfqId: string;data: BodyType<EnrollOpportunityRequest>}> = (props) => {
@@ -74,7 +74,7 @@ const {mutation: mutationOptions} = options ?
           return  publicOpportunityEnroll(rfqId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -97,17 +97,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const publicOpportunityList = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPublicOpportunityResponse>(
       {url: `/api/v1/public/opportunities`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -117,7 +117,7 @@ export const getPublicOpportunityListQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPublicOpportunityListQueryOptions = <TData = Awaited<ReturnType<typeof publicOpportunityList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicOpportunityList>>, TError, TData>>, }
 ) => {
 
@@ -125,13 +125,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicOpportunityListQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicOpportunityList>>> = ({ signal }) => publicOpportunityList(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicOpportunityList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -167,7 +167,7 @@ export function usePublicOpportunityList<TData = Awaited<ReturnType<typeof publi
 
 export function usePublicOpportunityList<TData = Awaited<ReturnType<typeof publicOpportunityList>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicOpportunityList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicOpportunityListQueryOptions(options)
@@ -186,14 +186,14 @@ export const publicOpportunityGet = (
     rfqId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePublicOpportunityResponse>(
       {url: `/api/v1/public/opportunities/${rfqId}`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -203,7 +203,7 @@ export const getPublicOpportunityGetQueryKey = (rfqId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getPublicOpportunityGetQueryOptions = <TData = Awaited<ReturnType<typeof publicOpportunityGet>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicOpportunityGet>>, TError, TData>>, }
 ) => {
 
@@ -211,13 +211,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicOpportunityGetQueryKey(rfqId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicOpportunityGet>>> = ({ signal }) => publicOpportunityGet(rfqId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicOpportunityGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -253,7 +253,7 @@ export function usePublicOpportunityGet<TData = Awaited<ReturnType<typeof public
 
 export function usePublicOpportunityGet<TData = Awaited<ReturnType<typeof publicOpportunityGet>>, TError = ErrorType<ApiResponseVoid>>(
  rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicOpportunityGet>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicOpportunityGetQueryOptions(rfqId,options)

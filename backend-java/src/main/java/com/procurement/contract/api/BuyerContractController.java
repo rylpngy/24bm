@@ -67,8 +67,12 @@ public class BuyerContractController {
   }
 
   @PostMapping("/{contractId}/approval")
-  public ApiResponse<ContractResponse> submitApproval(@PathVariable String contractId) {
-    return ApiResponse.ok(contractApplicationService.submitCurrentTenantContractApproval(contractId));
+  public ApiResponse<ContractResponse> submitApproval(
+      @PathVariable String contractId,
+      @RequestBody(required = false) SubmitContractApprovalRequest request) {
+    return ApiResponse.ok(request == null
+        ? contractApplicationService.submitCurrentTenantContractApproval(contractId)
+        : contractApplicationService.submitCurrentTenantContractApproval(contractId, request.formData()));
   }
 
   // 发起续签(到期提醒驱动)。

@@ -36,15 +36,15 @@ export const supplierInvoiceReconciliationList = (
     params?: SupplierInvoiceReconciliationListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListInvoiceReconciliationResponse>(
       {url: `/api/v1/supplier/invoice-reconciliations`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -54,7 +54,7 @@ export const getSupplierInvoiceReconciliationListQueryKey = (params?: SupplierIn
     ] as const;
     }
 
-    
+
 export const getSupplierInvoiceReconciliationListQueryOptions = <TData = Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError, TData>>, }
 ) => {
 
@@ -62,13 +62,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierInvoiceReconciliationListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>> = ({ signal }) => supplierInvoiceReconciliationList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -104,7 +104,7 @@ export function useSupplierInvoiceReconciliationList<TData = Awaited<ReturnType<
 
 export function useSupplierInvoiceReconciliationList<TData = Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SupplierInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoiceReconciliationList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierInvoiceReconciliationListQueryOptions(params,options)

@@ -1,19 +1,35 @@
 import { useState } from 'react';
 import { GitBranch, Plus, Trash2, UserCheck, Zap } from 'lucide-react';
 import { cn } from '@24bid/ui';
-import { OPERATORS, type FlowStep, type FormField, type Operator, conditionText, uid } from './types';
+import {
+  OPERATORS,
+  assignmentText,
+  conditionText,
+  type FlowStep,
+  type FormField,
+  type Operator,
+  type WorkflowAssignment,
+  uid,
+} from './types';
+
+type ActorOption = { id?: string; name?: string };
 
 // 流程设计:从 steps 渲染审批流(发起人 → 审批节点 / 条件分支),支持插入/编辑/删除节点。
 export function FlowDesigner({
   steps,
   fields,
+  users = [],
+  roles = [],
   onChange,
 }: {
   steps: FlowStep[];
   fields: FormField[];
+  users?: ActorOption[];
+  roles?: ActorOption[];
   onChange: (steps: FlowStep[]) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const defaultRoleId = roles[0]?.id;
 
   const insertAt = (index: number, step: FlowStep) => {
     const next = [...steps];
@@ -49,13 +65,18 @@ export function FlowDesigner({
           所有人
         </span>
 
-        <AddButton onApprover={() => insertAt(0, approver())} onCondition={() => insertAt(0, condition())} />
+        <AddButton
+          onApprover={() => insertAt(0, approver(defaultRoleId))}
+          onCondition={() => insertAt(0, condition(defaultRoleId))}
+        />
 
         {steps.map((step, i) => (
           <div key={step.id} className="flex w-full flex-col items-center">
             <StepNode
               step={step}
               fields={fields}
+              users={users}
+              roles={roles}
               selected={selectedId === step.id}
               onSelect={() => setSelectedId(selectedId === step.id ? null : step.id)}
               onUpdate={(p) => updateStep(step.id, p)}
@@ -64,6 +85,9 @@ export function FlowDesigner({
                 <div className="flex flex-col items-center">
                   <StepNode
                     step={bs}
+                    fields={fields}
+                    users={users}
+                    roles={roles}
                     selected={selectedId === bs.id}
                     onSelect={() => setSelectedId(selectedId === bs.id ? null : bs.id)}
                     onUpdate={(p) => updateStep(bs.id, p)}
@@ -71,11 +95,11 @@ export function FlowDesigner({
                   />
                 </div>
               )}
-              onAddBranchStep={(bi) => addBranchStep(step.id, bi, approver())}
+              onAddBranchStep={(bi) => addBranchStep(step.id, bi, approver(defaultRoleId))}
             />
             <AddButton
-              onApprover={() => insertAt(i + 1, approver())}
-              onCondition={() => insertAt(i + 1, condition())}
+              onApprover={() => insertAt(i + 1, approver(defaultRoleId))}
+              onCondition={() => insertAt(i + 1, condition(defaultRoleId))}
             />
           </div>
         ))}
@@ -86,16 +110,30 @@ export function FlowDesigner({
   );
 }
 
-function approver(): FlowStep {
-  return { id: uid('s'), type: 'approver', title: '审批人', assignee: '直接主管' };
+function approver(defaultRoleId?: string): FlowStep {
+  return {
+    id: uid('s'),
+    type: 'approver',
+    title: '审批人',
+    assignment: defaultRoleId
+      ? { type: 'role', roleId: defaultRoleId }
+      : { type: 'initiator_department_manager' },
+  };
 }
-function condition(): FlowStep {
+function condition(defaultRoleId?: string): FlowStep {
   return {
     id: uid('s'),
     type: 'condition',
     branches: [
-      { label: '条件一', steps: [{ id: uid('b'), type: 'auto', title: '系统自动通过' }] },
-      { label: '条件二', steps: [{ id: uid('b'), type: 'approver', title: '审批人', assignee: '指定审批人' }] },
+      {
+        label: '金额达到阈值',
+        condition: { field: '$amount', op: '>=', value: '100000' },
+        steps: [{ ...approver(defaultRoleId), id: uid('b'), title: '金额复核' }],
+      },
+      {
+        label: '其他情况',
+        steps: [{ ...approver(defaultRoleId), id: uid('b'), title: '常规审批' }],
+      },
     ],
   };
 }
@@ -103,6 +141,8 @@ function condition(): FlowStep {
 function StepNode({
   step,
   fields = [],
+  users = [],
+  roles = [],
   selected,
   onSelect,
   onUpdate,
@@ -112,6 +152,8 @@ function StepNode({
 }: {
   step: FlowStep;
   fields?: FormField[];
+  users?: ActorOption[];
+  roles?: ActorOption[];
   selected: boolean;
   onSelect: () => void;
   onUpdate: (p: Partial<FlowStep>) => void;
@@ -139,9 +181,20 @@ function StepNode({
                   <select
                     className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-1 py-1 text-[11px] font-bold text-slate-600 outline-none"
                     value={b.condition?.field ?? ''}
-                    onChange={(e) => patchBranch(step, bi, onUpdate, { field: e.target.value })}
+                    onChange={(e) => {
+                      const field = e.target.value;
+                      const formField = fields.find((item) => item.id === field);
+                      const equalityOnly = field === '$departmentId'
+                        || (formField != null && !['number', 'money'].includes(formField.type));
+                      patchBranch(step, bi, onUpdate, {
+                        field,
+                        ...(equalityOnly ? { op: '==' as Operator } : {}),
+                      });
+                    }}
                   >
                     <option value="">其他情况</option>
+                    <option value="$amount">流程金额</option>
+                    <option value="$departmentId">申请部门</option>
                     {fields.map((f) => (
                       <option key={f.id} value={f.id}>{f.label}</option>
                     ))}
@@ -152,16 +205,27 @@ function StepNode({
                     disabled={!b.condition?.field}
                     onChange={(e) => patchBranch(step, bi, onUpdate, { op: e.target.value as Operator })}
                   >
-                    {OPERATORS.map((o) => (
+                    {OPERATORS.filter((operator) => {
+                      const formField = fields.find((item) => item.id === b.condition?.field);
+                      const equalityOnly = b.condition?.field === '$departmentId'
+                        || (formField != null && !['number', 'money'].includes(formField.type));
+                      return !equalityOnly || operator.op === '==' || operator.op === '!=';
+                    }).map((o) => (
                       <option key={o.op} value={o.op}>{o.label}</option>
                     ))}
                   </select>
                   <input
-                    type="number"
+                    type={(() => {
+                      const formField = fields.find((item) => item.id === b.condition?.field);
+                      return b.condition?.field === '$amount'
+                        || (formField != null && ['number', 'money'].includes(formField.type))
+                        ? 'number'
+                        : 'text';
+                    })()}
                     className="w-16 rounded border border-slate-200 bg-white px-1 py-1 text-[11px] font-bold text-slate-600 outline-none disabled:opacity-40"
                     value={b.condition?.value ?? ''}
                     disabled={!b.condition?.field}
-                    onChange={(e) => patchBranch(step, bi, onUpdate, { value: Number(e.target.value) })}
+                    onChange={(e) => patchBranch(step, bi, onUpdate, { value: e.target.value })}
                   />
                 </div>
               </div>
@@ -210,7 +274,9 @@ function StepNode({
         </button>
       </div>
       <button type="button" onClick={onSelect} className="flex w-full items-center justify-between px-3 py-2.5 text-left">
-        <span className="text-sm font-bold text-slate-600">{isAuto ? '无需审批,自动流转' : step.assignee || '未指定'}</span>
+        <span className="text-sm font-bold text-slate-600">
+          {isAuto ? '无需审批,自动流转' : assignmentText(step.assignment, users, roles, step.assignee)}
+        </span>
         <span className="text-slate-300">{selected ? '收起' : '编辑 ›'}</span>
       </button>
       {selected && !isAuto && (
@@ -219,13 +285,88 @@ function StepNode({
             <p className="mb-1 text-[11px] font-black text-slate-400">节点名称</p>
             <input className={inputCls} value={step.title ?? ''} onChange={(e) => onUpdate({ title: e.target.value })} />
           </div>
-          <div>
-            <p className="mb-1 text-[11px] font-black text-slate-400">审批人</p>
-            <input className={inputCls} value={step.assignee ?? ''} onChange={(e) => onUpdate({ assignee: e.target.value })} />
-          </div>
+          <AssignmentEditor
+            assignment={step.assignment}
+            users={users}
+            roles={roles}
+            onChange={(assignment) => onUpdate({ assignment, assignee: undefined })}
+          />
         </div>
       )}
     </div>
+  );
+}
+
+function AssignmentEditor({
+  assignment,
+  users,
+  roles,
+  onChange,
+}: {
+  assignment?: WorkflowAssignment;
+  users: ActorOption[];
+  roles: ActorOption[];
+  onChange: (assignment: WorkflowAssignment) => void;
+}) {
+  const inputCls =
+    'w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-blue-300';
+  const type = assignment?.type ?? '';
+  return (
+    <>
+      <div>
+        <p className="mb-1 text-[11px] font-black text-slate-400">办理规则</p>
+        <select
+          className={inputCls}
+          value={type}
+          onChange={(event) => {
+            const next = event.target.value as WorkflowAssignment['type'];
+            if (next === 'user') onChange({ type: next, userId: users[0]?.id });
+            else if (next === 'role') onChange({ type: next, roleId: roles[0]?.id });
+            else onChange({ type: 'initiator_department_manager' });
+          }}
+        >
+          <option value="">请选择规则</option>
+          <option value="user">指定用户</option>
+          <option value="role">候选角色</option>
+          <option value="initiator_department_manager">发起部门主管</option>
+        </select>
+      </div>
+      {type === 'user' && (
+        <div>
+          <p className="mb-1 text-[11px] font-black text-slate-400">指定办理人</p>
+          <select
+            className={inputCls}
+            value={assignment?.userId ?? ''}
+            onChange={(event) => onChange({ type: 'user', userId: event.target.value || undefined })}
+          >
+            <option value="">请选择用户</option>
+            {users.filter((user) => user.id).map((user) => (
+              <option key={user.id} value={user.id}>{user.name ?? user.id}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {type === 'role' && (
+        <div>
+          <p className="mb-1 text-[11px] font-black text-slate-400">候选角色</p>
+          <select
+            className={inputCls}
+            value={assignment?.roleId ?? ''}
+            onChange={(event) => onChange({ type: 'role', roleId: event.target.value || undefined })}
+          >
+            <option value="">请选择角色</option>
+            {roles.filter((role) => role.id).map((role) => (
+              <option key={role.id} value={role.id}>{role.name ?? role.id}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {type === 'initiator_department_manager' && (
+        <p className="rounded-md bg-blue-50 px-2 py-1.5 text-[11px] font-bold leading-5 text-blue-700">
+          流程发起时将校验申请部门已配置启用状态的主管，并把任务直接分配给该主管。
+        </p>
+      )}
+    </>
   );
 }
 
@@ -269,7 +410,7 @@ function patchBranch(
   step: FlowStep,
   bi: number,
   onUpdate: (p: Partial<FlowStep>) => void,
-  patch: { field?: string; op?: Operator; value?: number },
+  patch: { field?: string; op?: Operator; value?: string },
 ) {
   const branches = (step.branches ?? []).map((x, i) => {
     if (i !== bi) return x;
@@ -277,7 +418,7 @@ function patchBranch(
       const { condition: _omit, ...rest } = x;
       return { ...rest, label: '其他情况' };
     }
-    const base = x.condition ?? { field: '', op: '>=' as Operator, value: 0 };
+    const base = x.condition ?? { field: '', op: '>=' as Operator, value: '' };
     return { ...x, condition: { ...base, ...patch } };
   });
   onUpdate({ branches });

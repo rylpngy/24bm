@@ -33,8 +33,8 @@ export const rfqAwardAward = (
     awardRfqRequest: BodyType<AwardRfqRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseAwardDecisionResponse>(
       {url: `/api/v1/buyer/rfqs/${rfqId}/award`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -42,7 +42,7 @@ export const rfqAwardAward = (
     },
       );
     }
-  
+
 
 
 export const getRfqAwardAwardMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -56,7 +56,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqAwardAward>>, {rfqId: string;data: BodyType<AwardRfqRequest>}> = (props) => {
@@ -65,7 +65,7 @@ const {mutation: mutationOptions} = options ?
           return  rfqAwardAward(rfqId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -92,8 +92,8 @@ const {mutation: mutationOptions} = options ?
     reviewAwardApprovalRequest: BodyType<ReviewAwardApprovalRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseAwardDecisionResponse>(
       {url: `/api/v1/buyer/rfqs/${rfqId}/award/approval`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -101,7 +101,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getRfqAwardReviewApprovalMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -115,7 +115,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof rfqAwardReviewApproval>>, {rfqId: string;data: BodyType<ReviewAwardApprovalRequest>}> = (props) => {
@@ -124,7 +124,7 @@ const {mutation: mutationOptions} = options ?
           return  rfqAwardReviewApproval(rfqId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -146,4 +146,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

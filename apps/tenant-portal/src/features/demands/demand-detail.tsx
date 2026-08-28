@@ -19,9 +19,11 @@ import {
   useAuditLogListTargetActions,
   usePurchaseDemandList,
   useMaterialList,
-  usePurchaseDemandSubmit,
+  useWorkflowPurchaseDemandSubmit,
 } from '@24bid/api-client';
 import { FeedbackNotice, PrimaryActionButton, ShellState, StatusPill, cn } from '@24bid/ui';
+import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
+import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 
 const currency = (v?: number) =>
   v == null ? '--' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`;
@@ -231,7 +233,8 @@ export function DemandDetail({
     targetType: 'purchase_demand',
     targetId: demand.id ?? '',
   });
-  const submit = usePurchaseDemandSubmit();
+  const submit = useWorkflowPurchaseDemandSubmit();
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
 
   const materialMap = useMemo(() => {
     const map: Record<string, { name: string; code: string; unit: string; referencePrice?: number }> = {};
@@ -259,9 +262,9 @@ export function DemandDetail({
         /\/buyer\/(demands|audit)/.test(q.queryKey[0] as string),
     });
 
-  const submitDemand = () => {
+  const submitDemand = (formData: Record<string, unknown>) => {
     submit.mutate(
-      { demandId: demand.id! },
+      { demandId: demand.id!, formData },
       {
         onSuccess: () => {
           refresh();
@@ -300,7 +303,7 @@ export function DemandDetail({
           </div>
           <div className="flex flex-wrap gap-2">
             {canSubmit ? (
-              <PrimaryActionButton onClick={submitDemand} busy={submit.isPending} pendingLabel="提交中">
+              <PrimaryActionButton onClick={() => setShowSubmitDialog(true)} busy={submit.isPending} pendingLabel="提交中">
                 <Send size={15} /> 提交审批
               </PrimaryActionButton>
             ) : (
@@ -321,6 +324,8 @@ export function DemandDetail({
           </div>
 
           <ProgressTracker demand={demand} />
+
+          {demand.id && <WorkflowStatusPanel businessType="purchase_demand" businessId={demand.id} />}
 
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50">
             <div className="mb-5 flex flex-wrap items-center gap-2">
@@ -555,6 +560,16 @@ export function DemandDetail({
           )}
         </div>
       </div>
+      {showSubmitDialog && (
+        <WorkflowSubmitDialog
+          businessType="purchase_demand"
+          title={demand.title ?? demand.id ?? '采购需求'}
+          busy={submit.isPending}
+          submissionError={submit.error}
+          onClose={() => setShowSubmitDialog(false)}
+          onSubmit={submitDemand}
+        />
+      )}
     </div>
   );
 }

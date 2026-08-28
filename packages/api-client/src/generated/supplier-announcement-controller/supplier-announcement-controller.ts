@@ -32,17 +32,17 @@ import type { ErrorType } from '../../http-client';
 
 
 export const supplierAnnouncementList = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPlatformAnnouncementResponse>(
       {url: `/api/v1/supplier/announcements`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -52,7 +52,7 @@ export const getSupplierAnnouncementListQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getSupplierAnnouncementListQueryOptions = <TData = Awaited<ReturnType<typeof supplierAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAnnouncementList>>, TError, TData>>, }
 ) => {
 
@@ -60,13 +60,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierAnnouncementListQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierAnnouncementList>>> = ({ signal }) => supplierAnnouncementList(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierAnnouncementList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -102,7 +102,7 @@ export function useSupplierAnnouncementList<TData = Awaited<ReturnType<typeof su
 
 export function useSupplierAnnouncementList<TData = Awaited<ReturnType<typeof supplierAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierAnnouncementList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierAnnouncementListQueryOptions(options)

@@ -46,15 +46,15 @@ export const attachmentList = (
     params: AttachmentListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListAttachmentResponse>(
       {url: `/api/v1/buyer/attachments`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -64,7 +64,7 @@ export const getAttachmentListQueryKey = (params?: AttachmentListParams,) => {
     ] as const;
     }
 
-    
+
 export const getAttachmentListQueryOptions = <TData = Awaited<ReturnType<typeof attachmentList>>, TError = ErrorType<ApiResponseVoid>>(params: AttachmentListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentList>>, TError, TData>>, }
 ) => {
 
@@ -72,13 +72,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getAttachmentListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof attachmentList>>> = ({ signal }) => attachmentList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof attachmentList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -114,7 +114,7 @@ export function useAttachmentList<TData = Awaited<ReturnType<typeof attachmentLi
 
 export function useAttachmentList<TData = Awaited<ReturnType<typeof attachmentList>>, TError = ErrorType<ApiResponseVoid>>(
  params: AttachmentListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAttachmentListQueryOptions(params,options)
@@ -133,8 +133,8 @@ export const attachmentCreate = (
     createAttachmentRequest: BodyType<CreateAttachmentRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseAttachmentResponse>(
       {url: `/api/v1/buyer/attachments`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -142,7 +142,7 @@ export const attachmentCreate = (
     },
       );
     }
-  
+
 
 
 export const getAttachmentCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -156,7 +156,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachmentCreate>>, {data: BodyType<CreateAttachmentRequest>}> = (props) => {
@@ -165,7 +165,7 @@ const {mutation: mutationOptions} = options ?
           return  attachmentCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -191,14 +191,14 @@ const {mutation: mutationOptions} = options ?
     attachmentId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseAttachmentDownloadLinkResponse>(
       {url: `/api/v1/buyer/attachments/${attachmentId}/download-link`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getAttachmentCreateDownloadLinkMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -212,7 +212,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachmentCreateDownloadLink>>, {attachmentId: string}> = (props) => {
@@ -221,13 +221,13 @@ const {mutation: mutationOptions} = options ?
           return  attachmentCreateDownloadLink(attachmentId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type AttachmentCreateDownloadLinkMutationResult = NonNullable<Awaited<ReturnType<typeof attachmentCreateDownloadLink>>>
-    
+
     export type AttachmentCreateDownloadLinkMutationError = ErrorType<ApiResponseVoid>
 
     export const useAttachmentCreateDownloadLink = <TError = ErrorType<ApiResponseVoid>,
@@ -247,8 +247,8 @@ const {mutation: mutationOptions} = options ?
     createAttachmentUploadTicketRequest: BodyType<CreateAttachmentUploadTicketRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseAttachmentUploadTicketResponse>(
       {url: `/api/v1/buyer/attachments/upload-ticket`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -256,7 +256,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getAttachmentCreateUploadTicketMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -270,7 +270,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachmentCreateUploadTicket>>, {data: BodyType<CreateAttachmentUploadTicketRequest>}> = (props) => {
@@ -279,7 +279,7 @@ const {mutation: mutationOptions} = options ?
           return  attachmentCreateUploadTicket(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -306,8 +306,8 @@ const {mutation: mutationOptions} = options ?
     params: AttachmentUploadSinkParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVoid>(
       {url: `/api/v1/buyer/attachments/upload-sink`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -316,7 +316,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getAttachmentUploadSinkMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -330,7 +330,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachmentUploadSink>>, {data: BodyType<string>;params: AttachmentUploadSinkParams}> = (props) => {
@@ -339,7 +339,7 @@ const {mutation: mutationOptions} = options ?
           return  attachmentUploadSink(data,params,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -365,15 +365,15 @@ const {mutation: mutationOptions} = options ?
     attachmentId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<Blob>(
       {url: `/api/v1/buyer/attachments/${attachmentId}/download`, method: 'GET',
         responseType: 'blob', signal
     },
       );
     }
-  
+
 
 
 
@@ -383,7 +383,7 @@ export const getAttachmentDownloadQueryKey = (attachmentId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getAttachmentDownloadQueryOptions = <TData = Awaited<ReturnType<typeof attachmentDownload>>, TError = ErrorType<ApiResponseVoid>>(attachmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentDownload>>, TError, TData>>, }
 ) => {
 
@@ -391,13 +391,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getAttachmentDownloadQueryKey(attachmentId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof attachmentDownload>>> = ({ signal }) => attachmentDownload(attachmentId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(attachmentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof attachmentDownload>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -433,7 +433,7 @@ export function useAttachmentDownload<TData = Awaited<ReturnType<typeof attachme
 
 export function useAttachmentDownload<TData = Awaited<ReturnType<typeof attachmentDownload>>, TError = ErrorType<ApiResponseVoid>>(
  attachmentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attachmentDownload>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAttachmentDownloadQueryOptions(attachmentId,options)

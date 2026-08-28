@@ -73,11 +73,12 @@ procurement:
       secret-key: ${MINIO_SECRET_KEY:minio12345}
       bucket: ${MINIO_BUCKET:24bid-attachments}
 
-# Flowable 工作流引擎(内嵌):自建 ACT_* 表(Liquibase),关闭异步执行器降低本地噪声。
+# Flowable 工作流引擎(内嵌):流程定义只允许由受控配置发布服务动态部署。
+# 历史 classpath:/processes/ 固定 BPMN 保留源码追溯，但不会随应用启动自动部署。
 flowable:
   database-schema-update: true
   async-executor-activate: false
-  process-definition-location-prefix: classpath:/processes/
+  process-definition-location-prefix: classpath:/workflow-runtime-disabled/
 
 # Keycloak(OIDC):后端作为资源服务器,通过 JWKS 验签 Keycloak 令牌(与自研 JWT 双签发器共存)。
 keycloak:

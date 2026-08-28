@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft,
@@ -9,6 +9,7 @@ import {
   Plane,
   Play,
   Plus,
+  Rocket,
   Save,
   UserCheck,
   UserPlus,
@@ -17,24 +18,41 @@ import {
   Zap,
 } from 'lucide-react';
 import {
-  type ProcessDefinitionResponse,
-  useProcessDefinitionCreate,
-  useProcessDefinitionGet,
-  useProcessDefinitionList,
-  useProcessDefinitionUpdate,
+  type WorkflowProcessDefinition,
+  useBuyerRoleList,
+  useBuyerUserList,
+  useWorkflowProcessDefinition,
+  useWorkflowProcessDefinitionCreate,
+  useWorkflowProcessDefinitionPublish,
+  useWorkflowProcessDefinitionUpdate,
+  useWorkflowProcessDefinitionVersions,
+  useWorkflowProcessDefinitions,
+  workflowRuntimeQueryKeys,
 } from '@24bid/api-client';
 import { FeedbackNotice, Tabs, cn } from '@24bid/ui';
 import { FormDesigner } from './form-designer';
 import { FlowDesigner } from './flow-designer';
-import { InstancesView } from './instances';
+import { resolveProcessListPrimaryAction } from './process-list-action';
 import {
   type FlowStep,
   type FormField,
   type ResolvedStep,
   evaluateFlow,
-  parseFlow,
-  parseForm,
+  parseWorkflowDraft,
 } from './types';
+
+const BUSINESS_TYPES = [
+  { id: 'purchase_demand', label: '采购需求' },
+  { id: 'buyer_supplier_admission', label: '供应商准入' },
+  { id: 'rfq_award', label: '询价定标' },
+  { id: 'contract_approval', label: '合同审批' },
+  { id: 'payment_request', label: '付款申请' },
+  { id: 'payment_batch', label: '付款批次' },
+  { id: 'payment_archive_exception', label: '付款归档例外' },
+] as const;
+
+const businessTypeLabel = (businessType?: string) =>
+  BUSINESS_TYPES.find((item) => item.id === businessType)?.label ?? businessType ?? '未绑定业务类型';
 
 const ICONS: Record<string, React.ElementType> = {
   box: Package,
@@ -55,61 +73,76 @@ export function ProcessEnginePage() {
 
 function ProcessList({ onConfigure }: { onConfigure: (id: string) => void }) {
   const queryClient = useQueryClient();
-  const list = useProcessDefinitionList();
-  const create = useProcessDefinitionCreate();
+  const list = useWorkflowProcessDefinitions();
+  const create = useWorkflowProcessDefinitionCreate();
   const processes = list.data?.data ?? [];
-  const [view, setView] = useState<'config' | 'instances'>('config');
+  const [businessType, setBusinessType] = useState<(typeof BUSINESS_TYPES)[number]['id']>('purchase_demand');
+  const primaryAction = useMemo(
+    () => resolveProcessListPrimaryAction(processes, businessType),
+    [businessType, processes],
+  );
 
   const onNew = () =>
     create.mutate(
-      { data: { name: `新建流程 ${processes.length + 1}`, description: '点击配置以设计表单与流程', icon: 'file-text' } },
+      {
+        name: `${businessTypeLabel(businessType)}审批流程`,
+        description: '配置表单、节点与受控办理规则后发布为 Flowable 版本。',
+        icon: 'file-text',
+        businessType,
+      },
       {
         onSuccess: (res) => {
-          queryClient.invalidateQueries({
-            predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/process-definitions'),
-          });
+          void queryClient.invalidateQueries({ queryKey: workflowRuntimeQueryKeys.processDefinitions });
           if (res.data?.id) onConfigure(res.data.id);
         },
       },
     );
+
+  const onPrimaryAction = () => {
+    if (primaryAction.type === 'configure') {
+      onConfigure(primaryAction.processId);
+      return;
+    }
+    onNew();
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4">
         <div>
           <p className="flex items-center gap-2 text-lg font-black text-slate-950">
-            <Workflow size={18} className="text-blue-600" /> 流程引擎
+            <Workflow size={18} className="text-blue-600" /> 流程定义配置
           </p>
-          <p className="mt-0.5 text-xs font-bold text-slate-400">可视化配置业务审批流与表单</p>
+          <p className="mt-0.5 text-xs font-bold text-slate-400">
+            每个业务类型保留一个配置入口，发布后生成不可变版本并部署至 Flowable
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg border border-slate-200 bg-white px-1.5">
-            <Tabs
-              items={[
-                { id: 'config', label: '流程配置' },
-                { id: 'instances', label: '运行实例' },
-              ]}
-              value={view}
-              onChange={(v) => setView(v as 'config' | 'instances')}
-            />
-          </div>
-          {view === 'config' && (
-            <button
-              type="button"
-              onClick={onNew}
-              disabled={create.isPending}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-sm font-black text-white transition hover:bg-slate-800 disabled:bg-slate-400"
-            >
-              <Plus size={16} /> 新建流程
-            </button>
-          )}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <select
+            value={businessType}
+            onChange={(event) => setBusinessType(event.target.value as (typeof BUSINESS_TYPES)[number]['id'])}
+            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-300"
+          >
+            {BUSINESS_TYPES.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}{processes.some((process) => process.businessType === item.id) ? '（已配置）' : ''}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={onPrimaryAction}
+            disabled={primaryAction.type === 'create' && create.isPending}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-sm font-black text-white transition hover:bg-slate-800 disabled:bg-slate-400"
+          >
+            {primaryAction.type === 'configure' ? <Workflow size={16} /> : <Plus size={16} />}
+            {primaryAction.type === 'configure' ? '配置新版本' : '新建流程'}
+          </button>
         </div>
       </div>
 
       {list.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载流程…" />
-      ) : view === 'instances' ? (
-        <InstancesView processes={processes} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {processes.map((p) => (
@@ -121,7 +154,7 @@ function ProcessList({ onConfigure }: { onConfigure: (id: string) => void }) {
   );
 }
 
-function ProcessCard({ process: p, onConfigure }: { process: ProcessDefinitionResponse; onConfigure: () => void }) {
+function ProcessCard({ process: p, onConfigure }: { process: WorkflowProcessDefinition; onConfigure: () => void }) {
   const Icon = ICONS[p.icon ?? ''] ?? FileText;
   const enabled = p.status === 'enabled';
   return (
@@ -141,6 +174,14 @@ function ProcessCard({ process: p, onConfigure }: { process: ProcessDefinitionRe
       </div>
       <p className="mt-4 text-base font-black text-slate-950">{p.name}</p>
       <p className="mt-1 text-xs font-bold text-slate-400">{p.description || '暂无描述'}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="rounded-md bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">
+          {businessTypeLabel(p.businessType)}
+        </span>
+        {p.activeVersionId && (
+          <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">已发布版本</span>
+        )}
+      </div>
       <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-3">
         <span className="text-[11px] font-bold text-slate-400">更新于 {p.updatedAt?.slice(0, 10) ?? '—'}</span>
         <button type="button" onClick={onConfigure} className="text-sm font-black text-blue-600 hover:text-blue-700">
@@ -153,42 +194,85 @@ function ProcessCard({ process: p, onConfigure }: { process: ProcessDefinitionRe
 
 function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
   const queryClient = useQueryClient();
-  const detail = useProcessDefinitionGet(id);
-  const update = useProcessDefinitionUpdate();
+  const detail = useWorkflowProcessDefinition(id);
+  const versions = useWorkflowProcessDefinitionVersions(id);
+  const users = useBuyerUserList();
+  const roles = useBuyerRoleList();
+  const update = useWorkflowProcessDefinitionUpdate();
+  const publish = useWorkflowProcessDefinitionPublish();
   const [tab, setTab] = useState<'form' | 'flow'>('form');
   const [fields, setFields] = useState<FormField[]>([]);
   const [steps, setSteps] = useState<FlowStep[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [identifierRepairNotice, setIdentifierRepairNotice] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const p = detail.data?.data;
+  const userList = users.data?.data ?? [];
+  const roleList = roles.data?.data ?? [];
 
   useEffect(() => {
     if (p) {
-      setFields(parseForm(p.formSchema).fields);
-      setSteps(parseFlow(p.flowSchema).steps);
+      const draft = parseWorkflowDraft(p.formSchema, p.flowSchema);
+      setFields(draft.fields);
+      setSteps(draft.steps);
+      setIdentifierRepairNotice(draft.repairedIdentifiers
+        ? '已自动修正旧草稿中的字段或节点编码。保存或发布后会按 Flowable 规则持久化。'
+        : null);
     }
   }, [p?.id, p?.formSchema, p?.flowSchema]);
 
-  const save = (status: string, label: string) => {
+  const invalidateDefinitions = () => {
+    void queryClient.invalidateQueries({ queryKey: workflowRuntimeQueryKeys.processDefinitions });
+    void queryClient.invalidateQueries({ queryKey: [...workflowRuntimeQueryKeys.processDefinitions, id] });
+    void queryClient.invalidateQueries({ queryKey: [...workflowRuntimeQueryKeys.processDefinitions, id, 'versions'] });
+  };
+
+  const errorMessage = (value: unknown) =>
+    (value as { response?: { data?: { message?: string } } })?.response?.data?.message
+      ?? '流程配置保存失败，请检查字段、条件和办理规则。';
+
+  const draftPayload = () => ({
+    name: p?.name ?? '流程',
+    description: p?.description ?? '',
+    status: 'draft' as const,
+    formSchema: JSON.stringify({ fields }),
+    flowSchema: JSON.stringify({ steps }),
+    businessType: p?.businessType,
+  });
+
+  const save = (label = '草稿已保存') => {
     if (!p) return;
+    setError(null);
     update.mutate(
       {
         id,
-        data: {
-          name: p.name ?? '流程',
-          description: p.description ?? '',
-          status,
-          formSchema: JSON.stringify({ fields }),
-          flowSchema: JSON.stringify({ steps }),
-        },
+        data: draftPayload(),
       },
       {
         onSuccess: () => {
           setFeedback(label);
-          queryClient.invalidateQueries({
-            predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/process-definitions'),
-          });
+          invalidateDefinitions();
         },
+        onError: (value) => setError(errorMessage(value)),
+      },
+    );
+  };
+
+  const publishVersion = () => {
+    if (!p) return;
+    setError(null);
+    update.mutate(
+      { id, data: draftPayload() },
+      {
+        onSuccess: () => publish.mutate(id, {
+          onSuccess: () => {
+            setFeedback('流程版本已发布并部署到 Flowable。正在办理的实例仍使用原版本。');
+            invalidateDefinitions();
+          },
+          onError: (value) => setError(errorMessage(value)),
+        }),
+        onError: (value) => setError(errorMessage(value)),
       },
     );
   };
@@ -199,7 +283,10 @@ function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
         <button type="button" onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
           <ChevronLeft size={18} />
         </button>
-        <p className="text-base font-black text-slate-950">{p?.name ?? '加载中…'}</p>
+        <div className="min-w-0">
+          <p className="truncate text-base font-black text-slate-950">{p?.name ?? '加载中…'}</p>
+          <p className="mt-0.5 text-[11px] font-bold text-slate-400">{businessTypeLabel(p?.businessType)}</p>
+        </div>
         <div className="mx-auto rounded-lg border border-slate-200 bg-white px-1.5">
           <Tabs
             items={[
@@ -220,31 +307,63 @@ function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
         </button>
         <button
           type="button"
-          onClick={() => save(p?.status ?? 'draft', '已保存')}
-          disabled={update.isPending || !p}
+          onClick={() => save()}
+          disabled={update.isPending || publish.isPending || !p}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
         >
           <Save size={14} /> 保存
         </button>
         <button
           type="button"
-          onClick={() => save('enabled', '流程已发布并启用')}
-          disabled={update.isPending || !p}
+          onClick={publishVersion}
+          disabled={update.isPending || publish.isPending || !p}
           className="inline-flex h-9 items-center rounded-lg bg-slate-900 px-4 text-xs font-black text-white hover:bg-slate-800 disabled:bg-slate-400"
         >
-          {update.isPending ? '处理中' : '发布流程'}
+          <Rocket size={14} /> {update.isPending || publish.isPending ? '处理中' : '发布版本'}
         </button>
       </div>
 
       {feedback && <FeedbackNotice tone="success" message={feedback} />}
+      {error && <FeedbackNotice tone="error" message={error} />}
+      {identifierRepairNotice && <FeedbackNotice tone="info" message={identifierRepairNotice} />}
 
       {detail.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载流程定义…" />
       ) : tab === 'form' ? (
         <FormDesigner fields={fields} onChange={setFields} />
       ) : (
-        <FlowDesigner steps={steps} fields={fields} onChange={setSteps} />
+        <FlowDesigner
+          steps={steps}
+          fields={fields}
+          users={userList}
+          roles={roleList}
+          onChange={setSteps}
+        />
       )}
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-black text-slate-950">已发布版本</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">版本快照不可修改；重新发布会创建新版本，不影响运行中的审批。</p>
+          </div>
+          {p?.activeVersionId && <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-black text-emerald-700">当前生效</span>}
+        </div>
+        {versions.isLoading ? (
+          <p className="mt-3 text-xs font-bold text-slate-400">正在加载版本…</p>
+        ) : (versions.data?.data ?? []).length === 0 ? (
+          <p className="mt-3 text-xs font-bold text-slate-400">尚未发布，保存草稿后可进行受控发布。</p>
+        ) : (
+          <div className="mt-3 divide-y divide-slate-100">
+            {(versions.data?.data ?? []).map((version) => (
+              <div key={version.id} className="flex items-center justify-between gap-3 py-2.5 text-xs">
+                <span className="font-black text-slate-700">v{version.versionNo} · {version.status === 'published' ? '当前发布' : '已被新版本替代'}</span>
+                <span className="font-mono font-bold text-slate-400">{version.publishedAt?.slice(0, 19) ?? '—'}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {showPreview && (
         <PreviewModal fields={fields} steps={steps} onClose={() => setShowPreview(false)} />
@@ -266,6 +385,7 @@ function PreviewModal({
   const [values, setValues] = useState<Record<string, string>>({});
   const [result, setResult] = useState<ResolvedStep[] | null>(null);
   const set = (id: string, v: string) => setValues((s) => ({ ...s, [id]: v }));
+  const hasSystemContext = flowUsesConditionField(steps, '$amount') || flowUsesConditionField(steps, '$departmentId');
   const inputCls =
     'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
 
@@ -278,6 +398,29 @@ function PreviewModal({
         </div>
 
         <p className="mb-2 text-xs font-black text-slate-400">填写表单</p>
+        {hasSystemContext && (
+          <div className="mb-3 grid gap-3 rounded-lg border border-blue-100 bg-blue-50/50 p-3 sm:grid-cols-2">
+            <div>
+              <p className="mb-1 text-xs font-black text-blue-700">流程金额</p>
+              <input
+                className={inputCls}
+                type="number"
+                placeholder="例如 100000"
+                value={values.$amount ?? ''}
+                onChange={(event) => set('$amount', event.target.value)}
+              />
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-black text-blue-700">申请部门 ID</p>
+              <input
+                className={inputCls}
+                placeholder="例如 dept-purchase"
+                value={values.$departmentId ?? ''}
+                onChange={(event) => set('$departmentId', event.target.value)}
+              />
+            </div>
+          </div>
+        )}
         <div className="space-y-3">
           {fields.length === 0 ? (
             <p className="text-xs font-bold text-slate-400">表单暂无字段。</p>
@@ -346,4 +489,12 @@ function PreviewModal({
       </div>
     </div>
   );
+}
+
+function flowUsesConditionField(steps: FlowStep[], field: string): boolean {
+  return steps.some((step) => {
+    if (step.type !== 'condition') return false;
+    return (step.branches ?? []).some((branch) =>
+      branch.condition?.field === field || flowUsesConditionField(branch.steps, field));
+  });
 }

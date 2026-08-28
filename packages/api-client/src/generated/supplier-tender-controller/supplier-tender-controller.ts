@@ -45,8 +45,8 @@ export const supplierTenderApplyPrequalification = (
     applyPrequalificationRequest: BodyType<ApplyPrequalificationRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/supplier/tenders/${tenderId}/prequalification`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -54,7 +54,7 @@ export const supplierTenderApplyPrequalification = (
     },
       );
     }
-  
+
 
 
 export const getSupplierTenderApplyPrequalificationMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -68,7 +68,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierTenderApplyPrequalification>>, {tenderId: string;data: BodyType<ApplyPrequalificationRequest>}> = (props) => {
@@ -77,7 +77,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierTenderApplyPrequalification(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -105,8 +105,8 @@ const {mutation: mutationOptions} = options ?
     answerTenderInquiryRequest: BodyType<AnswerTenderInquiryRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/supplier/tenders/${tenderId}/inquiries/${inquiryId}/answer`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -114,7 +114,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierTenderAnswerInquiryMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -128,7 +128,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierTenderAnswerInquiry>>, {tenderId: string;inquiryId: string;data: BodyType<AnswerTenderInquiryRequest>}> = (props) => {
@@ -137,7 +137,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierTenderAnswerInquiry(tenderId,inquiryId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -164,8 +164,8 @@ const {mutation: mutationOptions} = options ?
     submitTenderBidRequest: BodyType<SubmitTenderBidRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderBidResponse>(
       {url: `/api/v1/supplier/tenders/${tenderId}/bids`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -173,7 +173,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierTenderSubmitBidMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -187,7 +187,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierTenderSubmitBid>>, {tenderId: string;data: BodyType<SubmitTenderBidRequest>}> = (props) => {
@@ -196,7 +196,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierTenderSubmitBid(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -222,14 +222,14 @@ const {mutation: mutationOptions} = options ?
     tenderId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderBidResponse>(
       {url: `/api/v1/supplier/tenders/${tenderId}/bids/withdraw`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getSupplierTenderWithdrawBidMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -243,7 +243,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierTenderWithdrawBid>>, {tenderId: string}> = (props) => {
@@ -252,13 +252,13 @@ const {mutation: mutationOptions} = options ?
           return  supplierTenderWithdrawBid(tenderId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type SupplierTenderWithdrawBidMutationResult = NonNullable<Awaited<ReturnType<typeof supplierTenderWithdrawBid>>>
-    
+
     export type SupplierTenderWithdrawBidMutationError = ErrorType<ApiResponseVoid>
 
     export const useSupplierTenderWithdrawBid = <TError = ErrorType<ApiResponseVoid>,
@@ -278,14 +278,14 @@ const {mutation: mutationOptions} = options ?
     tenderId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/supplier/tenders/${tenderId}/acquire`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getSupplierTenderAcquireMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -299,7 +299,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierTenderAcquire>>, {tenderId: string}> = (props) => {
@@ -308,13 +308,13 @@ const {mutation: mutationOptions} = options ?
           return  supplierTenderAcquire(tenderId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type SupplierTenderAcquireMutationResult = NonNullable<Awaited<ReturnType<typeof supplierTenderAcquire>>>
-    
+
     export type SupplierTenderAcquireMutationError = ErrorType<ApiResponseVoid>
 
     export const useSupplierTenderAcquire = <TError = ErrorType<ApiResponseVoid>,
@@ -331,17 +331,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const supplierTenderList = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListTenderResponse>(
       {url: `/api/v1/supplier/tenders`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -351,7 +351,7 @@ export const getSupplierTenderListQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getSupplierTenderListQueryOptions = <TData = Awaited<ReturnType<typeof supplierTenderList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierTenderList>>, TError, TData>>, }
 ) => {
 
@@ -359,13 +359,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierTenderListQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierTenderList>>> = ({ signal }) => supplierTenderList(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierTenderList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -401,7 +401,7 @@ export function useSupplierTenderList<TData = Awaited<ReturnType<typeof supplier
 
 export function useSupplierTenderList<TData = Awaited<ReturnType<typeof supplierTenderList>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierTenderList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierTenderListQueryOptions(options)

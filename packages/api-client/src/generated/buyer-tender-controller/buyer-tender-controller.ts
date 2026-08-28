@@ -50,8 +50,8 @@ export const buyerTenderUpdate = (
     tenderId: string,
     saveTenderRequest: BodyType<SaveTenderRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -59,7 +59,7 @@ export const buyerTenderUpdate = (
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -73,7 +73,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderUpdate>>, {tenderId: string;data: BodyType<SaveTenderRequest>}> = (props) => {
@@ -82,7 +82,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderUpdate(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -108,8 +108,8 @@ const {mutation: mutationOptions} = options ?
     tenderId: string,
     setPrequalificationRequest: BodyType<SetPrequalificationRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/prequalification`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -117,7 +117,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderSetPrequalificationRequiredMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -131,7 +131,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderSetPrequalificationRequired>>, {tenderId: string;data: BodyType<SetPrequalificationRequest>}> = (props) => {
@@ -140,7 +140,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderSetPrequalificationRequired(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -163,17 +163,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const buyerTenderList = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListTenderResponse>(
       {url: `/api/v1/buyer/tenders`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -183,7 +183,7 @@ export const getBuyerTenderListQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getBuyerTenderListQueryOptions = <TData = Awaited<ReturnType<typeof buyerTenderList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerTenderList>>, TError, TData>>, }
 ) => {
 
@@ -191,13 +191,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerTenderListQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerTenderList>>> = ({ signal }) => buyerTenderList(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerTenderList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -233,7 +233,7 @@ export function useBuyerTenderList<TData = Awaited<ReturnType<typeof buyerTender
 
 export function useBuyerTenderList<TData = Awaited<ReturnType<typeof buyerTenderList>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerTenderList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerTenderListQueryOptions(options)
@@ -252,8 +252,8 @@ export const buyerTenderCreate = (
     saveTenderRequest: BodyType<SaveTenderRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -261,7 +261,7 @@ export const buyerTenderCreate = (
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -275,7 +275,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderCreate>>, {data: BodyType<SaveTenderRequest>}> = (props) => {
@@ -284,7 +284,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -311,8 +311,8 @@ const {mutation: mutationOptions} = options ?
     submitScoresRequest: BodyType<SubmitScoresRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/scores`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -320,7 +320,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderSubmitScoresMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -334,7 +334,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderSubmitScores>>, {tenderId: string;data: BodyType<SubmitScoresRequest>}> = (props) => {
@@ -343,7 +343,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderSubmitScores(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -369,14 +369,14 @@ const {mutation: mutationOptions} = options ?
     tenderId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/rebid`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderRebidMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -390,7 +390,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderRebid>>, {tenderId: string}> = (props) => {
@@ -399,13 +399,13 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderRebid(tenderId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerTenderRebidMutationResult = NonNullable<Awaited<ReturnType<typeof buyerTenderRebid>>>
-    
+
     export type BuyerTenderRebidMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerTenderRebid = <TError = ErrorType<ApiResponseVoid>,
@@ -425,14 +425,14 @@ const {mutation: mutationOptions} = options ?
     tenderId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/publish`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderPublishMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -446,7 +446,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderPublish>>, {tenderId: string}> = (props) => {
@@ -455,13 +455,13 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderPublish(tenderId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerTenderPublishMutationResult = NonNullable<Awaited<ReturnType<typeof buyerTenderPublish>>>
-    
+
     export type BuyerTenderPublishMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerTenderPublish = <TError = ErrorType<ApiResponseVoid>,
@@ -483,8 +483,8 @@ const {mutation: mutationOptions} = options ?
     reviewPrequalificationRequest: BodyType<ReviewPrequalificationRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/prequalifications/${applicationId}/review`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -492,7 +492,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderReviewPrequalificationMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -506,7 +506,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderReviewPrequalification>>, {tenderId: string;applicationId: string;data: BodyType<ReviewPrequalificationRequest>}> = (props) => {
@@ -515,7 +515,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderReviewPrequalification(tenderId,applicationId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -541,14 +541,14 @@ const {mutation: mutationOptions} = options ?
     tenderId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/open`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderOpenMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -562,7 +562,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderOpen>>, {tenderId: string}> = (props) => {
@@ -571,13 +571,13 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderOpen(tenderId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerTenderOpenMutationResult = NonNullable<Awaited<ReturnType<typeof buyerTenderOpen>>>
-    
+
     export type BuyerTenderOpenMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerTenderOpen = <TError = ErrorType<ApiResponseVoid>,
@@ -598,8 +598,8 @@ const {mutation: mutationOptions} = options ?
     sendTenderInquiryRequest: BodyType<SendTenderInquiryRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/inquiries`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -607,7 +607,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderSendInquiryMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -621,7 +621,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderSendInquiry>>, {tenderId: string;data: BodyType<SendTenderInquiryRequest>}> = (props) => {
@@ -630,7 +630,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderSendInquiry(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -657,8 +657,8 @@ const {mutation: mutationOptions} = options ?
     failTenderRequest: BodyType<FailTenderRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/fail`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -666,7 +666,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderFailMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -680,7 +680,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderFail>>, {tenderId: string;data: BodyType<FailTenderRequest>}> = (props) => {
@@ -689,7 +689,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderFail(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -716,8 +716,8 @@ const {mutation: mutationOptions} = options ?
     executeTenderRequest: BodyType<ExecuteTenderRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/execute`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -725,7 +725,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderExecuteMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -739,7 +739,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderExecute>>, {tenderId: string;data: BodyType<ExecuteTenderRequest>}> = (props) => {
@@ -748,7 +748,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderExecute(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -775,8 +775,8 @@ const {mutation: mutationOptions} = options ?
     distributeTenderRequest: BodyType<DistributeTenderRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/distribute`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -784,7 +784,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderDistributeMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -798,7 +798,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderDistribute>>, {tenderId: string;data: BodyType<DistributeTenderRequest>}> = (props) => {
@@ -807,7 +807,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderDistribute(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -834,8 +834,8 @@ const {mutation: mutationOptions} = options ?
     formCommitteeRequest: BodyType<FormCommitteeRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/committee`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -843,7 +843,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderFormCommitteeMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -857,7 +857,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderFormCommittee>>, {tenderId: string;data: BodyType<FormCommitteeRequest>}> = (props) => {
@@ -866,7 +866,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderFormCommittee(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -893,8 +893,8 @@ const {mutation: mutationOptions} = options ?
     awardTenderRequest: BodyType<AwardTenderRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenderResponse>(
       {url: `/api/v1/buyer/tenders/${tenderId}/award`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -902,7 +902,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerTenderAwardMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -916,7 +916,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerTenderAward>>, {tenderId: string;data: BodyType<AwardTenderRequest>}> = (props) => {
@@ -925,7 +925,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerTenderAward(tenderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -947,4 +947,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

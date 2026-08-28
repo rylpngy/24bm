@@ -1,7 +1,7 @@
 package com.procurement.supplier.api;
 
 import com.procurement.common.api.ApiResponse;
-import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.common.api.ApprovalTaskResponse;
 import com.procurement.supplier.application.BuyerSupplierApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -44,8 +44,12 @@ public class BuyerSupplierController {
   }
 
   @PostMapping("/{relationId}/submit")
-  public ApiResponse<ApprovalTaskResponse> submitAdmission(@PathVariable String relationId) {
-    return ApiResponse.ok(buyerSupplierApplicationService.submitAdmission(relationId));
+  public ApiResponse<ApprovalTaskResponse> submitAdmission(
+      @PathVariable String relationId,
+      @RequestBody(required = false) SubmitBuyerSupplierAdmissionRequest request) {
+    return ApiResponse.ok(request == null
+        ? buyerSupplierApplicationService.submitAdmission(relationId)
+        : buyerSupplierApplicationService.submitAdmission(relationId, request.formData()));
   }
 
   @GetMapping("/{relationId}/qualifications")

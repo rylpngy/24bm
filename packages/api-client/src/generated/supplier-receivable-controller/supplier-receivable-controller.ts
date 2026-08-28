@@ -43,8 +43,8 @@ export const supplierReceivableUpdateReceivable = (
     invoiceId: string,
     updateSupplierReceivableRequest: BodyType<UpdateSupplierReceivableRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseInvoiceResponse>(
       {url: `/api/v1/supplier/invoices/${invoiceId}/reconciliation`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -52,7 +52,7 @@ export const supplierReceivableUpdateReceivable = (
     },
       );
     }
-  
+
 
 
 export const getSupplierReceivableUpdateReceivableMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -66,7 +66,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierReceivableUpdateReceivable>>, {invoiceId: string;data: BodyType<UpdateSupplierReceivableRequest>}> = (props) => {
@@ -75,7 +75,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierReceivableUpdateReceivable(invoiceId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -101,15 +101,15 @@ const {mutation: mutationOptions} = options ?
     params?: SupplierReceivableListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListInvoiceResponse>(
       {url: `/api/v1/supplier/invoices`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -119,7 +119,7 @@ export const getSupplierReceivableListQueryKey = (params?: SupplierReceivableLis
     ] as const;
     }
 
-    
+
 export const getSupplierReceivableListQueryOptions = <TData = Awaited<ReturnType<typeof supplierReceivableList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierReceivableListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierReceivableList>>, TError, TData>>, }
 ) => {
 
@@ -127,13 +127,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierReceivableListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierReceivableList>>> = ({ signal }) => supplierReceivableList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierReceivableList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -169,7 +169,7 @@ export function useSupplierReceivableList<TData = Awaited<ReturnType<typeof supp
 
 export function useSupplierReceivableList<TData = Awaited<ReturnType<typeof supplierReceivableList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SupplierReceivableListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierReceivableList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierReceivableListQueryOptions(params,options)
@@ -188,14 +188,14 @@ export const supplierReceivablePaymentAuditLogs = (
     invoiceId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListAuditLogResponse>(
       {url: `/api/v1/supplier/invoices/${invoiceId}/payment-audit-logs`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -205,7 +205,7 @@ export const getSupplierReceivablePaymentAuditLogsQueryKey = (invoiceId?: string
     ] as const;
     }
 
-    
+
 export const getSupplierReceivablePaymentAuditLogsQueryOptions = <TData = Awaited<ReturnType<typeof supplierReceivablePaymentAuditLogs>>, TError = ErrorType<ApiResponseVoid>>(invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierReceivablePaymentAuditLogs>>, TError, TData>>, }
 ) => {
 
@@ -213,13 +213,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierReceivablePaymentAuditLogsQueryKey(invoiceId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierReceivablePaymentAuditLogs>>> = ({ signal }) => supplierReceivablePaymentAuditLogs(invoiceId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(invoiceId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierReceivablePaymentAuditLogs>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -255,7 +255,7 @@ export function useSupplierReceivablePaymentAuditLogs<TData = Awaited<ReturnType
 
 export function useSupplierReceivablePaymentAuditLogs<TData = Awaited<ReturnType<typeof supplierReceivablePaymentAuditLogs>>, TError = ErrorType<ApiResponseVoid>>(
  invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierReceivablePaymentAuditLogs>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierReceivablePaymentAuditLogsQueryOptions(invoiceId,options)

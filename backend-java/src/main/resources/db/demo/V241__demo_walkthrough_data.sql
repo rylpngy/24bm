@@ -236,47 +236,7 @@ on conflict (tenant_id, payment_batch_no, exception_type, approval_status) do up
   closed_by = excluded.closed_by,
   updated_at = now();
 
--- 4) 流程实例与统一审批中心任务。
-insert into process_instances
-  (id, tenant_id, process_id, process_name, amount, form_data, resolved_path,
-   current_index, status, initiator_id, created_at, updated_at)
-values
-  ('procinst-payment-1', 'tenant-acme', 'proc-payment', '付款申请', 88000.00,
-   '{"f1":"88000","f2":"2026-07-10"}'::jsonb,
-   '[{"id":"s1","type":"approver","title":"财务复核","assignee":"财务经理"}]'::jsonb,
-   0, 'processing', 'user-buyer-li', timestamptz '2026-07-04 09:00:00+08', now()),
-  ('procinst-payment-2', 'tenant-acme', 'proc-payment', '付款申请', 32200.00,
-   '{"f1":"32200","f2":"2026-07-01"}'::jsonb,
-   '[{"id":"s1","type":"approver","title":"财务复核","assignee":"财务经理"}]'::jsonb,
-   1, 'approved', 'user-buyer-li', timestamptz '2026-07-01 09:00:00+08', now()),
-  ('procinst-purchase-1', 'tenant-acme', 'proc-purchase', '采购立项审批', 36000.00,
-   '{"f1":"显示器批量采购用于研发部门工位扩容","f2":"36000","f3":"设备采购"}'::jsonb,
-   '[{"id":"s1","type":"approver","title":"部门主管","assignee":"直接主管"},{"id":"b2","type":"approver","title":"财务总监","assignee":"王总"}]'::jsonb,
-   1, 'processing', 'user-buyer-zhang', timestamptz '2026-07-03 10:00:00+08', now())
-on conflict (id) do update set
-  amount = excluded.amount,
-  form_data = excluded.form_data,
-  resolved_path = excluded.resolved_path,
-  current_index = excluded.current_index,
-  status = excluded.status,
-  updated_at = now();
-
-insert into approval_tasks
-  (id, tenant_id, biz_type, biz_id, assignee_id, status, acted_at, created_at, review_comment)
-values
-  ('task-proc-payment-1', 'tenant-acme', 'process_instance', 'procinst-payment-1', 'user-buyer-li',
-   '待处理', null, timestamptz '2026-07-04 09:05:00+08', null),
-  ('task-proc-purchase-1', 'tenant-acme', 'process_instance', 'procinst-purchase-1', 'user-buyer-owner',
-   '待处理', null, timestamptz '2026-07-03 10:05:00+08', null),
-  ('task-proc-payment-2', 'tenant-acme', 'process_instance', 'procinst-payment-2', 'user-buyer-li',
-   '已通过', timestamptz '2026-07-01 10:00:00+08', timestamptz '2026-07-01 09:05:00+08', '付款资料完整,同意。')
-on conflict (id) do update set
-  assignee_id = excluded.assignee_id,
-  status = excluded.status,
-  acted_at = excluded.acted_at,
-  review_comment = excluded.review_comment;
-
--- 5) 附件、通知与审计历史,让详情页和审计页有可读轨迹。
+-- 4) 附件、通知与审计历史,让详情页和审计页有可读轨迹。
 insert into attachments
   (id, tenant_id, owner_type, owner_id, file_name, storage_key, uploaded_by, visibility, status, created_at)
 values
@@ -343,9 +303,7 @@ values
   ('audit-invoice-var-reconciled', 'tenant-acme', 'user-buyer-li', 'invoice.updated', 'invoice', 'inv-var',
    timestamptz '2026-06-24 10:30:00+08', '登记金额差异处理'),
   ('audit-payment-batch-blocked', 'tenant-acme', 'user-buyer-li', 'payment_batch.updated', 'payment_batch', 'PB-2026-0002',
-   timestamptz '2026-07-04 16:20:00+08', '生成付款阻断处理任务'),
-  ('audit-process-payment-started', 'tenant-acme', 'user-buyer-li', 'process_instance.submitted', 'process_instance', 'procinst-payment-1',
-   timestamptz '2026-07-04 09:05:00+08', '发起付款申请流程')
+   timestamptz '2026-07-04 16:20:00+08', '生成付款阻断处理任务')
 on conflict (id) do update set
   action = excluded.action,
   target_type = excluded.target_type,

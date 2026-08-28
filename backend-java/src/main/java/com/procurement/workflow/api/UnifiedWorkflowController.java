@@ -1,0 +1,60 @@
+package com.procurement.workflow.api;
+
+import com.procurement.common.api.ApiResponse;
+import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/buyer/workflow")
+public class UnifiedWorkflowController {
+  private final UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
+
+  public UnifiedWorkflowController(UnifiedWorkflowApplicationService unifiedWorkflowApplicationService) {
+    this.unifiedWorkflowApplicationService = unifiedWorkflowApplicationService;
+  }
+
+  @GetMapping("/tasks")
+  public ApiResponse<List<UnifiedWorkflowTaskResponse>> tasks() {
+    return ApiResponse.ok(unifiedWorkflowApplicationService.listCurrentUserTasks());
+  }
+
+  @PostMapping("/tasks/{taskId}/complete")
+  public ApiResponse<WorkflowInstanceHistoryResponse> complete(
+      @PathVariable String taskId,
+      @Valid @RequestBody CompleteWorkflowTaskRequest request) {
+    return ApiResponse.ok(unifiedWorkflowApplicationService.completeCurrentUserTask(taskId, request));
+  }
+
+  @GetMapping("/instances/{workflowInstanceId}/history")
+  public ApiResponse<WorkflowInstanceHistoryResponse> history(@PathVariable String workflowInstanceId) {
+    return ApiResponse.ok(unifiedWorkflowApplicationService.getCurrentTenantHistory(workflowInstanceId));
+  }
+
+  @GetMapping("/instances/business/{businessType}/{businessId}/history")
+  public ApiResponse<WorkflowInstanceHistoryResponse> businessHistory(
+      @PathVariable String businessType,
+      @PathVariable String businessId) {
+    return ApiResponse.ok(
+        unifiedWorkflowApplicationService.getCurrentTenantBusinessHistory(businessType, businessId));
+  }
+
+  @GetMapping("/instances")
+  public ApiResponse<List<WorkflowInstanceLedgerResponse>> instances(
+      @RequestParam(defaultValue = "pending") String view,
+      @RequestParam(defaultValue = "100") int limit) {
+    return ApiResponse.ok(unifiedWorkflowApplicationService.listCurrentTenantInstances(view, limit));
+  }
+
+  @GetMapping("/definitions/{businessType}/form")
+  public ApiResponse<WorkflowPublishedFormResponse> publishedForm(@PathVariable String businessType) {
+    return ApiResponse.ok(unifiedWorkflowApplicationService.getPublishedForm(businessType));
+  }
+}

@@ -24,7 +24,11 @@ import com.procurement.sourcing.infrastructure.QuoteMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
+import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
+import com.procurement.workflow.application.WorkflowStartCommand;
 import java.util.UUID;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +43,7 @@ public class AwardApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final RfqAwardStatusTransition rfqAwardStatusTransition;
+  private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
 
   public AwardApplicationService(
       RfqMapper rfqMapper,
@@ -59,6 +64,12 @@ public class AwardApplicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.rfqAwardStatusTransition = rfqAwardStatusTransition;
+  }
+
+  @Autowired
+  void setUnifiedWorkflowApplicationService(
+      UnifiedWorkflowApplicationService unifiedWorkflowApplicationService) {
+    this.unifiedWorkflowApplicationService = unifiedWorkflowApplicationService;
   }
 
   @Transactional
@@ -102,7 +113,8 @@ public class AwardApplicationService {
     }
 
     String awardId = newId("award");
-    boolean requiresApproval = approvalGate.requiresApproval(tenantId, ApprovalBusinessType.RFQ_AWARD);
+    boolean requiresApproval = unifiedWorkflowApplicationService != null
+        || approvalGate.requiresApproval(tenantId, ApprovalBusinessType.RFQ_AWARD);
     awardDecisionMapper.insert(
         awardId,
         tenantId,
@@ -113,7 +125,27 @@ public class AwardApplicationService {
         request.reason(),
         requiresApproval ? ApprovalStatus.PENDING : ApprovalStatus.APPROVED);
 
-    if (requiresApproval) {
+    if (unifiedWorkflowApplicationService != null) {
+      unifiedWorkflowApplicationService.start(new WorkflowStartCommand(
+          ApprovalBusinessType.RFQ_AWARD,
+          awardId,
+          null,
+          quote.amount(),
+          request.formData() == null ? Map.of() : request.formData(),
+          Map.of(
+              "rfqId", rfqId,
+              "quoteId", quote.id(),
+              "supplierId", quote.supplierId(),
+              "amount", quote.amount())));
+      auditLogApplicationService.recordTenantAction(
+          RfqAwardAuditAction.SUBMITTED,
+          ApprovalBusinessType.RFQ_AWARD,
+          awardId);
+      notificationApplicationService.notifyActiveTenantUsers(
+          tenantId,
+          NotificationTitle.RFQ_AWARD_PENDING_APPROVAL,
+          rfq.title() + "已提交定标审批，请及时处理。");
+    } else if (requiresApproval) {
       approvalTaskApplicationService.createPendingTask(
           tenantId,
           ApprovalBusinessType.RFQ_AWARD,
@@ -170,6 +202,15 @@ public class AwardApplicationService {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
     rfqAwardStatusTransition.requireAwardReview(rfq.status(), rfqId);
+
+    if (unifiedWorkflowApplicationService != null) {
+      unifiedWorkflowApplicationService.completeCurrentUserBusinessTask(
+          ApprovalBusinessType.RFQ_AWARD,
+          request.awardId(),
+          Boolean.TRUE.equals(request.approved()),
+          request.comment());
+      return toResponse(awardDecisionMapper.findByTenantAndId(tenantId, request.awardId()));
+    }
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,

@@ -32,8 +32,8 @@ export const supplierInvoiceCreate = (
     createInvoiceRequest: BodyType<CreateInvoiceRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseInvoiceResponse>(
       {url: `/api/v1/supplier/orders/${orderId}/invoices`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -41,7 +41,7 @@ export const supplierInvoiceCreate = (
     },
       );
     }
-  
+
 
 
 export const getSupplierInvoiceCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -55,7 +55,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierInvoiceCreate>>, {orderId: string;data: BodyType<CreateInvoiceRequest>}> = (props) => {
@@ -64,7 +64,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierInvoiceCreate(orderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -86,4 +86,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

@@ -44,8 +44,8 @@ export const platformEnterpriseReview = (
     enterpriseReviewRequest: BodyType<EnterpriseReviewRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseEnterpriseReviewResponse>(
       {url: `/api/v1/platform/enterprise-reviews/${enterpriseId}`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -53,7 +53,7 @@ export const platformEnterpriseReview = (
     },
       );
     }
-  
+
 
 
 export const getPlatformEnterpriseReviewMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -67,7 +67,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformEnterpriseReview>>, {enterpriseId: string;data: BodyType<EnterpriseReviewRequest>}> = (props) => {
@@ -76,7 +76,7 @@ const {mutation: mutationOptions} = options ?
           return  platformEnterpriseReview(enterpriseId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -103,8 +103,8 @@ const {mutation: mutationOptions} = options ?
     advanceEnterpriseReviewRequest: BodyType<AdvanceEnterpriseReviewRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseEnterpriseReviewResponse>(
       {url: `/api/v1/platform/enterprise-reviews/${enterpriseId}/advance`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -112,7 +112,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getPlatformEnterpriseAdvanceMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -126,7 +126,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformEnterpriseAdvance>>, {enterpriseId: string;data: BodyType<AdvanceEnterpriseReviewRequest>}> = (props) => {
@@ -135,7 +135,7 @@ const {mutation: mutationOptions} = options ?
           return  platformEnterpriseAdvance(enterpriseId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -158,17 +158,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const platformEnterpriseListPendingReviews = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListEnterpriseReviewResponse>(
       {url: `/api/v1/platform/enterprise-reviews`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -178,7 +178,7 @@ export const getPlatformEnterpriseListPendingReviewsQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPlatformEnterpriseListPendingReviewsQueryOptions = <TData = Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError, TData>>, }
 ) => {
 
@@ -186,13 +186,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformEnterpriseListPendingReviewsQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>> = ({ signal }) => platformEnterpriseListPendingReviews(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -228,7 +228,7 @@ export function usePlatformEnterpriseListPendingReviews<TData = Awaited<ReturnTy
 
 export function usePlatformEnterpriseListPendingReviews<TData = Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseListPendingReviews>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformEnterpriseListPendingReviewsQueryOptions(options)
@@ -247,14 +247,14 @@ export const platformEnterpriseEvents = (
     enterpriseId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListEnterpriseReviewEventResponse>(
       {url: `/api/v1/platform/enterprise-reviews/${enterpriseId}/events`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -264,7 +264,7 @@ export const getPlatformEnterpriseEventsQueryKey = (enterpriseId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getPlatformEnterpriseEventsQueryOptions = <TData = Awaited<ReturnType<typeof platformEnterpriseEvents>>, TError = ErrorType<ApiResponseVoid>>(enterpriseId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseEvents>>, TError, TData>>, }
 ) => {
 
@@ -272,13 +272,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformEnterpriseEventsQueryKey(enterpriseId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformEnterpriseEvents>>> = ({ signal }) => platformEnterpriseEvents(enterpriseId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(enterpriseId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseEvents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -314,7 +314,7 @@ export function usePlatformEnterpriseEvents<TData = Awaited<ReturnType<typeof pl
 
 export function usePlatformEnterpriseEvents<TData = Awaited<ReturnType<typeof platformEnterpriseEvents>>, TError = ErrorType<ApiResponseVoid>>(
  enterpriseId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformEnterpriseEvents>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformEnterpriseEventsQueryOptions(enterpriseId,options)

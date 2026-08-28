@@ -13,7 +13,7 @@ import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.approval.infrastructure.ApprovalTemplateMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
-import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.common.api.ApprovalTaskResponse;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.supplier.api.BuyerSupplierResponse;

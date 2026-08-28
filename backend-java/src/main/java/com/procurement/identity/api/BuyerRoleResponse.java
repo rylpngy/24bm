@@ -7,5 +7,15 @@ public record BuyerRoleResponse(
     String tenantId,
     String name,
     List<String> permissions,
-    String dataScope) {
+    String dataScope,
+    boolean builtIn) {
+
+  public BuyerRoleResponse(
+      String id,
+      String tenantId,
+      String name,
+      List<String> permissions,
+      String dataScope) {
+    this(id, tenantId, name, permissions, dataScope, false);
+  }
 }

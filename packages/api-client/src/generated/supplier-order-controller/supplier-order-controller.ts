@@ -41,14 +41,14 @@ export const supplierOrderConfirm = (
     orderId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePurchaseOrderResponse>(
       {url: `/api/v1/supplier/orders/${orderId}/confirm`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getSupplierOrderConfirmMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -62,7 +62,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierOrderConfirm>>, {orderId: string}> = (props) => {
@@ -71,13 +71,13 @@ const {mutation: mutationOptions} = options ?
           return  supplierOrderConfirm(orderId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type SupplierOrderConfirmMutationResult = NonNullable<Awaited<ReturnType<typeof supplierOrderConfirm>>>
-    
+
     export type SupplierOrderConfirmMutationError = ErrorType<ApiResponseVoid>
 
     export const useSupplierOrderConfirm = <TError = ErrorType<ApiResponseVoid>,
@@ -97,15 +97,15 @@ const {mutation: mutationOptions} = options ?
     params?: SupplierOrderListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPurchaseOrderResponse>(
       {url: `/api/v1/supplier/orders`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -115,7 +115,7 @@ export const getSupplierOrderListQueryKey = (params?: SupplierOrderListParams,) 
     ] as const;
     }
 
-    
+
 export const getSupplierOrderListQueryOptions = <TData = Awaited<ReturnType<typeof supplierOrderList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderList>>, TError, TData>>, }
 ) => {
 
@@ -123,13 +123,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierOrderListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierOrderList>>> = ({ signal }) => supplierOrderList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierOrderList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -165,7 +165,7 @@ export function useSupplierOrderList<TData = Awaited<ReturnType<typeof supplierO
 
 export function useSupplierOrderList<TData = Awaited<ReturnType<typeof supplierOrderList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SupplierOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierOrderListQueryOptions(params,options)

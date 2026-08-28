@@ -1,6 +1,7 @@
 package com.procurement.demand.api;
 
 import com.procurement.common.api.ApiResponse;
+import com.procurement.common.api.ApprovalTaskResponse;
 import com.procurement.demand.application.PurchaseDemandApplicationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -50,8 +51,11 @@ public class PurchaseDemandController {
 
   @PostMapping("/{demandId}/submit")
   @ResponseStatus(HttpStatus.CREATED)
-  public ApiResponse<ApprovalTaskResponse> submit(@PathVariable String demandId) {
-    return ApiResponse.ok(purchaseDemandApplicationService.submit(demandId));
+  public ApiResponse<ApprovalTaskResponse> submit(
+      @PathVariable String demandId,
+      @RequestBody(required = false) SubmitPurchaseDemandRequest request) {
+    return ApiResponse.ok(purchaseDemandApplicationService.submit(
+        demandId, request == null ? java.util.Map.of() : request.formData()));
   }
 
   @PostMapping("/{demandId}/approval")

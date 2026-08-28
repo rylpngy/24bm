@@ -47,4 +47,15 @@ public class ProcessDefinitionController {
       @Valid @RequestBody UpdateProcessDefinitionRequest request) {
     return ApiResponse.ok(processDefinitionApplicationService.updateProcess(id, request));
   }
+
+  @PostMapping("/{id}/publish")
+  public ApiResponse<ProcessDefinitionResponse> publish(@PathVariable String id) {
+    return ApiResponse.ok(processDefinitionApplicationService.publishProcess(id));
+  }
+
+  @GetMapping("/{id}/versions")
+  public ApiResponse<List<ProcessDefinitionVersionResponse>> versions(
+      @PathVariable String id) {
+    return ApiResponse.ok(processDefinitionApplicationService.listProcessVersions(id));
+  }
 }

@@ -1,6 +1,7 @@
 package com.procurement.notification.domain;
 
 public final class NotificationTitle {
+  public static final String WORKFLOW_TASK_PENDING = "待审批任务";
   public static final String PURCHASE_DEMAND_PENDING_APPROVAL = "采购需求待审批";
   public static final String PURCHASE_DEMAND_APPROVED = "采购需求审批已通过";
   public static final String PURCHASE_DEMAND_REJECTED = "采购需求审批已驳回";

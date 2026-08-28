@@ -77,8 +77,8 @@ export const buyerFinanceActionUpdateVarianceHandlingStatus = (
     varianceHandlingId: string,
     updateVarianceHandlingStatusRequest: BodyType<UpdateVarianceHandlingStatusRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseVarianceHandlingResponse>(
       {url: `/api/v1/buyer/variance-handlings/${varianceHandlingId}/status`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -86,7 +86,7 @@ export const buyerFinanceActionUpdateVarianceHandlingStatus = (
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionUpdateVarianceHandlingStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -100,7 +100,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionUpdateVarianceHandlingStatus>>, {varianceHandlingId: string;data: BodyType<UpdateVarianceHandlingStatusRequest>}> = (props) => {
@@ -109,7 +109,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionUpdateVarianceHandlingStatus(varianceHandlingId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -135,8 +135,8 @@ const {mutation: mutationOptions} = options ?
     paymentRequestId: string,
     updatePaymentRequestStatusRequest: BodyType<UpdatePaymentRequestStatusRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponsePaymentRequestResponse>(
       {url: `/api/v1/buyer/payment-requests/${paymentRequestId}/status`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -144,7 +144,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionUpdatePaymentRequestStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -158,7 +158,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentRequestStatus>>, {paymentRequestId: string;data: BodyType<UpdatePaymentRequestStatusRequest>}> = (props) => {
@@ -167,7 +167,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionUpdatePaymentRequestStatus(paymentRequestId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -193,8 +193,8 @@ const {mutation: mutationOptions} = options ?
     resolutionId: string,
     updatePaymentBlockResolutionStatusRequest: BodyType<UpdatePaymentBlockResolutionStatusRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponsePaymentBlockResolutionResponse>(
       {url: `/api/v1/buyer/payment-block-resolutions/${resolutionId}/status`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -202,7 +202,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionUpdatePaymentBlockResolutionStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -216,7 +216,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBlockResolutionStatus>>, {resolutionId: string;data: BodyType<UpdatePaymentBlockResolutionStatusRequest>}> = (props) => {
@@ -225,7 +225,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionUpdatePaymentBlockResolutionStatus(resolutionId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -251,8 +251,8 @@ const {mutation: mutationOptions} = options ?
     paymentBatchNo: string,
     updatePaymentBatchStatusRequest: BodyType<UpdatePaymentBatchStatusRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponsePaymentBatchResponse>(
       {url: `/api/v1/buyer/payment-batches/${paymentBatchNo}/status`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -260,7 +260,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionUpdatePaymentBatchStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -274,7 +274,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionUpdatePaymentBatchStatus>>, {paymentBatchNo: string;data: BodyType<UpdatePaymentBatchStatusRequest>}> = (props) => {
@@ -283,7 +283,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionUpdatePaymentBatchStatus(paymentBatchNo,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -309,15 +309,15 @@ const {mutation: mutationOptions} = options ?
     params?: BuyerFinanceActionVarianceHandlingsParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListVarianceHandlingResponse>(
       {url: `/api/v1/buyer/variance-handlings`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -327,7 +327,7 @@ export const getBuyerFinanceActionVarianceHandlingsQueryKey = (params?: BuyerFin
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionVarianceHandlingsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionVarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError, TData>>, }
 ) => {
 
@@ -335,13 +335,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionVarianceHandlingsQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>> = ({ signal }) => buyerFinanceActionVarianceHandlings(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -377,7 +377,7 @@ export function useBuyerFinanceActionVarianceHandlings<TData = Awaited<ReturnTyp
 
 export function useBuyerFinanceActionVarianceHandlings<TData = Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionVarianceHandlingsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionVarianceHandlings>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionVarianceHandlingsQueryOptions(params,options)
@@ -396,8 +396,8 @@ export const buyerFinanceActionCreateVarianceHandling = (
     createVarianceHandlingRequest: BodyType<CreateVarianceHandlingRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVarianceHandlingResponse>(
       {url: `/api/v1/buyer/variance-handlings`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -405,7 +405,7 @@ export const buyerFinanceActionCreateVarianceHandling = (
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionCreateVarianceHandlingMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -419,7 +419,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandling>>, {data: BodyType<CreateVarianceHandlingRequest>}> = (props) => {
@@ -428,7 +428,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionCreateVarianceHandling(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -455,8 +455,8 @@ const {mutation: mutationOptions} = options ?
     approveVarianceHandlingRequest: BodyType<ApproveVarianceHandlingRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVarianceHandlingResponse>(
       {url: `/api/v1/buyer/variance-handlings/${varianceHandlingId}/manager-approval`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -464,7 +464,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionApproveVarianceHandlingMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -478,7 +478,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionApproveVarianceHandling>>, {varianceHandlingId: string;data: BodyType<ApproveVarianceHandlingRequest>}> = (props) => {
@@ -487,7 +487,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionApproveVarianceHandling(varianceHandlingId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -513,14 +513,14 @@ const {mutation: mutationOptions} = options ?
     matchId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVarianceHandlingResponse>(
       {url: `/api/v1/buyer/three-way-matches/${matchId}/variance-handling`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionCreateVarianceHandlingFromThreeWayMatchMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -534,7 +534,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch>>, {matchId: string}> = (props) => {
@@ -543,13 +543,13 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch(matchId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerFinanceActionCreateVarianceHandlingFromThreeWayMatchMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceHandlingFromThreeWayMatch>>>
-    
+
     export type BuyerFinanceActionCreateVarianceHandlingFromThreeWayMatchMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerFinanceActionCreateVarianceHandlingFromThreeWayMatch = <TError = ErrorType<ApiResponseVoid>,
@@ -570,14 +570,14 @@ const {mutation: mutationOptions} = options ?
     orderLineId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVarianceHandlingResponse>(
       {url: `/api/v1/buyer/three-way-matches/${invoiceId}/lines/${orderLineId}/variance`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionCreateVarianceFromMatchLineMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -591,7 +591,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceFromMatchLine>>, {invoiceId: string;orderLineId: string}> = (props) => {
@@ -600,13 +600,13 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionCreateVarianceFromMatchLine(invoiceId,orderLineId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerFinanceActionCreateVarianceFromMatchLineMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionCreateVarianceFromMatchLine>>>
-    
+
     export type BuyerFinanceActionCreateVarianceFromMatchLineMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerFinanceActionCreateVarianceFromMatchLine = <TError = ErrorType<ApiResponseVoid>,
@@ -623,17 +623,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const buyerFinanceActionRebuildThreeWayMatches = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseThreeWayMatchRebuildResponse>(
       {url: `/api/v1/buyer/three-way-matches/rebuild`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionRebuildThreeWayMatchesMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -647,22 +647,22 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionRebuildThreeWayMatches>>, void> = () => {
-          
+
 
           return  buyerFinanceActionRebuildThreeWayMatches()
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerFinanceActionRebuildThreeWayMatchesMutationResult = NonNullable<Awaited<ReturnType<typeof buyerFinanceActionRebuildThreeWayMatches>>>
-    
+
     export type BuyerFinanceActionRebuildThreeWayMatchesMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerFinanceActionRebuildThreeWayMatches = <TError = ErrorType<ApiResponseVoid>,
@@ -682,15 +682,15 @@ const {mutation: mutationOptions} = options ?
     params?: BuyerFinanceActionPaymentRequestsParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPaymentRequestResponse>(
       {url: `/api/v1/buyer/payment-requests`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -700,7 +700,7 @@ export const getBuyerFinanceActionPaymentRequestsQueryKey = (params?: BuyerFinan
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionPaymentRequestsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError, TData>>, }
 ) => {
 
@@ -708,13 +708,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentRequestsQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>> = ({ signal }) => buyerFinanceActionPaymentRequests(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -750,7 +750,7 @@ export function useBuyerFinanceActionPaymentRequests<TData = Awaited<ReturnType<
 
 export function useBuyerFinanceActionPaymentRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionPaymentRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentRequests>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionPaymentRequestsQueryOptions(params,options)
@@ -769,8 +769,8 @@ export const buyerFinanceActionCreatePaymentRequest = (
     createPaymentRequestRequest: BodyType<CreatePaymentRequestRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePaymentRequestResponse>(
       {url: `/api/v1/buyer/payment-requests`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -778,7 +778,7 @@ export const buyerFinanceActionCreatePaymentRequest = (
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionCreatePaymentRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -792,7 +792,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentRequest>>, {data: BodyType<CreatePaymentRequestRequest>}> = (props) => {
@@ -801,7 +801,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionCreatePaymentRequest(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -828,8 +828,8 @@ const {mutation: mutationOptions} = options ?
     registerPaymentRequest: BodyType<RegisterPaymentRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePaymentExecutionRecordResponse>(
       {url: `/api/v1/buyer/payment-execution-records/${executionRecordId}/registration`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -837,7 +837,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionRegisterPaymentExecutionRecordMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -851,7 +851,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionRegisterPaymentExecutionRecord>>, {executionRecordId: string;data: BodyType<RegisterPaymentRequest>}> = (props) => {
@@ -860,7 +860,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionRegisterPaymentExecutionRecord(executionRecordId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -886,15 +886,15 @@ const {mutation: mutationOptions} = options ?
     params?: BuyerFinanceActionPaymentBlockResolutionsParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPaymentBlockResolutionResponse>(
       {url: `/api/v1/buyer/payment-block-resolutions`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -904,7 +904,7 @@ export const getBuyerFinanceActionPaymentBlockResolutionsQueryKey = (params?: Bu
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionPaymentBlockResolutionsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError, TData>>, }
 ) => {
 
@@ -912,13 +912,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentBlockResolutionsQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>> = ({ signal }) => buyerFinanceActionPaymentBlockResolutions(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -954,7 +954,7 @@ export function useBuyerFinanceActionPaymentBlockResolutions<TData = Awaited<Ret
 
 export function useBuyerFinanceActionPaymentBlockResolutions<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionPaymentBlockResolutionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBlockResolutions>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionPaymentBlockResolutionsQueryOptions(params,options)
@@ -973,8 +973,8 @@ export const buyerFinanceActionCreatePaymentBlockResolution = (
     createPaymentBlockResolutionRequest: BodyType<CreatePaymentBlockResolutionRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePaymentBlockResolutionResponse>(
       {url: `/api/v1/buyer/payment-block-resolutions`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -982,7 +982,7 @@ export const buyerFinanceActionCreatePaymentBlockResolution = (
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionCreatePaymentBlockResolutionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -996,7 +996,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentBlockResolution>>, {data: BodyType<CreatePaymentBlockResolutionRequest>}> = (props) => {
@@ -1005,7 +1005,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionCreatePaymentBlockResolution(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1031,15 +1031,15 @@ const {mutation: mutationOptions} = options ?
     params?: BuyerFinanceActionPaymentArchiveExceptionRequestsParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPaymentArchiveExceptionRequestResponse>(
       {url: `/api/v1/buyer/payment-archive-exception-requests`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -1049,7 +1049,7 @@ export const getBuyerFinanceActionPaymentArchiveExceptionRequestsQueryKey = (par
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionPaymentArchiveExceptionRequestsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError, TData>>, }
 ) => {
 
@@ -1057,13 +1057,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentArchiveExceptionRequestsQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>> = ({ signal }) => buyerFinanceActionPaymentArchiveExceptionRequests(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -1099,7 +1099,7 @@ export function useBuyerFinanceActionPaymentArchiveExceptionRequests<TData = Awa
 
 export function useBuyerFinanceActionPaymentArchiveExceptionRequests<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionPaymentArchiveExceptionRequestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentArchiveExceptionRequests>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionPaymentArchiveExceptionRequestsQueryOptions(params,options)
@@ -1118,8 +1118,8 @@ export const buyerFinanceActionCreatePaymentArchiveExceptionRequest = (
     createPaymentArchiveExceptionRequestRequest: BodyType<CreatePaymentArchiveExceptionRequestRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePaymentArchiveExceptionRequestResponse>(
       {url: `/api/v1/buyer/payment-archive-exception-requests`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -1127,7 +1127,7 @@ export const buyerFinanceActionCreatePaymentArchiveExceptionRequest = (
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionCreatePaymentArchiveExceptionRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -1141,7 +1141,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCreatePaymentArchiveExceptionRequest>>, {data: BodyType<CreatePaymentArchiveExceptionRequestRequest>}> = (props) => {
@@ -1150,7 +1150,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionCreatePaymentArchiveExceptionRequest(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1177,8 +1177,8 @@ const {mutation: mutationOptions} = options ?
     completePaymentArchiveExceptionActionRequest: BodyType<CompletePaymentArchiveExceptionActionRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePaymentArchiveExceptionRequestResponse>(
       {url: `/api/v1/buyer/payment-archive-exception-requests/${requestId}/controlled-action`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -1186,7 +1186,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionCompletePaymentArchiveExceptionActionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -1200,7 +1200,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionCompletePaymentArchiveExceptionAction>>, {requestId: string;data: BodyType<CompletePaymentArchiveExceptionActionRequest>}> = (props) => {
@@ -1209,7 +1209,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionCompletePaymentArchiveExceptionAction(requestId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1236,8 +1236,8 @@ const {mutation: mutationOptions} = options ?
     closePaymentArchiveExceptionRequestRequest: BodyType<ClosePaymentArchiveExceptionRequestRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePaymentArchiveExceptionRequestResponse>(
       {url: `/api/v1/buyer/payment-archive-exception-requests/${requestId}/closure`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -1245,7 +1245,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionClosePaymentArchiveExceptionRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -1259,7 +1259,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionClosePaymentArchiveExceptionRequest>>, {requestId: string;data: BodyType<ClosePaymentArchiveExceptionRequestRequest>}> = (props) => {
@@ -1268,7 +1268,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionClosePaymentArchiveExceptionRequest(requestId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1295,8 +1295,8 @@ const {mutation: mutationOptions} = options ?
     reviewPaymentArchiveExceptionRequest: BodyType<ReviewPaymentArchiveExceptionRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseApprovalTaskResponse>(
       {url: `/api/v1/buyer/payment-archive-exception-requests/${requestId}/approval`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -1304,7 +1304,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerFinanceActionReviewPaymentArchiveExceptionRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -1318,7 +1318,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerFinanceActionReviewPaymentArchiveExceptionRequest>>, {requestId: string;data: BodyType<ReviewPaymentArchiveExceptionRequest>}> = (props) => {
@@ -1327,7 +1327,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerFinanceActionReviewPaymentArchiveExceptionRequest(requestId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1353,15 +1353,15 @@ const {mutation: mutationOptions} = options ?
     params?: BuyerFinanceActionThreeWayMatchesParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListThreeWayMatchResponse>(
       {url: `/api/v1/buyer/three-way-matches`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -1371,7 +1371,7 @@ export const getBuyerFinanceActionThreeWayMatchesQueryKey = (params?: BuyerFinan
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionThreeWayMatchesQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError, TData>>, }
 ) => {
 
@@ -1379,13 +1379,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionThreeWayMatchesQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>> = ({ signal }) => buyerFinanceActionThreeWayMatches(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -1421,7 +1421,7 @@ export function useBuyerFinanceActionThreeWayMatches<TData = Awaited<ReturnType<
 
 export function useBuyerFinanceActionThreeWayMatches<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionThreeWayMatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatches>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionThreeWayMatchesQueryOptions(params,options)
@@ -1440,14 +1440,14 @@ export const buyerFinanceActionThreeWayMatchLines = (
     invoiceId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListThreeWayMatchLineResponse>(
       {url: `/api/v1/buyer/three-way-matches/${invoiceId}/lines`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -1457,7 +1457,7 @@ export const getBuyerFinanceActionThreeWayMatchLinesQueryKey = (invoiceId?: stri
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionThreeWayMatchLinesQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError = ErrorType<ApiResponseVoid>>(invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError, TData>>, }
 ) => {
 
@@ -1465,13 +1465,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionThreeWayMatchLinesQueryKey(invoiceId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>> = ({ signal }) => buyerFinanceActionThreeWayMatchLines(invoiceId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(invoiceId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -1507,7 +1507,7 @@ export function useBuyerFinanceActionThreeWayMatchLines<TData = Awaited<ReturnTy
 
 export function useBuyerFinanceActionThreeWayMatchLines<TData = Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError = ErrorType<ApiResponseVoid>>(
  invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionThreeWayMatchLines>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionThreeWayMatchLinesQueryOptions(invoiceId,options)
@@ -1526,8 +1526,8 @@ export const buyerFinanceActionExportReconciliation = (
     params?: BuyerFinanceActionExportReconciliationParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<Blob>(
       {url: `/api/v1/buyer/reports/reconciliation`, method: 'GET',
         params,
@@ -1535,7 +1535,7 @@ export const buyerFinanceActionExportReconciliation = (
     },
       );
     }
-  
+
 
 
 
@@ -1545,7 +1545,7 @@ export const getBuyerFinanceActionExportReconciliationQueryKey = (params?: Buyer
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionExportReconciliationQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionExportReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError, TData>>, }
 ) => {
 
@@ -1553,13 +1553,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionExportReconciliationQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>> = ({ signal }) => buyerFinanceActionExportReconciliation(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -1595,7 +1595,7 @@ export function useBuyerFinanceActionExportReconciliation<TData = Awaited<Return
 
 export function useBuyerFinanceActionExportReconciliation<TData = Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionExportReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportReconciliation>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionExportReconciliationQueryOptions(params,options)
@@ -1614,8 +1614,8 @@ export const buyerFinanceActionExportProcurementAnalytics = (
     params?: BuyerFinanceActionExportProcurementAnalyticsParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<Blob>(
       {url: `/api/v1/buyer/reports/procurement-analytics`, method: 'GET',
         params,
@@ -1623,7 +1623,7 @@ export const buyerFinanceActionExportProcurementAnalytics = (
     },
       );
     }
-  
+
 
 
 
@@ -1633,7 +1633,7 @@ export const getBuyerFinanceActionExportProcurementAnalyticsQueryKey = (params?:
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionExportProcurementAnalyticsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionExportProcurementAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError, TData>>, }
 ) => {
 
@@ -1641,13 +1641,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionExportProcurementAnalyticsQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>> = ({ signal }) => buyerFinanceActionExportProcurementAnalytics(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -1683,7 +1683,7 @@ export function useBuyerFinanceActionExportProcurementAnalytics<TData = Awaited<
 
 export function useBuyerFinanceActionExportProcurementAnalytics<TData = Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionExportProcurementAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportProcurementAnalytics>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionExportProcurementAnalyticsQueryOptions(params,options)
@@ -1702,8 +1702,8 @@ export const buyerFinanceActionExportInvoices = (
     params?: BuyerFinanceActionExportInvoicesParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<Blob>(
       {url: `/api/v1/buyer/reports/invoices`, method: 'GET',
         params,
@@ -1711,7 +1711,7 @@ export const buyerFinanceActionExportInvoices = (
     },
       );
     }
-  
+
 
 
 
@@ -1721,7 +1721,7 @@ export const getBuyerFinanceActionExportInvoicesQueryKey = (params?: BuyerFinanc
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionExportInvoicesQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionExportInvoicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError, TData>>, }
 ) => {
 
@@ -1729,13 +1729,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionExportInvoicesQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>> = ({ signal }) => buyerFinanceActionExportInvoices(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -1771,7 +1771,7 @@ export function useBuyerFinanceActionExportInvoices<TData = Awaited<ReturnType<t
 
 export function useBuyerFinanceActionExportInvoices<TData = Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionExportInvoicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionExportInvoices>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionExportInvoicesQueryOptions(params,options)
@@ -1790,15 +1790,15 @@ export const buyerFinanceActionPaymentExecutionRecords = (
     params?: BuyerFinanceActionPaymentExecutionRecordsParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPaymentExecutionRecordResponse>(
       {url: `/api/v1/buyer/payment-execution-records`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -1808,7 +1808,7 @@ export const getBuyerFinanceActionPaymentExecutionRecordsQueryKey = (params?: Bu
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionPaymentExecutionRecordsQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError, TData>>, }
 ) => {
 
@@ -1816,13 +1816,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentExecutionRecordsQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>> = ({ signal }) => buyerFinanceActionPaymentExecutionRecords(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -1858,7 +1858,7 @@ export function useBuyerFinanceActionPaymentExecutionRecords<TData = Awaited<Ret
 
 export function useBuyerFinanceActionPaymentExecutionRecords<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionPaymentExecutionRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentExecutionRecords>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionPaymentExecutionRecordsQueryOptions(params,options)
@@ -1877,15 +1877,15 @@ export const buyerFinanceActionPaymentBatches = (
     params?: BuyerFinanceActionPaymentBatchesParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPaymentBatchResponse>(
       {url: `/api/v1/buyer/payment-batches`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -1895,7 +1895,7 @@ export const getBuyerFinanceActionPaymentBatchesQueryKey = (params?: BuyerFinanc
     ] as const;
     }
 
-    
+
 export const getBuyerFinanceActionPaymentBatchesQueryOptions = <TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerFinanceActionPaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError, TData>>, }
 ) => {
 
@@ -1903,13 +1903,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerFinanceActionPaymentBatchesQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>> = ({ signal }) => buyerFinanceActionPaymentBatches(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -1945,7 +1945,7 @@ export function useBuyerFinanceActionPaymentBatches<TData = Awaited<ReturnType<t
 
 export function useBuyerFinanceActionPaymentBatches<TData = Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerFinanceActionPaymentBatchesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerFinanceActionPaymentBatches>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerFinanceActionPaymentBatchesQueryOptions(params,options)

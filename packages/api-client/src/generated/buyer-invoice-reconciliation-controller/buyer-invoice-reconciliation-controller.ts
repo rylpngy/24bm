@@ -36,15 +36,15 @@ export const buyerInvoiceReconciliationList = (
     params?: BuyerInvoiceReconciliationListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListInvoiceReconciliationResponse>(
       {url: `/api/v1/buyer/invoice-reconciliations`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -54,7 +54,7 @@ export const getBuyerInvoiceReconciliationListQueryKey = (params?: BuyerInvoiceR
     ] as const;
     }
 
-    
+
 export const getBuyerInvoiceReconciliationListQueryOptions = <TData = Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError, TData>>, }
 ) => {
 
@@ -62,13 +62,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerInvoiceReconciliationListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>> = ({ signal }) => buyerInvoiceReconciliationList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -104,7 +104,7 @@ export function useBuyerInvoiceReconciliationList<TData = Awaited<ReturnType<typ
 
 export function useBuyerInvoiceReconciliationList<TData = Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerInvoiceReconciliationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerInvoiceReconciliationList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerInvoiceReconciliationListQueryOptions(params,options)

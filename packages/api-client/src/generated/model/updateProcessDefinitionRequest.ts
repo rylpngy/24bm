@@ -12,4 +12,5 @@ export interface UpdateProcessDefinitionRequest {
   status: string;
   formSchema: string;
   flowSchema: string;
+  businessType?: string;
 }

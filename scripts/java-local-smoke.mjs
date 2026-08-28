@@ -1,22 +1,4 @@
-import { execFileSync } from 'node:child_process';
-
-const baseUrl = process.env.JAVA_API_BASE_URL ?? 'http://localhost:8080';
-const localSmokeDatabaseUrl = process.env.JAVA_SMOKE_DATABASE_URL
-  ?? process.env.DB_URL
-  ?? 'postgresql://procurement:procurement@localhost:5432/procurement_saas';
-
-const requestJson = async (path, init = {}) => {
-  const response = await fetch(`${baseUrl}${path}`, init);
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
-
-  if (!response.ok || payload?.success === false) {
-    const message = payload?.message || payload?.error?.message || response.statusText;
-    throw new Error(`${init.method ?? 'GET'} ${path} failed: ${response.status} ${message}`);
-  }
-
-  return payload?.data;
-};
+import { baseUrl, requestJson, runLocalSmokeSql, sqlLiteral } from './java-smoke-support.mjs';
 
 const expectRequestFailure = async (path, init, expectedMessage) => {
   try {
@@ -28,43 +10,6 @@ const expectRequestFailure = async (path, init, expectedMessage) => {
     return error.message;
   }
   throw new Error(`Java payment request was not blocked before variance handling: ${path}`);
-};
-
-const sqlLiteral = (value) => `'${String(value).replaceAll("'", "''")}'`;
-
-const resolveLocalSmokeSqlCommand = () => {
-  try {
-    execFileSync('psql', ['--version'], { stdio: 'ignore' });
-    return {
-      command: 'psql',
-      args: [localSmokeDatabaseUrl, '-v', 'ON_ERROR_STOP=1', '-q', '-c'],
-    };
-  } catch {
-    return {
-      command: 'docker',
-      args: [
-        'exec',
-        '-i',
-        'procurement-saas-postgres',
-        'psql',
-        '-U',
-        'procurement',
-        '-d',
-        'procurement_saas',
-        '-v',
-        'ON_ERROR_STOP=1',
-        '-q',
-        '-c',
-      ],
-    };
-  }
-};
-
-const runLocalSmokeSql = (sql) => {
-  const sqlCommand = resolveLocalSmokeSqlCommand();
-  execFileSync(sqlCommand.command, [...sqlCommand.args, sql], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
 };
 
 const requireItem = (items, predicate, label) => {
@@ -90,16 +35,159 @@ const futureDate = () => {
   return date.toISOString().slice(0, 10);
 };
 
-const main = async () => {
-  const platformLogin = await requestJson('/api/v1/auth/login', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      account: process.env.JAVA_PLATFORM_ACCOUNT ?? 'platform.admin@example.com',
-      password: process.env.JAVA_PLATFORM_PASSWORD ?? 'demo123456',
-      scope: 'PLATFORM',
-    }),
+const workflowSmokeDefinitions = [
+  { businessType: 'purchase_demand', name: '采购需求审批' },
+  { businessType: 'buyer_supplier_admission', name: '供应商准入审批' },
+  { businessType: 'rfq_award', name: '询价定标审批' },
+  { businessType: 'contract_approval', name: '合同审批' },
+  { businessType: 'payment_request', name: '付款申请审批' },
+  { businessType: 'payment_batch', name: '付款批次审批' },
+  { businessType: 'payment_archive_exception', name: '付款归档例外审批' },
+];
+
+const workflowValueForSmoke = (field, businessType) => {
+  if (field.type === 'number' || field.type === 'money') return 1;
+  if (field.type === 'date') return futureDate();
+  if (field.type === 'select') {
+    if (!Array.isArray(field.options) || field.options.length === 0) {
+      throw new Error(`Published workflow select field has no options: ${businessType}.${field.id}`);
+    }
+    return field.options[0];
+  }
+  return `Java smoke ${businessType} ${field.label ?? field.id}`;
+};
+
+const formDataForPublishedWorkflow = (publishedForm) => {
+  let schema;
+  try {
+    schema = JSON.parse(publishedForm.formSchema ?? '{"fields":[]}');
+  } catch {
+    throw new Error(`Published workflow form is not valid JSON: ${publishedForm.businessType}`);
+  }
+  if (!Array.isArray(schema.fields)) {
+    throw new Error(`Published workflow form fields are invalid: ${publishedForm.businessType}`);
+  }
+  return Object.fromEntries(
+    schema.fields
+      .filter((field) => field?.required)
+      .map((field) => [field.id, workflowValueForSmoke(field, publishedForm.businessType)]),
+  );
+};
+
+// The smoke does not overwrite tenant configuration. It creates a minimal role-based
+// definition only when this business type has never been configured in the local seed.
+const ensurePublishedWorkflowForms = async (authHeaders) => {
+  const [processes, roles] = await Promise.all([
+    requestJson('/api/v1/buyer/process-definitions', { headers: authHeaders }),
+    requestJson('/api/v1/buyer/roles', { headers: authHeaders }),
+  ]);
+  const configuredRoleId = process.env.JAVA_SMOKE_WORKFLOW_ROLE_ID ?? 'role-buyer-owner';
+  if (!roles.some((role) => role.id === configuredRoleId)) {
+    throw new Error(`Java smoke workflow role is unavailable in tenant scope: ${configuredRoleId}`);
+  }
+  const processByBusinessType = new Map(
+    processes.filter((process) => process.businessType).map((process) => [process.businessType, process]),
+  );
+  const flowSchema = JSON.stringify({
+    steps: [
+      {
+        id: 'smoke_review',
+        type: 'approver',
+        title: 'Java smoke 审批',
+        assignment: { type: 'role', roleId: configuredRoleId },
+      },
+    ],
   });
+
+  for (const definition of workflowSmokeDefinitions) {
+    const existing = processByBusinessType.get(definition.businessType);
+    if (existing?.activeVersionId) continue;
+    if (existing) {
+      throw new Error(
+        `Workflow definition exists but has no published version: ${definition.businessType}. Publish it before running java:smoke.`,
+      );
+    }
+    const created = await requestJson('/api/v1/buyer/process-definitions', {
+      method: 'POST',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: `Java smoke · ${definition.name}`,
+        description: '仅用于本地 Java 联调的最小受控 Flowable 定义。',
+        icon: 'file-text',
+        businessType: definition.businessType,
+      }),
+    });
+    const saved = await requestJson(`/api/v1/buyer/process-definitions/${created.id}`, {
+      method: 'PUT',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: created.name,
+        description: created.description,
+        status: 'draft',
+        formSchema: '{"fields":[]}',
+        flowSchema,
+        businessType: definition.businessType,
+      }),
+    });
+    const published = await requestJson(`/api/v1/buyer/process-definitions/${saved.id}/publish`, {
+      method: 'POST',
+      headers: authHeaders,
+    });
+    if (!published.activeVersionId) {
+      throw new Error(`Java smoke could not publish workflow definition: ${definition.businessType}`);
+    }
+  }
+
+  const forms = {};
+  for (const definition of workflowSmokeDefinitions) {
+    const publishedForm = await requestJson(
+      `/api/v1/buyer/workflow/definitions/${definition.businessType}/form`,
+      { headers: authHeaders },
+    );
+    if (!publishedForm.definitionVersionId) {
+      throw new Error(`Published workflow definition is missing: ${definition.businessType}`);
+    }
+    forms[definition.businessType] = formDataForPublishedWorkflow(publishedForm);
+  }
+  return forms;
+};
+
+const completeWorkflowBusinessTask = async (
+  authHeaders,
+  businessType,
+  businessId,
+  comment,
+  action = 'approve',
+) => {
+  for (let index = 0; index < 20; index += 1) {
+    const tasks = await requestJson('/api/v1/buyer/workflow/tasks', { headers: authHeaders });
+    const task = tasks.find((item) => item.businessType === businessType && item.businessId === businessId);
+    if (!task) {
+      throw new Error(`Java smoke could not find Flowable task for ${businessType}: ${businessId}`);
+    }
+    const history = await requestJson(`/api/v1/buyer/workflow/tasks/${task.taskId}/complete`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({ action, comment }),
+    });
+    if (history.status !== 'processing') return { task, history };
+  }
+  throw new Error(`Java smoke exceeded Flowable task steps for ${businessType}: ${businessId}`);
+};
+
+const main = async () => {
+  const skipPlatformSmoke = process.env.JAVA_SKIP_PLATFORM_SMOKE === '1';
+  const platformLogin = skipPlatformSmoke
+    ? null
+    : await requestJson('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          account: process.env.JAVA_PLATFORM_ACCOUNT ?? 'platform.admin@example.com',
+          password: process.env.JAVA_PLATFORM_PASSWORD ?? 'demo123456',
+          scope: 'PLATFORM',
+        }),
+      });
 
   const buyerLogin = await requestJson('/api/v1/auth/login', {
     method: 'POST',
@@ -123,15 +211,19 @@ const main = async () => {
     }),
   });
 
-  const platformHeaders = { Authorization: `${platformLogin.tokenType} ${platformLogin.accessToken}` };
+  const platformHeaders = platformLogin
+    ? { Authorization: `${platformLogin.tokenType} ${platformLogin.accessToken}` }
+    : null;
   const authHeaders = { Authorization: `${buyerLogin.tokenType} ${buyerLogin.accessToken}` };
   const supplierHeaders = { Authorization: `${supplierLogin.tokenType} ${supplierLogin.accessToken}` };
-  const [platformWorkspace, platformOverview, platformTenants, platformEnterpriseReviews] = await Promise.all([
-    requestJson('/api/v1/platform/workspace', { headers: platformHeaders }),
-    requestJson('/api/v1/platform/overview', { headers: platformHeaders }),
-    requestJson('/api/v1/platform/tenants', { headers: platformHeaders }),
-    requestJson('/api/v1/platform/enterprise-reviews', { headers: platformHeaders }),
-  ]);
+  const [platformWorkspace, platformOverview, platformTenants, platformEnterpriseReviews] = platformHeaders
+    ? await Promise.all([
+        requestJson('/api/v1/platform/workspace', { headers: platformHeaders }),
+        requestJson('/api/v1/platform/overview', { headers: platformHeaders }),
+        requestJson('/api/v1/platform/tenants', { headers: platformHeaders }),
+        requestJson('/api/v1/platform/enterprise-reviews', { headers: platformHeaders }),
+      ])
+    : [null, null, [], []];
   const [buyerWorkspace, suppliers, materials, departments, users, demands, orders, invoices, auditLogs] = await Promise.all([
     requestJson('/api/v1/buyer/workspace', { headers: authHeaders }),
     requestJson('/api/v1/buyer/suppliers', { headers: authHeaders }),
@@ -152,12 +244,13 @@ const main = async () => {
     requestJson('/api/v1/supplier/invoices', { headers: supplierHeaders }),
   ]);
 
-  requireItem(suppliers, (item) => item.supplierId === 'supplier-tech', 'supplier-tech');
+  requireItem(suppliers, (item) => item.supplierId === 'ent-supplier-sunrise', 'ent-supplier-sunrise');
   requireItem(materials, (item) => item.id === 'mat-laptop', 'mat-laptop');
   requireItem(departments, (item) => item.id === 'dept-it', 'dept-it');
   requireItem(users, (item) => item.id === 'user-buyer-owner', 'user-buyer-owner');
-  requireItem(demands, (item) => item.id === 'dem-local-laptop', 'dem-local-laptop');
-  requireItem(platformTenants, (item) => item.id === 'tenant-acme', 'tenant-acme');
+  if (!skipPlatformSmoke) {
+    requireItem(platformTenants, (item) => item.id === 'tenant-acme', 'tenant-acme');
+  }
   let createdSmokeDepartment = null;
   if (process.env.JAVA_CREATE_SMOKE_DEPARTMENT === '1') {
     createdSmokeDepartment = await requestJson('/api/v1/buyer/departments', {
@@ -181,29 +274,32 @@ const main = async () => {
       throw new Error('Unexpected Java disabled department payload');
     }
   }
-  if (platformOverview.scope !== 'platform') {
-    throw new Error(`Unexpected Java platform overview scope: ${platformOverview.scope}`);
+  if (!skipPlatformSmoke) {
+    if (platformOverview.scope !== 'platform') {
+      throw new Error(`Unexpected Java platform overview scope: ${platformOverview.scope}`);
+    }
+    if (platformWorkspace.overview?.scope !== 'platform' || !Array.isArray(platformWorkspace.tenants)) {
+      throw new Error('Unexpected Java platform workspace aggregate payload');
+    }
+    const buyerTenant = platformTenants.find((item) => item.id === buyerLogin.tenantId);
+    let financeFeatureTenant = buyerTenant;
+    if (!buyerTenant) {
+      throw new Error(`Missing Java buyer tenant in platform tenant list: ${buyerLogin.tenantId}`);
+    }
+    if (!buyerTenant.enabledFeatures?.includes('finance')) {
+      financeFeatureTenant = await requestJson(`/api/v1/platform/tenants/${buyerLogin.tenantId}/features`, {
+        method: 'POST',
+        headers: { ...platformHeaders, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          enabledFeatures: Array.from(new Set([...(buyerTenant.enabledFeatures ?? []), 'finance'])),
+        }),
+      });
+    }
+    if (!financeFeatureTenant.enabledFeatures?.includes('finance')) {
+      throw new Error('Java smoke tenant does not have finance feature enabled');
+    }
   }
-  if (platformWorkspace.overview?.scope !== 'platform' || !Array.isArray(platformWorkspace.tenants)) {
-    throw new Error('Unexpected Java platform workspace aggregate payload');
-  }
-  const buyerTenant = platformTenants.find((item) => item.id === buyerLogin.tenantId);
-  let financeFeatureTenant = buyerTenant;
-  if (!buyerTenant) {
-    throw new Error(`Missing Java buyer tenant in platform tenant list: ${buyerLogin.tenantId}`);
-  }
-  if (!buyerTenant.enabledFeatures?.includes('finance')) {
-    financeFeatureTenant = await requestJson(`/api/v1/platform/tenants/${buyerLogin.tenantId}/features`, {
-      method: 'POST',
-      headers: { ...platformHeaders, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        enabledFeatures: Array.from(new Set([...(buyerTenant.enabledFeatures ?? []), 'finance'])),
-      }),
-    });
-  }
-  if (!financeFeatureTenant.enabledFeatures?.includes('finance')) {
-    throw new Error('Java smoke tenant does not have finance feature enabled');
-  }
+  const workflowFormData = await ensurePublishedWorkflowForms(authHeaders);
   if (supplierProfile.id !== 'ent-supplier-sunrise') {
     throw new Error(`Unexpected Java supplier profile: ${supplierProfile.id}`);
   }
@@ -220,19 +316,21 @@ const main = async () => {
   if (pendingAdmissionRelation?.status === '待准入') {
     const submittedAdmission = await requestJson(`/api/v1/buyer/suppliers/${pendingAdmissionRelation.id}/submit`, {
       method: 'POST',
-      headers: authHeaders,
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({ formData: workflowFormData.buyer_supplier_admission }),
     });
     if (submittedAdmission.bizType !== 'buyer_supplier_admission' || submittedAdmission.bizId !== pendingAdmissionRelation.id) {
       throw new Error('Unexpected Java supplier admission submission payload');
     }
 
-    admissionApproval = await requestJson(`/api/v1/buyer/suppliers/${pendingAdmissionRelation.id}/approval`, {
-      method: 'POST',
-      headers: { ...authHeaders, 'content-type': 'application/json' },
-      body: JSON.stringify({ approved: true }),
-    });
-    if (admissionApproval.status !== '已通过') {
-      throw new Error(`Unexpected Java supplier admission approval status: ${admissionApproval.status}`);
+    admissionApproval = await completeWorkflowBusinessTask(
+      authHeaders,
+      'buyer_supplier_admission',
+      pendingAdmissionRelation.id,
+      'Java smoke 供应商准入通过',
+    );
+    if (admissionApproval.history.status !== 'approved') {
+      throw new Error(`Unexpected Java supplier admission workflow status: ${admissionApproval.history.status}`);
     }
 
     const refreshedBuyerWorkspace = await requestJson('/api/v1/buyer/workspace', { headers: authHeaders });
@@ -263,19 +361,21 @@ const main = async () => {
 
   const submittedDemand = await requestJson(`/api/v1/buyer/demands/${smokeDemand.id}/submit`, {
     method: 'POST',
-    headers: authHeaders,
+    headers: { ...authHeaders, 'content-type': 'application/json' },
+    body: JSON.stringify({ formData: workflowFormData.purchase_demand }),
   });
   if (submittedDemand.bizType !== 'purchase_demand' || submittedDemand.bizId !== smokeDemand.id) {
     throw new Error('Unexpected Java purchase demand submission payload');
   }
 
-  const demandApproval = await requestJson(`/api/v1/buyer/demands/${smokeDemand.id}/approval`, {
-    method: 'POST',
-    headers: { ...authHeaders, 'content-type': 'application/json' },
-    body: JSON.stringify({ approved: true }),
-  });
-  if (demandApproval.status !== '已通过') {
-    throw new Error(`Unexpected Java purchase demand approval status: ${demandApproval.status}`);
+  const demandApproval = await completeWorkflowBusinessTask(
+    authHeaders,
+    'purchase_demand',
+    smokeDemand.id,
+    'Java smoke 采购需求通过',
+  );
+  if (demandApproval.history.status !== 'approved') {
+    throw new Error(`Unexpected Java purchase demand workflow status: ${demandApproval.history.status}`);
   }
 
   const rfq = await requestJson('/api/v1/buyer/rfqs', {
@@ -289,6 +389,25 @@ const main = async () => {
     }),
   });
 
+  const materialById = new Map(materials.map((material) => [material.id, material]));
+  const quoteLineItems = (smokeDemand.lineItems ?? []).map((lineItem, index) => {
+    const material = materialById.get(lineItem.materialId);
+    const quantity = Number(lineItem.quantity);
+    if (!lineItem.id || !Number.isFinite(quantity) || quantity <= 0) {
+      throw new Error(`Java smoke demand line is not quotable: ${smokeDemand.id}`);
+    }
+    return {
+      demandItemId: lineItem.id,
+      description: material?.name ?? `采购清单行 ${index + 1}`,
+      unit: material?.unit ?? '项',
+      quantity,
+      unitPrice: 118000 / quantity,
+    };
+  });
+  if (quoteLineItems.length === 0) {
+    throw new Error(`Java smoke RFQ has no demand line items: ${rfq.id}`);
+  }
+
   const quote = await requestJson(`/api/v1/supplier/rfqs/${rfq.id}/quotes`, {
     method: 'POST',
     headers: { ...supplierHeaders, 'content-type': 'application/json' },
@@ -296,8 +415,18 @@ const main = async () => {
       amount: 118000,
       taxRate: 13,
       deliveryDays: 7,
+      lineItems: quoteLineItems,
     }),
   });
+
+  const openedRfq = await requestJson(`/api/v1/buyer/rfqs/${rfq.id}/open`, {
+    method: 'POST',
+    headers: { ...authHeaders, 'content-type': 'application/json' },
+    body: JSON.stringify({ force: true }),
+  });
+  if (openedRfq.status !== '已开标' || !openedRfq.openedAt) {
+    throw new Error(`Java smoke did not open RFQ before award: ${rfq.id}`);
+  }
 
   const award = await requestJson(`/api/v1/buyer/rfqs/${rfq.id}/award`, {
     method: 'POST',
@@ -305,20 +434,20 @@ const main = async () => {
     body: JSON.stringify({
       quoteId: quote.id,
       reason: '本地联调报价最优',
+      formData: workflowFormData.rfq_award,
     }),
   });
 
-  const approvedAward = await requestJson(`/api/v1/buyer/rfqs/${rfq.id}/award/approval`, {
-    method: 'POST',
-    headers: { ...authHeaders, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      awardId: award.id,
-      approved: true,
-    }),
-  });
-  if (approvedAward.approvedStatus !== '已通过') {
-    throw new Error(`Unexpected Java award approval status: ${approvedAward.approvedStatus}`);
+  const awardApproval = await completeWorkflowBusinessTask(
+    authHeaders,
+    'rfq_award',
+    award.id,
+    'Java smoke 询价定标通过',
+  );
+  if (awardApproval.history.status !== 'approved') {
+    throw new Error(`Unexpected Java award workflow status: ${awardApproval.history.status}`);
   }
+  const approvedAward = { ...award, approvedStatus: '已通过' };
 
   const order = await requestJson('/api/v1/buyer/orders', {
     method: 'POST',
@@ -378,93 +507,102 @@ const main = async () => {
   }
 
   const perturbedInvoiceAmount = Number(invoice.amount) + 123.45;
+  const paymentBatchNo = `PAY-SMOKE-${Date.now()}`;
+  let resolvedVarianceHandling;
+  let paymentRequest;
+  let invoiceAmountPerturbed = false;
   // Java smoke deliberately perturbs invoice amount after valid invoice creation
   // so the API-level variance handling flow can be exercised without weakening
   // the supplier invoice creation policy.
-  runLocalSmokeSql(`
-    update invoices
-    set amount = ${perturbedInvoiceAmount},
-        updated_at = now()
-    where tenant_id = ${sqlLiteral(buyerLogin.tenantId)}
-      and id = ${sqlLiteral(invoice.id)}
-  `);
+  try {
+    runLocalSmokeSql(`
+      update invoices
+      set amount = ${perturbedInvoiceAmount},
+          updated_at = now()
+      where tenant_id = ${sqlLiteral(buyerLogin.tenantId)}
+        and id = ${sqlLiteral(invoice.id)}
+    `);
+    invoiceAmountPerturbed = true;
 
-  await requestJson('/api/v1/buyer/three-way-matches/rebuild', {
-    method: 'POST',
-    headers: authHeaders,
-  });
-  const varianceMatches = await requestJson(
-    `/api/v1/buyer/three-way-matches?matchStatus=${encodeURIComponent('金额差异')}&invoiceId=${invoice.id}`,
-    { headers: authHeaders },
-  );
-  const varianceMatch = varianceMatches.find((item) => item.invoiceId === invoice.id);
-  if (!varianceMatch || varianceMatch.paymentReadiness !== '需处理差异') {
-    throw new Error('Java smoke did not create an amount variance three-way match');
+    await requestJson('/api/v1/buyer/three-way-matches/rebuild', {
+      method: 'POST',
+      headers: authHeaders,
+    });
+    const varianceMatches = await requestJson(
+      `/api/v1/buyer/three-way-matches?matchStatus=${encodeURIComponent('金额差异')}&invoiceId=${invoice.id}`,
+      { headers: authHeaders },
+    );
+    const varianceMatch = varianceMatches.find((item) => item.invoiceId === invoice.id);
+    if (!varianceMatch || varianceMatch.paymentReadiness !== '需处理差异') {
+      throw new Error('Java smoke did not create an amount variance three-way match');
+    }
+
+    await expectRequestFailure('/api/v1/buyer/payment-requests', {
+      method: 'POST',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        invoiceId: invoice.id,
+        requestStatus: '付款申请待提交',
+        paymentBatchNo: `PAY-BLOCKED-${Date.now()}`,
+        remark: 'Java smoke expects variance to block payment request',
+      }),
+    }, 'Amount variance must be handled before payment request');
+
+    const varianceHandling = await requestJson(`/api/v1/buyer/three-way-matches/${varianceMatch.id}/variance-handling`, {
+      method: 'POST',
+      headers: authHeaders,
+    });
+    if (varianceHandling.status !== '待处理' || varianceHandling.invoiceId !== invoice.id) {
+      throw new Error('Java smoke did not create variance handling from amount variance match');
+    }
+
+    resolvedVarianceHandling = await requestJson(`/api/v1/buyer/variance-handlings/${varianceHandling.id}/status`, {
+      method: 'PUT',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        status: '已处理',
+        result: 'Java smoke 已核对差异，恢复付款申请。',
+      }),
+    });
+    if (resolvedVarianceHandling.status !== '已处理') {
+      throw new Error('Java smoke did not resolve variance handling');
+    }
+
+    paymentRequest = await requestJson('/api/v1/buyer/payment-requests', {
+      method: 'POST',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        invoiceId: invoice.id,
+        requestStatus: '付款申请待提交',
+        paymentBatchNo,
+        remark: 'Java smoke 付款申请和付款批次联调',
+      }),
+    });
+    if (paymentRequest.paymentBatchNo !== paymentBatchNo || paymentRequest.invoiceId !== invoice.id) {
+      throw new Error('Unexpected Java payment request payload');
+    }
+  } finally {
+    if (invoiceAmountPerturbed) {
+      runLocalSmokeSql(`
+        update invoices
+        set amount = ${Number(invoice.amount)},
+            updated_at = now()
+        where tenant_id = ${sqlLiteral(buyerLogin.tenantId)}
+          and id = ${sqlLiteral(invoice.id)}
+      `);
+      await requestJson('/api/v1/buyer/three-way-matches/rebuild', {
+        method: 'POST',
+        headers: authHeaders,
+      });
+    }
   }
-
-  await expectRequestFailure('/api/v1/buyer/payment-requests', {
-    method: 'POST',
-    headers: { ...authHeaders, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      invoiceId: invoice.id,
-      requestStatus: '付款申请待提交',
-      paymentBatchNo: `PAY-BLOCKED-${Date.now()}`,
-      remark: 'Java smoke expects variance to block payment request',
-    }),
-  }, 'Amount variance must be handled before payment request');
-
-  const varianceHandling = await requestJson(`/api/v1/buyer/three-way-matches/${varianceMatch.id}/variance-handling`, {
-    method: 'POST',
-    headers: authHeaders,
-  });
-  if (varianceHandling.status !== '待处理' || varianceHandling.invoiceId !== invoice.id) {
-    throw new Error('Java smoke did not create variance handling from amount variance match');
-  }
-
-  const resolvedVarianceHandling = await requestJson(`/api/v1/buyer/variance-handlings/${varianceHandling.id}/status`, {
-    method: 'PUT',
-    headers: { ...authHeaders, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      status: '已处理',
-      result: 'Java smoke 已核对差异，恢复付款申请。',
-    }),
-  });
-  if (resolvedVarianceHandling.status !== '已处理') {
-    throw new Error('Java smoke did not resolve variance handling');
-  }
-
-  const paymentBatchNo = `PAY-SMOKE-${Date.now()}`;
-  const paymentRequest = await requestJson('/api/v1/buyer/payment-requests', {
-    method: 'POST',
-    headers: { ...authHeaders, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      invoiceId: invoice.id,
-      requestStatus: '付款申请待提交',
-      paymentBatchNo,
-      remark: 'Java smoke 付款申请和付款批次联调',
-    }),
-  });
-  if (paymentRequest.paymentBatchNo !== paymentBatchNo || paymentRequest.invoiceId !== invoice.id) {
-    throw new Error('Unexpected Java payment request payload');
-  }
-
-  runLocalSmokeSql(`
-    update invoices
-    set amount = ${Number(order.amount)},
-        updated_at = now()
-    where tenant_id = ${sqlLiteral(buyerLogin.tenantId)}
-      and id = ${sqlLiteral(invoice.id)}
-  `);
-  await requestJson('/api/v1/buyer/three-way-matches/rebuild', {
-    method: 'POST',
-    headers: authHeaders,
-  });
 
   const submittedPaymentRequest = await requestJson(`/api/v1/buyer/payment-requests/${paymentRequest.id}/status`, {
     method: 'PUT',
     headers: { ...authHeaders, 'content-type': 'application/json' },
     body: JSON.stringify({
       requestStatus: '付款申请审批中',
+      formData: workflowFormData.payment_request,
     }),
   });
   if (submittedPaymentRequest.requestStatus !== '付款申请审批中') {
@@ -472,32 +610,83 @@ const main = async () => {
   }
 
   const paymentBatchesAfterSubmit = await requestJson(
-    `/api/v1/buyer/payment-batches?batchStatus=${encodeURIComponent('审批中')}`,
+    `/api/v1/buyer/payment-batches?batchStatus=${encodeURIComponent('付款申请审批中')}`,
     { headers: authHeaders },
   );
   const paymentBatchAfterSubmit = paymentBatchesAfterSubmit.find((item) => item.paymentBatchNo === paymentBatchNo);
-  if (!paymentBatchAfterSubmit || paymentBatchAfterSubmit.batchStatus !== '审批中') {
-    throw new Error('Java payment batch did not refresh to approval pending status');
+  if (!paymentBatchAfterSubmit || paymentBatchAfterSubmit.batchStatus !== '付款申请审批中') {
+    throw new Error('Java payment batch did not wait for payment request approval');
   }
 
-  const approvedPaymentRequest = await requestJson(`/api/v1/buyer/payment-requests/${paymentRequest.id}/status`, {
+  await expectRequestFailure(`/api/v1/buyer/payment-batches/${encodeURIComponent(paymentBatchNo)}/status`, {
     method: 'PUT',
     headers: { ...authHeaders, 'content-type': 'application/json' },
     body: JSON.stringify({
-      requestStatus: '付款申请已通过',
+      batchStatus: '审批中',
+      formData: workflowFormData.payment_batch,
+    }),
+  }, 'Payment batch cannot be approved until all payment requests are approved');
+
+  const rejectedPaymentRequest = await completeWorkflowBusinessTask(
+    authHeaders,
+    'payment_request',
+    paymentRequest.id,
+    'Java smoke 付款申请驳回后补充付款依据',
+    'reject',
+  );
+  if (rejectedPaymentRequest.history.status !== 'rejected') {
+    throw new Error(`Unexpected rejected payment request workflow status: ${rejectedPaymentRequest.history.status}`);
+  }
+  const paymentRequestsAfterRejection = await requestJson('/api/v1/buyer/payment-requests', { headers: authHeaders });
+  const rejectedPaymentRequestRecord = paymentRequestsAfterRejection.find((item) => item.id === paymentRequest.id);
+  if (!rejectedPaymentRequestRecord || rejectedPaymentRequestRecord.requestStatus !== '付款申请已驳回') {
+    throw new Error(`Java payment request did not persist rejection: ${rejectedPaymentRequestRecord?.requestStatus}`);
+  }
+  const paymentBatchesAfterRequestRejection = await requestJson(
+    `/api/v1/buyer/payment-batches?batchStatus=${encodeURIComponent('付款申请未通过')}`,
+    { headers: authHeaders },
+  );
+  const paymentBatchAfterRequestRejection = paymentBatchesAfterRequestRejection.find(
+    (item) => item.paymentBatchNo === paymentBatchNo,
+  );
+  if (!paymentBatchAfterRequestRejection || paymentBatchAfterRequestRejection.batchStatus !== '付款申请未通过') {
+    throw new Error('Java payment batch did not return to payment request rejection state');
+  }
+
+  const resubmittedPaymentRequest = await requestJson(`/api/v1/buyer/payment-requests/${paymentRequest.id}/status`, {
+    method: 'PUT',
+    headers: { ...authHeaders, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      requestStatus: '付款申请审批中',
+      formData: workflowFormData.payment_request,
     }),
   });
-  if (approvedPaymentRequest.requestStatus !== '付款申请已通过') {
-    throw new Error(`Unexpected Java payment request approved status: ${approvedPaymentRequest.requestStatus}`);
+  if (resubmittedPaymentRequest.requestStatus !== '付款申请审批中') {
+    throw new Error(`Java payment request did not resubmit after rejection: ${resubmittedPaymentRequest.requestStatus}`);
+  }
+
+  const paymentRequestApproval = await completeWorkflowBusinessTask(
+    authHeaders,
+    'payment_request',
+    paymentRequest.id,
+    'Java smoke 付款申请通过',
+  );
+  if (paymentRequestApproval.history.status !== 'approved') {
+    throw new Error(`Unexpected Java payment request workflow status: ${paymentRequestApproval.history.status}`);
+  }
+  const paymentRequestsAfterApproval = await requestJson('/api/v1/buyer/payment-requests', { headers: authHeaders });
+  const approvedPaymentRequest = paymentRequestsAfterApproval.find((item) => item.id === paymentRequest.id);
+  if (!approvedPaymentRequest || approvedPaymentRequest.requestStatus !== '付款申请已通过') {
+    throw new Error(`Unexpected Java payment request approved status: ${approvedPaymentRequest?.requestStatus}`);
   }
 
   const paymentBatchesAfterApproval = await requestJson(
-    `/api/v1/buyer/payment-batches?batchStatus=${encodeURIComponent('可安排付款')}`,
+    `/api/v1/buyer/payment-batches?batchStatus=${encodeURIComponent('待提交审批')}`,
     { headers: authHeaders },
   );
   const paymentBatchAfterApproval = paymentBatchesAfterApproval.find((item) => item.paymentBatchNo === paymentBatchNo);
-  if (!paymentBatchAfterApproval || paymentBatchAfterApproval.batchStatus !== '可安排付款') {
-    throw new Error('Java payment batch did not refresh to payable status');
+  if (!paymentBatchAfterApproval || paymentBatchAfterApproval.batchStatus !== '待提交审批') {
+    throw new Error('Java payment batch did not return to pending batch approval after request approval');
   }
 
   const paymentExecutionRecordsBeforePayment = await requestJson(
@@ -510,6 +699,10 @@ const main = async () => {
   if (!paymentExecutionRecordBeforePayment || paymentExecutionRecordBeforePayment.executionStatus !== '待登记付款') {
     throw new Error('Java payment execution record did not refresh to pending registration status');
   }
+  await expectRequestFailure(`/api/v1/buyer/payment-execution-records/${paymentExecutionRecordBeforePayment.id}/registration`, {
+    method: 'POST',
+    headers: authHeaders,
+  }, 'Payment batch must be approved before payment execution registration');
 
   const paymentBlockResolution = await requestJson('/api/v1/buyer/payment-block-resolutions', {
     method: 'POST',
@@ -568,6 +761,7 @@ const main = async () => {
       headers: { ...authHeaders, 'content-type': 'application/json' },
       body: JSON.stringify({
         batchStatus: '审批中',
+        formData: workflowFormData.payment_batch,
       }),
     },
   );
@@ -575,38 +769,64 @@ const main = async () => {
     throw new Error(`Unexpected Java payment batch approval submitted status: ${paymentBatchAfterBatchSubmit.batchStatus}`);
   }
 
-  const pendingBatchApprovals = await requestJson('/api/v1/buyer/approvals/pending', {
-    headers: authHeaders,
-  });
-  const pendingBatchApproval = pendingBatchApprovals.find(
-    (item) => item.bizType === 'payment_batch' && item.bizId === paymentBatchNo,
+  const rejectedPaymentBatch = await completeWorkflowBusinessTask(
+    authHeaders,
+    'payment_batch',
+    paymentBatchNo,
+    'Java smoke 付款批次驳回后补充资金计划',
+    'reject',
   );
-  if (
-    !pendingBatchApproval
-    || pendingBatchApproval.summaryTitle !== `付款批次 ${paymentBatchNo}`
-    || pendingBatchApproval.businessStatus !== '审批中'
-  ) {
-    throw new Error('Java smoke did not expose payment batch approval task');
+  if (rejectedPaymentBatch.history.status !== 'rejected') {
+    throw new Error(`Unexpected rejected payment batch workflow status: ${rejectedPaymentBatch.history.status}`);
+  }
+  const paymentBatchesAfterBatchRejection = await requestJson(
+    `/api/v1/buyer/payment-batches?batchStatus=${encodeURIComponent('待提交审批')}`,
+    { headers: authHeaders },
+  );
+  const paymentBatchAfterBatchRejection = paymentBatchesAfterBatchRejection.find(
+    (item) => item.paymentBatchNo === paymentBatchNo,
+  );
+  if (!paymentBatchAfterBatchRejection || paymentBatchAfterBatchRejection.batchStatus !== '待提交审批') {
+    throw new Error('Java payment batch did not return to pending submission after rejection');
   }
 
-  const paymentBatchAfterBatchApproval = await requestJson(
+  const resubmittedPaymentBatch = await requestJson(
     `/api/v1/buyer/payment-batches/${encodeURIComponent(paymentBatchNo)}/status`,
     {
       method: 'PUT',
       headers: { ...authHeaders, 'content-type': 'application/json' },
       body: JSON.stringify({
-        batchStatus: '可安排付款',
+        batchStatus: '审批中',
+        formData: workflowFormData.payment_batch,
       }),
     },
   );
-  if (paymentBatchAfterBatchApproval.batchStatus !== '可安排付款') {
-    throw new Error(`Unexpected Java payment batch approval passed status: ${paymentBatchAfterBatchApproval.batchStatus}`);
+  if (resubmittedPaymentBatch.batchStatus !== '审批中') {
+    throw new Error(`Java payment batch did not resubmit after rejection: ${resubmittedPaymentBatch.batchStatus}`);
   }
-  const pendingApprovalsAfterBatchApproval = await requestJson('/api/v1/buyer/approvals/pending', {
-    headers: authHeaders,
-  });
-  if (pendingApprovalsAfterBatchApproval.some((item) => item.bizType === 'payment_batch' && item.bizId === paymentBatchNo)) {
-    throw new Error('Java smoke did not close payment batch approval task');
+
+  const paymentBatchApproval = await completeWorkflowBusinessTask(
+    authHeaders,
+    'payment_batch',
+    paymentBatchNo,
+    'Java smoke 付款批次通过',
+  );
+  if (paymentBatchApproval.history.status !== 'approved') {
+    throw new Error(`Unexpected Java payment batch workflow status: ${paymentBatchApproval.history.status}`);
+  }
+  const paymentBatchesAfterBatchApproval = await requestJson(
+    `/api/v1/buyer/payment-batches?batchStatus=${encodeURIComponent('可安排付款')}`,
+    { headers: authHeaders },
+  );
+  const paymentBatchAfterBatchApproval = paymentBatchesAfterBatchApproval.find(
+    (item) => item.paymentBatchNo === paymentBatchNo,
+  );
+  if (!paymentBatchAfterBatchApproval || paymentBatchAfterBatchApproval.batchStatus !== '可安排付款') {
+    throw new Error(`Unexpected Java payment batch approval passed status: ${paymentBatchAfterBatchApproval?.batchStatus}`);
+  }
+  const pendingPaymentBatchTasks = await requestJson('/api/v1/buyer/workflow/tasks', { headers: authHeaders });
+  if (pendingPaymentBatchTasks.some((item) => item.businessType === 'payment_batch' && item.businessId === paymentBatchNo)) {
+    throw new Error('Java smoke did not close the Flowable payment batch task');
   }
 
   const registeredExecutionRecord = await requestJson(`/api/v1/buyer/payment-execution-records/${paymentExecutionRecordBeforePayment.id}/registration`, {
@@ -667,21 +887,26 @@ const main = async () => {
   const smokeContractId = createdContract.id;
   const submittedContractApproval = await requestJson(`/api/v1/buyer/contracts/${smokeContractId}/approval`, {
     method: 'POST',
-    headers: authHeaders,
+    headers: { ...authHeaders, 'content-type': 'application/json' },
+    body: JSON.stringify({ formData: workflowFormData.contract_approval }),
   });
   if (submittedContractApproval.status !== '审批中') {
     throw new Error(`Unexpected Java smoke contract approval submitted status: ${submittedContractApproval.status}`);
   }
 
-  const approvedContract = await requestJson(`/api/v1/buyer/contracts/${smokeContractId}/approval-review`, {
-    method: 'PUT',
-    headers: { ...authHeaders, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      approved: true,
-    }),
-  });
-  if (approvedContract.status !== '已生效' || approvedContract.fulfillmentProgress !== '已生效') {
-    throw new Error('Java smoke did not approve contract through approval center flow');
+  const contractApproval = await completeWorkflowBusinessTask(
+    authHeaders,
+    'contract_approval',
+    smokeContractId,
+    'Java smoke 合同审批通过',
+  );
+  if (contractApproval.history.status !== 'approved') {
+    throw new Error(`Unexpected Java contract workflow status: ${contractApproval.history.status}`);
+  }
+  const contractsAfterApproval = await requestJson('/api/v1/buyer/contracts', { headers: authHeaders });
+  const approvedContract = contractsAfterApproval.find((item) => item.id === smokeContractId);
+  if (!approvedContract || approvedContract.status !== '已生效' || approvedContract.fulfillmentProgress !== '已生效') {
+    throw new Error('Java smoke did not approve contract through the Flowable workflow');
   }
 
   const updatedContract = await requestJson(`/api/v1/buyer/contracts/${smokeContractId}`, {
@@ -803,6 +1028,7 @@ const main = async () => {
       paymentBatchNo,
       exceptionType: '撤销申请',
       exceptionReason: 'Java smoke 归档后登记异常申请，验证审批、受控处理和关闭复核闭环。',
+      formData: workflowFormData.payment_archive_exception,
     }),
   });
   if (
@@ -814,19 +1040,24 @@ const main = async () => {
     throw new Error('Java smoke did not create pending payment archive exception request');
   }
 
-  const paymentArchiveExceptionApproval = await requestJson(`/api/v1/buyer/payment-archive-exception-requests/${paymentArchiveExceptionRequest.id}/approval`, {
-    method: 'POST',
-    headers: { ...authHeaders, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      approved: true,
-    }),
-  });
-  if (
-    paymentArchiveExceptionApproval.bizType !== 'payment_archive_exception'
-    || paymentArchiveExceptionApproval.bizId !== paymentArchiveExceptionRequest.id
-    || paymentArchiveExceptionApproval.status !== '已通过'
-  ) {
-    throw new Error('Java smoke did not approve payment archive exception request');
+  const paymentArchiveExceptionApproval = await completeWorkflowBusinessTask(
+    authHeaders,
+    'payment_archive_exception',
+    paymentArchiveExceptionRequest.id,
+    'Java smoke 付款归档例外通过',
+  );
+  if (paymentArchiveExceptionApproval.history.status !== 'approved') {
+    throw new Error(`Unexpected Java payment archive exception workflow status: ${paymentArchiveExceptionApproval.history.status}`);
+  }
+  const approvedPaymentArchiveExceptionRequests = await requestJson(
+    `/api/v1/buyer/payment-archive-exception-requests?paymentBatchNo=${encodeURIComponent(paymentBatchNo)}`,
+    { headers: authHeaders },
+  );
+  const approvedPaymentArchiveExceptionRequest = approvedPaymentArchiveExceptionRequests.find(
+    (item) => item.id === paymentArchiveExceptionRequest.id,
+  );
+  if (approvedPaymentArchiveExceptionRequest?.approvalStatus !== '已通过') {
+    throw new Error('Java smoke did not apply payment archive exception workflow approval');
   }
 
   const completedPaymentArchiveExceptionAction = await requestJson(`/api/v1/buyer/payment-archive-exception-requests/${paymentArchiveExceptionRequest.id}/controlled-action`, {
@@ -881,15 +1112,21 @@ const main = async () => {
   }
 
   console.log(`Java local API smoke passed at ${baseUrl}`);
-  console.log(`Logged in as ${platformLogin.displayName} for platform scope`);
+  if (platformLogin) {
+    console.log(`Logged in as ${platformLogin.displayName} for platform scope`);
+  } else {
+    console.log('Skipped platform API smoke by JAVA_SKIP_PLATFORM_SMOKE=1');
+  }
   console.log(`Logged in as ${buyerLogin.displayName} for tenant ${buyerLogin.tenantId}`);
-  console.log(`Loaded ${platformTenants.length} tenants, ${platformOverview.publicSupplierCount} public suppliers, ${platformEnterpriseReviews.length} pending enterprise reviews`);
-  console.log(`Loaded platform workspace aggregate with ${platformWorkspace.tenants.length} tenants and ${platformWorkspace.enterpriseReviews.length} pending enterprise reviews`);
-  console.log(`Confirmed finance feature for tenant ${buyerLogin.tenantId}`);
+  if (platformLogin) {
+    console.log(`Loaded ${platformTenants.length} tenants, ${platformOverview.publicSupplierCount} public suppliers, ${platformEnterpriseReviews.length} pending enterprise reviews`);
+    console.log(`Loaded platform workspace aggregate with ${platformWorkspace.tenants.length} tenants and ${platformWorkspace.enterpriseReviews.length} pending enterprise reviews`);
+    console.log(`Confirmed finance feature for tenant ${buyerLogin.tenantId}`);
+  }
   console.log(`Loaded ${suppliers.length} suppliers, ${materials.length} materials, ${departments.length} departments, ${users.length} buyer users`);
   console.log(`Loaded buyer workspace aggregate with ${buyerWorkspace.suppliers.length} suppliers and ${buyerWorkspace.auditLogs.length} audit logs`);
   if (admittedRelation && admissionApproval) {
-    console.log(`Approved supplier admission ${admissionApproval.id}; relation ${admittedRelation.id} status is ${admittedRelation.status}`);
+    console.log(`Completed Flowable supplier admission task ${admissionApproval.task.taskId}; relation ${admittedRelation.id} status is ${admittedRelation.status}`);
   } else {
     console.log('Skipped supplier admission approval smoke because no pending admission relation was available');
   }
@@ -902,10 +1139,11 @@ const main = async () => {
   console.log(`Created three-way match ${threeWayMatchAfterPayment.id}, status ${threeWayMatchAfterPayment.matchStatus}, readiness ${threeWayMatchAfterPayment.paymentReadiness}`);
   console.log(`Rebuilt ${rebuiltThreeWayMatches.rebuiltCount} three-way match snapshots`);
   console.log(`Recovered payment request ${paymentRequest.id} after variance handling ${resolvedVarianceHandling.id}`);
+  console.log(`Verified Flowable rejection and resubmission for payment request ${paymentRequest.id} and batch ${paymentBatchNo}`);
   console.log(`Created payment request ${paymentRequest.id}, batch ${paymentBatchNo}, batch status ${paymentBatchAfterApproval.batchStatus}`);
   console.log(`Created payment block resolution ${paymentBlockResolution.id}, status ${updatedPaymentBlockResolution.resolutionStatus}`);
   console.log(`Loaded payment block resolutions ${paymentBlockResolutions.length} for batch ${paymentBatchNo}`);
-  console.log(`Submitted and approved payment batch approval ${pendingBatchApproval.id} for ${paymentBatchNo}, batch status ${paymentBatchAfterBatchApproval.batchStatus}`);
+  console.log(`Completed Flowable payment batch task ${paymentBatchApproval.task.taskId} for ${paymentBatchNo}, batch status ${paymentBatchAfterBatchApproval.batchStatus}`);
   console.log(`Archived payment batch ${paymentBatchAfterArchive.paymentBatchNo}, batch status ${paymentBatchAfterArchive.batchStatus}`);
   console.log(`Created, approved and updated contract ${updatedContract.contractNo}, status ${updatedContract.status}`);
   console.log(`Contract fulfillment event persisted ${contractFulfillmentEvent.id}, target ${contractFulfillmentEvent.targetId}`);

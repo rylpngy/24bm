@@ -44,15 +44,15 @@ export const supplierUserList = (
     params?: SupplierUserListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListSupplierUserResponse>(
       {url: `/api/v1/supplier/users`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -62,7 +62,7 @@ export const getSupplierUserListQueryKey = (params?: SupplierUserListParams,) =>
     ] as const;
     }
 
-    
+
 export const getSupplierUserListQueryOptions = <TData = Awaited<ReturnType<typeof supplierUserList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierUserListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierUserList>>, TError, TData>>, }
 ) => {
 
@@ -70,13 +70,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierUserListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierUserList>>> = ({ signal }) => supplierUserList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierUserList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -112,7 +112,7 @@ export function useSupplierUserList<TData = Awaited<ReturnType<typeof supplierUs
 
 export function useSupplierUserList<TData = Awaited<ReturnType<typeof supplierUserList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SupplierUserListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierUserList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierUserListQueryOptions(params,options)
@@ -131,8 +131,8 @@ export const supplierUserCreate = (
     createSupplierUserRequest: BodyType<CreateSupplierUserRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierUserResponse>(
       {url: `/api/v1/supplier/users`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -140,7 +140,7 @@ export const supplierUserCreate = (
     },
       );
     }
-  
+
 
 
 export const getSupplierUserCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -154,7 +154,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierUserCreate>>, {data: BodyType<CreateSupplierUserRequest>}> = (props) => {
@@ -163,7 +163,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierUserCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -190,8 +190,8 @@ const {mutation: mutationOptions} = options ?
     changeSupplierUserStatusRequest: BodyType<ChangeSupplierUserStatusRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierUserResponse>(
       {url: `/api/v1/supplier/users/${userId}/status`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -199,7 +199,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierUserChangeStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -213,7 +213,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierUserChangeStatus>>, {userId: string;data: BodyType<ChangeSupplierUserStatusRequest>}> = (props) => {
@@ -222,7 +222,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierUserChangeStatus(userId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -249,8 +249,8 @@ const {mutation: mutationOptions} = options ?
     resetSupplierUserPasswordRequest: BodyType<ResetSupplierUserPasswordRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierUserResponse>(
       {url: `/api/v1/supplier/users/${userId}/password`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -258,7 +258,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierUserResetPasswordMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -272,7 +272,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierUserResetPassword>>, {userId: string;data: BodyType<ResetSupplierUserPasswordRequest>}> = (props) => {
@@ -281,7 +281,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierUserResetPassword(userId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -303,4 +303,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

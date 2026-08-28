@@ -12,6 +12,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
+import java.util.Set;
 
 /**
  * 架构护栏（标准第三章）：守住模块化单体的分层方向与模块边界。
@@ -22,6 +23,13 @@ import com.tngtech.archunit.library.freeze.FreezingArchRule;
  */
 @AnalyzeClasses(packages = "com.procurement", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
+
+  /** Flowable 编排层允许使用的跨模块持久化网关；任何新增依赖都必须显式评审后加入。 */
+  private static final Set<String> WORKFLOW_ORCHESTRATION_INFRASTRUCTURE = Set.of(
+      "com.procurement.approval.infrastructure.ApprovalTemplateMapper",
+      "com.procurement.identity.infrastructure.BuyerUserMapper",
+      "com.procurement.organization.infrastructure.DepartmentMapper",
+      "com.procurement.process.infrastructure.ProcessDefinitionMapper");
 
   /** 领域核心不依赖控制器层（api 是最外层边缘）。硬约束。 */
   @ArchTest
@@ -60,6 +68,16 @@ class ArchitectureTest {
           JavaClass target = dependency.getTargetClass();
           String targetModule = moduleOf(target);
           boolean targetInLayer = target.getPackageName().contains("." + layerSegment);
+          if ("api".equals(layerSegment) && "common".equals(targetModule)) {
+            // common.api 是跨模块稳定契约（统一信封和通用审批回执），不属于任一业务模块私有 API。
+            continue;
+          }
+          if ("infrastructure".equals(layerSegment)
+              && "workflow".equals(ownModule)
+              && WORKFLOW_ORCHESTRATION_INFRASTRUCTURE.contains(target.getFullName())) {
+            // workflow 是唯一 Flowable 运行时编排模块；白名单之外的跨模块 Mapper 仍受护栏拦截。
+            continue;
+          }
           if (targetInLayer
               && !targetModule.isEmpty()
               && !targetModule.equals(ownModule)) {

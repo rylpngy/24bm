@@ -12,7 +12,7 @@ import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
-import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.common.api.ApprovalTaskResponse;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.supplier.api.ChangeBuyerSupplierPerformanceRequest;
@@ -32,9 +32,14 @@ import com.procurement.supplier.domain.SupplierQualification;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.supplier.infrastructure.SupplierProfileMapper;
 import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
+import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
+import com.procurement.workflow.application.WorkflowStartCommand;
+import com.procurement.workflow.application.WorkflowStartResult;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +57,7 @@ public class BuyerSupplierApplicationService {
   private final BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition;
   private final BuyerSupplierManualStatusTransition buyerSupplierManualStatusTransition;
   private final SupplierQualificationApplicationService supplierQualificationApplicationService;
+  private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
 
   public BuyerSupplierApplicationService(
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
@@ -78,6 +84,12 @@ public class BuyerSupplierApplicationService {
     this.buyerSupplierManualStatusTransition = buyerSupplierManualStatusTransition;
     this.supplierQualificationApplicationService = supplierQualificationApplicationService;
     this.supplierProfileMapper = supplierProfileMapper;
+  }
+
+  @Autowired
+  void setUnifiedWorkflowApplicationService(
+      UnifiedWorkflowApplicationService unifiedWorkflowApplicationService) {
+    this.unifiedWorkflowApplicationService = unifiedWorkflowApplicationService;
   }
 
   public List<BuyerSupplierResponse> listCurrentTenantSuppliers() {
@@ -162,10 +174,45 @@ public class BuyerSupplierApplicationService {
 
   @Transactional
   public ApprovalTaskResponse submitAdmission(String relationId) {
+    return submitAdmission(relationId, Map.of());
+  }
+
+  @Transactional
+  public ApprovalTaskResponse submitAdmission(String relationId, Map<String, Object> formData) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
     buyerSupplierAdmissionStatusTransition.requireAdmissionSubmission(relation.status(), relationId);
     requireActiveQualification(relation);
+
+    if (unifiedWorkflowApplicationService != null) {
+      int updated = buyerSupplierRelationMapper.updateStatus(
+          tenantId,
+          relationId,
+          BuyerSupplierRelationStatus.PENDING_ADMISSION,
+          BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL);
+      if (updated == 0) {
+        throw new IllegalStateException("Supplier relation status changed before admission could be submitted: " + relationId);
+      }
+      WorkflowStartResult started = unifiedWorkflowApplicationService.start(new WorkflowStartCommand(
+          ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,
+          relationId,
+          null,
+          null,
+          formData == null ? Map.of() : formData,
+          Map.of("supplierId", relation.supplierId(), "supplierName", relation.supplierName())));
+      auditLogApplicationService.recordTenantAction(
+          BuyerSupplierAuditAction.ADMISSION_SUBMITTED,
+          AuditTargetType.BUYER_SUPPLIER_RELATION,
+          relationId);
+      return new ApprovalTaskResponse(
+          started.firstTaskId(),
+          tenantId,
+          ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,
+          relationId,
+          null,
+          "审批中",
+          started.createdAt());
+    }
 
     // 审批闸门:准入审批节点关闭时免审直通(直接已准入,审计留痕)。
     if (!approvalGate.requiresApproval(tenantId, ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION)) {
@@ -222,6 +269,26 @@ public class BuyerSupplierApplicationService {
     String userId = TenantAccessGuard.requireUserId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
     buyerSupplierAdmissionStatusTransition.requireAdmissionReview(relation.status(), relationId);
+
+    if (unifiedWorkflowApplicationService != null) {
+      var history = unifiedWorkflowApplicationService.completeCurrentUserBusinessTask(
+          ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,
+          relationId,
+          Boolean.TRUE.equals(request.approved()),
+          request.comment());
+      String status = "approved".equals(history.status())
+          ? ApprovalStatus.APPROVED
+          : "rejected".equals(history.status()) ? ApprovalStatus.REJECTED : "审批中";
+      return new ApprovalTaskResponse(
+          null,
+          tenantId,
+          ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,
+          relationId,
+          userId,
+          status,
+          request.comment(),
+          history.actedAt());
+    }
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,

@@ -3,8 +3,10 @@ package com.procurement.identity.application;
 import com.procurement.common.event.DomainAuditEvent;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.identity.api.BuyerRoleResponse;
+import com.procurement.identity.api.CreateBuyerRoleRequest;
 import com.procurement.identity.api.MyPermissionsResponse;
 import com.procurement.identity.api.PermissionPointResponse;
+import com.procurement.identity.api.UpdateBuyerRoleRequest;
 import com.procurement.identity.api.UpdateRoleDataScopeRequest;
 import com.procurement.identity.api.UpdateRolePermissionsRequest;
 import com.procurement.identity.domain.BuyerPermissionCatalog;
@@ -14,6 +16,7 @@ import com.procurement.identity.infrastructure.BuyerRoleMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +46,53 @@ public class BuyerRoleApplicationService {
         .toList();
   }
 
+  @Transactional
+  public BuyerRoleResponse createRole(CreateBuyerRoleRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
+    permissionService.require("buyer:role:manage");
+    String name = request.name().trim();
+    requireRoleNameAvailable(tenantId, name, null);
+    List<String> permissions = normalizeAndValidatePermissions(request.permissions());
+    requireValidDataScope(request.dataScope());
+    String roleId = "role-custom-" + UUID.randomUUID();
+    buyerRoleMapper.insertBuyerRole(roleId, tenantId, name, writePermissions(permissions), request.dataScope());
+    eventPublisher.publishEvent(
+        new DomainAuditEvent("buyer_role.created", "buyer_role", roleId, "新建角色: " + name));
+    return toResponse(buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId));
+  }
+
+  @Transactional
+  public BuyerRoleResponse updateRole(String roleId, UpdateBuyerRoleRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
+    permissionService.require("buyer:role:manage");
+    BuyerRole current = requireBuyerRole(tenantId, roleId);
+    requireMutableRole(current);
+    String name = request.name().trim();
+    requireRoleNameAvailable(tenantId, name, roleId);
+    List<String> permissions = normalizeAndValidatePermissions(request.permissions());
+    requireValidDataScope(request.dataScope());
+    buyerRoleMapper.updateDetails(tenantId, roleId, name, writePermissions(permissions), request.dataScope());
+    eventPublisher.publishEvent(
+        new DomainAuditEvent("buyer_role.updated", "buyer_role", roleId, "角色资料更新: " + name));
+    return toResponse(buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId));
+  }
+
+  @Transactional
+  public void deleteRole(String roleId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
+    permissionService.require("buyer:role:manage");
+    BuyerRole role = requireBuyerRole(tenantId, roleId);
+    if (isBuiltInRole(role)) {
+      throw new IllegalStateException("系统内置角色不可删除");
+    }
+    if (buyerRoleMapper.countUsersByTenantAndRoleId(tenantId, roleId) > 0) {
+      throw new IllegalStateException("该角色仍有关联成员，请先为成员分配其他角色");
+    }
+    buyerRoleMapper.deleteBuyerRole(tenantId, roleId);
+    eventPublisher.publishEvent(
+        new DomainAuditEvent("buyer_role.deleted", "buyer_role", roleId, "删除角色: " + role.name()));
+  }
+
   // 当前登录用户的有效权限点(展平其激活角色)。前端据此做菜单/路由门禁。
   public MyPermissionsResponse myPermissions() {
     TenantAccessGuard.requireTenantId("buyer role APIs");
@@ -61,16 +111,9 @@ public class BuyerRoleApplicationService {
   public BuyerRoleResponse updateRolePermissions(String roleId, UpdateRolePermissionsRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
     permissionService.require("buyer:role:manage");
-    BuyerRole role = buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId);
-    if (role == null) {
-      throw new IllegalArgumentException("角色不存在: " + roleId);
-    }
-    List<String> submitted = request.permissions().stream().distinct().toList();
-    submitted.forEach(p -> {
-      if (!BuyerPermissionCatalog.isValid(p)) {
-        throw new IllegalArgumentException("非法权限点: " + p);
-      }
-    });
+    BuyerRole role = requireBuyerRole(tenantId, roleId);
+    requireMutableRole(role);
+    List<String> submitted = normalizeAndValidatePermissions(request.permissions());
     // 保留该角色目录之外的既有权限点(矩阵只管理目录内的点),避免整组覆盖时丢失。
     List<String> preserved = parsePermissions(role.permissionsJson()).stream()
         .filter(p -> !BuyerPermissionCatalog.isValid(p))
@@ -88,13 +131,9 @@ public class BuyerRoleApplicationService {
   public BuyerRoleResponse updateRoleDataScope(String roleId, UpdateRoleDataScopeRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
     permissionService.require("buyer:role:manage");
-    if (!DataScope.isValid(request.dataScope())) {
-      throw new IllegalArgumentException("非法数据范围: " + request.dataScope());
-    }
-    BuyerRole role = buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId);
-    if (role == null) {
-      throw new IllegalArgumentException("角色不存在: " + roleId);
-    }
+    requireValidDataScope(request.dataScope());
+    BuyerRole role = requireBuyerRole(tenantId, roleId);
+    requireMutableRole(role);
     String detail =
         "数据范围: " + dataScopeLabel(role.dataScope()) + " → " + dataScopeLabel(request.dataScope());
     buyerRoleMapper.updateDataScope(tenantId, roleId, request.dataScope());
@@ -126,7 +165,48 @@ public class BuyerRoleApplicationService {
         role.tenantId(),
         role.name(),
         parsePermissions(role.permissionsJson()),
-        role.dataScope());
+        role.dataScope(),
+        isBuiltInRole(role));
+  }
+
+  private BuyerRole requireBuyerRole(String tenantId, String roleId) {
+    BuyerRole role = buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId);
+    if (role == null) {
+      throw new IllegalArgumentException("角色不存在: " + roleId);
+    }
+    return role;
+  }
+
+  private void requireRoleNameAvailable(String tenantId, String name, String excludeRoleId) {
+    if (buyerRoleMapper.existsBuyerRoleByTenantAndName(tenantId, name, excludeRoleId)) {
+      throw new IllegalArgumentException("角色名称已存在: " + name);
+    }
+  }
+
+  private List<String> normalizeAndValidatePermissions(List<String> permissions) {
+    List<String> submitted = permissions.stream().distinct().toList();
+    submitted.forEach(p -> {
+      if (!BuyerPermissionCatalog.isValid(p)) {
+        throw new IllegalArgumentException("非法权限点: " + p);
+      }
+    });
+    return submitted;
+  }
+
+  private void requireValidDataScope(String dataScope) {
+    if (!DataScope.isValid(dataScope)) {
+      throw new IllegalArgumentException("非法数据范围: " + dataScope);
+    }
+  }
+
+  private void requireMutableRole(BuyerRole role) {
+    if ("role-buyer-owner".equals(role.id())) {
+      throw new IllegalStateException("采购管理员是系统保护角色，不可修改权限或数据范围");
+    }
+  }
+
+  private boolean isBuiltInRole(BuyerRole role) {
+    return role.id() != null && role.id().startsWith("role-buyer-");
   }
 
   private List<String> parsePermissions(String permissionsJson) {

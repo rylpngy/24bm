@@ -43,8 +43,8 @@ export const supplierDeliveryUpdate = (
     deliveryId: string,
     updateDeliveryRequest: BodyType<UpdateDeliveryRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseDeliveryResponse>(
       {url: `/api/v1/supplier/deliveries/${deliveryId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -52,7 +52,7 @@ export const supplierDeliveryUpdate = (
     },
       );
     }
-  
+
 
 
 export const getSupplierDeliveryUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -66,7 +66,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierDeliveryUpdate>>, {deliveryId: string;data: BodyType<UpdateDeliveryRequest>}> = (props) => {
@@ -75,7 +75,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierDeliveryUpdate(deliveryId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -102,8 +102,8 @@ const {mutation: mutationOptions} = options ?
     createDeliveryRequest: BodyType<CreateDeliveryRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseDeliveryResponse>(
       {url: `/api/v1/supplier/orders/${orderId}/deliveries`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -111,7 +111,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierDeliveryCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -125,7 +125,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierDeliveryCreate>>, {orderId: string;data: BodyType<CreateDeliveryRequest>}> = (props) => {
@@ -134,7 +134,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierDeliveryCreate(orderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -160,15 +160,15 @@ const {mutation: mutationOptions} = options ?
     params?: SupplierDeliveryListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListDeliveryResponse>(
       {url: `/api/v1/supplier/deliveries`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -178,7 +178,7 @@ export const getSupplierDeliveryListQueryKey = (params?: SupplierDeliveryListPar
     ] as const;
     }
 
-    
+
 export const getSupplierDeliveryListQueryOptions = <TData = Awaited<ReturnType<typeof supplierDeliveryList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierDeliveryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierDeliveryList>>, TError, TData>>, }
 ) => {
 
@@ -186,13 +186,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierDeliveryListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierDeliveryList>>> = ({ signal }) => supplierDeliveryList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierDeliveryList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -228,7 +228,7 @@ export function useSupplierDeliveryList<TData = Awaited<ReturnType<typeof suppli
 
 export function useSupplierDeliveryList<TData = Awaited<ReturnType<typeof supplierDeliveryList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SupplierDeliveryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierDeliveryList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierDeliveryListQueryOptions(params,options)

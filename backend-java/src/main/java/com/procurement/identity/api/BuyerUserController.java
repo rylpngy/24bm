@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/api/v1/buyer/users")
@@ -39,6 +40,13 @@ public class BuyerUserController {
   @ResponseStatus(HttpStatus.CREATED)
   public ApiResponse<BuyerUserResponse> create(@Valid @RequestBody CreateBuyerUserRequest request) {
     return ApiResponse.ok(buyerUserApplicationService.createUser(request));
+  }
+
+  @PutMapping("/{userId}")
+  public ApiResponse<BuyerUserResponse> update(
+      @PathVariable String userId,
+      @Valid @RequestBody UpdateBuyerUserRequest request) {
+    return ApiResponse.ok(buyerUserApplicationService.updateUser(userId, request));
   }
 
   // 批量导入部门成员(CSV 解析后提交);逐行尽力创建,返回成功/失败明细。

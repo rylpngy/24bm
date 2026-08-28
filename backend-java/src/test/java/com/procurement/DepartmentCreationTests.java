@@ -9,6 +9,9 @@ import static org.mockito.Mockito.when;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.application.PermissionService;
+import com.procurement.identity.domain.BuyerUser;
+import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.organization.api.CreateDepartmentRequest;
 import com.procurement.organization.application.DepartmentApplicationService;
 import com.procurement.organization.domain.Department;
@@ -22,8 +25,15 @@ class DepartmentCreationTests {
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
+  private final PermissionService permissionService = org.mockito.Mockito.mock(PermissionService.class);
   private final DepartmentApplicationService departmentApplicationService =
-      new DepartmentApplicationService(departmentMapper, purchaseDemandMapper, auditLogApplicationService);
+      new DepartmentApplicationService(
+          departmentMapper,
+          purchaseDemandMapper,
+          auditLogApplicationService,
+          buyerUserMapper,
+          permissionService);
 
   @AfterEach
   void clearTenantContext() {
@@ -127,6 +137,10 @@ class DepartmentCreationTests {
   void updatesDepartmentDetailsAndRecordsAuditWithRenameDetail() {
     TenantContext.set("tenant-1", null, "buyer-admin");
     when(departmentMapper.findByTenantAndId("tenant-1", "dept-1")).thenReturn(department("dept-1"));
+    when(buyerUserMapper.findByTenantAndId("tenant-1", "user-1")).thenReturn(new BuyerUser(
+        "user-1", "tenant-1", "采购负责人", "", "", "active", "dept-1", "role-buyer-owner"));
+    when(departmentMapper.existsActiveMemberByTenantAndDepartment("tenant-1", "dept-1", "user-1"))
+        .thenReturn(true);
 
     departmentApplicationService.updateDepartment("dept-1",
         new com.procurement.organization.api.UpdateDepartmentRequest("采购部", "统筹采购", "user-1"));

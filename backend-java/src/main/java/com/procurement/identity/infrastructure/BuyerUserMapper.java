@@ -111,6 +111,38 @@ public interface BuyerUserMapper {
       @Param("roleId") String roleId);
 
   @Select("""
+      select r.id
+      from users u
+      join user_roles ur on ur.user_id = u.id
+      join roles r on r.id = ur.role_id
+      where u.tenant_id = #{tenantId}
+        and u.id = #{userId}
+        and u.status = 'active'
+        and r.tenant_id = #{tenantId}
+        and r.scope = 'buyer'
+      order by r.id
+      """)
+  List<String> listBuyerRoleIdsByTenantAndUser(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId);
+
+  @Select("""
+      select distinct u.id
+      from users u
+      join user_roles ur on ur.user_id = u.id
+      join roles r on r.id = ur.role_id
+      where u.tenant_id = #{tenantId}
+        and u.status = 'active'
+        and r.tenant_id = #{tenantId}
+        and r.scope = 'buyer'
+        and r.id = #{roleId}
+      order by u.id
+      """)
+  List<String> listActiveBuyerUserIdsByTenantAndRole(
+      @Param("tenantId") String tenantId,
+      @Param("roleId") String roleId);
+
+  @Select("""
       select name
       from roles
       where tenant_id = #{tenantId}
@@ -195,6 +227,40 @@ public interface BuyerUserMapper {
       @Param("tenantId") String tenantId,
       @Param("userId") String userId,
       @Param("status") String status);
+
+  @Update("""
+      update users
+      set name = #{name},
+          mobile = #{mobile,jdbcType=VARCHAR},
+          email = #{email,jdbcType=VARCHAR},
+          department_id = #{departmentId},
+          employee_no = #{employeeNo,jdbcType=VARCHAR},
+          job_title = #{jobTitle,jdbcType=VARCHAR},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{userId}
+      """)
+  int updateDetails(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId,
+      @Param("name") String name,
+      @Param("mobile") String mobile,
+      @Param("email") String email,
+      @Param("departmentId") String departmentId,
+      @Param("employeeNo") String employeeNo,
+      @Param("jobTitle") String jobTitle);
+
+  @Update("""
+      update users
+      set department_id = #{departmentId},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{userId}
+      """)
+  int updateDepartment(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId,
+      @Param("departmentId") String departmentId);
 
   @Update("""
       update users

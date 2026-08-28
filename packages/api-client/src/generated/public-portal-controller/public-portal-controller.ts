@@ -44,8 +44,8 @@ export const publicPortalRegisterSupplier = (
     registerSupplierRequest: BodyType<RegisterSupplierRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseString>(
       {url: `/api/v1/public/supplier-registrations`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -53,7 +53,7 @@ export const publicPortalRegisterSupplier = (
     },
       );
     }
-  
+
 
 
 export const getPublicPortalRegisterSupplierMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -67,7 +67,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof publicPortalRegisterSupplier>>, {data: BodyType<RegisterSupplierRequest>}> = (props) => {
@@ -76,7 +76,7 @@ const {mutation: mutationOptions} = options ?
           return  publicPortalRegisterSupplier(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -99,17 +99,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const publicPortalListSuppliers = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPublicSupplierResponse>(
       {url: `/api/v1/public/suppliers`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -119,7 +119,7 @@ export const getPublicPortalListSuppliersQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPublicPortalListSuppliersQueryOptions = <TData = Awaited<ReturnType<typeof publicPortalListSuppliers>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicPortalListSuppliers>>, TError, TData>>, }
 ) => {
 
@@ -127,13 +127,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicPortalListSuppliersQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicPortalListSuppliers>>> = ({ signal }) => publicPortalListSuppliers(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicPortalListSuppliers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -169,7 +169,7 @@ export function usePublicPortalListSuppliers<TData = Awaited<ReturnType<typeof p
 
 export function usePublicPortalListSuppliers<TData = Awaited<ReturnType<typeof publicPortalListSuppliers>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicPortalListSuppliers>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicPortalListSuppliersQueryOptions(options)
@@ -188,14 +188,14 @@ export const publicPortalGetSupplier = (
     enterpriseId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePublicSupplierResponse>(
       {url: `/api/v1/public/suppliers/${enterpriseId}`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -205,7 +205,7 @@ export const getPublicPortalGetSupplierQueryKey = (enterpriseId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getPublicPortalGetSupplierQueryOptions = <TData = Awaited<ReturnType<typeof publicPortalGetSupplier>>, TError = ErrorType<ApiResponseVoid>>(enterpriseId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicPortalGetSupplier>>, TError, TData>>, }
 ) => {
 
@@ -213,13 +213,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicPortalGetSupplierQueryKey(enterpriseId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicPortalGetSupplier>>> = ({ signal }) => publicPortalGetSupplier(enterpriseId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(enterpriseId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicPortalGetSupplier>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -255,7 +255,7 @@ export function usePublicPortalGetSupplier<TData = Awaited<ReturnType<typeof pub
 
 export function usePublicPortalGetSupplier<TData = Awaited<ReturnType<typeof publicPortalGetSupplier>>, TError = ErrorType<ApiResponseVoid>>(
  enterpriseId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicPortalGetSupplier>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicPortalGetSupplierQueryOptions(enterpriseId,options)
@@ -271,17 +271,17 @@ export function usePublicPortalGetSupplier<TData = Awaited<ReturnType<typeof pub
 
 
 export const publicPortalListAnnouncements = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPublicAnnouncementResponse>(
       {url: `/api/v1/public/announcements`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -291,7 +291,7 @@ export const getPublicPortalListAnnouncementsQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPublicPortalListAnnouncementsQueryOptions = <TData = Awaited<ReturnType<typeof publicPortalListAnnouncements>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicPortalListAnnouncements>>, TError, TData>>, }
 ) => {
 
@@ -299,13 +299,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicPortalListAnnouncementsQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicPortalListAnnouncements>>> = ({ signal }) => publicPortalListAnnouncements(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicPortalListAnnouncements>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -341,7 +341,7 @@ export function usePublicPortalListAnnouncements<TData = Awaited<ReturnType<type
 
 export function usePublicPortalListAnnouncements<TData = Awaited<ReturnType<typeof publicPortalListAnnouncements>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicPortalListAnnouncements>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicPortalListAnnouncementsQueryOptions(options)
@@ -360,14 +360,14 @@ export const publicPortalGetAnnouncement = (
     announcementId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePublicAnnouncementResponse>(
       {url: `/api/v1/public/announcements/${announcementId}`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -377,7 +377,7 @@ export const getPublicPortalGetAnnouncementQueryKey = (announcementId?: string,)
     ] as const;
     }
 
-    
+
 export const getPublicPortalGetAnnouncementQueryOptions = <TData = Awaited<ReturnType<typeof publicPortalGetAnnouncement>>, TError = ErrorType<ApiResponseVoid>>(announcementId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicPortalGetAnnouncement>>, TError, TData>>, }
 ) => {
 
@@ -385,13 +385,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicPortalGetAnnouncementQueryKey(announcementId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicPortalGetAnnouncement>>> = ({ signal }) => publicPortalGetAnnouncement(announcementId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(announcementId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicPortalGetAnnouncement>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -427,7 +427,7 @@ export function usePublicPortalGetAnnouncement<TData = Awaited<ReturnType<typeof
 
 export function usePublicPortalGetAnnouncement<TData = Awaited<ReturnType<typeof publicPortalGetAnnouncement>>, TError = ErrorType<ApiResponseVoid>>(
  announcementId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicPortalGetAnnouncement>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicPortalGetAnnouncementQueryOptions(announcementId,options)

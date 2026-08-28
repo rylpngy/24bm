@@ -6,5 +6,11 @@ import jakarta.validation.constraints.NotBlank;
 public record CreateProcessDefinitionRequest(
     @NotBlank String name,
     String description,
-    String icon) {
+    String icon,
+    String businessType) {
+
+  // 兼容旧客户端；业务类型可以在首次保存草稿时补齐，但发布前必须存在。
+  public CreateProcessDefinitionRequest(String name, String description, String icon) {
+    this(name, description, icon, null);
+  }
 }

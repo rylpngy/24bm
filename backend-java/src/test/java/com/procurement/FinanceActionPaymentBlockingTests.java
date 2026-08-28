@@ -216,6 +216,24 @@ class FinanceActionPaymentBlockingTests {
   }
 
   @Test
+  void submittingPaymentBatchIsBlockedUntilAllPaymentRequestsAreApproved() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(paymentBatchMapper.findByTenantAndPaymentBatchNo("tenant-1", "PAY-202606"))
+        .thenReturn(paymentBatch("付款申请审批中", BigDecimal.valueOf(2400), BigDecimal.valueOf(1200)));
+
+    assertThatThrownBy(() -> financeActionApplicationService.updateCurrentTenantPaymentBatchStatus(
+        "PAY-202606",
+        new UpdatePaymentBatchStatusRequest("审批中")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Payment batch cannot be approved until all payment requests are approved");
+
+    verify(paymentBatchMapper, never()).updateStatus(
+        org.mockito.ArgumentMatchers.eq("tenant-1"),
+        org.mockito.ArgumentMatchers.eq("PAY-202606"),
+        org.mockito.ArgumentMatchers.eq("审批中"));
+  }
+
+  @Test
   void archivingPaymentBatchRecordsExecutionSummaryAudit() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(paymentBatchMapper.findByTenantAndPaymentBatchNo("tenant-1", "PAY-202606"))

@@ -30,7 +30,11 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
+import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
+import com.procurement.workflow.application.WorkflowStartCommand;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,6 +51,7 @@ public class ContractApplicationService {
   private final ApprovalGate approvalGate;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
 
   public ContractApplicationService(
       ContractMapper contractMapper,
@@ -120,6 +125,12 @@ public class ContractApplicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.approvalGate = approvalGate;
+  }
+
+  @Autowired
+  void setUnifiedWorkflowApplicationService(
+      UnifiedWorkflowApplicationService unifiedWorkflowApplicationService) {
+    this.unifiedWorkflowApplicationService = unifiedWorkflowApplicationService;
   }
 
   // 电子签章入口:按当前租户取合同(供 esign 模块计算内容指纹),不存在即抛错。
@@ -225,6 +236,13 @@ public class ContractApplicationService {
     if ("已归档".equals(contract.archiveStatus())) {
       throw new IllegalStateException("Archived contract can only be audited: " + contractId);
     }
+    if (unifiedWorkflowApplicationService != null
+        && ("审批中".equals(request.status())
+            || "已生效".equals(request.status())
+            || "审批中".equals(contract.status()))) {
+      throw new IllegalStateException(
+          "Contract approval status can only be submitted and completed through the Flowable workflow");
+    }
 
     int updated = contractMapper.updateStatus(
         tenantId,
@@ -302,6 +320,12 @@ public class ContractApplicationService {
 
   @Transactional
   public ContractResponse submitCurrentTenantContractApproval(String contractId) {
+    return submitCurrentTenantContractApproval(contractId, Map.of());
+  }
+
+  @Transactional
+  public ContractResponse submitCurrentTenantContractApproval(
+      String contractId, Map<String, Object> formData) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     ContractLedger contract = requireContract(tenantId, contractId);
     requireEditable(contract, contractId);
@@ -309,7 +333,29 @@ public class ContractApplicationService {
       throw new IllegalStateException("Only draft contracts can submit approval: " + contractId);
     }
 
-    // 审批闸门:合同审批节点关闭时免审直通(草案直达已生效,审计留痕)。
+    if (unifiedWorkflowApplicationService != null) {
+      int updated = contractMapper.updateStatus(
+          tenantId, contractId, contract.status(), "审批中", "审批中");
+      if (updated == 0) {
+        throw new IllegalStateException("Contract status changed before approval could be submitted: " + contractId);
+      }
+      unifiedWorkflowApplicationService.start(new WorkflowStartCommand(
+          ApprovalBusinessType.CONTRACT_APPROVAL,
+          contractId,
+          null,
+          contract.amount(),
+          formData == null ? Map.of() : formData,
+          contractWorkflowSnapshot(contract)));
+      auditLogApplicationService.recordTenantAction(
+          "contract_approval.submitted", ApprovalBusinessType.CONTRACT_APPROVAL, contractId);
+      notificationApplicationService.notifyActiveTenantUsers(
+          tenantId,
+          NotificationTitle.CONTRACT_APPROVAL_PENDING,
+          contract.contractName() + "已提交合同审批，请及时处理。");
+      return toResponse(requireContract(tenantId, contractId));
+    }
+
+    // 旧离线构造兼容路径。
     if (approvalGate != null && !approvalGate.requiresApproval(tenantId, ApprovalBusinessType.CONTRACT_APPROVAL)) {
       int bypassed = contractMapper.updateStatus(
           tenantId, contractId, contract.status(), "已生效", "已生效");
@@ -351,6 +397,15 @@ public class ContractApplicationService {
     return toResponse(requireContract(tenantId, contractId));
   }
 
+  private static Map<String, Object> contractWorkflowSnapshot(ContractLedger contract) {
+    Map<String, Object> snapshot = new LinkedHashMap<>();
+    snapshot.put("contractNo", contract.contractNo());
+    snapshot.put("contractName", contract.contractName());
+    snapshot.put("supplierId", contract.supplierId());
+    snapshot.put("relatedOrderId", contract.relatedOrderId());
+    return snapshot;
+  }
+
   @Transactional
   public ContractResponse reviewCurrentTenantContractApproval(
       String contractId,
@@ -361,6 +416,15 @@ public class ContractApplicationService {
     requireEditable(contract, contractId);
     if (!"审批中".equals(contract.status())) {
       throw new IllegalStateException("Only contracts in approval can be reviewed: " + contractId);
+    }
+
+    if (unifiedWorkflowApplicationService != null) {
+      unifiedWorkflowApplicationService.completeCurrentUserBusinessTask(
+          ApprovalBusinessType.CONTRACT_APPROVAL,
+          contractId,
+          Boolean.TRUE.equals(request.approved()),
+          request.comment());
+      return toResponse(requireContract(tenantId, contractId));
     }
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(

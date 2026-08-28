@@ -36,15 +36,15 @@ export const buyerSupplierDiscoveryDiscover = (
     params?: BuyerSupplierDiscoveryDiscoverParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListDiscoverableSupplierResponse>(
       {url: `/api/v1/buyer/suppliers/discover`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -54,7 +54,7 @@ export const getBuyerSupplierDiscoveryDiscoverQueryKey = (params?: BuyerSupplier
     ] as const;
     }
 
-    
+
 export const getBuyerSupplierDiscoveryDiscoverQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierDiscoveryDiscover>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerSupplierDiscoveryDiscoverParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDiscoveryDiscover>>, TError, TData>>, }
 ) => {
 
@@ -62,13 +62,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierDiscoveryDiscoverQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierDiscoveryDiscover>>> = ({ signal }) => buyerSupplierDiscoveryDiscover(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDiscoveryDiscover>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -104,7 +104,7 @@ export function useBuyerSupplierDiscoveryDiscover<TData = Awaited<ReturnType<typ
 
 export function useBuyerSupplierDiscoveryDiscover<TData = Awaited<ReturnType<typeof buyerSupplierDiscoveryDiscover>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerSupplierDiscoveryDiscoverParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDiscoveryDiscover>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerSupplierDiscoveryDiscoverQueryOptions(params,options)

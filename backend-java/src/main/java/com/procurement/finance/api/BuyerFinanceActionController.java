@@ -1,7 +1,7 @@
 package com.procurement.finance.api;
 
 import com.procurement.common.api.ApiResponse;
-import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.common.api.ApprovalTaskResponse;
 import com.procurement.finance.application.FinanceActionApplicationService;
 import jakarta.validation.Valid;
 import java.nio.charset.StandardCharsets;

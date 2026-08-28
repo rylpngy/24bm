@@ -33,17 +33,17 @@ import type { ErrorType } from '../../http-client';
 
 
 export const platformOverviewOverview = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePlatformOverviewResponse>(
       {url: `/api/v1/platform/overview`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -53,7 +53,7 @@ export const getPlatformOverviewOverviewQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPlatformOverviewOverviewQueryOptions = <TData = Awaited<ReturnType<typeof platformOverviewOverview>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewOverview>>, TError, TData>>, }
 ) => {
 
@@ -61,13 +61,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformOverviewOverviewQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformOverviewOverview>>> = ({ signal }) => platformOverviewOverview(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformOverviewOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -103,7 +103,7 @@ export function usePlatformOverviewOverview<TData = Awaited<ReturnType<typeof pl
 
 export function usePlatformOverviewOverview<TData = Awaited<ReturnType<typeof platformOverviewOverview>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewOverview>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformOverviewOverviewQueryOptions(options)
@@ -119,17 +119,17 @@ export function usePlatformOverviewOverview<TData = Awaited<ReturnType<typeof pl
 
 
 export const platformOverviewBusinessMetrics = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePlatformBusinessMetricsResponse>(
       {url: `/api/v1/platform/business-metrics`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -139,7 +139,7 @@ export const getPlatformOverviewBusinessMetricsQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPlatformOverviewBusinessMetricsQueryOptions = <TData = Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError, TData>>, }
 ) => {
 
@@ -147,13 +147,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformOverviewBusinessMetricsQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>> = ({ signal }) => platformOverviewBusinessMetrics(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -189,7 +189,7 @@ export function usePlatformOverviewBusinessMetrics<TData = Awaited<ReturnType<ty
 
 export function usePlatformOverviewBusinessMetrics<TData = Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformOverviewBusinessMetrics>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformOverviewBusinessMetricsQueryOptions(options)

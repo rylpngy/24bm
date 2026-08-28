@@ -40,6 +40,21 @@ public interface DepartmentMapper {
       @Param("departmentId") String departmentId);
 
   @Select("""
+      select exists (
+        select 1
+        from users
+        where tenant_id = #{tenantId}
+          and id = #{userId}
+          and department_id = #{departmentId}
+          and status = 'active'
+      )
+      """)
+  boolean existsActiveMemberByTenantAndDepartment(
+      @Param("tenantId") String tenantId,
+      @Param("departmentId") String departmentId,
+      @Param("userId") String userId);
+
+  @Select("""
       select d.id, d.tenant_id, d.name, d.parent_id, d.status, d.description,
              d.manager_id, u.name as manager_name,
              (select count(*) from users mu
@@ -80,6 +95,52 @@ public interface DepartmentMapper {
       @Param("name") String name,
       @Param("description") String description,
       @Param("managerId") String managerId);
+
+  @Update("""
+      update departments
+      set manager_id = null,
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and manager_id = #{userId}
+      """)
+  int clearManagerByUserId(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId);
+
+  @Update("""
+      update departments
+      set manager_id = null,
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and manager_id = #{userId}
+        and id <> #{departmentId}
+      """)
+  int clearManagerByUserIdExceptDepartment(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId,
+      @Param("departmentId") String departmentId);
+
+  @Select("""
+      select count(1)
+      from users
+      where tenant_id = #{tenantId}
+        and department_id = #{departmentId}
+        and status = 'active'
+      """)
+  int countActiveMembersByTenantAndDepartment(
+      @Param("tenantId") String tenantId,
+      @Param("departmentId") String departmentId);
+
+  @Select("""
+      select count(1)
+      from departments
+      where tenant_id = #{tenantId}
+        and parent_id = #{parentId}
+        and status = 'active'
+      """)
+  int countActiveChildrenByTenantAndParent(
+      @Param("tenantId") String tenantId,
+      @Param("parentId") String parentId);
 
   @Update("""
       update departments

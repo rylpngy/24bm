@@ -15,6 +15,7 @@
     "typecheck:all": "turbo typecheck",
     "java:dev": "cd backend-java && SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev' mvn spring-boot:run -Dspring-boot.run.profiles=local",
     "java:smoke": "node scripts/java-local-smoke.mjs",
+    "java:workflow-smoke": "node scripts/java-workflow-routing-smoke.mjs",
     "openapi:backend": "node scripts/export-backend-openapi.mjs",
     "openapi:export": "node scripts/export-openapi.mjs",
     "openapi:check": "node scripts/check-openapi.mjs",

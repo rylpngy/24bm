@@ -32,17 +32,17 @@ import type { ErrorType } from '../../http-client';
 
 
 export const platformWorkspaceLoad = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePlatformWorkspaceResponse>(
       {url: `/api/v1/platform/workspace`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -52,7 +52,7 @@ export const getPlatformWorkspaceLoadQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPlatformWorkspaceLoadQueryOptions = <TData = Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError, TData>>, }
 ) => {
 
@@ -60,13 +60,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformWorkspaceLoadQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformWorkspaceLoad>>> = ({ signal }) => platformWorkspaceLoad(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -102,7 +102,7 @@ export function usePlatformWorkspaceLoad<TData = Awaited<ReturnType<typeof platf
 
 export function usePlatformWorkspaceLoad<TData = Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformWorkspaceLoad>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformWorkspaceLoadQueryOptions(options)

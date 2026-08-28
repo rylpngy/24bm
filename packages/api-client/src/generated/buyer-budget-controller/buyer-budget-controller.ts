@@ -38,17 +38,17 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 export const buyerBudgetBudgets = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListDepartmentBudgetResponse>(
       {url: `/api/v1/buyer/budgets`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -58,7 +58,7 @@ export const getBuyerBudgetBudgetsQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getBuyerBudgetBudgetsQueryOptions = <TData = Awaited<ReturnType<typeof buyerBudgetBudgets>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerBudgetBudgets>>, TError, TData>>, }
 ) => {
 
@@ -66,13 +66,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerBudgetBudgetsQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerBudgetBudgets>>> = ({ signal }) => buyerBudgetBudgets(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerBudgetBudgets>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -108,7 +108,7 @@ export function useBuyerBudgetBudgets<TData = Awaited<ReturnType<typeof buyerBud
 
 export function useBuyerBudgetBudgets<TData = Awaited<ReturnType<typeof buyerBudgetBudgets>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerBudgetBudgets>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerBudgetBudgetsQueryOptions(options)
@@ -127,8 +127,8 @@ export const buyerBudgetUpsert = (
     upsertDepartmentBudgetRequest: BodyType<UpsertDepartmentBudgetRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseDepartmentBudgetResponse>(
       {url: `/api/v1/buyer/budgets`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -136,7 +136,7 @@ export const buyerBudgetUpsert = (
     },
       );
     }
-  
+
 
 
 export const getBuyerBudgetUpsertMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -150,7 +150,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerBudgetUpsert>>, {data: BodyType<UpsertDepartmentBudgetRequest>}> = (props) => {
@@ -159,7 +159,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerBudgetUpsert(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -181,4 +181,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

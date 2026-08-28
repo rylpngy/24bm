@@ -38,17 +38,17 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 export const buyerNotificationChannelSettings = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseNotificationSettingsResponse>(
       {url: `/api/v1/buyer/notification-channels/settings`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -58,7 +58,7 @@ export const getBuyerNotificationChannelSettingsQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getBuyerNotificationChannelSettingsQueryOptions = <TData = Awaited<ReturnType<typeof buyerNotificationChannelSettings>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationChannelSettings>>, TError, TData>>, }
 ) => {
 
@@ -66,13 +66,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerNotificationChannelSettingsQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerNotificationChannelSettings>>> = ({ signal }) => buyerNotificationChannelSettings(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationChannelSettings>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -108,7 +108,7 @@ export function useBuyerNotificationChannelSettings<TData = Awaited<ReturnType<t
 
 export function useBuyerNotificationChannelSettings<TData = Awaited<ReturnType<typeof buyerNotificationChannelSettings>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationChannelSettings>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerNotificationChannelSettingsQueryOptions(options)
@@ -126,8 +126,8 @@ export function useBuyerNotificationChannelSettings<TData = Awaited<ReturnType<t
 export const buyerNotificationChannelUpdateSettings = (
     updateNotificationSettingsRequest: BodyType<UpdateNotificationSettingsRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseNotificationSettingsResponse>(
       {url: `/api/v1/buyer/notification-channels/settings`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -135,7 +135,7 @@ export const buyerNotificationChannelUpdateSettings = (
     },
       );
     }
-  
+
 
 
 export const getBuyerNotificationChannelUpdateSettingsMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -149,7 +149,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerNotificationChannelUpdateSettings>>, {data: BodyType<UpdateNotificationSettingsRequest>}> = (props) => {
@@ -158,7 +158,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerNotificationChannelUpdateSettings(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -181,17 +181,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const buyerNotificationChannelTest = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListNotificationDeliveryResponse>(
       {url: `/api/v1/buyer/notification-channels/test`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getBuyerNotificationChannelTestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -205,22 +205,22 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerNotificationChannelTest>>, void> = () => {
-          
+
 
           return  buyerNotificationChannelTest()
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerNotificationChannelTestMutationResult = NonNullable<Awaited<ReturnType<typeof buyerNotificationChannelTest>>>
-    
+
     export type BuyerNotificationChannelTestMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerNotificationChannelTest = <TError = ErrorType<ApiResponseVoid>,
@@ -240,14 +240,14 @@ const {mutation: mutationOptions} = options ?
     deliveryId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListNotificationDeliveryResponse>(
       {url: `/api/v1/buyer/notification-channels/deliveries/${deliveryId}/retry`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getBuyerNotificationChannelRetryMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -261,7 +261,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerNotificationChannelRetry>>, {deliveryId: string}> = (props) => {
@@ -270,13 +270,13 @@ const {mutation: mutationOptions} = options ?
           return  buyerNotificationChannelRetry(deliveryId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerNotificationChannelRetryMutationResult = NonNullable<Awaited<ReturnType<typeof buyerNotificationChannelRetry>>>
-    
+
     export type BuyerNotificationChannelRetryMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerNotificationChannelRetry = <TError = ErrorType<ApiResponseVoid>,
@@ -293,17 +293,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const buyerNotificationChannelDeliveries = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListNotificationDeliveryResponse>(
       {url: `/api/v1/buyer/notification-channels/deliveries`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -313,7 +313,7 @@ export const getBuyerNotificationChannelDeliveriesQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getBuyerNotificationChannelDeliveriesQueryOptions = <TData = Awaited<ReturnType<typeof buyerNotificationChannelDeliveries>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationChannelDeliveries>>, TError, TData>>, }
 ) => {
 
@@ -321,13 +321,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerNotificationChannelDeliveriesQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerNotificationChannelDeliveries>>> = ({ signal }) => buyerNotificationChannelDeliveries(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationChannelDeliveries>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -363,7 +363,7 @@ export function useBuyerNotificationChannelDeliveries<TData = Awaited<ReturnType
 
 export function useBuyerNotificationChannelDeliveries<TData = Awaited<ReturnType<typeof buyerNotificationChannelDeliveries>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerNotificationChannelDeliveries>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerNotificationChannelDeliveriesQueryOptions(options)

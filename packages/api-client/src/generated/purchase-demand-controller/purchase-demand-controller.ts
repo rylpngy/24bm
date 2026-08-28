@@ -32,6 +32,7 @@ import type {
   CreatePurchaseDemandRequest,
   PurchaseDemandListParams,
   ReviewPurchaseDemandRequest,
+  SubmitPurchaseDemandRequest,
   UpdatePurchaseDemandRequest
 } from '.././model';
 
@@ -45,8 +46,8 @@ export const purchaseDemandUpdate = (
     demandId: string,
     updatePurchaseDemandRequest: BodyType<UpdatePurchaseDemandRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponsePurchaseDemandResponse>(
       {url: `/api/v1/buyer/demands/${demandId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -54,7 +55,7 @@ export const purchaseDemandUpdate = (
     },
       );
     }
-  
+
 
 
 export const getPurchaseDemandUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -68,7 +69,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseDemandUpdate>>, {demandId: string;data: BodyType<UpdatePurchaseDemandRequest>}> = (props) => {
@@ -77,7 +78,7 @@ const {mutation: mutationOptions} = options ?
           return  purchaseDemandUpdate(demandId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -103,15 +104,15 @@ const {mutation: mutationOptions} = options ?
     params?: PurchaseDemandListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPurchaseDemandResponse>(
       {url: `/api/v1/buyer/demands`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -121,7 +122,7 @@ export const getPurchaseDemandListQueryKey = (params?: PurchaseDemandListParams,
     ] as const;
     }
 
-    
+
 export const getPurchaseDemandListQueryOptions = <TData = Awaited<ReturnType<typeof purchaseDemandList>>, TError = ErrorType<ApiResponseVoid>>(params?: PurchaseDemandListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandList>>, TError, TData>>, }
 ) => {
 
@@ -129,13 +130,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPurchaseDemandListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof purchaseDemandList>>> = ({ signal }) => purchaseDemandList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -171,7 +172,7 @@ export function usePurchaseDemandList<TData = Awaited<ReturnType<typeof purchase
 
 export function usePurchaseDemandList<TData = Awaited<ReturnType<typeof purchaseDemandList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: PurchaseDemandListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPurchaseDemandListQueryOptions(params,options)
@@ -190,8 +191,8 @@ export const purchaseDemandCreate = (
     createPurchaseDemandRequest: BodyType<CreatePurchaseDemandRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePurchaseDemandResponse>(
       {url: `/api/v1/buyer/demands`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -199,7 +200,7 @@ export const purchaseDemandCreate = (
     },
       );
     }
-  
+
 
 
 export const getPurchaseDemandCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -213,7 +214,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseDemandCreate>>, {data: BodyType<CreatePurchaseDemandRequest>}> = (props) => {
@@ -222,7 +223,7 @@ const {mutation: mutationOptions} = options ?
           return  purchaseDemandCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -246,21 +247,24 @@ const {mutation: mutationOptions} = options ?
     }
     export const purchaseDemandSubmit = (
     demandId: string,
+    submitPurchaseDemandRequest: BodyType<SubmitPurchaseDemandRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseApprovalTaskResponse>(
-      {url: `/api/v1/buyer/demands/${demandId}/submit`, method: 'POST', signal
+      {url: `/api/v1/buyer/demands/${demandId}/submit`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: submitPurchaseDemandRequest, signal
     },
       );
     }
-  
+
 
 
 export const getPurchaseDemandSubmitMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDemandSubmit>>, TError,{demandId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof purchaseDemandSubmit>>, TError,{demandId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDemandSubmit>>, TError,{demandId: string;data: BodyType<SubmitPurchaseDemandRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof purchaseDemandSubmit>>, TError,{demandId: string;data: BodyType<SubmitPurchaseDemandRequest>}, TContext> => {
 
 const mutationKey = ['purchaseDemandSubmit'];
 const {mutation: mutationOptions} = options ?
@@ -269,30 +273,30 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseDemandSubmit>>, {demandId: string}> = (props) => {
-          const {demandId} = props ?? {};
 
-          return  purchaseDemandSubmit(demandId,)
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseDemandSubmit>>, {demandId: string;data: BodyType<SubmitPurchaseDemandRequest>}> = (props) => {
+          const {demandId,data} = props ?? {};
+
+          return  purchaseDemandSubmit(demandId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type PurchaseDemandSubmitMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseDemandSubmit>>>
-    
+    export type PurchaseDemandSubmitMutationBody = BodyType<SubmitPurchaseDemandRequest>
     export type PurchaseDemandSubmitMutationError = ErrorType<ApiResponseVoid>
 
     export const usePurchaseDemandSubmit = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDemandSubmit>>, TError,{demandId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDemandSubmit>>, TError,{demandId: string;data: BodyType<SubmitPurchaseDemandRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof purchaseDemandSubmit>>,
         TError,
-        {demandId: string},
+        {demandId: string;data: BodyType<SubmitPurchaseDemandRequest>},
         TContext
       > => {
 
@@ -305,8 +309,8 @@ const {mutation: mutationOptions} = options ?
     reviewPurchaseDemandRequest: BodyType<ReviewPurchaseDemandRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseApprovalTaskResponse>(
       {url: `/api/v1/buyer/demands/${demandId}/approval`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -314,7 +318,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getPurchaseDemandReviewMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -328,7 +332,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseDemandReview>>, {demandId: string;data: BodyType<ReviewPurchaseDemandRequest>}> = (props) => {
@@ -337,7 +341,7 @@ const {mutation: mutationOptions} = options ?
           return  purchaseDemandReview(demandId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -359,4 +363,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    
