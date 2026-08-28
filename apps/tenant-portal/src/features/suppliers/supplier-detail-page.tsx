@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Contact,
   FileText,
@@ -18,6 +19,7 @@ import {
   ShieldCheck,
   Star,
   TrendingUp,
+  Workflow,
 } from 'lucide-react';
 import {
   type BuyerSupplierResponse,
@@ -76,6 +78,7 @@ export function SupplierDetailPage({
   onBack: () => void;
 }) {
   const [tab, setTab] = useState<TabId>('performance');
+  const [showApproval, setShowApproval] = useState(false);
   const id = supplier.id ?? '';
   const supplierId = supplier.supplierId ?? '';
   const ordersQuery = usePurchaseOrderList(
@@ -129,11 +132,35 @@ export function SupplierDetailPage({
             >
               <TrendingUp size={16} /> 绩效考核
             </button>
+            <button
+              type="button"
+              onClick={() => setShowApproval((visible) => !visible)}
+              disabled={!id}
+              aria-expanded={showApproval}
+              aria-controls="supplier-approval-panel"
+              className={cn(
+                'inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-50',
+                showApproval
+                  ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+              )}
+            >
+              <Workflow size={16} />
+              审批信息
+              <ChevronDown
+                size={15}
+                className={cn('transition-transform', showApproval && 'rotate-180')}
+              />
+            </button>
           </div>
         </div>
       </section>
 
-      {id && <WorkflowStatusPanel businessType="buyer_supplier_admission" businessId={id} />}
+      {id && showApproval && (
+        <div id="supplier-approval-panel">
+          <WorkflowStatusPanel businessType="buyer_supplier_admission" businessId={id} />
+        </div>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         <aside className="space-y-5">
