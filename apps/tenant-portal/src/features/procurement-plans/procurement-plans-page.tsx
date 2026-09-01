@@ -127,17 +127,26 @@ function PlanList({
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
-        <table className="w-full min-w-[920px] text-left text-sm">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
+        <table className="w-full min-w-[1024px] table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-16" />
+            <col className="w-40" />
+            <col />
+            <col className="w-[28%]" />
+            <col className="w-24" />
+            <col className="w-36" />
+            <col className="w-24" />
+          </colgroup>
           <thead className="bg-slate-50 text-xs font-black text-slate-500">
             <tr>
-              <th className="px-5 py-4">序号</th>
-              <th className="px-5 py-4">项目编号</th>
-              <th className="px-5 py-4">项目名称</th>
-              <th className="px-5 py-4">采购内容</th>
-              <th className="px-5 py-4">采购方式</th>
-              <th className="px-5 py-4">当前阶段</th>
-              <th className="px-5 py-4 text-right">操作</th>
+              <th className="px-5 py-4 whitespace-nowrap">序号</th>
+              <th className="px-5 py-4 whitespace-nowrap">项目编号</th>
+              <th className="px-5 py-4 whitespace-nowrap">项目名称</th>
+              <th className="px-5 py-4 whitespace-nowrap">采购内容</th>
+              <th className="px-5 py-4 whitespace-nowrap">采购方式</th>
+              <th className="px-5 py-4 text-center whitespace-nowrap">当前阶段</th>
+              <th className="px-5 py-4 text-right whitespace-nowrap">操作</th>
             </tr>
           </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
@@ -146,39 +155,51 @@ function PlanList({
               return (
                 <tr key={plan.id} className="hover:bg-blue-50/30">
                   <td className="px-5 py-5 font-mono font-black text-slate-400">{index + 1}</td>
-                  <td className="px-5 py-5 font-mono text-xs font-black text-slate-500">{planNo(plan, index)}</td>
                   <td className="px-5 py-5">
-                    <p className="flex items-center gap-2 font-black text-slate-950">
-                      {plan.title}
+                    <p className="truncate font-mono text-xs font-black text-slate-500" title={planNo(plan, index)}>
+                      {planNo(plan, index)}
+                    </p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="flex min-w-0 items-center gap-2 font-black text-slate-950">
+                      <span className="truncate" title={plan.title}>{plan.title}</span>
                       {linked.length > 0 && linked.every((d) => d.source === '直录登记') && (
                         <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-black text-amber-700">直接创建</span>
                       )}
                     </p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">{departmentLabel(linked.map((d) => d.departmentId), departmentNames)}</p>
+                    <p
+                      className="mt-1 truncate text-xs font-bold text-slate-400"
+                      title={departmentLabel(linked.map((d) => d.departmentId), departmentNames)}
+                    >
+                      {departmentLabel(linked.map((d) => d.departmentId), departmentNames)}
+                    </p>
                   </td>
                   <td className="px-5 py-5">
-                    <p className="max-w-sm truncate text-sm font-bold text-slate-600">
+                    <p
+                      className="truncate text-sm font-bold text-slate-600"
+                      title={linked.map((d) => d.title).join('、') || plan.quoteRequirement || '--'}
+                    >
                       {linked.map((d) => d.title).join('、') || plan.quoteRequirement || '--'}
                     </p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">
+                    <p className="mt-1 whitespace-nowrap text-xs font-bold text-slate-500">
                       <span className="rounded bg-slate-100 px-2 py-1">预算</span> {currency(planBudget(linked))}
                     </p>
                   </td>
                   <td className="px-5 py-5">
                     <span className={cn('rounded-md px-2 py-1 text-xs font-black', methodTone(plan.method))}>{plan.method ?? '询比'}</span>
                   </td>
-                  <td className="px-5 py-5">
+                  <td className="px-5 py-5 text-center">
                     {(() => {
                       const progress = derivePlanProgress(plan, orders.find((o) => o.rfqId === plan.id));
                       return (
                         <span
                           className={cn(
-                            'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black',
+                            'inline-flex h-9 w-32 items-center justify-center gap-1 overflow-hidden rounded-full px-3 text-xs font-black whitespace-nowrap',
                             progress.terminated ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700',
                           )}
                         >
-                          <i className={cn('h-2 w-2 rounded-full', progress.terminated ? 'bg-red-500' : 'bg-blue-600')} />
-                          {progress.stageLabel}
+                          <i className={cn('h-2 w-2 shrink-0 rounded-full', progress.terminated ? 'bg-red-500' : 'bg-blue-600')} />
+                          <span className="truncate">{progress.stageLabel}</span>
                         </span>
                       );
                     })()}
@@ -187,9 +208,9 @@ function PlanList({
                     <button
                       type="button"
                       onClick={() => onOpen(plan)}
-                      className="h-8 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                      className="inline-flex h-8 w-16 items-center justify-center whitespace-nowrap rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                     >
-                      查看详情
+                      详情
                     </button>
                   </td>
                 </tr>

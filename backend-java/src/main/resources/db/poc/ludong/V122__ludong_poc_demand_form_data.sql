@@ -1,0 +1,37 @@
+-- 补齐学校货物类采购需求表的原始填报字段。所有字段只填写一次，审批通过后同时进入两份归档模板。
+update ludong_poc_applications
+set form_data = form_data || jsonb_build_object(
+  'participants', concat_ws('、', form_data ->> 'projectLeaderName', form_data ->> 'technicalLeaderName'),
+  'smeSuitable', '是',
+  'microSuitable', '否',
+  'procurementFunction', '满足' || project_name || '的教学、科研或管理使用需求，并支持日常运行维护。',
+  'procurementGoal', '改善学校相关业务条件，提高设备使用效率和服务保障能力。',
+  'mandatoryStandards', '符合国家现行强制性标准及相关安全、节能、环保要求。',
+  'otherStandards', '符合采购文件、产品技术规范及学校使用管理要求。',
+  'supplierQualifications', '符合政府采购法律法规及采购文件规定的资格条件。',
+  'implementationLocation', applicant_unit || '指定地点',
+  'installationReady', '是',
+  'utilitiesReady', '是',
+  'assetDisposalPlan', '不涉及现有资产处置；如实施中涉及，按学校国有资产管理制度办理。',
+  'deliveryDays', '30',
+  'coreProduct', coalesce(items -> 0 ->> 'name', project_name),
+  'packingRequirement', '采用符合运输和设备防护要求的包装，运输、装卸过程造成的损坏由供应商负责。',
+  'warrantyYears', '3',
+  'domesticPaymentTerms', '货物安装调试并验收合格后，按合同约定办理付款。',
+  'importPaymentTerms', '不涉及进口设备。',
+  'afterSalesRequirement', '供应商应提供明确的售后服务方案、响应时限和技术支持联系方式。',
+  'acceptanceStandard', '货物安装调试完成并正常运行后，依据合同、采购文件及响应文件组织验收。',
+  'otherTechnicalRequirements', '符合国家关于国产设备、节能环保及信息安全的相关要求。',
+  'siteVisitRequired', '否',
+  'siteVisitTime', '',
+  'siteVisitLocation', '',
+  'siteVisitContact', '',
+  'siteVisitPhone', '',
+  'sampleRequired', '否',
+  'sampleRequirement', '不要求提供样品。',
+  'demoRequired', '否',
+  'demoDuration', '',
+  'demoRequirement', '不要求现场演示。',
+  'otherNotes', '无。'
+)
+where tenant_id = 'tenant-ludong-poc';

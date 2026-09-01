@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/api/v1/buyer/users")
@@ -41,6 +42,13 @@ public class BuyerUserController {
     return ApiResponse.ok(buyerUserApplicationService.createUser(request));
   }
 
+  @PutMapping("/{userId}")
+  public ApiResponse<BuyerUserResponse> update(
+      @PathVariable String userId,
+      @Valid @RequestBody UpdateBuyerUserRequest request) {
+    return ApiResponse.ok(buyerUserApplicationService.updateUser(userId, request));
+  }
+
   // 批量导入部门成员(CSV 解析后提交);逐行尽力创建,返回成功/失败明细。
   @PostMapping("/import")
   public ApiResponse<ImportBuyerUsersResponse> importUsers(
@@ -53,6 +61,13 @@ public class BuyerUserController {
       @PathVariable String userId,
       @Valid @RequestBody ChangeBuyerUserRoleRequest request) {
     return ApiResponse.ok(buyerUserApplicationService.changeUserRole(userId, request));
+  }
+
+  @PutMapping("/{userId}/roles")
+  public ApiResponse<BuyerUserResponse> updateRoles(
+      @PathVariable String userId,
+      @Valid @RequestBody UpdateBuyerUserRolesRequest request) {
+    return ApiResponse.ok(buyerUserApplicationService.updateUserRoles(userId, request));
   }
 
   @PostMapping("/{userId}/password")

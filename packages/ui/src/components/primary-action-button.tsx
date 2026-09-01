@@ -4,6 +4,7 @@ import { cn } from '../lib/cn';
 export interface PrimaryActionButtonProps {
   children: ReactNode;
   onClick: () => void;
+  type?: 'button' | 'submit';
   disabled?: boolean;
   busy?: boolean;
   pendingLabel?: string;
@@ -31,6 +32,7 @@ const sizeClasses = {
 export function PrimaryActionButton({
   children,
   onClick,
+  type = 'button',
   disabled = false,
   busy = false,
   pendingLabel,
@@ -43,7 +45,7 @@ export function PrimaryActionButton({
 }: PrimaryActionButtonProps) {
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       disabled={disabled}
       data-testid={testId}

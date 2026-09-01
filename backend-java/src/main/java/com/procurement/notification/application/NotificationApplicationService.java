@@ -8,6 +8,7 @@ import com.procurement.notification.domain.NotificationRecipientStatus;
 import com.procurement.notification.infrastructure.NotificationMapper;
 import com.procurement.supplier.infrastructure.SupplierUserMapper;
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -68,6 +69,23 @@ public class NotificationApplicationService {
             user.id(),
             title,
             content));
+  }
+
+  @Transactional
+  public void notifyTenantUsers(
+      String tenantId, Iterable<String> recipientIds, String title, String content) {
+    LinkedHashSet<String> uniqueIds = new LinkedHashSet<>();
+    recipientIds.forEach(recipientId -> {
+      if (recipientId != null && !recipientId.isBlank()) {
+        uniqueIds.add(recipientId);
+      }
+    });
+    uniqueIds.stream()
+        .map(recipientId -> buyerUserMapper.findByTenantAndId(tenantId, recipientId))
+        .filter(java.util.Objects::nonNull)
+        .filter(user -> NotificationRecipientStatus.ENABLED.equals(user.status()))
+        .forEach(user -> notificationMapper.insert(
+            "notice-" + UUID.randomUUID(), tenantId, user.id(), title, content));
   }
 
   @Transactional

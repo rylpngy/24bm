@@ -160,9 +160,10 @@ public interface PaymentBatchMapper {
         coalesce(sum(pr.amount), 0),
         coalesce(sum(case when pr.request_status = '付款申请已通过' then pr.amount else 0 end), 0),
         case
-          when count(*) = sum(case when pr.request_status = '付款申请已通过' then 1 else 0 end) then '可安排付款'
-          when sum(case when pr.request_status = '付款申请审批中' then 1 else 0 end) > 0 then '审批中'
-          else '待提交审批'
+          when count(*) = sum(case when pr.request_status = '付款申请已通过' then 1 else 0 end) then '待提交审批'
+          when sum(case when pr.request_status = '付款申请审批中' then 1 else 0 end) > 0 then '付款申请审批中'
+          when sum(case when pr.request_status = '付款申请已驳回' then 1 else 0 end) > 0 then '付款申请未通过'
+          else '付款申请待提交'
         end,
         min((i.created_at::date + interval '30 days')::date)
       from payment_requests pr
@@ -177,7 +178,11 @@ public interface PaymentBatchMapper {
             request_count = excluded.request_count,
             total_amount = excluded.total_amount,
             approved_amount = excluded.approved_amount,
-            batch_status = excluded.batch_status,
+            batch_status = case
+              when payment_batches.batch_status in ('审批中', '可安排付款', '已付款归档')
+                then payment_batches.batch_status
+              else excluded.batch_status
+            end,
             planned_payment_date = excluded.planned_payment_date,
             updated_at = now()
       """)

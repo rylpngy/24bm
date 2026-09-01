@@ -43,8 +43,8 @@ export const buyerReceiptCreate = (
     createReceiptRequest: BodyType<CreateReceiptRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseReceiptResponse>(
       {url: `/api/v1/buyer/orders/${orderId}/receipts`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -52,7 +52,7 @@ export const buyerReceiptCreate = (
     },
       );
     }
-  
+
 
 
 export const getBuyerReceiptCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -66,7 +66,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerReceiptCreate>>, {orderId: string;data: BodyType<CreateReceiptRequest>}> = (props) => {
@@ -75,7 +75,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerReceiptCreate(orderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -101,15 +101,15 @@ const {mutation: mutationOptions} = options ?
     params?: BuyerReceiptListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListReceiptResponse>(
       {url: `/api/v1/buyer/receipts`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -119,7 +119,7 @@ export const getBuyerReceiptListQueryKey = (params?: BuyerReceiptListParams,) =>
     ] as const;
     }
 
-    
+
 export const getBuyerReceiptListQueryOptions = <TData = Awaited<ReturnType<typeof buyerReceiptList>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerReceiptListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptList>>, TError, TData>>, }
 ) => {
 
@@ -127,13 +127,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerReceiptListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerReceiptList>>> = ({ signal }) => buyerReceiptList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -169,7 +169,7 @@ export function useBuyerReceiptList<TData = Awaited<ReturnType<typeof buyerRecei
 
 export function useBuyerReceiptList<TData = Awaited<ReturnType<typeof buyerReceiptList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerReceiptListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerReceiptListQueryOptions(params,options)

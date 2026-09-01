@@ -43,8 +43,8 @@ export const purchaseOrderUpdate = (
     orderId: string,
     updatePurchaseOrderRequest: BodyType<UpdatePurchaseOrderRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponsePurchaseOrderResponse>(
       {url: `/api/v1/buyer/orders/${orderId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -52,7 +52,7 @@ export const purchaseOrderUpdate = (
     },
       );
     }
-  
+
 
 
 export const getPurchaseOrderUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -66,7 +66,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseOrderUpdate>>, {orderId: string;data: BodyType<UpdatePurchaseOrderRequest>}> = (props) => {
@@ -75,7 +75,7 @@ const {mutation: mutationOptions} = options ?
           return  purchaseOrderUpdate(orderId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -101,15 +101,15 @@ const {mutation: mutationOptions} = options ?
     params?: PurchaseOrderListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPurchaseOrderResponse>(
       {url: `/api/v1/buyer/orders`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -119,7 +119,7 @@ export const getPurchaseOrderListQueryKey = (params?: PurchaseOrderListParams,) 
     ] as const;
     }
 
-    
+
 export const getPurchaseOrderListQueryOptions = <TData = Awaited<ReturnType<typeof purchaseOrderList>>, TError = ErrorType<ApiResponseVoid>>(params?: PurchaseOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderList>>, TError, TData>>, }
 ) => {
 
@@ -127,13 +127,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPurchaseOrderListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof purchaseOrderList>>> = ({ signal }) => purchaseOrderList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -169,7 +169,7 @@ export function usePurchaseOrderList<TData = Awaited<ReturnType<typeof purchaseO
 
 export function usePurchaseOrderList<TData = Awaited<ReturnType<typeof purchaseOrderList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: PurchaseOrderListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPurchaseOrderListQueryOptions(params,options)
@@ -188,8 +188,8 @@ export const purchaseOrderCreate = (
     createPurchaseOrderRequest: BodyType<CreatePurchaseOrderRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePurchaseOrderResponse>(
       {url: `/api/v1/buyer/orders`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -197,7 +197,7 @@ export const purchaseOrderCreate = (
     },
       );
     }
-  
+
 
 
 export const getPurchaseOrderCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -211,7 +211,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseOrderCreate>>, {data: BodyType<CreatePurchaseOrderRequest>}> = (props) => {
@@ -220,7 +220,7 @@ const {mutation: mutationOptions} = options ?
           return  purchaseOrderCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -242,4 +242,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

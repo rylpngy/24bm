@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Banknote, Info, Receipt, Scale } from 'lucide-react';
 import {
@@ -6,6 +6,7 @@ import {
   useBuyerPaymentPaymentAuditLogs,
   useBuyerPaymentUpdate,
   useBuyerSupplierList,
+  useWorkflowPaymentRequestCreate,
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
@@ -20,6 +21,8 @@ import {
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
 import { PaymentBatchesPage } from './payment-batches-page';
 import { InvoiceLineMatchPanel } from './invoice-line-match-panel';
+import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
+import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -73,10 +76,16 @@ export function InvoicesPage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
+  const [paymentRequestDraft, setPaymentRequestDraft] = useState<{
+    invoiceId: string;
+    paymentBatchNo: string;
+    remark: string;
+  } | null>(null);
 
   const query = useBuyerPaymentList();
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
   const pay = useBuyerPaymentUpdate();
+  const paymentRequest = useWorkflowPaymentRequestCreate();
   const allInvoices = query.data?.data ?? [];
 
   const supplierNames = useMemo(() => {
@@ -109,10 +118,15 @@ export function InvoicesPage() {
   const safePage = Math.min(page, pageCount);
   const pageItems = invoices.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
+  useEffect(() => {
+    const recordId = new URLSearchParams(window.location.search).get('recordId');
+    if (!selectedId && recordId && allInvoices.some((item) => item.id === recordId)) setSelectedId(recordId);
+  }, [allInvoices, selectedId]);
+
   const refresh = () =>
     queryClient.invalidateQueries({
       predicate: (q) =>
-        typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/invoices'),
+        typeof q.queryKey[0] === 'string' && /\/buyer\/(invoices|payment)/.test(q.queryKey[0] as string),
     });
 
   const register = (invoiceId: string, paymentStatus: string) => {
@@ -191,7 +205,9 @@ export function InvoicesPage() {
     const inv = selected;
     const variance = inv.varianceAmount ?? 0;
     const matched = variance === 0;
-    const busy = pay.isPending && pay.variables?.invoiceId === inv.id;
+    const busy =
+      (pay.isPending && pay.variables?.invoiceId === inv.id)
+      || paymentRequest.isPending;
     const payable = inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款';
     const supplierName = inv.supplierId ? (supplierNames[inv.supplierId] ?? inv.supplierId) : '—';
     return (
@@ -230,6 +246,8 @@ export function InvoicesPage() {
         </div>
 
         {feedback && <FeedbackNotice tone="success" message={feedback} />}
+
+        {inv.id && <WorkflowStatusPanel businessType="payment_request" businessId={inv.id} />}
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
@@ -381,6 +399,20 @@ export function InvoicesPage() {
             </div>
             {payable && inv.id && (
               <div className="flex shrink-0 flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPaymentRequestDraft({
+                      invoiceId: inv.id!,
+                      paymentBatchNo: `PAY-${new Date().toISOString().slice(0, 7).replace('-', '')}-${(inv.supplierId ?? 'GENERAL').slice(-6).toUpperCase()}`,
+                      remark: '',
+                    })
+                  }
+                  disabled={busy}
+                  className="inline-flex h-10 items-center rounded-lg border border-blue-200 bg-white px-4 text-sm font-black text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
+                >
+                  提交付款申请
+                </button>
                 {inv.paymentStatus === '待付款' && (
                   <button
                     type="button"
@@ -403,6 +435,67 @@ export function InvoicesPage() {
             )}
           </div>
         </div>
+        {paymentRequestDraft && (
+          <WorkflowSubmitDialog
+            businessType="payment_request"
+            title={`发票 ${inv.invoiceNo ?? inv.id} · 付款申请`}
+            busy={paymentRequest.isPending}
+            submissionError={paymentRequest.error}
+            onClose={() => setPaymentRequestDraft(null)}
+            onSubmit={(formData) => {
+              const paymentBatchNo = paymentRequestDraft.paymentBatchNo.trim();
+              if (!paymentBatchNo) {
+                setFeedback('请填写付款批次号后再提交。');
+                return;
+              }
+              paymentRequest.mutate(
+                {
+                  invoiceId: paymentRequestDraft.invoiceId,
+                  requestStatus: '付款申请审批中',
+                  paymentBatchNo,
+                  remark: paymentRequestDraft.remark.trim() || undefined,
+                  formData,
+                },
+                {
+                  onSuccess: () => {
+                    setPaymentRequestDraft(null);
+                    setFeedback('付款申请已提交审批，待候选审批人办理。');
+                    refresh();
+                  },
+                  onError: () => setFeedback('付款申请提交失败，请检查发票对账状态和流程配置。'),
+                },
+              );
+            }}
+          >
+            <div className="grid gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:grid-cols-2">
+              <label className="block text-xs font-black text-slate-600">
+                付款批次号<span className="ml-1 text-red-500">*</span>
+                <input
+                  value={paymentRequestDraft.paymentBatchNo}
+                  onChange={(event) => setPaymentRequestDraft((current) => current && ({ ...current, paymentBatchNo: event.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+              <label className="block text-xs font-black text-slate-600">
+                关联订单
+                <input
+                  value={inv.orderId ?? '—'}
+                  readOnly
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-500"
+                />
+              </label>
+              <label className="block text-xs font-black text-slate-600 sm:col-span-2">
+                申请备注
+                <textarea
+                  value={paymentRequestDraft.remark}
+                  onChange={(event) => setPaymentRequestDraft((current) => current && ({ ...current, remark: event.target.value }))}
+                  placeholder="说明付款依据、计划日期或其他补充信息"
+                  className="mt-1 min-h-20 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+            </div>
+          </WorkflowSubmitDialog>
+        )}
       </div>
     );
   }

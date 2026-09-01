@@ -20,6 +20,8 @@ import com.procurement.common.api.ImportResultResponse;
 import com.procurement.common.excel.ExcelSheets;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.application.PermissionService;
+import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.organization.application.DepartmentApplicationService;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import com.procurement.supplier.application.SupplierInvitationApplicationService;
@@ -45,8 +47,10 @@ class BaseDataExcelImportTests {
   private final PurchaseDemandMapper purchaseDemandMapper = mock(PurchaseDemandMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
       mock(AuditLogApplicationService.class);
+  private final BuyerUserMapper buyerUserMapper = mock(BuyerUserMapper.class);
+  private final PermissionService permissionService = mock(PermissionService.class);
   private final DepartmentApplicationService departmentService = new DepartmentApplicationService(
-      departmentMapper, purchaseDemandMapper, auditLogApplicationService);
+      departmentMapper, purchaseDemandMapper, auditLogApplicationService, buyerUserMapper, permissionService);
 
   private final SupplierInvitationMapper invitationMapper = mock(SupplierInvitationMapper.class);
   private final BuyerSupplierRelationMapper relationMapper = mock(BuyerSupplierRelationMapper.class);

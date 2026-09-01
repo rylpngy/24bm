@@ -10,6 +10,7 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.api.ChangeBuyerUserStatusRequest;
 import com.procurement.identity.application.BuyerUserApplicationService;
+import com.procurement.identity.application.PermissionService;
 import com.procurement.identity.domain.BuyerUserStatusTransition;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
@@ -31,6 +32,7 @@ class BuyerUserStatusChangeTests {
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
+  private final PermissionService permissionService = org.mockito.Mockito.mock(PermissionService.class);
   private final BuyerUserApplicationService buyerUserApplicationService =
       new BuyerUserApplicationService(
           buyerUserMapper,
@@ -38,7 +40,8 @@ class BuyerUserStatusChangeTests {
           tenantEntitlementApplicationService,
           auditLogApplicationService,
           passwordEncoder,
-          new BuyerUserStatusTransition());
+          new BuyerUserStatusTransition(),
+          permissionService);
 
   @AfterEach
   void clearTenantContext() {

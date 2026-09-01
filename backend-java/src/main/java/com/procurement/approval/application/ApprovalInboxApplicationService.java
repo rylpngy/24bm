@@ -42,7 +42,6 @@ public class ApprovalInboxApplicationService {
   private final PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper;
   private final ContractMapper contractMapper;
   private final BuyerUserMapper buyerUserMapper;
-  private final com.procurement.process.infrastructure.ProcessInstanceMapper processInstanceMapper;
 
   public ApprovalInboxApplicationService(
       ApprovalTaskMapper approvalTaskMapper,
@@ -54,9 +53,7 @@ public class ApprovalInboxApplicationService {
       PaymentBatchMapper paymentBatchMapper,
       PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper,
       ContractMapper contractMapper,
-      BuyerUserMapper buyerUserMapper,
-      com.procurement.process.infrastructure.ProcessInstanceMapper processInstanceMapper) {
-    this.processInstanceMapper = processInstanceMapper;
+      BuyerUserMapper buyerUserMapper) {
     this.approvalTaskMapper = approvalTaskMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
@@ -115,26 +112,8 @@ public class ApprovalInboxApplicationService {
       case ApprovalBusinessType.PAYMENT_BATCH -> paymentBatchSummary(task);
       case ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION -> paymentArchiveExceptionSummary(task);
       case ApprovalBusinessType.CONTRACT_APPROVAL -> contractApprovalSummary(task);
-      case "process_instance" -> processInstanceSummary(task);
       default -> ApprovalTaskSummary.empty();
     };
-  }
-
-  private ApprovalTaskSummary processInstanceSummary(ApprovalTask task) {
-    var instance = processInstanceMapper.findByTenantAndId(task.tenantId(), task.bizId());
-    if (instance == null) {
-      return ApprovalTaskSummary.empty();
-    }
-    BuyerUser initiator = buyerUserMapper.findByTenantAndId(task.tenantId(), instance.initiatorId());
-    return new ApprovalTaskSummary(
-        instance.processId(),
-        "流程审批 · " + instance.processName(),
-        task.status(),
-        instance.initiatorId(),
-        initiator == null ? instance.initiatorId() : initiator.name(),
-        instance.amount(),
-        null,
-        null);
   }
 
   private Integer priorityFor(String bizType) {
@@ -145,7 +124,6 @@ public class ApprovalInboxApplicationService {
       case ApprovalBusinessType.CONTRACT_APPROVAL -> 86;
       case ApprovalBusinessType.PAYMENT_REQUEST -> 85;
       case ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION -> 80;
-      case "process_instance" -> 75;
       case ApprovalBusinessType.PURCHASE_DEMAND -> 70;
       default -> 50;
     };

@@ -36,15 +36,15 @@ export const dictionaryList = (
     params: DictionaryListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListDictionaryEntryResponse>(
       {url: `/api/v1/dictionaries`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -54,7 +54,7 @@ export const getDictionaryListQueryKey = (params?: DictionaryListParams,) => {
     ] as const;
     }
 
-    
+
 export const getDictionaryListQueryOptions = <TData = Awaited<ReturnType<typeof dictionaryList>>, TError = ErrorType<ApiResponseVoid>>(params: DictionaryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionaryList>>, TError, TData>>, }
 ) => {
 
@@ -62,13 +62,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getDictionaryListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof dictionaryList>>> = ({ signal }) => dictionaryList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof dictionaryList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -104,7 +104,7 @@ export function useDictionaryList<TData = Awaited<ReturnType<typeof dictionaryLi
 
 export function useDictionaryList<TData = Awaited<ReturnType<typeof dictionaryList>>, TError = ErrorType<ApiResponseVoid>>(
  params: DictionaryListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionaryList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDictionaryListQueryOptions(params,options)

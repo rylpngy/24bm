@@ -10,4 +10,5 @@ export interface CreateProcessDefinitionRequest {
   name: string;
   description?: string;
   icon?: string;
+  businessType?: string;
 }

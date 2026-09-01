@@ -7,9 +7,12 @@ import {
   useBuyerFinanceActionRegisterPaymentExecutionRecord,
   useBuyerFinanceActionUpdatePaymentBatchStatus,
   useBuyerFinanceActionUpdatePaymentBlockResolutionStatus,
+  useWorkflowPaymentBatchStatusUpdate,
 } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
 import { FinanceExceptionDashboardPanel } from './finance-exception-dashboard-panel';
+import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
+import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 import {
   buildPaymentBatchExecutionSummaries,
   type PaymentBatchExecutionSummary,
@@ -162,7 +165,9 @@ export function PaymentBatchesPage() {
   const registerPayment = useBuyerFinanceActionRegisterPaymentExecutionRecord();
   const resolveBlock = useBuyerFinanceActionUpdatePaymentBlockResolutionStatus();
   const updateBatchStatus = useBuyerFinanceActionUpdatePaymentBatchStatus();
+  const submitBatchApproval = useWorkflowPaymentBatchStatusUpdate();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [submitBatchNo, setSubmitBatchNo] = useState<string | null>(null);
   const batches = query.data?.data ?? [];
   const executionSummaries = buildPaymentBatchExecutionSummaries(
     executions.data?.data ?? [],
@@ -189,7 +194,11 @@ export function PaymentBatchesPage() {
       { onSuccess: refreshFinanceQueries, onError: reportActionError },
     );
   };
-  const busy = registerPayment.isPending || resolveBlock.isPending || updateBatchStatus.isPending;
+  const busy =
+    registerPayment.isPending
+    || resolveBlock.isPending
+    || updateBatchStatus.isPending
+    || submitBatchApproval.isPending;
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
@@ -234,29 +243,31 @@ export function PaymentBatchesPage() {
                     <StatusPill
                       label={allRegistered ? '已全部登记' : blocked ? '存在阻断' : b.executionDecision ?? '—'}
                     />
-                    {b.batchStatus !== '审批中'
-                      && b.batchStatus !== '可安排付款'
-                      && b.batchStatus !== '已付款归档' && (
+                    {b.batchStatus === '待提交审批' && (
                       <button
                         type="button"
                         disabled={busy}
                         aria-label={`提交批次审批 ${b.paymentBatchNo}`}
-                        onClick={() => changeBatchStatus(b.paymentBatchNo, '审批中')}
+                        onClick={() => setSubmitBatchNo(b.paymentBatchNo ?? null)}
                         className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                       >
                         提交批次审批
                       </button>
                     )}
                     {b.batchStatus === '审批中' && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        aria-label={`批次审批通过 ${b.paymentBatchNo}`}
-                        onClick={() => changeBatchStatus(b.paymentBatchNo, '可安排付款')}
-                        className="rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-                      >
-                        审批通过
-                      </button>
+                      <span className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700">
+                        审批处理中
+                      </span>
+                    )}
+                    {b.batchStatus === '付款申请审批中' && (
+                      <span className="rounded-md border border-amber-100 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-700">
+                        等待付款申请审批
+                      </span>
+                    )}
+                    {b.batchStatus === '付款申请未通过' && (
+                      <span className="rounded-md border border-rose-100 bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-700">
+                        存在未通过申请
+                      </span>
                     )}
                     {b.batchStatus === '可安排付款' && allRegistered && (
                       <button
@@ -278,6 +289,12 @@ export function PaymentBatchesPage() {
                   <MiniFact label="已审批额" value={currency(b.approvedAmount)} />
                   <MiniFact label="已登记付款额" value={currency(b.registeredAmount)} />
                 </div>
+
+                {b.paymentBatchNo && b.batchStatus !== '待提交审批' && (
+                  <div className="mt-3">
+                    <WorkflowStatusPanel compact businessType="payment_batch" businessId={b.paymentBatchNo} />
+                  </div>
+                )}
 
                 <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
                   <p className="text-xs font-black text-slate-500">执行登记进度</p>
@@ -345,6 +362,27 @@ export function PaymentBatchesPage() {
             );
           })}
         </div>
+      )}
+      {submitBatchNo && (
+        <WorkflowSubmitDialog
+          businessType="payment_batch"
+          title={`付款批次 ${submitBatchNo}`}
+          busy={submitBatchApproval.isPending}
+          submissionError={submitBatchApproval.error}
+          onClose={() => setSubmitBatchNo(null)}
+          onSubmit={(formData) =>
+            submitBatchApproval.mutate(
+              { paymentBatchNo: submitBatchNo, batchStatus: '审批中', formData },
+              {
+                onSuccess: () => {
+                  setSubmitBatchNo(null);
+                  refreshFinanceQueries();
+                },
+                onError: reportActionError,
+              },
+            )
+          }
+        />
       )}
     </section>
   );

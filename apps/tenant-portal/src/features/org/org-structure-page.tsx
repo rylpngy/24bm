@@ -1,694 +1,788 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
   CalendarDays,
   ChevronDown,
   ChevronRight,
-  Mail,
   Network,
   Pencil,
-  Phone,
   Plus,
-  Trash2,
-  Upload,
+  Search,
+  UserCheck,
   UserPlus,
   UserRound,
   Users,
+  X,
 } from 'lucide-react';
 import {
   type BuyerRoleResponse,
   type BuyerUserResponse,
   type DepartmentResponse,
-  type ImportBuyerUserRow,
-  type ImportBuyerUsersResponse,
   useBuyerRoleList,
-  useBuyerUserCreate,
-  useBuyerUserImportUsers,
   useBuyerUserList,
   useDepartmentCreate,
   useDepartmentDisable,
   useDepartmentList,
   useDepartmentUpdate,
 } from '@24bid/api-client';
-import { FeedbackNotice, SearchInput, StatusPill, cn } from '@24bid/ui';
+import { ConfirmDialog, FeedbackNotice, Pagination, StatusPill, cn } from '@24bid/ui';
+import { BuyerMemberEditorDialog } from '../shared/buyer-member-editor-dialog';
 import { ExcelImportControl } from '../shared/excel-import-control';
 
 interface TreeNode {
-  dept: DepartmentResponse;
+  department: DepartmentResponse;
   children: TreeNode[];
   rollup: number;
 }
 
-function buildTree(list: DepartmentResponse[]): TreeNode[] {
-  const byParent = new Map<string, DepartmentResponse[]>();
-  for (const d of list) {
-    const key = d.parentId ?? '__root__';
-    byParent.set(key, [...(byParent.get(key) ?? []), d]);
-  }
-  const make = (d: DepartmentResponse): TreeNode => {
-    const children = (byParent.get(d.id ?? '') ?? []).map(make);
-    const rollup = (d.memberCount ?? 0) + children.reduce((s, c) => s + c.rollup, 0);
-    return { dept: d, children, rollup };
-  };
-  return (byParent.get('__root__') ?? []).map(make);
+interface Feedback {
+  tone: 'success' | 'error' | 'info';
+  message: string;
 }
 
-// 组织架构:左侧部门树 + 右侧部门详情卡 + 成员表。
-export function OrgStructurePage() {
+type DepartmentDialogState =
+  | { kind: 'root' }
+  | { kind: 'child'; parent: DepartmentResponse }
+  | { kind: 'edit'; department: DepartmentResponse }
+  | null;
+
+const PAGE_SIZE = 8;
+
+function errorMessage(error: unknown, fallback: string) {
+  const response = error as {
+    response?: { data?: { message?: unknown; error?: { message?: unknown } } };
+    message?: unknown;
+  };
+  const message = response.response?.data?.message ?? response.response?.data?.error?.message ?? response.message;
+  return typeof message === 'string' && message.trim() ? message : fallback;
+}
+
+function buildTree(departments: DepartmentResponse[]) {
+  const byParent = new Map<string, DepartmentResponse[]>();
+  departments.forEach((department) => {
+    const key = department.parentId || '__root__';
+    byParent.set(key, [...(byParent.get(key) || []), department]);
+  });
+
+  const makeNode = (department: DepartmentResponse): TreeNode => {
+    const children = (byParent.get(department.id || '') || []).map(makeNode);
+    return {
+      department,
+      children,
+      rollup: (department.memberCount || 0) + children.reduce((total, child) => total + child.rollup, 0),
+    };
+  };
+
+  return (byParent.get('__root__') || []).map(makeNode);
+}
+
+function sameIds(left: string[], right: string[]) {
+  return left.length === right.length && left.every((item) => right.includes(item));
+}
+
+export function OrgStructurePage({ requireEmployeeNo = false }: { requireEmployeeNo?: boolean }) {
   const queryClient = useQueryClient();
-  const departments = useDepartmentList();
-  const roles = useBuyerRoleList();
-  const create = useDepartmentCreate();
-  const update = useDepartmentUpdate();
-  const disable = useDepartmentDisable();
-  const createMember = useBuyerUserCreate();
-  const importMembers = useBuyerUserImportUsers();
-
+  const departmentsQuery = useDepartmentList();
+  const rolesQuery = useBuyerRoleList();
+  const activeUsersQuery = useBuyerUserList({ status: 'active' });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [treeSearch, setTreeSearch] = useState('');
-  const [memberSearch, setMemberSearch] = useState('');
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [mode, setMode] = useState<'view' | 'edit' | 'add-child' | 'add-root'>('view');
-  const [draftName, setDraftName] = useState('');
-  const [draftDesc, setDraftDesc] = useState('');
-  const [draftManager, setDraftManager] = useState('');
-  const [showAddMember, setShowAddMember] = useState(false);
-  const [showImport, setShowImport] = useState(false);
+  const [treeKeyword, setTreeKeyword] = useState('');
+  const [memberKeyword, setMemberKeyword] = useState('');
+  const [memberPage, setMemberPage] = useState(1);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [dialog, setDialog] = useState<DepartmentDialogState>(null);
+  const [memberEditor, setMemberEditor] = useState<BuyerUserResponse | null | 'new'>(null);
+  const [disableTarget, setDisableTarget] = useState<DepartmentResponse | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const updateDepartment = useDepartmentUpdate();
+  const disableDepartment = useDepartmentDisable();
 
-  const list = departments.data?.data ?? [];
-  const tree = useMemo(() => buildTree(list), [list]);
-
-  // 首次加载后默认展开所有上级部门(整棵树可见)。
-  const parentIds = useMemo(
-    () => [...new Set(list.map((d) => d.parentId).filter(Boolean))] as string[],
-    [list],
+  const departments = departmentsQuery.data?.data || [];
+  const roles = rolesQuery.data?.data || [];
+  const activeUsers = activeUsersQuery.data?.data || [];
+  const tree = useMemo(() => buildTree(departments), [departments]);
+  const selected = departments.find((department) => department.id === selectedId) || departments[0];
+  const membersQuery = useBuyerUserList(
+    {
+      departmentId: selected?.id,
+      keyword: memberKeyword || undefined,
+    },
+    { query: { enabled: Boolean(selected?.id) } },
   );
-  const [expandedInit, setExpandedInit] = useState(false);
+  const departmentMembers = membersQuery.data?.data || [];
+
+  const roleNameById = useMemo(() => {
+    const names = new Map<string, string>();
+    roles.forEach((role) => {
+      if (role.id) names.set(role.id, role.name || role.id);
+    });
+    return names;
+  }, [roles]);
+  const roleNames = (member: BuyerUserResponse) => {
+    const roleIds = (member as BuyerUserResponse & { roleIds?: string[] }).roleIds;
+    return (roleIds?.length ? roleIds : [member.roleId])
+      .filter(Boolean)
+      .map((roleId) => roleNameById.get(roleId!) || roleId)
+      .join('、') || '未设置角色';
+  };
+
+  const departmentNameById = useMemo(() => {
+    const names = new Map<string, string>();
+    departments.forEach((department) => {
+      if (department.id) names.set(department.id, department.name || department.id);
+    });
+    return names;
+  }, [departments]);
+
+  const activeChildCount = useMemo(
+    () => departments.filter((department) => department.parentId === selected?.id).length,
+    [departments, selected?.id],
+  );
+
   useEffect(() => {
-    if (!expandedInit && parentIds.length > 0) {
-      setExpanded(new Set(parentIds));
-      setExpandedInit(true);
+    if (departments.length === 0) {
+      setSelectedId(null);
+      return;
     }
-  }, [parentIds, expandedInit]);
-  const selected = list.find((d) => d.id === selectedId) ?? list.find((d) => !d.parentId) ?? list[0];
+    if (!selectedId || !departments.some((department) => department.id === selectedId)) {
+      setSelectedId(departments[0].id || null);
+    }
+  }, [departments, selectedId]);
 
-  const members = useBuyerUserList(
-    { departmentId: selected?.id, keyword: memberSearch || undefined },
-    { query: { enabled: !!selected?.id } },
-  );
-  const memberList = members.data?.data ?? [];
+  useEffect(() => {
+    const parents = departments.map((department) => department.parentId).filter(Boolean) as string[];
+    if (parents.length > 0) {
+      setExpanded((current) => {
+        const next = new Set(current);
+        parents.forEach((parentId) => next.add(parentId));
+        return sameIds([...current], [...next]) ? current : next;
+      });
+    }
+  }, [departments]);
+
+  useEffect(() => {
+    setMemberPage(1);
+  }, [selected?.id, memberKeyword]);
 
   const refresh = () =>
     queryClient.invalidateQueries({
-      predicate: (q) =>
-        typeof q.queryKey[0] === 'string' && /\/buyer\/(departments|users)/.test(q.queryKey[0] as string),
+      predicate: (query) => /^\/api\/v1\/buyer\/(departments|users|roles)/.test(String(query.queryKey[0] || '')),
     });
 
-  const toggleExpand = (id: string) =>
-    setExpanded((s) => {
-      const next = new Set(s);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const pageCount = Math.max(1, Math.ceil(departmentMembers.length / PAGE_SIZE));
+  const safeMemberPage = Math.min(memberPage, pageCount);
+  const pagedMembers = departmentMembers.slice((safeMemberPage - 1) * PAGE_SIZE, safeMemberPage * PAGE_SIZE);
 
-  const startEdit = () => {
-    if (!selected) return;
-    setDraftName(selected.name ?? '');
-    setDraftDesc(selected.description ?? '');
-    setDraftManager(selected.managerId ?? '');
-    setMode('edit');
-  };
-  const startAddChild = () => {
-    setDraftName('');
-    setDraftDesc('');
-    setMode('add-child');
-  };
-
-  const submitEdit = () => {
-    if (!selected?.id || !draftName.trim()) return;
-    update.mutate(
-      { departmentId: selected.id, data: { name: draftName.trim(), description: draftDesc, managerId: draftManager || undefined } },
-      { onSuccess: () => { setFeedback(`部门「${draftName}」已更新`); setMode('view'); refresh(); } },
+  const appointManager = (member: BuyerUserResponse) => {
+    if (!selected?.id || !member.id) return;
+    updateDepartment.mutate(
+      {
+        departmentId: selected.id,
+        data: {
+          name: selected.name || '',
+          description: selected.description || '',
+          managerId: member.id,
+          transferManagerToDepartment: false,
+        },
+      },
+      {
+        onSuccess: () => {
+          setFeedback({ tone: 'success', message: '已将 ' + (member.name || '该成员') + ' 任命为部门主管。' });
+          void refresh();
+        },
+        onError: (error) => setFeedback({ tone: 'error', message: errorMessage(error, '任命主管失败，请刷新后重试。') }),
+      },
     );
   };
-  const submitAddChild = () => {
-    if (!draftName.trim()) return;
-    create.mutate(
-      { data: { name: draftName.trim(), parentId: mode === 'add-root' ? undefined : selected?.id } },
+
+  const confirmDisable = () => {
+    if (!disableTarget?.id) return;
+    disableDepartment.mutate(
+      { departmentId: disableTarget.id },
       {
-        onSuccess: (res) => {
-          setFeedback(`部门「${draftName}」已创建`);
-          setMode('view');
-          if (selected?.id) setExpanded((s) => new Set(s).add(selected.id!));
-          if (res.data?.id) setSelectedId(res.data.id);
-          refresh();
+        onSuccess: () => {
+          setFeedback({ tone: 'success', message: '部门已停用。' });
+          setDisableTarget(null);
+          void refresh();
+        },
+        onError: (error) => {
+          setDisableTarget(null);
+          setFeedback({
+            tone: 'error',
+            message: errorMessage(error, '该部门存在在职成员、子部门或业务引用，暂不能停用。'),
+          });
         },
       },
     );
   };
-  const onDelete = () => {
-    if (!selected?.id) return;
-    disable.mutate(
-      { departmentId: selected.id },
-      {
-        onSuccess: () => { setFeedback(`部门「${selected.name}」已删除`); setSelectedId(null); refresh(); },
-        onError: () => setFeedback('删除失败:该部门仍被需求引用或存在下级。'),
-      },
-    );
+
+  const toggleExpand = (departmentId: string) => {
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(departmentId)) next.delete(departmentId);
+      else next.add(departmentId);
+      return next;
+    });
   };
 
-  const renderNode = (node: TreeNode, depth: number): React.ReactNode => {
-    const { dept, children, rollup } = node;
-    const on = dept.id === (selected?.id ?? '');
-    const isOpen = expanded.has(dept.id ?? '');
-    const matches = !treeSearch || (dept.name ?? '').toLowerCase().includes(treeSearch.toLowerCase());
-    const childNodes = children.map((c) => renderNode(c, depth + 1)).filter(Boolean);
-    if (!matches && childNodes.length === 0) return null;
+  const renderNode = (node: TreeNode, depth: number): ReactNode => {
+    const { department, children, rollup } = node;
+    const hasMatch = !treeKeyword.trim() || (department.name || '').toLowerCase().includes(treeKeyword.trim().toLowerCase());
+    const childNodes = children.map((child) => renderNode(child, depth + 1)).filter(Boolean);
+    if (!hasMatch && childNodes.length === 0) return null;
+    const isSelected = department.id === selected?.id;
+    const isOpen = expanded.has(department.id || '') || Boolean(treeKeyword.trim());
+
     return (
-      <div key={dept.id}>
+      <div key={department.id}>
         <div
           className={cn(
-            'flex items-center gap-1 rounded-lg pr-2 transition',
-            on ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-100',
+            'group flex min-h-9 items-center gap-1 rounded-lg pr-2 transition',
+            isSelected ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' : 'text-slate-700 hover:bg-slate-100',
           )}
-          style={{ paddingLeft: `${depth * 14 + 4}px` }}
+          style={{ paddingLeft: depth * 16 + 4 }}
         >
           {children.length > 0 ? (
             <button
               type="button"
-              onClick={() => dept.id && toggleExpand(dept.id)}
-              className={cn('p-1', on ? 'text-blue-100' : 'text-slate-400')}
+              className={cn(
+                'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition',
+                isSelected ? 'text-blue-100 hover:bg-blue-500' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600',
+              )}
+              onClick={() => department.id && toggleExpand(department.id)}
+              aria-label={isOpen ? '收起子部门' : '展开子部门'}
             >
-              {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              {isOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
             </button>
           ) : (
-            <span className="w-6" />
+            <span className="w-7 shrink-0" />
           )}
           <button
             type="button"
-            onClick={() => { setSelectedId(dept.id ?? null); setMode('view'); }}
-            className="flex flex-1 items-center justify-between gap-2 py-2 text-left"
+            onClick={() => department.id && setSelectedId(department.id)}
+            className="flex min-w-0 flex-1 items-center justify-between gap-2 py-1.5 text-left"
           >
-            <span className="truncate text-sm font-black">{dept.name}</span>
+            <span className="truncate text-sm font-bold">{department.name || '未命名部门'}</span>
             <span
               className={cn(
-                'shrink-0 rounded px-1.5 text-[11px] font-black',
-                on ? 'bg-blue-500 text-blue-50' : 'bg-slate-100 text-slate-400',
+                'shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-black',
+                isSelected ? 'bg-blue-500 text-blue-50' : 'bg-slate-100 text-slate-400',
               )}
             >
               {rollup}
             </span>
           </button>
         </div>
-        {isOpen && childNodes.length > 0 && <div>{childNodes}</div>}
+        {isOpen && childNodes.length > 0 && <div className="space-y-0.5">{childNodes}</div>}
       </div>
     );
   };
 
   return (
-    <div className="space-y-3">
-      {feedback && <FeedbackNotice tone="success" message={feedback} />}
-      <div className="grid gap-3 lg:grid-cols-[300px_1fr]">
-        {/* 左:部门树 */}
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <div className="mb-2 flex items-center justify-between px-1">
-            <p className="flex items-center gap-1.5 text-sm font-black text-slate-700">
-              <Network size={15} className="text-blue-600" /> 组织架构
-            </p>
-            <button
-              type="button"
-              onClick={() => { setDraftName(''); setMode('add-root'); }}
-              title="新增一级部门"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-blue-600"
-            >
-              <Plus size={16} />
-            </button>
+    <div className="space-y-4">
+      {feedback && <FeedbackNotice tone={feedback.tone} message={feedback.message} />}
+
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200/40">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+              <Network size={19} />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-base font-black text-slate-950">组织架构</h1>
+              <p className="mt-0.5 text-xs font-semibold text-slate-400">部门层级、负责人和成员归属统一维护</p>
+            </div>
           </div>
-          <SearchInput className="mb-2" placeholder="搜索部门…" onSearch={setTreeSearch} />
-          <div className="mb-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-md bg-slate-100 px-2.5 py-1.5 text-xs font-black text-slate-600">
+              {departments.length} 个部门
+            </span>
+            <span className="rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-black text-blue-700">
+              {activeUsers.length} 名在职成员
+            </span>
             <ExcelImportControl
               endpoint="/api/v1/buyer/departments/import"
               templateName="部门导入模板"
               invalidatePrefix="/api/v1/buyer/departments"
-              label="批量导入部门"
+              label="批量导入"
             />
+            <button
+              type="button"
+              onClick={() => setDialog({ kind: 'root' })}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 text-xs font-black text-white transition hover:bg-slate-800"
+            >
+              <Plus size={15} /> 新建一级部门
+            </button>
           </div>
-          {mode === 'add-root' && (
-            <InlineDeptForm
-              title="新增一级部门"
-              name={draftName}
-              onName={setDraftName}
-              busy={create.isPending}
-              onCancel={() => setMode('view')}
-              onSubmit={submitAddChild}
-            />
-          )}
-          {departments.isLoading ? (
-            <p className="px-1 py-3 text-xs font-bold text-slate-400">加载部门…</p>
-          ) : tree.length === 0 ? (
-            <p className="px-1 py-3 text-xs font-bold text-slate-400">暂无部门。</p>
-          ) : (
-            <div className="space-y-0.5">{tree.map((n) => renderNode(n, 0))}</div>
-          )}
-        </div>
+        </header>
 
-        {/* 右:详情 + 成员 */}
-        <div className="space-y-3">
-          {!selected ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-8">
-              <FeedbackNotice tone="info" message="请选择左侧部门查看详情与成员。" />
+        <div className="grid min-h-[640px] lg:grid-cols-[300px_minmax(0,1fr)]">
+          <aside className="border-b border-slate-100 bg-slate-50/60 p-4 lg:border-b-0 lg:border-r">
+            <label className="relative block">
+              <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={treeKeyword}
+                onChange={(event) => setTreeKeyword(event.target.value)}
+                placeholder="搜索部门"
+                className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-xs font-semibold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              />
+              {treeKeyword && (
+                <button
+                  type="button"
+                  onClick={() => setTreeKeyword('')}
+                  aria-label="清除搜索"
+                  className="absolute right-1.5 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </label>
+            <div className="mt-4">
+              <p className="mb-2 px-1 text-[11px] font-black uppercase tracking-wide text-slate-400">部门结构</p>
+              {departmentsQuery.isLoading ? (
+                <p className="px-1 py-5 text-xs font-bold text-slate-400">正在加载部门…</p>
+              ) : tree.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-slate-200 bg-white px-4 py-8 text-center">
+                  <Building2 size={20} className="mx-auto text-slate-300" />
+                  <p className="mt-2 text-xs font-bold text-slate-400">尚未建立部门</p>
+                </div>
+              ) : (
+                <div className="space-y-0.5">{tree.map((node) => renderNode(node, 0))}</div>
+              )}
             </div>
-          ) : (
-            <>
-              <div className="rounded-xl border border-slate-200 bg-white p-5">
-                {mode === 'edit' || mode === 'add-child' ? (
-                  <InlineDeptForm
-                    title={mode === 'edit' ? `编辑「${selected.name}」` : `在「${selected.name}」下新增子部门`}
-                    name={draftName}
-                    onName={setDraftName}
-                    desc={mode === 'edit' ? draftDesc : undefined}
-                    onDesc={mode === 'edit' ? setDraftDesc : undefined}
-                    managerOptions={mode === 'edit' ? memberList : undefined}
-                    managerId={mode === 'edit' ? draftManager : undefined}
-                    onManager={mode === 'edit' ? setDraftManager : undefined}
-                    busy={update.isPending || create.isPending}
-                    onCancel={() => setMode('view')}
-                    onSubmit={mode === 'edit' ? submitEdit : submitAddChild}
-                  />
-                ) : (
-                  <>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="flex items-center gap-2 text-xl font-black text-slate-950">
-                          {selected.name}
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-black text-slate-400">
-                            ID: {selected.id?.replace('dept-', '')}
-                          </span>
-                        </p>
-                        <p className="mt-1 text-sm font-bold text-slate-500">
-                          {selected.description || '暂无部门描述'}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={startAddChild}
-                          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
-                        >
-                          <Plus size={14} /> 添加子部门
-                        </button>
-                        <button
-                          type="button"
-                          onClick={startEdit}
-                          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
-                        >
-                          <Pencil size={14} /> 编辑
-                        </button>
-                        <button
-                          type="button"
-                          onClick={onDelete}
-                          disabled={disable.isPending}
-                          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        >
-                          <Trash2 size={14} /> 删除
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-x-10 gap-y-3 border-t border-slate-100 pt-4">
-                      <Fact icon={UserRound} label="负责人" value={selected.managerName ?? '未指定'} />
-                      <Fact icon={Users} label="成员数" value={`${selected.memberCount ?? 0} 人`} />
-                      <Fact icon={CalendarDays} label="成立时间" value={selected.establishedOn ?? '—'} />
-                    </div>
-                  </>
-                )}
-              </div>
+          </aside>
 
-              {/* 成员表 */}
-              <div className="rounded-xl border border-slate-200 bg-white">
-                <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4">
-                  <SearchInput className="mb-0" placeholder="搜索成员姓名 / 工号…" onSearch={setMemberSearch} />
-                  <div className="ml-auto flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => { setShowImport((v) => !v); setShowAddMember(false); }}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
-                    >
-                      <Upload size={14} /> {showImport ? '收起导入' : '导入'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setShowAddMember((v) => !v); setShowImport(false); }}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white hover:bg-slate-800"
-                    >
-                      <UserPlus size={14} /> {showAddMember ? '收起' : '添加成员'}
-                    </button>
-                  </div>
-                </div>
-                {showImport && selected?.id && (
-                  <ImportMembersForm
-                    departmentName={selected.name ?? ''}
-                    busy={importMembers.isPending}
-                    result={importMembers.data?.data}
-                    onSubmit={(defaultPassword, members) =>
-                      importMembers.mutate(
-                        { data: { departmentId: selected.id!, defaultPassword, members } },
-                        { onSuccess: (res) => { setFeedback(`导入完成:成功 ${res.data?.created ?? 0} 条、失败 ${res.data?.failed ?? 0} 条`); refresh(); } },
-                      )
-                    }
-                  />
-                )}
-                {showAddMember && selected?.id && (
-                  <AddMemberForm
-                    departmentId={selected.id}
-                    roles={roles.data?.data ?? []}
-                    busy={createMember.isPending}
-                    error={createMember.isError}
-                    onSubmit={(data) =>
-                      createMember.mutate(
-                        { data: { ...data, departmentId: selected.id!, status: 'active' } },
-                        {
-                          onSuccess: () => {
-                            setFeedback(`成员「${data.name}」已添加到「${selected.name}」`);
-                            setShowAddMember(false);
-                            refresh();
-                          },
-                        },
-                      )
-                    }
-                  />
-                )}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-xs font-black text-slate-400">
-                        <th className="px-4 py-3">姓名 / 工号</th>
-                        <th className="px-4 py-3">职位</th>
-                        <th className="px-4 py-3">联系方式</th>
-                        <th className="px-4 py-3">状态</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {members.isLoading ? (
-                        <tr><td colSpan={4} className="px-4 py-6 text-xs font-bold text-slate-400">加载成员…</td></tr>
-                      ) : memberList.length === 0 ? (
-                        <tr><td colSpan={4} className="px-4 py-6 text-xs font-bold text-slate-400">该部门暂无成员。</td></tr>
-                      ) : (
-                        memberList.map((m) => (
-                          <tr key={m.id} className="border-b border-slate-50 last:border-0">
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2.5">
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">
-                                  {(m.name ?? '?').slice(0, 1)}
-                                </span>
-                                <div className="min-w-0">
-                                  <p className="truncate font-black text-slate-800">{m.name}</p>
-                                  <p className="truncate font-mono text-[11px] font-bold text-slate-400">
-                                    {m.employeeNo ?? '—'}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 font-bold text-slate-700">{m.jobTitle || '—'}</td>
-                            <td className="px-4 py-3">
-                              <p className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-                                <Phone size={12} className="text-slate-400" /> {m.mobile || '—'}
-                              </p>
-                              <p className="mt-0.5 flex items-center gap-1.5 text-xs font-bold text-slate-400">
-                                <Mail size={12} className="text-slate-400" /> {m.email || '—'}
-                              </p>
-                            </td>
-                            <td className="px-4 py-3">
-                              <StatusPill label={m.status === 'active' ? '在职' : '离职'} />
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="border-t border-slate-100 px-4 py-3 text-xs font-bold text-slate-400">
-                  共 {memberList.length} 条记录
-                </div>
+          <main className="min-w-0 p-4 sm:p-5">
+            {!selected ? (
+              <div className="flex min-h-[360px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 text-center">
+                <Building2 size={28} className="text-slate-300" />
+                <p className="mt-3 text-sm font-black text-slate-600">请选择一个部门开始维护</p>
+                <p className="mt-1 text-xs font-semibold text-slate-400">可新建一级部门，或通过 Excel 批量导入。</p>
               </div>
+            ) : (
+              <div className="space-y-4">
+                <section className="rounded-xl border border-slate-200 bg-white">
+                  <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="truncate text-lg font-black text-slate-950">{selected.name || '未命名部门'}</h2>
+                        <StatusPill label="启用" />
+                      </div>
+                      <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-slate-500">
+                        {selected.description || '尚未填写部门说明。可在编辑部门中补充职责范围和说明。'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDialog({ kind: 'child', parent: selected })}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <Plus size={14} /> 新建子部门
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDialog({ kind: 'edit', department: selected })}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <Pencil size={14} /> 编辑部门
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDisableTarget(selected)}
+                        className="inline-flex h-9 items-center rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-700 transition hover:bg-red-50"
+                      >
+                        停用
+                      </button>
+                    </div>
+                  </header>
+                  <div className="grid divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                    <DepartmentFact icon={<UserRound size={16} />} label="部门主管" value={selected.managerName || '暂未设置'} />
+                    <DepartmentFact icon={<Users size={16} />} label="在职成员" value={String(selected.memberCount || 0) + ' 人'} />
+                    <DepartmentFact icon={<CalendarDays size={16} />} label="成立时间" value={selected.establishedOn || '未登记'} />
+                  </div>
+                </section>
+
+                <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+                    <div>
+                      <h2 className="text-sm font-black text-slate-900">部门成员</h2>
+                      <p className="mt-0.5 text-xs font-semibold text-slate-400">维护成员资料、岗位、主角色和部门主管。</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="relative">
+                        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          value={memberKeyword}
+                          onChange={(event) => setMemberKeyword(event.target.value)}
+                          placeholder="搜索姓名、工号"
+                          className="h-9 w-44 rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setMemberEditor('new')}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-black text-white transition hover:bg-blue-700"
+                      >
+                        <UserPlus size={14} /> 新增成员
+                      </button>
+                    </div>
+                  </header>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[920px] table-fixed text-left">
+                      <thead className="bg-slate-50/80">
+                        <tr className="text-xs font-black text-slate-500">
+                          <th className="w-[27%] px-5 py-3">成员</th>
+                          <th className="w-[20%] px-4 py-3">岗位 / 角色</th>
+                          <th className="w-[25%] px-4 py-3">联系方式</th>
+                          <th className="w-[108px] px-4 py-3">状态</th>
+                          <th className="sticky right-0 z-10 w-[224px] border-l border-slate-100 bg-slate-50/95 px-4 py-3 text-right">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {membersQuery.isLoading ? (
+                          <tr><td colSpan={5} className="px-5 py-12 text-center text-sm font-semibold text-slate-400">正在加载成员…</td></tr>
+                        ) : pagedMembers.length === 0 ? (
+                          <tr><td colSpan={5} className="px-5 py-12 text-center text-sm font-semibold text-slate-400">暂无符合条件的成员。</td></tr>
+                        ) : (
+                          pagedMembers.map((member) => {
+                            const isManager = member.id === selected.managerId;
+                            const isActive = member.status === 'active';
+                            const appointing = updateDepartment.isPending && updateDepartment.variables?.data.managerId === member.id;
+                            return (
+                              <tr key={member.id} className="group border-t border-slate-100 align-middle transition hover:bg-slate-50/70">
+                                <td className="px-5 py-3.5">
+                                  <div className="flex min-w-0 items-center gap-3">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-black text-blue-700">
+                                      {(member.name || '?').slice(0, 1)}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="flex min-w-0 items-center gap-1.5">
+                                        <p className="truncate text-sm font-black text-slate-800">{member.name || '未命名成员'}</p>
+                                        {isManager && <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-black text-amber-700">主管</span>}
+                                      </div>
+                                      <p className="mt-0.5 truncate font-mono text-[11px] font-bold text-slate-400">{member.employeeNo || '未设置工号'}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <p className="truncate text-sm font-bold text-slate-700">{member.jobTitle || '未设置岗位'}</p>
+                                  <p className="mt-0.5 truncate text-xs font-semibold text-slate-400" title={roleNames(member)}>{roleNames(member)}</p>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <p className="truncate text-xs font-semibold text-slate-700">{member.mobile || '未登记手机号'}</p>
+                                  <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">{member.email || '未登记邮箱'}</p>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <StatusPill label={isActive ? '在职' : '已停用'} />
+                                </td>
+                                <td className="sticky right-0 z-[5] w-[224px] border-l border-slate-100 bg-white px-4 py-3.5 transition group-hover:bg-slate-50">
+                                  <div className="flex min-w-[180px] items-center justify-end gap-2 whitespace-nowrap">
+                                    <button
+                                      type="button"
+                                      onClick={() => setMemberEditor(member)}
+                                      className="inline-flex h-8 w-[68px] shrink-0 items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs font-black leading-none text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+                                    >
+                                      <Pencil size={13} /> 编辑
+                                    </button>
+                                    {!isManager && isActive && (
+                                      <button
+                                        type="button"
+                                        onClick={() => appointManager(member)}
+                                        disabled={appointing}
+                                        className="inline-flex h-8 min-w-[100px] shrink-0 items-center justify-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-3 text-xs font-black leading-none text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        <UserCheck size={13} /> {appointing ? '处理中' : '设为主管'}
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <footer className="border-t border-slate-100 px-5 py-3">
+                    <Pagination page={safeMemberPage} pageSize={PAGE_SIZE} total={departmentMembers.length} onPageChange={setMemberPage} />
+                  </footer>
+                </section>
+
+                {activeChildCount > 0 && (
+                  <p className="px-1 text-xs font-semibold text-slate-400">
+                    当前部门下有 {activeChildCount} 个启用子部门。停用前请先处理子部门和在职成员。
+                  </p>
+                )}
+              </div>
+            )}
+          </main>
+        </div>
+      </section>
+
+      <DepartmentEditorDialog
+        state={dialog}
+        activeUsers={activeUsers}
+        departmentNameById={departmentNameById}
+        onClose={() => setDialog(null)}
+        onSaved={(message, departmentId) => {
+          setDialog(null);
+          if (departmentId) setSelectedId(departmentId);
+          setFeedback({ tone: 'success', message });
+          void refresh();
+        }}
+      />
+
+      <BuyerMemberEditorDialog
+        open={memberEditor !== null}
+        member={memberEditor === 'new' ? null : memberEditor}
+        defaultDepartmentId={selected?.id}
+        departments={departments}
+        roles={roles as BuyerRoleResponse[]}
+        requireEmployeeNo={requireEmployeeNo}
+        onClose={() => setMemberEditor(null)}
+        onSaved={(member, mode) => {
+          setMemberEditor(null);
+          setFeedback({
+            tone: 'success',
+            message: mode === 'create' ? '成员已创建并加入当前部门。' : '成员资料已更新。',
+          });
+          if (member?.departmentId) setSelectedId(member.departmentId);
+          void refresh();
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(disableTarget)}
+        title="确认停用部门"
+        message={
+          '停用“' +
+          (disableTarget?.name || '') +
+          '”后不可继续分配成员或使用该部门。存在在职成员、子部门或采购业务引用时，系统会阻止停用。'
+        }
+        tone="danger"
+        confirmLabel="确认停用"
+        busy={disableDepartment.isPending}
+        onCancel={() => setDisableTarget(null)}
+        onConfirm={confirmDisable}
+      />
+    </div>
+  );
+}
+
+function DepartmentFact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 px-5 py-4">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-400">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-black text-slate-400">{label}</p>
+        <p className="mt-0.5 truncate text-sm font-black text-slate-800">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function DepartmentEditorDialog({
+  state,
+  activeUsers,
+  departmentNameById,
+  onClose,
+  onSaved,
+}: {
+  state: DepartmentDialogState;
+  activeUsers: BuyerUserResponse[];
+  departmentNameById: Map<string, string>;
+  onClose: () => void;
+  onSaved: (message: string, departmentId?: string) => void;
+}) {
+  const createDepartment = useDepartmentCreate();
+  const updateDepartment = useDepartmentUpdate();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [managerId, setManagerId] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const isEdit = state?.kind === 'edit';
+  const department = state?.kind === 'edit' ? state.department : undefined;
+  const busy = createDepartment.isPending || updateDepartment.isPending;
+
+  useEffect(() => {
+    if (!state) return;
+    setName(department?.name || '');
+    setDescription(department?.description || '');
+    setManagerId(department?.managerId || '');
+    setError(null);
+  }, [state, department?.id]);
+
+  if (!state) return null;
+
+  const selectedManager = activeUsers.find((user) => user.id === managerId);
+  const transferRequired = Boolean(
+    isEdit &&
+      selectedManager?.departmentId &&
+      selectedManager.departmentId !== department?.id,
+  );
+  const currentDepartmentUsers = activeUsers.filter((user) => user.departmentId === department?.id);
+  const otherDepartmentUsers = activeUsers.filter((user) => user.departmentId !== department?.id);
+  const title =
+    state.kind === 'root'
+      ? '新建一级部门'
+      : state.kind === 'child'
+        ? '新建子部门'
+        : '编辑部门';
+  const titleDetail =
+    state.kind === 'root'
+      ? '创建一个新的一级组织单元。'
+      : state.kind === 'child'
+        ? '将在“' + (state.parent.name || '') + '”下创建子部门。'
+        : '可维护部门职责，并从全企业在职成员中指定部门主管。';
+
+  const submit = () => {
+    if (!name.trim()) {
+      setError('请填写部门名称。');
+      return;
+    }
+    setError(null);
+    if (state.kind === 'edit' && department?.id) {
+      updateDepartment.mutate(
+        {
+          departmentId: department.id,
+          data: {
+            name: name.trim(),
+            description: description.trim(),
+            managerId: managerId || undefined,
+            transferManagerToDepartment: transferRequired,
+          },
+        },
+        {
+          onSuccess: () => onSaved('部门资料已保存。', department.id),
+          onError: (mutationError) => setError(errorMessage(mutationError, '部门资料保存失败，请稍后重试。')),
+        },
+      );
+      return;
+    }
+    createDepartment.mutate(
+      {
+        data: {
+          name: name.trim(),
+          parentId: state.kind === 'child' ? state.parent.id : undefined,
+        },
+      },
+      {
+        onSuccess: (response) => onSaved('部门已创建。', response.data?.id),
+        onError: (mutationError) => setError(errorMessage(mutationError, '创建部门失败，请检查名称后重试。')),
+      },
+    );
+  };
+
+  const inputClass =
+    'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4" onClick={busy ? undefined : onClose}>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="w-full max-w-xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="text-lg font-black text-slate-950">{title}</h2>
+            <p className="mt-1 text-xs font-semibold text-slate-400">{titleDetail}</p>
+          </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onClose}
+            aria-label="关闭"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-40"
+          >
+            <X size={18} />
+          </button>
+        </header>
+        <div className="space-y-4 px-6 py-5">
+          {error && <FeedbackNotice tone="error" message={error} />}
+          <Field label="部门名称" required>
+            <input
+              autoFocus
+              className={inputClass}
+              value={name}
+              placeholder="请输入部门名称"
+              onChange={(event) => setName(event.target.value)}
+            />
+          </Field>
+          {isEdit && (
+            <>
+              <Field label="部门说明">
+                <textarea
+                  className="min-h-20 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  value={description}
+                  placeholder="填写部门职责、适用范围等说明"
+                  onChange={(event) => setDescription(event.target.value)}
+                />
+              </Field>
+              <Field label="部门主管">
+                <select className={inputClass} value={managerId} onChange={(event) => setManagerId(event.target.value)}>
+                  <option value="">暂不设置主管</option>
+                  <optgroup label="当前部门成员">
+                    {currentDepartmentUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {(user.name || '未命名成员') + ' · ' + (user.jobTitle || '成员')}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {otherDepartmentUsers.length > 0 && (
+                    <optgroup label="其他部门成员（任命后调入当前部门）">
+                      {otherDepartmentUsers.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {(user.name || '未命名成员') + ' · ' + (departmentNameById.get(user.departmentId || '') || '未分配部门')}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </Field>
+              {transferRequired && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-bold leading-5 text-amber-800">
+                  该成员目前属于“{departmentNameById.get(selectedManager?.departmentId || '') || '其他部门'}”。保存后会先将其调入当前部门，再任命为主管；原部门主管身份会自动解除。
+                </div>
+              )}
             </>
           )}
         </div>
-      </div>
+        <footer className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onClose}
+            className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            disabled={busy || !name.trim()}
+            onClick={submit}
+            className="inline-flex h-10 items-center rounded-lg bg-blue-600 px-5 text-sm font-black text-white transition hover:bg-blue-700 disabled:bg-slate-300"
+          >
+            {busy ? '保存中…' : '保存'}
+          </button>
+        </footer>
+      </section>
     </div>
   );
 }
 
-function Fact({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+function Field({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-        <Icon size={16} />
+    <label className="block min-w-0">
+      <span className="mb-1.5 block text-xs font-black text-slate-600">
+        {label}{required && <span className="ml-1 text-red-500">*</span>}
       </span>
-      <div>
-        <p className="text-[11px] font-black text-slate-400">{label}</p>
-        <p className="text-sm font-black text-slate-800">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function InlineDeptForm({
-  title,
-  name,
-  onName,
-  desc,
-  onDesc,
-  managerOptions,
-  managerId,
-  onManager,
-  busy,
-  onCancel,
-  onSubmit,
-}: {
-  title: string;
-  name: string;
-  onName: (v: string) => void;
-  desc?: string;
-  onDesc?: (v: string) => void;
-  managerOptions?: BuyerUserResponse[];
-  managerId?: string;
-  onManager?: (v: string) => void;
-  busy: boolean;
-  onCancel: () => void;
-  onSubmit: () => void;
-}) {
-  const inputCls =
-    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
-  return (
-    <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-3">
-      <p className="mb-2 text-xs font-black text-slate-600">{title}</p>
-      <div className="space-y-2">
-        <input className={inputCls} placeholder="部门名称" value={name} onChange={(e) => onName(e.target.value)} />
-        {onDesc && (
-          <input className={inputCls} placeholder="部门描述(选填)" value={desc ?? ''} onChange={(e) => onDesc(e.target.value)} />
-        )}
-        {managerOptions && onManager && (
-          <select className={inputCls} value={managerId ?? ''} onChange={(e) => onManager(e.target.value)}>
-            <option value="">未指定负责人</option>
-            {managerOptions.map((m) => (
-              <option key={m.id} value={m.id}>{m.name}（{m.jobTitle || '成员'}）</option>
-            ))}
-          </select>
-        )}
-      </div>
-      <div className="mt-2 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={busy || !name.trim()}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-300"
-        >
-          <Building2 size={13} /> {busy ? '保存中' : '保存'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-500 hover:bg-slate-50"
-        >
-          取消
-        </button>
-      </div>
-    </div>
-  );
-}
-
-interface NewMember {
-  name: string;
-  employeeNo: string;
-  jobTitle: string;
-  mobile: string;
-  email: string;
-  roleId: string;
-  initialPassword: string;
-}
-
-// 添加成员表单:在选中部门下创建成员(复用 createUser,含工号/职位/角色/初始密码)。
-function AddMemberForm({
-  departmentId: _departmentId,
-  roles,
-  busy,
-  error,
-  onSubmit,
-}: {
-  departmentId: string;
-  roles: BuyerRoleResponse[];
-  busy: boolean;
-  error: boolean;
-  onSubmit: (data: NewMember) => void;
-}) {
-  const [f, setF] = useState<NewMember>({
-    name: '',
-    employeeNo: '',
-    jobTitle: '',
-    mobile: '',
-    email: '',
-    roleId: roles[0]?.id ?? '',
-    initialPassword: '',
-  });
-  const set = (patch: Partial<NewMember>) => setF((s) => ({ ...s, ...patch }));
-  const inputCls =
-    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
-  const canSubmit = f.name.trim() && f.roleId && f.initialPassword.trim();
-  return (
-    <div className="border-b border-slate-100 bg-slate-50/60 px-4 py-3">
-      <div className="grid gap-2 sm:grid-cols-3">
-        <input className={inputCls} placeholder="姓名 *" value={f.name} onChange={(e) => set({ name: e.target.value })} />
-        <input className={inputCls} placeholder="工号" value={f.employeeNo} onChange={(e) => set({ employeeNo: e.target.value })} />
-        <input className={inputCls} placeholder="职位" value={f.jobTitle} onChange={(e) => set({ jobTitle: e.target.value })} />
-        <input className={inputCls} placeholder="手机号" value={f.mobile} onChange={(e) => set({ mobile: e.target.value })} />
-        <input className={inputCls} placeholder="邮箱" value={f.email} onChange={(e) => set({ email: e.target.value })} />
-        <select className={inputCls} value={f.roleId} onChange={(e) => set({ roleId: e.target.value })}>
-          {roles.map((r) => (
-            <option key={r.id} value={r.id}>{r.name}</option>
-          ))}
-        </select>
-        <input
-          className={inputCls}
-          type="password"
-          placeholder="初始密码 *"
-          value={f.initialPassword}
-          onChange={(e) => set({ initialPassword: e.target.value })}
-        />
-      </div>
-      <div className="mt-2 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onSubmit(f)}
-          disabled={busy || !canSubmit}
-          className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-300"
-        >
-          {busy ? '添加中' : '确认添加'}
-        </button>
-        {error && <span className="text-xs font-bold text-red-600">添加失败:邮箱格式 / 名额上限 / 权限不足。</span>}
-      </div>
-    </div>
-  );
-}
-
-// CSV 文本解析:列序 姓名,工号,职位,手机号,邮箱,角色;首行若含表头关键字则跳过。
-function parseCsv(text: string): ImportBuyerUserRow[] {
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  if (lines.length === 0) return [];
-  const start = /姓名|name|角色|role/i.test(lines[0]) ? 1 : 0;
-  return lines.slice(start).map((line) => {
-    const c = line.split(',').map((x) => x.trim());
-    return {
-      name: c[0] ?? '',
-      employeeNo: c[1] ?? '',
-      jobTitle: c[2] ?? '',
-      mobile: c[3] ?? '',
-      email: c[4] ?? '',
-      roleName: c[5] ?? '',
-    };
-  });
-}
-
-// CSV 批量导入成员:粘贴/上传 CSV → 解析预览 → 提交,展示成功/失败明细。
-function ImportMembersForm({
-  departmentName,
-  busy,
-  result,
-  onSubmit,
-}: {
-  departmentName: string;
-  busy: boolean;
-  result?: ImportBuyerUsersResponse;
-  onSubmit: (defaultPassword: string, members: ImportBuyerUserRow[]) => void;
-}) {
-  const [text, setText] = useState('');
-  const [password, setPassword] = useState('');
-  const parsed = parseCsv(text);
-  const inputCls =
-    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
-  return (
-    <div className="border-b border-slate-100 bg-slate-50/60 px-4 py-3">
-      <p className="mb-2 text-xs font-black text-slate-600">
-        批量导入成员到「{departmentName}」 · 列序:姓名,工号,职位,手机号,邮箱,角色
-      </p>
-      <div className="grid gap-2 sm:grid-cols-[1fr_220px]">
-        <textarea
-          className={`${inputCls} min-h-[88px] font-mono`}
-          placeholder={'张三,ZC101,采购专员,13800000001,zhang3@x.com,采购申请员\n李四,ZC102,出纳,13800000002,li4@x.com,财务专员'}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <div className="space-y-2">
-          <input
-            type="file"
-            accept=".csv,text/csv,text/plain"
-            className="block w-full text-xs font-bold text-slate-500 file:mr-2 file:rounded-md file:border-0 file:bg-slate-200 file:px-2 file:py-1 file:text-xs file:font-black"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) file.text().then(setText);
-            }}
-          />
-          <input
-            className={inputCls}
-            type="password"
-            placeholder="统一初始密码 *"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="mt-2 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onSubmit(password, parsed)}
-          disabled={busy || parsed.length === 0 || !password.trim()}
-          className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-300"
-        >
-          {busy ? '导入中' : `解析并导入(${parsed.length} 行)`}
-        </button>
-        {parsed.length > 0 && (
-          <span className="text-[11px] font-bold text-slate-400">已解析 {parsed.length} 行</span>
-        )}
-      </div>
-      {result && (
-        <div className="mt-2 rounded-lg border border-slate-200 bg-white p-2.5">
-          <p className="text-xs font-black text-slate-700">
-            导入结果:成功 <span className="text-emerald-600">{result.created}</span> 条、失败{' '}
-            <span className="text-red-600">{result.failed}</span> 条
-          </p>
-          {(result.failures ?? []).length > 0 && (
-            <ul className="mt-1 space-y-0.5">
-              {(result.failures ?? []).map((f) => (
-                <li key={f.row} className="text-[11px] font-bold text-red-500">
-                  第 {f.row} 行「{f.name || '—'}」:{f.reason}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
+      {children}
+    </label>
   );
 }

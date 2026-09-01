@@ -42,8 +42,8 @@ export const platformSupplierCreate = (
     createSupplierEnterpriseRequest: BodyType<CreateSupplierEnterpriseRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierEnterpriseResponse>(
       {url: `/api/v1/platform/suppliers`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -51,7 +51,7 @@ export const platformSupplierCreate = (
     },
       );
     }
-  
+
 
 
 export const getPlatformSupplierCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -65,7 +65,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformSupplierCreate>>, {data: BodyType<CreateSupplierEnterpriseRequest>}> = (props) => {
@@ -74,7 +74,7 @@ const {mutation: mutationOptions} = options ?
           return  platformSupplierCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -100,14 +100,14 @@ const {mutation: mutationOptions} = options ?
     supplierId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierCreditProfileResponse>(
       {url: `/api/v1/platform/suppliers/${supplierId}/credit-profile`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -117,7 +117,7 @@ export const getPlatformSupplierCreditProfileQueryKey = (supplierId?: string,) =
     ] as const;
     }
 
-    
+
 export const getPlatformSupplierCreditProfileQueryOptions = <TData = Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError = ErrorType<ApiResponseVoid>>(supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError, TData>>, }
 ) => {
 
@@ -125,13 +125,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformSupplierCreditProfileQueryKey(supplierId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformSupplierCreditProfile>>> = ({ signal }) => platformSupplierCreditProfile(supplierId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(supplierId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -167,7 +167,7 @@ export function usePlatformSupplierCreditProfile<TData = Awaited<ReturnType<type
 
 export function usePlatformSupplierCreditProfile<TData = Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError = ErrorType<ApiResponseVoid>>(
  supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfile>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformSupplierCreditProfileQueryOptions(supplierId,options)
@@ -183,17 +183,17 @@ export function usePlatformSupplierCreditProfile<TData = Awaited<ReturnType<type
 
 
 export const platformSupplierCreditProfiles = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListSupplierCreditProfileResponse>(
       {url: `/api/v1/platform/suppliers/credit-profiles`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -203,7 +203,7 @@ export const getPlatformSupplierCreditProfilesQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPlatformSupplierCreditProfilesQueryOptions = <TData = Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError, TData>>, }
 ) => {
 
@@ -211,13 +211,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformSupplierCreditProfilesQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>> = ({ signal }) => platformSupplierCreditProfiles(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -253,7 +253,7 @@ export function usePlatformSupplierCreditProfiles<TData = Awaited<ReturnType<typ
 
 export function usePlatformSupplierCreditProfiles<TData = Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSupplierCreditProfiles>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformSupplierCreditProfilesQueryOptions(options)

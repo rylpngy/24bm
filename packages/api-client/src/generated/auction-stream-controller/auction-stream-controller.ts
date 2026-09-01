@@ -32,17 +32,17 @@ import type { ErrorType } from '../../http-client';
 
 
 export const auctionStreamSupplierStream = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<SseEmitter>(
       {url: `/api/v1/supplier/auction-stream`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -52,7 +52,7 @@ export const getAuctionStreamSupplierStreamQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getAuctionStreamSupplierStreamQueryOptions = <TData = Awaited<ReturnType<typeof auctionStreamSupplierStream>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auctionStreamSupplierStream>>, TError, TData>>, }
 ) => {
 
@@ -60,13 +60,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getAuctionStreamSupplierStreamQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof auctionStreamSupplierStream>>> = ({ signal }) => auctionStreamSupplierStream(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof auctionStreamSupplierStream>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -102,7 +102,7 @@ export function useAuctionStreamSupplierStream<TData = Awaited<ReturnType<typeof
 
 export function useAuctionStreamSupplierStream<TData = Awaited<ReturnType<typeof auctionStreamSupplierStream>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auctionStreamSupplierStream>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAuctionStreamSupplierStreamQueryOptions(options)
@@ -118,17 +118,17 @@ export function useAuctionStreamSupplierStream<TData = Awaited<ReturnType<typeof
 
 
 export const auctionStreamBuyerStream = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<SseEmitter>(
       {url: `/api/v1/buyer/auction-stream`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -138,7 +138,7 @@ export const getAuctionStreamBuyerStreamQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getAuctionStreamBuyerStreamQueryOptions = <TData = Awaited<ReturnType<typeof auctionStreamBuyerStream>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auctionStreamBuyerStream>>, TError, TData>>, }
 ) => {
 
@@ -146,13 +146,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getAuctionStreamBuyerStreamQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof auctionStreamBuyerStream>>> = ({ signal }) => auctionStreamBuyerStream(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof auctionStreamBuyerStream>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -188,7 +188,7 @@ export function useAuctionStreamBuyerStream<TData = Awaited<ReturnType<typeof au
 
 export function useAuctionStreamBuyerStream<TData = Awaited<ReturnType<typeof auctionStreamBuyerStream>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auctionStreamBuyerStream>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAuctionStreamBuyerStreamQueryOptions(options)

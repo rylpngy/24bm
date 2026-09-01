@@ -13,6 +13,13 @@ public final class BuyerPermissionCatalog {
   public static final List<Point> POINTS = List.of(
       new Point("buyer:*", "全部权限(管理员)", "全局"),
       new Point("buyer:role:manage", "管理角色与权限", "管理"),
+      new Point("buyer:workflow:manage", "配置与发布流程", "流程"),
+      new Point("buyer:workflow:read", "查看流程与任务历史", "流程"),
+      new Point("buyer:workflow:review", "办理审批任务", "流程"),
+      new Point("buyer:ludong-poc:read", "查看鲁东申报材料", "鲁东 POC"),
+      new Point("buyer:ludong-poc:write", "填报鲁东申报材料", "鲁东 POC"),
+      new Point("buyer:ludong-poc:review", "审核鲁东申报材料", "鲁东 POC"),
+      new Point("buyer:ludong-poc:export", "下载鲁东归档表格", "鲁东 POC"),
       new Point("buyer:demand:create", "新建需求", "需求"),
       new Point("buyer:demand:read", "查看需求", "需求"),
       new Point("buyer:rfq:read", "查看询比", "询比"),

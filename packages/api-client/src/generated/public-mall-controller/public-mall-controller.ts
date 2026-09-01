@@ -33,17 +33,17 @@ import type { ErrorType } from '../../http-client';
 
 
 export const publicMallPublicProducts = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListMallProductResponse>(
       {url: `/api/v1/public/mall/products`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -53,7 +53,7 @@ export const getPublicMallPublicProductsQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPublicMallPublicProductsQueryOptions = <TData = Awaited<ReturnType<typeof publicMallPublicProducts>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicMallPublicProducts>>, TError, TData>>, }
 ) => {
 
@@ -61,13 +61,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicMallPublicProductsQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicMallPublicProducts>>> = ({ signal }) => publicMallPublicProducts(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicMallPublicProducts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -103,7 +103,7 @@ export function usePublicMallPublicProducts<TData = Awaited<ReturnType<typeof pu
 
 export function usePublicMallPublicProducts<TData = Awaited<ReturnType<typeof publicMallPublicProducts>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicMallPublicProducts>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicMallPublicProductsQueryOptions(options)
@@ -119,17 +119,17 @@ export function usePublicMallPublicProducts<TData = Awaited<ReturnType<typeof pu
 
 
 export const publicMallOverview = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePublicMallOverviewResponse>(
       {url: `/api/v1/public/mall/overview`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -139,7 +139,7 @@ export const getPublicMallOverviewQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPublicMallOverviewQueryOptions = <TData = Awaited<ReturnType<typeof publicMallOverview>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicMallOverview>>, TError, TData>>, }
 ) => {
 
@@ -147,13 +147,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicMallOverviewQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicMallOverview>>> = ({ signal }) => publicMallOverview(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicMallOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -189,7 +189,7 @@ export function usePublicMallOverview<TData = Awaited<ReturnType<typeof publicMa
 
 export function usePublicMallOverview<TData = Awaited<ReturnType<typeof publicMallOverview>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicMallOverview>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicMallOverviewQueryOptions(options)

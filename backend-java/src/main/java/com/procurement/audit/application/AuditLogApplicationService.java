@@ -39,6 +39,20 @@ public class AuditLogApplicationService {
     auditLogMapper.insert(newId(), tenantId, actorId, action, targetType, targetId, detail);
   }
 
+  /** 系统自动执行某个真实用户的审批结论时，以该有效工号对应用户作为审计人。 */
+  public void recordAutomatedTenantAction(
+      String tenantId,
+      String actorId,
+      String action,
+      String targetType,
+      String targetId,
+      String detail) {
+    if (actorId == null || actorId.isBlank()) {
+      throw new IllegalArgumentException("Automated audit action requires an actorId");
+    }
+    auditLogMapper.insert(newId(), tenantId, actorId, action, targetType, targetId, detail);
+  }
+
   public List<AuditLogResponse> listCurrentTenantAuditLogs(int limit) {
     return listCurrentTenantAuditLogs(limit, null, null, null, null);
   }

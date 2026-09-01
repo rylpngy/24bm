@@ -43,8 +43,8 @@ export const platformDictionaryUpdate = (
     code: string,
     saveDictionaryEntryRequest: BodyType<SaveDictionaryEntryRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseDictionaryAdminEntryResponse>(
       {url: `/api/v1/platform/dictionaries/${type}/entries/${code}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -52,7 +52,7 @@ export const platformDictionaryUpdate = (
     },
       );
     }
-  
+
 
 
 export const getPlatformDictionaryUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -66,7 +66,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformDictionaryUpdate>>, {type: string;code: string;data: BodyType<SaveDictionaryEntryRequest>}> = (props) => {
@@ -75,7 +75,7 @@ const {mutation: mutationOptions} = options ?
           return  platformDictionaryUpdate(type,code,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -101,8 +101,8 @@ const {mutation: mutationOptions} = options ?
     saveDictionaryEntryRequest: BodyType<SaveDictionaryEntryRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseDictionaryAdminEntryResponse>(
       {url: `/api/v1/platform/dictionaries/entries`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -110,7 +110,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getPlatformDictionaryCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -124,7 +124,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformDictionaryCreate>>, {data: BodyType<SaveDictionaryEntryRequest>}> = (props) => {
@@ -133,7 +133,7 @@ const {mutation: mutationOptions} = options ?
           return  platformDictionaryCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -156,17 +156,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const platformDictionaryTypes = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListDictionaryTypeSummaryResponse>(
       {url: `/api/v1/platform/dictionaries`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -176,7 +176,7 @@ export const getPlatformDictionaryTypesQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPlatformDictionaryTypesQueryOptions = <TData = Awaited<ReturnType<typeof platformDictionaryTypes>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformDictionaryTypes>>, TError, TData>>, }
 ) => {
 
@@ -184,13 +184,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformDictionaryTypesQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformDictionaryTypes>>> = ({ signal }) => platformDictionaryTypes(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformDictionaryTypes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -226,7 +226,7 @@ export function usePlatformDictionaryTypes<TData = Awaited<ReturnType<typeof pla
 
 export function usePlatformDictionaryTypes<TData = Awaited<ReturnType<typeof platformDictionaryTypes>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformDictionaryTypes>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformDictionaryTypesQueryOptions(options)
@@ -245,14 +245,14 @@ export const platformDictionaryEntries = (
     type: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListDictionaryAdminEntryResponse>(
       {url: `/api/v1/platform/dictionaries/${type}/entries`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -262,7 +262,7 @@ export const getPlatformDictionaryEntriesQueryKey = (type?: string,) => {
     ] as const;
     }
 
-    
+
 export const getPlatformDictionaryEntriesQueryOptions = <TData = Awaited<ReturnType<typeof platformDictionaryEntries>>, TError = ErrorType<ApiResponseVoid>>(type: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformDictionaryEntries>>, TError, TData>>, }
 ) => {
 
@@ -270,13 +270,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformDictionaryEntriesQueryKey(type);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformDictionaryEntries>>> = ({ signal }) => platformDictionaryEntries(type, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(type), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformDictionaryEntries>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -312,7 +312,7 @@ export function usePlatformDictionaryEntries<TData = Awaited<ReturnType<typeof p
 
 export function usePlatformDictionaryEntries<TData = Awaited<ReturnType<typeof platformDictionaryEntries>>, TError = ErrorType<ApiResponseVoid>>(
  type: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformDictionaryEntries>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformDictionaryEntriesQueryOptions(type,options)

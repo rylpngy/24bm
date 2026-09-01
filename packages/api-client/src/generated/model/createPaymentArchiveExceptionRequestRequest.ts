@@ -5,9 +5,11 @@
  * 多租户采购协同管理 SaaS 后端契约（平台 / 采购方 / 供应商三端）。
  * OpenAPI spec version: v1
  */
+import type { CreatePaymentArchiveExceptionRequestRequestFormData } from './createPaymentArchiveExceptionRequestRequestFormData';
 
 export interface CreatePaymentArchiveExceptionRequestRequest {
   paymentBatchNo: string;
   exceptionType: string;
   exceptionReason: string;
+  formData?: CreatePaymentArchiveExceptionRequestRequestFormData;
 }

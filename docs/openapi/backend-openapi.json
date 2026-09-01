@@ -816,6 +816,126 @@
         }
       }
     },
+    "/api/v1/buyer/users/{userId}": {
+      "put": {
+        "tags": [
+          "buyer-user-controller"
+        ],
+        "operationId": "BuyerUser_update",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBuyerUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBuyerUserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/users/{userId}/roles": {
+      "put": {
+        "tags": [
+          "buyer-user-controller"
+        ],
+        "operationId": "BuyerUser_updateRoles",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBuyerUserRolesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBuyerUserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/tenders/{tenderId}": {
       "put": {
         "tags": [
@@ -909,6 +1029,114 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseTenderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/roles/{roleId}": {
+      "put": {
+        "tags": [
+          "buyer-role-controller"
+        ],
+        "operationId": "BuyerRole_update",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBuyerRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBuyerRoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "buyer-role-controller"
+        ],
+        "operationId": "BuyerRole_delete",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
                 }
               }
             }
@@ -1673,6 +1901,114 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListMallAddressResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/applications/{id}": {
+      "get": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLudongPocApplicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LudongPocApplicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLudongPocApplicationResponse"
                 }
               }
             }
@@ -4844,80 +5180,12 @@
         }
       }
     },
-    "/api/v1/buyer/workflow/approvals/{bizId}/start": {
+    "/api/v1/buyer/workflow/tasks/{taskId}/complete": {
       "post": {
         "tags": [
-          "flowable-demand-approval-controller"
+          "unified-workflow-controller"
         ],
-        "operationId": "FlowableDemandApproval_start",
-        "parameters": [
-          {
-            "name": "bizId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "bizType",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "purchase_demand"
-            }
-          },
-          {
-            "name": "amount",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "default": 0
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseStartProcessResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/buyer/workflow/approvals/tasks/{taskId}/complete": {
-      "post": {
-        "tags": [
-          "flowable-demand-approval-controller"
-        ],
-        "operationId": "FlowableDemandApproval_complete",
+        "operationId": "UnifiedWorkflow_complete",
         "parameters": [
           {
             "name": "taskId",
@@ -4932,7 +5200,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteApprovalRequest"
+                "$ref": "#/components/schemas/CompleteWorkflowTaskRequest"
               }
             }
           },
@@ -4944,7 +5212,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
+                  "$ref": "#/components/schemas/ApiResponseWorkflowInstanceHistoryResponse"
                 }
               }
             }
@@ -6570,6 +6838,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitBuyerSupplierAdmissionRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -7124,6 +7401,94 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseImportResultResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/roles": {
+      "get": {
+        "tags": [
+          "buyer-role-controller"
+        ],
+        "operationId": "BuyerRole_list",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListBuyerRoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer-role-controller"
+        ],
+        "operationId": "BuyerRole_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBuyerRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBuyerRoleResponse"
                 }
               }
             }
@@ -8121,164 +8486,6 @@
         }
       }
     },
-    "/api/v1/buyer/process-instances": {
-      "get": {
-        "tags": [
-          "process-instance-controller"
-        ],
-        "operationId": "ProcessInstance_list",
-        "parameters": [
-          {
-            "name": "processId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseListProcessInstanceResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "process-instance-controller"
-        ],
-        "operationId": "ProcessInstance_start",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StartProcessInstanceRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseProcessInstanceResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/buyer/process-instances/{id}/review": {
-      "post": {
-        "tags": [
-          "process-instance-controller"
-        ],
-        "operationId": "ProcessInstance_review",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReviewProcessInstanceRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseProcessInstanceResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/buyer/process-definitions": {
       "get": {
         "tags": [
@@ -8336,6 +8543,56 @@
         "responses": {
           "201": {
             "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseProcessDefinitionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/process-definitions/{id}/publish": {
+      "post": {
+        "tags": [
+          "process-definition-controller"
+        ],
+        "operationId": "ProcessDefinition_publish",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
@@ -10075,6 +10332,332 @@
         }
       }
     },
+    "/api/v1/buyer/ludong-poc/tasks/{taskId}/complete": {
+      "post": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_completeTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteLudongPocTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLudongPocTaskCompletionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/applications": {
+      "get": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_list",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListLudongPocApplicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LudongPocApplicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLudongPocApplicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/applications/{id}/submit": {
+      "post": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_submit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLudongPocApplicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/applications/{id}/ai-review": {
+      "post": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_aiReview",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LudongPocAiReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLudongPocAiReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/applications/{id}/ai-review/{runId}/feedback": {
+      "post": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_aiReviewFeedback",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LudongPocAiReviewFeedbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/invoices/{invoiceId}/payments": {
       "post": {
         "tags": [
@@ -10560,6 +11143,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitPurchaseDemandRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Created",
@@ -11108,6 +11700,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitContractApprovalRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -13676,29 +14277,19 @@
         }
       }
     },
-    "/api/v1/buyer/workflow/approvals/{bizId}/outcome": {
+    "/api/v1/buyer/workflow/tasks": {
       "get": {
         "tags": [
-          "flowable-demand-approval-controller"
+          "unified-workflow-controller"
         ],
-        "operationId": "FlowableDemandApproval_outcome",
-        "parameters": [
-          {
-            "name": "bizId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "UnifiedWorkflow_tasks",
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponseString"
+                  "$ref": "#/components/schemas/ApiResponseListUnifiedWorkflowTaskResponse"
                 }
               }
             }
@@ -13726,19 +14317,198 @@
         }
       }
     },
-    "/api/v1/buyer/workflow/approvals/tasks": {
+    "/api/v1/buyer/workflow/instances": {
       "get": {
         "tags": [
-          "flowable-demand-approval-controller"
+          "unified-workflow-controller"
         ],
-        "operationId": "FlowableDemandApproval_tasks",
+        "operationId": "UnifiedWorkflow_instances",
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "pending"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponseListWorkflowTaskResponse"
+                  "$ref": "#/components/schemas/ApiResponseListWorkflowInstanceLedgerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/workflow/instances/{workflowInstanceId}/history": {
+      "get": {
+        "tags": [
+          "unified-workflow-controller"
+        ],
+        "operationId": "UnifiedWorkflow_history",
+        "parameters": [
+          {
+            "name": "workflowInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkflowInstanceHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/workflow/instances/business/{businessType}/{businessId}/history": {
+      "get": {
+        "tags": [
+          "unified-workflow-controller"
+        ],
+        "operationId": "UnifiedWorkflow_businessHistory",
+        "parameters": [
+          {
+            "name": "businessType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "businessId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkflowInstanceHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/workflow/definitions/{businessType}/form": {
+      "get": {
+        "tags": [
+          "unified-workflow-controller"
+        ],
+        "operationId": "UnifiedWorkflow_publishedForm",
+        "parameters": [
+          {
+            "name": "businessType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkflowPublishedFormResponse"
                 }
               }
             }
@@ -14163,46 +14933,6 @@
                 "schema": {
                   "type": "string",
                   "format": "binary"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/buyer/roles": {
-      "get": {
-        "tags": [
-          "buyer-role-controller"
-        ],
-        "operationId": "BuyerRole_list",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseListBuyerRoleResponse"
                 }
               }
             }
@@ -14995,6 +15725,56 @@
         }
       }
     },
+    "/api/v1/buyer/process-definitions/{id}/versions": {
+      "get": {
+        "tags": [
+          "process-definition-controller"
+        ],
+        "operationId": "ProcessDefinition_versions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListProcessDefinitionVersionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/payment-execution-records": {
       "get": {
         "tags": [
@@ -15551,6 +16331,300 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseMallAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/stats": {
+      "get": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_stats",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLudongPocStatsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/reports.xlsx": {
+      "get": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_report",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "quarter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/applications/{id}/documents/demand.docx": {
+      "get": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_demand",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/applications/{id}/documents/archive.zip": {
+      "get": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/applications/{id}/documents/application.docx": {
+      "get": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_application",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/ludong-poc/ai-review/metrics": {
+      "get": {
+        "tags": [
+          "ludong-poc-controller"
+        ],
+        "operationId": "LudongPoc_aiReviewMetrics",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLudongPocAiReviewMetricsResponse"
                 }
               }
             }
@@ -17511,6 +18585,106 @@
           }
         }
       },
+      "UpdateBuyerUserRequest": {
+        "required": [
+          "departmentId",
+          "name",
+          "roleId"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "employeeNo": {
+            "type": "string"
+          },
+          "jobTitle": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseBuyerUserResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BuyerUserResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BuyerUserResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "employeeNo": {
+            "type": "string"
+          },
+          "jobTitle": {
+            "type": "string"
+          },
+          "roleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UpdateBuyerUserRolesRequest": {
+        "required": [
+          "roleIds"
+        ],
+        "type": "object",
+        "properties": {
+          "roleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "SaveTenderRequest": {
         "required": [
           "tenderType",
@@ -17900,6 +19074,70 @@
           }
         }
       },
+      "UpdateBuyerRoleRequest": {
+        "required": [
+          "dataScope",
+          "name",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 50,
+            "minLength": 0,
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dataScope": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseBuyerRoleResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BuyerRoleResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BuyerRoleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dataScope": {
+            "type": "string"
+          },
+          "builtIn": {
+            "type": "boolean"
+          }
+        }
+      },
       "UpdateRfqRequest": {
         "required": [
           "invitedSupplierIds",
@@ -18155,6 +19393,9 @@
           },
           "flowSchema": {
             "type": "string"
+          },
+          "businessType": {
+            "type": "string"
           }
         }
       },
@@ -18190,11 +19431,21 @@
           "status": {
             "type": "string"
           },
+          "businessType": {
+            "type": "string"
+          },
+          "activeVersionId": {
+            "type": "string"
+          },
           "formSchema": {
             "type": "string"
           },
           "flowSchema": {
             "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
           },
           "updatedAt": {
             "type": "string",
@@ -18210,6 +19461,12 @@
         "properties": {
           "requestStatus": {
             "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
           }
         }
       },
@@ -18361,6 +19618,12 @@
         "properties": {
           "batchStatus": {
             "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
           }
         }
       },
@@ -18772,6 +20035,123 @@
           }
         }
       },
+      "LudongPocApplicationRequest": {
+        "required": [
+          "applicantUnit",
+          "budgetAmount",
+          "formData",
+          "items",
+          "projectName"
+        ],
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "applicantUnit": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "budgetAmount": {
+            "type": "number"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "ApiResponseLudongPocApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LudongPocApplicationResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LudongPocApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "applicationNo": {
+            "type": "string"
+          },
+          "projectName": {
+            "type": "string"
+          },
+          "applicantUnit": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "budgetAmount": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object"
+              }
+            }
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approvedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "UpdateInvoicePaymentRequest": {
         "required": [
           "paymentStatus"
@@ -18797,6 +20177,9 @@
           },
           "managerId": {
             "type": "string"
+          },
+          "transferManagerToDepartment": {
+            "type": "boolean"
           }
         }
       },
@@ -20305,48 +21688,212 @@
           }
         }
       },
-      "ApiResponseStartProcessResponse": {
+      "CompleteWorkflowTaskRequest": {
+        "required": [
+          "action"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseWorkflowInstanceHistoryResponse": {
         "type": "object",
         "properties": {
           "success": {
             "type": "boolean"
           },
           "data": {
-            "$ref": "#/components/schemas/StartProcessResponse"
+            "$ref": "#/components/schemas/WorkflowInstanceHistoryResponse"
           },
           "message": {
             "type": "string"
           }
         }
       },
-      "StartProcessResponse": {
+      "UnifiedWorkflowTaskResponse": {
         "type": "object",
         "properties": {
-          "processInstanceId": {
+          "taskId": {
             "type": "string"
           },
-          "bizType": {
+          "workflowInstanceId": {
             "type": "string"
           },
-          "bizId": {
+          "businessType": {
             "type": "string"
           },
-          "ended": {
-            "type": "boolean"
+          "businessId": {
+            "type": "string"
+          },
+          "taskName": {
+            "type": "string"
+          },
+          "taskDefinitionKey": {
+            "type": "string"
+          },
+          "assigneeId": {
+            "type": "string"
+          },
+          "candidateUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "candidateRoleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "amount": {
+            "type": "number"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
-      "CompleteApprovalRequest": {
-        "required": [
-          "approved"
-        ],
+      "WorkflowAttachmentResponse": {
         "type": "object",
         "properties": {
-          "approved": {
-            "type": "boolean"
+          "id": {
+            "type": "string"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WorkflowInstanceHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "workflowInstanceId": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "businessId": {
+            "type": "string"
+          },
+          "definitionVersionId": {
+            "type": "string"
+          },
+          "flowableProcessInstanceId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "initiatorId": {
+            "type": "string"
+          },
+          "initiatorName": {
+            "type": "string"
+          },
+          "completedBy": {
+            "type": "string"
+          },
+          "completedByName": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "businessSnapshot": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowAttachmentResponse"
+            }
+          },
+          "currentTask": {
+            "$ref": "#/components/schemas/UnifiedWorkflowTaskResponse"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowTaskEventResponse"
+            }
+          }
+        }
+      },
+      "WorkflowTaskEventResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "flowableTaskId": {
+            "type": "string"
+          },
+          "nodeId": {
+            "type": "string"
+          },
+          "nodeName": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "actorName": {
+            "type": "string"
           },
           "comment": {
             "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -20420,55 +21967,6 @@
             "type": "string"
           },
           "initialPassword": {
-            "type": "string"
-          },
-          "employeeNo": {
-            "type": "string"
-          },
-          "jobTitle": {
-            "type": "string"
-          }
-        }
-      },
-      "ApiResponseBuyerUserResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "$ref": "#/components/schemas/BuyerUserResponse"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "BuyerUserResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "tenantId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "mobile": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "departmentId": {
-            "type": "string"
-          },
-          "roleId": {
             "type": "string"
           },
           "employeeNo": {
@@ -20925,6 +22423,17 @@
           }
         }
       },
+      "SubmitBuyerSupplierAdmissionRequest": {
+        "type": "object",
+        "properties": {
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
       "ApiResponseApprovalTaskResponse": {
         "type": "object",
         "properties": {
@@ -21243,6 +22752,30 @@
           }
         }
       },
+      "CreateBuyerRoleRequest": {
+        "required": [
+          "dataScope",
+          "name",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 50,
+            "minLength": 0,
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dataScope": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateRolePermissionsRequest": {
         "required": [
           "permissions"
@@ -21254,43 +22787,6 @@
             "items": {
               "type": "string"
             }
-          }
-        }
-      },
-      "ApiResponseBuyerRoleResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "$ref": "#/components/schemas/BuyerRoleResponse"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "BuyerRoleResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "tenantId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "permissions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "dataScope": {
-            "type": "string"
           }
         }
       },
@@ -21573,6 +23069,12 @@
           },
           "reason": {
             "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
           }
         }
       },
@@ -21655,89 +23157,6 @@
           }
         }
       },
-      "StartProcessInstanceRequest": {
-        "required": [
-          "formData",
-          "processId"
-        ],
-        "type": "object",
-        "properties": {
-          "processId": {
-            "type": "string"
-          },
-          "formData": {
-            "type": "string"
-          },
-          "amount": {
-            "type": "number"
-          }
-        }
-      },
-      "ApiResponseProcessInstanceResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "$ref": "#/components/schemas/ProcessInstanceResponse"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "ProcessInstanceResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "processId": {
-            "type": "string"
-          },
-          "processName": {
-            "type": "string"
-          },
-          "amount": {
-            "type": "number"
-          },
-          "status": {
-            "type": "string"
-          },
-          "currentIndex": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "resolvedPath": {
-            "type": "string"
-          },
-          "formData": {
-            "type": "string"
-          },
-          "initiatorId": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "ReviewProcessInstanceRequest": {
-        "required": [
-          "decision"
-        ],
-        "type": "object",
-        "properties": {
-          "decision": {
-            "type": "string"
-          },
-          "comment": {
-            "type": "string"
-          }
-        }
-      },
       "CreateProcessDefinitionRequest": {
         "required": [
           "name"
@@ -21751,6 +23170,9 @@
             "type": "string"
           },
           "icon": {
+            "type": "string"
+          },
+          "businessType": {
             "type": "string"
           }
         }
@@ -21774,6 +23196,12 @@
           },
           "remark": {
             "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
           }
         }
       },
@@ -21925,6 +23353,12 @@
           },
           "exceptionReason": {
             "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
           }
         }
       },
@@ -22624,6 +24058,217 @@
           }
         }
       },
+      "CompleteLudongPocTaskRequest": {
+        "required": [
+          "action",
+          "applicationId",
+          "nodeId",
+          "reviewData"
+        ],
+        "type": "object",
+        "properties": {
+          "applicationId": {
+            "type": "string"
+          },
+          "nodeId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "reviewData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "ApiResponseLudongPocTaskCompletionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LudongPocTaskCompletionResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LudongPocTaskCompletionResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "actedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LudongPocAiReviewRequest": {
+        "required": [
+          "nodeId"
+        ],
+        "type": "object",
+        "properties": {
+          "nodeId": {
+            "type": "string"
+          },
+          "currentReviewData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "ApiResponseLudongPocAiReviewResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LudongPocAiReviewResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LudongPocAiEvidenceReference": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "verificationStatus": {
+            "type": "string"
+          }
+        }
+      },
+      "LudongPocAiReviewFinding": {
+        "type": "object",
+        "properties": {
+          "findingId": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "evidenceReferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LudongPocAiEvidenceReference"
+            }
+          }
+        }
+      },
+      "LudongPocAiReviewResponse": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string"
+          },
+          "analysisMode": {
+            "type": "string"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "knowledgeVersion": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nodeName": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "recommendation": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reviewFocus": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LudongPocAiReviewFinding"
+            }
+          },
+          "missingMaterials": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "suggestedComment": {
+            "type": "string"
+          },
+          "accuracyNotice": {
+            "type": "string"
+          }
+        }
+      },
+      "LudongPocAiReviewFeedbackRequest": {
+        "required": [
+          "findingId"
+        ],
+        "type": "object",
+        "properties": {
+          "findingId": {
+            "type": "string"
+          },
+          "disposition": {
+            "pattern": "adopted|false_positive|noted",
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
       "CreateDepartmentRequest": {
         "required": [
           "name"
@@ -22670,6 +24315,17 @@
           },
           "purpose": {
             "type": "string"
+          }
+        }
+      },
+      "SubmitPurchaseDemandRequest": {
+        "type": "object",
+        "properties": {
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
           }
         }
       },
@@ -22852,6 +24508,17 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "SubmitContractApprovalRequest": {
+        "type": "object",
+        "properties": {
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
           }
         }
       },
@@ -25001,7 +26668,7 @@
           }
         }
       },
-      "ApiResponseListWorkflowTaskResponse": {
+      "ApiResponseListUnifiedWorkflowTaskResponse": {
         "type": "object",
         "properties": {
           "success": {
@@ -25010,7 +26677,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/WorkflowTaskResponse"
+              "$ref": "#/components/schemas/UnifiedWorkflowTaskResponse"
             }
           },
           "message": {
@@ -25018,29 +26685,105 @@
           }
         }
       },
-      "WorkflowTaskResponse": {
+      "ApiResponseListWorkflowInstanceLedgerResponse": {
         "type": "object",
         "properties": {
-          "taskId": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowInstanceLedgerResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkflowInstanceLedgerResponse": {
+        "type": "object",
+        "properties": {
+          "workflowInstanceId": {
             "type": "string"
           },
-          "name": {
+          "businessType": {
             "type": "string"
           },
-          "bizType": {
+          "businessId": {
             "type": "string"
           },
-          "bizId": {
+          "definitionVersionId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "initiatorId": {
+            "type": "string"
+          },
+          "initiatorName": {
+            "type": "string"
+          },
+          "completedBy": {
+            "type": "string"
+          },
+          "completedByName": {
+            "type": "string"
+          },
+          "departmentId": {
             "type": "string"
           },
           "amount": {
             "type": "number"
           },
-          "processInstanceId": {
-            "type": "string"
+          "currentTask": {
+            "$ref": "#/components/schemas/UnifiedWorkflowTaskResponse"
           },
           "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseWorkflowPublishedFormResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WorkflowPublishedFormResponse"
+          },
+          "message": {
             "type": "string"
+          }
+        }
+      },
+      "WorkflowPublishedFormResponse": {
+        "type": "object",
+        "properties": {
+          "businessType": {
+            "type": "string"
+          },
+          "definitionVersionId": {
+            "type": "string"
+          },
+          "formSchema": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -25720,23 +27463,6 @@
           }
         }
       },
-      "ApiResponseListProcessInstanceResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProcessInstanceResponse"
-            }
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
       "ApiResponseListProcessDefinitionResponse": {
         "type": "object",
         "properties": {
@@ -25750,6 +27476,51 @@
             }
           },
           "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListProcessDefinitionVersionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProcessDefinitionVersionResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ProcessDefinitionVersionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          },
+          "flowableProcessDefinitionId": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publishedBy": {
             "type": "string"
           }
         }
@@ -25941,6 +27712,131 @@
           },
           "totalAmount": {
             "type": "number"
+          }
+        }
+      },
+      "ApiResponseLudongPocStatsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LudongPocStatsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LudongPocStatsResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "drafts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inApproval": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "approved": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "archived": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalBudget": {
+            "type": "number"
+          }
+        }
+      },
+      "ApiResponseListLudongPocApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LudongPocApplicationResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseLudongPocAiReviewMetricsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LudongPocAiReviewMetricsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LudongPocAiReviewMetricsResponse": {
+        "type": "object",
+        "properties": {
+          "datasetVersion": {
+            "type": "string"
+          },
+          "fixedSampleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expectedRiskCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detectedRiskCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "truePositiveCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "falsePositiveCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "riskRecall": {
+            "type": "number",
+            "format": "double"
+          },
+          "riskPrecision": {
+            "type": "number",
+            "format": "double"
+          },
+          "humanFeedbackCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "adoptedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "humanFalsePositiveCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "adoptionRate": {
+            "type": "number",
+            "format": "double"
           }
         }
       },

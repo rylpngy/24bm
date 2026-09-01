@@ -41,14 +41,14 @@ export const contractScheduleReach = (
     milestoneId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListContractPaymentMilestoneResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/payment-milestones/${milestoneId}/reach`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getContractScheduleReachMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -62,7 +62,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof contractScheduleReach>>, {contractId: string;milestoneId: string}> = (props) => {
@@ -71,13 +71,13 @@ const {mutation: mutationOptions} = options ?
           return  contractScheduleReach(contractId,milestoneId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type ContractScheduleReachMutationResult = NonNullable<Awaited<ReturnType<typeof contractScheduleReach>>>
-    
+
     export type ContractScheduleReachMutationError = ErrorType<ApiResponseVoid>
 
     export const useContractScheduleReach = <TError = ErrorType<ApiResponseVoid>,
@@ -98,14 +98,14 @@ const {mutation: mutationOptions} = options ?
     milestoneId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListContractPaymentMilestoneResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/payment-milestones/${milestoneId}/pay`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getContractSchedulePayMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -119,7 +119,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof contractSchedulePay>>, {contractId: string;milestoneId: string}> = (props) => {
@@ -128,13 +128,13 @@ const {mutation: mutationOptions} = options ?
           return  contractSchedulePay(contractId,milestoneId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type ContractSchedulePayMutationResult = NonNullable<Awaited<ReturnType<typeof contractSchedulePay>>>
-    
+
     export type ContractSchedulePayMutationError = ErrorType<ApiResponseVoid>
 
     export const useContractSchedulePay = <TError = ErrorType<ApiResponseVoid>,
@@ -154,14 +154,14 @@ const {mutation: mutationOptions} = options ?
     contractId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListContractPaymentMilestoneResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/payment-milestones/generate`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getContractScheduleGenerateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -175,7 +175,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof contractScheduleGenerate>>, {contractId: string}> = (props) => {
@@ -184,13 +184,13 @@ const {mutation: mutationOptions} = options ?
           return  contractScheduleGenerate(contractId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type ContractScheduleGenerateMutationResult = NonNullable<Awaited<ReturnType<typeof contractScheduleGenerate>>>
-    
+
     export type ContractScheduleGenerateMutationError = ErrorType<ApiResponseVoid>
 
     export const useContractScheduleGenerate = <TError = ErrorType<ApiResponseVoid>,
@@ -210,14 +210,14 @@ const {mutation: mutationOptions} = options ?
     contractId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListContractPaymentMilestoneResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/payment-milestones`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -227,7 +227,7 @@ export const getContractScheduleMilestonesQueryKey = (contractId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getContractScheduleMilestonesQueryOptions = <TData = Awaited<ReturnType<typeof contractScheduleMilestones>>, TError = ErrorType<ApiResponseVoid>>(contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof contractScheduleMilestones>>, TError, TData>>, }
 ) => {
 
@@ -235,13 +235,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getContractScheduleMilestonesQueryKey(contractId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof contractScheduleMilestones>>> = ({ signal }) => contractScheduleMilestones(contractId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(contractId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof contractScheduleMilestones>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -277,7 +277,7 @@ export function useContractScheduleMilestones<TData = Awaited<ReturnType<typeof 
 
 export function useContractScheduleMilestones<TData = Awaited<ReturnType<typeof contractScheduleMilestones>>, TError = ErrorType<ApiResponseVoid>>(
  contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof contractScheduleMilestones>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getContractScheduleMilestonesQueryOptions(contractId,options)
@@ -296,14 +296,14 @@ export const contractScheduleLineItems = (
     contractId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListContractLineItemResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/line-items`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -313,7 +313,7 @@ export const getContractScheduleLineItemsQueryKey = (contractId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getContractScheduleLineItemsQueryOptions = <TData = Awaited<ReturnType<typeof contractScheduleLineItems>>, TError = ErrorType<ApiResponseVoid>>(contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof contractScheduleLineItems>>, TError, TData>>, }
 ) => {
 
@@ -321,13 +321,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getContractScheduleLineItemsQueryKey(contractId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof contractScheduleLineItems>>> = ({ signal }) => contractScheduleLineItems(contractId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(contractId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof contractScheduleLineItems>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -363,7 +363,7 @@ export function useContractScheduleLineItems<TData = Awaited<ReturnType<typeof c
 
 export function useContractScheduleLineItems<TData = Awaited<ReturnType<typeof contractScheduleLineItems>>, TError = ErrorType<ApiResponseVoid>>(
  contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof contractScheduleLineItems>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getContractScheduleLineItemsQueryOptions(contractId,options)

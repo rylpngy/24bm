@@ -8,5 +8,15 @@ public record UpdateProcessDefinitionRequest(
     String description,
     @NotBlank String status,
     @NotBlank String formSchema,
-    @NotBlank String flowSchema) {
+    @NotBlank String flowSchema,
+    String businessType) {
+
+  public UpdateProcessDefinitionRequest(
+      String name,
+      String description,
+      String status,
+      String formSchema,
+      String flowSchema) {
+    this(name, description, status, formSchema, flowSchema, null);
+  }
 }

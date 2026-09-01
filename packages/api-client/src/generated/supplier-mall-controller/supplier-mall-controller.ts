@@ -51,8 +51,8 @@ export const supplierMallUpdateProduct = (
     productId: string,
     saveMallProductRequest: BodyType<SaveMallProductRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseMallProductResponse>(
       {url: `/api/v1/supplier/mall/products/${productId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -60,7 +60,7 @@ export const supplierMallUpdateProduct = (
     },
       );
     }
-  
+
 
 
 export const getSupplierMallUpdateProductMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -74,7 +74,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdateProduct>>, {productId: string;data: BodyType<SaveMallProductRequest>}> = (props) => {
@@ -83,7 +83,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallUpdateProduct(productId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -109,8 +109,8 @@ const {mutation: mutationOptions} = options ?
     productId: string,
     updateMallProductStatusRequest: BodyType<UpdateMallProductStatusRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseMallProductResponse>(
       {url: `/api/v1/supplier/mall/products/${productId}/status`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -118,7 +118,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierMallUpdateProductStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -132,7 +132,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdateProductStatus>>, {productId: string;data: BodyType<UpdateMallProductStatusRequest>}> = (props) => {
@@ -141,7 +141,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallUpdateProductStatus(productId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -168,8 +168,8 @@ const {mutation: mutationOptions} = options ?
     skuId: string,
     saveMallSkuRequest: BodyType<SaveMallSkuRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseMallProductResponse>(
       {url: `/api/v1/supplier/mall/products/${productId}/skus/${skuId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -177,7 +177,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierMallUpdateSkuMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -191,7 +191,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdateSku>>, {productId: string;skuId: string;data: BodyType<SaveMallSkuRequest>}> = (props) => {
@@ -200,7 +200,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallUpdateSku(productId,skuId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -227,8 +227,8 @@ const {mutation: mutationOptions} = options ?
     skuId: string,
     updateMallProductStatusRequest: BodyType<UpdateMallProductStatusRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseMallProductResponse>(
       {url: `/api/v1/supplier/mall/products/${productId}/skus/${skuId}/status`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -236,7 +236,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierMallUpdateSkuStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -250,7 +250,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdateSkuStatus>>, {productId: string;skuId: string;data: BodyType<UpdateMallProductStatusRequest>}> = (props) => {
@@ -259,7 +259,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallUpdateSkuStatus(productId,skuId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -285,8 +285,8 @@ const {mutation: mutationOptions} = options ?
     listingId: string,
     updateMallListingStatusRequest: BodyType<UpdateMallListingStatusRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseMallListingResponse>(
       {url: `/api/v1/supplier/mall/listings/${listingId}/status`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -294,7 +294,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierMallUpdateStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -308,7 +308,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdateStatus>>, {listingId: string;data: BodyType<UpdateMallListingStatusRequest>}> = (props) => {
@@ -317,7 +317,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallUpdateStatus(listingId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -343,8 +343,8 @@ const {mutation: mutationOptions} = options ?
     listingId: string,
     updateMallListingPriceRequest: BodyType<UpdateMallListingPriceRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseMallListingResponse>(
       {url: `/api/v1/supplier/mall/listings/${listingId}/price`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -352,7 +352,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierMallUpdatePriceMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -366,7 +366,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallUpdatePrice>>, {listingId: string;data: BodyType<UpdateMallListingPriceRequest>}> = (props) => {
@@ -375,7 +375,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallUpdatePrice(listingId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -401,8 +401,8 @@ const {mutation: mutationOptions} = options ?
     afterSalesId: string,
     handleAfterSalesRequest: BodyType<HandleAfterSalesRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseListMallAfterSalesResponse>(
       {url: `/api/v1/supplier/mall/after-sales/${afterSalesId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -410,7 +410,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierMallHandleAfterSalesMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -424,7 +424,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallHandleAfterSales>>, {afterSalesId: string;data: BodyType<HandleAfterSalesRequest>}> = (props) => {
@@ -433,7 +433,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallHandleAfterSales(afterSalesId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -456,17 +456,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const supplierMallProducts = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListMallProductResponse>(
       {url: `/api/v1/supplier/mall/products`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -476,7 +476,7 @@ export const getSupplierMallProductsQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getSupplierMallProductsQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallProducts>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallProducts>>, TError, TData>>, }
 ) => {
 
@@ -484,13 +484,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierMallProductsQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallProducts>>> = ({ signal }) => supplierMallProducts(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallProducts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -526,7 +526,7 @@ export function useSupplierMallProducts<TData = Awaited<ReturnType<typeof suppli
 
 export function useSupplierMallProducts<TData = Awaited<ReturnType<typeof supplierMallProducts>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallProducts>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierMallProductsQueryOptions(options)
@@ -545,8 +545,8 @@ export const supplierMallCreateProduct = (
     saveMallProductRequest: BodyType<SaveMallProductRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseMallProductResponse>(
       {url: `/api/v1/supplier/mall/products`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -554,7 +554,7 @@ export const supplierMallCreateProduct = (
     },
       );
     }
-  
+
 
 
 export const getSupplierMallCreateProductMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -568,7 +568,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallCreateProduct>>, {data: BodyType<SaveMallProductRequest>}> = (props) => {
@@ -577,7 +577,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallCreateProduct(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -604,8 +604,8 @@ const {mutation: mutationOptions} = options ?
     saveMallSkuRequest: BodyType<SaveMallSkuRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseMallProductResponse>(
       {url: `/api/v1/supplier/mall/products/${productId}/skus`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -613,7 +613,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierMallAddSkuMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -627,7 +627,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallAddSku>>, {productId: string;data: BodyType<SaveMallSkuRequest>}> = (props) => {
@@ -636,7 +636,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallAddSku(productId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -659,17 +659,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const supplierMallListings = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListMallListingResponse>(
       {url: `/api/v1/supplier/mall/listings`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -679,7 +679,7 @@ export const getSupplierMallListingsQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getSupplierMallListingsQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallListings>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallListings>>, TError, TData>>, }
 ) => {
 
@@ -687,13 +687,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierMallListingsQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallListings>>> = ({ signal }) => supplierMallListings(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallListings>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -729,7 +729,7 @@ export function useSupplierMallListings<TData = Awaited<ReturnType<typeof suppli
 
 export function useSupplierMallListings<TData = Awaited<ReturnType<typeof supplierMallListings>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallListings>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierMallListingsQueryOptions(options)
@@ -748,8 +748,8 @@ export const supplierMallPublish = (
     supplierPublishMallListingRequest: BodyType<SupplierPublishMallListingRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseMallListingResponse>(
       {url: `/api/v1/supplier/mall/listings`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -757,7 +757,7 @@ export const supplierMallPublish = (
     },
       );
     }
-  
+
 
 
 export const getSupplierMallPublishMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -771,7 +771,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallPublish>>, {data: BodyType<SupplierPublishMallListingRequest>}> = (props) => {
@@ -780,7 +780,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierMallPublish(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -803,17 +803,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const supplierMallMaterials = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListSupplierMallMaterialResponse>(
       {url: `/api/v1/supplier/mall/materials`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -823,7 +823,7 @@ export const getSupplierMallMaterialsQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getSupplierMallMaterialsQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallMaterials>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallMaterials>>, TError, TData>>, }
 ) => {
 
@@ -831,13 +831,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierMallMaterialsQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallMaterials>>> = ({ signal }) => supplierMallMaterials(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallMaterials>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -873,7 +873,7 @@ export function useSupplierMallMaterials<TData = Awaited<ReturnType<typeof suppl
 
 export function useSupplierMallMaterials<TData = Awaited<ReturnType<typeof supplierMallMaterials>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallMaterials>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierMallMaterialsQueryOptions(options)
@@ -889,17 +889,17 @@ export function useSupplierMallMaterials<TData = Awaited<ReturnType<typeof suppl
 
 
 export const supplierMallAfterSales = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListMallAfterSalesResponse>(
       {url: `/api/v1/supplier/mall/after-sales`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -909,7 +909,7 @@ export const getSupplierMallAfterSalesQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getSupplierMallAfterSalesQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallAfterSales>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSales>>, TError, TData>>, }
 ) => {
 
@@ -917,13 +917,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierMallAfterSalesQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallAfterSales>>> = ({ signal }) => supplierMallAfterSales(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSales>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -959,7 +959,7 @@ export function useSupplierMallAfterSales<TData = Awaited<ReturnType<typeof supp
 
 export function useSupplierMallAfterSales<TData = Awaited<ReturnType<typeof supplierMallAfterSales>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSales>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierMallAfterSalesQueryOptions(options)

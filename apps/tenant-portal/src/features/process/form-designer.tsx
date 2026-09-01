@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlignLeft, Calendar, ChevronDown, GripVertical, Hash, Trash2, Type, Wallet } from 'lucide-react';
 import { cn } from '@24bid/ui';
 import { FIELD_PALETTE, type FieldType, type FormField, uid } from './types';
@@ -24,6 +24,11 @@ export function FormDesigner({
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const selected = fields.find((f) => f.id === selectedId) ?? null;
+
+  useEffect(() => {
+    setSelectedId((current) =>
+      current && fields.some((field) => field.id === current) ? current : fields[0]?.id ?? null);
+  }, [fields]);
 
   const reorder = (fromId: string, toId: string) => {
     if (fromId === toId) return;

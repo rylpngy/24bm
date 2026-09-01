@@ -9,7 +9,9 @@ import static org.mockito.Mockito.when;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.api.CreateBuyerUserRequest;
+import com.procurement.identity.api.UpdateBuyerUserRolesRequest;
 import com.procurement.identity.application.BuyerUserApplicationService;
+import com.procurement.identity.application.PermissionService;
 import com.procurement.identity.domain.BuyerUserStatusTransition;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
@@ -31,6 +33,7 @@ class BuyerUserRoleAssignmentTests {
   private final AuditLogApplicationService auditLogApplicationService =
       org.mockito.Mockito.mock(AuditLogApplicationService.class);
   private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
+  private final PermissionService permissionService = org.mockito.Mockito.mock(PermissionService.class);
   private final BuyerUserApplicationService buyerUserApplicationService =
       new BuyerUserApplicationService(
           buyerUserMapper,
@@ -38,7 +41,8 @@ class BuyerUserRoleAssignmentTests {
           tenantEntitlementApplicationService,
           auditLogApplicationService,
           passwordEncoder,
-          new BuyerUserStatusTransition());
+          new BuyerUserStatusTransition(),
+          permissionService);
 
   @AfterEach
   void clearTenantContext() {
@@ -114,6 +118,45 @@ class BuyerUserRoleAssignmentTests {
     verify(buyerUserMapper).assignRole(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("user-")),
         org.mockito.ArgumentMatchers.eq("role-buyer-requester"));
+  }
+
+  @Test
+  void createUserRejectsDuplicateEmployeeNumberWithinTenant() {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    when(tenantEntitlementMapper.findUserLimit("tenant-1")).thenReturn(10);
+    when(buyerUserMapper.countByTenant("tenant-1")).thenReturn(1);
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
+    when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-buyer-requester")).thenReturn(true);
+    when(buyerUserMapper.existsByEmployeeNoExcludingUser("tenant-1", "LDU100001", null)).thenReturn(true);
+
+    assertThatThrownBy(() -> buyerUserApplicationService.createUser(new CreateBuyerUserRequest(
+        "重复工号用户", "13900000000", "duplicate@example.com", "active", "dept-it",
+        "role-buyer-requester", "new-password", "ldu100001", "采购员")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("工号已存在");
+
+    verify(buyerUserMapper, never()).assignRole(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void updateUserRolesPersistsEveryAssignedRole() {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    when(buyerUserMapper.existsByTenantAndId("tenant-1", "user-1")).thenReturn(true);
+    when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-a")).thenReturn(true);
+    when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-b")).thenReturn(true);
+    when(buyerUserMapper.findByTenantAndId("tenant-1", "user-1")).thenReturn(new BuyerUser(
+        "user-1", "tenant-1", "多角色人员", null, null, "active", "dept-it", "role-a",
+        "LDU200001", "审核人"));
+    when(buyerUserMapper.listBuyerRoleIdsByTenantAndUser("tenant-1", "user-1"))
+        .thenReturn(java.util.List.of("role-a", "role-b"));
+
+    var response = buyerUserApplicationService.updateUserRoles(
+        "user-1", new UpdateBuyerUserRolesRequest(java.util.List.of("role-a", "role-b", "role-a")));
+
+    assertThat(response.roleIds()).containsExactly("role-a", "role-b");
+    verify(buyerUserMapper).deleteBuyerRoles("tenant-1", "user-1");
+    verify(buyerUserMapper).assignRoles("user-1", java.util.List.of("role-a", "role-b"));
   }
 
   private BuyerUser user(String id) {

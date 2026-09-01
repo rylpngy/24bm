@@ -15,7 +15,6 @@ import {
   type RfqResponse,
   useRfqAbort,
   useRfqAnnounceResult,
-  useRfqAwardAward,
   useRfqOpen,
   useRfqRemind,
   useRfqStartNewRound,
@@ -23,6 +22,7 @@ import {
   useRfqDismissEnrollment,
   useRfqListEnrollments,
   useRfqListAnnouncements,
+  useWorkflowRfqAwardSubmit,
 } from '@24bid/api-client';
 import { ConfirmDialog, FeedbackNotice, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
@@ -30,6 +30,8 @@ import { RfqClarificationsBuyer } from './rfq-clarifications';
 import { RfqResultBuyer } from './rfq-result';
 import { RfqSupplierPerformance } from './rfq-supplier-performance';
 import { BidEvaluationPanel } from '../quotes/bid-evaluation-panel';
+import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
+import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 
 const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -98,7 +100,7 @@ export function RfqProjectDetail({
 }) {
   const queryClient = useQueryClient();
   const open = useRfqOpen();
-  const award = useRfqAwardAward();
+  const award = useWorkflowRfqAwardSubmit();
   const newRound = useRfqStartNewRound();
   const abort = useRfqAbort();
   const remind = useRfqRemind();
@@ -111,6 +113,7 @@ export function RfqProjectDetail({
   const [error, setError] = useState<string | null>(null);
   const [roundForm, setRoundForm] = useState<{ deadline: string; final: boolean; note: string } | null>(null);
   const [confirmAction, setConfirmAction] = useState<'open-early' | 'no-bid' | 'abort' | null>(null);
+  const [awardDraft, setAwardDraft] = useState<{ quoteId: string; reason: string } | null>(null);
 
   const quoting = rfq.status === '报价中';
   const terminal = TERMINAL[rfq.status ?? ''];
@@ -159,6 +162,8 @@ export function RfqProjectDetail({
           </div>
         </div>
       </div>
+
+      {rfq.id && <WorkflowStatusPanel businessType="rfq_award" businessId={rfq.id} />}
 
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
         {terminal && (
@@ -483,13 +488,9 @@ export function RfqProjectDetail({
               quotes={quotes}
               supplierNames={supplierNames}
               canAward={rfq.status === '已开标'}
-              awardingQuoteId={award.isPending ? (award.variables?.data.quoteId ?? null) : null}
+              awardingQuoteId={award.isPending ? (award.variables?.quoteId ?? null) : null}
               onAward={(quoteId) =>
-                rfq.id &&
-                award.mutate(
-                  { rfqId: rfq.id, data: { quoteId, reason: '含税总价与交期综合最优' } },
-                  { onSuccess: refresh, onError: reportError },
-                )
+                setAwardDraft({ quoteId, reason: '含税总价与交期综合最优' })
               }
             />
           </div>
@@ -504,7 +505,7 @@ export function RfqProjectDetail({
                 canAward={rfq.status === '已开标'}
                 awarding={award.isPending}
                 onAward={(quoteId, reason) =>
-                  rfq.id && award.mutate({ rfqId: rfq.id, data: { quoteId, reason } }, { onSuccess: refresh, onError: reportError })
+                  setAwardDraft({ quoteId, reason })
                 }
               />
             </div>
@@ -730,6 +731,28 @@ export function RfqProjectDetail({
             </div>
           </div>
         </div>
+      )}
+      {awardDraft && rfq.id && (
+        <WorkflowSubmitDialog
+          businessType="rfq_award"
+          title={`${rfq.title} · 定标审批`}
+          busy={award.isPending}
+          submissionError={award.error}
+          onClose={() => setAwardDraft(null)}
+          onSubmit={(formData) =>
+            award.mutate(
+              { rfqId: rfq.id!, ...awardDraft, formData },
+              {
+                onSuccess: () => {
+                  setAwardDraft(null);
+                  setFeedback('已提交定标审批，待候选审批人办理。');
+                  refresh();
+                },
+                onError: reportError,
+              },
+            )
+          }
+        />
       )}
     </div>
   );

@@ -26,6 +26,7 @@ import type {
 
 import type {
   ApiResponseListProcessDefinitionResponse,
+  ApiResponseListProcessDefinitionVersionResponse,
   ApiResponseProcessDefinitionResponse,
   ApiResponseVoid,
   CreateProcessDefinitionRequest,
@@ -42,14 +43,14 @@ export const processDefinitionGet = (
     id: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseProcessDefinitionResponse>(
       {url: `/api/v1/buyer/process-definitions/${id}`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -59,7 +60,7 @@ export const getProcessDefinitionGetQueryKey = (id?: string,) => {
     ] as const;
     }
 
-    
+
 export const getProcessDefinitionGetQueryOptions = <TData = Awaited<ReturnType<typeof processDefinitionGet>>, TError = ErrorType<ApiResponseVoid>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof processDefinitionGet>>, TError, TData>>, }
 ) => {
 
@@ -67,13 +68,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getProcessDefinitionGetQueryKey(id);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof processDefinitionGet>>> = ({ signal }) => processDefinitionGet(id, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof processDefinitionGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -109,7 +110,7 @@ export function useProcessDefinitionGet<TData = Awaited<ReturnType<typeof proces
 
 export function useProcessDefinitionGet<TData = Awaited<ReturnType<typeof processDefinitionGet>>, TError = ErrorType<ApiResponseVoid>>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof processDefinitionGet>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getProcessDefinitionGetQueryOptions(id,options)
@@ -120,16 +121,12 @@ export function useProcessDefinitionGet<TData = Awaited<ReturnType<typeof proces
 
   return query;
 }
-
-
-
-
 export const processDefinitionUpdate = (
     id: string,
     updateProcessDefinitionRequest: BodyType<UpdateProcessDefinitionRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseProcessDefinitionResponse>(
       {url: `/api/v1/buyer/process-definitions/${id}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -137,7 +134,7 @@ export const processDefinitionUpdate = (
     },
       );
     }
-  
+
 
 
 export const getProcessDefinitionUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -151,7 +148,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof processDefinitionUpdate>>, {id: string;data: BodyType<UpdateProcessDefinitionRequest>}> = (props) => {
@@ -160,7 +157,7 @@ const {mutation: mutationOptions} = options ?
           return  processDefinitionUpdate(id,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -183,17 +180,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const processDefinitionList = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListProcessDefinitionResponse>(
       {url: `/api/v1/buyer/process-definitions`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -203,7 +200,7 @@ export const getProcessDefinitionListQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getProcessDefinitionListQueryOptions = <TData = Awaited<ReturnType<typeof processDefinitionList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof processDefinitionList>>, TError, TData>>, }
 ) => {
 
@@ -211,13 +208,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getProcessDefinitionListQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof processDefinitionList>>> = ({ signal }) => processDefinitionList(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof processDefinitionList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -253,7 +250,7 @@ export function useProcessDefinitionList<TData = Awaited<ReturnType<typeof proce
 
 export function useProcessDefinitionList<TData = Awaited<ReturnType<typeof processDefinitionList>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof processDefinitionList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getProcessDefinitionListQueryOptions(options)
@@ -265,15 +262,12 @@ export function useProcessDefinitionList<TData = Awaited<ReturnType<typeof proce
   return query;
 }
 
-
-
-
 export const processDefinitionCreate = (
     createProcessDefinitionRequest: BodyType<CreateProcessDefinitionRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseProcessDefinitionResponse>(
       {url: `/api/v1/buyer/process-definitions`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -281,7 +275,7 @@ export const processDefinitionCreate = (
     },
       );
     }
-  
+
 
 
 export const getProcessDefinitionCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -295,7 +289,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof processDefinitionCreate>>, {data: BodyType<CreateProcessDefinitionRequest>}> = (props) => {
@@ -304,7 +298,7 @@ const {mutation: mutationOptions} = options ?
           return  processDefinitionCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -326,4 +320,141 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    
+    export const processDefinitionPublish = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseProcessDefinitionResponse>(
+      {url: `/api/v1/buyer/process-definitions/${id}/publish`, method: 'POST', signal
+    },
+      );
+    }
+
+
+
+export const getProcessDefinitionPublishMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof processDefinitionPublish>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof processDefinitionPublish>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['processDefinitionPublish'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof processDefinitionPublish>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  processDefinitionPublish(id,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ProcessDefinitionPublishMutationResult = NonNullable<Awaited<ReturnType<typeof processDefinitionPublish>>>
+
+    export type ProcessDefinitionPublishMutationError = ErrorType<ApiResponseVoid>
+
+    export const useProcessDefinitionPublish = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof processDefinitionPublish>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof processDefinitionPublish>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getProcessDefinitionPublishMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const processDefinitionVersions = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseListProcessDefinitionVersionResponse>(
+      {url: `/api/v1/buyer/process-definitions/${id}/versions`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getProcessDefinitionVersionsQueryKey = (id?: string,) => {
+    return [
+    `/api/v1/buyer/process-definitions/${id}/versions`
+    ] as const;
+    }
+
+
+export const getProcessDefinitionVersionsQueryOptions = <TData = Awaited<ReturnType<typeof processDefinitionVersions>>, TError = ErrorType<ApiResponseVoid>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof processDefinitionVersions>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getProcessDefinitionVersionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof processDefinitionVersions>>> = ({ signal }) => processDefinitionVersions(id, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof processDefinitionVersions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ProcessDefinitionVersionsQueryResult = NonNullable<Awaited<ReturnType<typeof processDefinitionVersions>>>
+export type ProcessDefinitionVersionsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useProcessDefinitionVersions<TData = Awaited<ReturnType<typeof processDefinitionVersions>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof processDefinitionVersions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof processDefinitionVersions>>,
+          TError,
+          Awaited<ReturnType<typeof processDefinitionVersions>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProcessDefinitionVersions<TData = Awaited<ReturnType<typeof processDefinitionVersions>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof processDefinitionVersions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof processDefinitionVersions>>,
+          TError,
+          Awaited<ReturnType<typeof processDefinitionVersions>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProcessDefinitionVersions<TData = Awaited<ReturnType<typeof processDefinitionVersions>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof processDefinitionVersions>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useProcessDefinitionVersions<TData = Awaited<ReturnType<typeof processDefinitionVersions>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof processDefinitionVersions>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getProcessDefinitionVersionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}

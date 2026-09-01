@@ -3,6 +3,7 @@ package com.procurement.identity.infrastructure;
 import com.procurement.identity.domain.BuyerUser;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -82,6 +83,21 @@ public interface BuyerUserMapper {
       @Param("id") String id);
 
   @Select("""
+      select exists(
+        select 1
+        from users
+        where tenant_id = #{tenantId}
+          and employee_no is not null
+          and upper(employee_no) = upper(#{employeeNo})
+          and (#{excludedUserId,jdbcType=VARCHAR} is null or id <> #{excludedUserId,jdbcType=VARCHAR})
+      )
+      """)
+  boolean existsByEmployeeNoExcludingUser(
+      @Param("tenantId") String tenantId,
+      @Param("employeeNo") String employeeNo,
+      @Param("excludedUserId") String excludedUserId);
+
+  @Select("""
       select u.id
       from users u
       join user_roles ur on ur.user_id = u.id
@@ -107,6 +123,38 @@ public interface BuyerUserMapper {
       )
       """)
   boolean existsBuyerRoleByTenantAndId(
+      @Param("tenantId") String tenantId,
+      @Param("roleId") String roleId);
+
+  @Select("""
+      select r.id
+      from users u
+      join user_roles ur on ur.user_id = u.id
+      join roles r on r.id = ur.role_id
+      where u.tenant_id = #{tenantId}
+        and u.id = #{userId}
+        and u.status = 'active'
+        and r.tenant_id = #{tenantId}
+        and r.scope = 'buyer'
+      order by r.id
+      """)
+  List<String> listBuyerRoleIdsByTenantAndUser(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId);
+
+  @Select("""
+      select distinct u.id
+      from users u
+      join user_roles ur on ur.user_id = u.id
+      join roles r on r.id = ur.role_id
+      where u.tenant_id = #{tenantId}
+        and u.status = 'active'
+        and r.tenant_id = #{tenantId}
+        and r.scope = 'buyer'
+        and r.id = #{roleId}
+      order by u.id
+      """)
+  List<String> listActiveBuyerUserIdsByTenantAndRole(
       @Param("tenantId") String tenantId,
       @Param("roleId") String roleId);
 
@@ -160,6 +208,32 @@ public interface BuyerUserMapper {
       @Param("userId") String userId,
       @Param("roleId") String roleId);
 
+  @Delete("""
+      delete from user_roles ur
+      using users u, roles r
+      where ur.user_id = u.id
+        and ur.role_id = r.id
+        and u.tenant_id = #{tenantId}
+        and u.id = #{userId}
+        and r.scope = 'buyer'
+      """)
+  void deleteBuyerRoles(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId);
+
+  @Insert("""
+      <script>
+      insert into user_roles (user_id, role_id)
+      values
+      <foreach collection="roleIds" item="roleId" separator=",">
+        (#{userId}, #{roleId})
+      </foreach>
+      </script>
+      """)
+  void assignRoles(
+      @Param("userId") String userId,
+      @Param("roleIds") List<String> roleIds);
+
   @Update("""
       with deleted as (
         delete from user_roles ur
@@ -195,6 +269,40 @@ public interface BuyerUserMapper {
       @Param("tenantId") String tenantId,
       @Param("userId") String userId,
       @Param("status") String status);
+
+  @Update("""
+      update users
+      set name = #{name},
+          mobile = #{mobile,jdbcType=VARCHAR},
+          email = #{email,jdbcType=VARCHAR},
+          department_id = #{departmentId},
+          employee_no = #{employeeNo,jdbcType=VARCHAR},
+          job_title = #{jobTitle,jdbcType=VARCHAR},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{userId}
+      """)
+  int updateDetails(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId,
+      @Param("name") String name,
+      @Param("mobile") String mobile,
+      @Param("email") String email,
+      @Param("departmentId") String departmentId,
+      @Param("employeeNo") String employeeNo,
+      @Param("jobTitle") String jobTitle);
+
+  @Update("""
+      update users
+      set department_id = #{departmentId},
+          updated_at = now()
+      where tenant_id = #{tenantId}
+        and id = #{userId}
+      """)
+  int updateDepartment(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId,
+      @Param("departmentId") String departmentId);
 
   @Update("""
       update users

@@ -7,8 +7,8 @@ import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.common.api.ApprovalTaskResponse;
 import com.procurement.common.tenant.TenantAccessGuard;
-import com.procurement.demand.api.ApprovalTaskResponse;
 import com.procurement.demand.api.CreatePurchaseDemandRequest;
 import com.procurement.demand.api.PurchaseDemandLineItemResponse;
 import com.procurement.demand.api.PurchaseDemandResponse;
@@ -28,11 +28,17 @@ import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import com.procurement.sourcing.application.RfqDemandLinkQueryService;
+import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
+import com.procurement.workflow.application.WorkflowStartCommand;
+import com.procurement.workflow.application.WorkflowStartResult;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +56,7 @@ public class PurchaseDemandApplicationService {
   private final NotificationApplicationService notificationApplicationService;
   private final PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition;
   private final DataScopeService dataScopeService;
+  private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
 
   public PurchaseDemandApplicationService(
       PurchaseDemandMapper purchaseDemandMapper,
@@ -74,6 +81,12 @@ public class PurchaseDemandApplicationService {
     this.notificationApplicationService = notificationApplicationService;
     this.purchaseDemandApprovalStatusTransition = purchaseDemandApprovalStatusTransition;
     this.dataScopeService = dataScopeService;
+  }
+
+  @Autowired
+  void setUnifiedWorkflowApplicationService(
+      UnifiedWorkflowApplicationService unifiedWorkflowApplicationService) {
+    this.unifiedWorkflowApplicationService = unifiedWorkflowApplicationService;
   }
 
   public List<PurchaseDemandResponse> listCurrentTenantDemands() {
@@ -192,6 +205,11 @@ public class PurchaseDemandApplicationService {
 
   @Transactional
   public ApprovalTaskResponse submit(String demandId) {
+    return submit(demandId, Map.of());
+  }
+
+  @Transactional
+  public ApprovalTaskResponse submit(String demandId, Map<String, Object> formData) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     PurchaseDemand demand = purchaseDemandMapper.findByTenantAndId(tenantId, demandId);
     if (demand == null) {
@@ -199,6 +217,44 @@ public class PurchaseDemandApplicationService {
     }
     purchaseDemandApprovalStatusTransition.requireSubmission(demand.status(), demandId);
 
+    // 旧离线构造的兼容路径；Spring 生产装配始终注入 Flowable 统一门面。
+    if (unifiedWorkflowApplicationService == null) {
+      return submitLegacy(demandId, tenantId, demand);
+    }
+
+    purchaseDemandMapper.updateStatus(tenantId, demandId, PurchaseDemandStatus.IN_APPROVAL);
+    Map<String, Object> snapshot = new LinkedHashMap<>();
+    snapshot.put("title", demand.title());
+    snapshot.put("budget", demand.budget());
+    snapshot.put("priority", demand.priority());
+    snapshot.put("purpose", demand.purpose());
+    snapshot.put("expectedDeliveryDate", demand.expectedDeliveryDate() == null ? null : demand.expectedDeliveryDate().toString());
+    WorkflowStartResult started = unifiedWorkflowApplicationService.start(new WorkflowStartCommand(
+        ApprovalBusinessType.PURCHASE_DEMAND,
+        demandId,
+        demand.departmentId(),
+        demand.budget(),
+        formData == null ? Map.of() : formData,
+        snapshot));
+    auditLogApplicationService.recordTenantAction(
+        PurchaseDemandAuditAction.SUBMITTED,
+        ApprovalBusinessType.PURCHASE_DEMAND,
+        demandId);
+    notificationApplicationService.notifyActiveTenantUsers(
+        tenantId,
+        NotificationTitle.PURCHASE_DEMAND_PENDING_APPROVAL,
+        demand.title() + "已提交审批，请及时处理。");
+    return new ApprovalTaskResponse(
+        started.firstTaskId(),
+        tenantId,
+        ApprovalBusinessType.PURCHASE_DEMAND,
+        demandId,
+        null,
+        "审批中",
+        started.createdAt());
+  }
+
+  private ApprovalTaskResponse submitLegacy(String demandId, String tenantId, PurchaseDemand demand) {
     // 审批闸门:需求审批节点关闭时免审直通(状态直达已通过,审计留痕)。
     if (!approvalGate.requiresApproval(tenantId, ApprovalBusinessType.PURCHASE_DEMAND)) {
       purchaseDemandMapper.updateStatus(tenantId, demandId, PurchaseDemandStatus.APPROVED);
@@ -251,6 +307,26 @@ public class PurchaseDemandApplicationService {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
     purchaseDemandApprovalStatusTransition.requireReview(demand.status(), demandId);
+
+    if (unifiedWorkflowApplicationService != null) {
+      var history = unifiedWorkflowApplicationService.completeCurrentUserBusinessTask(
+          ApprovalBusinessType.PURCHASE_DEMAND,
+          demandId,
+          Boolean.TRUE.equals(request.approved()),
+          request.comment());
+      String status = "approved".equals(history.status())
+          ? ApprovalStatus.APPROVED
+          : "rejected".equals(history.status()) ? ApprovalStatus.REJECTED : "审批中";
+      return new ApprovalTaskResponse(
+          null,
+          tenantId,
+          ApprovalBusinessType.PURCHASE_DEMAND,
+          demandId,
+          userId,
+          status,
+          request.comment(),
+          history.actedAt());
+    }
 
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,

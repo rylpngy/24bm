@@ -1,4 +1,4 @@
-import { useState, type ElementType } from 'react';
+import { useEffect, useState, type ElementType } from 'react';
 import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck } from 'lucide-react';
 import { useBuyerSupplierList } from '@24bid/api-client';
 import { cn } from '@24bid/ui';
@@ -32,6 +32,11 @@ export function SuppliersPage() {
   const query = useBuyerSupplierList();
   const all = query.data?.data ?? [];
   const admissionCount = all.filter((s) => ADMISSION_STATUSES.includes(s.status ?? '')).length;
+
+  useEffect(() => {
+    const recordId = new URLSearchParams(window.location.search).get('recordId');
+    if (!selectedId && recordId && all.some((item) => item.id === recordId)) setSelectedId(recordId);
+  }, [all, selectedId]);
 
   // 供应商登记独立页(详细建档)。
   if (registering) {

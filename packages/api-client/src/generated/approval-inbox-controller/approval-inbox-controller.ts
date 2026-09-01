@@ -43,8 +43,8 @@ export const approvalInboxUpdateTemplateConfig = (
     updateApprovalTemplateRequest: BodyType<UpdateApprovalTemplateRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseApprovalTemplateResponse>(
       {url: `/api/v1/buyer/approvals/templates/${templateCode}/config`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -52,7 +52,7 @@ export const approvalInboxUpdateTemplateConfig = (
     },
       );
     }
-  
+
 
 
 export const getApprovalInboxUpdateTemplateConfigMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -66,7 +66,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof approvalInboxUpdateTemplateConfig>>, {templateCode: string;data: BodyType<UpdateApprovalTemplateRequest>}> = (props) => {
@@ -75,7 +75,7 @@ const {mutation: mutationOptions} = options ?
           return  approvalInboxUpdateTemplateConfig(templateCode,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -98,17 +98,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const approvalInboxTemplates = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListApprovalTemplateResponse>(
       {url: `/api/v1/buyer/approvals/templates`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -118,7 +118,7 @@ export const getApprovalInboxTemplatesQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getApprovalInboxTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof approvalInboxTemplates>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxTemplates>>, TError, TData>>, }
 ) => {
 
@@ -126,13 +126,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getApprovalInboxTemplatesQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof approvalInboxTemplates>>> = ({ signal }) => approvalInboxTemplates(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof approvalInboxTemplates>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -168,7 +168,7 @@ export function useApprovalInboxTemplates<TData = Awaited<ReturnType<typeof appr
 
 export function useApprovalInboxTemplates<TData = Awaited<ReturnType<typeof approvalInboxTemplates>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxTemplates>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getApprovalInboxTemplatesQueryOptions(options)
@@ -184,17 +184,17 @@ export function useApprovalInboxTemplates<TData = Awaited<ReturnType<typeof appr
 
 
 export const approvalInboxRecent = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPendingApprovalTaskResponse>(
       {url: `/api/v1/buyer/approvals/recent`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -204,7 +204,7 @@ export const getApprovalInboxRecentQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getApprovalInboxRecentQueryOptions = <TData = Awaited<ReturnType<typeof approvalInboxRecent>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxRecent>>, TError, TData>>, }
 ) => {
 
@@ -212,13 +212,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getApprovalInboxRecentQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof approvalInboxRecent>>> = ({ signal }) => approvalInboxRecent(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof approvalInboxRecent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -254,7 +254,7 @@ export function useApprovalInboxRecent<TData = Awaited<ReturnType<typeof approva
 
 export function useApprovalInboxRecent<TData = Awaited<ReturnType<typeof approvalInboxRecent>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxRecent>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getApprovalInboxRecentQueryOptions(options)
@@ -270,17 +270,17 @@ export function useApprovalInboxRecent<TData = Awaited<ReturnType<typeof approva
 
 
 export const approvalInboxPending = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPendingApprovalTaskResponse>(
       {url: `/api/v1/buyer/approvals/pending`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -290,7 +290,7 @@ export const getApprovalInboxPendingQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getApprovalInboxPendingQueryOptions = <TData = Awaited<ReturnType<typeof approvalInboxPending>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxPending>>, TError, TData>>, }
 ) => {
 
@@ -298,13 +298,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getApprovalInboxPendingQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof approvalInboxPending>>> = ({ signal }) => approvalInboxPending(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof approvalInboxPending>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -340,7 +340,7 @@ export function useApprovalInboxPending<TData = Awaited<ReturnType<typeof approv
 
 export function useApprovalInboxPending<TData = Awaited<ReturnType<typeof approvalInboxPending>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof approvalInboxPending>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getApprovalInboxPendingQueryOptions(options)

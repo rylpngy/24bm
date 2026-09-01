@@ -6,5 +6,11 @@ import jakarta.validation.constraints.NotBlank;
 public record UpdateDepartmentRequest(
     @NotBlank String name,
     String description,
-    String managerId) {
+    String managerId,
+    // 负责人不属于当前部门时，明确授权系统先将其调入当前部门再完成任命。
+    Boolean transferManagerToDepartment) {
+
+  public UpdateDepartmentRequest(String name, String description, String managerId) {
+    this(name, description, managerId, false);
+  }
 }

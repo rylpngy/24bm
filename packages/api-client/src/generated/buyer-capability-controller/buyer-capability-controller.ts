@@ -32,17 +32,17 @@ import type { ErrorType } from '../../http-client';
 
 
 export const buyerCapabilityCapabilities = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenantCapabilityResponse>(
       {url: `/api/v1/buyer/capabilities`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -52,7 +52,7 @@ export const getBuyerCapabilityCapabilitiesQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getBuyerCapabilityCapabilitiesQueryOptions = <TData = Awaited<ReturnType<typeof buyerCapabilityCapabilities>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerCapabilityCapabilities>>, TError, TData>>, }
 ) => {
 
@@ -60,13 +60,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerCapabilityCapabilitiesQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerCapabilityCapabilities>>> = ({ signal }) => buyerCapabilityCapabilities(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerCapabilityCapabilities>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -102,7 +102,7 @@ export function useBuyerCapabilityCapabilities<TData = Awaited<ReturnType<typeof
 
 export function useBuyerCapabilityCapabilities<TData = Awaited<ReturnType<typeof buyerCapabilityCapabilities>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerCapabilityCapabilities>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerCapabilityCapabilitiesQueryOptions(options)

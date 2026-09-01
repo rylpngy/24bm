@@ -37,17 +37,17 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 export const supplierProfileGet = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierProfileResponse>(
       {url: `/api/v1/supplier/profile`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -57,7 +57,7 @@ export const getSupplierProfileGetQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getSupplierProfileGetQueryOptions = <TData = Awaited<ReturnType<typeof supplierProfileGet>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierProfileGet>>, TError, TData>>, }
 ) => {
 
@@ -65,13 +65,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierProfileGetQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierProfileGet>>> = ({ signal }) => supplierProfileGet(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierProfileGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -107,7 +107,7 @@ export function useSupplierProfileGet<TData = Awaited<ReturnType<typeof supplier
 
 export function useSupplierProfileGet<TData = Awaited<ReturnType<typeof supplierProfileGet>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierProfileGet>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierProfileGetQueryOptions(options)
@@ -126,8 +126,8 @@ export const supplierProfileUpdate = (
     updateSupplierProfileRequest: BodyType<UpdateSupplierProfileRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierProfileResponse>(
       {url: `/api/v1/supplier/profile`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -135,7 +135,7 @@ export const supplierProfileUpdate = (
     },
       );
     }
-  
+
 
 
 export const getSupplierProfileUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -149,7 +149,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierProfileUpdate>>, {data: BodyType<UpdateSupplierProfileRequest>}> = (props) => {
@@ -158,7 +158,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierProfileUpdate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -180,4 +180,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

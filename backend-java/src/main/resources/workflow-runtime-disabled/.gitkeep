@@ -1,0 +1,2 @@
+# Flowable 自动部署目录必须存在；该目录刻意不放 BPMN 文件。
+# 所有生产流程只能由 WorkflowDefinitionPublicationService 动态部署。

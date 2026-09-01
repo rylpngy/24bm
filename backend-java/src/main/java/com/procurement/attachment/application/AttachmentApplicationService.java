@@ -40,10 +40,14 @@ public class AttachmentApplicationService {
   }
 
   public List<AttachmentResponse> listCurrentTenantAttachments(String ownerType, String ownerId) {
-    String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
-    return attachmentMapper.listActiveByTenantAndOwner(tenantId, ownerType, ownerId).stream()
+    return listCurrentTenantAttachmentEntities(ownerType, ownerId).stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  public List<Attachment> listCurrentTenantAttachmentEntities(String ownerType, String ownerId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
+    return attachmentMapper.listActiveByTenantAndOwner(tenantId, ownerType, ownerId);
   }
 
   public AttachmentUploadTicketResponse createCurrentTenantUploadTicket(CreateAttachmentUploadTicketRequest request) {

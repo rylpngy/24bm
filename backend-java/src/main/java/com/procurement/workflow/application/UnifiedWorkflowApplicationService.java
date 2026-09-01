@@ -1,0 +1,904 @@
+package com.procurement.workflow.application;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.procurement.attachment.domain.Attachment;
+import com.procurement.attachment.infrastructure.AttachmentMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.common.tenant.PermissionDeniedException;
+import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.identity.application.DataScopeService;
+import com.procurement.identity.application.PermissionService;
+import com.procurement.identity.domain.BuyerUser;
+import com.procurement.identity.domain.DataScope;
+import com.procurement.identity.infrastructure.BuyerUserMapper;
+import com.procurement.organization.domain.Department;
+import com.procurement.organization.infrastructure.DepartmentMapper;
+import com.procurement.notification.application.NotificationApplicationService;
+import com.procurement.notification.domain.NotificationTitle;
+import com.procurement.workflow.api.CompleteWorkflowTaskRequest;
+import com.procurement.workflow.api.UnifiedWorkflowTaskResponse;
+import com.procurement.workflow.api.WorkflowInstanceHistoryResponse;
+import com.procurement.workflow.api.WorkflowAttachmentResponse;
+import com.procurement.workflow.api.WorkflowInstanceLedgerResponse;
+import com.procurement.workflow.api.WorkflowPublishedFormResponse;
+import com.procurement.workflow.api.WorkflowTaskEventResponse;
+import com.procurement.workflow.definition.FlowableProcessCompiler;
+import com.procurement.workflow.definition.WorkflowBusinessTypeCatalog;
+import com.procurement.workflow.definition.WorkflowDefinitionSchema;
+import com.procurement.workflow.definition.WorkflowExecutablePathResolver;
+import com.procurement.workflow.definition.WorkflowSchemaValidator;
+import com.procurement.workflow.domain.WorkflowBusinessInstance;
+import com.procurement.workflow.domain.WorkflowDefinitionVersion;
+import com.procurement.workflow.domain.WorkflowInstanceStatus;
+import com.procurement.workflow.domain.WorkflowTaskEvent;
+import com.procurement.workflow.infrastructure.WorkflowBusinessInstanceMapper;
+import com.procurement.workflow.infrastructure.WorkflowTaskEventMapper;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.TaskService;
+import org.flowable.engine.runtime.ProcessInstance;
+import org.flowable.identitylink.api.IdentityLink;
+import org.flowable.task.api.Task;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+// 唯一生产审批运行时。所有业务审批均以 Flowable 任务为准，业务库只保存关联、状态和审计快照。
+@Service
+public class UnifiedWorkflowApplicationService {
+  private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
+
+  private final WorkflowDefinitionPublicationService workflowDefinitionPublicationService;
+  private final WorkflowBusinessInstanceMapper workflowBusinessInstanceMapper;
+  private final WorkflowTaskEventMapper workflowTaskEventMapper;
+  private final WorkflowSchemaValidator workflowSchemaValidator;
+  private final ObjectMapper objectMapper;
+  private final RuntimeService runtimeService;
+  private final TaskService taskService;
+  private final BuyerUserMapper buyerUserMapper;
+  private final DepartmentMapper departmentMapper;
+  private final PermissionService permissionService;
+  private final DataScopeService dataScopeService;
+  private final AuditLogApplicationService auditLogApplicationService;
+  private final AttachmentMapper attachmentMapper;
+  private final NotificationApplicationService notificationApplicationService;
+  private final List<WorkflowBusinessCompletionHandler> completionHandlers;
+
+  public UnifiedWorkflowApplicationService(
+      WorkflowDefinitionPublicationService workflowDefinitionPublicationService,
+      WorkflowBusinessInstanceMapper workflowBusinessInstanceMapper,
+      WorkflowTaskEventMapper workflowTaskEventMapper,
+      WorkflowSchemaValidator workflowSchemaValidator,
+      ObjectMapper objectMapper,
+      RuntimeService runtimeService,
+      TaskService taskService,
+      BuyerUserMapper buyerUserMapper,
+      DepartmentMapper departmentMapper,
+      PermissionService permissionService,
+      DataScopeService dataScopeService,
+      AuditLogApplicationService auditLogApplicationService,
+      AttachmentMapper attachmentMapper,
+      NotificationApplicationService notificationApplicationService,
+      List<WorkflowBusinessCompletionHandler> completionHandlers) {
+    this.workflowDefinitionPublicationService = workflowDefinitionPublicationService;
+    this.workflowBusinessInstanceMapper = workflowBusinessInstanceMapper;
+    this.workflowTaskEventMapper = workflowTaskEventMapper;
+    this.workflowSchemaValidator = workflowSchemaValidator;
+    this.objectMapper = objectMapper;
+    this.runtimeService = runtimeService;
+    this.taskService = taskService;
+    this.buyerUserMapper = buyerUserMapper;
+    this.departmentMapper = departmentMapper;
+    this.permissionService = permissionService;
+    this.dataScopeService = dataScopeService;
+    this.auditLogApplicationService = auditLogApplicationService;
+    this.attachmentMapper = attachmentMapper;
+    this.notificationApplicationService = notificationApplicationService;
+    this.completionHandlers = completionHandlers == null ? List.of() : List.copyOf(completionHandlers);
+  }
+
+  @Transactional
+  public WorkflowStartResult start(WorkflowStartCommand command) {
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
+    String actorId = TenantAccessGuard.requireUserId("unified workflow APIs");
+    WorkflowBusinessTypeCatalog.requireSupported(command.businessType());
+    requireCompletionHandler(command.businessType());
+    if (command.businessId() == null || command.businessId().isBlank()) {
+      throw new IllegalArgumentException("Workflow businessId is required");
+    }
+    WorkflowBusinessInstance existing = workflowBusinessInstanceMapper.findActiveByBusiness(
+        tenantId, command.businessType(), command.businessId());
+    if (existing != null) {
+      throw new IllegalStateException("An active workflow already exists for this business object: " + command.businessId());
+    }
+
+    WorkflowDefinitionVersion version = workflowDefinitionPublicationService.requirePublishedVersion(
+        tenantId, command.businessType(), actorId);
+    WorkflowDefinitionSchema schema = workflowSchemaValidator.validate(
+        tenantId, version.formSchema(), version.flowSchema());
+    Map<String, Object> formData = workflowSchemaValidator.validateStartData(schema, command.formData());
+    String workflowInstanceId = "workflow-" + UUID.randomUUID();
+    String departmentId = resolveWorkflowDepartmentId(tenantId, actorId, command.departmentId());
+    BigDecimal amount = command.amount() == null ? BigDecimal.ZERO : command.amount();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("tenantId", tenantId);
+    variables.put("workflowInstanceId", workflowInstanceId);
+    variables.put("businessType", command.businessType());
+    variables.put("businessId", command.businessId());
+    variables.put("initiatorId", actorId);
+    variables.put("departmentId", departmentId);
+    variables.put("amount", amount);
+    formData.forEach((key, value) -> variables.put("form_" + key, value));
+    bindDepartmentManagerAssignments(tenantId, departmentId, schema.steps(), variables);
+
+    ProcessInstance flowableInstance = runtimeService.startProcessInstanceById(
+        version.flowableProcessDefinitionId(), workflowInstanceId, variables);
+    workflowBusinessInstanceMapper.insert(
+        workflowInstanceId,
+        tenantId,
+        command.businessType(),
+        command.businessId(),
+        version.id(),
+        flowableInstance.getId(),
+        WorkflowInstanceStatus.PROCESSING,
+        actorId,
+        departmentId,
+        amount,
+        writeJson(formData),
+        writeJson(command.businessSnapshot() == null ? Map.of() : command.businessSnapshot()));
+    recordCreatedTasks(tenantId, workflowInstanceId, flowableInstance.getId());
+    auditLogApplicationService.recordTenantAction(
+        tenantId,
+        "workflow.started",
+        command.businessType(),
+        command.businessId(),
+        "已按发布版本 " + version.id() + " 发起 Flowable 审批");
+    WorkflowBusinessInstance saved = workflowBusinessInstanceMapper.findByTenantAndId(tenantId, workflowInstanceId);
+    Task firstTask = firstActiveTask(flowableInstance.getId());
+    return new WorkflowStartResult(
+        saved.id(),
+        saved.flowableProcessInstanceId(),
+        saved.definitionVersionId(),
+        firstTask == null ? null : firstTask.getId(),
+        saved.status(),
+        saved.createdAt());
+  }
+
+  public List<UnifiedWorkflowTaskResponse> listCurrentUserTasks() {
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
+    String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
+    permissionService.require("buyer:workflow:review");
+    DataScope dataScope = dataScopeService.currentUserDataScope();
+    if (dataScope.blocksAll()) {
+      return List.of();
+    }
+    List<String> roleGroups = buyerUserMapper.listBuyerRoleIdsByTenantAndUser(tenantId, userId).stream()
+        .map(roleId -> FlowableProcessCompiler.roleGroup(tenantId, roleId))
+        .toList();
+    List<UnifiedWorkflowTaskResponse> tasks = new ArrayList<>();
+    for (Task task : taskService.createTaskQuery()
+        .processVariableValueEquals("tenantId", tenantId)
+        .active()
+        .orderByTaskCreateTime().desc()
+        .list()) {
+      WorkflowBusinessInstance instance = workflowBusinessInstanceMapper
+          .findByTenantAndFlowableProcessInstanceId(tenantId, task.getProcessInstanceId());
+      if (instance == null || !isVisible(instance, dataScope) || !canHandle(task, userId, roleGroups)) {
+        continue;
+      }
+      tasks.add(toTaskResponse(task, instance));
+    }
+    return tasks;
+  }
+
+  /** 返回当前用户确实有权办理的活动任务，供业务门面绑定节点表单并阻止伪造 nodeId。 */
+  public UnifiedWorkflowTaskResponse requireCurrentUserTask(String taskId) {
+    return listCurrentUserTasks().stream()
+        .filter(task -> task.taskId().equals(taskId))
+        .findFirst()
+        .orElseThrow(() -> new PermissionDeniedException("当前用户无权办理该审批任务"));
+  }
+
+  public WorkflowTaskContext requireCurrentUserTaskContext(String taskId) {
+    UnifiedWorkflowTaskResponse task = requireCurrentUserTask(taskId);
+    return new WorkflowTaskContext(
+        task.taskId(), task.businessType(), task.businessId(), task.taskDefinitionKey());
+  }
+
+  @Transactional
+  public WorkflowCompletionResult completeCurrentUserTaskForBusiness(
+      String taskId, String action, String comment) {
+    TaskCompletionOutcome outcome = completeCurrentUserTaskInternal(
+        taskId, new CompleteWorkflowTaskRequest(action, comment), true);
+    WorkflowInstanceHistoryResponse history = outcome.history();
+    OffsetDateTime actedAt = history.events().isEmpty()
+        ? history.createdAt()
+        : history.events().getLast().createdAt();
+    return new WorkflowCompletionResult(history.status(), actedAt, outcome.reusedTasks());
+  }
+
+  public List<WorkflowApprovalSignature> listApprovalSignatures(
+      String businessType, String businessId) {
+    WorkflowInstanceHistoryResponse history = getCurrentTenantBusinessHistory(businessType, businessId);
+    if (history == null) {
+      return List.of();
+    }
+    return history.events().stream()
+        .filter(event -> "approved".equals(event.action()) && event.actorId() != null)
+        .map(event -> new WorkflowApprovalSignature(
+            event.nodeId(), event.actorName() == null ? event.actorId() : event.actorName(), event.createdAt()))
+        .toList();
+  }
+
+  @Transactional
+  public WorkflowInstanceHistoryResponse completeCurrentUserTask(
+      String taskId, CompleteWorkflowTaskRequest request) {
+    return completeCurrentUserTaskInternal(taskId, request, false).history();
+  }
+
+  private TaskCompletionOutcome completeCurrentUserTaskInternal(
+      String taskId, CompleteWorkflowTaskRequest request, boolean businessProjectionEnabled) {
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
+    String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
+    permissionService.require("buyer:workflow:review");
+    boolean approved = decision(request.action());
+    Task task = taskService.createTaskQuery().taskId(taskId).active().singleResult();
+    if (task == null) {
+      throw new IllegalArgumentException("Workflow task not found or already completed: " + taskId);
+    }
+    WorkflowBusinessInstance instance = workflowBusinessInstanceMapper
+        .findByTenantAndFlowableProcessInstanceId(tenantId, task.getProcessInstanceId());
+    if (instance == null || !WorkflowInstanceStatus.PROCESSING.equals(instance.status())) {
+      throw new IllegalArgumentException("Workflow task is not part of an active tenant workflow: " + taskId);
+    }
+    if ("ludong_project_application".equals(instance.businessType()) && !businessProjectionEnabled) {
+      throw new IllegalStateException("鲁东采购申报任务必须通过业务审批入口办理，以同步保存节点表单");
+    }
+    if (!isVisible(instance, dataScopeService.currentUserDataScope())) {
+      throw new PermissionDeniedException("当前数据范围无权办理该审批任务");
+    }
+    List<String> roleGroups = buyerUserMapper.listBuyerRoleIdsByTenantAndUser(tenantId, userId).stream()
+        .map(roleId -> FlowableProcessCompiler.roleGroup(tenantId, roleId))
+        .toList();
+    if (!canHandle(task, userId, roleGroups)) {
+      throw new PermissionDeniedException("当前用户不是该审批任务的办理人或候选人");
+    }
+    if (task.getAssignee() == null || task.getAssignee().isBlank()) {
+      taskService.claim(taskId, userId);
+      recordTaskEvent(tenantId, instance.id(), task, "claimed", userId, null);
+    }
+    taskService.complete(taskId, Map.of(
+        "approved", approved,
+        "reviewComment", request.comment() == null ? "" : request.comment()));
+    recordTaskEvent(tenantId, instance.id(), task, approved ? "approved" : "rejected", userId, request.comment());
+    List<WorkflowReusedTask> reusedTasks = approved
+        && "ludong_project_application".equals(instance.businessType())
+        ? reuseApprovedDecisionsWithinInstance(tenantId, instance)
+        : List.of();
+    boolean ended = runtimeService.createProcessInstanceQuery()
+        .processInstanceId(instance.flowableProcessInstanceId())
+        .singleResult() == null;
+    if (ended) {
+      String nextStatus = approved ? WorkflowInstanceStatus.APPROVED : WorkflowInstanceStatus.REJECTED;
+      String completionActorId = reusedTasks.isEmpty() ? userId : reusedTasks.getLast().actorId();
+      String completionComment = reusedTasks.isEmpty() ? request.comment() : reusedTasks.getLast().comment();
+      int changed = workflowBusinessInstanceMapper.complete(
+          tenantId, instance.id(), nextStatus, completionActorId);
+      if (changed == 0) {
+        throw new IllegalStateException("Workflow instance changed before completion could be recorded: " + instance.id());
+      }
+      WorkflowBusinessInstance completed = workflowBusinessInstanceMapper.findByTenantAndId(tenantId, instance.id());
+      requireCompletionHandler(completed.businessType()).onCompleted(
+          completed, new WorkflowCompletion(approved, completionActorId, completionComment));
+      if (reusedTasks.isEmpty()) {
+        auditLogApplicationService.recordTenantAction(
+            tenantId,
+            approved ? "workflow.approved" : "workflow.rejected",
+            completed.businessType(),
+            completed.businessId(),
+            "Flowable 审批流程已" + (approved ? "通过" : "驳回"));
+      } else {
+        auditLogApplicationService.recordAutomatedTenantAction(
+            tenantId,
+            completionActorId,
+            "workflow.approved",
+            completed.businessType(),
+            completed.businessId(),
+            "Flowable 审批流程已通过，最终节点按工号自动复用");
+      }
+    } else {
+      recordCreatedTasks(tenantId, instance.id(), instance.flowableProcessInstanceId());
+    }
+    return new TaskCompletionOutcome(
+        toHistoryResponse(
+            tenantId, workflowBusinessInstanceMapper.findByTenantAndId(tenantId, instance.id())),
+        reusedTasks);
+  }
+
+  // 兼容业务详情页的“通过/驳回”入口：仍按当前登录人的候选资格办理 Flowable 任务，不再写旧审批任务表。
+  @Transactional
+  public WorkflowCompletionResult completeCurrentUserBusinessTask(
+      String businessType,
+      String businessId,
+      boolean approved,
+      String comment) {
+    UnifiedWorkflowTaskResponse task = listCurrentUserTasks().stream()
+        .filter(item -> businessType.equals(item.businessType()) && businessId.equals(item.businessId()))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException(
+            "No actionable Flowable task found for business object: " + businessId));
+    TaskCompletionOutcome outcome = completeCurrentUserTaskInternal(
+        task.taskId(), new CompleteWorkflowTaskRequest(approved ? "approve" : "reject", comment), false);
+    WorkflowInstanceHistoryResponse history = outcome.history();
+    OffsetDateTime actedAt = history.events().isEmpty()
+        ? history.createdAt()
+        : history.events().getLast().createdAt();
+    return new WorkflowCompletionResult(history.status(), actedAt, outcome.reusedTasks());
+  }
+
+  public WorkflowInstanceHistoryResponse getCurrentTenantHistory(String workflowInstanceId) {
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
+    permissionService.require("buyer:workflow:read");
+    WorkflowBusinessInstance instance = requireVisibleInstance(tenantId, workflowInstanceId);
+    return toHistoryResponse(tenantId, instance);
+  }
+
+  public WorkflowInstanceHistoryResponse getCurrentTenantBusinessHistory(
+      String businessType, String businessId) {
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
+    WorkflowBusinessTypeCatalog.requireSupported(businessType);
+    requireWorkflowReadAccess();
+    WorkflowBusinessInstance instance = workflowBusinessInstanceMapper.findLatestByBusiness(
+        tenantId, businessType, businessId);
+    if (instance == null) {
+      String referenceField = switch (businessType) {
+        case "rfq_award" -> "rfqId";
+        case "payment_request" -> "invoiceId";
+        case "payment_archive_exception" -> "paymentBatchNo";
+        default -> null;
+      };
+      if (referenceField != null) {
+        instance = workflowBusinessInstanceMapper.findLatestByBusinessReference(
+            tenantId, businessType, referenceField, businessId);
+      }
+    }
+    if (instance == null) {
+      return null;
+    }
+    if (!isVisible(instance, dataScopeService.currentUserDataScope())) {
+      throw new PermissionDeniedException("当前数据范围无权查看该审批实例");
+    }
+    return toHistoryResponse(tenantId, instance);
+  }
+
+  public List<WorkflowInstanceLedgerResponse> listCurrentTenantInstances(String view, int requestedLimit) {
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
+    String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
+    int limit = Math.max(1, Math.min(requestedLimit, 200));
+    DataScope dataScope = dataScopeService.currentUserDataScope();
+    List<WorkflowBusinessInstance> instances;
+    switch (view == null ? "pending" : view) {
+      case "pending" -> {
+        return listCurrentUserTasks().stream()
+            .map(task -> workflowBusinessInstanceMapper.findByTenantAndId(tenantId, task.workflowInstanceId()))
+            .filter(Objects::nonNull)
+            .map(instance -> toLedgerResponse(tenantId, instance))
+            .limit(limit)
+            .toList();
+      }
+      case "processed" -> {
+        permissionService.require("buyer:workflow:review");
+        instances = workflowBusinessInstanceMapper.listActedByTenantUser(tenantId, userId, limit);
+      }
+      case "initiated" -> {
+        requireWorkflowReadAccess();
+        instances = workflowBusinessInstanceMapper.listByTenantAndInitiator(tenantId, userId, limit);
+      }
+      case "all" -> {
+        permissionService.require("buyer:workflow:read");
+        instances = workflowBusinessInstanceMapper.listByTenant(tenantId, limit);
+      }
+      default -> throw new IllegalArgumentException("Unsupported workflow ledger view: " + view);
+    }
+    return instances.stream()
+        .filter(instance -> isVisible(instance, dataScope))
+        .map(instance -> toLedgerResponse(tenantId, instance))
+        .toList();
+  }
+
+  public WorkflowPublishedFormResponse getPublishedForm(String businessType) {
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
+    WorkflowBusinessTypeCatalog.requireSupported(businessType);
+    WorkflowDefinitionVersion version = workflowDefinitionPublicationService.findPublishedVersion(tenantId, businessType);
+    if (version == null) {
+      return new WorkflowPublishedFormResponse(businessType, null, "{\"fields\":[]}", null);
+    }
+    return new WorkflowPublishedFormResponse(
+        businessType, version.id(), version.formSchema(), version.publishedAt());
+  }
+
+  private WorkflowBusinessCompletionHandler requireCompletionHandler(String businessType) {
+    return completionHandlers.stream()
+        .filter(handler -> Objects.equals(handler.businessType(), businessType))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException(
+            "No workflow business callback is registered for: " + businessType));
+  }
+
+  private WorkflowBusinessInstance requireVisibleInstance(String tenantId, String workflowInstanceId) {
+    WorkflowBusinessInstance instance = workflowBusinessInstanceMapper.findByTenantAndId(tenantId, workflowInstanceId);
+    if (instance == null) {
+      throw new IllegalArgumentException("Workflow instance not found in tenant scope: " + workflowInstanceId);
+    }
+    if (!isVisible(instance, dataScopeService.currentUserDataScope())) {
+      throw new PermissionDeniedException("当前数据范围无权查看该审批实例");
+    }
+    return instance;
+  }
+
+  private void requireWorkflowReadAccess() {
+    if (!permissionService.currentUserHas("buyer:workflow:read")
+        && !permissionService.currentUserHas("buyer:workflow:review")
+        && !permissionService.currentUserHas("buyer:workflow:manage")) {
+      permissionService.require("buyer:workflow:read");
+    }
+  }
+
+  private boolean canHandle(Task task, String userId, List<String> roleGroups) {
+    if (task.getAssignee() != null && !task.getAssignee().isBlank()) {
+      return userId.equals(task.getAssignee());
+    }
+    for (IdentityLink link : taskService.getIdentityLinksForTask(task.getId())) {
+      if (!"candidate".equals(link.getType())) {
+        continue;
+      }
+      if (userId.equals(link.getUserId()) || roleGroups.contains(link.getGroupId())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // 鲁东材料包中同一人员可能同时承担多个审核角色。每产生一个新任务，
+  // 都在整个流程实例已通过历史中按工号查重，因此支持 A-B-A 这类非连续复用。
+  private List<WorkflowReusedTask> reuseApprovedDecisionsWithinInstance(
+      String tenantId, WorkflowBusinessInstance instance) {
+    List<WorkflowReusedTask> reusedTasks = new ArrayList<>();
+    while (runtimeService.createProcessInstanceQuery()
+        .processInstanceId(instance.flowableProcessInstanceId()).singleResult() != null) {
+      Task next = firstActiveTask(instance.flowableProcessInstanceId());
+      if (next == null) {
+        return List.copyOf(reusedTasks);
+      }
+      SoleApprovalHandler handler = soleApprovalHandler(next, tenantId);
+      WorkflowTaskEvent source = handler == null
+          ? null
+          : findApprovedEventByEmployeeNo(tenantId, instance.id(), handler.employeeNo());
+      if (source == null) {
+        recordCreatedTasks(tenantId, instance.id(), instance.flowableProcessInstanceId());
+        return List.copyOf(reusedTasks);
+      }
+      recordTaskEvent(tenantId, instance.id(), next, "created", null, null);
+      if (next.getAssignee() == null || next.getAssignee().isBlank()) {
+        taskService.claim(next.getId(), handler.userId());
+        recordTaskEvent(
+            tenantId, instance.id(), next, "claimed", handler.userId(), "按流程实例内已审工号自动认领");
+      }
+      String comment = "同一办理人（工号 " + handler.employeeNo()
+          + "）已在本流程实例的节点「" + source.nodeName()
+          + "（" + source.nodeId() + "）」审批通过，系统自动复用结论";
+      taskService.complete(next.getId(), Map.of("approved", true, "reviewComment", comment));
+      recordTaskEvent(tenantId, instance.id(), next, "approved", handler.userId(), comment);
+      auditLogApplicationService.recordAutomatedTenantAction(
+          tenantId,
+          handler.userId(),
+          "workflow.task.reused",
+          instance.businessType(),
+          instance.businessId(),
+          "节点 " + next.getTaskDefinitionKey() + " 复用节点 " + source.nodeId()
+              + " 的已通过结论，校验工号 " + handler.employeeNo());
+      reusedTasks.add(new WorkflowReusedTask(
+          next.getId(),
+          next.getTaskDefinitionKey(),
+          next.getName(),
+          handler.userId(),
+          handler.employeeNo(),
+          source.flowableTaskId(),
+          source.nodeId(),
+          comment));
+    }
+    return List.copyOf(reusedTasks);
+  }
+
+  private SoleApprovalHandler soleApprovalHandler(Task task, String tenantId) {
+    if (task.getAssignee() != null && !task.getAssignee().isBlank()) {
+      BuyerUser assignee = buyerUserMapper.findByTenantAndId(tenantId, task.getAssignee());
+      String employeeNo = approvalEmployeeNo(assignee);
+      return employeeNo == null ? null : new SoleApprovalHandler(task.getAssignee(), employeeNo);
+    }
+    LinkedHashSet<String> candidateUserIds = new LinkedHashSet<>();
+    String prefix = "role:" + tenantId + ":";
+    for (IdentityLink link : taskService.getIdentityLinksForTask(task.getId())) {
+      if (!"candidate".equals(link.getType())) continue;
+      if (link.getUserId() != null && !link.getUserId().isBlank()) {
+        candidateUserIds.add(link.getUserId());
+      }
+      if (link.getGroupId() != null && link.getGroupId().startsWith(prefix)) {
+        candidateUserIds.addAll(buyerUserMapper.listActiveBuyerUserIdsByTenantAndRole(
+            tenantId, link.getGroupId().substring(prefix.length())));
+      }
+    }
+    LinkedHashMap<String, String> identities = new LinkedHashMap<>();
+    for (String candidateUserId : candidateUserIds) {
+      BuyerUser candidate = buyerUserMapper.findByTenantAndId(tenantId, candidateUserId);
+      if (candidate == null || !"active".equals(candidate.status())) continue;
+      String employeeNo = approvalEmployeeNo(candidate);
+      if (employeeNo != null) {
+        identities.putIfAbsent(employeeNo, candidateUserId);
+      }
+    }
+    if (identities.size() != 1) {
+      return null;
+    }
+    Map.Entry<String, String> sole = identities.entrySet().iterator().next();
+    return new SoleApprovalHandler(sole.getValue(), sole.getKey());
+  }
+
+  private WorkflowTaskEvent findApprovedEventByEmployeeNo(
+      String tenantId, String workflowInstanceId, String employeeNo) {
+    List<WorkflowTaskEvent> events = workflowTaskEventMapper.listByTenantAndWorkflowInstance(
+        tenantId, workflowInstanceId);
+    for (int index = events.size() - 1; index >= 0; index--) {
+      WorkflowTaskEvent event = events.get(index);
+      if (!"approved".equals(event.action()) || event.actorId() == null) continue;
+      BuyerUser actor = buyerUserMapper.findByTenantAndId(tenantId, event.actorId());
+      if (employeeNo.equals(approvalEmployeeNo(actor))) {
+        return event;
+      }
+    }
+    return null;
+  }
+
+  private static String approvalEmployeeNo(BuyerUser user) {
+    return user != null && user.employeeNo() != null && !user.employeeNo().isBlank()
+        ? user.employeeNo().trim().toUpperCase()
+        : null;
+  }
+
+  private boolean isVisible(WorkflowBusinessInstance instance, DataScope dataScope) {
+    if (!dataScope.restricted()) {
+      return true;
+    }
+    if (dataScope.requesterId() != null) {
+      return dataScope.requesterId().equals(instance.initiatorId());
+    }
+    return instance.departmentId() != null && dataScope.departmentIds().contains(instance.departmentId());
+  }
+
+  // 需求等业务可直接传入业务部门；尚未建部门字段的企业级业务则在发起时固化发起人部门。
+  // 这样任务数据范围、部门条件与部门主管办理规则始终基于同一份不可变实例归属。
+  private String resolveWorkflowDepartmentId(String tenantId, String actorId, String requestedDepartmentId) {
+    if (requestedDepartmentId != null && !requestedDepartmentId.isBlank()) {
+      Department department = departmentMapper.findByTenantAndId(tenantId, requestedDepartmentId);
+      if (department == null) {
+        throw new IllegalArgumentException("Workflow department is not in tenant scope: " + requestedDepartmentId);
+      }
+      return requestedDepartmentId;
+    }
+    BuyerUser initiator = buyerUserMapper.findByTenantAndId(tenantId, actorId);
+    if (initiator == null || !"active".equals(initiator.status())) {
+      throw new IllegalStateException("Workflow initiator is not an active buyer user: " + actorId);
+    }
+    return initiator.departmentId();
+  }
+
+  private void bindDepartmentManagerAssignments(
+      String tenantId,
+      String departmentId,
+      List<WorkflowDefinitionSchema.FlowStep> steps,
+      Map<String, Object> variables) {
+    for (WorkflowDefinitionSchema.FlowStep step : WorkflowExecutablePathResolver.resolve(steps, variables)) {
+      if ("approver".equals(step.type())
+          && "initiator_department_manager".equals(step.assignment().type())) {
+        if (departmentId == null || departmentId.isBlank()) {
+          throw new IllegalArgumentException("Department manager approval requires a business departmentId");
+        }
+        Department department = departmentMapper.findByTenantAndId(tenantId, departmentId);
+        if (department == null || department.managerId() == null || department.managerId().isBlank()) {
+          throw new IllegalStateException("Initiator department has no active manager configured: " + departmentId);
+        }
+        BuyerUser manager = buyerUserMapper.findByTenantAndId(tenantId, department.managerId());
+        if (manager == null || !"active".equals(manager.status())) {
+          throw new IllegalStateException("Initiator department manager is not an active buyer user: " + departmentId);
+        }
+        variables.put("assignee_" + step.id(), manager.id());
+      }
+    }
+  }
+
+  private void recordCreatedTasks(String tenantId, String workflowInstanceId, String flowableProcessInstanceId) {
+    WorkflowBusinessInstance instance = workflowBusinessInstanceMapper.findByTenantAndId(tenantId, workflowInstanceId);
+    for (Task task : taskService.createTaskQuery()
+        .processInstanceId(flowableProcessInstanceId)
+        .active()
+        .list()) {
+      if (recordTaskEvent(tenantId, workflowInstanceId, task, "created", null, null) > 0 && instance != null) {
+        notifyTaskRecipients(tenantId, task, instance);
+      }
+    }
+  }
+
+  private int recordTaskEvent(
+      String tenantId,
+      String workflowInstanceId,
+      Task task,
+      String action,
+      String actorId,
+      String comment) {
+    return workflowTaskEventMapper.insert(
+        "workflow-task-event-" + UUID.randomUUID(),
+        tenantId,
+        workflowInstanceId,
+        task.getId(),
+        task.getTaskDefinitionKey(),
+        task.getName(),
+        action,
+        actorId,
+        comment);
+  }
+
+  private void notifyTaskRecipients(
+      String tenantId, Task task, WorkflowBusinessInstance instance) {
+    LinkedHashSet<String> recipients = new LinkedHashSet<>();
+    if (task.getAssignee() != null && !task.getAssignee().isBlank()) {
+      recipients.add(task.getAssignee());
+    }
+    for (IdentityLink link : taskService.getIdentityLinksForTask(task.getId())) {
+      if (!"candidate".equals(link.getType())) {
+        continue;
+      }
+      if (link.getUserId() != null && !link.getUserId().isBlank()) {
+        recipients.add(link.getUserId());
+      }
+      String groupId = link.getGroupId();
+      String prefix = "role:" + tenantId + ":";
+      if (groupId != null && groupId.startsWith(prefix)) {
+        recipients.addAll(buyerUserMapper.listActiveBuyerUserIdsByTenantAndRole(
+            tenantId, groupId.substring(prefix.length())));
+      }
+    }
+    recipients.removeIf(userId -> !isVisible(
+        instance, dataScopeService.userDataScope(tenantId, userId)));
+    notificationApplicationService.notifyTenantUsers(
+        tenantId,
+        recipients,
+        NotificationTitle.WORKFLOW_TASK_PENDING,
+        task.getName() + "待办理：" + workflowBusinessName(instance.businessType()) + " " + instance.businessId());
+  }
+
+  private Task firstActiveTask(String flowableProcessInstanceId) {
+    return taskService.createTaskQuery()
+        .processInstanceId(flowableProcessInstanceId)
+        .active()
+        .orderByTaskCreateTime().asc()
+        .list()
+        .stream()
+        .findFirst()
+        .orElse(null);
+  }
+
+  private UnifiedWorkflowTaskResponse toTaskResponse(Task task, WorkflowBusinessInstance instance) {
+    String groupPrefix = "role:" + instance.tenantId() + ":";
+    List<IdentityLink> identityLinks = taskService.getIdentityLinksForTask(task.getId());
+    List<String> candidateUserIds = identityLinks.stream()
+        .filter(link -> "candidate".equals(link.getType()) && link.getUserId() != null)
+        .map(IdentityLink::getUserId)
+        .toList();
+    List<String> candidateRoleIds = identityLinks.stream()
+        .filter(link -> "candidate".equals(link.getType()) && link.getGroupId() != null)
+        .map(IdentityLink::getGroupId)
+        .filter(group -> group.startsWith(groupPrefix))
+        .map(group -> group.substring(groupPrefix.length()))
+        .toList();
+    OffsetDateTime createdAt = task.getCreateTime() == null
+        ? null
+        : OffsetDateTime.ofInstant(task.getCreateTime().toInstant(), ZoneOffset.UTC);
+    return new UnifiedWorkflowTaskResponse(
+        task.getId(),
+        instance.id(),
+        instance.businessType(),
+        instance.businessId(),
+        task.getName(),
+        task.getTaskDefinitionKey(),
+        task.getAssignee(),
+        candidateUserIds,
+        candidateRoleIds,
+        instance.amount(),
+        instance.departmentId(),
+        createdAt);
+  }
+
+  private WorkflowInstanceHistoryResponse toHistoryResponse(
+      String tenantId, WorkflowBusinessInstance instance) {
+    List<WorkflowTaskEventResponse> events = workflowTaskEventMapper
+        .listByTenantAndWorkflowInstance(tenantId, instance.id())
+        .stream()
+        .map(this::toTaskEventResponse)
+        .toList();
+    BuyerUser initiator = buyerUserMapper.findByTenantAndId(tenantId, instance.initiatorId());
+    BuyerUser completedBy = instance.completedBy() == null
+        ? null
+        : buyerUserMapper.findByTenantAndId(tenantId, instance.completedBy());
+    Task activeTask = activeTask(instance);
+    return new WorkflowInstanceHistoryResponse(
+        instance.id(),
+        instance.businessType(),
+        instance.businessId(),
+        instance.definitionVersionId(),
+        instance.flowableProcessInstanceId(),
+        instance.status(),
+        instance.initiatorId(),
+        initiator == null ? null : initiator.name(),
+        instance.completedBy(),
+        completedBy == null ? null : completedBy.name(),
+        instance.departmentId(),
+        instance.amount(),
+        readJson(instance.formData()),
+        readJson(instance.businessSnapshot()),
+        workflowAttachments(tenantId, instance),
+        activeTask == null ? null : toTaskResponse(activeTask, instance),
+        instance.createdAt(),
+        instance.completedAt(),
+        events);
+  }
+
+  private WorkflowInstanceLedgerResponse toLedgerResponse(
+      String tenantId, WorkflowBusinessInstance instance) {
+    BuyerUser initiator = buyerUserMapper.findByTenantAndId(tenantId, instance.initiatorId());
+    BuyerUser completedBy = instance.completedBy() == null
+        ? null
+        : buyerUserMapper.findByTenantAndId(tenantId, instance.completedBy());
+    Task activeTask = activeTask(instance);
+    return new WorkflowInstanceLedgerResponse(
+        instance.id(),
+        instance.businessType(),
+        instance.businessId(),
+        instance.definitionVersionId(),
+        instance.status(),
+        instance.initiatorId(),
+        initiator == null ? null : initiator.name(),
+        instance.completedBy(),
+        completedBy == null ? null : completedBy.name(),
+        instance.departmentId(),
+        instance.amount(),
+        activeTask == null ? null : toTaskResponse(activeTask, instance),
+        instance.createdAt(),
+        instance.completedAt(),
+        instance.updatedAt());
+  }
+
+  private Task activeTask(WorkflowBusinessInstance instance) {
+    if (!WorkflowInstanceStatus.PROCESSING.equals(instance.status())) {
+      return null;
+    }
+    return taskService.createTaskQuery()
+        .processInstanceId(instance.flowableProcessInstanceId())
+        .active()
+        .orderByTaskCreateTime().asc()
+        .list()
+        .stream()
+        .findFirst()
+        .orElse(null);
+  }
+
+  private List<WorkflowAttachmentResponse> workflowAttachments(
+      String tenantId, WorkflowBusinessInstance instance) {
+    Map<String, Object> snapshot = readJson(instance.businessSnapshot());
+    LinkedHashMap<String, String> owners = new LinkedHashMap<>();
+    owners.put(instance.businessType(), instance.businessId());
+    switch (instance.businessType()) {
+      case "purchase_demand" -> owners.put("purchase_demand", instance.businessId());
+      case "buyer_supplier_admission" -> putOwner(owners, "supplier", snapshot.get("supplierId"));
+      case "rfq_award" -> putOwner(owners, "rfq", snapshot.get("rfqId"));
+      case "contract_approval" -> owners.put("contract", instance.businessId());
+      case "payment_request" -> putOwner(owners, "invoice", snapshot.get("invoiceId"));
+      case "payment_batch" -> owners.put("payment_batch", instance.businessId());
+      case "payment_archive_exception" -> putOwner(owners, "payment_batch", snapshot.get("paymentBatchNo"));
+      default -> {
+      }
+    }
+    LinkedHashMap<String, Attachment> attachments = new LinkedHashMap<>();
+    owners.forEach((ownerType, ownerId) -> attachmentMapper
+        .listActiveByTenantAndOwner(tenantId, ownerType, ownerId)
+        .forEach(attachment -> attachments.putIfAbsent(attachment.id(), attachment)));
+    return attachments.values().stream()
+        .map(attachment -> new WorkflowAttachmentResponse(
+            attachment.id(),
+            attachment.ownerType(),
+            attachment.ownerId(),
+            attachment.fileName(),
+            attachment.visibility(),
+            attachment.createdAt()))
+        .toList();
+  }
+
+  private static void putOwner(Map<String, String> owners, String ownerType, Object ownerId) {
+    if (ownerId != null && !String.valueOf(ownerId).isBlank()) {
+      owners.put(ownerType, String.valueOf(ownerId));
+    }
+  }
+
+  private static String workflowBusinessName(String businessType) {
+    return switch (businessType) {
+      case "purchase_demand" -> "采购需求";
+      case "buyer_supplier_admission" -> "供应商准入";
+      case "rfq_award" -> "询价定标";
+      case "contract_approval" -> "合同审批";
+      case "payment_request" -> "付款申请";
+      case "payment_batch" -> "付款批次";
+      case "payment_archive_exception" -> "付款归档例外";
+      case "ludong_project_application" -> "鲁东大学货物类采购申报";
+      default -> businessType;
+    };
+  }
+
+  private WorkflowTaskEventResponse toTaskEventResponse(WorkflowTaskEvent event) {
+    BuyerUser actor = event.actorId() == null
+        ? null
+        : buyerUserMapper.findByTenantAndId(event.tenantId(), event.actorId());
+    return new WorkflowTaskEventResponse(
+        event.id(),
+        event.flowableTaskId(),
+        event.nodeId(),
+        event.nodeName(),
+        event.action(),
+        event.actorId(),
+        actor == null ? null : actor.name(),
+        event.comment(),
+        event.createdAt());
+  }
+
+  private static boolean decision(String action) {
+    if ("approve".equalsIgnoreCase(action)) {
+      return true;
+    }
+    if ("reject".equalsIgnoreCase(action)) {
+      return false;
+    }
+    throw new IllegalArgumentException("Workflow action must be approve or reject");
+  }
+
+  private String writeJson(Map<String, Object> value) {
+    try {
+      return objectMapper.writeValueAsString(value);
+    } catch (Exception exception) {
+      throw new IllegalStateException("Cannot serialize workflow data", exception);
+    }
+  }
+
+  private Map<String, Object> readJson(String value) {
+    try {
+      return objectMapper.readValue(value == null || value.isBlank() ? "{}" : value, MAP_TYPE);
+    } catch (Exception exception) {
+      return Map.of();
+    }
+  }
+
+  private record SoleApprovalHandler(String userId, String employeeNo) {
+  }
+
+  private record TaskCompletionOutcome(
+      WorkflowInstanceHistoryResponse history,
+      List<WorkflowReusedTask> reusedTasks) {
+  }
+}

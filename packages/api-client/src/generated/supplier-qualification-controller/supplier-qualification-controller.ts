@@ -46,15 +46,15 @@ export const supplierQualificationList = (
     params?: SupplierQualificationListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListSupplierQualificationResponse>(
       {url: `/api/v1/supplier/qualifications`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -64,7 +64,7 @@ export const getSupplierQualificationListQueryKey = (params?: SupplierQualificat
     ] as const;
     }
 
-    
+
 export const getSupplierQualificationListQueryOptions = <TData = Awaited<ReturnType<typeof supplierQualificationList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierQualificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationList>>, TError, TData>>, }
 ) => {
 
@@ -72,13 +72,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierQualificationListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQualificationList>>> = ({ signal }) => supplierQualificationList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -114,7 +114,7 @@ export function useSupplierQualificationList<TData = Awaited<ReturnType<typeof s
 
 export function useSupplierQualificationList<TData = Awaited<ReturnType<typeof supplierQualificationList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SupplierQualificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierQualificationListQueryOptions(params,options)
@@ -133,8 +133,8 @@ export const supplierQualificationCreate = (
     createSupplierQualificationRequest: BodyType<CreateSupplierQualificationRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierQualificationResponse>(
       {url: `/api/v1/supplier/qualifications`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -142,7 +142,7 @@ export const supplierQualificationCreate = (
     },
       );
     }
-  
+
 
 
 export const getSupplierQualificationCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -156,7 +156,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQualificationCreate>>, {data: BodyType<CreateSupplierQualificationRequest>}> = (props) => {
@@ -165,7 +165,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierQualificationCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -192,8 +192,8 @@ const {mutation: mutationOptions} = options ?
     changeSupplierQualificationStatusRequest: BodyType<ChangeSupplierQualificationStatusRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierQualificationResponse>(
       {url: `/api/v1/supplier/qualifications/${qualificationId}/status`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -201,7 +201,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierQualificationChangeStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -215,7 +215,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQualificationChangeStatus>>, {qualificationId: string;data: BodyType<ChangeSupplierQualificationStatusRequest>}> = (props) => {
@@ -224,7 +224,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierQualificationChangeStatus(qualificationId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -250,8 +250,8 @@ const {mutation: mutationOptions} = options ?
     createQualificationUploadTicketRequest: BodyType<CreateQualificationUploadTicketRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseQualificationUploadTicketResponse>(
       {url: `/api/v1/supplier/qualifications/upload-ticket`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -259,7 +259,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierQualificationCreateUploadTicketMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -273,7 +273,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQualificationCreateUploadTicket>>, {data: BodyType<CreateQualificationUploadTicketRequest>}> = (props) => {
@@ -282,7 +282,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierQualificationCreateUploadTicket(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -309,8 +309,8 @@ const {mutation: mutationOptions} = options ?
     params: SupplierQualificationUploadSinkParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVoid>(
       {url: `/api/v1/supplier/qualifications/upload-sink`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -319,7 +319,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierQualificationUploadSinkMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -333,7 +333,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQualificationUploadSink>>, {data: BodyType<string>;params: SupplierQualificationUploadSinkParams}> = (props) => {
@@ -342,7 +342,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierQualificationUploadSink(data,params,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -368,15 +368,15 @@ const {mutation: mutationOptions} = options ?
     qualificationId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<Blob>(
       {url: `/api/v1/supplier/qualifications/${qualificationId}/download`, method: 'GET',
         responseType: 'blob', signal
     },
       );
     }
-  
+
 
 
 
@@ -386,7 +386,7 @@ export const getSupplierQualificationDownloadQueryKey = (qualificationId?: strin
     ] as const;
     }
 
-    
+
 export const getSupplierQualificationDownloadQueryOptions = <TData = Awaited<ReturnType<typeof supplierQualificationDownload>>, TError = ErrorType<ApiResponseVoid>>(qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationDownload>>, TError, TData>>, }
 ) => {
 
@@ -394,13 +394,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierQualificationDownloadQueryKey(qualificationId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQualificationDownload>>> = ({ signal }) => supplierQualificationDownload(qualificationId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(qualificationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationDownload>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -436,7 +436,7 @@ export function useSupplierQualificationDownload<TData = Awaited<ReturnType<type
 
 export function useSupplierQualificationDownload<TData = Awaited<ReturnType<typeof supplierQualificationDownload>>, TError = ErrorType<ApiResponseVoid>>(
  qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQualificationDownload>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierQualificationDownloadQueryOptions(qualificationId,options)

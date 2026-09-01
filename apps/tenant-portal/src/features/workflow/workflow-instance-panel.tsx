@@ -1,0 +1,200 @@
+import { useState } from 'react';
+import { ExternalLink, FileText, History, Paperclip, Workflow } from 'lucide-react';
+import {
+  axiosInstance,
+  type WorkflowInstanceHistory,
+  useWorkflowBusinessHistory,
+} from '@24bid/api-client';
+import { FeedbackNotice, StatusPill } from '@24bid/ui';
+
+const statusLabel: Record<string, string> = {
+  processing: '审批中',
+  approved: '已通过',
+  rejected: '已驳回',
+  cancelled: '已取消',
+};
+
+const eventLabel: Record<string, string> = {
+  created: '任务创建',
+  claimed: '任务领取',
+  approved: '审批通过',
+  rejected: '审批驳回',
+  completed: '任务完成',
+};
+
+export function WorkflowStatusPanel({
+  businessType,
+  businessId,
+  compact = false,
+}: {
+  businessType: string;
+  businessId: string;
+  compact?: boolean;
+}) {
+  const query = useWorkflowBusinessHistory(businessType, businessId);
+  if (query.isLoading) return <FeedbackNotice tone="info" message="正在读取流程状态…" />;
+  if (query.isError) return <FeedbackNotice tone="error" message="流程状态加载失败，请刷新后重试。" />;
+  const history = query.data?.data;
+  if (!history) return <FeedbackNotice tone="info" message="该业务尚未发起审批流程。" />;
+  return <WorkflowInstancePanel history={history} compact={compact} />;
+}
+
+export function WorkflowInstancePanel({
+  history,
+  compact = false,
+}: {
+  history: WorkflowInstanceHistory;
+  compact?: boolean;
+}) {
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const snapshotEntries = visibleEntries(history.businessSnapshot);
+  const formEntries = visibleEntries(history.formData);
+  const detailHref = workflowBusinessHref(history);
+
+  const download = async (id: string, fileName: string) => {
+    setDownloadError(null);
+    try {
+      const response = await axiosInstance.get(`/api/v1/buyer/attachments/${id}/download`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(response.data as Blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDownloadError('附件下载失败，请重试。');
+    }
+  };
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-black text-slate-950">
+            <Workflow size={16} className="text-blue-600" /> 审批流程
+          </p>
+          <p className="mt-1 text-xs font-bold text-slate-400">
+            {history.initiatorName ?? history.initiatorId} 发起 · {history.createdAt?.slice(0, 19) ?? '—'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <StatusPill label={statusLabel[history.status] ?? history.status} />
+          {detailHref && (
+            <a href={detailHref} className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 px-3 text-xs font-black text-blue-700 hover:bg-blue-50">
+              业务详情 <ExternalLink size={12} />
+            </a>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <Fact label="当前节点" value={history.currentTask?.taskName ?? (history.status === 'processing' ? '等待流转' : '流程已结束')} />
+        <Fact label="当前办理人" value={currentHandler(history)} />
+        <Fact label="完成人" value={history.completedByName ?? history.completedBy ?? '—'} />
+      </div>
+
+      {!compact && (snapshotEntries.length > 0 || formEntries.length > 0) && (
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <ContextBlock title="业务快照" icon={FileText} entries={snapshotEntries} />
+          <ContextBlock title="审批表单" icon={FileText} entries={formEntries} />
+        </div>
+      )}
+
+      {!compact && (
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
+          <div className="rounded-lg bg-slate-50 p-4">
+            <p className="flex items-center gap-1.5 text-xs font-black text-slate-600"><History size={13} /> 完整流转记录</p>
+            <ol className="mt-3 space-y-3 border-l border-slate-200 pl-4">
+              {history.events.map((event) => (
+                <li key={event.id} className="relative">
+                  <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-blue-500 ring-4 ring-slate-50" />
+                  <p className="text-xs font-black text-slate-700">{eventLabel[event.action] ?? event.action} · {event.nodeName ?? '流程节点'}</p>
+                  <p className="mt-1 text-[11px] font-bold text-slate-400">{event.actorName ?? event.actorId ?? '系统'} · {event.createdAt?.slice(0, 19) ?? '—'}</p>
+                  {event.comment && <p className="mt-1 text-xs font-semibold text-slate-600">{event.comment}</p>}
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="rounded-lg bg-slate-50 p-4">
+            <p className="flex items-center gap-1.5 text-xs font-black text-slate-600"><Paperclip size={13} /> 关联附件</p>
+            {downloadError && <div className="mt-2"><FeedbackNotice tone="error" message={downloadError} /></div>}
+            <div className="mt-3 space-y-2">
+              {history.attachments.map((attachment) => (
+                <button key={attachment.id} type="button" onClick={() => download(attachment.id, attachment.fileName)} className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700">
+                  <span className="truncate">{attachment.fileName}</span><span className="shrink-0 text-slate-400">下载</span>
+                </button>
+              ))}
+              {history.attachments.length === 0 && <p className="text-xs font-bold text-slate-400">暂无关联附件。</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ContextBlock({ title, icon: Icon, entries }: { title: string; icon: React.ElementType; entries: Array<[string, unknown]> }) {
+  return (
+    <div className="rounded-lg bg-slate-50 p-4">
+      <p className="flex items-center gap-1.5 text-xs font-black text-slate-600"><Icon size={13} /> {title}</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {entries.map(([key, value]) => <Fact key={key} label={fieldLabel(key)} value={displayValue(value)} />)}
+        {entries.length === 0 && <p className="text-xs font-bold text-slate-400">无额外信息。</p>}
+      </div>
+    </div>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-md border border-slate-100 bg-white px-3 py-2"><p className="text-[11px] font-black text-slate-400">{label}</p><p className="mt-1 break-words text-xs font-black text-slate-700">{value}</p></div>;
+}
+
+function currentHandler(history: WorkflowInstanceHistory) {
+  const task = history.currentTask;
+  if (!task) return '—';
+  if (task.assigneeId) return task.assigneeId;
+  const candidates = [...task.candidateUserIds, ...task.candidateRoleIds.map((id) => `角色:${id}`)];
+  return candidates.join('、') || '动态分配';
+}
+
+function visibleEntries(value: Record<string, unknown> | undefined) {
+  return Object.entries(value ?? {}).filter(([, item]) => item != null && item !== '');
+}
+
+function displayValue(value: unknown): string {
+  if (Array.isArray(value)) return value.map(displayValue).join('、');
+  if (typeof value === 'object' && value != null) return JSON.stringify(value);
+  return String(value ?? '—');
+}
+
+function fieldLabel(key: string) {
+  const labels: Record<string, string> = {
+    title: '标题', budget: '预算', priority: '优先级', purpose: '用途', expectedDeliveryDate: '期望交付日期',
+    supplierId: '供应商编号', supplierName: '供应商名称', rfqId: '询价编号', quoteId: '报价编号',
+    contractNo: '合同编号', contractName: '合同名称', invoiceId: '发票编号', orderId: '订单编号', paymentBatchNo: '付款批次',
+    exceptionType: '例外类型', exceptionReason: '例外原因', amount: '金额', requestCount: '申请数量', totalAmount: '总金额',
+  };
+  return labels[key] ?? key;
+}
+
+export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'businessType' | 'businessId' | 'businessSnapshot'>) {
+  const snapshot = history.businessSnapshot ?? {};
+  const target: Record<string, { module: string; id: unknown }> = {
+    purchase_demand: { module: 'demands', id: history.businessId },
+    buyer_supplier_admission: { module: 'suppliers', id: history.businessId },
+    rfq_award: { module: 'rfqs', id: snapshot.rfqId },
+    contract_approval: { module: 'contracts', id: history.businessId },
+    payment_request: { module: 'invoices', id: snapshot.invoiceId },
+    payment_batch: { module: 'invoices', id: history.businessId },
+    payment_archive_exception: { module: 'invoices', id: snapshot.paymentBatchNo },
+  };
+  const item = target[history.businessType];
+  if (!item) return null;
+  const params = new URLSearchParams({ module: item.module });
+  if (item.id != null && String(item.id)) params.set('recordId', String(item.id));
+  return `/?${params.toString()}`;
+}

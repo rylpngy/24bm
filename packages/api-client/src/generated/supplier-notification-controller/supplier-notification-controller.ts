@@ -41,14 +41,14 @@ export const supplierNotificationMarkRead = (
     notificationId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseNotificationResponse>(
       {url: `/api/v1/supplier/notifications/${notificationId}/read`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getSupplierNotificationMarkReadMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -62,7 +62,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierNotificationMarkRead>>, {notificationId: string}> = (props) => {
@@ -71,13 +71,13 @@ const {mutation: mutationOptions} = options ?
           return  supplierNotificationMarkRead(notificationId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type SupplierNotificationMarkReadMutationResult = NonNullable<Awaited<ReturnType<typeof supplierNotificationMarkRead>>>
-    
+
     export type SupplierNotificationMarkReadMutationError = ErrorType<ApiResponseVoid>
 
     export const useSupplierNotificationMarkRead = <TError = ErrorType<ApiResponseVoid>,
@@ -97,15 +97,15 @@ const {mutation: mutationOptions} = options ?
     params?: SupplierNotificationListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListNotificationResponse>(
       {url: `/api/v1/supplier/notifications`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -115,7 +115,7 @@ export const getSupplierNotificationListQueryKey = (params?: SupplierNotificatio
     ] as const;
     }
 
-    
+
 export const getSupplierNotificationListQueryOptions = <TData = Awaited<ReturnType<typeof supplierNotificationList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierNotificationList>>, TError, TData>>, }
 ) => {
 
@@ -123,13 +123,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierNotificationListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierNotificationList>>> = ({ signal }) => supplierNotificationList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierNotificationList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -165,7 +165,7 @@ export function useSupplierNotificationList<TData = Awaited<ReturnType<typeof su
 
 export function useSupplierNotificationList<TData = Awaited<ReturnType<typeof supplierNotificationList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SupplierNotificationListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierNotificationList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierNotificationListQueryOptions(params,options)

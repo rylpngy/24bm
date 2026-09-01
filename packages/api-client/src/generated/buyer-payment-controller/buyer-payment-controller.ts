@@ -44,8 +44,8 @@ export const buyerPaymentUpdate = (
     invoiceId: string,
     updateInvoicePaymentRequest: BodyType<UpdateInvoicePaymentRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseInvoiceResponse>(
       {url: `/api/v1/buyer/invoices/${invoiceId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -53,7 +53,7 @@ export const buyerPaymentUpdate = (
     },
       );
     }
-  
+
 
 
 export const getBuyerPaymentUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -67,7 +67,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerPaymentUpdate>>, {invoiceId: string;data: BodyType<UpdateInvoicePaymentRequest>}> = (props) => {
@@ -76,7 +76,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerPaymentUpdate(invoiceId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -103,8 +103,8 @@ const {mutation: mutationOptions} = options ?
     registerPaymentRequest: BodyType<RegisterPaymentRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseInvoiceResponse>(
       {url: `/api/v1/buyer/invoices/${invoiceId}/payments`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -112,7 +112,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerPaymentRegisterMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -126,7 +126,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerPaymentRegister>>, {invoiceId: string;data: BodyType<RegisterPaymentRequest>}> = (props) => {
@@ -135,7 +135,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerPaymentRegister(invoiceId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -161,15 +161,15 @@ const {mutation: mutationOptions} = options ?
     params?: BuyerPaymentListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListInvoiceResponse>(
       {url: `/api/v1/buyer/invoices`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -179,7 +179,7 @@ export const getBuyerPaymentListQueryKey = (params?: BuyerPaymentListParams,) =>
     ] as const;
     }
 
-    
+
 export const getBuyerPaymentListQueryOptions = <TData = Awaited<ReturnType<typeof buyerPaymentList>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerPaymentListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerPaymentList>>, TError, TData>>, }
 ) => {
 
@@ -187,13 +187,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerPaymentListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerPaymentList>>> = ({ signal }) => buyerPaymentList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerPaymentList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -229,7 +229,7 @@ export function useBuyerPaymentList<TData = Awaited<ReturnType<typeof buyerPayme
 
 export function useBuyerPaymentList<TData = Awaited<ReturnType<typeof buyerPaymentList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerPaymentListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerPaymentList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerPaymentListQueryOptions(params,options)
@@ -248,14 +248,14 @@ export const buyerPaymentPaymentAuditLogs = (
     invoiceId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListAuditLogResponse>(
       {url: `/api/v1/buyer/invoices/${invoiceId}/payment-audit-logs`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -265,7 +265,7 @@ export const getBuyerPaymentPaymentAuditLogsQueryKey = (invoiceId?: string,) => 
     ] as const;
     }
 
-    
+
 export const getBuyerPaymentPaymentAuditLogsQueryOptions = <TData = Awaited<ReturnType<typeof buyerPaymentPaymentAuditLogs>>, TError = ErrorType<ApiResponseVoid>>(invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerPaymentPaymentAuditLogs>>, TError, TData>>, }
 ) => {
 
@@ -273,13 +273,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerPaymentPaymentAuditLogsQueryKey(invoiceId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerPaymentPaymentAuditLogs>>> = ({ signal }) => buyerPaymentPaymentAuditLogs(invoiceId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(invoiceId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerPaymentPaymentAuditLogs>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -315,7 +315,7 @@ export function useBuyerPaymentPaymentAuditLogs<TData = Awaited<ReturnType<typeo
 
 export function useBuyerPaymentPaymentAuditLogs<TData = Awaited<ReturnType<typeof buyerPaymentPaymentAuditLogs>>, TError = ErrorType<ApiResponseVoid>>(
  invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerPaymentPaymentAuditLogs>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerPaymentPaymentAuditLogsQueryOptions(invoiceId,options)

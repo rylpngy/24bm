@@ -7,6 +7,8 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
+  Clock3,
   Contact,
   FileText,
   Gauge,
@@ -17,17 +19,21 @@ import {
   ShieldCheck,
   Star,
   TrendingUp,
+  Workflow,
 } from 'lucide-react';
 import {
   type BuyerSupplierResponse,
   type PurchaseOrderResponse,
   useBuyerSupplierChangeStatus,
-  useBuyerSupplierReviewAdmission,
-  useBuyerSupplierSubmitAdmission,
   usePurchaseOrderList,
+  useUnifiedWorkflowCompleteTask,
+  useWorkflowBuyerSupplierAdmissionSubmit,
+  useWorkflowRuntimeTasks,
 } from '@24bid/api-client';
-import { StatusPill, cn } from '@24bid/ui';
+import { FeedbackNotice, StatusPill, cn } from '@24bid/ui';
 import { SupplierQualificationsTab } from './supplier-qualifications-tab';
+import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
+import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 
 type TabId = 'orders' | 'finance' | 'performance' | 'products' | 'qualifications';
 
@@ -44,6 +50,20 @@ const currency = (v?: number) =>
 
 const shortDate = (v?: string) => (v ? v.slice(0, 10) : '—');
 
+interface AdmissionFeedback {
+  tone: 'success' | 'error' | 'info';
+  message: string;
+}
+
+function admissionErrorMessage(error: unknown, fallback: string) {
+  const response = error as {
+    response?: { data?: { message?: unknown; error?: { message?: unknown } } };
+    message?: unknown;
+  };
+  const message = response.response?.data?.message ?? response.response?.data?.error?.message ?? response.message;
+  return typeof message === 'string' && message.trim() ? message : fallback;
+}
+
 const scoreTone = (score: number) => {
   if (score >= 90) return 'text-emerald-700 bg-emerald-50 border-emerald-100';
   if (score >= 80) return 'text-blue-700 bg-blue-50 border-blue-100';
@@ -58,6 +78,7 @@ export function SupplierDetailPage({
   onBack: () => void;
 }) {
   const [tab, setTab] = useState<TabId>('performance');
+  const [showApproval, setShowApproval] = useState(false);
   const id = supplier.id ?? '';
   const supplierId = supplier.supplierId ?? '';
   const ordersQuery = usePurchaseOrderList(
@@ -111,9 +132,35 @@ export function SupplierDetailPage({
             >
               <TrendingUp size={16} /> 绩效考核
             </button>
+            <button
+              type="button"
+              onClick={() => setShowApproval((visible) => !visible)}
+              disabled={!id}
+              aria-expanded={showApproval}
+              aria-controls="supplier-approval-panel"
+              className={cn(
+                'inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-50',
+                showApproval
+                  ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+              )}
+            >
+              <Workflow size={16} />
+              审批信息
+              <ChevronDown
+                size={15}
+                className={cn('transition-transform', showApproval && 'rotate-180')}
+              />
+            </button>
           </div>
         </div>
       </section>
+
+      {id && showApproval && (
+        <div id="supplier-approval-panel">
+          <WorkflowStatusPanel businessType="buyer_supplier_admission" businessId={id} />
+        </div>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         <aside className="space-y-5">
@@ -285,30 +332,89 @@ function AdmissionCard({ supplier }: { supplier: BuyerSupplierResponse }) {
 // 底部悬浮操作条:生命周期动作常驻可见,样式对齐需求/登记页提交操作条。
 function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
   const queryClient = useQueryClient();
-  const submit = useBuyerSupplierSubmitAdmission();
-  const review = useBuyerSupplierReviewAdmission();
+  const submit = useWorkflowBuyerSupplierAdmissionSubmit();
+  const workflowTasks = useWorkflowRuntimeTasks();
+  const completeTask = useUnifiedWorkflowCompleteTask();
   const changeStatus = useBuyerSupplierChangeStatus();
   const id = supplier.id ?? '';
-  const busy = submit.isPending || review.isPending || changeStatus.isPending;
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [feedback, setFeedback] = useState<AdmissionFeedback | null>(null);
+  const admissionTask = (workflowTasks.data?.data ?? []).find(
+    (task) => task.businessType === 'buyer_supplier_admission' && task.businessId === id,
+  );
+  const busy = submit.isPending || completeTask.isPending || changeStatus.isPending;
   const refresh = () =>
-    queryClient.invalidateQueries({
-      predicate: (q) =>
-        typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/suppliers'),
-    });
-  const action = lifecycleAction(supplier.status, {
-    submit: () => submit.mutate({ relationId: id }, { onSuccess: refresh }),
-    approve: () => review.mutate({ relationId: id, data: { approved: true } }, { onSuccess: refresh }),
-    reject: () => review.mutate({ relationId: id, data: { approved: false } }, { onSuccess: refresh }),
-    blacklist: () =>
-      changeStatus.mutate({ relationId: id, data: { status: '黑名单' } }, { onSuccess: refresh }),
-    restore: () =>
-      changeStatus.mutate({ relationId: id, data: { status: '待准入' } }, { onSuccess: refresh }),
-  });
+    Promise.all([
+      queryClient.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/suppliers'),
+      }),
+      queryClient.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/workflow/tasks'),
+      }),
+    ]);
+
+  const reviewAdmission = (approved: boolean) => {
+    if (!admissionTask) return;
+    setFeedback(null);
+    completeTask.mutate(
+      {
+        taskId: admissionTask.taskId,
+        data: {
+          action: approved ? 'approve' : 'reject',
+          comment: approved ? '资料与资质核验通过，同意准入。' : '资料或资质不符合准入要求，驳回申请。',
+        },
+      },
+      {
+        onSuccess: (response) => {
+          const status = response.data?.status;
+          setFeedback({
+            tone: 'success',
+            message:
+              status === 'processing'
+                ? '当前审批节点已完成，流程已转交下一办理人。'
+                : approved
+                  ? '供应商准入审批已通过。'
+                  : '供应商准入申请已驳回。',
+          });
+          void refresh();
+        },
+        onError: (error) => {
+          setFeedback({
+            tone: 'error',
+            message: admissionErrorMessage(error, '准入审批失败，请刷新任务后重试。'),
+          });
+          void refresh();
+        },
+      },
+    );
+  };
+
+  const action = lifecycleAction(
+    supplier.status,
+    {
+      submit: () => setShowSubmitDialog(true),
+      approve: () => reviewAdmission(true),
+      reject: () => reviewAdmission(false),
+      blacklist: () =>
+        changeStatus.mutate({ relationId: id, data: { status: '黑名单' } }, { onSuccess: refresh }),
+      restore: () =>
+        changeStatus.mutate({ relationId: id, data: { status: '待准入' } }, { onSuccess: refresh }),
+    },
+    Boolean(admissionTask),
+  );
   const hint =
     supplier.status === '待准入' || supplier.status === '已驳回'
       ? '资料确认无误后提交准入,进入准入审批。'
       : supplier.status === '准入审批中'
-        ? '准入审批中:可在此直接通过或驳回。'
+        ? workflowTasks.isLoading
+          ? '正在确认当前审批节点的办理权限。'
+          : workflowTasks.isError
+            ? '暂时无法确认当前办理权限，请刷新页面后重试。'
+            : admissionTask
+              ? '当前审批节点由您办理，可直接通过或驳回。'
+              : '当前审批节点已分配给其他办理人，您可查看详情但不能越权审批。'
         : supplier.status === '已准入'
           ? '已准入供应商;发现重大风险可加入黑名单。'
           : supplier.status === '黑名单'
@@ -316,35 +422,78 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
             : '可执行生命周期操作。';
 
   return (
-    <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-          <ShieldCheck size={14} className="shrink-0 text-blue-600" />
-          <span>
-            当前状态 <StatusPill label={supplier.status ?? '—'} />
-            <span className="ml-2">{hint}</span>
-          </span>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          {action.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              disabled={busy || !id}
-              onClick={item.onClick}
-              className={cn(
-                'inline-flex h-10 items-center rounded-lg px-5 text-sm font-black text-white transition disabled:bg-slate-300',
-                item.tone === 'blue' && 'bg-blue-600 hover:bg-blue-700',
-                item.tone === 'emerald' && 'bg-emerald-600 hover:bg-emerald-700',
-                item.tone === 'red' && 'bg-red-600 hover:bg-red-700',
-              )}
-            >
-              {busy ? '处理中' : item.label}
-            </button>
-          ))}
+    <>
+      <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+        {feedback && (
+          <div className="mb-3">
+            <FeedbackNotice tone={feedback.tone} message={feedback.message} />
+          </div>
+        )}
+        {workflowTasks.isError && supplier.status === '准入审批中' && (
+          <div className="mb-3">
+            <FeedbackNotice tone="error" message="审批任务加载失败，暂不能办理准入审批，请刷新页面后重试。" />
+          </div>
+        )}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <ShieldCheck size={14} className="shrink-0 text-blue-600" />
+            <span>
+              当前状态 <StatusPill label={supplier.status ?? '—'} />
+              <span className="ml-2">{hint}</span>
+            </span>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {supplier.status === '准入审批中' && workflowTasks.isLoading && (
+              <span className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-500">
+                <Clock3 size={15} /> 正在确认办理人
+              </span>
+            )}
+            {supplier.status === '准入审批中' &&
+              !workflowTasks.isLoading &&
+              !workflowTasks.isError &&
+              !admissionTask && (
+              <span
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-black text-amber-700"
+                title="该流程当前节点已分配给其他办理人，当前账号不可越权审批"
+              >
+                <Clock3 size={15} /> 等待其他办理人
+              </span>
+            )}
+            {action.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                disabled={busy || !id}
+                onClick={item.onClick}
+                className={cn(
+                  'inline-flex h-10 items-center rounded-lg px-5 text-sm font-black text-white transition disabled:bg-slate-300',
+                  item.tone === 'blue' && 'bg-blue-600 hover:bg-blue-700',
+                  item.tone === 'emerald' && 'bg-emerald-600 hover:bg-emerald-700',
+                  item.tone === 'red' && 'bg-red-600 hover:bg-red-700',
+                )}
+              >
+                {busy ? '处理中' : item.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+      {showSubmitDialog && (
+        <WorkflowSubmitDialog
+          businessType="buyer_supplier_admission"
+          title={supplier.supplierName ?? '供应商准入'}
+          busy={submit.isPending}
+          submissionError={submit.error}
+          onClose={() => setShowSubmitDialog(false)}
+          onSubmit={(formData) =>
+            submit.mutate(
+              { relationId: id, formData },
+              { onSuccess: () => { setShowSubmitDialog(false); refresh(); } },
+            )
+          }
+        />
+      )}
+    </>
   );
 }
 
@@ -643,16 +792,19 @@ function lifecycleAction(
     blacklist: () => void;
     restore: () => void;
   },
+  canReview = false,
 ) {
   switch (status) {
     case '待准入':
     case '已驳回':
       return [{ label: '提交准入', onClick: handlers.submit, tone: 'blue' as const }];
     case '准入审批中':
-      return [
-        { label: '通过', onClick: handlers.approve, tone: 'emerald' as const },
-        { label: '驳回', onClick: handlers.reject, tone: 'red' as const },
-      ];
+      return canReview
+        ? [
+            { label: '通过', onClick: handlers.approve, tone: 'emerald' as const },
+            { label: '驳回', onClick: handlers.reject, tone: 'red' as const },
+          ]
+        : [];
     case '已准入':
       return [{ label: '加入黑名单', onClick: handlers.blacklist, tone: 'red' as const }];
     case '黑名单':

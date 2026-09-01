@@ -42,15 +42,15 @@ export const buyerEsignList = (
     params: BuyerEsignListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListEsignRecordResponse>(
       {url: `/api/v1/buyer/esign-records`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -60,7 +60,7 @@ export const getBuyerEsignListQueryKey = (params?: BuyerEsignListParams,) => {
     ] as const;
     }
 
-    
+
 export const getBuyerEsignListQueryOptions = <TData = Awaited<ReturnType<typeof buyerEsignList>>, TError = ErrorType<ApiResponseVoid>>(params: BuyerEsignListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerEsignList>>, TError, TData>>, }
 ) => {
 
@@ -68,13 +68,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerEsignListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerEsignList>>> = ({ signal }) => buyerEsignList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerEsignList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -110,7 +110,7 @@ export function useBuyerEsignList<TData = Awaited<ReturnType<typeof buyerEsignLi
 
 export function useBuyerEsignList<TData = Awaited<ReturnType<typeof buyerEsignList>>, TError = ErrorType<ApiResponseVoid>>(
  params: BuyerEsignListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerEsignList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerEsignListQueryOptions(params,options)
@@ -129,8 +129,8 @@ export const buyerEsignSign = (
     createEsignRequest: BodyType<CreateEsignRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseEsignRecordResponse>(
       {url: `/api/v1/buyer/esign-records`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -138,7 +138,7 @@ export const buyerEsignSign = (
     },
       );
     }
-  
+
 
 
 export const getBuyerEsignSignMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -152,7 +152,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerEsignSign>>, {data: BodyType<CreateEsignRequest>}> = (props) => {
@@ -161,7 +161,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerEsignSign(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -183,4 +183,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

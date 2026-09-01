@@ -43,15 +43,15 @@ export const materialList = (
     params?: MaterialListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListMaterialResponse>(
       {url: `/api/v1/buyer/materials`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -61,7 +61,7 @@ export const getMaterialListQueryKey = (params?: MaterialListParams,) => {
     ] as const;
     }
 
-    
+
 export const getMaterialListQueryOptions = <TData = Awaited<ReturnType<typeof materialList>>, TError = ErrorType<ApiResponseVoid>>(params?: MaterialListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialList>>, TError, TData>>, }
 ) => {
 
@@ -69,13 +69,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getMaterialListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof materialList>>> = ({ signal }) => materialList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof materialList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -111,7 +111,7 @@ export function useMaterialList<TData = Awaited<ReturnType<typeof materialList>>
 
 export function useMaterialList<TData = Awaited<ReturnType<typeof materialList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: MaterialListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getMaterialListQueryOptions(params,options)
@@ -130,8 +130,8 @@ export const materialCreate = (
     createMaterialRequest: BodyType<CreateMaterialRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseMaterialResponse>(
       {url: `/api/v1/buyer/materials`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -139,7 +139,7 @@ export const materialCreate = (
     },
       );
     }
-  
+
 
 
 export const getMaterialCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -153,7 +153,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof materialCreate>>, {data: BodyType<CreateMaterialRequest>}> = (props) => {
@@ -162,7 +162,7 @@ const {mutation: mutationOptions} = options ?
           return  materialCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -189,8 +189,8 @@ const {mutation: mutationOptions} = options ?
     createMaterialRequest: BodyType<CreateMaterialRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseMaterialResponse>(
       {url: `/api/v1/buyer/materials/${materialId}`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -198,7 +198,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getMaterialUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -212,7 +212,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof materialUpdate>>, {materialId: string;data: BodyType<CreateMaterialRequest>}> = (props) => {
@@ -221,7 +221,7 @@ const {mutation: mutationOptions} = options ?
           return  materialUpdate(materialId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -247,8 +247,8 @@ const {mutation: mutationOptions} = options ?
     materialImportMaterialsBody: BodyType<string>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseImportResultResponse>(
       {url: `/api/v1/buyer/materials/import`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -256,7 +256,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getMaterialImportMaterialsMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -270,7 +270,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof materialImportMaterials>>, {data: BodyType<string>}> = (props) => {
@@ -279,7 +279,7 @@ const {mutation: mutationOptions} = options ?
           return  materialImportMaterials(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -302,18 +302,18 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const materialImportTemplate = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<Blob>(
       {url: `/api/v1/buyer/materials/import-template`, method: 'GET',
         responseType: 'blob', signal
     },
       );
     }
-  
+
 
 
 
@@ -323,7 +323,7 @@ export const getMaterialImportTemplateQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getMaterialImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof materialImportTemplate>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialImportTemplate>>, TError, TData>>, }
 ) => {
 
@@ -331,13 +331,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getMaterialImportTemplateQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof materialImportTemplate>>> = ({ signal }) => materialImportTemplate(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof materialImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -373,7 +373,7 @@ export function useMaterialImportTemplate<TData = Awaited<ReturnType<typeof mate
 
 export function useMaterialImportTemplate<TData = Awaited<ReturnType<typeof materialImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof materialImportTemplate>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getMaterialImportTemplateQueryOptions(options)

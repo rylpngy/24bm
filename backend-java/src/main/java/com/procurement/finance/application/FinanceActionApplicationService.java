@@ -35,10 +35,11 @@ import com.procurement.finance.api.FinanceReport;
 import com.procurement.finance.infrastructure.FinanceReportRenderer;
 import com.procurement.finance.api.UpdateVarianceHandlingStatusRequest;
 import com.procurement.finance.api.VarianceHandlingResponse;
-import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.common.api.ApprovalTaskResponse;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.PaymentArchiveExceptionRequest;
 import com.procurement.finance.domain.PaymentBatch;
+import com.procurement.finance.domain.PaymentBatchStatus;
 import com.procurement.finance.domain.PaymentBlockResolution;
 import com.procurement.finance.domain.PaymentExecutionRecord;
 import com.procurement.finance.domain.PaymentRequest;
@@ -58,6 +59,8 @@ import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
+import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
+import com.procurement.workflow.application.WorkflowStartCommand;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -91,6 +94,7 @@ public class FinanceActionApplicationService {
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final PermissionService permissionService;
   private final DataScopeService dataScopeService;
+  private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
 
   public FinanceActionApplicationService(
       InvoiceMapper invoiceMapper,
@@ -161,6 +165,12 @@ public class FinanceActionApplicationService {
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.permissionService = permissionService;
     this.dataScopeService = dataScopeService;
+  }
+
+  @Autowired
+  void setUnifiedWorkflowApplicationService(
+      UnifiedWorkflowApplicationService unifiedWorkflowApplicationService) {
+    this.unifiedWorkflowApplicationService = unifiedWorkflowApplicationService;
   }
 
   public List<PaymentBatchResponse> listCurrentTenantPaymentBatches(
@@ -247,7 +257,21 @@ public class FinanceActionApplicationService {
         request.paymentBatchNo(),
         request.exceptionType(),
         approvalStatus);
-    ensurePaymentArchiveExceptionApprovalTask(tenantId, savedRequest);
+    if (unifiedWorkflowApplicationService != null) {
+      Map<String, Object> snapshot = new LinkedHashMap<>();
+      snapshot.put("paymentBatchNo", savedRequest.paymentBatchNo());
+      snapshot.put("exceptionType", savedRequest.exceptionType());
+      snapshot.put("exceptionReason", savedRequest.exceptionReason());
+      unifiedWorkflowApplicationService.start(new WorkflowStartCommand(
+          ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
+          savedRequest.id(),
+          null,
+          null,
+          request.formData() == null ? Map.of() : request.formData(),
+          snapshot));
+    } else {
+      ensurePaymentArchiveExceptionApprovalTask(tenantId, savedRequest);
+    }
     return toPaymentArchiveExceptionRequestResponse(savedRequest);
   }
 
@@ -265,6 +289,25 @@ public class FinanceActionApplicationService {
     }
     if (!ApprovalStatus.PENDING.equals(archiveExceptionRequest.approvalStatus())) {
       throw new IllegalStateException("Only pending payment archive exception requests can be reviewed: " + requestId);
+    }
+    if (unifiedWorkflowApplicationService != null) {
+      var history = unifiedWorkflowApplicationService.completeCurrentUserBusinessTask(
+          ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
+          requestId,
+          Boolean.TRUE.equals(request.approved()),
+          request.comment());
+      String status = "approved".equals(history.status())
+          ? ApprovalStatus.APPROVED
+          : "rejected".equals(history.status()) ? ApprovalStatus.REJECTED : "审批中";
+      return new ApprovalTaskResponse(
+          null,
+          tenantId,
+          ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
+          requestId,
+          userId,
+          status,
+          request.comment(),
+          history.actedAt());
     }
     ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
         tenantId,
@@ -471,33 +514,57 @@ public class FinanceActionApplicationService {
     if (paymentBatch == null) {
       throw new IllegalArgumentException("Payment batch not found in tenant scope: " + paymentBatchNo);
     }
-    if ("已付款归档".equals(paymentBatch.batchStatus()) && !"已付款归档".equals(request.batchStatus())) {
+    if (PaymentBatchStatus.ARCHIVED.equals(paymentBatch.batchStatus())
+        && !PaymentBatchStatus.ARCHIVED.equals(request.batchStatus())) {
       requirePaymentBatchNotArchived(tenantId, paymentBatchNo);
     }
-    if ("可安排付款".equals(request.batchStatus())) {
+    if (PaymentBatchStatus.APPROVAL_IN_PROGRESS.equals(request.batchStatus())
+        || PaymentBatchStatus.READY_FOR_PAYMENT.equals(request.batchStatus())) {
       requirePaymentBatchRequestsApproved(paymentBatch);
     }
-    if ("已付款归档".equals(request.batchStatus())) {
+    PaymentBatchStatus.requireManualTransition(paymentBatch.batchStatus(), request.batchStatus());
+    if (PaymentBatchStatus.ARCHIVED.equals(request.batchStatus())) {
       paymentExecutionRecordMapper.refreshTenantFromPaymentRequests(tenantId);
       requirePaymentBatchArchiveReady(tenantId, paymentBatchNo);
     }
+    if (unifiedWorkflowApplicationService != null
+        && PaymentBatchStatus.READY_FOR_PAYMENT.equals(request.batchStatus())) {
+      throw new IllegalStateException("Payment batch approval outcome can only be applied by Flowable workflow tasks");
+    }
     paymentBatchMapper.updateStatus(tenantId, paymentBatchNo, request.batchStatus());
     paymentExecutionRecordMapper.refreshTenantFromPaymentRequests(tenantId);
-    if ("审批中".equals(request.batchStatus())) {
-      ensurePaymentBatchApprovalTask(tenantId, paymentBatch);
+    if (PaymentBatchStatus.APPROVAL_IN_PROGRESS.equals(request.batchStatus())) {
+      if (unifiedWorkflowApplicationService != null) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("paymentBatchNo", paymentBatch.paymentBatchNo());
+        snapshot.put("supplierId", paymentBatch.supplierId());
+        snapshot.put("requestCount", paymentBatch.requestCount());
+        snapshot.put("totalAmount", paymentBatch.totalAmount());
+        unifiedWorkflowApplicationService.start(new WorkflowStartCommand(
+            ApprovalBusinessType.PAYMENT_BATCH,
+            paymentBatchNo,
+            null,
+            paymentBatch.totalAmount(),
+            request.formData() == null ? Map.of() : request.formData(),
+            snapshot));
+      } else {
+        ensurePaymentBatchApprovalTask(tenantId, paymentBatch);
+      }
       auditLogApplicationService.recordTenantAction(
           tenantId,
           "payment_batch.submitted",
           AuditTargetType.PAYMENT_BATCH,
           paymentBatchNo);
-    } else if ("可安排付款".equals(request.batchStatus())) {
-      approvePendingPaymentBatchTask(tenantId, paymentBatch);
+    } else if (PaymentBatchStatus.READY_FOR_PAYMENT.equals(request.batchStatus())) {
+      if (unifiedWorkflowApplicationService == null) {
+        approvePendingPaymentBatchTask(tenantId, paymentBatch);
+      }
       auditLogApplicationService.recordTenantAction(
           tenantId,
           "payment_batch.approved",
           AuditTargetType.PAYMENT_BATCH,
           paymentBatchNo);
-    } else if ("已付款归档".equals(request.batchStatus())) {
+    } else if (PaymentBatchStatus.ARCHIVED.equals(request.batchStatus())) {
       auditLogApplicationService.recordTenantAction(
           tenantId,
           buildPaymentBatchArchiveAuditAction(tenantId, paymentBatchNo),
@@ -821,6 +888,13 @@ public class FinanceActionApplicationService {
     if (existingRequest != null) {
       requirePaymentRequestNotExecuted(tenantId, existingRequest);
       requirePaymentBatchNotArchived(tenantId, existingRequest.paymentBatchNo());
+      requirePaymentBatchAcceptsRequestChanges(tenantId, existingRequest.paymentBatchNo());
+    }
+    requirePaymentBatchAcceptsRequestChanges(tenantId, request.paymentBatchNo());
+    if (unifiedWorkflowApplicationService != null
+        && ("付款申请已通过".equals(request.requestStatus())
+            || "付款申请已驳回".equals(request.requestStatus()))) {
+      throw new IllegalStateException("Payment request approval outcome can only be applied by Flowable workflow tasks");
     }
     paymentRequestMapper.upsert(
         "payreq-" + UUID.randomUUID(),
@@ -838,6 +912,18 @@ public class FinanceActionApplicationService {
     syncPaymentExecutionRecord(tenantId, savedRequest.id());
     if (existingRequest != null && !existingRequest.paymentBatchNo().equals(request.paymentBatchNo())) {
       syncPaymentBatch(tenantId, existingRequest.paymentBatchNo());
+    }
+    if ("付款申请审批中".equals(request.requestStatus())) {
+      if (unifiedWorkflowApplicationService != null) {
+        startPaymentRequestWorkflow(savedRequest, request.formData());
+      } else {
+        ensurePaymentRequestApprovalTask(tenantId, savedRequest);
+      }
+      auditLogApplicationService.recordTenantAction(
+          tenantId,
+          "payment_request.submitted",
+          AuditTargetType.INVOICE,
+          savedRequest.invoiceId());
     }
     return toPaymentRequestResponse(savedRequest);
   }
@@ -874,18 +960,30 @@ public class FinanceActionApplicationService {
     }
     requirePaymentBatchNotArchived(tenantId, paymentRequest.paymentBatchNo());
     requirePaymentRequestNotExecuted(tenantId, paymentRequest);
+    requirePaymentBatchAcceptsRequestChanges(tenantId, paymentRequest.paymentBatchNo());
+    if (unifiedWorkflowApplicationService != null
+        && ("付款申请已通过".equals(request.requestStatus())
+            || "付款申请已驳回".equals(request.requestStatus()))) {
+      throw new IllegalStateException("Payment request approval outcome can only be applied by Flowable workflow tasks");
+    }
     paymentRequestMapper.updateStatus(tenantId, paymentRequestId, request.requestStatus());
     syncPaymentBatch(tenantId, paymentRequest.paymentBatchNo());
     syncPaymentExecutionRecord(tenantId, paymentRequestId);
     if ("付款申请审批中".equals(request.requestStatus())) {
-      ensurePaymentRequestApprovalTask(tenantId, paymentRequest);
+      if (unifiedWorkflowApplicationService != null) {
+        startPaymentRequestWorkflow(paymentRequest, request.formData());
+      } else {
+        ensurePaymentRequestApprovalTask(tenantId, paymentRequest);
+      }
       auditLogApplicationService.recordTenantAction(
           tenantId,
           "payment_request.submitted",
           AuditTargetType.INVOICE,
           paymentRequest.invoiceId());
     } else if ("付款申请已通过".equals(request.requestStatus())) {
-      approvePendingPaymentRequestTask(tenantId, paymentRequest);
+      if (unifiedWorkflowApplicationService == null) {
+        approvePendingPaymentRequestTask(tenantId, paymentRequest);
+      }
       auditLogApplicationService.recordTenantAction(
           tenantId,
           "payment_request.approved",
@@ -893,6 +991,22 @@ public class FinanceActionApplicationService {
           paymentRequest.invoiceId());
     }
     return toPaymentRequestResponse(paymentRequestMapper.findByTenantAndId(tenantId, paymentRequestId));
+  }
+
+  private void startPaymentRequestWorkflow(
+      PaymentRequest paymentRequest, Map<String, Object> formData) {
+    Map<String, Object> snapshot = new LinkedHashMap<>();
+    snapshot.put("invoiceId", paymentRequest.invoiceId());
+    snapshot.put("orderId", paymentRequest.orderId());
+    snapshot.put("supplierId", paymentRequest.supplierId());
+    snapshot.put("paymentBatchNo", paymentRequest.paymentBatchNo());
+    unifiedWorkflowApplicationService.start(new WorkflowStartCommand(
+        ApprovalBusinessType.PAYMENT_REQUEST,
+        paymentRequest.id(),
+        null,
+        paymentRequest.amount(),
+        formData == null ? Map.of() : formData,
+        snapshot));
   }
 
   @Transactional
@@ -1091,6 +1205,15 @@ public class FinanceActionApplicationService {
         "payexec-" + UUID.randomUUID(),
         tenantId,
         paymentRequestId);
+  }
+
+  private void requirePaymentBatchAcceptsRequestChanges(String tenantId, String paymentBatchNo) {
+    PaymentBatch paymentBatch = paymentBatchMapper.findByTenantAndPaymentBatchNo(tenantId, paymentBatchNo);
+    if (paymentBatch == null || PaymentBatchStatus.acceptsPaymentRequestChanges(paymentBatch.batchStatus())) {
+      return;
+    }
+    throw new IllegalStateException(
+        "Payment batch cannot be changed after batch approval has started: " + paymentBatchNo);
   }
 
   private void requirePaymentRequestNotExecuted(String tenantId, PaymentRequest paymentRequest) {

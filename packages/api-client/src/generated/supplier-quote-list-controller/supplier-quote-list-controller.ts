@@ -42,8 +42,8 @@ export const supplierQuoteListUpdate = (
     quoteId: string,
     updateQuoteRequest: BodyType<UpdateQuoteRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseQuoteResponse>(
       {url: `/api/v1/supplier/quotes/${quoteId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -51,7 +51,7 @@ export const supplierQuoteListUpdate = (
     },
       );
     }
-  
+
 
 
 export const getSupplierQuoteListUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -65,7 +65,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQuoteListUpdate>>, {quoteId: string;data: BodyType<UpdateQuoteRequest>}> = (props) => {
@@ -74,7 +74,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierQuoteListUpdate(quoteId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -100,15 +100,15 @@ const {mutation: mutationOptions} = options ?
     params?: SupplierQuoteListListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListQuoteResponse>(
       {url: `/api/v1/supplier/quotes`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -118,7 +118,7 @@ export const getSupplierQuoteListListQueryKey = (params?: SupplierQuoteListListP
     ] as const;
     }
 
-    
+
 export const getSupplierQuoteListListQueryOptions = <TData = Awaited<ReturnType<typeof supplierQuoteListList>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierQuoteListListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListList>>, TError, TData>>, }
 ) => {
 
@@ -126,13 +126,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierQuoteListListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQuoteListList>>> = ({ signal }) => supplierQuoteListList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -168,7 +168,7 @@ export function useSupplierQuoteListList<TData = Awaited<ReturnType<typeof suppl
 
 export function useSupplierQuoteListList<TData = Awaited<ReturnType<typeof supplierQuoteListList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SupplierQuoteListListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierQuoteListListQueryOptions(params,options)

@@ -31,8 +31,8 @@ export const authLogin = (
     loginRequest: BodyType<LoginRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseLoginResponse>(
       {url: `/api/v1/auth/login`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -40,7 +40,7 @@ export const authLogin = (
     },
       );
     }
-  
+
 
 
 export const getAuthLoginMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -54,7 +54,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof authLogin>>, {data: BodyType<LoginRequest>}> = (props) => {
@@ -63,7 +63,7 @@ const {mutation: mutationOptions} = options ?
           return  authLogin(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -85,4 +85,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

@@ -41,17 +41,17 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 export const platformTenantList = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListTenantResponse>(
       {url: `/api/v1/platform/tenants`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -61,7 +61,7 @@ export const getPlatformTenantListQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPlatformTenantListQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantList>>, TError, TData>>, }
 ) => {
 
@@ -69,13 +69,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformTenantListQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantList>>> = ({ signal }) => platformTenantList(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -111,7 +111,7 @@ export function usePlatformTenantList<TData = Awaited<ReturnType<typeof platform
 
 export function usePlatformTenantList<TData = Awaited<ReturnType<typeof platformTenantList>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformTenantListQueryOptions(options)
@@ -130,8 +130,8 @@ export const platformTenantCreate = (
     createTenantRequest: BodyType<CreateTenantRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenantResponse>(
       {url: `/api/v1/platform/tenants`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -139,7 +139,7 @@ export const platformTenantCreate = (
     },
       );
     }
-  
+
 
 
 export const getPlatformTenantCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -153,7 +153,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantCreate>>, {data: BodyType<CreateTenantRequest>}> = (props) => {
@@ -162,7 +162,7 @@ const {mutation: mutationOptions} = options ?
           return  platformTenantCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -189,8 +189,8 @@ const {mutation: mutationOptions} = options ?
     updateTenantPlanRequest: BodyType<UpdateTenantPlanRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenantResponse>(
       {url: `/api/v1/platform/tenants/${tenantId}/plan`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -198,7 +198,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getPlatformTenantUpdatePlanMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -212,7 +212,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantUpdatePlan>>, {tenantId: string;data: BodyType<UpdateTenantPlanRequest>}> = (props) => {
@@ -221,7 +221,7 @@ const {mutation: mutationOptions} = options ?
           return  platformTenantUpdatePlan(tenantId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -248,8 +248,8 @@ const {mutation: mutationOptions} = options ?
     featureToggleRequest: BodyType<FeatureToggleRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenantResponse>(
       {url: `/api/v1/platform/tenants/${tenantId}/features`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -257,7 +257,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getPlatformTenantUpdateFeaturesMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -271,7 +271,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantUpdateFeatures>>, {tenantId: string;data: BodyType<FeatureToggleRequest>}> = (props) => {
@@ -280,7 +280,7 @@ const {mutation: mutationOptions} = options ?
           return  platformTenantUpdateFeatures(tenantId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -306,14 +306,14 @@ const {mutation: mutationOptions} = options ?
     tenantId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenantResponse>(
       {url: `/api/v1/platform/tenants/${tenantId}/enable`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getPlatformTenantEnableMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -327,7 +327,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantEnable>>, {tenantId: string}> = (props) => {
@@ -336,13 +336,13 @@ const {mutation: mutationOptions} = options ?
           return  platformTenantEnable(tenantId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type PlatformTenantEnableMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantEnable>>>
-    
+
     export type PlatformTenantEnableMutationError = ErrorType<ApiResponseVoid>
 
     export const usePlatformTenantEnable = <TError = ErrorType<ApiResponseVoid>,
@@ -362,14 +362,14 @@ const {mutation: mutationOptions} = options ?
     tenantId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenantResponse>(
       {url: `/api/v1/platform/tenants/${tenantId}/disable`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getPlatformTenantDisableMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -383,7 +383,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantDisable>>, {tenantId: string}> = (props) => {
@@ -392,13 +392,13 @@ const {mutation: mutationOptions} = options ?
           return  platformTenantDisable(tenantId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type PlatformTenantDisableMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantDisable>>>
-    
+
     export type PlatformTenantDisableMutationError = ErrorType<ApiResponseVoid>
 
     export const usePlatformTenantDisable = <TError = ErrorType<ApiResponseVoid>,
@@ -418,14 +418,14 @@ const {mutation: mutationOptions} = options ?
     tenantId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseTenantResponse>(
       {url: `/api/v1/platform/tenants/${tenantId}`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -435,7 +435,7 @@ export const getPlatformTenantGetQueryKey = (tenantId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getPlatformTenantGetQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantGet>>, TError = ErrorType<ApiResponseVoid>>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantGet>>, TError, TData>>, }
 ) => {
 
@@ -443,13 +443,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformTenantGetQueryKey(tenantId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantGet>>> = ({ signal }) => platformTenantGet(tenantId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(tenantId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -485,7 +485,7 @@ export function usePlatformTenantGet<TData = Awaited<ReturnType<typeof platformT
 
 export function usePlatformTenantGet<TData = Awaited<ReturnType<typeof platformTenantGet>>, TError = ErrorType<ApiResponseVoid>>(
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantGet>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformTenantGetQueryOptions(tenantId,options)
@@ -504,14 +504,14 @@ export const platformTenantPlanChanges = (
     tenantId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListTenantPlanChangeResponse>(
       {url: `/api/v1/platform/tenants/${tenantId}/plan-changes`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -521,7 +521,7 @@ export const getPlatformTenantPlanChangesQueryKey = (tenantId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getPlatformTenantPlanChangesQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError = ErrorType<ApiResponseVoid>>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError, TData>>, }
 ) => {
 
@@ -529,13 +529,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformTenantPlanChangesQueryKey(tenantId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantPlanChanges>>> = ({ signal }) => platformTenantPlanChanges(tenantId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(tenantId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -571,7 +571,7 @@ export function usePlatformTenantPlanChanges<TData = Awaited<ReturnType<typeof p
 
 export function usePlatformTenantPlanChanges<TData = Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError = ErrorType<ApiResponseVoid>>(
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantPlanChanges>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformTenantPlanChangesQueryOptions(tenantId,options)

@@ -42,8 +42,8 @@ export const platformAnnouncementUpdate = (
     announcementId: string,
     updatePlatformAnnouncementRequest: BodyType<UpdatePlatformAnnouncementRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponsePlatformAnnouncementResponse>(
       {url: `/api/v1/platform/announcements/${announcementId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -51,7 +51,7 @@ export const platformAnnouncementUpdate = (
     },
       );
     }
-  
+
 
 
 export const getPlatformAnnouncementUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -65,7 +65,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformAnnouncementUpdate>>, {announcementId: string;data: BodyType<UpdatePlatformAnnouncementRequest>}> = (props) => {
@@ -74,7 +74,7 @@ const {mutation: mutationOptions} = options ?
           return  platformAnnouncementUpdate(announcementId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -97,17 +97,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const platformAnnouncementList = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPlatformAnnouncementResponse>(
       {url: `/api/v1/platform/announcements`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -117,7 +117,7 @@ export const getPlatformAnnouncementListQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPlatformAnnouncementListQueryOptions = <TData = Awaited<ReturnType<typeof platformAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAnnouncementList>>, TError, TData>>, }
 ) => {
 
@@ -125,13 +125,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPlatformAnnouncementListQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof platformAnnouncementList>>> = ({ signal }) => platformAnnouncementList(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformAnnouncementList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -167,7 +167,7 @@ export function usePlatformAnnouncementList<TData = Awaited<ReturnType<typeof pl
 
 export function usePlatformAnnouncementList<TData = Awaited<ReturnType<typeof platformAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAnnouncementList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformAnnouncementListQueryOptions(options)
@@ -186,8 +186,8 @@ export const platformAnnouncementPublish = (
     createPlatformAnnouncementRequest: BodyType<CreatePlatformAnnouncementRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePlatformAnnouncementResponse>(
       {url: `/api/v1/platform/announcements`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -195,7 +195,7 @@ export const platformAnnouncementPublish = (
     },
       );
     }
-  
+
 
 
 export const getPlatformAnnouncementPublishMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -209,7 +209,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformAnnouncementPublish>>, {data: BodyType<CreatePlatformAnnouncementRequest>}> = (props) => {
@@ -218,7 +218,7 @@ const {mutation: mutationOptions} = options ?
           return  platformAnnouncementPublish(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -244,14 +244,14 @@ const {mutation: mutationOptions} = options ?
     announcementId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePlatformAnnouncementResponse>(
       {url: `/api/v1/platform/announcements/${announcementId}/withdraw`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getPlatformAnnouncementWithdrawMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -265,7 +265,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformAnnouncementWithdraw>>, {announcementId: string}> = (props) => {
@@ -274,13 +274,13 @@ const {mutation: mutationOptions} = options ?
           return  platformAnnouncementWithdraw(announcementId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type PlatformAnnouncementWithdrawMutationResult = NonNullable<Awaited<ReturnType<typeof platformAnnouncementWithdraw>>>
-    
+
     export type PlatformAnnouncementWithdrawMutationError = ErrorType<ApiResponseVoid>
 
     export const usePlatformAnnouncementWithdraw = <TError = ErrorType<ApiResponseVoid>,
@@ -296,4 +296,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

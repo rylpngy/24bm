@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { FileText, Plus } from 'lucide-react';
 import {
@@ -92,6 +92,11 @@ export function RfqsPage() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  useEffect(() => {
+    const recordId = new URLSearchParams(window.location.search).get('recordId');
+    if (!selectedId && recordId && list.some((item) => item.id === recordId)) setSelectedId(recordId);
+  }, [list, selectedId]);
 
   const supplierNames = useMemo(() => {
     const map: Record<string, string> = {};

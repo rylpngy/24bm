@@ -15,6 +15,7 @@ import com.procurement.catalog.infrastructure.MaterialMapper;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.application.BuyerUserApplicationService;
+import com.procurement.identity.application.PermissionService;
 import com.procurement.identity.domain.BuyerUserStatusTransition;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
@@ -52,6 +53,7 @@ class BuyerMasterDataAuditLogTests {
     TenantEntitlementApplicationService tenantEntitlementApplicationService =
         org.mockito.Mockito.mock(TenantEntitlementApplicationService.class);
     PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
+    PermissionService permissionService = org.mockito.Mockito.mock(PermissionService.class);
     BuyerUserApplicationService buyerUserApplicationService =
         new BuyerUserApplicationService(
             buyerUserMapper,
@@ -59,7 +61,8 @@ class BuyerMasterDataAuditLogTests {
             tenantEntitlementApplicationService,
             auditLogApplicationService,
             passwordEncoder,
-            new BuyerUserStatusTransition());
+            new BuyerUserStatusTransition(),
+            permissionService);
     when(buyerUserMapper.countByTenant("tenant-1")).thenReturn(3);
     when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
     when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-buyer-requester")).thenReturn(true);

@@ -23,6 +23,11 @@ export { RichTextEditor, RichTextView, richTextToPlain, sanitizeRichText } from 
 export type { RichTextEditorProps } from './components/rich-text';
 export { PrimaryActionButton } from './components/primary-action-button';
 export type { PrimaryActionButtonProps } from './components/primary-action-button';
+export { ActionButton } from './components/action-button';
+export type { ActionButtonProps } from './components/action-button';
+export { PageHeader } from './components/page-header';
+export type { PageHeaderProps } from './components/page-header';
+export { EmptyState } from './components/empty-state';
 
 export { ResponsiveTableFrame } from './components/responsive-table-frame';
 export type { ResponsiveTableFrameProps } from './components/responsive-table-frame';

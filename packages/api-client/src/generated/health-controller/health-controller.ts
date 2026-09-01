@@ -32,17 +32,17 @@ import type { ErrorType } from '../../http-client';
 
 
 export const healthHealth = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseMapStringObject>(
       {url: `/api/v1/health`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -52,7 +52,7 @@ export const getHealthHealthQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getHealthHealthQueryOptions = <TData = Awaited<ReturnType<typeof healthHealth>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof healthHealth>>, TError, TData>>, }
 ) => {
 
@@ -60,13 +60,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getHealthHealthQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof healthHealth>>> = ({ signal }) => healthHealth(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof healthHealth>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -102,7 +102,7 @@ export function useHealthHealth<TData = Awaited<ReturnType<typeof healthHealth>>
 
 export function useHealthHealth<TData = Awaited<ReturnType<typeof healthHealth>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof healthHealth>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getHealthHealthQueryOptions(options)

@@ -39,3 +39,55 @@
 
 **Final result**
 - final result: passed
+
+---
+
+# 组织架构成员操作区视觉验收（2026-08-28）
+
+**Source visual truth path**
+- `/var/folders/rh/96k_7lt939128gxywxjy2khr0000gn/T/codex-clipboard-768c3e34-4257-4188-aa24-47992d6f85ed.png`
+
+**Implementation screenshot path**
+- Full page: `/Users/epl/Documents/Codex/代码/24Bid-latest-audit/artifacts/org-page-after-sticky-actions.png`
+- Focused source: `/Users/epl/Documents/Codex/代码/24Bid-latest-audit/artifacts/org-actions-source-focus.png`
+- Focused implementation: `/Users/epl/Documents/Codex/代码/24Bid-latest-audit/artifacts/org-actions-implementation-focus.png`
+
+**Viewport and normalization**
+- Source image: 1810 x 654 px. The supplied crop is a Retina-density view of the department member table.
+- Implementation capture: 1280 x 720 px, browser CSS viewport 1280 x 720.
+- The full views have different surrounding page crops, so the operation column was also compared as a focused region. DOM measurements were used as the authoritative wrapping and overflow evidence.
+
+**State**
+- Buyer administrator logged in, organization structure module, 信息化部 selected, two active members displayed.
+
+**Full-view comparison evidence**
+- The member table keeps the existing visual language, typography, row density, status treatment, and blue secondary action treatment.
+- The operation column remains visible at the right edge while the rest of the table can scroll within its own container.
+- Browser measurement confirms the document width equals the 1280 px viewport width; no whole-page horizontal overflow was introduced.
+
+**Focused region comparison evidence**
+- Before: percentage-based column sizing compressed both actions, causing `编辑` and `设为主管` to wrap vertically.
+- After: the operation column is a fixed 224 px sticky column; `编辑` is 68 x 32 px and `设为主管` is 100 x 32 px.
+- Both buttons report `white-space: nowrap` and equal client/scroll heights, confirming no hidden second line.
+- Buttons use consistent icon placement, height, spacing, border treatment, hover state, and right alignment.
+
+**Required fidelity surfaces**
+- Fonts and typography: existing font scale and weight retained; operation labels now remain on one line.
+- Spacing and layout rhythm: fixed action width and 8 px action gap restore consistent row alignment.
+- Colors and visual tokens: existing slate secondary and blue supervisory-action tokens retained.
+- Image quality and asset fidelity: no raster assets are used in this table; existing Lucide icons remain sharp and consistent.
+- Copy and content: action labels remain `编辑` and `设为主管` without abbreviation or semantic change.
+
+**Comparison history**
+- P1 initial finding: operation buttons wrapped into two lines and visually broke row alignment.
+- Fix: changed to a fixed table layout, fixed/sticky action column, non-shrinking controls, and explicit no-wrap behavior.
+- Post-fix evidence: all three rendered actions are 32 px high, no button text overflows, the operation column remains visible, and browser error/warning logs are empty.
+
+**Findings**
+- No actionable P0/P1/P2 findings remain.
+
+**Follow-up polish**
+- None required for this scoped operation-column adjustment.
+
+**Final result**
+- final result: passed

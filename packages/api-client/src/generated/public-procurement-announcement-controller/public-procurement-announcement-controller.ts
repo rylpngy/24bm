@@ -33,17 +33,17 @@ import type { ErrorType } from '../../http-client';
 
 
 export const publicProcurementAnnouncementList = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListPublicProcurementAnnouncementResponse>(
       {url: `/api/v1/public/procurement-announcements`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -53,7 +53,7 @@ export const getPublicProcurementAnnouncementListQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getPublicProcurementAnnouncementListQueryOptions = <TData = Awaited<ReturnType<typeof publicProcurementAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicProcurementAnnouncementList>>, TError, TData>>, }
 ) => {
 
@@ -61,13 +61,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicProcurementAnnouncementListQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicProcurementAnnouncementList>>> = ({ signal }) => publicProcurementAnnouncementList(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicProcurementAnnouncementList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -103,7 +103,7 @@ export function usePublicProcurementAnnouncementList<TData = Awaited<ReturnType<
 
 export function usePublicProcurementAnnouncementList<TData = Awaited<ReturnType<typeof publicProcurementAnnouncementList>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicProcurementAnnouncementList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicProcurementAnnouncementListQueryOptions(options)
@@ -122,14 +122,14 @@ export const publicProcurementAnnouncementGet = (
     announcementId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponsePublicProcurementAnnouncementResponse>(
       {url: `/api/v1/public/procurement-announcements/${announcementId}`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -139,7 +139,7 @@ export const getPublicProcurementAnnouncementGetQueryKey = (announcementId?: str
     ] as const;
     }
 
-    
+
 export const getPublicProcurementAnnouncementGetQueryOptions = <TData = Awaited<ReturnType<typeof publicProcurementAnnouncementGet>>, TError = ErrorType<ApiResponseVoid>>(announcementId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicProcurementAnnouncementGet>>, TError, TData>>, }
 ) => {
 
@@ -147,13 +147,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getPublicProcurementAnnouncementGetQueryKey(announcementId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof publicProcurementAnnouncementGet>>> = ({ signal }) => publicProcurementAnnouncementGet(announcementId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(announcementId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicProcurementAnnouncementGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -189,7 +189,7 @@ export function usePublicProcurementAnnouncementGet<TData = Awaited<ReturnType<t
 
 export function usePublicProcurementAnnouncementGet<TData = Awaited<ReturnType<typeof publicProcurementAnnouncementGet>>, TError = ErrorType<ApiResponseVoid>>(
  announcementId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicProcurementAnnouncementGet>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicProcurementAnnouncementGetQueryOptions(announcementId,options)

@@ -21,11 +21,14 @@ public class DataScopeService {
     if (userId == null) {
       return DataScope.unrestricted();
     }
+    return userDataScope(TenantContext.tenantId(), userId);
+  }
+
+  public DataScope userDataScope(String tenantId, String userId) {
     List<String> scopes = dataScopeMapper.listUserRoleDataScopes(userId);
     if (scopes == null || scopes.isEmpty() || scopes.contains(DataScope.ALL)) {
       return DataScope.unrestricted();
     }
-    String tenantId = TenantContext.tenantId();
     if (scopes.contains(DataScope.DEPARTMENT_AND_BELOW)) {
       String dept = dataScopeMapper.findUserDepartmentId(userId);
       return dept == null

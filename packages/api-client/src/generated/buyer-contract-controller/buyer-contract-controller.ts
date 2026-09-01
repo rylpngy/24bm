@@ -39,6 +39,7 @@ import type {
   CreateContractFulfillmentEventRequest,
   CreateContractRequest,
   ReviewContractApprovalRequest,
+  SubmitContractApprovalRequest,
   UpdateContractArchiveStatusRequest,
   UpdateContractRequest,
   UpdateContractStatusRequest
@@ -54,8 +55,8 @@ export const buyerContractUpdate = (
     contractId: string,
     updateContractRequest: BodyType<UpdateContractRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseContractResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -63,7 +64,7 @@ export const buyerContractUpdate = (
     },
       );
     }
-  
+
 
 
 export const getBuyerContractUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -77,7 +78,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractUpdate>>, {contractId: string;data: BodyType<UpdateContractRequest>}> = (props) => {
@@ -86,7 +87,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerContractUpdate(contractId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -112,8 +113,8 @@ const {mutation: mutationOptions} = options ?
     contractId: string,
     updateContractStatusRequest: BodyType<UpdateContractStatusRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseContractResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/status`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -121,7 +122,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerContractUpdateStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -135,7 +136,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractUpdateStatus>>, {contractId: string;data: BodyType<UpdateContractStatusRequest>}> = (props) => {
@@ -144,7 +145,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerContractUpdateStatus(contractId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -170,8 +171,8 @@ const {mutation: mutationOptions} = options ?
     contractId: string,
     updateContractArchiveStatusRequest: BodyType<UpdateContractArchiveStatusRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseContractResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/archive-status`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -179,7 +180,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerContractUpdateArchiveStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -193,7 +194,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractUpdateArchiveStatus>>, {contractId: string;data: BodyType<UpdateContractArchiveStatusRequest>}> = (props) => {
@@ -202,7 +203,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerContractUpdateArchiveStatus(contractId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -228,8 +229,8 @@ const {mutation: mutationOptions} = options ?
     contractId: string,
     reviewContractApprovalRequest: BodyType<ReviewContractApprovalRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseContractResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/approval-review`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -237,7 +238,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerContractReviewApprovalMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -251,7 +252,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractReviewApproval>>, {contractId: string;data: BodyType<ReviewContractApprovalRequest>}> = (props) => {
@@ -260,7 +261,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerContractReviewApproval(contractId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -286,15 +287,15 @@ const {mutation: mutationOptions} = options ?
     params?: BuyerContractListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListContractResponse>(
       {url: `/api/v1/buyer/contracts`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -304,7 +305,7 @@ export const getBuyerContractListQueryKey = (params?: BuyerContractListParams,) 
     ] as const;
     }
 
-    
+
 export const getBuyerContractListQueryOptions = <TData = Awaited<ReturnType<typeof buyerContractList>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerContractListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractList>>, TError, TData>>, }
 ) => {
 
@@ -312,13 +313,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerContractListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerContractList>>> = ({ signal }) => buyerContractList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerContractList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -354,7 +355,7 @@ export function useBuyerContractList<TData = Awaited<ReturnType<typeof buyerCont
 
 export function useBuyerContractList<TData = Awaited<ReturnType<typeof buyerContractList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerContractListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerContractListQueryOptions(params,options)
@@ -373,8 +374,8 @@ export const buyerContractCreate = (
     createContractRequest: BodyType<CreateContractRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseContractResponse>(
       {url: `/api/v1/buyer/contracts`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -382,7 +383,7 @@ export const buyerContractCreate = (
     },
       );
     }
-  
+
 
 
 export const getBuyerContractCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -396,7 +397,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractCreate>>, {data: BodyType<CreateContractRequest>}> = (props) => {
@@ -405,7 +406,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerContractCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -431,14 +432,14 @@ const {mutation: mutationOptions} = options ?
     contractId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseContractResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/renew`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getBuyerContractRenewMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -452,7 +453,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractRenew>>, {contractId: string}> = (props) => {
@@ -461,13 +462,13 @@ const {mutation: mutationOptions} = options ?
           return  buyerContractRenew(contractId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerContractRenewMutationResult = NonNullable<Awaited<ReturnType<typeof buyerContractRenew>>>
-    
+
     export type BuyerContractRenewMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerContractRenew = <TError = ErrorType<ApiResponseVoid>,
@@ -487,14 +488,14 @@ const {mutation: mutationOptions} = options ?
     contractId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListContractFulfillmentEventResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/fulfillment-events`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -504,7 +505,7 @@ export const getBuyerContractListFulfillmentEventsQueryKey = (contractId?: strin
     ] as const;
     }
 
-    
+
 export const getBuyerContractListFulfillmentEventsQueryOptions = <TData = Awaited<ReturnType<typeof buyerContractListFulfillmentEvents>>, TError = ErrorType<ApiResponseVoid>>(contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractListFulfillmentEvents>>, TError, TData>>, }
 ) => {
 
@@ -512,13 +513,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerContractListFulfillmentEventsQueryKey(contractId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerContractListFulfillmentEvents>>> = ({ signal }) => buyerContractListFulfillmentEvents(contractId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(contractId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerContractListFulfillmentEvents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -554,7 +555,7 @@ export function useBuyerContractListFulfillmentEvents<TData = Awaited<ReturnType
 
 export function useBuyerContractListFulfillmentEvents<TData = Awaited<ReturnType<typeof buyerContractListFulfillmentEvents>>, TError = ErrorType<ApiResponseVoid>>(
  contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractListFulfillmentEvents>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerContractListFulfillmentEventsQueryOptions(contractId,options)
@@ -574,8 +575,8 @@ export const buyerContractCreateFulfillmentEvent = (
     createContractFulfillmentEventRequest: BodyType<CreateContractFulfillmentEventRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseContractFulfillmentEventResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/fulfillment-events`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -583,7 +584,7 @@ export const buyerContractCreateFulfillmentEvent = (
     },
       );
     }
-  
+
 
 
 export const getBuyerContractCreateFulfillmentEventMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -597,7 +598,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractCreateFulfillmentEvent>>, {contractId: string;data: BodyType<CreateContractFulfillmentEventRequest>}> = (props) => {
@@ -606,7 +607,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerContractCreateFulfillmentEvent(contractId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -630,21 +631,24 @@ const {mutation: mutationOptions} = options ?
     }
     export const buyerContractSubmitApproval = (
     contractId: string,
+    submitContractApprovalRequest: BodyType<SubmitContractApprovalRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseContractResponse>(
-      {url: `/api/v1/buyer/contracts/${contractId}/approval`, method: 'POST', signal
+      {url: `/api/v1/buyer/contracts/${contractId}/approval`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: submitContractApprovalRequest, signal
     },
       );
     }
-  
+
 
 
 export const getBuyerContractSubmitApprovalMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractSubmitApproval>>, TError,{contractId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof buyerContractSubmitApproval>>, TError,{contractId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractSubmitApproval>>, TError,{contractId: string;data: BodyType<SubmitContractApprovalRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerContractSubmitApproval>>, TError,{contractId: string;data: BodyType<SubmitContractApprovalRequest>}, TContext> => {
 
 const mutationKey = ['buyerContractSubmitApproval'];
 const {mutation: mutationOptions} = options ?
@@ -653,30 +657,30 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractSubmitApproval>>, {contractId: string}> = (props) => {
-          const {contractId} = props ?? {};
 
-          return  buyerContractSubmitApproval(contractId,)
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractSubmitApproval>>, {contractId: string;data: BodyType<SubmitContractApprovalRequest>}> = (props) => {
+          const {contractId,data} = props ?? {};
+
+          return  buyerContractSubmitApproval(contractId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerContractSubmitApprovalMutationResult = NonNullable<Awaited<ReturnType<typeof buyerContractSubmitApproval>>>
-    
+    export type BuyerContractSubmitApprovalMutationBody = BodyType<SubmitContractApprovalRequest>
     export type BuyerContractSubmitApprovalMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerContractSubmitApproval = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractSubmitApproval>>, TError,{contractId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerContractSubmitApproval>>, TError,{contractId: string;data: BodyType<SubmitContractApprovalRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof buyerContractSubmitApproval>>,
         TError,
-        {contractId: string},
+        {contractId: string;data: BodyType<SubmitContractApprovalRequest>},
         TContext
       > => {
 
@@ -688,14 +692,14 @@ const {mutation: mutationOptions} = options ?
     contractId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListContractAmendmentResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/amendments`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -705,7 +709,7 @@ export const getBuyerContractListAmendmentsQueryKey = (contractId?: string,) => 
     ] as const;
     }
 
-    
+
 export const getBuyerContractListAmendmentsQueryOptions = <TData = Awaited<ReturnType<typeof buyerContractListAmendments>>, TError = ErrorType<ApiResponseVoid>>(contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractListAmendments>>, TError, TData>>, }
 ) => {
 
@@ -713,13 +717,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerContractListAmendmentsQueryKey(contractId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerContractListAmendments>>> = ({ signal }) => buyerContractListAmendments(contractId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(contractId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerContractListAmendments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -755,7 +759,7 @@ export function useBuyerContractListAmendments<TData = Awaited<ReturnType<typeof
 
 export function useBuyerContractListAmendments<TData = Awaited<ReturnType<typeof buyerContractListAmendments>>, TError = ErrorType<ApiResponseVoid>>(
  contractId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerContractListAmendments>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerContractListAmendmentsQueryOptions(contractId,options)
@@ -775,8 +779,8 @@ export const buyerContractCreateAmendment = (
     createContractAmendmentRequest: BodyType<CreateContractAmendmentRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseContractAmendmentResponse>(
       {url: `/api/v1/buyer/contracts/${contractId}/amendments`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -784,7 +788,7 @@ export const buyerContractCreateAmendment = (
     },
       );
     }
-  
+
 
 
 export const getBuyerContractCreateAmendmentMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -798,7 +802,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractCreateAmendment>>, {contractId: string;data: BodyType<CreateContractAmendmentRequest>}> = (props) => {
@@ -807,7 +811,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerContractCreateAmendment(contractId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -833,15 +837,15 @@ const {mutation: mutationOptions} = options ?
     params?: BuyerContractScanExpiryParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseScanExpiryResponse>(
       {url: `/api/v1/buyer/contracts/scan-expiry`, method: 'POST',
         params, signal
     },
       );
     }
-  
+
 
 
 export const getBuyerContractScanExpiryMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -855,7 +859,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerContractScanExpiry>>, {params?: BuyerContractScanExpiryParams}> = (props) => {
@@ -864,13 +868,13 @@ const {mutation: mutationOptions} = options ?
           return  buyerContractScanExpiry(params,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerContractScanExpiryMutationResult = NonNullable<Awaited<ReturnType<typeof buyerContractScanExpiry>>>
-    
+
     export type BuyerContractScanExpiryMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerContractScanExpiry = <TError = ErrorType<ApiResponseVoid>,
@@ -886,4 +890,3 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    

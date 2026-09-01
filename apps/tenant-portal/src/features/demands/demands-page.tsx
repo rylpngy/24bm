@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Calculator, CheckSquare, ClipboardList, Layers3, Plus, Search, Sparkles, Users, X,
   ClipboardCheck,
@@ -9,8 +9,8 @@ import {
   type PurchaseDemandResponse,
   useBuyerSupplierList,
   usePurchaseDemandList,
-  usePurchaseDemandSubmit,
   useRfqCreate,
+  useWorkflowPurchaseDemandSubmit,
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
@@ -26,6 +26,7 @@ import {
 import { MaterialLinePicker } from '../shared/material-line-picker';
 import { DemandCreateForm } from './demand-create-form';
 import { DemandDetail } from './demand-detail';
+import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 
 const currency = (value?: number) =>
   value == null ? '—' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -55,6 +56,7 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
+  const [submitDemand, setSubmitDemand] = useState<PurchaseDemandResponse | null>(null);
   const [selected, setSelected] = useState<PurchaseDemandResponse | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showPlanForm, setShowPlanForm] = useState(false);
@@ -68,7 +70,7 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
 
   const query = usePurchaseDemandList(status === '全部' ? undefined : { status });
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
-  const submit = usePurchaseDemandSubmit();
+  const submit = useWorkflowPurchaseDemandSubmit();
   const createRfq = useRfqCreate();
   const demands = query.data?.data ?? [];
   const suppliers = suppliersQuery.data?.data ?? [];
@@ -90,6 +92,14 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
   );
   const selectedContent = selectedDemands.map((d) => d.title).filter(Boolean).join('、');
 
+  useEffect(() => {
+    const recordId = new URLSearchParams(window.location.search).get('recordId');
+    if (!selected && recordId) {
+      const target = demands.find((item) => item.id === recordId);
+      if (target) setSelected(target);
+    }
+  }, [demands, selected]);
+
   if (selected) {
     const fresh = demands.find((d) => d.id === selected.id) ?? selected;
     return <DemandDetail demand={fresh} onBack={() => setSelected(null)} />;
@@ -101,8 +111,14 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
         typeof q.queryKey[0] === 'string' && /\/buyer\/(demands|rfqs)/.test(q.queryKey[0] as string),
     });
 
-  const handleSubmitForApproval = (demandId: string) => {
-    submit.mutate({ demandId }, { onSuccess: () => refreshDemands() });
+  const handleSubmitForApproval = (demand: PurchaseDemandResponse) => setSubmitDemand(demand);
+
+  const submitForApproval = (formData: Record<string, unknown>) => {
+    if (!submitDemand?.id) return;
+    submit.mutate(
+      { demandId: submitDemand.id, formData },
+      { onSuccess: () => { setSubmitDemand(null); refreshDemands(); } },
+    );
   };
 
   const toggleDemand = (id?: string) => {
@@ -404,7 +420,7 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
               </button>
               {d.status === '草稿' && d.id && (
                 <PrimaryActionButton
-                  onClick={() => handleSubmitForApproval(d.id!)}
+                  onClick={() => handleSubmitForApproval(d)}
                   busy={submit.isPending && submit.variables?.demandId === d.id}
                   pendingLabel="提交中"
                   fullWidth
@@ -477,7 +493,7 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
                       {d.status === '草稿' && d.id && (
                         <button
                           type="button"
-                          onClick={() => handleSubmitForApproval(d.id!)}
+                          onClick={() => handleSubmitForApproval(d)}
                           disabled={submit.isPending && submit.variables?.demandId === d.id}
                           className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:bg-slate-400"
                         >
@@ -502,6 +518,16 @@ export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) =>
         </>
       )}
     </Panel>
+    {submitDemand && (
+      <WorkflowSubmitDialog
+        businessType="purchase_demand"
+        title={submitDemand.title ?? submitDemand.id ?? '采购需求'}
+        busy={submit.isPending}
+        submissionError={submit.error}
+        onClose={() => setSubmitDemand(null)}
+        onSubmit={submitForApproval}
+      />
+    )}
     </div>
   );
 }

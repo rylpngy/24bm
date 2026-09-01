@@ -35,7 +35,8 @@ import type {
   ChangeBuyerSupplierProfileRequest,
   ChangeBuyerSupplierStatusRequest,
   CreateBuyerSupplierRequest,
-  ReviewBuyerSupplierAdmissionRequest
+  ReviewBuyerSupplierAdmissionRequest,
+  SubmitBuyerSupplierAdmissionRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -48,15 +49,15 @@ export const buyerSupplierList = (
     params?: BuyerSupplierListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListBuyerSupplierResponse>(
       {url: `/api/v1/buyer/suppliers`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -66,7 +67,7 @@ export const getBuyerSupplierListQueryKey = (params?: BuyerSupplierListParams,) 
     ] as const;
     }
 
-    
+
 export const getBuyerSupplierListQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierList>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerSupplierListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierList>>, TError, TData>>, }
 ) => {
 
@@ -74,13 +75,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierList>>> = ({ signal }) => buyerSupplierList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -116,7 +117,7 @@ export function useBuyerSupplierList<TData = Awaited<ReturnType<typeof buyerSupp
 
 export function useBuyerSupplierList<TData = Awaited<ReturnType<typeof buyerSupplierList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: BuyerSupplierListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerSupplierListQueryOptions(params,options)
@@ -135,8 +136,8 @@ export const buyerSupplierCreate = (
     createBuyerSupplierRequest: BodyType<CreateBuyerSupplierRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseBuyerSupplierResponse>(
       {url: `/api/v1/buyer/suppliers`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -144,7 +145,7 @@ export const buyerSupplierCreate = (
     },
       );
     }
-  
+
 
 
 export const getBuyerSupplierCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -158,7 +159,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierCreate>>, {data: BodyType<CreateBuyerSupplierRequest>}> = (props) => {
@@ -167,7 +168,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerSupplierCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -191,21 +192,24 @@ const {mutation: mutationOptions} = options ?
     }
     export const buyerSupplierSubmitAdmission = (
     relationId: string,
+    submitBuyerSupplierAdmissionRequest: BodyType<SubmitBuyerSupplierAdmissionRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseApprovalTaskResponse>(
-      {url: `/api/v1/buyer/suppliers/${relationId}/submit`, method: 'POST', signal
+      {url: `/api/v1/buyer/suppliers/${relationId}/submit`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: submitBuyerSupplierAdmissionRequest, signal
     },
       );
     }
-  
+
 
 
 export const getBuyerSupplierSubmitAdmissionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, TError,{relationId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, TError,{relationId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, TError,{relationId: string;data: BodyType<SubmitBuyerSupplierAdmissionRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, TError,{relationId: string;data: BodyType<SubmitBuyerSupplierAdmissionRequest>}, TContext> => {
 
 const mutationKey = ['buyerSupplierSubmitAdmission'];
 const {mutation: mutationOptions} = options ?
@@ -214,30 +218,30 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, {relationId: string}> = (props) => {
-          const {relationId} = props ?? {};
 
-          return  buyerSupplierSubmitAdmission(relationId,)
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, {relationId: string;data: BodyType<SubmitBuyerSupplierAdmissionRequest>}> = (props) => {
+          const {relationId,data} = props ?? {};
+
+          return  buyerSupplierSubmitAdmission(relationId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type BuyerSupplierSubmitAdmissionMutationResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>>
-    
+    export type BuyerSupplierSubmitAdmissionMutationBody = BodyType<SubmitBuyerSupplierAdmissionRequest>
     export type BuyerSupplierSubmitAdmissionMutationError = ErrorType<ApiResponseVoid>
 
     export const useBuyerSupplierSubmitAdmission = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, TError,{relationId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>, TError,{relationId: string;data: BodyType<SubmitBuyerSupplierAdmissionRequest>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof buyerSupplierSubmitAdmission>>,
         TError,
-        {relationId: string},
+        {relationId: string;data: BodyType<SubmitBuyerSupplierAdmissionRequest>},
         TContext
       > => {
 
@@ -250,8 +254,8 @@ const {mutation: mutationOptions} = options ?
     changeBuyerSupplierStatusRequest: BodyType<ChangeBuyerSupplierStatusRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseBuyerSupplierResponse>(
       {url: `/api/v1/buyer/suppliers/${relationId}/status`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -259,7 +263,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerSupplierChangeStatusMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -273,7 +277,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierChangeStatus>>, {relationId: string;data: BodyType<ChangeBuyerSupplierStatusRequest>}> = (props) => {
@@ -282,7 +286,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerSupplierChangeStatus(relationId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -309,8 +313,8 @@ const {mutation: mutationOptions} = options ?
     changeBuyerSupplierProfileRequest: BodyType<ChangeBuyerSupplierProfileRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseBuyerSupplierResponse>(
       {url: `/api/v1/buyer/suppliers/${relationId}/profile`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -318,7 +322,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerSupplierChangeProfileMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -332,7 +336,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierChangeProfile>>, {relationId: string;data: BodyType<ChangeBuyerSupplierProfileRequest>}> = (props) => {
@@ -341,7 +345,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerSupplierChangeProfile(relationId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -368,8 +372,8 @@ const {mutation: mutationOptions} = options ?
     changeBuyerSupplierPerformanceRequest: BodyType<ChangeBuyerSupplierPerformanceRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseBuyerSupplierResponse>(
       {url: `/api/v1/buyer/suppliers/${relationId}/performance`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -377,7 +381,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerSupplierChangePerformanceMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -391,7 +395,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierChangePerformance>>, {relationId: string;data: BodyType<ChangeBuyerSupplierPerformanceRequest>}> = (props) => {
@@ -400,7 +404,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerSupplierChangePerformance(relationId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -427,8 +431,8 @@ const {mutation: mutationOptions} = options ?
     reviewBuyerSupplierAdmissionRequest: BodyType<ReviewBuyerSupplierAdmissionRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseApprovalTaskResponse>(
       {url: `/api/v1/buyer/suppliers/${relationId}/approval`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -436,7 +440,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getBuyerSupplierReviewAdmissionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -450,7 +454,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierReviewAdmission>>, {relationId: string;data: BodyType<ReviewBuyerSupplierAdmissionRequest>}> = (props) => {
@@ -459,7 +463,7 @@ const {mutation: mutationOptions} = options ?
           return  buyerSupplierReviewAdmission(relationId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -485,14 +489,14 @@ const {mutation: mutationOptions} = options ?
     relationId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListSupplierQualificationResponse>(
       {url: `/api/v1/buyer/suppliers/${relationId}/qualifications`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -502,7 +506,7 @@ export const getBuyerSupplierListRelationQualificationsQueryKey = (relationId?: 
     ] as const;
     }
 
-    
+
 export const getBuyerSupplierListRelationQualificationsQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError, TData>>, }
 ) => {
 
@@ -510,13 +514,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierListRelationQualificationsQueryKey(relationId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>> = ({ signal }) => buyerSupplierListRelationQualifications(relationId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(relationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -552,7 +556,7 @@ export function useBuyerSupplierListRelationQualifications<TData = Awaited<Retur
 
 export function useBuyerSupplierListRelationQualifications<TData = Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError = ErrorType<ApiResponseVoid>>(
  relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierListRelationQualifications>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerSupplierListRelationQualificationsQueryOptions(relationId,options)
@@ -572,15 +576,15 @@ export const buyerSupplierDownloadQualification = (
     qualificationId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<Blob>(
       {url: `/api/v1/buyer/suppliers/${relationId}/qualifications/${qualificationId}/download`, method: 'GET',
         responseType: 'blob', signal
     },
       );
     }
-  
+
 
 
 
@@ -591,7 +595,7 @@ export const getBuyerSupplierDownloadQualificationQueryKey = (relationId?: strin
     ] as const;
     }
 
-    
+
 export const getBuyerSupplierDownloadQualificationQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError = ErrorType<ApiResponseVoid>>(relationId: string,
     qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError, TData>>, }
 ) => {
@@ -600,13 +604,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierDownloadQualificationQueryKey(relationId,qualificationId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>> = ({ signal }) => buyerSupplierDownloadQualification(relationId,qualificationId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(relationId && qualificationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -646,7 +650,7 @@ export function useBuyerSupplierDownloadQualification<TData = Awaited<ReturnType
 export function useBuyerSupplierDownloadQualification<TData = Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError = ErrorType<ApiResponseVoid>>(
  relationId: string,
     qualificationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierDownloadQualification>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerSupplierDownloadQualificationQueryOptions(relationId,qualificationId,options)

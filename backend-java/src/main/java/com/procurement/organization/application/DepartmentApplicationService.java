@@ -4,6 +4,9 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
+import com.procurement.identity.application.PermissionService;
+import com.procurement.identity.domain.BuyerUser;
+import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.organization.api.CreateDepartmentRequest;
 import com.procurement.organization.api.DepartmentResponse;
 import com.procurement.organization.api.UpdateDepartmentRequest;
@@ -21,14 +24,20 @@ public class DepartmentApplicationService {
   private final DepartmentMapper departmentMapper;
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final BuyerUserMapper buyerUserMapper;
+  private final PermissionService permissionService;
 
   public DepartmentApplicationService(
       DepartmentMapper departmentMapper,
       PurchaseDemandMapper purchaseDemandMapper,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService,
+      BuyerUserMapper buyerUserMapper,
+      PermissionService permissionService) {
     this.departmentMapper = departmentMapper;
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.buyerUserMapper = buyerUserMapper;
+    this.permissionService = permissionService;
   }
 
   public List<DepartmentResponse> listCurrentTenantDepartments() {
@@ -38,9 +47,17 @@ public class DepartmentApplicationService {
         .toList();
   }
 
+  /** 跨模块查询入口：按当前租户获取启用中的组织单位。 */
+  public Department findCurrentTenantActiveDepartment(String departmentId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    Department department = departmentMapper.findByTenantAndId(tenantId, departmentId);
+    return department != null && DepartmentStatus.ACTIVE.equals(department.status()) ? department : null;
+  }
+
   @Transactional
   public DepartmentResponse createDepartment(CreateDepartmentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    requireTeamManagement();
     requireActiveParentDepartment(tenantId, request.parentId());
     String departmentId = "dept-" + UUID.randomUUID();
     departmentMapper.insert(
@@ -72,6 +89,7 @@ public class DepartmentApplicationService {
   @Transactional
   public com.procurement.common.api.ImportResultResponse importDepartments(byte[] content) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    requireTeamManagement();
     List<List<String>> rows = com.procurement.common.excel.ExcelSheets.readFirstSheet(content, 201);
     if (rows.size() <= 1) {
       throw new IllegalArgumentException("文件中没有数据行,请按模板填写后再导入");
@@ -122,19 +140,26 @@ public class DepartmentApplicationService {
   @Transactional
   public DepartmentResponse updateDepartment(String departmentId, UpdateDepartmentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    requireTeamManagement();
     Department current = departmentMapper.findByTenantAndId(tenantId, departmentId);
     if (current == null || !DepartmentStatus.ACTIVE.equals(current.status())) {
       throw new IllegalArgumentException("Department not found in tenant scope: " + departmentId);
     }
+    String managerId = blankToNull(request.managerId());
+    boolean managerTransferred = prepareManager(
+        tenantId, departmentId, managerId, request.transferManagerToDepartment());
     departmentMapper.updateDetails(
         tenantId,
         departmentId,
-        request.name(),
+        request.name().trim(),
         request.description() == null ? "" : request.description(),
-        request.managerId());
-    String detail = current.name().equals(request.name())
-        ? "部门资料更新: " + request.name()
-        : "部门: " + current.name() + " → " + request.name();
+        managerId);
+    String detail = current.name().equals(request.name().trim())
+        ? "部门资料更新: " + request.name().trim()
+        : "部门: " + current.name() + " → " + request.name().trim();
+    if (managerTransferred) {
+      detail += "；负责人已调入当前部门";
+    }
     auditLogApplicationService.recordTenantAction(
         tenantId, DepartmentAuditAction.UPDATED, AuditTargetType.DEPARTMENT, departmentId, detail);
     return toResponse(departmentMapper.findByTenantAndId(tenantId, departmentId));
@@ -143,12 +168,19 @@ public class DepartmentApplicationService {
   @Transactional
   public DepartmentResponse disableDepartment(String departmentId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    requireTeamManagement();
     if (!departmentMapper.existsActiveByTenantAndId(tenantId, departmentId)) {
       throw new IllegalArgumentException("Department not found in tenant scope: " + departmentId);
     }
     int referencedDemands = purchaseDemandMapper.countByTenantAndDepartment(tenantId, departmentId);
     if (referencedDemands > 0) {
       throw new IllegalStateException("Department is referenced by purchase demands: " + departmentId);
+    }
+    if (departmentMapper.countActiveMembersByTenantAndDepartment(tenantId, departmentId) > 0) {
+      throw new IllegalStateException("Department still has active members: " + departmentId);
+    }
+    if (departmentMapper.countActiveChildrenByTenantAndParent(tenantId, departmentId) > 0) {
+      throw new IllegalStateException("Department still has active child departments: " + departmentId);
     }
     int updated = departmentMapper.updateStatus(
         tenantId,
@@ -172,6 +204,44 @@ public class DepartmentApplicationService {
     if (!departmentMapper.existsActiveByTenantAndId(tenantId, parentId)) {
       throw new IllegalArgumentException("Parent department not found in tenant scope: " + parentId);
     }
+  }
+
+  private boolean prepareManager(
+      String tenantId,
+      String departmentId,
+      String managerId,
+      Boolean transferManagerToDepartment) {
+    if (managerId == null) {
+      return false;
+    }
+    BuyerUser manager = buyerUserMapper.findByTenantAndId(tenantId, managerId);
+    if (manager == null || !"active".equals(manager.status())) {
+      throw new IllegalArgumentException("负责人必须是当前企业的在职成员");
+    }
+    boolean transferred = false;
+    if (!departmentId.equals(manager.departmentId())) {
+      if (!Boolean.TRUE.equals(transferManagerToDepartment)) {
+        throw new IllegalArgumentException("负责人必须属于当前部门；可选择调入当前部门后再任命");
+      }
+      int changed = buyerUserMapper.updateDepartment(tenantId, managerId, departmentId);
+      if (changed == 0) {
+        throw new IllegalStateException("负责人调入部门失败，请刷新后重试");
+      }
+      departmentMapper.clearManagerByUserIdExceptDepartment(tenantId, managerId, departmentId);
+      transferred = true;
+    }
+    if (!departmentMapper.existsActiveMemberByTenantAndDepartment(tenantId, departmentId, managerId)) {
+      throw new IllegalArgumentException("负责人必须是当前部门的在职成员");
+    }
+    return transferred;
+  }
+
+  private void requireTeamManagement() {
+    permissionService.require("buyer:role:manage");
+  }
+
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
   }
 
   private DepartmentResponse toResponse(Department department) {

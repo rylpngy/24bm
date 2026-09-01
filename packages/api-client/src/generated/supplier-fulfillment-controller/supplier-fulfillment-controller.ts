@@ -35,14 +35,14 @@ export const supplierFulfillmentFulfillmentMetrics = (
     supplierId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSupplierFulfillmentMetricsResponse>(
       {url: `/api/v1/buyer/suppliers/${supplierId}/fulfillment-metrics`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -52,7 +52,7 @@ export const getSupplierFulfillmentFulfillmentMetricsQueryKey = (supplierId?: st
     ] as const;
     }
 
-    
+
 export const getSupplierFulfillmentFulfillmentMetricsQueryOptions = <TData = Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError = ErrorType<ApiResponseVoid>>(supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>>, }
 ) => {
 
@@ -60,13 +60,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierFulfillmentFulfillmentMetricsQueryKey(supplierId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>> = ({ signal }) => supplierFulfillmentFulfillmentMetrics(supplierId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(supplierId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -102,7 +102,7 @@ export function useSupplierFulfillmentFulfillmentMetrics<TData = Awaited<ReturnT
 
 export function useSupplierFulfillmentFulfillmentMetrics<TData = Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError = ErrorType<ApiResponseVoid>>(
  supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierFulfillmentFulfillmentMetricsQueryOptions(supplierId,options)

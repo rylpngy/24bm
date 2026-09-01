@@ -59,8 +59,8 @@ export function ApprovalTimeline({
   return (
     <SectionCard icon={ShieldCheck} title={title} className={className}>
       <div className="space-y-5 border-l border-slate-100 pl-5">
-        {nodes.map((node) => (
-          <div key={node.label} className="relative">
+        {nodes.map((node, index) => (
+          <div key={`${node.label}-${index}`} className="relative">
             <i
               className={cn(
                 'absolute -left-[1.45rem] top-1 h-2 w-2 rounded-full',

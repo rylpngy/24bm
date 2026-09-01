@@ -41,7 +41,7 @@ import com.procurement.attachment.api.AttachmentResponse;
 import com.procurement.attachment.api.CreateAttachmentRequest;
 import com.procurement.attachment.application.AttachmentApplicationService;
 import com.procurement.demand.api.PurchaseDemandController;
-import com.procurement.demand.api.ApprovalTaskResponse;
+import com.procurement.common.api.ApprovalTaskResponse;
 import com.procurement.demand.api.PurchaseDemandResponse;
 import com.procurement.demand.application.PurchaseDemandApplicationService;
 import com.procurement.dictionary.api.DictionaryController;
@@ -98,7 +98,8 @@ import com.procurement.organization.api.DepartmentController;
 import com.procurement.organization.api.DepartmentResponse;
 import com.procurement.organization.application.DepartmentApplicationService;
 import com.procurement.order.api.BuyerDeliveryController;
-import com.procurement.workflow.api.FlowableDemandApprovalController;
+import com.procurement.workflow.api.UnifiedWorkflowController;
+import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
 import com.procurement.order.api.BuyerReceiptController;
 import com.procurement.order.api.CreatePurchaseOrderRequest;
 import com.procurement.order.api.CreateReceiptRequest;
@@ -250,7 +251,7 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerReceiptController.class,
     SupplierDeliveryController.class,
     BuyerDeliveryController.class,
-    FlowableDemandApprovalController.class,
+    UnifiedWorkflowController.class,
     BuyerInvoiceReconciliationController.class,
     SupplierInvoiceReconciliationController.class,
     BuyerFinanceActionController.class,
@@ -268,14 +269,14 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierNotificationController.class,
     DepartmentController.class,
     com.procurement.process.api.ProcessDefinitionController.class,
-    com.procurement.process.api.ProcessInstanceController.class,
     com.procurement.mall.api.BuyerMallController.class,
     com.procurement.mall.api.SupplierMallController.class,
     com.procurement.esign.api.BuyerEsignController.class,
     com.procurement.esign.api.SupplierEsignController.class,
     com.procurement.tender.api.BuyerTenderController.class,
     com.procurement.tender.api.SupplierTenderController.class,
-    com.procurement.tenant.api.BuyerCapabilityController.class
+    com.procurement.tenant.api.BuyerCapabilityController.class,
+    com.procurement.ludongpoc.api.LudongPocController.class
 })
 @Import({
     SecurityConfig.class,
@@ -306,9 +307,6 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.tenant.application.TenantCapabilityApplicationService tenantCapabilityApplicationService;
-
-  @MockBean
-  private com.procurement.workflow.application.FlowableDemandApprovalService flowableDemandApprovalService;
 
   @MockBean
   private com.procurement.platform.application.PublicPortalApplicationService publicPortalApplicationService;
@@ -443,7 +441,22 @@ class HttpSecurityContractTests {
   private com.procurement.process.application.ProcessDefinitionApplicationService processDefinitionApplicationService;
 
   @MockBean
-  private com.procurement.process.application.ProcessInstanceApplicationService processInstanceApplicationService;
+  private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocApplicationService ludongPocApplicationService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocDocumentService ludongPocDocumentService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocAnalyticsReportService ludongPocAnalyticsReportService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocAiReviewService ludongPocAiReviewService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocAiReviewRegistry ludongPocAiReviewRegistry;
 
   @MockBean
   private AuditLogApplicationService auditLogApplicationService;
@@ -714,41 +727,16 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.status").value("enabled"));
 
-    // 流程实例:发起 / 审批。供应商越权 403;采购方 200。
-    mockMvc.perform(post("/api/v1/buyer/process-instances")
-            .header("Authorization", "Bearer " + supplierToken)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {"processId": "proc-1", "formData": "{}", "amount": 8000}
-                """))
+    // 统一审批运行时:供应商越权 403;采购方只可通过 Flowable 待办入口访问。
+    mockMvc.perform(get("/api/v1/buyer/workflow/tasks")
+            .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isForbidden());
 
-    when(processInstanceApplicationService.start(org.mockito.ArgumentMatchers.any()))
-        .thenReturn(new com.procurement.process.api.ProcessInstanceResponse(
-            "pi-1", "proc-1", "采购立项审批", new java.math.BigDecimal("8000"), "processing", 0,
-            "[]", "{}", "user-buyer-owner", OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
-    mockMvc.perform(post("/api/v1/buyer/process-instances")
-            .header("Authorization", "Bearer " + buyerToken)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {"processId": "proc-1", "formData": "{}", "amount": 8000}
-                """))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.data.status").value("processing"));
-
-    when(processInstanceApplicationService.review(
-        org.mockito.ArgumentMatchers.eq("pi-1"), org.mockito.ArgumentMatchers.any()))
-        .thenReturn(new com.procurement.process.api.ProcessInstanceResponse(
-            "pi-1", "proc-1", "采购立项审批", new java.math.BigDecimal("8000"), "approved", 0,
-            "[]", "{}", "user-buyer-owner", OffsetDateTime.parse("2026-06-29T10:00:00+08:00")));
-    mockMvc.perform(post("/api/v1/buyer/process-instances/pi-1/review")
-            .header("Authorization", "Bearer " + buyerToken)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {"decision": "approve", "comment": "同意"}
-                """))
+    when(unifiedWorkflowApplicationService.listCurrentUserTasks()).thenReturn(List.of());
+    mockMvc.perform(get("/api/v1/buyer/workflow/tasks")
+            .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.status").value("approved"));
+        .andExpect(jsonPath("$.data").isArray());
   }
 
   @Test

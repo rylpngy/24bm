@@ -16,14 +16,14 @@ values ('twm-demo', 'tenant-acme', 'inv-demo', 'ent-supplier-sunrise', 'po-invoi
         '已收货', 88000.00, 0.00, '三单匹配通过', '订单、收货、发票一致', '可申请付款')
 on conflict (tenant_id, invoice_id) do nothing;
 
--- 3) 两条付款申请,同属批次 PB-2026-0001。
+-- 3) 两条已通过付款申请,同属批次 PB-2026-0001,用于演示批次提交统一审批。
 insert into payment_requests (id, tenant_id, invoice_id, supplier_id, order_id, amount,
                               request_status, payment_batch_no, remark, created_by)
 values
   ('preq-demo-a', 'tenant-acme', 'inv-demo', 'ent-supplier-sunrise', 'po-invoiced', 88000.00,
    '付款申请已通过', 'PB-2026-0001', '线缆采购验收合格,正常付款', 'user-buyer-owner'),
   ('preq-demo-b', 'tenant-acme', 'inv-batch-a', 'ent-supplier-sunrise', 'po-demo', 46000.00,
-   '付款申请审批中', 'PB-2026-0001', '打印机采购,待财务审批', 'user-buyer-owner')
+   '付款申请已通过', 'PB-2026-0001', '打印机采购付款申请已通过,待提交批次审批', 'user-buyer-owner')
 on conflict (tenant_id, invoice_id) do nothing;
 
 -- 4) 付款批次抬头。

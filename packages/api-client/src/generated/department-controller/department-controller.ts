@@ -43,8 +43,8 @@ export const departmentUpdate = (
     departmentId: string,
     updateDepartmentRequest: BodyType<UpdateDepartmentRequest>,
  ) => {
-      
-      
+
+
       return customInstance<ApiResponseDepartmentResponse>(
       {url: `/api/v1/buyer/departments/${departmentId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
@@ -52,7 +52,7 @@ export const departmentUpdate = (
     },
       );
     }
-  
+
 
 
 export const getDepartmentUpdateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -66,7 +66,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof departmentUpdate>>, {departmentId: string;data: BodyType<UpdateDepartmentRequest>}> = (props) => {
@@ -75,7 +75,7 @@ const {mutation: mutationOptions} = options ?
           return  departmentUpdate(departmentId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -98,17 +98,17 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const departmentList = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListDepartmentResponse>(
       {url: `/api/v1/buyer/departments`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -118,7 +118,7 @@ export const getDepartmentListQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getDepartmentListQueryOptions = <TData = Awaited<ReturnType<typeof departmentList>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof departmentList>>, TError, TData>>, }
 ) => {
 
@@ -126,13 +126,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getDepartmentListQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof departmentList>>> = ({ signal }) => departmentList(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof departmentList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -168,7 +168,7 @@ export function useDepartmentList<TData = Awaited<ReturnType<typeof departmentLi
 
 export function useDepartmentList<TData = Awaited<ReturnType<typeof departmentList>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof departmentList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDepartmentListQueryOptions(options)
@@ -187,8 +187,8 @@ export const departmentCreate = (
     createDepartmentRequest: BodyType<CreateDepartmentRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseDepartmentResponse>(
       {url: `/api/v1/buyer/departments`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -196,7 +196,7 @@ export const departmentCreate = (
     },
       );
     }
-  
+
 
 
 export const getDepartmentCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -210,7 +210,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof departmentCreate>>, {data: BodyType<CreateDepartmentRequest>}> = (props) => {
@@ -219,7 +219,7 @@ const {mutation: mutationOptions} = options ?
           return  departmentCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -245,14 +245,14 @@ const {mutation: mutationOptions} = options ?
     departmentId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseDepartmentResponse>(
       {url: `/api/v1/buyer/departments/${departmentId}/disable`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getDepartmentDisableMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -266,7 +266,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof departmentDisable>>, {departmentId: string}> = (props) => {
@@ -275,13 +275,13 @@ const {mutation: mutationOptions} = options ?
           return  departmentDisable(departmentId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type DepartmentDisableMutationResult = NonNullable<Awaited<ReturnType<typeof departmentDisable>>>
-    
+
     export type DepartmentDisableMutationError = ErrorType<ApiResponseVoid>
 
     export const useDepartmentDisable = <TError = ErrorType<ApiResponseVoid>,
@@ -301,8 +301,8 @@ const {mutation: mutationOptions} = options ?
     departmentImportDepartmentsBody: BodyType<string>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseImportResultResponse>(
       {url: `/api/v1/buyer/departments/import`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -310,7 +310,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getDepartmentImportDepartmentsMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -324,7 +324,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof departmentImportDepartments>>, {data: BodyType<string>}> = (props) => {
@@ -333,7 +333,7 @@ const {mutation: mutationOptions} = options ?
           return  departmentImportDepartments(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -356,18 +356,18 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const departmentImportTemplate = (
-    
+
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<Blob>(
       {url: `/api/v1/buyer/departments/import-template`, method: 'GET',
         responseType: 'blob', signal
     },
       );
     }
-  
+
 
 
 
@@ -377,7 +377,7 @@ export const getDepartmentImportTemplateQueryKey = () => {
     ] as const;
     }
 
-    
+
 export const getDepartmentImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof departmentImportTemplate>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof departmentImportTemplate>>, TError, TData>>, }
 ) => {
 
@@ -385,13 +385,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getDepartmentImportTemplateQueryKey();
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof departmentImportTemplate>>> = ({ signal }) => departmentImportTemplate(signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof departmentImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -427,7 +427,7 @@ export function useDepartmentImportTemplate<TData = Awaited<ReturnType<typeof de
 
 export function useDepartmentImportTemplate<TData = Awaited<ReturnType<typeof departmentImportTemplate>>, TError = ErrorType<ApiResponseVoid>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof departmentImportTemplate>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDepartmentImportTemplateQueryOptions(options)

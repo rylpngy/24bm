@@ -1,0 +1,37 @@
+{
+  "version": "ldu-ai-eval-v1-2026-08-31",
+  "samples": [
+    {
+      "id": "missing-core-fields",
+      "nodeId": "argumentation_review",
+      "budgetAmount": 200000,
+      "formData": {"fundingSource": "", "projectLeaderName": "", "technicalLeaderName": ""},
+      "items": [{"name": "服务器", "quantity": 2, "unitPrice": 100000, "totalPrice": 200000, "technicalParameters": "64GB内存", "referenceBrands": "品牌甲"}],
+      "expectedRiskTitles": ["基础材料存在缺项"]
+    },
+    {
+      "id": "mall-over-price",
+      "nodeId": "mall_selection_participant_review",
+      "budgetAmount": 100000,
+      "formData": {"fundingSource": "教学经费", "projectLeaderName": "王老师", "technicalLeaderName": "赵老师", "mallSelectionApplicable": "是"},
+      "items": [{"name": "笔记本电脑", "quantity": 2, "unitPrice": 50000, "totalPrice": 100000, "technicalParameters": "16GB内存", "referenceBrands": "品牌甲", "selectedBrand": "品牌甲", "selectedModel": "A1", "selectedSupplier": "供应商甲", "selectedUnitPrice": 52000, "selectionParticipants": "张三、李四、王五"}],
+      "expectedRiskTitles": ["商城选型价格超过申报单价"]
+    },
+    {
+      "id": "mall-participants-insufficient",
+      "nodeId": "mall_selection_participant_review",
+      "budgetAmount": 80000,
+      "formData": {"fundingSource": "教学经费", "projectLeaderName": "王老师", "technicalLeaderName": "赵老师", "mallSelectionApplicable": "是"},
+      "items": [{"name": "投影仪", "quantity": 1, "unitPrice": 80000, "totalPrice": 80000, "technicalParameters": "激光光源", "referenceBrands": "品牌甲", "selectedBrand": "品牌甲", "selectedModel": "P1", "selectedSupplier": "供应商甲", "selectedUnitPrice": 78000, "selectionParticipants": "张三、李四"}],
+      "expectedRiskTitles": ["商城选型参与人数不足"]
+    },
+    {
+      "id": "complete-standard-case",
+      "nodeId": "unit_review",
+      "budgetAmount": 60000,
+      "formData": {"fundingSource": "年度教学经费", "projectLeaderName": "王老师", "technicalLeaderName": "赵老师", "mallSelectionApplicable": "否"},
+      "items": [{"name": "教学终端", "quantity": 2, "unitPrice": 30000, "totalPrice": 60000, "technicalParameters": "国产处理器", "referenceBrands": "品牌甲、品牌乙"}],
+      "expectedRiskTitles": []
+    }
+  ]
+}

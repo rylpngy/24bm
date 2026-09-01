@@ -17,4 +17,5 @@ export interface BuyerUserResponse {
   roleId?: string;
   employeeNo?: string;
   jobTitle?: string;
+  roleIds?: string[];
 }

@@ -47,14 +47,14 @@ export const supplierQuoteMarkViewed = (
     rfqId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVoid>(
       {url: `/api/v1/supplier/rfqs/${rfqId}/view`, method: 'POST', signal
     },
       );
     }
-  
+
 
 
 export const getSupplierQuoteMarkViewedMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -68,7 +68,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQuoteMarkViewed>>, {rfqId: string}> = (props) => {
@@ -77,13 +77,13 @@ const {mutation: mutationOptions} = options ?
           return  supplierQuoteMarkViewed(rfqId,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type SupplierQuoteMarkViewedMutationResult = NonNullable<Awaited<ReturnType<typeof supplierQuoteMarkViewed>>>
-    
+
     export type SupplierQuoteMarkViewedMutationError = ErrorType<ApiResponseVoid>
 
     export const useSupplierQuoteMarkViewed = <TError = ErrorType<ApiResponseVoid>,
@@ -104,8 +104,8 @@ const {mutation: mutationOptions} = options ?
     submitQuoteRequest: BodyType<SubmitQuoteRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseQuoteResponse>(
       {url: `/api/v1/supplier/rfqs/${rfqId}/quotes`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -113,7 +113,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierQuoteSubmitMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -127,7 +127,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQuoteSubmit>>, {rfqId: string;data: BodyType<SubmitQuoteRequest>}> = (props) => {
@@ -136,7 +136,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierQuoteSubmit(rfqId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -163,8 +163,8 @@ const {mutation: mutationOptions} = options ?
     declineRfqInvitationRequest: BodyType<DeclineRfqInvitationRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseVoid>(
       {url: `/api/v1/supplier/rfqs/${rfqId}/decline`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -172,7 +172,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSupplierQuoteDeclineMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -186,7 +186,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQuoteDecline>>, {rfqId: string;data: BodyType<DeclineRfqInvitationRequest>}> = (props) => {
@@ -195,7 +195,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierQuoteDecline(rfqId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -221,14 +221,14 @@ const {mutation: mutationOptions} = options ?
     rfqId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListRfqClarificationResponse>(
       {url: `/api/v1/supplier/rfqs/${rfqId}/clarifications`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -238,7 +238,7 @@ export const getSupplierQuoteClarificationsQueryKey = (rfqId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getSupplierQuoteClarificationsQueryOptions = <TData = Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError, TData>>, }
 ) => {
 
@@ -246,13 +246,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierQuoteClarificationsQueryKey(rfqId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQuoteClarifications>>> = ({ signal }) => supplierQuoteClarifications(rfqId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -288,7 +288,7 @@ export function useSupplierQuoteClarifications<TData = Awaited<ReturnType<typeof
 
 export function useSupplierQuoteClarifications<TData = Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError = ErrorType<ApiResponseVoid>>(
  rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteClarifications>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierQuoteClarificationsQueryOptions(rfqId,options)
@@ -308,8 +308,8 @@ export const supplierQuoteAsk = (
     askClarificationRequest: BodyType<AskClarificationRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseRfqClarificationResponse>(
       {url: `/api/v1/supplier/rfqs/${rfqId}/clarifications`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -317,7 +317,7 @@ export const supplierQuoteAsk = (
     },
       );
     }
-  
+
 
 
 export const getSupplierQuoteAskMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -331,7 +331,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierQuoteAsk>>, {rfqId: string;data: BodyType<AskClarificationRequest>}> = (props) => {
@@ -340,7 +340,7 @@ const {mutation: mutationOptions} = options ?
           return  supplierQuoteAsk(rfqId,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -366,15 +366,15 @@ const {mutation: mutationOptions} = options ?
     params?: SupplierQuoteListRfqsParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseListRfqResponse>(
       {url: `/api/v1/supplier/rfqs`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -384,7 +384,7 @@ export const getSupplierQuoteListRfqsQueryKey = (params?: SupplierQuoteListRfqsP
     ] as const;
     }
 
-    
+
 export const getSupplierQuoteListRfqsQueryOptions = <TData = Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierQuoteListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError, TData>>, }
 ) => {
 
@@ -392,13 +392,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierQuoteListRfqsQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQuoteListRfqs>>> = ({ signal }) => supplierQuoteListRfqs(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -434,7 +434,7 @@ export function useSupplierQuoteListRfqs<TData = Awaited<ReturnType<typeof suppl
 
 export function useSupplierQuoteListRfqs<TData = Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SupplierQuoteListRfqsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteListRfqs>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierQuoteListRfqsQueryOptions(params,options)
@@ -453,14 +453,14 @@ export const supplierQuoteResult = (
     rfqId: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseRfqResultResponse>(
       {url: `/api/v1/supplier/rfqs/${rfqId}/result`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -470,7 +470,7 @@ export const getSupplierQuoteResultQueryKey = (rfqId?: string,) => {
     ] as const;
     }
 
-    
+
 export const getSupplierQuoteResultQueryOptions = <TData = Awaited<ReturnType<typeof supplierQuoteResult>>, TError = ErrorType<ApiResponseVoid>>(rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteResult>>, TError, TData>>, }
 ) => {
 
@@ -478,13 +478,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSupplierQuoteResultQueryKey(rfqId);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierQuoteResult>>> = ({ signal }) => supplierQuoteResult(rfqId, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(rfqId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteResult>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -520,7 +520,7 @@ export function useSupplierQuoteResult<TData = Awaited<ReturnType<typeof supplie
 
 export function useSupplierQuoteResult<TData = Awaited<ReturnType<typeof supplierQuoteResult>>, TError = ErrorType<ApiResponseVoid>>(
  rfqId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierQuoteResult>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierQuoteResultQueryOptions(rfqId,options)

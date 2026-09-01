@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, Info, Plus } from 'lucide-react';
 import {
@@ -6,10 +6,10 @@ import {
   useBuyerContractList,
   useBuyerContractRenew,
   useBuyerContractReviewApproval,
-  useBuyerContractSubmitApproval,
   useBuyerContractUpdateArchiveStatus,
   useBuyerContractUpdateStatus,
   usePurchaseOrderList,
+  useWorkflowContractApprovalSubmit,
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
@@ -30,6 +30,8 @@ import { ContractAmendments } from './contract-amendments';
 import { ContractScheduleSection } from './contract-schedule-section';
 import { ContractPaymentReconciliationPanel, ContractReconciliationDetail } from './contract-payment-reconciliation-panel';
 import { ContractEsignPanel } from './contract-esign-panel';
+import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
+import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -76,11 +78,12 @@ export function ContractsPage() {
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
 
   const query = useBuyerContractList();
   const orders = usePurchaseOrderList();
   const create = useBuyerContractCreate();
-  const submit = useBuyerContractSubmitApproval();
+  const submit = useWorkflowContractApprovalSubmit();
   const reviewApproval = useBuyerContractReviewApproval();
   const renew = useBuyerContractRenew();
   const updateStatus = useBuyerContractUpdateStatus();
@@ -101,6 +104,11 @@ export function ContractsPage() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  useEffect(() => {
+    const recordId = new URLSearchParams(window.location.search).get('recordId');
+    if (!selectedId && recordId && contracts.some((item) => item.id === recordId)) setSelectedId(recordId);
+  }, [contracts, selectedId]);
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -181,6 +189,8 @@ export function ContractsPage() {
         </div>
 
         {feedback && <FeedbackNotice tone="success" message={feedback} />}
+
+        {c.id && <WorkflowStatusPanel businessType="contract_approval" businessId={c.id} />}
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
@@ -304,9 +314,7 @@ export function ContractsPage() {
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() =>
-                    submit.mutate({ contractId: c.id! }, { onSuccess: () => { setFeedback('合同已提交审批'); refresh(); } })
-                  }
+                  onClick={() => setShowApprovalDialog(true)}
                   className="inline-flex h-10 items-center rounded-lg bg-blue-600 px-5 text-sm font-black text-white hover:bg-blue-700 disabled:bg-slate-300"
                 >
                   提交审批
@@ -393,6 +401,28 @@ export function ContractsPage() {
             </div>
           </div>
         </div>
+        {showApprovalDialog && c.id && (
+          <WorkflowSubmitDialog
+            businessType="contract_approval"
+            title={c.contractName ?? '合同审批'}
+            busy={submit.isPending}
+            submissionError={submit.error}
+            onClose={() => setShowApprovalDialog(false)}
+            onSubmit={(formData) =>
+              submit.mutate(
+                { contractId: c.id!, formData },
+                {
+                  onSuccess: () => {
+                    setShowApprovalDialog(false);
+                    setFeedback('合同已提交审批，待候选审批人办理。');
+                    refresh();
+                  },
+                  onError: () => setFeedback('提交失败：请确认已发布合同审批流程并重试。'),
+                },
+              )
+            }
+          />
+        )}
       </div>
     );
   }

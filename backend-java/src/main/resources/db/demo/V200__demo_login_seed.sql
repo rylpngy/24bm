@@ -52,6 +52,23 @@ values
   ('rel-acme-sunrise', 'tenant-acme', 'ent-supplier-sunrise', '已准入', 'A', '["办公设备","电脑整机"]'::jsonb, 94.50)
 on conflict (tenant_id, supplier_id) do nothing;
 
+-- 询价邀请会校验供应商存在有效资质；演示账号也应具备可完整走通主流程的最小资料。
+insert into supplier_qualifications (
+  id, supplier_id, qualification_type, certificate_no, expires_at, file_name, storage_key, status
+)
+values
+  (
+    'qual-acme-sunrise-license',
+    'ent-supplier-sunrise',
+    '营业执照',
+    '91310000SUNRISE001',
+    date '2030-12-31',
+    '晨光科技营业执照.pdf',
+    'demo/qualifications/qual-acme-sunrise-license.pdf',
+    'active'
+  )
+on conflict (id) do nothing;
+
 insert into materials (id, tenant_id, code, name, category, unit, reference_price)
 values
   ('mat-laptop', 'tenant-acme', 'IT-LAPTOP', '办公电脑', '办公设备', '台', 6000.00),
