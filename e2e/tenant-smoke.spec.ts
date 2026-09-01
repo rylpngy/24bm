@@ -133,7 +133,7 @@ test('采购计划详情:进度节点与合规检查由真实数据驱动', asyn
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
   await page.getByRole('button', { name: /登录系统/ }).click();
 
-  await page.getByRole('button', { name: '查看详情' }).first().click();
+  await page.getByRole('button', { name: '详情', exact: true }).first().click();
   await expect(page.getByText('执行进度跟踪')).toBeVisible();
   await expect(page.getByText('方案合规检查')).toBeVisible();
   await expect(page.getByText('审批流转')).toBeVisible();
@@ -231,18 +231,21 @@ test('商机大厅:公开列表 + 详情 + 报名参与', async ({ page }) => {
   await page.getByRole('button', { name: /提交报名/ }).click();
   await expect(page.getByText('报名已提交')).toBeVisible();
 });
-test('智能审批:审批节点配置面板(可配置+财务节点固定开启)', async ({ page }) => {
-  await page.goto('/?module=approvals');
+test('流程引擎:表单、审批节点、办理人和条件分支可配置', async ({ page }) => {
+  await page.goto('/?module=process-engine');
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
   await page.getByRole('button', { name: /登录系统/ }).click();
 
-  // 入口在标题栏右上角,点击展开配置面板。
-  await page.getByRole('button', { name: '审批节点配置' }).click();
-  await expect(page.getByText(/审批人与流转规则由审批引擎/)).toBeVisible();
-  // 七个节点渲染,财务节点带固定开启锁。
-  await expect(page.getByRole('switch').first()).toBeVisible();
-  await expect(page.getByText('固定开启').first()).toBeVisible();
-  await expect(page.getByText('需求审批', { exact: true })).toBeVisible();
+  await expect(page.getByText('流程定义配置', { exact: true })).toBeVisible();
+  await expect(page.getByText(/发布后生成不可变版本并部署至 Flowable/)).toBeVisible();
+  await page.getByRole('button', { name: '配置', exact: true }).first().click();
+  await page.getByRole('button', { name: '流程设计', exact: true }).click();
+  await page.getByRole('button', { name: /编辑/ }).first().click();
+  await expect(page.getByText('办理规则', { exact: true })).toBeVisible();
+  await expect(page.getByRole('option', { name: '候选角色' })).toBeAttached();
+  await page.locator('button:has(svg.lucide-plus)').first().click();
+  await expect(page.getByRole('button', { name: '条件分支', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '发布版本' })).toBeVisible();
 });
 test('门户供应商入驻:注册入口 + 申请表单 + 提交成功', async ({ page }) => {
   await page.goto('/?page=supplier-register');
