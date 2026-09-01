@@ -30,7 +30,7 @@ function errorMessage(error: unknown, fallback: string) {
   return typeof message === 'string' && message.trim() ? message : fallback;
 }
 
-export function TeamPage() {
+export function TeamPage({ requireEmployeeNo = false }: { requireEmployeeNo?: boolean }) {
   const queryClient = useQueryClient();
   const usersQuery = useBuyerUserList();
   const departmentsQuery = useDepartmentList();
@@ -58,6 +58,13 @@ export function TeamPage() {
     });
     return map;
   }, [roles]);
+  const roleNames = (user: BuyerUserResponse) => {
+    const roleIds = (user as BuyerUserResponse & { roleIds?: string[] }).roleIds;
+    return (roleIds?.length ? roleIds : [user.roleId])
+      .filter(Boolean)
+      .map((roleId) => roleNameById.get(roleId!) || roleId)
+      .join('、') || '未设置角色';
+  };
 
   const departmentById = useMemo(() => {
     const map = new Map<string, { name: string; managerId?: string }>();
@@ -246,7 +253,7 @@ export function TeamPage() {
                     <tr className="text-xs font-black text-slate-500">
                       <th className="w-[24%] px-5 py-3">成员</th>
                       <th className="w-[16%] px-4 py-3">所属部门</th>
-                      <th className="w-[18%] px-4 py-3">岗位 / 主角色</th>
+                      <th className="w-[18%] px-4 py-3">岗位 / 角色</th>
                       <th className="w-[20%] px-4 py-3">联系方式</th>
                       <th className="w-[104px] px-4 py-3">状态</th>
                       <th className="sticky right-0 z-10 w-[232px] border-l border-slate-100 bg-slate-50/95 px-4 py-3 text-right">操作</th>
@@ -283,7 +290,7 @@ export function TeamPage() {
                             </td>
                             <td className="px-4 py-3.5">
                               <p className="truncate text-sm font-bold text-slate-700">{user.jobTitle || '未设置岗位'}</p>
-                              <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">{roleNameById.get(user.roleId || '') || '未设置角色'}</p>
+                              <p className="mt-0.5 truncate text-xs font-semibold text-slate-400" title={roleNames(user)}>{roleNames(user)}</p>
                             </td>
                             <td className="px-4 py-3.5">
                               <p className="truncate text-xs font-semibold text-slate-700">{user.mobile || '未登记手机号'}</p>
@@ -346,6 +353,7 @@ export function TeamPage() {
         member={memberEditor === 'new' ? null : memberEditor}
         departments={departments}
         roles={roles}
+        requireEmployeeNo={requireEmployeeNo}
         onClose={() => setMemberEditor(null)}
         onSaved={(_, mode) => {
           setMemberEditor(null);

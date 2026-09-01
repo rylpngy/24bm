@@ -63,6 +63,13 @@ public class BuyerUserController {
     return ApiResponse.ok(buyerUserApplicationService.changeUserRole(userId, request));
   }
 
+  @PutMapping("/{userId}/roles")
+  public ApiResponse<BuyerUserResponse> updateRoles(
+      @PathVariable String userId,
+      @Valid @RequestBody UpdateBuyerUserRolesRequest request) {
+    return ApiResponse.ok(buyerUserApplicationService.updateUserRoles(userId, request));
+  }
+
   @PostMapping("/{userId}/password")
   public ApiResponse<BuyerUserResponse> resetPassword(
       @PathVariable String userId,

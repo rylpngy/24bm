@@ -3,6 +3,7 @@ package com.procurement.identity.infrastructure;
 import com.procurement.identity.domain.BuyerUser;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -80,6 +81,21 @@ public interface BuyerUserMapper {
   boolean existsByTenantAndId(
       @Param("tenantId") String tenantId,
       @Param("id") String id);
+
+  @Select("""
+      select exists(
+        select 1
+        from users
+        where tenant_id = #{tenantId}
+          and employee_no is not null
+          and upper(employee_no) = upper(#{employeeNo})
+          and (#{excludedUserId,jdbcType=VARCHAR} is null or id <> #{excludedUserId,jdbcType=VARCHAR})
+      )
+      """)
+  boolean existsByEmployeeNoExcludingUser(
+      @Param("tenantId") String tenantId,
+      @Param("employeeNo") String employeeNo,
+      @Param("excludedUserId") String excludedUserId);
 
   @Select("""
       select u.id
@@ -191,6 +207,32 @@ public interface BuyerUserMapper {
   void assignRole(
       @Param("userId") String userId,
       @Param("roleId") String roleId);
+
+  @Delete("""
+      delete from user_roles ur
+      using users u, roles r
+      where ur.user_id = u.id
+        and ur.role_id = r.id
+        and u.tenant_id = #{tenantId}
+        and u.id = #{userId}
+        and r.scope = 'buyer'
+      """)
+  void deleteBuyerRoles(
+      @Param("tenantId") String tenantId,
+      @Param("userId") String userId);
+
+  @Insert("""
+      <script>
+      insert into user_roles (user_id, role_id)
+      values
+      <foreach collection="roleIds" item="roleId" separator=",">
+        (#{userId}, #{roleId})
+      </foreach>
+      </script>
+      """)
+  void assignRoles(
+      @Param("userId") String userId,
+      @Param("roleIds") List<String> roleIds);
 
   @Update("""
       with deleted as (

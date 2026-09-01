@@ -81,6 +81,77 @@ public class WorkflowDefinitionPublicationService {
     return workflowDefinitionVersionMapper.findPublishedByTenantAndBusinessType(tenantId, businessType);
   }
 
+  // 业务场景首次启用时创建并发布受控定义。发布后仍由流程配置器产生后续不可变版本。
+  @Transactional
+  public WorkflowDefinitionVersion ensurePublishedDefinition(
+      String tenantId,
+      String actorId,
+      String definitionId,
+      String name,
+      String description,
+      String businessType,
+      String formSchema,
+      String flowSchema) {
+    WorkflowDefinitionVersion current = findPublishedVersion(tenantId, businessType);
+    if (current != null) {
+      return current;
+    }
+    ProcessDefinition definition = processDefinitionMapper.findByTenantAndBusinessType(tenantId, businessType);
+    if (definition == null) {
+      processDefinitionMapper.insert(
+          definitionId, tenantId, name, description, "graduation-cap", businessType);
+      definition = processDefinitionMapper.findByTenantAndId(tenantId, definitionId);
+    }
+    processDefinitionMapper.update(
+        tenantId,
+        definition.id(),
+        name,
+        description,
+        ProcessDefinitionStatus.DRAFT,
+        businessType,
+        formSchema,
+        flowSchema);
+    return publish(tenantId, actorId, requireProcess(tenantId, definition.id()));
+  }
+
+  /**
+   * 系统托管流程定义升级：结构未变化时复用当前版本，结构变化时发布不可变的新版本。
+   * 仅供代码内受控业务门面使用，不能用于覆盖租户在流程配置器中维护的普通流程。
+   */
+  @Transactional
+  public WorkflowDefinitionVersion ensureManagedPublishedDefinition(
+      String tenantId,
+      String actorId,
+      String definitionId,
+      String name,
+      String description,
+      String businessType,
+      String formSchema,
+      String flowSchema) {
+    WorkflowDefinitionVersion current = findPublishedVersion(tenantId, businessType);
+    if (current != null
+        && formSchema.equals(current.formSchema())
+        && flowSchema.equals(current.flowSchema())) {
+      return current;
+    }
+    ProcessDefinition definition = processDefinitionMapper.findByTenantAndBusinessType(tenantId, businessType);
+    if (definition == null) {
+      processDefinitionMapper.insert(
+          definitionId, tenantId, name, description, "graduation-cap", businessType);
+      definition = processDefinitionMapper.findByTenantAndId(tenantId, definitionId);
+    }
+    processDefinitionMapper.update(
+        tenantId,
+        definition.id(),
+        name,
+        description,
+        ProcessDefinitionStatus.DRAFT,
+        businessType,
+        formSchema,
+        flowSchema);
+    return publish(tenantId, actorId, requireProcess(tenantId, definition.id()));
+  }
+
   // 兼容已有审批模板：首次使用某业务类型但还未进入可视化配置器时，生成一次受控的单角色默认版本。
   // 它同样走 BPMN 部署和版本表，之后由人工发布的定义覆盖，不会写入旧 approval_tasks。
   @Transactional
@@ -157,6 +228,10 @@ public class WorkflowDefinitionPublicationService {
         .name("24Bid " + definition.name() + " v" + versionNo)
         .tenantId(tenantId)
         .addBytes(compiled.processKey() + ".bpmn20.xml", compiled.bpmnXml())
+        // 定义已由 WorkflowSchemaValidator + 受控 BPMN 编译器校验。Flowable 7 在可执行
+        // Spring Boot JAR 中会错误解析扩展 XSD 的 extension 元素，因此跳过重复 XSD 校验，
+        // 仍保留 Flowable 的 BPMN 语义校验与部署解析。
+        .disableSchemaValidation()
         .deploy();
     org.flowable.engine.repository.ProcessDefinition flowableDefinition = repositoryService
         .createProcessDefinitionQuery()
@@ -223,6 +298,7 @@ public class WorkflowDefinitionPublicationService {
       case "payment_request" -> "付款申请";
       case "payment_batch" -> "付款批次";
       case "payment_archive_exception" -> "付款归档例外";
+      case "ludong_project_application" -> "鲁东大学货物类采购申报";
       default -> businessType;
     };
   }

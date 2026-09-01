@@ -6,6 +6,7 @@ import {
   type DepartmentResponse,
   useBuyerUserCreate,
   useBuyerUserUpdate,
+  useBuyerUserUpdateRoles,
 } from '@24bid/api-client';
 import { FeedbackNotice } from '@24bid/ui';
 
@@ -16,7 +17,7 @@ interface MemberDraft {
   mobile: string;
   email: string;
   departmentId: string;
-  roleId: string;
+  roleIds: string[];
   initialPassword: string;
 }
 
@@ -26,6 +27,7 @@ export interface BuyerMemberEditorDialogProps {
   defaultDepartmentId?: string;
   departments: DepartmentResponse[];
   roles: BuyerRoleResponse[];
+  requireEmployeeNo?: boolean;
   onClose: () => void;
   onSaved: (member: BuyerUserResponse | undefined, mode: 'create' | 'update') => void;
 }
@@ -41,6 +43,7 @@ function createDraft(
   defaultDepartmentId: string | undefined,
   roles: BuyerRoleResponse[],
 ): MemberDraft {
+  const assignedRoles = (member as BuyerUserResponse & { roleIds?: string[] } | null | undefined)?.roleIds;
   return {
     name: member?.name ?? '',
     employeeNo: member?.employeeNo ?? '',
@@ -48,7 +51,9 @@ function createDraft(
     mobile: member?.mobile ?? '',
     email: member?.email ?? '',
     departmentId: member?.departmentId ?? defaultDepartmentId ?? '',
-    roleId: member?.roleId ?? roles[0]?.id ?? '',
+    roleIds: (assignedRoles?.length
+      ? assignedRoles
+      : [member?.roleId ?? roles[0]?.id ?? '']).filter(Boolean) as string[],
     initialPassword: '',
   };
 }
@@ -60,11 +65,13 @@ export function BuyerMemberEditorDialog({
   defaultDepartmentId,
   departments,
   roles,
+  requireEmployeeNo = false,
   onClose,
   onSaved,
 }: BuyerMemberEditorDialogProps) {
   const create = useBuyerUserCreate();
   const update = useBuyerUserUpdate();
+  const updateRoles = useBuyerUserUpdateRoles();
   const [draft, setDraft] = useState<MemberDraft>(() => createDraft(member, defaultDepartmentId, roles));
   const [localError, setLocalError] = useState<string | null>(null);
   const isEdit = Boolean(member?.id);
@@ -81,15 +88,16 @@ export function BuyerMemberEditorDialog({
 
   if (!open) return null;
 
-  const busy = create.isPending || update.isPending;
+  const busy = create.isPending || update.isPending || updateRoles.isPending;
   const inputClass =
     'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-400';
   const set = (patch: Partial<MemberDraft>) => setDraft((current) => ({ ...current, ...patch }));
 
   const validate = () => {
     if (!draft.name.trim()) return '请填写成员姓名。';
+    if (requireEmployeeNo && !draft.employeeNo.trim()) return '请填写成员工号。';
     if (!draft.departmentId) return '请选择所属部门。';
-    if (!draft.roleId) return '请选择角色。';
+    if (draft.roleIds.length === 0) return '请至少选择一个角色。';
     if (!isEdit && draft.initialPassword.trim().length < 6) return '初始密码至少 6 位。';
     return null;
   };
@@ -108,13 +116,28 @@ export function BuyerMemberEditorDialog({
       mobile: draft.mobile.trim() || undefined,
       email: draft.email.trim() || undefined,
       departmentId: draft.departmentId,
-      roleId: draft.roleId,
+      roleId: draft.roleIds[0],
+    };
+    const finish = async (saved: BuyerUserResponse | undefined, mode: 'create' | 'update') => {
+      if (!saved?.id) {
+        setLocalError('成员已保存，但返回结果缺少成员编号。');
+        return;
+      }
+      try {
+        const response = await updateRoles.mutateAsync({
+          userId: saved.id,
+          data: { roleIds: draft.roleIds },
+        });
+        onSaved(response.data ?? saved, mode);
+      } catch (error) {
+        setLocalError(errorMessage(error, '成员资料已保存，但多角色授权失败，请重试。'));
+      }
     };
     if (isEdit && member?.id) {
       update.mutate(
         { userId: member.id, data: profile },
         {
-          onSuccess: (response) => onSaved(response.data, 'update'),
+          onSuccess: (response) => void finish(response.data, 'update'),
           onError: (error) => setLocalError(errorMessage(error, '成员资料保存失败，请稍后重试。')),
         },
       );
@@ -123,7 +146,7 @@ export function BuyerMemberEditorDialog({
     create.mutate(
       { data: { ...profile, initialPassword: draft.initialPassword, status: 'active' } },
       {
-        onSuccess: (response) => onSaved(response.data, 'create'),
+        onSuccess: (response) => void finish(response.data, 'create'),
         onError: (error) => setLocalError(errorMessage(error, '新增成员失败，请检查资料或企业成员配额。')),
       },
     );
@@ -146,7 +169,7 @@ export function BuyerMemberEditorDialog({
             <div className="min-w-0">
               <h2 className="text-lg font-black text-slate-950">{isEdit ? '编辑成员资料' : '新增团队成员'}</h2>
               <p className="mt-1 text-xs font-semibold text-slate-400">
-                {isEdit ? '可维护成员资料、所属部门和主角色。' : '账号创建后默认为启用状态，可在团队成员中后续停用。'}
+                {isEdit ? '可维护成员资料、所属部门和多个业务角色。' : '账号创建后默认为启用状态，可授予一个或多个业务角色。'}
               </p>
             </div>
           </div>
@@ -167,7 +190,7 @@ export function BuyerMemberEditorDialog({
             <Field label="成员姓名" required>
               <input className={inputClass} value={draft.name} placeholder="请输入姓名" onChange={(event) => set({ name: event.target.value })} />
             </Field>
-            <Field label="工号">
+            <Field label="工号" required={requireEmployeeNo}>
               <input className={inputClass} value={draft.employeeNo} placeholder="如 EMP-001" onChange={(event) => set({ employeeNo: event.target.value })} />
             </Field>
             <Field label="职位">
@@ -181,14 +204,29 @@ export function BuyerMemberEditorDialog({
                 ))}
               </select>
             </Field>
-            <Field label="主角色" required>
-              <select className={inputClass} value={draft.roleId} onChange={(event) => set({ roleId: event.target.value })}>
-                <option value="">请选择角色</option>
-                {roles.map((role) => (
-                  <option key={role.id} value={role.id}>{role.name}</option>
-                ))}
-              </select>
-            </Field>
+            <div className="sm:col-span-2">
+              <Field label="业务角色" required>
+                <div className="grid max-h-52 gap-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-2">
+                  {roles.map((role) => {
+                    const roleId = role.id ?? '';
+                    const checked = draft.roleIds.includes(roleId);
+                    return (
+                      <label key={roleId} className="flex min-w-0 cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 hover:border-blue-200">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => set({ roleIds: checked
+                            ? draft.roleIds.filter((value) => value !== roleId)
+                            : [...draft.roleIds, roleId] })}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                        />
+                        <span className="truncate">{role.name || roleId}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </Field>
+            </div>
             <Field label="手机号码">
               <input className={inputClass} value={draft.mobile} placeholder="请输入手机号码" onChange={(event) => set({ mobile: event.target.value })} />
             </Field>

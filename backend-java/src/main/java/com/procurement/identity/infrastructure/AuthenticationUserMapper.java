@@ -16,7 +16,12 @@ public interface AuthenticationUserMapper {
       from users u
       where u.status = 'active'
         and u.password_hash is not null
-        and (u.email = #{account} or u.mobile = #{account} or u.id = #{account})
+        and (
+          u.email = #{account}
+          or u.mobile = #{account}
+          or u.id = #{account}
+          or upper(u.employee_no) = upper(trim(#{account}))
+        )
         and (
           (#{scope} = 'PLATFORM' and u.tenant_id is null and u.supplier_id is null)
           or (#{scope} = 'BUYER' and u.tenant_id = #{tenantId} and u.supplier_id is null)

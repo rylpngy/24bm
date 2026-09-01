@@ -9,6 +9,7 @@ import com.procurement.identity.api.ChangeBuyerUserStatusRequest;
 import com.procurement.identity.api.CreateBuyerUserRequest;
 import com.procurement.identity.api.ResetBuyerUserPasswordRequest;
 import com.procurement.identity.api.UpdateBuyerUserRequest;
+import com.procurement.identity.api.UpdateBuyerUserRolesRequest;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.domain.BuyerUserAuditAction;
 import com.procurement.identity.domain.BuyerUserStatusTransition;
@@ -72,6 +73,8 @@ public class BuyerUserApplicationService {
     tenantEntitlementApplicationService.requireUserCapacity(tenantId, buyerUserMapper.countByTenant(tenantId));
     requireActiveDepartment(tenantId, request.departmentId());
     requireBuyerRole(tenantId, request.roleId());
+    String employeeNo = normalizeEmployeeNo(request.employeeNo());
+    requireUniqueEmployeeNo(tenantId, employeeNo, null);
     String userId = "user-" + UUID.randomUUID();
     buyerUserMapper.insert(
         userId,
@@ -82,7 +85,7 @@ public class BuyerUserApplicationService {
         request.status(),
         request.departmentId(),
         passwordEncoder.encode(request.initialPassword()),
-        request.employeeNo(),
+        employeeNo,
         request.jobTitle() == null ? "" : request.jobTitle());
     buyerUserMapper.assignRole(userId, request.roleId());
     auditLogApplicationService.recordTenantAction(BuyerUserAuditAction.CREATED, AuditTargetType.BUYER_USER, userId);
@@ -106,7 +109,8 @@ public class BuyerUserApplicationService {
     String name = request.name().trim();
     String mobile = blankToNull(request.mobile());
     String email = blankToNull(request.email());
-    String employeeNo = blankToNull(request.employeeNo());
+    String employeeNo = normalizeEmployeeNo(request.employeeNo());
+    requireUniqueEmployeeNo(tenantId, employeeNo, userId);
     String jobTitle = blankToNull(request.jobTitle());
     boolean departmentChanged = !Objects.equals(current.departmentId(), request.departmentId());
     boolean roleChanged = !Objects.equals(current.roleId(), request.roleId());
@@ -157,6 +161,24 @@ public class BuyerUserApplicationService {
     buyerUserMapper.replaceRole(tenantId, userId, request.roleId());
     auditLogApplicationService.recordTenantAction(
         tenantId, BuyerUserAuditAction.ROLE_CHANGED, AuditTargetType.BUYER_USER, userId, detail);
+    return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
+  }
+
+  @Transactional
+  public BuyerUserResponse updateUserRoles(String userId, UpdateBuyerUserRolesRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
+    requireTeamManagement();
+    requireBuyerUser(tenantId, userId);
+    List<String> roleIds = request.roleIds().stream().distinct().toList();
+    roleIds.forEach(roleId -> requireBuyerRole(tenantId, roleId));
+    buyerUserMapper.deleteBuyerRoles(tenantId, userId);
+    buyerUserMapper.assignRoles(userId, roleIds);
+    auditLogApplicationService.recordTenantAction(
+        tenantId,
+        BuyerUserAuditAction.ROLE_CHANGED,
+        AuditTargetType.BUYER_USER,
+        userId,
+        "角色调整为: " + roleIds.stream().map(roleId -> roleLabel(tenantId, roleId)).toList());
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 
@@ -231,7 +253,20 @@ public class BuyerUserApplicationService {
         user.departmentId(),
         user.roleId(),
         user.employeeNo(),
-        user.jobTitle());
+        user.jobTitle(),
+        buyerUserMapper.listBuyerRoleIdsByTenantAndUser(user.tenantId(), user.id()));
+  }
+
+  private void requireUniqueEmployeeNo(String tenantId, String employeeNo, String excludedUserId) {
+    if (employeeNo != null
+        && buyerUserMapper.existsByEmployeeNoExcludingUser(tenantId, employeeNo, excludedUserId)) {
+      throw new IllegalArgumentException("工号已存在于当前企业，请检查后重试");
+    }
+  }
+
+  private String normalizeEmployeeNo(String value) {
+    String employeeNo = blankToNull(value);
+    return employeeNo == null ? null : employeeNo.toUpperCase(java.util.Locale.ROOT);
   }
 
   private String blankToNull(String value) {

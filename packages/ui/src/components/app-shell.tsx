@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ElementType, ReactNode } from 'react';
-import { Globe, Sparkles, Languages, ChevronDown, Menu, X,
+import { Globe, Sparkles, Languages, ChevronDown, LogOut, Menu, X,
   BadgeCheck,
   BarChart3,
   Banknote,
@@ -30,6 +30,7 @@ const MODULE_ICONS: Record<string, ElementType> = {
   overview: LayoutGrid,
   analytics: TrendingUp,
   demands: FileText,
+  applications: FileText,
   approvals: ShieldCheck,
   reviews: ShieldCheck,
   suppliers: Users,
@@ -44,6 +45,8 @@ const MODULE_ICONS: Record<string, ElementType> = {
   'payment-batches': Banknote,
   team: Users,
   audit: ClipboardList,
+  archive: FileText,
+  stats: BarChart3,
   tenants: Building2,
   announcements: Megaphone,
   profile: BadgeCheck,
@@ -65,6 +68,8 @@ export interface AppShellProps {
   portalUrl?: string;
   /** 智能分析模块 id(有真实 AI 报告能力的端传入,点击经 onSelectModule 跳转)。 */
   aiModuleId?: string;
+  /** 统一退出入口；传入后显示在顶栏账户操作区。 */
+  onSignOut?: () => void;
   children: ReactNode;
 }
 
@@ -79,6 +84,7 @@ export function AppShell({
   accountLabel = '主账户',
   portalUrl,
   aiModuleId,
+  onSignOut,
   children,
 }: AppShellProps) {
   const [langOpen, setLangOpen] = useState(false);
@@ -275,6 +281,17 @@ export function AppShell({
                 </div>
               )}
             </div>
+            {onSignOut && (
+              <button
+                type="button"
+                onClick={onSignOut}
+                title={t('退出登录')}
+                aria-label={t('退出登录')}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-red-600"
+              >
+                <LogOut size={15} />
+              </button>
+            )}
           </div>
         </header>
 

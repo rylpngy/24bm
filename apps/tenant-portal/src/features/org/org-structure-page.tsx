@@ -81,7 +81,7 @@ function sameIds(left: string[], right: string[]) {
   return left.length === right.length && left.every((item) => right.includes(item));
 }
 
-export function OrgStructurePage() {
+export function OrgStructurePage({ requireEmployeeNo = false }: { requireEmployeeNo?: boolean }) {
   const queryClient = useQueryClient();
   const departmentsQuery = useDepartmentList();
   const rolesQuery = useBuyerRoleList();
@@ -119,6 +119,13 @@ export function OrgStructurePage() {
     });
     return names;
   }, [roles]);
+  const roleNames = (member: BuyerUserResponse) => {
+    const roleIds = (member as BuyerUserResponse & { roleIds?: string[] }).roleIds;
+    return (roleIds?.length ? roleIds : [member.roleId])
+      .filter(Boolean)
+      .map((roleId) => roleNameById.get(roleId!) || roleId)
+      .join('、') || '未设置角色';
+  };
 
   const departmentNameById = useMemo(() => {
     const names = new Map<string, string>();
@@ -462,7 +469,7 @@ export function OrgStructurePage() {
                                 </td>
                                 <td className="px-4 py-3.5">
                                   <p className="truncate text-sm font-bold text-slate-700">{member.jobTitle || '未设置岗位'}</p>
-                                  <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">{roleNameById.get(member.roleId || '') || '未设置角色'}</p>
+                                  <p className="mt-0.5 truncate text-xs font-semibold text-slate-400" title={roleNames(member)}>{roleNames(member)}</p>
                                 </td>
                                 <td className="px-4 py-3.5">
                                   <p className="truncate text-xs font-semibold text-slate-700">{member.mobile || '未登记手机号'}</p>
@@ -534,6 +541,7 @@ export function OrgStructurePage() {
         defaultDepartmentId={selected?.id}
         departments={departments}
         roles={roles as BuyerRoleResponse[]}
+        requireEmployeeNo={requireEmployeeNo}
         onClose={() => setMemberEditor(null)}
         onSaved={(member, mode) => {
           setMemberEditor(null);

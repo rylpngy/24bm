@@ -98,7 +98,10 @@ export function RolePermissionWorkbench() {
     initialPermissions.slice().sort().join(','),
   ].join('|');
   const protectedRole = isProtectedRole(selected);
-  const memberList = selected?.id ? users.filter((user) => user.roleId === selected.id) : [];
+  const memberList = selected?.id ? users.filter((user) => {
+    const roleIds = (user as typeof user & { roleIds?: string[] }).roleIds;
+    return roleIds?.length ? roleIds.includes(selected.id!) : user.roleId === selected.id;
+  }) : [];
   const dirty =
     draftName.trim() !== (selected?.name || '') ||
     draftScope !== (selected?.dataScope || 'department') ||
@@ -223,7 +226,10 @@ export function RolePermissionWorkbench() {
           <div className="max-h-[620px] space-y-1.5 overflow-y-auto p-3">
             {roles.map((role) => {
               const active = role.id === selected?.id;
-              const memberCount = users.filter((user) => user.roleId === role.id).length;
+              const memberCount = users.filter((user) => {
+                const roleIds = (user as typeof user & { roleIds?: string[] }).roleIds;
+                return roleIds?.length ? roleIds.includes(role.id!) : user.roleId === role.id;
+              }).length;
               return (
                 <button
                   key={role.id}

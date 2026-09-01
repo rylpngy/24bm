@@ -47,6 +47,13 @@ public class DepartmentApplicationService {
         .toList();
   }
 
+  /** 跨模块查询入口：按当前租户获取启用中的组织单位。 */
+  public Department findCurrentTenantActiveDepartment(String departmentId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    Department department = departmentMapper.findByTenantAndId(tenantId, departmentId);
+    return department != null && DepartmentStatus.ACTIVE.equals(department.status()) ? department : null;
+  }
+
   @Transactional
   public DepartmentResponse createDepartment(CreateDepartmentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");

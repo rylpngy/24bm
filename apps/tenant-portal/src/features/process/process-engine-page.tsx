@@ -42,6 +42,7 @@ import {
 } from './types';
 
 const BUSINESS_TYPES = [
+  { id: 'ludong_project_application', label: '鲁东大学货物类采购申报' },
   { id: 'purchase_demand', label: '采购需求' },
   { id: 'buyer_supplier_admission', label: '供应商准入' },
   { id: 'rfq_award', label: '询价定标' },
@@ -63,26 +64,60 @@ const ICONS: Record<string, React.ElementType> = {
 };
 
 // 流程引擎:流程列表 ↔ 设计器(表单/流程)。
-export function ProcessEnginePage() {
+export function ProcessEnginePage({
+  fixedBusinessType,
+  scopeTitle,
+  scopeDescription,
+  initialTab = 'form',
+}: {
+  fixedBusinessType?: string;
+  scopeTitle?: string;
+  scopeDescription?: string;
+  initialTab?: 'form' | 'flow';
+} = {}) {
   const [editingId, setEditingId] = useState<string | null>(null);
   if (editingId) {
-    return <ProcessDesigner id={editingId} onBack={() => setEditingId(null)} />;
+    return <ProcessDesigner id={editingId} initialTab={initialTab} onBack={() => setEditingId(null)} />;
   }
-  return <ProcessList onConfigure={setEditingId} />;
+  return (
+    <ProcessList
+      fixedBusinessType={fixedBusinessType}
+      scopeTitle={scopeTitle}
+      scopeDescription={scopeDescription}
+      onConfigure={setEditingId}
+    />
+  );
 }
 
-function ProcessList({ onConfigure }: { onConfigure: (id: string) => void }) {
+function ProcessList({
+  fixedBusinessType,
+  scopeTitle,
+  scopeDescription,
+  onConfigure,
+}: {
+  fixedBusinessType?: string;
+  scopeTitle?: string;
+  scopeDescription?: string;
+  onConfigure: (id: string) => void;
+}) {
   const queryClient = useQueryClient();
   const list = useWorkflowProcessDefinitions();
   const create = useWorkflowProcessDefinitionCreate();
   const processes = list.data?.data ?? [];
-  const [businessType, setBusinessType] = useState<(typeof BUSINESS_TYPES)[number]['id']>('purchase_demand');
+  const scopedProcesses = useMemo(
+    () => fixedBusinessType ? processes.filter((process) => process.businessType === fixedBusinessType) : processes,
+    [fixedBusinessType, processes],
+  );
+  const [selectedBusinessType, setSelectedBusinessType] = useState<string>(fixedBusinessType ?? 'purchase_demand');
+  const businessType = fixedBusinessType ?? selectedBusinessType;
+  const [error, setError] = useState<string | null>(null);
   const primaryAction = useMemo(
     () => resolveProcessListPrimaryAction(processes, businessType),
     [businessType, processes],
   );
 
-  const onNew = () =>
+  const onNew = () => {
+    setError(null);
     create.mutate(
       {
         name: `${businessTypeLabel(businessType)}审批流程`,
@@ -95,8 +130,13 @@ function ProcessList({ onConfigure }: { onConfigure: (id: string) => void }) {
           void queryClient.invalidateQueries({ queryKey: workflowRuntimeQueryKeys.processDefinitions });
           if (res.data?.id) onConfigure(res.data.id);
         },
+        onError: (value) => setError(
+          (value as { response?: { data?: { message?: string } } })?.response?.data?.message
+            ?? '新建流程失败，请确认当前账号具有流程管理权限。',
+        ),
       },
     );
+  };
 
   const onPrimaryAction = () => {
     if (primaryAction.type === 'configure') {
@@ -111,24 +151,30 @@ function ProcessList({ onConfigure }: { onConfigure: (id: string) => void }) {
       <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4">
         <div>
           <p className="flex items-center gap-2 text-lg font-black text-slate-950">
-            <Workflow size={18} className="text-blue-600" /> 流程定义配置
+            <Workflow size={18} className="text-blue-600" /> {scopeTitle ?? '流程定义配置'}
           </p>
           <p className="mt-0.5 text-xs font-bold text-slate-400">
-            每个业务类型保留一个配置入口，发布后生成不可变版本并部署至 Flowable
+            {scopeDescription ?? '每个业务类型保留一个配置入口，发布后生成不可变版本并部署至 Flowable'}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <select
-            value={businessType}
-            onChange={(event) => setBusinessType(event.target.value as (typeof BUSINESS_TYPES)[number]['id'])}
-            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-300"
-          >
-            {BUSINESS_TYPES.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}{processes.some((process) => process.businessType === item.id) ? '（已配置）' : ''}
-              </option>
-            ))}
-          </select>
+          {fixedBusinessType ? (
+            <span className="inline-flex h-10 items-center rounded-lg border border-blue-100 bg-blue-50 px-3 text-xs font-black text-blue-700">
+              {businessTypeLabel(fixedBusinessType)}
+            </span>
+          ) : (
+            <select
+              value={businessType}
+              onChange={(event) => setSelectedBusinessType(event.target.value)}
+              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-300"
+            >
+              {BUSINESS_TYPES.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}{processes.some((process) => process.businessType === item.id) ? '（已配置）' : ''}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             type="button"
             onClick={onPrimaryAction}
@@ -141,11 +187,20 @@ function ProcessList({ onConfigure }: { onConfigure: (id: string) => void }) {
         </div>
       </div>
 
-      {list.isLoading ? (
+      {error && <FeedbackNotice tone="error" message={error} />}
+      {list.isError ? (
+        <FeedbackNotice tone="error" message="流程定义加载失败，请确认当前账号具有流程管理权限。" />
+      ) : list.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载流程…" />
+      ) : scopedProcesses.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+          <Workflow className="mx-auto text-slate-300" size={32} />
+          <p className="mt-3 text-sm font-black text-slate-800">当前业务尚未建立流程定义</p>
+          <p className="mt-1 text-xs font-bold text-slate-400">点击右上角“新建流程”后配置审批节点、办理人和条件分支。</p>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {processes.map((p) => (
+          {scopedProcesses.map((p) => (
             <ProcessCard key={p.id} process={p} onConfigure={() => p.id && onConfigure(p.id)} />
           ))}
         </div>
@@ -192,7 +247,7 @@ function ProcessCard({ process: p, onConfigure }: { process: WorkflowProcessDefi
   );
 }
 
-function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
+function ProcessDesigner({ id, initialTab, onBack }: { id: string; initialTab: 'form' | 'flow'; onBack: () => void }) {
   const queryClient = useQueryClient();
   const detail = useWorkflowProcessDefinition(id);
   const versions = useWorkflowProcessDefinitionVersions(id);
@@ -200,7 +255,7 @@ function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
   const roles = useBuyerRoleList();
   const update = useWorkflowProcessDefinitionUpdate();
   const publish = useWorkflowProcessDefinitionPublish();
-  const [tab, setTab] = useState<'form' | 'flow'>('form');
+  const [tab, setTab] = useState<'form' | 'flow'>(initialTab);
   const [fields, setFields] = useState<FormField[]>([]);
   const [steps, setSteps] = useState<FlowStep[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -279,7 +334,7 @@ function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
         <button type="button" onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
           <ChevronLeft size={18} />
         </button>
@@ -287,7 +342,7 @@ function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
           <p className="truncate text-base font-black text-slate-950">{p?.name ?? '加载中…'}</p>
           <p className="mt-0.5 text-[11px] font-bold text-slate-400">{businessTypeLabel(p?.businessType)}</p>
         </div>
-        <div className="mx-auto rounded-lg border border-slate-200 bg-white px-1.5">
+        <div className="order-3 w-full rounded-lg border border-slate-200 bg-white px-1.5 sm:order-none sm:mx-auto sm:w-auto">
           <Tabs
             items={[
               { id: 'form', label: '表单设计' },
@@ -317,7 +372,7 @@ function ProcessDesigner({ id, onBack }: { id: string; onBack: () => void }) {
           type="button"
           onClick={publishVersion}
           disabled={update.isPending || publish.isPending || !p}
-          className="inline-flex h-9 items-center rounded-lg bg-slate-900 px-4 text-xs font-black text-white hover:bg-slate-800 disabled:bg-slate-400"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white hover:bg-slate-800 disabled:bg-slate-400"
         >
           <Rocket size={14} /> {update.isPending || publish.isPending ? '处理中' : '发布版本'}
         </button>

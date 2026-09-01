@@ -275,7 +275,8 @@ import org.springframework.test.web.servlet.MvcResult;
     com.procurement.esign.api.SupplierEsignController.class,
     com.procurement.tender.api.BuyerTenderController.class,
     com.procurement.tender.api.SupplierTenderController.class,
-    com.procurement.tenant.api.BuyerCapabilityController.class
+    com.procurement.tenant.api.BuyerCapabilityController.class,
+    com.procurement.ludongpoc.api.LudongPocController.class
 })
 @Import({
     SecurityConfig.class,
@@ -441,6 +442,21 @@ class HttpSecurityContractTests {
 
   @MockBean
   private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocApplicationService ludongPocApplicationService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocDocumentService ludongPocDocumentService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocAnalyticsReportService ludongPocAnalyticsReportService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocAiReviewService ludongPocAiReviewService;
+
+  @MockBean
+  private com.procurement.ludongpoc.application.LudongPocAiReviewRegistry ludongPocAiReviewRegistry;
 
   @MockBean
   private AuditLogApplicationService auditLogApplicationService;

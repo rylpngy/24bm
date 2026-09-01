@@ -25,6 +25,7 @@ import { AuditPage } from './features/audit/audit-page';
 import { TeamPage } from './features/team/team-page';
 import { OrgStructurePage } from './features/org/org-structure-page';
 import { ProcessEnginePage } from './features/process/process-engine-page';
+import { LudongPocApp } from './features/ludong-poc/ludong-poc-app';
 
 const initialModuleId = () => {
   if (typeof window === 'undefined') return 'dashboard';
@@ -32,6 +33,12 @@ const initialModuleId = () => {
 };
 
 export function App() {
+  const isLudongPoc = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('solution') === 'ludong-poc';
+  return isLudongPoc ? <LudongPocApp /> : <TenantPortalApp />;
+}
+
+function TenantPortalApp() {
   const session = useAuthStore((s) => s.session);
   const [activeModuleId, setActiveModuleId] = useState(initialModuleId);
 

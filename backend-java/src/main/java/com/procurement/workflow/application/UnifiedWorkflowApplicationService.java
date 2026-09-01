@@ -201,9 +201,53 @@ public class UnifiedWorkflowApplicationService {
     return tasks;
   }
 
+  /** 返回当前用户确实有权办理的活动任务，供业务门面绑定节点表单并阻止伪造 nodeId。 */
+  public UnifiedWorkflowTaskResponse requireCurrentUserTask(String taskId) {
+    return listCurrentUserTasks().stream()
+        .filter(task -> task.taskId().equals(taskId))
+        .findFirst()
+        .orElseThrow(() -> new PermissionDeniedException("当前用户无权办理该审批任务"));
+  }
+
+  public WorkflowTaskContext requireCurrentUserTaskContext(String taskId) {
+    UnifiedWorkflowTaskResponse task = requireCurrentUserTask(taskId);
+    return new WorkflowTaskContext(
+        task.taskId(), task.businessType(), task.businessId(), task.taskDefinitionKey());
+  }
+
+  @Transactional
+  public WorkflowCompletionResult completeCurrentUserTaskForBusiness(
+      String taskId, String action, String comment) {
+    TaskCompletionOutcome outcome = completeCurrentUserTaskInternal(
+        taskId, new CompleteWorkflowTaskRequest(action, comment), true);
+    WorkflowInstanceHistoryResponse history = outcome.history();
+    OffsetDateTime actedAt = history.events().isEmpty()
+        ? history.createdAt()
+        : history.events().getLast().createdAt();
+    return new WorkflowCompletionResult(history.status(), actedAt, outcome.reusedTasks());
+  }
+
+  public List<WorkflowApprovalSignature> listApprovalSignatures(
+      String businessType, String businessId) {
+    WorkflowInstanceHistoryResponse history = getCurrentTenantBusinessHistory(businessType, businessId);
+    if (history == null) {
+      return List.of();
+    }
+    return history.events().stream()
+        .filter(event -> "approved".equals(event.action()) && event.actorId() != null)
+        .map(event -> new WorkflowApprovalSignature(
+            event.nodeId(), event.actorName() == null ? event.actorId() : event.actorName(), event.createdAt()))
+        .toList();
+  }
+
   @Transactional
   public WorkflowInstanceHistoryResponse completeCurrentUserTask(
       String taskId, CompleteWorkflowTaskRequest request) {
+    return completeCurrentUserTaskInternal(taskId, request, false).history();
+  }
+
+  private TaskCompletionOutcome completeCurrentUserTaskInternal(
+      String taskId, CompleteWorkflowTaskRequest request, boolean businessProjectionEnabled) {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
     permissionService.require("buyer:workflow:review");
@@ -216,6 +260,9 @@ public class UnifiedWorkflowApplicationService {
         .findByTenantAndFlowableProcessInstanceId(tenantId, task.getProcessInstanceId());
     if (instance == null || !WorkflowInstanceStatus.PROCESSING.equals(instance.status())) {
       throw new IllegalArgumentException("Workflow task is not part of an active tenant workflow: " + taskId);
+    }
+    if ("ludong_project_application".equals(instance.businessType()) && !businessProjectionEnabled) {
+      throw new IllegalStateException("鲁东采购申报任务必须通过业务审批入口办理，以同步保存节点表单");
     }
     if (!isVisible(instance, dataScopeService.currentUserDataScope())) {
       throw new PermissionDeniedException("当前数据范围无权办理该审批任务");
@@ -234,32 +281,52 @@ public class UnifiedWorkflowApplicationService {
         "approved", approved,
         "reviewComment", request.comment() == null ? "" : request.comment()));
     recordTaskEvent(tenantId, instance.id(), task, approved ? "approved" : "rejected", userId, request.comment());
+    List<WorkflowReusedTask> reusedTasks = approved
+        && "ludong_project_application".equals(instance.businessType())
+        ? reuseApprovedDecisionsWithinInstance(tenantId, instance)
+        : List.of();
     boolean ended = runtimeService.createProcessInstanceQuery()
         .processInstanceId(instance.flowableProcessInstanceId())
         .singleResult() == null;
     if (ended) {
       String nextStatus = approved ? WorkflowInstanceStatus.APPROVED : WorkflowInstanceStatus.REJECTED;
-      int changed = workflowBusinessInstanceMapper.complete(tenantId, instance.id(), nextStatus, userId);
+      String completionActorId = reusedTasks.isEmpty() ? userId : reusedTasks.getLast().actorId();
+      String completionComment = reusedTasks.isEmpty() ? request.comment() : reusedTasks.getLast().comment();
+      int changed = workflowBusinessInstanceMapper.complete(
+          tenantId, instance.id(), nextStatus, completionActorId);
       if (changed == 0) {
         throw new IllegalStateException("Workflow instance changed before completion could be recorded: " + instance.id());
       }
       WorkflowBusinessInstance completed = workflowBusinessInstanceMapper.findByTenantAndId(tenantId, instance.id());
       requireCompletionHandler(completed.businessType()).onCompleted(
-          completed, new WorkflowCompletion(approved, userId, request.comment()));
-      auditLogApplicationService.recordTenantAction(
-          tenantId,
-          approved ? "workflow.approved" : "workflow.rejected",
-          completed.businessType(),
-          completed.businessId(),
-          "Flowable 审批流程已" + (approved ? "通过" : "驳回"));
+          completed, new WorkflowCompletion(approved, completionActorId, completionComment));
+      if (reusedTasks.isEmpty()) {
+        auditLogApplicationService.recordTenantAction(
+            tenantId,
+            approved ? "workflow.approved" : "workflow.rejected",
+            completed.businessType(),
+            completed.businessId(),
+            "Flowable 审批流程已" + (approved ? "通过" : "驳回"));
+      } else {
+        auditLogApplicationService.recordAutomatedTenantAction(
+            tenantId,
+            completionActorId,
+            "workflow.approved",
+            completed.businessType(),
+            completed.businessId(),
+            "Flowable 审批流程已通过，最终节点按工号自动复用");
+      }
     } else {
       recordCreatedTasks(tenantId, instance.id(), instance.flowableProcessInstanceId());
     }
-    return toHistoryResponse(
-        tenantId, workflowBusinessInstanceMapper.findByTenantAndId(tenantId, instance.id()));
+    return new TaskCompletionOutcome(
+        toHistoryResponse(
+            tenantId, workflowBusinessInstanceMapper.findByTenantAndId(tenantId, instance.id())),
+        reusedTasks);
   }
 
   // 兼容业务详情页的“通过/驳回”入口：仍按当前登录人的候选资格办理 Flowable 任务，不再写旧审批任务表。
+  @Transactional
   public WorkflowCompletionResult completeCurrentUserBusinessTask(
       String businessType,
       String businessId,
@@ -270,12 +337,13 @@ public class UnifiedWorkflowApplicationService {
         .findFirst()
         .orElseThrow(() -> new IllegalStateException(
             "No actionable Flowable task found for business object: " + businessId));
-    WorkflowInstanceHistoryResponse history = completeCurrentUserTask(
-        task.taskId(), new CompleteWorkflowTaskRequest(approved ? "approve" : "reject", comment));
+    TaskCompletionOutcome outcome = completeCurrentUserTaskInternal(
+        task.taskId(), new CompleteWorkflowTaskRequest(approved ? "approve" : "reject", comment), false);
+    WorkflowInstanceHistoryResponse history = outcome.history();
     OffsetDateTime actedAt = history.events().isEmpty()
         ? history.createdAt()
         : history.events().getLast().createdAt();
-    return new WorkflowCompletionResult(history.status(), actedAt);
+    return new WorkflowCompletionResult(history.status(), actedAt, outcome.reusedTasks());
   }
 
   public WorkflowInstanceHistoryResponse getCurrentTenantHistory(String workflowInstanceId) {
@@ -399,6 +467,112 @@ public class UnifiedWorkflowApplicationService {
       }
     }
     return false;
+  }
+
+  // 鲁东材料包中同一人员可能同时承担多个审核角色。每产生一个新任务，
+  // 都在整个流程实例已通过历史中按工号查重，因此支持 A-B-A 这类非连续复用。
+  private List<WorkflowReusedTask> reuseApprovedDecisionsWithinInstance(
+      String tenantId, WorkflowBusinessInstance instance) {
+    List<WorkflowReusedTask> reusedTasks = new ArrayList<>();
+    while (runtimeService.createProcessInstanceQuery()
+        .processInstanceId(instance.flowableProcessInstanceId()).singleResult() != null) {
+      Task next = firstActiveTask(instance.flowableProcessInstanceId());
+      if (next == null) {
+        return List.copyOf(reusedTasks);
+      }
+      SoleApprovalHandler handler = soleApprovalHandler(next, tenantId);
+      WorkflowTaskEvent source = handler == null
+          ? null
+          : findApprovedEventByEmployeeNo(tenantId, instance.id(), handler.employeeNo());
+      if (source == null) {
+        recordCreatedTasks(tenantId, instance.id(), instance.flowableProcessInstanceId());
+        return List.copyOf(reusedTasks);
+      }
+      recordTaskEvent(tenantId, instance.id(), next, "created", null, null);
+      if (next.getAssignee() == null || next.getAssignee().isBlank()) {
+        taskService.claim(next.getId(), handler.userId());
+        recordTaskEvent(
+            tenantId, instance.id(), next, "claimed", handler.userId(), "按流程实例内已审工号自动认领");
+      }
+      String comment = "同一办理人（工号 " + handler.employeeNo()
+          + "）已在本流程实例的节点「" + source.nodeName()
+          + "（" + source.nodeId() + "）」审批通过，系统自动复用结论";
+      taskService.complete(next.getId(), Map.of("approved", true, "reviewComment", comment));
+      recordTaskEvent(tenantId, instance.id(), next, "approved", handler.userId(), comment);
+      auditLogApplicationService.recordAutomatedTenantAction(
+          tenantId,
+          handler.userId(),
+          "workflow.task.reused",
+          instance.businessType(),
+          instance.businessId(),
+          "节点 " + next.getTaskDefinitionKey() + " 复用节点 " + source.nodeId()
+              + " 的已通过结论，校验工号 " + handler.employeeNo());
+      reusedTasks.add(new WorkflowReusedTask(
+          next.getId(),
+          next.getTaskDefinitionKey(),
+          next.getName(),
+          handler.userId(),
+          handler.employeeNo(),
+          source.flowableTaskId(),
+          source.nodeId(),
+          comment));
+    }
+    return List.copyOf(reusedTasks);
+  }
+
+  private SoleApprovalHandler soleApprovalHandler(Task task, String tenantId) {
+    if (task.getAssignee() != null && !task.getAssignee().isBlank()) {
+      BuyerUser assignee = buyerUserMapper.findByTenantAndId(tenantId, task.getAssignee());
+      String employeeNo = approvalEmployeeNo(assignee);
+      return employeeNo == null ? null : new SoleApprovalHandler(task.getAssignee(), employeeNo);
+    }
+    LinkedHashSet<String> candidateUserIds = new LinkedHashSet<>();
+    String prefix = "role:" + tenantId + ":";
+    for (IdentityLink link : taskService.getIdentityLinksForTask(task.getId())) {
+      if (!"candidate".equals(link.getType())) continue;
+      if (link.getUserId() != null && !link.getUserId().isBlank()) {
+        candidateUserIds.add(link.getUserId());
+      }
+      if (link.getGroupId() != null && link.getGroupId().startsWith(prefix)) {
+        candidateUserIds.addAll(buyerUserMapper.listActiveBuyerUserIdsByTenantAndRole(
+            tenantId, link.getGroupId().substring(prefix.length())));
+      }
+    }
+    LinkedHashMap<String, String> identities = new LinkedHashMap<>();
+    for (String candidateUserId : candidateUserIds) {
+      BuyerUser candidate = buyerUserMapper.findByTenantAndId(tenantId, candidateUserId);
+      if (candidate == null || !"active".equals(candidate.status())) continue;
+      String employeeNo = approvalEmployeeNo(candidate);
+      if (employeeNo != null) {
+        identities.putIfAbsent(employeeNo, candidateUserId);
+      }
+    }
+    if (identities.size() != 1) {
+      return null;
+    }
+    Map.Entry<String, String> sole = identities.entrySet().iterator().next();
+    return new SoleApprovalHandler(sole.getValue(), sole.getKey());
+  }
+
+  private WorkflowTaskEvent findApprovedEventByEmployeeNo(
+      String tenantId, String workflowInstanceId, String employeeNo) {
+    List<WorkflowTaskEvent> events = workflowTaskEventMapper.listByTenantAndWorkflowInstance(
+        tenantId, workflowInstanceId);
+    for (int index = events.size() - 1; index >= 0; index--) {
+      WorkflowTaskEvent event = events.get(index);
+      if (!"approved".equals(event.action()) || event.actorId() == null) continue;
+      BuyerUser actor = buyerUserMapper.findByTenantAndId(tenantId, event.actorId());
+      if (employeeNo.equals(approvalEmployeeNo(actor))) {
+        return event;
+      }
+    }
+    return null;
+  }
+
+  private static String approvalEmployeeNo(BuyerUser user) {
+    return user != null && user.employeeNo() != null && !user.employeeNo().isBlank()
+        ? user.employeeNo().trim().toUpperCase()
+        : null;
   }
 
   private boolean isVisible(WorkflowBusinessInstance instance, DataScope dataScope) {
@@ -673,6 +847,7 @@ public class UnifiedWorkflowApplicationService {
       case "payment_request" -> "付款申请";
       case "payment_batch" -> "付款批次";
       case "payment_archive_exception" -> "付款归档例外";
+      case "ludong_project_application" -> "鲁东大学货物类采购申报";
       default -> businessType;
     };
   }
@@ -717,5 +892,13 @@ public class UnifiedWorkflowApplicationService {
     } catch (Exception exception) {
       return Map.of();
     }
+  }
+
+  private record SoleApprovalHandler(String userId, String employeeNo) {
+  }
+
+  private record TaskCompletionOutcome(
+      WorkflowInstanceHistoryResponse history,
+      List<WorkflowReusedTask> reusedTasks) {
   }
 }

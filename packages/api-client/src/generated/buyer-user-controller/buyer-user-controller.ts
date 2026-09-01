@@ -35,7 +35,8 @@ import type {
   CreateBuyerUserRequest,
   ImportBuyerUsersRequest,
   ResetBuyerUserPasswordRequest,
-  UpdateBuyerUserRequest
+  UpdateBuyerUserRequest,
+  UpdateBuyerUserRolesRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -102,6 +103,64 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerUserUpdateRoles = (
+    userId: string,
+    updateBuyerUserRolesRequest: BodyType<UpdateBuyerUserRolesRequest>,
+ ) => {
+
+
+      return customInstance<ApiResponseBuyerUserResponse>(
+      {url: `/api/v1/buyer/users/${userId}/roles`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: updateBuyerUserRolesRequest
+    },
+      );
+    }
+
+
+
+export const getBuyerUserUpdateRolesMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerUserUpdateRoles>>, TError,{userId: string;data: BodyType<UpdateBuyerUserRolesRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerUserUpdateRoles>>, TError,{userId: string;data: BodyType<UpdateBuyerUserRolesRequest>}, TContext> => {
+
+const mutationKey = ['buyerUserUpdateRoles'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerUserUpdateRoles>>, {userId: string;data: BodyType<UpdateBuyerUserRolesRequest>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  buyerUserUpdateRoles(userId,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerUserUpdateRolesMutationResult = NonNullable<Awaited<ReturnType<typeof buyerUserUpdateRoles>>>
+    export type BuyerUserUpdateRolesMutationBody = BodyType<UpdateBuyerUserRolesRequest>
+    export type BuyerUserUpdateRolesMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerUserUpdateRoles = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerUserUpdateRoles>>, TError,{userId: string;data: BodyType<UpdateBuyerUserRolesRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerUserUpdateRoles>>,
+        TError,
+        {userId: string;data: BodyType<UpdateBuyerUserRolesRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerUserUpdateRolesMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const buyerUserList = (
     params?: BuyerUserListParams,
  signal?: AbortSignal
@@ -114,10 +173,6 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-
-
-
-
 export const getBuyerUserListQueryKey = (params?: BuyerUserListParams,) => {
     return [
     `/api/v1/buyer/users`, ...(params ? [params]: [])
