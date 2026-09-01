@@ -95,6 +95,7 @@ class ContractWorkflowCompletionHandlerTests {
 
   private ContractLedger contract(String status, String fulfillmentProgress) {
     OffsetDateTime now = OffsetDateTime.parse("2026-08-26T10:00:00+08:00");
+    LocalDate contractStartDate = LocalDate.now().plusDays(5);
     return new ContractLedger(
         "contract-1",
         "tenant-1",
@@ -106,11 +107,11 @@ class ContractWorkflowCompletionHandlerTests {
         status,
         "未归档",
         fulfillmentProgress,
-        LocalDate.parse("2026-09-01"),
+        contractStartDate,
         now,
         now,
         LocalDate.parse("2026-08-26"),
-        LocalDate.parse("2027-08-31"),
+        contractStartDate.plusYears(1).minusDays(1),
         "验收后30日内付款",
         "原厂三年质保",
         null);

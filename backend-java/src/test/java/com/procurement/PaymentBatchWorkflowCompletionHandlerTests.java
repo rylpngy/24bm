@@ -92,7 +92,7 @@ class PaymentBatchWorkflowCompletionHandlerTests {
         "暂无执行记录",
         "暂无阻断",
         status,
-        LocalDate.parse("2026-09-25"),
+        LocalDate.now().plusDays(24),
         now,
         now);
   }
