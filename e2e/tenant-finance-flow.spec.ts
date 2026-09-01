@@ -31,7 +31,7 @@ test('登记付款证据表单:未审批批次被后端守卫拦截(无状态变
 test('付款批次提交审批后进入统一流程状态与我发起台账', async ({ page }) => {
   await openPaymentBatches(page);
 
-  // 首次运行:待执行 → 提交批次审批;重复运行时批次已在审批中,直接跳过提交。
+  // 首次运行:待提交审批 → 提交批次审批;重复运行时批次已在审批中,直接跳过提交。
   const submitBtn = page.getByRole('button', { name: '提交批次审批 PB-2026-0001' });
   if (await submitBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await submitBtn.click();
