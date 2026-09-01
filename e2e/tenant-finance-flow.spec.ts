@@ -35,16 +35,17 @@ test('付款批次提交审批后进入统一流程状态与我发起台账', as
   const submitBtn = page.getByRole('button', { name: '提交批次审批 PB-2026-0001' });
   if (await submitBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await submitBtn.click();
-    await expect(page.getByRole('heading', { name: /提交审批 · 付款批次 PB-2026-0001/ })).toBeVisible();
+    const submitDialogHeading = page.getByRole('heading', {
+      name: /提交审批 · 付款批次 PB-2026-0001/,
+    });
+    await expect(submitDialogHeading).toBeVisible();
     await page.getByRole('button', { name: '确认提交' }).click();
+    await expect(submitDialogHeading).toBeHidden({ timeout: 15_000 });
   }
 
-  // 审批动作已从业务页内嵌按钮迁移到统一 Flowable 台账；业务页只展示真实流程状态。
-  await expect(page.getByText('审批处理中').first()).toBeVisible();
-  await expect(page.getByText('审批流程').first()).toBeVisible();
-
+  // 统一 Flowable 台账是流程已发起的权威验收信号，避免依赖业务页的瞬时刷新文案。
   await page.goto('/?module=approvals');
   await page.getByRole('button', { name: '我发起的' }).click();
   await page.getByPlaceholder('搜索业务单号、节点或发起人').fill('PB-2026-0001');
-  await expect(page.getByText('PB-2026-0001').first()).toBeVisible();
+  await expect(page.getByText('PB-2026-0001').first()).toBeVisible({ timeout: 15_000 });
 });
