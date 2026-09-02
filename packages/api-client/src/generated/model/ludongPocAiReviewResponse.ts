@@ -12,6 +12,9 @@ export interface LudongPocAiReviewResponse {
   analysisMode?: string;
   modelName?: string;
   knowledgeVersion?: string;
+  institutionalBasis?: string;
+  evidenceBoundary?: string;
+  institutionalDocuments?: string[];
   generatedAt?: string;
   nodeName?: string;
   summary?: string;

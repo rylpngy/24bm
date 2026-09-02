@@ -12,6 +12,7 @@ public record CreateMaterialRequest(
     @PositiveOrZero BigDecimal referencePrice,
     String specification,
     String brand,
+    boolean governmentMallCatalog,
     @PositiveOrZero BigDecimal taxRate,
     String description) {
 }

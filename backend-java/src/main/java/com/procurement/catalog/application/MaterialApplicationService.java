@@ -66,6 +66,7 @@ public class MaterialApplicationService {
         request.referencePrice(),
         orEmpty(request.specification()),
         orEmpty(request.brand()),
+        request.governmentMallCatalog(),
         orDefaultTax(request.taxRate()),
         orEmpty(request.description()));
     eventPublisher.publishEvent(
@@ -87,6 +88,7 @@ public class MaterialApplicationService {
         request.referencePrice(),
         orEmpty(request.specification()),
         orEmpty(request.brand()),
+        request.governmentMallCatalog(),
         orDefaultTax(request.taxRate()),
         orEmpty(request.description()));
     eventPublisher.publishEvent(
@@ -97,13 +99,14 @@ public class MaterialApplicationService {
   // ====== Excel 批量导入:模板下载 + 逐行校验(部分成功,失败行带原因)======
 
   private static final List<String> IMPORT_HEADERS = List.of(
-      "物料编码*", "物料名称*", "分类*", "计量单位*", "参考价", "规格型号", "品牌", "税率(%)", "描述");
+      "物料编码*", "物料名称*", "分类*", "计量单位*", "参考价", "规格型号", "品牌",
+      "省政府网上商城目录(是/否)", "税率(%)", "描述");
 
   public byte[] importTemplate() {
     return com.procurement.common.excel.ExcelSheets.template(
         "物料导入模板",
         IMPORT_HEADERS,
-        List.of(List.of("MAT-0001", "A4复印纸", "办公用品", "箱", "180", "70g 500张*5包", "得力", "13", "示例行,导入前请删除")));
+        List.of(List.of("MAT-0001", "A4复印纸", "办公用品", "箱", "180", "70g 500张*5包", "得力", "是", "13", "示例行,导入前请删除")));
   }
 
   @Transactional
@@ -141,9 +144,11 @@ public class MaterialApplicationService {
       }
       java.math.BigDecimal referencePrice;
       java.math.BigDecimal taxRate;
+      boolean governmentMallCatalog;
       try {
         referencePrice = parseDecimal(cell(cells, 4), "参考价");
-        taxRate = parseDecimal(cell(cells, 7), "税率");
+        taxRate = parseDecimal(cell(cells, 8), "税率");
+        governmentMallCatalog = parseYesNo(cell(cells, 7), "省政府网上商城目录");
       } catch (IllegalArgumentException exception) {
         failures.add(new com.procurement.common.api.ImportRowError(rowNumber, exception.getMessage()));
         continue;
@@ -159,8 +164,9 @@ public class MaterialApplicationService {
           referencePrice == null ? java.math.BigDecimal.ZERO : referencePrice,
           cell(cells, 5),
           cell(cells, 6),
+          governmentMallCatalog,
           orDefaultTax(taxRate),
-          cell(cells, 8));
+          cell(cells, 9));
       eventPublisher.publishEvent(
           new DomainAuditEvent(MaterialAuditAction.CREATED, AuditTargetType.MATERIAL, materialId));
       existingCodes.add(code);
@@ -205,6 +211,7 @@ public class MaterialApplicationService {
         material.referencePrice(),
         material.specification(),
         material.brand(),
+        material.governmentMallCatalog(),
         material.taxRate(),
         material.description());
   }
@@ -215,6 +222,16 @@ public class MaterialApplicationService {
 
   private static java.math.BigDecimal orDefaultTax(java.math.BigDecimal value) {
     return value == null ? new java.math.BigDecimal("13.00") : value;
+  }
+
+  private static boolean parseYesNo(String value, String label) {
+    if (value == null || value.isBlank() || "否".equals(value.trim())) {
+      return false;
+    }
+    if ("是".equals(value.trim())) {
+      return true;
+    }
+    throw new IllegalArgumentException(label + "只能填写是或否: " + value);
   }
 
   private String blankToNull(String value) {

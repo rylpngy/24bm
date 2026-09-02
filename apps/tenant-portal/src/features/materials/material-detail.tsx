@@ -83,6 +83,7 @@ export function MaterialDetail({
               <InfoItem label="计量单位" value={material.unit ?? '—'} />
               <InfoItem label="规格型号" value={material.specification || '—'} />
               <InfoItem label="品牌 / 属性" value={material.brand || '—'} />
+              <InfoItem label="目录属性" value={material.governmentMallCatalog ? '山东省政府采购网上商城目录' : '学校采购目录'} />
             </div>
           </section>
 

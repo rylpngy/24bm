@@ -57,6 +57,7 @@ class LudongPocDocumentServiceTests {
     byte[] applicationDocument = service.generate(APPLICATION_ID, LudongPocDocumentService.DocumentType.APPLICATION);
     String demandText = text(demandDocument);
     String applicationText = text(applicationDocument);
+    String mallConfirmationText = tableText(applicationDocument, 2);
     Path qaDirectory = Path.of("target", "docx-qa");
     Files.createDirectories(qaDirectory);
     Files.write(qaDirectory.resolve("ludong-purchase-demand.docx"), demandDocument);
@@ -82,7 +83,8 @@ class LudongPocDocumentServiceTests {
         "材料完整，确认提交", "材料齐全，确认受理",
         "☑ 公开招标", "☐ 邀请招标", "☐ 单一来源采购",
         "负责人终审意见", "技术负责人确认", "参与编制人员确认", "网上商城选型确认",
-        "高性能教学终端", "国产处理器，32GB内存", "商城选型确认人", "申报单位负责人");
+        "高性能教学终端", "目录外专用实验装置", "国产处理器，32GB内存", "商城选型确认人", "申报单位负责人");
+    assertThat(mallConfirmationText).contains("高性能教学终端").doesNotContain("目录外专用实验装置");
     assertThat(demandText).doesNotContain("驳回时的错误覆盖值");
     assertThat(applicationText).doesNotContain("驳回时的错误覆盖值");
   }
@@ -209,6 +211,7 @@ class LudongPocDocumentServiceTests {
     form.put("otherNotes", "无其他事项");
     List<Map<String, Object>> items = List.of(Map.ofEntries(
         Map.entry("name", "高性能教学终端"), Map.entry("quantity", "10"),
+        Map.entry("governmentMallCatalog", "是"),
         Map.entry("unitPrice", "32000"), Map.entry("totalPrice", "320000"),
         Map.entry("technicalParameters", "国产处理器，32GB内存"),
         Map.entry("referenceBrands", "品牌甲、品牌乙、品牌丙"), Map.entry("imported", "否"),
@@ -219,7 +222,15 @@ class LudongPocDocumentServiceTests {
         Map.entry("selectedSupplier", "测试供应商"), Map.entry("supplierContact", "李经理"),
         Map.entry("supplierPhone", "13900000001"), Map.entry("productLink", "https://example.test/a1"),
         Map.entry("selectedParameters", "国产处理器，32GB内存"),
-        Map.entry("selectedUnitPrice", "31800"), Map.entry("selectionParticipants", "王老师、赵老师、李老师")));
+        Map.entry("selectedUnitPrice", "31800"), Map.entry("selectionParticipants", "王老师、赵老师、李老师")),
+        Map.ofEntries(
+            Map.entry("name", "目录外专用实验装置"), Map.entry("quantity", "1"),
+            Map.entry("governmentMallCatalog", "否"), Map.entry("unitPrice", "0"),
+            Map.entry("totalPrice", "0"), Map.entry("technicalParameters", "定制实验参数"),
+            Map.entry("referenceBrands", "无"), Map.entry("imported", "否"),
+            Map.entry("importLeadTime", ""), Map.entry("purpose", "实验教学"),
+            Map.entry("usageDirection", "教学"), Map.entry("userName", "王老师"),
+            Map.entry("installationLocation", "实验楼"), Map.entry("configurationLimit", "专用设备标准")));
     return new LudongPocApplication(
         APPLICATION_ID, TENANT_ID, "LDU-2026-001", "智慧教室设备更新项目", "教务处", "dept-jwc",
         new BigDecimal("320000"), "approved", objectMapper.writeValueAsString(form),
@@ -311,6 +322,15 @@ class LudongPocDocumentServiceTests {
       for (XWPFTable table : document.getTables()) {
         table.getRows().forEach(row -> row.getTableCells().forEach(cell -> result.append(cell.getText()).append('\n')));
       }
+      return result.toString();
+    }
+  }
+
+  private static String tableText(byte[] documentBytes, int tableIndex) throws Exception {
+    try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(documentBytes))) {
+      StringBuilder result = new StringBuilder();
+      document.getTables().get(tableIndex).getRows()
+          .forEach(row -> row.getTableCells().forEach(cell -> result.append(cell.getText()).append('\n')));
       return result.toString();
     }
   }

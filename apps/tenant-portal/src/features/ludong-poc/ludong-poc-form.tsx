@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { type DepartmentResponse, useDepartmentList } from '@24bid/api-client';
-import { ActionButton, FeedbackNotice, PageHeader, PrimaryActionButton, SectionCard, cn } from '@24bid/ui';
-import { ClipboardList, GitBranch, ListChecks, Plus, RotateCcw, Save, Trash2, WalletCards } from 'lucide-react';
+import { FeedbackNotice, PageHeader, PrimaryActionButton, SectionCard, cn } from '@24bid/ui';
+import { ClipboardList, GitBranch, ListChecks, RotateCcw, Save, WalletCards } from 'lucide-react';
 import { defaultFormData, emptyItem, type LudongApplication, type LudongItem } from './api';
+import { LudongPocMaterialItemsEditor } from './ludong-poc-material-items-editor';
 
 export interface LudongFormPayload {
   projectName: string;
@@ -47,16 +48,13 @@ export function LudongPocForm({
     }
     return data;
   });
-  const [items, setItems] = useState<LudongItem[]>(() => (initial?.items ?? []).map((item) => ({ ...emptyItem(), ...item })));
+  const [items, setItems] = useState<LudongItem[]>(() => (initial?.items ?? []).map((item) => ({
+    ...emptyItem(),
+    ...item,
+    catalogSource: item.catalogSource ?? (item.materialId ? 'catalog' : 'custom'),
+    governmentMallCatalog: item.governmentMallCatalog ?? '否',
+  })));
   const update = (key: string, value: string) => setFormData((current) => ({ ...current, [key]: value }));
-  const updateItem = (index: number, key: keyof LudongItem, value: string) => setItems((current) => current.map((item, rowIndex) => {
-    if (rowIndex !== index) return item;
-    const next = { ...item, [key]: value };
-    if (key === 'quantity' || key === 'unitPrice') {
-      next.totalPrice = String(Number(next.quantity || 0) * Number(next.unitPrice || 0) || '');
-    }
-    return next;
-  }));
   const departmentGroups = useMemo(() => buildDepartmentGroups(departmentsQuery.data?.data ?? []), [departmentsQuery.data?.data]);
 
   const selectApplicantUnit = (nextDepartmentId: string) => {
@@ -115,12 +113,20 @@ export function LudongPocForm({
       [`${decision.key}SystemValue`, decision.value],
       [`${decision.key}Reason`, decision.evidence.join('；')],
     ]));
+    const hasGovernmentMallItems = items.some((item) => item.governmentMallCatalog === '是');
     onSave({
       projectName,
       applicantUnit,
       departmentId,
       budgetAmount: Number(budgetAmount || 0),
-      formData: { ...formData, ...routeSnapshot },
+      formData: {
+        ...formData,
+        ...routeSnapshot,
+        mallSelectionApplicable: hasGovernmentMallItems ? '是' : '否',
+        mallSelectionReason: hasGovernmentMallItems
+          ? `设备清单中有 ${items.filter((item) => item.governmentMallCatalog === '是').length} 项属于山东省政府采购网上商城目录`
+          : '设备清单中没有属于山东省政府采购网上商城目录的项目',
+      },
       items,
     });
   };
@@ -244,61 +250,20 @@ export function LudongPocForm({
         </div>
       </SectionCard>
 
-      <SectionCard title="拟采购设备清单" icon={ListChecks} extra={<span className="text-[11px] font-black text-red-500">至少填写 1 条 *</span>}>
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <p className="max-w-2xl text-xs font-bold leading-5 text-slate-500">申报人填写拟采购设备名称、数量和用途，系统据此辅助判断审批路径；论证环节再关联物料库并完善品牌、型号和技术参数。</p>
-          <ActionButton icon={Plus} onClick={() => setItems((current) => [...current, emptyItem()])}>添加设备</ActionButton>
-        </div>
-        <div className="space-y-3">
-          {items.map((item, index) => (
-            <div key={index} className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
-              <div className="grid gap-3 md:grid-cols-12">
-                <Field label={`设备或采购内容 ${index + 1}`} required className="md:col-span-4"><input className={inputClass} value={item.name} onChange={(event) => updateItem(index, 'name', event.target.value)} placeholder="例如：高性能计算工作站" /></Field>
-                <Field label="数量" required className="md:col-span-2"><input type="number" min="1" className={inputClass} value={item.quantity} onChange={(event) => updateItem(index, 'quantity', event.target.value)} /></Field>
-                <Field label="单位" className="md:col-span-2"><input className={inputClass} value={item.unit} onChange={(event) => updateItem(index, 'unit', event.target.value)} placeholder="台 / 套" /></Field>
-                <Field label="预算单价（元）" className="md:col-span-3"><input type="number" min="0" className={inputClass} value={item.unitPrice} onChange={(event) => updateItem(index, 'unitPrice', event.target.value)} /></Field>
-                <button type="button" onClick={() => setItems((current) => current.filter((_, rowIndex) => rowIndex !== index))} aria-label={`删除第 ${index + 1} 条设备`} title="删除设备" className="mt-6 flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-600 md:col-span-1"><Trash2 size={15} /></button>
-                <Field label="主要用途" className="md:col-span-6"><textarea className={textareaClass} value={item.purpose} onChange={(event) => updateItem(index, 'purpose', event.target.value)} placeholder="例如：人工智能实验教学与模型训练" /></Field>
-                <Field label="初步技术参数" className="md:col-span-6"><textarea className={textareaClass} value={item.technicalParameters} onChange={(event) => updateItem(index, 'technicalParameters', event.target.value)} placeholder="填写性能、配置、接口和服务要求" /></Field>
-              </div>
-              <div className="mt-3 flex justify-end text-xs font-black text-slate-500">预算小计：<span className="ml-2 font-mono text-blue-700">¥{Number(item.totalPrice || 0).toLocaleString('zh-CN')}</span></div>
-            </div>
-          ))}
-          {items.length === 0 && <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/50 px-5 py-9 text-center"><p className="text-sm font-black text-slate-700">尚未填写拟采购设备</p><p className="mt-1 text-xs font-bold text-slate-400">至少添加一条设备或采购内容，系统才能形成完整的流程判断依据。</p></div>}
+      <SectionCard title="采购设备明细" icon={ListChecks} extra={<span className="text-[11px] font-black text-red-500">至少选择 1 条 *</span>}>
+        <LudongPocMaterialItemsEditor stage="application" items={items} onChange={setItems} />
+        <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+          <p className="text-xs font-black text-blue-800">系统目录判定</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-blue-700/80">
+            {items.some((item) => item.governmentMallCatalog === '是')
+              ? `已识别 ${items.filter((item) => item.governmentMallCatalog === '是').length} 项省政府商城目录设备，系统已自动纳入下方确认单。`
+              : '当前清单没有省政府商城目录设备，网上商城确认单无需填写。'}
+          </p>
         </div>
       </SectionCard>
 
-      <SectionCard title="网上商城型号确认单" icon={ListChecks} extra={<span className="text-[11px] font-black text-blue-700">与设备清单同步</span>}>
-        <div className="mb-4 grid gap-4 rounded-lg border border-blue-100 bg-blue-50/60 p-4 md:grid-cols-[14rem_minmax(0,1fr)]">
-          <Field label="是否需要网上商城选型"><YesNoSelect value={formData.mallSelectionApplicable} onChange={(value) => update('mallSelectionApplicable', value)} /></Field>
-          <p className="self-end pb-2 text-xs font-bold leading-5 text-blue-700/80">选择“是”后，需为每条设备确认品牌、型号、供应商、商城价格和参与选型人员。确认结果自动写入采购申请模板。</p>
-        </div>
-        {formData.mallSelectionApplicable === '否' ? (
-          <FeedbackNotice tone="info" message="当前项目不适用网上商城选型，设备清单仍会进入采购需求表和采购申请单。" />
-        ) : (
-          <div className="space-y-4">
-            {items.map((item, index) => (
-              <div key={`mall-${index}`} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <p className="text-sm font-black text-slate-950">{index + 1}. {item.name || '待填写设备名称'}</p>
-                  <span className="text-xs font-bold text-slate-500">数量 {item.quantity || 0} {item.unit}</span>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <Field label="确认品牌" required><input className={inputClass} value={item.selectedBrand} onChange={(event) => updateItem(index, 'selectedBrand', event.target.value)} /></Field>
-                  <Field label="确认型号" required><input className={inputClass} value={item.selectedModel} onChange={(event) => updateItem(index, 'selectedModel', event.target.value)} /></Field>
-                  <Field label="商城供应商" required><input className={inputClass} value={item.selectedSupplier} onChange={(event) => updateItem(index, 'selectedSupplier', event.target.value)} /></Field>
-                  <Field label="商城单价（元）" required><input type="number" min="0" className={inputClass} value={item.selectedUnitPrice} onChange={(event) => updateItem(index, 'selectedUnitPrice', event.target.value)} /></Field>
-                  <Field label="供应商联系人"><input className={inputClass} value={item.supplierContact} onChange={(event) => updateItem(index, 'supplierContact', event.target.value)} /></Field>
-                  <Field label="联系电话"><input className={inputClass} value={item.supplierPhone} onChange={(event) => updateItem(index, 'supplierPhone', event.target.value)} /></Field>
-                  <Field label="商品链接" className="lg:col-span-2"><input className={inputClass} value={item.productLink} onChange={(event) => updateItem(index, 'productLink', event.target.value)} placeholder="https://" /></Field>
-                  <Field label="商城型号技术参数" className="md:col-span-2"><textarea className={textareaClass} value={item.selectedParameters} onChange={(event) => updateItem(index, 'selectedParameters', event.target.value)} /></Field>
-                  <Field label="网上商城选型参与人" required className="md:col-span-2"><input className={inputClass} value={item.selectionParticipants} onChange={(event) => updateItem(index, 'selectionParticipants', event.target.value)} placeholder="多人可使用顿号分隔" /></Field>
-                </div>
-              </div>
-            ))}
-            {items.length === 0 && <FeedbackNotice tone="info" message="请先在上方添加拟采购设备，再填写商城型号确认信息。" />}
-          </div>
-        )}
+      <SectionCard title="网上商城品牌型号确认单" icon={ListChecks} extra={<span className="text-[11px] font-black text-blue-600">由申请人填写 · 系统自动带入目录内设备</span>}>
+        <LudongPocMaterialItemsEditor stage="mall-selection" items={items} onChange={setItems} />
       </SectionCard>
 
       <SectionCard title="流程判定信息" icon={GitBranch}>
@@ -373,12 +338,16 @@ export function getMissingRequiredFields({
     items.forEach((item, index) => {
       if (!item.name.trim()) missing.push(`第 ${index + 1} 条设备名称`);
       if (!(Number(item.quantity) > 0)) missing.push(`第 ${index + 1} 条设备数量`);
-      if (formData.mallSelectionApplicable === '是') {
-        requireText(item.selectedBrand, `第 ${index + 1} 条商城确认品牌`);
-        requireText(item.selectedModel, `第 ${index + 1} 条商城确认型号`);
+      requireText(item.unit, `第 ${index + 1} 条计量单位`);
+      if (!(Number(item.unitPrice) > 0)) missing.push(`第 ${index + 1} 条市场调研单价`);
+      requireText(item.technicalParameters, `第 ${index + 1} 条技术参数`);
+      requireText(item.purpose, `第 ${index + 1} 条主要用途`);
+      if (item.governmentMallCatalog === '是') {
+        requireText(item.selectedBrand, `第 ${index + 1} 条商城最终品牌`);
+        requireText(item.selectedModel, `第 ${index + 1} 条商城最终型号`);
         requireText(item.selectedSupplier, `第 ${index + 1} 条商城供应商`);
-        if (!(Number(item.selectedUnitPrice) > 0)) missing.push(`第 ${index + 1} 条商城单价`);
-        requireText(item.selectionParticipants, `第 ${index + 1} 条商城选型参与人`);
+        if (!(Number(item.selectedUnitPrice) > 0)) missing.push(`第 ${index + 1} 条商城确认单价`);
+        requireText(item.selectionParticipants, `第 ${index + 1} 条商城选型人员`);
       }
     });
   }

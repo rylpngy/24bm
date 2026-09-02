@@ -100,6 +100,8 @@ public class LudongPocApplicationService {
   public LudongPocApplicationResponse create(LudongPocApplicationRequest request) {
     permissionService.require("buyer:ludong-poc:write");
     validate(request);
+    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items());
+    Map<String, Object> normalizedForm = prepareApplicationForm(request.formData(), normalizedItems);
     String tenantId = tenant();
     String userId = user();
     String id = "ldu-poc-" + UUID.randomUUID();
@@ -107,8 +109,8 @@ public class LudongPocApplicationService {
         + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
     mapper.insert(
         id, tenantId, no, request.projectName().trim(), request.applicantUnit().trim(),
-        blankToNull(request.departmentId()), request.budgetAmount(), write(request.formData()),
-        write(request.items()), userId);
+        blankToNull(request.departmentId()), request.budgetAmount(), write(normalizedForm),
+        write(normalizedItems), userId);
     auditService.recordCurrentTenantAction(
         "ludong_poc.created", "ludong_project_application", id, "创建货物类采购申报材料包 " + no);
     return get(id);
@@ -118,10 +120,12 @@ public class LudongPocApplicationService {
   public LudongPocApplicationResponse update(String id, LudongPocApplicationRequest request) {
     permissionService.require("buyer:ludong-poc:write");
     validate(request);
+    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items());
+    Map<String, Object> normalizedForm = prepareApplicationForm(request.formData(), normalizedItems);
     requireApplication(tenant(), id);
     int changed = mapper.updateDraft(
         tenant(), id, request.projectName().trim(), request.applicantUnit().trim(),
-        blankToNull(request.departmentId()), request.budgetAmount(), write(request.formData()), write(request.items()));
+        blankToNull(request.departmentId()), request.budgetAmount(), write(normalizedForm), write(normalizedItems));
     if (changed == 0) {
       throw new IllegalStateException("只有草稿或已驳回的申报可以编辑");
     }
@@ -192,7 +196,7 @@ public class LudongPocApplicationService {
     Map<String, Object> reviewData = LudongPocTaskFormCatalog.validate(
         nodeId, request.action(), request.reviewData());
     if ("approve".equals(request.action()) && "argumentation_review".equals(nodeId)) {
-      reviewData = normalizeArgumentationMaterials(reviewData);
+      reviewData = normalizeReviewMaterials(reviewData);
     }
     reviewRecordMapper.insert(
         "ldu-review-" + UUID.randomUUID(), tenant(), request.applicationId(), taskId,
@@ -325,16 +329,14 @@ public class LudongPocApplicationService {
     if (request.items().isEmpty()) {
       throw new IllegalArgumentException("至少填写一条拟采购设备明细");
     }
-    String mallSelectionApplicable = String.valueOf(
-        request.formData().getOrDefault("mallSelectionApplicable", "是"));
-    if (!List.of("是", "否").contains(mallSelectionApplicable)) {
-      throw new IllegalArgumentException("必须选择是否需要网上商城选型");
-    }
     for (int index = 0; index < request.items().size(); index++) {
       Map<String, Object> item = request.items().get(index);
       if (item.get("name") == null || String.valueOf(item.get("name")).isBlank()) {
         throw new IllegalArgumentException("第 " + (index + 1) + " 条设备名称不能为空");
       }
+      requireItemText(item, index, "unit", "计量单位");
+      requireItemText(item, index, "technicalParameters", "主要技术参数");
+      requireItemText(item, index, "purpose", "主要用途");
       try {
         if (new BigDecimal(String.valueOf(item.get("quantity"))).signum() <= 0) {
           throw new IllegalArgumentException("第 " + (index + 1) + " 条设备数量必须大于 0");
@@ -342,20 +344,26 @@ public class LudongPocApplicationService {
       } catch (NumberFormatException exception) {
         throw new IllegalArgumentException("第 " + (index + 1) + " 条设备数量必须是有效数字", exception);
       }
-      if ("是".equals(mallSelectionApplicable)) {
-        requireItemText(item, index, "selectedBrand", "商城确认品牌");
-        requireItemText(item, index, "selectedModel", "商城确认型号");
+      requirePositiveItemNumber(item, index, "unitPrice", "市场调研单价");
+      if ("是".equals(String.valueOf(item.get("governmentMallCatalog")))) {
+        requireItemText(item, index, "selectedBrand", "商城最终品牌");
+        requireItemText(item, index, "selectedModel", "商城最终型号");
         requireItemText(item, index, "selectedSupplier", "商城供应商");
-        requireItemText(item, index, "selectionParticipants", "商城选型参与人");
-        try {
-          if (new BigDecimal(String.valueOf(item.get("selectedUnitPrice"))).signum() <= 0) {
-            throw new IllegalArgumentException("第 " + (index + 1) + " 条商城单价必须大于 0");
-          }
-        } catch (NumberFormatException exception) {
-          throw new IllegalArgumentException(
-              "第 " + (index + 1) + " 条商城单价必须是有效数字", exception);
-        }
+        requirePositiveItemNumber(item, index, "selectedUnitPrice", "商城确认单价");
+        requireItemText(item, index, "selectionParticipants", "商城选型人员");
       }
+    }
+  }
+
+  private static void requirePositiveItemNumber(
+      Map<String, Object> item, int index, String field, String label) {
+    requireItemText(item, index, field, label);
+    try {
+      if (new BigDecimal(String.valueOf(item.get(field))).signum() <= 0) {
+        throw new IllegalArgumentException("第 " + (index + 1) + " 条" + label + "必须大于 0");
+      }
+    } catch (NumberFormatException exception) {
+      throw new IllegalArgumentException("第 " + (index + 1) + " 条" + label + "必须是有效数字", exception);
     }
   }
 
@@ -458,46 +466,119 @@ public class LudongPocApplicationService {
     return step;
   }
 
-  private Map<String, Object> normalizeArgumentationMaterials(Map<String, Object> reviewData) {
+  private Map<String, Object> normalizeReviewMaterials(Map<String, Object> reviewData) {
     List<Map<String, Object>> items = objectMapper.convertValue(reviewData.get("items"), ITEMS_TYPE);
+    validateMaterialReferences(items);
+    Map<String, Object> normalized = new LinkedHashMap<>(reviewData);
+    normalized.put("items", items);
+    return Map.copyOf(normalized);
+  }
+
+  private void validateMaterialReferences(List<Map<String, Object>> items) {
     List<String> materialIds = items.stream()
-        .map(item -> String.valueOf(item.get("materialId")).trim())
+        .map(item -> item.get("materialId") == null ? "" : String.valueOf(item.get("materialId")).trim())
+        .filter(id -> !id.isBlank())
         .distinct()
         .toList();
-    if (materialIds.size() != items.size()) {
+    long linkedCount = items.stream()
+        .filter(item -> item.get("materialId") != null && !String.valueOf(item.get("materialId")).isBlank())
+        .count();
+    if (materialIds.size() != linkedCount) {
+      throw new IllegalArgumentException("设备配置明细不能重复关联同一物料");
+    }
+    if (materialApplicationService.findMaterialsByTenantAndIds(tenant(), materialIds).size()
+        != materialIds.size()) {
+      throw new IllegalArgumentException("设备配置明细包含不存在或不属于当前租户的学校采购目录物料");
+    }
+  }
+
+  private List<Map<String, Object>> prepareApplicationItems(List<Map<String, Object>> items) {
+    List<String> materialIds = items.stream()
+        .map(item -> item.get("materialId") == null ? "" : String.valueOf(item.get("materialId")).trim())
+        .filter(id -> !id.isBlank())
+        .distinct()
+        .toList();
+    long linkedCount = items.stream()
+        .filter(item -> item.get("materialId") != null && !String.valueOf(item.get("materialId")).isBlank())
+        .count();
+    if (materialIds.size() != linkedCount) {
       throw new IllegalArgumentException("设备配置明细不能重复关联同一物料");
     }
     Map<String, Material> materials = new LinkedHashMap<>();
     materialApplicationService.findMaterialsByTenantAndIds(tenant(), materialIds)
         .forEach(material -> materials.put(material.id(), material));
     List<Map<String, Object>> normalizedItems = items.stream().map(item -> {
-      String materialId = String.valueOf(item.get("materialId")).trim();
-      Material material = materials.get(materialId);
-      if (material == null) {
-        throw new IllegalArgumentException("关联物料不存在或不属于当前租户: " + materialId);
+      String materialId = item.get("materialId") == null ? "" : String.valueOf(item.get("materialId")).trim();
+      Material material = materialId.isBlank() ? null : materials.get(materialId);
+      if (!materialId.isBlank() && material == null) {
+        throw new IllegalArgumentException("关联的学校采购目录物料不存在或不属于当前租户: " + materialId);
       }
       BigDecimal quantity;
       try {
         quantity = new BigDecimal(String.valueOf(item.get("quantity")));
       } catch (NumberFormatException exception) {
-        throw new IllegalArgumentException("设备数量必须为有效数字: " + material.name(), exception);
+        throw new IllegalArgumentException("设备数量必须为有效数字: " + item.get("name"), exception);
       }
       if (quantity.signum() <= 0) {
-        throw new IllegalArgumentException("设备数量必须大于 0: " + material.name());
+        throw new IllegalArgumentException("设备数量必须大于 0: " + item.get("name"));
+      }
+      BigDecimal researchedPrice;
+      try {
+        researchedPrice = new BigDecimal(String.valueOf(item.get("unitPrice")));
+      } catch (NumberFormatException exception) {
+        throw new IllegalArgumentException("市场调研单价必须为有效数字: " + item.get("name"), exception);
       }
       Map<String, Object> normalized = new LinkedHashMap<>(item);
-      normalized.put("materialId", material.id());
-      normalized.put("materialCode", material.code());
-      normalized.put("materialCategory", material.category());
-      normalized.put("unit", material.unit());
-      normalized.put("name", material.name());
-      normalized.put("unitPrice", material.referencePrice().toPlainString());
-      normalized.put("totalPrice", material.referencePrice().multiply(quantity).toPlainString());
+      normalized.entrySet().removeIf(entry -> entry.getValue() == null);
+      if (material != null) {
+        normalized.put("materialId", material.id());
+        normalized.put("materialCode", material.code() == null ? "" : material.code());
+        normalized.put("materialCategory", material.category() == null ? "" : material.category());
+        normalized.put("catalogSource", "catalog");
+        normalized.put("governmentMallCatalog", material.governmentMallCatalog() ? "是" : "否");
+      } else {
+        normalized.put("materialId", "");
+        normalized.put("materialCode", "");
+        normalized.put("materialCategory", "");
+        normalized.put("catalogSource", "custom");
+        normalized.put("governmentMallCatalog", "否");
+      }
+      normalized.put("totalPrice", researchedPrice.multiply(quantity).toPlainString());
+      putDefault(normalized, "configurationLimit", "附件3（办公设备及家具配置标准）");
       return Map.copyOf(normalized);
     }).toList();
-    Map<String, Object> normalized = new LinkedHashMap<>(reviewData);
-    normalized.put("items", normalizedItems);
+    for (int index = 0; index < normalizedItems.size(); index++) {
+      Map<String, Object> item = normalizedItems.get(index);
+      if ("是".equals(String.valueOf(item.get("governmentMallCatalog")))) {
+        requireItemText(item, index, "selectedBrand", "商城最终品牌");
+        requireItemText(item, index, "selectedModel", "商城最终型号");
+        requireItemText(item, index, "selectedSupplier", "商城供应商");
+        requirePositiveItemNumber(item, index, "selectedUnitPrice", "商城确认单价");
+        requireItemText(item, index, "selectionParticipants", "商城选型人员");
+      }
+    }
+    return normalizedItems;
+  }
+
+  private Map<String, Object> prepareApplicationForm(
+      Map<String, Object> formData, List<Map<String, Object>> items) {
+    long mallItemCount = items.stream()
+        .filter(item -> "是".equals(String.valueOf(item.get("governmentMallCatalog"))))
+        .count();
+    Map<String, Object> normalized = new LinkedHashMap<>(formData);
+    normalized.entrySet().removeIf(entry -> entry.getValue() == null);
+    normalized.put("mallSelectionApplicable", mallItemCount > 0 ? "是" : "否");
+    normalized.put("mallSelectionReason", mallItemCount > 0
+        ? "设备清单中有 " + mallItemCount + " 项属于山东省政府采购网上商城目录"
+        : "设备清单中没有属于山东省政府采购网上商城目录的项目");
     return Map.copyOf(normalized);
+  }
+
+  private static void putDefault(Map<String, Object> target, String field, String value) {
+    Object current = target.get(field);
+    if ((current == null || String.valueOf(current).isBlank()) && value != null && !value.isBlank()) {
+      target.put(field, value);
+    }
   }
 
   private LudongPocApplicationResponse toResponse(LudongPocApplication value) {

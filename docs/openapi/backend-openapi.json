@@ -23704,6 +23704,9 @@
           "brand": {
             "type": "string"
           },
+          "governmentMallCatalog": {
+            "type": "boolean"
+          },
           "taxRate": {
             "type": "number"
           },
@@ -23755,6 +23758,9 @@
           },
           "brand": {
             "type": "string"
+          },
+          "governmentMallCatalog": {
+            "type": "boolean"
           },
           "taxRate": {
             "type": "number"
@@ -24207,6 +24213,18 @@
           },
           "knowledgeVersion": {
             "type": "string"
+          },
+          "institutionalBasis": {
+            "type": "string"
+          },
+          "evidenceBoundary": {
+            "type": "string"
+          },
+          "institutionalDocuments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "generatedAt": {
             "type": "string",

@@ -4,6 +4,8 @@ export interface LudongItem {
   materialId: string;
   materialCode: string;
   materialCategory: string;
+  catalogSource: 'catalog' | 'custom';
+  governmentMallCatalog: '是' | '否';
   unit: string;
   name: string;
   quantity: string;
@@ -132,6 +134,9 @@ export interface LudongAiReviewResult {
   analysisMode: 'AI_MODEL' | 'RULE_ASSISTED' | 'RULE_FALLBACK';
   modelName: string;
   knowledgeVersion: string;
+  institutionalBasis: string;
+  evidenceBoundary: string;
+  institutionalDocuments: string[];
   generatedAt: string;
   nodeName: string;
   summary: string;
@@ -309,7 +314,7 @@ export const ludongApi = {
 };
 
 export const emptyItem = (): LudongItem => ({
-  materialId: '', materialCode: '', materialCategory: '', unit: '',
+  materialId: '', materialCode: '', materialCategory: '', catalogSource: 'custom', governmentMallCatalog: '否', unit: '',
   name: '', quantity: '1', unitPrice: '', totalPrice: '', technicalParameters: '', referenceBrands: '',
   imported: '否', importLeadTime: '', purpose: '', usageDirection: '教学', userName: '', installationLocation: '',
   configurationLimit: '', selectedBrand: '', selectedModel: '', selectedSupplier: '', supplierContact: '',

@@ -1,81 +1,89 @@
 {
-  "version": "ldu-procurement-policy-v1-2026-08-31",
+  "version": "ldu-procurement-policy-v2-2026-09-01",
+  "institutionalBasis": "鲁东大学校内采购制度知识库",
+  "evidenceBoundary": "仅使用学校确认并导入系统的采购管理办法、配套表单、配置标准、当前项目材料和前序审批记录；不使用互联网搜索、第三方网站或外部行业知识形成审批意见。校内制度未覆盖的事项必须提示人工核验。",
+  "institutionalDocuments": [
+    "鲁东大学采购管理办法及配套制度（以学校导入的现行有效版本为准）",
+    "货物类项目采购及招标申请单、受理单",
+    "采购需求表（货物类）",
+    "附件3：办公设备及家具配置标准（待学校导入正式正文）"
+  ],
   "rules": [
     {
       "id": "LDU-FORM-BASE-001",
       "title": "项目申报基础信息",
       "clause": "项目名称、预算金额、经费来源、项目负责人和技术负责人属于采购申报基础信息，应在提交审批前完整填写。",
-      "source": "货物类项目采购及招标申请单、受理单",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单",
       "verificationStatus": "VERIFIED_TEMPLATE"
     },
     {
       "id": "LDU-FORM-ITEM-001",
       "title": "采购设备配置明细",
       "clause": "采购设备应填写名称、数量、预算单价、技术参数、参考品牌型号等可供论证和采购执行的信息。",
-      "source": "货物类项目采购及招标申请单、受理单-采购设备配置明细",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单-采购设备配置明细",
       "verificationStatus": "VERIFIED_TEMPLATE"
     },
     {
       "id": "LDU-BUDGET-001",
       "title": "预算与设备明细一致性",
       "clause": "项目预算应与设备明细合计保持一致；存在差异时应由审批人复核差异原因。",
-      "source": "采购申报表与采购设备配置明细交叉校验规则",
+      "source": "鲁东大学采购申报校内控制规则：申报表与设备明细交叉校验",
       "verificationStatus": "POC_CONTROL_RULE"
     },
     {
       "id": "LDU-ASSET-ANNEX3-001",
       "title": "通用资产配置标准核验",
       "clause": "办公设备及家具配置应对照《鲁东大学通用资产配置标准》附表3进行购置必要性、配置数量和配置价格核验。具体品目限价以学校确认并导入系统的有效版本为准。",
-      "source": "货物类项目采购及招标申请单、受理单-表内说明",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单-表内说明",
       "verificationStatus": "VERIFIED_TEMPLATE_PENDING_ANNEX_TEXT"
     },
     {
       "id": "LDU-MALL-001",
       "title": "网上商城型号确认要求",
       "clause": "商城选型应记录品牌、型号、单价、技术参数、供应商和选型参与人，选型参与人至少三人且包含一名处级领导。",
-      "source": "货物类项目采购及招标申请单、受理单-网上商城型号确认单注释1",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单-网上商城型号确认单注释1",
       "verificationStatus": "VERIFIED_TEMPLATE"
     },
     {
       "id": "LDU-MALL-002",
       "title": "商城选型不得提高采购标准",
       "clause": "选定产品参数及单价不得高于购置申请中的单价和技术参数配置要求，不得根据预算金额擅自提高采购标准。",
-      "source": "货物类项目采购及招标申请单、受理单-网上商城型号确认单特别提醒",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单-网上商城型号确认单特别提醒",
       "verificationStatus": "VERIFIED_TEMPLATE"
     },
     {
       "id": "LDU-LEADER-001",
       "title": "学院项目分管校领导审批条件",
       "clause": "学院预算金额超过30万元（含）的，须经分管业务的校领导审批。",
-      "source": "货物类项目采购及招标申请单、受理单-表内说明",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单-表内说明",
       "verificationStatus": "VERIFIED_TEMPLATE"
     },
     {
       "id": "LDU-LEADER-002",
       "title": "其他单位项目分管校领导审批条件",
       "clause": "其他单位预算金额超过10万元（含）的，须经分管校领导审批。",
-      "source": "货物类项目采购及招标申请单、受理单-表内说明",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单-表内说明",
       "verificationStatus": "VERIFIED_TEMPLATE"
     },
     {
       "id": "LDU-BUDGET-STATUS-001",
       "title": "财务预算审查选项",
       "clause": "财务预算应确认已列入本年度学校预算、已办理预算追加手续，或列入下一年度学校预算。",
-      "source": "货物类项目采购及招标申请单、受理单-财务预算",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单-财务预算",
       "verificationStatus": "VERIFIED_TEMPLATE"
     },
     {
       "id": "LDU-PROCUREMENT-BUDGET-001",
       "title": "采购预算审查选项",
       "clause": "采购预算应确认已列入本年度采购预算、已办理采购预算追加手续，或列入下一年度采购预算。",
-      "source": "货物类项目采购及招标申请单、受理单-采购预算",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单-采购预算",
       "verificationStatus": "VERIFIED_TEMPLATE"
     },
     {
       "id": "LDU-ARCHIVE-001",
       "title": "申请材料交接完整性",
       "clause": "材料交接前应核对采购需求表、采购申请单、设备明细、审批意见和签字记录是否齐全。",
-      "source": "货物类项目采购及招标申请单、受理单-申请材料交接",
+      "source": "鲁东大学校内表单：货物类项目采购及招标申请单、受理单-申请材料交接",
       "verificationStatus": "VERIFIED_TEMPLATE"
     }
   ]

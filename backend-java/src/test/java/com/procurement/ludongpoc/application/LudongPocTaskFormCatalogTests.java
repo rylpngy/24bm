@@ -3,6 +3,7 @@ package com.procurement.ludongpoc.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,8 @@ class LudongPocTaskFormCatalogTests {
         "compilation_participant_review", "approve", Map.of("compilationParticipantOpinion", "同意")))
         .containsEntry("compilationParticipantOpinion", "同意");
     assertThat(LudongPocTaskFormCatalog.validate(
-        "mall_selection_participant_review", "approve", Map.of("mallSelectionParticipantOpinion", "同意")))
+        "mall_selection_participant_review", "approve", Map.of(
+            "mallSelectionParticipantOpinion", "同意")))
         .containsEntry("mallSelectionParticipantOpinion", "同意");
   }
 
@@ -26,7 +28,24 @@ class LudongPocTaskFormCatalogTests {
     assertThatThrownBy(() -> LudongPocTaskFormCatalog.validate(
         "mall_selection_participant_review", "approve", Map.of()))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mallSelectionParticipantOpinion");
+        .hasMessageContaining("审批通过前必须完成节点字段");
+  }
+
+  @Test
+  void acceptsCatalogExternalEquipmentDuringArgumentation() {
+    assertThat(LudongPocTaskFormCatalog.validate(
+        "argumentation_review", "approve", Map.of(
+            "purchaseReason", "教学设备老化，需要更新",
+            "argumentationOpinion", "同意",
+            "items", List.of(Map.of(
+                "materialId", "",
+                "name", "专用实验设备",
+                "quantity", "1",
+                "unitPrice", "120000",
+                "configurationLimit", "实验室专用设备配置标准",
+                "referenceBrands", "调研品牌甲",
+                "technicalParameters", "满足实验教学参数")))))
+        .containsKey("items");
   }
 
   @Test

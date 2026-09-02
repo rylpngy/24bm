@@ -24,8 +24,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * 审批节点智能辅助评审。可配置 OpenAI 兼容接口；未配置或调用失败时，
- * 使用可复现的采购规则模型进行辅助分析，不自动作出审批决定。
+ * 审批节点智能辅助评审。只使用学校已导入的采购制度、当前项目材料和
+ * 前序审批记录；不使用互联网搜索或第三方知识作为审批依据。
  */
 @Service
 public class LudongPocAiReviewService {
@@ -80,6 +80,8 @@ public class LudongPocAiReviewService {
     } catch (Exception ignored) {
       return new LudongPocAiReviewResponse(
           local.runId(), "RULE_FALLBACK", RULE_MODEL, knowledgeBase.version(),
+          knowledgeBase.institutionalBasis(), knowledgeBase.evidenceBoundary(),
+          knowledgeBase.institutionalDocuments(),
           OffsetDateTime.now(), local.nodeName(),
           local.summary(), local.recommendation(), local.confidence(), local.reviewFocus(),
           local.findings(), local.missingMaterials(), local.suggestedComment(), local.accuracyNotice());
@@ -129,9 +131,12 @@ public class LudongPocAiReviewService {
           : "经辅助核验，当前项目基本信息、设备明细和前序材料未发现明显缺项，具备继续审批条件。";
     return new LudongPocAiReviewResponse(
         "ai-run-" + UUID.randomUUID(), "RULE_ASSISTED", RULE_MODEL, knowledgeBase.version(),
+        knowledgeBase.institutionalBasis(), knowledgeBase.evidenceBoundary(),
+        knowledgeBase.institutionalDocuments(),
         OffsetDateTime.now(), profile.name(), summary, recommendation, confidence, profile.focus(),
         findings, List.copyOf(missing), suggestedComment,
-        "置信度表示当前材料对规则与模型分析的支撑程度，不代表结论正确率；辅助结果须由审批人复核确认。");
+        "辅助意见仅依据学校已导入的采购管理制度、当前项目材料和前序审批记录；"
+            + "不引用互联网搜索或第三方信息。置信度不代表结论正确率，最终意见须由审批人复核确认。");
   }
 
   private void addCoreFindings(
@@ -187,7 +192,14 @@ public class LudongPocAiReviewService {
     }
 
     if ("是".equals(text(form.get("mallSelectionApplicable")))) {
-      long incompleteSelections = items.stream().filter(item -> blank(item.get("selectedBrand"))
+      boolean hasCatalogSnapshot = items.stream()
+          .anyMatch(item -> item.containsKey("governmentMallCatalog"));
+      List<Map<String, Object>> mallItems = hasCatalogSnapshot
+          ? items.stream()
+              .filter(item -> "是".equals(text(item.get("governmentMallCatalog"))))
+              .toList()
+          : items;
+      long incompleteSelections = mallItems.stream().filter(item -> blank(item.get("selectedBrand"))
           || blank(item.get("selectedModel"))
           || blank(item.get("selectedSupplier"))
           || number(item.get("selectedUnitPrice")).compareTo(BigDecimal.ZERO) <= 0
@@ -199,10 +211,10 @@ public class LudongPocAiReviewService {
             "网上商城型号确认单"));
       } else {
         findings.add(finding("passed", "商城型号确认单已完成",
-            "全部 " + items.size() + " 项设备均已记录商城选型依据和参与人员。",
+            "全部 " + mallItems.size() + " 项省政府商城目录设备均已记录选型依据和参与人员。",
             "网上商城型号确认单"));
       }
-      long overpricedSelections = items.stream().filter(item -> {
+      long overpricedSelections = mallItems.stream().filter(item -> {
         BigDecimal requested = number(item.get("unitPrice"));
         BigDecimal selected = number(item.get("selectedUnitPrice"));
         return requested.signum() > 0 && selected.compareTo(requested) > 0;
@@ -212,7 +224,7 @@ public class LudongPocAiReviewService {
             overpricedSelections + " 项商品的商城选型单价高于购置申请单价，不应直接进入后续审批。",
             "预算单价 / 商城选型单价"));
       }
-      long insufficientParticipants = items.stream().filter(item ->
+      long insufficientParticipants = mallItems.stream().filter(item ->
           participantCount(item.get("selectionParticipants")) < 3).count();
       if (insufficientParticipants > 0) {
         findings.add(finding("risk", "商城选型参与人数不足",
@@ -321,10 +333,17 @@ public class LudongPocAiReviewService {
     context.put("currentReviewData", current);
     context.put("priorApprovals", priorApprovals);
     context.put("knowledgeVersion", knowledgeBase.version());
+    context.put("institutionalBasis", knowledgeBase.institutionalBasis());
+    context.put("evidenceBoundary", knowledgeBase.evidenceBoundary());
+    context.put("institutionalDocuments", knowledgeBase.institutionalDocuments());
     context.put("ruleAnalysis", local);
-    String system = "你是高校采购审批辅助员。仅做辅助研判，不代替审批人作决定。"
+    String system = "你是鲁东大学采购审批辅助员，仅做辅助研判，不代替审批人作决定。"
+        + "你只能使用输入中的 institutionalDocuments、application、currentReviewData、priorApprovals"
+        + " 和 ruleAnalysis 作为依据。禁止使用模型训练记忆、互联网搜索、第三方网站、外部行业知识"
+        + " 或未在输入中提供的制度内容形成审批结论。"
+        + "若校内制度未覆盖某事项，不得自行补充外部结论，应保留规则分析并明确提示人工核验。"
         + "请结合当前节点重点和规则分析输出 JSON，不要输出法律结论。"
-        + "只能使用 ruleAnalysis.findings 中已有的 findingId，并保留其证据关系，不得虚构制度条款。"
+        + "只能使用 ruleAnalysis.findings 中已有的 findingId，并保留其证据关系，不得虚构制度名称、条款或编号。"
         + "字段：summary,recommendation,confidence,reviewFocus,findings,missingMaterials,suggestedComment；"
         + "findings 元素字段为 findingId,level(passed/warning/risk),title,detail。";
     Map<String, Object> payload = Map.of(
@@ -369,7 +388,9 @@ public class LudongPocAiReviewService {
     List<LudongPocAiReviewFinding> finalFindings = findings.isEmpty()
         ? local.findings() : List.copyOf(findings);
     return new LudongPocAiReviewResponse(
-        local.runId(), "AI_MODEL", model, knowledgeBase.version(), OffsetDateTime.now(), profile.name(),
+        local.runId(), "AI_MODEL", model, knowledgeBase.version(),
+        knowledgeBase.institutionalBasis(), knowledgeBase.evidenceBoundary(),
+        knowledgeBase.institutionalDocuments(), OffsetDateTime.now(), profile.name(),
         valueOr(result.path("summary").asText(), local.summary()),
         valueOr(result.path("recommendation").asText(), local.recommendation()),
         Math.max(0, Math.min(100, result.path("confidence").asInt(local.confidence()))),

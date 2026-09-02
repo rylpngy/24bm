@@ -372,9 +372,13 @@ public class LudongPocDocumentService {
   private void fillMallTable(
       XWPFTable table, List<Map<String, Object>> items, Map<String, String> signatures) {
     table.getRow(0).setRepeatHeader(true);
-    int count = Math.min(items.size(), table.getNumberOfRows() - 1);
+    boolean hasCatalogSnapshot = items.stream().anyMatch(item -> item.containsKey("governmentMallCatalog"));
+    List<Map<String, Object>> mallItems = hasCatalogSnapshot
+        ? items.stream().filter(item -> "是".equals(value(item, "governmentMallCatalog"))).toList()
+        : items;
+    int count = Math.min(mallItems.size(), table.getNumberOfRows() - 1);
     for (int row = 1; row <= count; row++) {
-      Map<String, Object> item = items.get(row - 1);
+      Map<String, Object> item = mallItems.get(row - 1);
       set(table, row, 0, String.valueOf(row));
       set(table, row, 1, value(item, "name"));
       set(table, row, 2, value(item, "quantity"));

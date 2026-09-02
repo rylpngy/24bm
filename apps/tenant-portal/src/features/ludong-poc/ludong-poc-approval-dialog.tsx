@@ -1,17 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { type MaterialResponse, useMaterialList } from '@24bid/api-client';
 import {
   ActionButton, FeedbackNotice, PrimaryActionButton, SectionCard, StatusPill, cn,
 } from '@24bid/ui';
 import {
-  Bot, CheckCircle2, ClipboardCheck, FileText, Flag, RefreshCw, Search, Sparkles,
-  ThumbsUp, Trash2, TriangleAlert, WandSparkles, X, XCircle,
+  BookOpenCheck, Bot, CheckCircle2, ClipboardCheck, FileText, Flag, RefreshCw,
+  ShieldCheck, Sparkles, ThumbsUp, TriangleAlert, WandSparkles, X, XCircle,
 } from 'lucide-react';
 import {
   emptyItem, ludongApi, type LudongAiReviewFinding, type LudongAiReviewResult,
   type LudongAiReviewMetrics, type LudongApplication, type LudongItem, type WorkflowTask,
 } from './api';
+import { LudongPocMaterialItemsEditor } from './ludong-poc-material-items-editor';
 
 type ReviewData = Record<string, unknown>;
 type FieldDefinition = {
@@ -132,8 +132,10 @@ export function createTaskReviewData(task: WorkflowTask, app?: LudongApplication
     data[field.id] = field.options?.[0] ?? '';
   });
   if (node === 'argumentation_review') {
-    data.configurationStandard = '附件3（办公设备及家具配置标准）';
     data.items = app?.items?.length ? app.items.map((item) => ({ ...emptyItem(), ...item })) : [];
+  }
+  if (node === 'argumentation_review') {
+    data.configurationStandard = '附件3（办公设备及家具配置标准）';
   }
   return data;
 }
@@ -155,11 +157,18 @@ export function LudongPocApprovalDialog({
   const form = nodeForms[node];
   const update = (key: string, value: unknown) => setReviewData({ ...reviewData, [key]: value });
   const items = (reviewData.items as LudongItem[] | undefined) ?? [];
+  const stageItemsComplete = node === 'argumentation_review'
+    ? items.length > 0 && items.every((item) => (
+      item.name.trim()
+      && Number(item.quantity) > 0
+      && Number(item.unitPrice) > 0
+      && item.configurationLimit.trim()
+      && item.referenceBrands.trim()
+      && item.technicalParameters.trim()
+    ))
+    : true;
   const complete = form?.fields.every((field) => !field.required || String(reviewData[field.id] ?? '').trim())
-    && (node !== 'argumentation_review' || (
-      items.length > 0
-      && items.every((item) => item.materialId && item.name.trim() && Number(item.quantity) > 0)
-    ));
+    && stageItemsComplete;
   const aiReview = useMutation({
     mutationFn: () => {
       if (!app) throw new Error('未找到项目申报数据');
@@ -216,7 +225,11 @@ export function LudongPocApprovalDialog({
             <div className="grid gap-4 md:grid-cols-2">
               {form.fields.map((field) => <TaskField key={field.id} field={field} value={reviewData[field.id]} onChange={(value) => update(field.id, value)} />)}
             </div>
-            {node === 'argumentation_review' && <EquipmentEditor items={items} onChange={(value) => update('items', value)} />}
+            {node === 'argumentation_review' && (
+              <div className="mt-6 border-t border-slate-100 pt-5">
+                <LudongPocMaterialItemsEditor stage="argumentation" items={items} onChange={(value) => update('items', value)} />
+              </div>
+            )}
           </SectionCard>}
           <Field label="审批意见"><textarea value={comment} onChange={(e) => setComment(e.target.value)} className={cn(inputClass, 'h-24 py-3 leading-6')} /></Field>
           <FeedbackNotice tone="info" message="签字由当前登录账号和办理时间自动形成电子审批记录。后续办理人可查看本节点提交的全部信息。" />
@@ -250,7 +263,7 @@ function AiReviewPanel({
       ? '规则模型兜底'
       : '采购规则模型';
   return (
-    <SectionCard title="AI 辅助评审" icon={Sparkles} className="border-blue-200 bg-blue-50/30 shadow-none">
+    <SectionCard title="AI 辅助评审（校内制度依据）" icon={Sparkles} className="border-blue-200 bg-blue-50/30 shadow-none">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-blue-100 pb-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -258,7 +271,7 @@ function AiReviewPanel({
             {result && <span className="text-[11px] font-black text-slate-400">置信度 {result.confidence}% · {result.modelName}</span>}
           </div>
           <p className="mt-2 max-w-3xl text-xs font-bold leading-5 text-slate-500">
-            根据当前审批节点，结合项目表单、设备明细、预算和前序意见进行辅助研判。结果不代替审批人决策。
+            依据学校已导入的采购管理办法及配套制度，结合当前项目材料和前序审批记录进行辅助研判。结果不代替审批人决策。
           </p>
         </div>
         <PrimaryActionButton
@@ -291,12 +304,20 @@ function AiReviewPanel({
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="rounded-lg border border-blue-200 bg-white p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-black text-slate-800">本次辅助评审依据</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><BookOpenCheck size={16} /></span>
+                  <div>
+                    <p className="text-xs font-black text-slate-800">{result.institutionalBasis || '鲁东大学校内采购制度知识库'}</p>
+                    <p className="mt-0.5 text-[10px] font-bold text-slate-400">制度库版本 {result.knowledgeVersion}</p>
+                  </div>
+                </div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {['项目申报表', '采购设备清单', '商城型号确认单', '前序审批数据', '流程条件判定'].map((source) => (
+                  {(result.institutionalDocuments?.length ? result.institutionalDocuments : [
+                    '鲁东大学采购管理办法及配套制度', '货物类采购申请表', '采购需求表（货物类）', '附件3配置标准',
+                  ]).map((source) => (
                     <span key={source} className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600">{source}</span>
                   ))}
                 </div>
@@ -306,9 +327,13 @@ function AiReviewPanel({
                 <p>{new Date(result.generatedAt).toLocaleString('zh-CN')}</p>
               </div>
             </div>
-            <p className="mt-3 border-t border-slate-100 pt-3 text-[11px] font-bold leading-5 text-slate-500">
-              每条结论下方均展示命中的数据依据；置信度表示当前材料对规则分析的支撑程度，不等同于结论正确率。AI 只提供风险线索和辅助研判，审批意见仍由当前工号对应的办理人确认。
-            </p>
+            <div className="mt-3 flex items-start gap-2.5 border-t border-slate-100 pt-3">
+              <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+              <p className="text-[11px] font-bold leading-5 text-slate-500">
+                {result.evidenceBoundary || '仅使用学校已导入的采购制度、当前项目材料和前序审批记录；不使用互联网搜索或第三方信息形成审批意见。'}
+                每条结论均展示命中的校内制度和项目字段，未被校内制度覆盖的事项只提示人工核验。
+              </p>
+            </div>
           </div>
 
           <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -355,7 +380,7 @@ function AiFinding({
   const Icon = meta.icon;
   const groups = [
     { type: 'FIELD', label: '关联字段' },
-    { type: 'RULE', label: '制度条款' },
+    { type: 'RULE', label: '校内制度条款' },
     { type: 'PRIOR_APPROVAL', label: '前序审批' },
   ] as const;
   return (
@@ -416,161 +441,6 @@ function TaskField({ field, value, onChange }: { field: FieldDefinition; value: 
       ? <textarea className={cn(inputClass, 'h-24 py-3 leading-6')} value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} />
       : <input className={inputClass} value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} />;
   return <Field label={field.label} required={field.required} className={field.type === 'textarea' ? 'md:col-span-2' : undefined}>{control}</Field>;
-}
-
-function EquipmentEditor({ items, onChange }: { items: LudongItem[]; onChange: (items: LudongItem[]) => void }) {
-  const materials = useMaterialList();
-  const [searchTerm, setSearchTerm] = useState('');
-  const materialList = materials.data?.data ?? [];
-  const keyword = searchTerm.trim().toLowerCase();
-  const filteredMaterials = useMemo(() => materialList.filter((material) => {
-    if (!keyword) return true;
-    return [material.name, material.code, material.category, material.specification]
-      .filter(Boolean).join(' ').toLowerCase().includes(keyword);
-  }), [keyword, materialList]);
-  const selectedIds = new Set(items.map((item) => item.materialId).filter(Boolean));
-
-  const update = (index: number, key: keyof LudongItem, value: string) => onChange(items.map((item, i) => {
-    if (i !== index) return item;
-    const next = { ...item, [key]: value };
-    if (key === 'quantity' || key === 'unitPrice') next.totalPrice = String(Number(next.quantity || 0) * Number(next.unitPrice || 0) || '');
-    return next;
-  }));
-
-  const selectMaterial = (material: MaterialResponse) => {
-    if (!material.id || selectedIds.has(material.id)) return;
-    const unlinkedIndex = items.findIndex((item) => !item.materialId);
-    const previous = unlinkedIndex >= 0 ? items[unlinkedIndex] : emptyItem();
-    const referencePrice = String(material.referencePrice ?? '');
-    const linked: LudongItem = {
-      ...previous,
-      materialId: material.id,
-      materialCode: material.code ?? '',
-      materialCategory: material.category ?? '',
-      unit: material.unit ?? '',
-      name: material.name ?? '',
-      quantity: previous.quantity || '1',
-      unitPrice: referencePrice,
-      totalPrice: String(Number(previous.quantity || 1) * Number(referencePrice || 0) || ''),
-      technicalParameters: previous.technicalParameters || material.specification || '',
-      referenceBrands: previous.referenceBrands || material.brand || '',
-      configurationLimit: previous.configurationLimit || '附件3',
-    };
-    if (unlinkedIndex >= 0) {
-      onChange(items.map((item, index) => (index === unlinkedIndex ? linked : item)));
-    } else {
-      onChange([...items, linked]);
-    }
-  };
-
-  const total = items.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0);
-  return (
-    <div className="mt-6 border-t border-slate-100 pt-5">
-      <div className="mb-4">
-        <p className="text-sm font-black text-slate-950">附件三配置及品牌型号数量</p>
-        <p className="mt-1 text-xs font-bold text-slate-500">从物料库关联设备主数据，再补充本项目的数量、参考品牌型号和技术参数。</p>
-      </div>
-      <div className="grid gap-4 xl:grid-cols-[20rem_minmax(0,1fr)]">
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <div className="relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="搜索物料名称、编码、分类、规格"
-              className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-          <div className="mt-3 max-h-[30rem] min-h-[18rem] space-y-2 overflow-y-auto pr-1">
-            {materials.isLoading && filteredMaterials.length === 0 ? (
-              <FeedbackNotice tone="info" message="正在加载物料清单…" />
-            ) : filteredMaterials.length === 0 ? (
-              <FeedbackNotice tone="info" message="未找到匹配物料。" />
-            ) : filteredMaterials.map((material) => {
-              const selected = !!material.id && selectedIds.has(material.id);
-              return (
-                <button
-                  key={material.id ?? material.code ?? material.name}
-                  type="button"
-                  disabled={selected}
-                  onClick={() => selectMaterial(material)}
-                  className={cn(
-                    'w-full rounded-lg border bg-white p-3 text-left transition',
-                    selected
-                      ? 'cursor-default border-blue-200 bg-blue-50/60 ring-1 ring-blue-100'
-                      : 'border-slate-200 hover:border-blue-200 hover:bg-blue-50/30',
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-slate-950">{material.name}</p>
-                      <p className="mt-1 truncate text-xs font-bold text-slate-400">
-                        {[material.code, material.category, material.specification].filter(Boolean).join(' · ') || '—'}
-                      </p>
-                    </div>
-                    <span className={cn(
-                      'shrink-0 rounded-md px-2 py-1 text-[11px] font-black',
-                      selected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600',
-                    )}>
-                      {selected ? '已关联' : `¥${Number(material.referencePrice ?? 0).toLocaleString('zh-CN')}`}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="min-w-0 space-y-3">
-          {items.some((item) => !item.materialId) && (
-            <FeedbackNotice tone="info" message="存在历史设备明细尚未关联物料。请从左侧选择物料，系统会优先绑定到待关联明细并保留已填内容。" />
-          )}
-          {items.length === 0 && (
-            <div className="flex min-h-[18rem] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50/50 p-8 text-center">
-              <div>
-                <p className="text-sm font-black text-slate-700">尚未选择设备物料</p>
-                <p className="mt-2 text-xs font-bold text-slate-400">请从左侧物料库检索并点击物料卡片添加。</p>
-              </div>
-            </div>
-          )}
-          {items.map((item, index) => (
-            <div key={`${item.materialId || 'unlinked'}-${index}`} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-600 text-xs font-black text-white">{index + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-black text-slate-950">{item.name || '待关联设备'}</p>
-                    <span className={cn(
-                      'rounded-md px-2 py-1 text-[11px] font-black',
-                      item.materialId ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
-                    )}>{item.materialId ? '已关联物料库' : '待关联'}</span>
-                  </div>
-                  <p className="mt-1 truncate text-xs font-bold text-slate-400">
-                    {[item.materialCode, item.materialCategory, item.unit].filter(Boolean).join(' · ') || '请选择左侧物料建立关联'}
-                  </p>
-                </div>
-                <button type="button" onClick={() => onChange(items.filter((_, i) => i !== index))} aria-label="删除设备" title="删除设备" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button>
-              </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-4">
-                <Field label={`数量${item.unit ? `（${item.unit}）` : ''}`} required><input type="number" min="1" className={inputClass} value={item.quantity} onChange={(e) => update(index, 'quantity', e.target.value)} /></Field>
-                <Field label="参考单价（元）"><input readOnly className={cn(inputClass, 'bg-slate-50')} value={item.unitPrice} /></Field>
-                <Field label="预算小计（元）"><input readOnly className={cn(inputClass, 'bg-slate-50')} value={item.totalPrice} /></Field>
-                <Field label="配置标准"><input readOnly className={cn(inputClass, 'bg-slate-50')} value={item.configurationLimit || '附件3'} /></Field>
-                <Field label="参考品牌、型号" className="md:col-span-2"><textarea className={cn(inputClass, 'h-20 py-2')} value={item.referenceBrands} onChange={(e) => update(index, 'referenceBrands', e.target.value)} /></Field>
-                <Field label="主要技术参数" className="md:col-span-2"><textarea className={cn(inputClass, 'h-20 py-2')} value={item.technicalParameters} onChange={(e) => update(index, 'technicalParameters', e.target.value)} /></Field>
-              </div>
-            </div>
-          ))}
-          {items.length > 0 && (
-            <div className="flex items-center justify-end rounded-lg bg-slate-50 px-4 py-3">
-              <span className="text-xs font-black text-slate-500">设备参考预算合计</span>
-              <strong className="ml-3 font-mono text-lg text-blue-700">¥{total.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</strong>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function Snapshot({ app }: { app?: LudongApplication }) {

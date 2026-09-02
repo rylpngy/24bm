@@ -1,5 +1,6 @@
 package com.procurement.ludongpoc.application;
 
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +81,7 @@ final class LudongPocTaskFormCatalog {
         }
       }
       if ("argumentation_review".equals(nodeId)) {
-        validateItems(normalized.get("items"));
+        validateArgumentationItems(normalized.get("items"));
       }
     }
     return Map.copyOf(normalized);
@@ -147,20 +148,46 @@ final class LudongPocTaskFormCatalog {
     return REUSED_DECISION;
   }
 
-  private static void validateItems(Object raw) {
+  private static void validateArgumentationItems(Object raw) {
     if (!(raw instanceof List<?> items) || items.isEmpty()) {
       throw new IllegalArgumentException("论证环节至少需要填写一条设备配置明细");
     }
     for (Object item : items) {
-      if (!(item instanceof Map<?, ?> map)
-          || map.get("materialId") == null
-          || String.valueOf(map.get("materialId")).isBlank()
-          || map.get("name") == null
-          || String.valueOf(map.get("name")).isBlank()
-          || map.get("quantity") == null
-          || String.valueOf(map.get("quantity")).isBlank()) {
-        throw new IllegalArgumentException("设备配置明细必须关联物料库，并包含设备名称和数量");
+      Map<?, ?> map = requireEquipmentItem(item, "设备配置明细");
+      requirePositiveNumber(map, "unitPrice", "标准参考价格");
+      requireItemText(map, "configurationLimit", "配置标准");
+      requireItemText(map, "referenceBrands", "参考品牌型号");
+      requireItemText(map, "technicalParameters", "主要技术参数");
+    }
+  }
+
+  private static Map<?, ?> requireEquipmentItem(Object item, String label) {
+    if (!(item instanceof Map<?, ?> map)
+        || map.get("name") == null
+        || String.valueOf(map.get("name")).isBlank()
+        || map.get("quantity") == null
+        || String.valueOf(map.get("quantity")).isBlank()) {
+      throw new IllegalArgumentException(label + "必须包含设备名称和数量");
+    }
+    requirePositiveNumber(map, "quantity", "设备数量");
+    return map;
+  }
+
+  private static void requireItemText(Map<?, ?> item, String field, String label) {
+    Object value = item.get(field);
+    if (value == null || String.valueOf(value).isBlank()) {
+      throw new IllegalArgumentException(label + "不能为空");
+    }
+  }
+
+  private static void requirePositiveNumber(Map<?, ?> item, String field, String label) {
+    requireItemText(item, field, label);
+    try {
+      if (new BigDecimal(String.valueOf(item.get(field))).signum() <= 0) {
+        throw new IllegalArgumentException(label + "必须大于 0");
       }
+    } catch (NumberFormatException exception) {
+      throw new IllegalArgumentException(label + "必须是有效数字", exception);
     }
   }
 

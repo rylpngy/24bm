@@ -12,6 +12,7 @@ public record MaterialResponse(
     BigDecimal referencePrice,
     String specification,
     String brand,
+    boolean governmentMallCatalog,
     BigDecimal taxRate,
     String description) {
 }
