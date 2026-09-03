@@ -510,7 +510,7 @@ function ArchivePage() {
     <div className="space-y-5"><PageHeader title="表格下载与材料归档" subtitle="统一归集项目原始附件，审批通过后生成 Word 与完整归档包。" /><Panel title="归档项目列表" icon={FileArchive} subtitle={`共 ${items.length} 个可归档项目`}><div className="space-y-3">{items.map((app) => (
       <article key={app.id} className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm xl:grid-cols-[2.5rem_minmax(0,1fr)_auto_auto] xl:gap-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><FileArchive size={19} /></span><div className="min-w-0"><p className="truncate text-sm font-black text-slate-950">{app.projectName}</p><p className="mt-1 truncate text-xs font-bold text-slate-500">{app.applicationNo} · {app.applicantUnit}</p></div><Status applicationStatus={app.status} /><div className="col-span-3 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3 xl:col-span-1 xl:border-0 xl:pt-0"><ActionButton icon={ListChecks} onClick={() => setLedgerId(app.id)}>材料台账</ActionButton><ActionButton icon={Download} onClick={() => ludongApi.downloadDemand(app.id)}>需求表</ActionButton><ActionButton icon={Download} onClick={() => ludongApi.downloadApplication(app.id)}>申请单</ActionButton><PrimaryActionButton icon={Archive} flushTop onClick={() => ludongApi.downloadArchive(app.id)}>完整归档包</PrimaryActionButton></div></article>
     ))}{!query.isLoading && items.length === 0 && <EmptyState title="暂无已通过的归档材料" description="项目审批通过后，可下载材料将出现在这里。" icon={FileArchive} />}</div></Panel>
-    {ledgerApplication && <Panel title={ledgerApplication.projectName + ' · 统一附件台账'} icon={ListChecks} subtitle="项目附件、配置标准、商城确认材料和补充证明统一归集"><LudongPocArchiveMaterials applicationId={ledgerApplication.id} readOnly={ledgerApplication.status === 'archived'} /></Panel>}
+    {ledgerApplication && <Panel title={ledgerApplication.projectName + ' · 统一附件台账'} icon={ListChecks} subtitle="项目附件、商城确认材料和补充证明统一归集"><LudongPocArchiveMaterials applicationId={ledgerApplication.id} readOnly={ledgerApplication.status === 'archived'} /></Panel>}
     </div>
   );
 }
@@ -665,7 +665,6 @@ function ApprovalSummary({ app }: { app: LudongApplication }) {
 
 function RouteDecisionSummary({ app }: { app: LudongApplication }) {
   const decisions = [
-    ['sameFundingUnit', '经费主管单位与申报单位相同'],
     ['requiresItReview', '涉及信创产品'],
     ['requiresAssetReview', '涉及办公设备或家具配置'],
     ['requiresLabReview', '涉及大型仪器或实验室'],

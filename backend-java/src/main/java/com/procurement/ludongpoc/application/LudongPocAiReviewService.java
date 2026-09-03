@@ -288,13 +288,15 @@ public class LudongPocAiReviewService {
         }
       }
       case "asset_configuration_review", "asset_division_leader_review", "asset_unit_leader_review" -> {
-        long missingStandards = items.stream().filter(item -> blank(item.get("configurationLimit"))).count();
-        findings.add(finding(missingStandards > 0 ? "warning" : "passed",
-            "配置标准和数量上限核验",
-            missingStandards > 0
-                ? missingStandards + " 项设备尚未关联附件三具体配置标准，须由资产审核人补充核验。"
-                : "全部设备均已记录配置标准依据，仍需资产审核人确认标准版本和适用范围。",
-            "附件 3 / 设备配置明细"));
+        BigDecimal itemTotal = items.stream()
+            .map(item -> number(item.get("totalPrice")))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        findings.add(finding(
+            itemTotal.compareTo(application.budgetAmount()) == 0 ? "passed" : "risk",
+            "资产数量与价格复核",
+            "设备清单共 " + items.size() + " 项，明细合计 " + money(itemTotal)
+                + "。请资产审核人依学校现行采购管理办法人工确认数量、单价和现有资产情况。",
+            "设备清单 / 学校采购管理办法"));
       }
       case "lab_equipment_review", "lab_division_leader_review", "lab_unit_leader_review" ->
           findings.add(finding("warning", "大型仪器共享及使用条件",
@@ -401,14 +403,14 @@ public class LudongPocAiReviewService {
 
   private static Map<String, NodeProfile> profiles() {
     Map<String, NodeProfile> result = new LinkedHashMap<>();
-    result.put("argumentation_review", profile("购置必要性论证", "购置理由与业务目标", "参考品牌型号的合理性", "设备数量及技术参数", "附件 3 配置标准"));
+    result.put("argumentation_review", profile("购置必要性论证", "购置理由与业务目标", "参考品牌型号的合理性", "设备数量及技术参数", "学校采购管理办法"));
     result.put("technical_leader_review", profile("技术负责人确认", "技术参数可执行性", "接口与兼容性", "安装实施条件", "验收指标"));
     result.put("compilation_participant_review", profile("参与编制人员确认", "表单字段完整性", "采购目标一致性", "技术与服务要求", "设备清单一致性"));
     result.put("mall_selection_participant_review", profile("网上商城选型参与人确认", "品牌型号", "供应商与商品链接", "商城价格", "选型参与记录"));
     result.put("it_review", profile("教育信息技术部审核", "信创产品范围", "软硬件生态适配", "网络与数据安全", "技术参数可验证性"));
     result.put("unit_review", profile("申报单位负责人审核", "项目必要性", "单位内部需求", "项目负责人责任", "申报材料完整性"));
     result.put("funding_review", profile("经费主管单位负责人审核", "经费来源", "预算归属", "支出必要性", "预算与明细一致性"));
-    result.put("asset_configuration_review", profile("资产处配置审核", "配置价格上限", "配置数量上限", "现有资产情况", "附件 3 配置标准"));
+    result.put("asset_configuration_review", profile("资产处配置审核", "设备数量", "市场调研价格", "现有资产情况", "学校采购管理办法"));
     result.put("asset_division_leader_review", profile("资产处分管领导审核", "配置审核结果", "超限情况", "资产配置合理性"));
     result.put("asset_unit_leader_review", profile("资产处单位负责人审核", "资产审核意见完整性", "超标事项", "配置决策依据"));
     result.put("lab_equipment_review", profile("实验室管理处论证审核", "大型仪器认定", "设备共享方案", "安装使用条件", "预计使用效益"));
@@ -505,9 +507,6 @@ public class LudongPocAiReviewService {
     if (clue.contains("商城")) {
       ruleIds.add("LDU-MALL-001");
       ruleIds.add("LDU-MALL-002");
-    }
-    if (clue.contains("附件 3") || clue.contains("附件3") || clue.contains("配置标准")) {
-      ruleIds.add("LDU-ASSET-ANNEX3-001");
     }
     if (clue.contains("设备") || clue.contains("参数")) ruleIds.add("LDU-FORM-ITEM-001");
     if (clue.contains("校领导")) {

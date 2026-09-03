@@ -275,9 +275,8 @@ public class LudongPocDocumentService {
           + "\n线上确认：" + signatures.getOrDefault("technical_leader_review", ""));
       set(main, 4, 2, value(data, "projectLeaderPhone"));
       set(main, 4, 5, value(data, "technicalLeaderPhone"));
-      set(main, 5, 1, value(data, "purchaseReason")
-          + "\n配置标准：" + value(data, "configurationStandard")
-          + "\n" + choice("论证意见", value(data, "argumentationOpinion"), APPROVAL_OPTIONS, 0)
+      set(main, 5, 1, "申报人购置理由及必要性：" + value(data, "purchaseReason")
+          + "\n论证人审核：" + choice("论证结论", value(data, "argumentationOpinion"), APPROVAL_OPTIONS, 0)
           + "\n补充意见：" + value(data, "argumentationComment")
           + "\n论证人（签字）：" + signatures.getOrDefault("argumentation_review", "")
           + "\n" + choice("技术负责人确认", value(data, "technicalLeaderOpinion"), APPROVAL_OPTIONS, 0)
@@ -294,12 +293,12 @@ public class LudongPocDocumentService {
           + signatures.getOrDefault("unit_review", ""));
       set(main, 8, 1, choice("经费主管单位意见", value(data, "fundingUnitOpinion"), APPROVAL_OPTIONS, 0)
           + "\n" + value(data, "fundingUnitComment") + "\n单位负责人（签字）："
-          + signatures.getOrDefault("funding_review", "系统按规则跳过"));
+          + signatures.getOrDefault("funding_review", ""));
       set(main, 9, 1, choice("是否超价格上限", value(data, "exceedsPriceLimit"), YES_NO_OPTIONS, 0)
           + "    " + choice("是否超数量上限", value(data, "exceedsQuantityLimit"), YES_NO_OPTIONS, 0)
           + "\n" + choice("配置审核意见", value(data, "assetConfigurationOpinion"), APPROVAL_OPTIONS, 0)
           + "\n配置审核说明：" + value(data, "assetConfigurationComment")
-          + "\n审核人（签字）：" + signatures.getOrDefault("asset_configuration_review", "系统按规则跳过")
+          + "\n审核人（签字）：" + signatures.getOrDefault("asset_configuration_review", "")
           + "\n" + choice("分管领导意见", value(data, "assetDivisionLeaderOpinion"), APPROVAL_OPTIONS, 0)
           + "\n分管领导说明：" + value(data, "assetDivisionLeaderComment")
           + "\n分管领导（签字）：" + signatures.getOrDefault("asset_division_leader_review", "")
@@ -309,7 +308,7 @@ public class LudongPocDocumentService {
       set(main, 10, 1, choice("大型仪器设备共享审核", value(data, "largeEquipmentSharing"), SHARING_OPTIONS, 0)
           + "\n" + choice("论证审核意见", value(data, "labReviewOpinion"), APPROVAL_OPTIONS, 0)
           + "\n论证审核说明：" + value(data, "labReviewComment")
-          + "\n审核人（签字）：" + signatures.getOrDefault("lab_equipment_review", "系统按规则跳过")
+          + "\n审核人（签字）：" + signatures.getOrDefault("lab_equipment_review", "")
           + "\n" + choice("分管领导意见", value(data, "labDivisionLeaderOpinion"), APPROVAL_OPTIONS, 0)
           + "\n分管领导说明：" + value(data, "labDivisionLeaderComment")
           + "\n分管领导（签字）：" + signatures.getOrDefault("lab_division_leader_review", "")
@@ -319,7 +318,7 @@ public class LudongPocDocumentService {
       set(main, 11, 1, choice("分管校领导意见", value(data, "schoolLeaderOpinion"), APPROVAL_OPTIONS, 0)
           + "\n补充意见：" + value(data, "schoolLeaderComment")
           + "\n负责人（签字）："
-          + signatures.getOrDefault("school_leader_review", "未达到审核条件"));
+          + signatures.getOrDefault("school_leader_review", ""));
       set(main, 12, 1, choice("预算审查情况", value(data, "financeBudgetStatus"), BUDGET_STATUS_OPTIONS, 1)
           + "\n补充意见：" + value(data, "financeBudgetOpinion")
           + "\n负责人（签字）：" + signatures.getOrDefault("finance_budget_review", ""));
@@ -383,7 +382,7 @@ public class LudongPocDocumentService {
       set(table, row, 1, value(item, "name"));
       set(table, row, 2, value(item, "quantity"));
       set(table, row, 3, value(item, "unitPrice"));
-      set(table, row, 4, value(item, "configurationLimit"));
+      set(table, row, 4, value(item, "standardUnitPrice"));
       set(table, row, 5, value(item, "technicalParameters"));
       set(table, row, 6, "品牌：" + value(item, "selectedBrand") + "\n型号：" + value(item, "selectedModel")
           + "\n供货商：" + value(item, "selectedSupplier") + "\n联系人：" + value(item, "supplierContact")

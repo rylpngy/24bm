@@ -72,7 +72,7 @@ class LudongPocDocumentServiceTests {
         "单位负责人（签字）：申报单位负责人");
     assertThat(applicationText).contains(
         "智慧教室设备更新项目", "32", "年度教学经费", "教学条件改善专项",
-        "王老师", "赵老师", "购置必要性充分", "附件3配置标准", "☑ 同意", "☐ 不同意",
+        "王老师", "赵老师", "购置必要性充分", "☑ 同意", "☐ 不同意",
         "教育信息技术部意见", "申报单位意见", "经费主管单位意见",
         "是否超价格上限：☐ 是    ☑ 否", "配置审核意见",
         "大型仪器设备共享审核", "分管校领导意见",
@@ -112,7 +112,7 @@ class LudongPocDocumentServiceTests {
         "☐ 本项目本年度无预算，已列入下一年度预算",
         "采购方式", "☐ 公开招标", "☐ 邀请招标", "☐ 竞争性谈判",
         "☐ 竞争性磋商", "☐ 单一来源采购", "☐ 询价",
-        "是否超价格上限：☐ 是    ☐ 否", "论证意见：☐ 同意    ☐ 不同意");
+        "是否超价格上限：☐ 是    ☐ 否", "论证结论：☐ 同意    ☐ 不同意");
   }
 
   @Test
@@ -157,15 +157,13 @@ class LudongPocDocumentServiceTests {
         "01-生成表格/01-采购需求表（货物类）.docx",
         "01-生成表格/02-货物类项目采购及招标申请单、受理单.docx",
         "02-项目附件/01-项目附件.pdf",
-        "03-配置标准/01-配置标准.pdf",
-        "04-商城确认材料/01-商城确认材料.pdf",
-        "05-补充证明/01-补充证明.pdf");
+        "03-商城确认材料/01-商城确认材料.pdf",
+        "04-补充证明/01-补充证明.pdf");
     String manifest = new String(
         entries.get("00-归档材料清单.txt"), java.nio.charset.StandardCharsets.UTF_8);
     assertThat(manifest).contains(
         "鲁东大学货物类采购申报归档材料清单",
         "项目附件：1 份（应归档）",
-        "配置标准：1 份（应归档）",
         "商城确认材料：1 份（应归档）",
         "补充证明：1 份（按需归档）",
         "SHA-256:");
@@ -186,6 +184,7 @@ class LudongPocDocumentServiceTests {
     form.put("microSuitable", "否");
     form.put("procurementFunction", "远程教学和课堂互动");
     form.put("procurementGoal", "提升教学质量");
+    form.put("purchaseReason", "购置必要性充分");
     form.put("mandatoryStandards", "GB 4943.1");
     form.put("otherStandards", "学校设备技术规范");
     form.put("supplierQualifications", "依法登记并具备履约能力");
@@ -217,7 +216,7 @@ class LudongPocDocumentServiceTests {
         Map.entry("referenceBrands", "品牌甲、品牌乙、品牌丙"), Map.entry("imported", "否"),
         Map.entry("importLeadTime", ""), Map.entry("purpose", "智慧教学"),
         Map.entry("usageDirection", "教学"), Map.entry("userName", "王老师"),
-        Map.entry("installationLocation", "南校区教学楼"), Map.entry("configurationLimit", "32000"),
+        Map.entry("installationLocation", "南校区教学楼"), Map.entry("standardUnitPrice", "32000"),
         Map.entry("selectedBrand", "品牌甲"), Map.entry("selectedModel", "A1"),
         Map.entry("selectedSupplier", "测试供应商"), Map.entry("supplierContact", "李经理"),
         Map.entry("supplierPhone", "13900000001"), Map.entry("productLink", "https://example.test/a1"),
@@ -230,7 +229,7 @@ class LudongPocDocumentServiceTests {
             Map.entry("referenceBrands", "无"), Map.entry("imported", "否"),
             Map.entry("importLeadTime", ""), Map.entry("purpose", "实验教学"),
             Map.entry("usageDirection", "教学"), Map.entry("userName", "王老师"),
-            Map.entry("installationLocation", "实验楼"), Map.entry("configurationLimit", "专用设备标准")));
+            Map.entry("installationLocation", "实验楼")));
     return new LudongPocApplication(
         APPLICATION_ID, TENANT_ID, "LDU-2026-001", "智慧教室设备更新项目", "教务处", "dept-jwc",
         new BigDecimal("320000"), "approved", objectMapper.writeValueAsString(form),
@@ -241,7 +240,6 @@ class LudongPocDocumentServiceTests {
   private static List<LudongPocReviewRecord> reviews(ObjectMapper objectMapper) throws Exception {
     List<LudongPocReviewRecord> result = new ArrayList<>();
     result.add(review(objectMapper, "argumentation_review", "approve", Map.of(
-        "purchaseReason", "购置必要性充分", "configurationStandard", "附件3配置标准",
         "argumentationOpinion", "同意", "argumentationComment", "论证材料完整")));
     result.add(review(objectMapper, "technical_leader_review", "approve", Map.of(
         "technicalLeaderOpinion", "同意")));

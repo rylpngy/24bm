@@ -7,7 +7,6 @@ function history(overrides: Partial<WorkflowHistory> = {}): WorkflowHistory {
     workflowInstanceId: 'workflow-1',
     status: 'PROCESSING',
     formData: {
-      sameFundingUnit: '是',
       requiresItReview: '否',
       requiresAssetReview: '是',
       requiresLabReview: '否',
@@ -42,7 +41,7 @@ describe('buildLudongWorkflowProgress', () => {
     expect(nodes.find((node) => node.id === 'asset_configuration_review')?.status).toBe('current');
     expect(nodes.find((node) => node.id === 'asset_division_leader_review')?.status).toBe('pending');
     expect(nodes.find((node) => node.id === 'it_review')?.status).toBe('skipped');
-    expect(nodes.find((node) => node.id === 'funding_review')?.status).toBe('reused');
+    expect(nodes.find((node) => node.id === 'funding_review')?.status).toBe('pending');
     expect(nodes.find((node) => node.id === 'lab_equipment_review')?.status).toBe('skipped');
   });
 
@@ -62,7 +61,7 @@ describe('buildLudongWorkflowProgress', () => {
     }));
 
     expect(nodes.find((node) => node.id === 'unit_review')?.status).toBe('rejected');
-    expect(workflowProgressCounts(nodes)).toEqual({ completed: 1, total: 15, skipped: 5 });
+    expect(workflowProgressCounts(nodes)).toEqual({ completed: 0, total: 15, skipped: 5 });
   });
 
   it('shows an approved task completed by decision reuse as auto reused', () => {

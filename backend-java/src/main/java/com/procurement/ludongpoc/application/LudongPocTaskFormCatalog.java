@@ -1,6 +1,5 @@
 package com.procurement.ludongpoc.application;
 
-import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,8 +9,8 @@ import java.util.Set;
 final class LudongPocTaskFormCatalog {
   private static final String REUSED_DECISION = "同工号审批复用（原节点已通过）";
   private static final Map<String, NodeForm> FORMS = Map.ofEntries(
-      entry("argumentation_review", required("purchaseReason", "argumentationOpinion", "items"),
-          "purchaseReason", "argumentationOpinion", "argumentationComment", "configurationStandard", "items"),
+      entry("argumentation_review", required("argumentationOpinion", "argumentationComment"),
+          "argumentationOpinion", "argumentationComment"),
       entry("technical_leader_review", required("technicalLeaderOpinion"),
           "technicalLeaderOpinion", "technicalLeaderComment"),
       entry("compilation_participant_review", required("compilationParticipantOpinion"),
@@ -80,9 +79,11 @@ final class LudongPocTaskFormCatalog {
           throw new IllegalArgumentException("审批通过前必须完成节点字段: " + key);
         }
       }
-      if ("argumentation_review".equals(nodeId)) {
-        validateArgumentationItems(normalized.get("items"));
-      }
+    }
+    if ("argumentation_review".equals(nodeId)
+        && "approve".equals(action)
+        && "不同意".equals(String.valueOf(normalized.get("argumentationOpinion")))) {
+      throw new IllegalArgumentException("论证结论为不同意时只能驳回，不能审批通过");
     }
     return Map.copyOf(normalized);
   }
@@ -139,56 +140,10 @@ final class LudongPocTaskFormCatalog {
     if (field.endsWith("Opinion")) {
       return "同意";
     }
-    if ("items".equals(field) && source.get("items") instanceof List<?> items) {
-      return items;
-    }
     if ("handoverSubmitConfirmation".equals(field)) {
       return "同工号前序节点已确认申请材料";
     }
     return REUSED_DECISION;
-  }
-
-  private static void validateArgumentationItems(Object raw) {
-    if (!(raw instanceof List<?> items) || items.isEmpty()) {
-      throw new IllegalArgumentException("论证环节至少需要填写一条设备配置明细");
-    }
-    for (Object item : items) {
-      Map<?, ?> map = requireEquipmentItem(item, "设备配置明细");
-      requirePositiveNumber(map, "unitPrice", "标准参考价格");
-      requireItemText(map, "configurationLimit", "配置标准");
-      requireItemText(map, "referenceBrands", "参考品牌型号");
-      requireItemText(map, "technicalParameters", "主要技术参数");
-    }
-  }
-
-  private static Map<?, ?> requireEquipmentItem(Object item, String label) {
-    if (!(item instanceof Map<?, ?> map)
-        || map.get("name") == null
-        || String.valueOf(map.get("name")).isBlank()
-        || map.get("quantity") == null
-        || String.valueOf(map.get("quantity")).isBlank()) {
-      throw new IllegalArgumentException(label + "必须包含设备名称和数量");
-    }
-    requirePositiveNumber(map, "quantity", "设备数量");
-    return map;
-  }
-
-  private static void requireItemText(Map<?, ?> item, String field, String label) {
-    Object value = item.get(field);
-    if (value == null || String.valueOf(value).isBlank()) {
-      throw new IllegalArgumentException(label + "不能为空");
-    }
-  }
-
-  private static void requirePositiveNumber(Map<?, ?> item, String field, String label) {
-    requireItemText(item, field, label);
-    try {
-      if (new BigDecimal(String.valueOf(item.get(field))).signum() <= 0) {
-        throw new IllegalArgumentException(label + "必须大于 0");
-      }
-    } catch (NumberFormatException exception) {
-      throw new IllegalArgumentException(label + "必须是有效数字", exception);
-    }
   }
 
   private static Map.Entry<String, NodeForm> entry(

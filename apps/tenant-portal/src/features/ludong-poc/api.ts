@@ -5,7 +5,11 @@ export interface LudongItem {
   materialCode: string;
   materialCategory: string;
   catalogSource: 'catalog' | 'custom';
-  governmentMallCatalog: '是' | '否';
+  governmentMallCatalog: '' | '是' | '否';
+  governmentMallCatalogMode: 'auto' | 'manual';
+  governmentMallCatalogReason: string;
+  governmentMallCatalogSystemValue: '' | '是' | '否';
+  governmentMallCatalogSystemReason: string;
   unit: string;
   name: string;
   quantity: string;
@@ -19,7 +23,8 @@ export interface LudongItem {
   usageDirection: string;
   userName: string;
   installationLocation: string;
-  configurationLimit: string;
+  coreProduct: '' | '是' | '否';
+  standardUnitPrice: string;
   selectedBrand: string;
   selectedModel: string;
   selectedSupplier: string;
@@ -170,7 +175,6 @@ const unwrap = async <T>(promise: Promise<{ data: Envelope<T> }>) => (await prom
 
 export type LudongArchiveMaterialCategory =
   | 'project_attachment'
-  | 'configuration_standard'
   | 'mall_confirmation'
   | 'supplementary_evidence';
 
@@ -193,7 +197,6 @@ export interface LudongArchiveMaterial {
 
 export const ludongArchiveMaterialCategories: LudongArchiveMaterialCategoryMeta[] = [
   { id: 'project_attachment', ownerType: 'ludong_poc_project_attachment', label: '项目附件', required: true },
-  { id: 'configuration_standard', ownerType: 'ludong_poc_configuration_standard', label: '配置标准', required: true },
   { id: 'mall_confirmation', ownerType: 'ludong_poc_mall_confirmation', label: '商城确认材料', required: true },
   { id: 'supplementary_evidence', ownerType: 'ludong_poc_supplementary_evidence', label: '补充证明', required: false },
 ];
@@ -314,15 +317,20 @@ export const ludongApi = {
 };
 
 export const emptyItem = (): LudongItem => ({
-  materialId: '', materialCode: '', materialCategory: '', catalogSource: 'custom', governmentMallCatalog: '否', unit: '',
-  name: '', quantity: '1', unitPrice: '', totalPrice: '', technicalParameters: '', referenceBrands: '',
-  imported: '否', importLeadTime: '', purpose: '', usageDirection: '教学', userName: '', installationLocation: '',
-  configurationLimit: '', selectedBrand: '', selectedModel: '', selectedSupplier: '', supplierContact: '',
+  materialId: '', materialCode: '', materialCategory: '', catalogSource: 'custom', governmentMallCatalog: '',
+  governmentMallCatalogMode: 'auto', governmentMallCatalogReason: '', unit: '',
+  governmentMallCatalogSystemValue: '', governmentMallCatalogSystemReason: '',
+  name: '', quantity: '', unitPrice: '', totalPrice: '', technicalParameters: '', referenceBrands: '',
+  imported: '', importLeadTime: '', purpose: '', usageDirection: '', userName: '', installationLocation: '',
+  coreProduct: '', standardUnitPrice: '', selectedBrand: '', selectedModel: '', selectedSupplier: '', supplierContact: '',
   supplierPhone: '', productLink: '', selectedParameters: '', selectedUnitPrice: '', selectionParticipants: '',
 });
 
+export const domesticPaymentTerms = '国产设备合同签订生效，具备实施条件后 5 个工作日内支付预付款30%；设备到货经采购人验收合格且在中标人开出全额增值税专用发票后，采购人按合同约定付清余款。';
+export const importPaymentTerms = '进口设备按人民币报价，免税工作由甲方指定的外贸代理机构（丙方）办理，报价为到用户（甲方）指定地点的最终价格（含外贸代理费），外贸代理费用包含但不限于办理对外开立信用证、付汇、核销、报关、检验检疫、提货、运输、送货、货物保险、仓库费及索赔费等费用。合同签订生效，具备实施条件后 5 个工作日内支付预付款30%；设备到货验收合格，凭丙方开具的进口设备增值税普通发票，付清余款。';
+
 export const defaultFormData: Record<string, string> = {
-  applicantUnitType: '学院',
+  applicantUnitType: '',
   projectLeaderName: '',
   projectLeaderPhone: '',
   technicalLeaderName: '',
@@ -330,41 +338,41 @@ export const defaultFormData: Record<string, string> = {
   fundingSource: '',
   fundingProjectName: '',
   fundingProjectNo: '',
-  sameFundingUnit: '是',
-  requiresItReview: '否',
-  requiresAssetReview: '否',
-  requiresLabReview: '否',
-  mallSelectionApplicable: '是',
+  requiresItReview: '',
+  requiresAssetReview: '',
+  requiresLabReview: '',
+  mallSelectionApplicable: '',
   participants: '',
-  smeSuitable: '是',
-  microSuitable: '否',
+  purchaseReason: '',
+  smeSuitable: '',
+  microSuitable: '',
   procurementFunction: '',
   procurementGoal: '',
-  mandatoryStandards: '符合国家现行强制性标准及相关安全、节能、环保要求。',
-  otherStandards: '符合采购文件、产品技术规范及学校使用管理要求。',
-  supplierQualifications: '符合政府采购法律法规及采购文件规定的资格条件。',
+  mandatoryStandards: '',
+  otherStandards: '',
+  supplierQualifications: '',
   implementationLocation: '',
-  installationReady: '是',
-  utilitiesReady: '是',
-  assetDisposalPlan: '不涉及现有资产处置。',
-  deliveryDays: '30',
+  installationReady: '',
+  utilitiesReady: '',
+  assetDisposalPlan: '',
+  deliveryDays: '',
   coreProduct: '',
-  packingRequirement: '采用符合运输和设备防护要求的包装，运输、装卸过程造成的损坏由供应商负责。',
-  warrantyYears: '3',
-  domesticPaymentTerms: '货物安装调试并验收合格后，按合同约定办理付款。',
-  importPaymentTerms: '不涉及进口设备。',
-  afterSalesRequirement: '供应商应提供明确的售后服务方案、响应时限和技术支持联系方式。',
-  acceptanceStandard: '货物安装调试完成并正常运行后，依据合同、采购文件及响应文件组织验收。',
-  otherTechnicalRequirements: '符合国家关于国产设备、节能环保及信息安全的相关要求。',
-  siteVisitRequired: '否',
+  packingRequirement: '',
+  warrantyYears: '',
+  domesticPaymentTerms,
+  importPaymentTerms,
+  afterSalesRequirement: '',
+  acceptanceStandard: '',
+  otherTechnicalRequirements: '',
+  siteVisitRequired: '',
   siteVisitTime: '',
   siteVisitLocation: '',
   siteVisitContact: '',
   siteVisitPhone: '',
-  sampleRequired: '否',
-  sampleRequirement: '不要求提供样品。',
-  demoRequired: '否',
+  sampleRequired: '',
+  sampleRequirement: '',
+  demoRequired: '',
   demoDuration: '',
-  demoRequirement: '不要求现场演示。',
-  otherNotes: '无。',
+  demoRequirement: '',
+  otherNotes: '',
 };

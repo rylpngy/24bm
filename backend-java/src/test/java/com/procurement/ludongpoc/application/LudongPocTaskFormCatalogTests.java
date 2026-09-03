@@ -3,7 +3,6 @@ package com.procurement.ludongpoc.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -32,20 +31,22 @@ class LudongPocTaskFormCatalogTests {
   }
 
   @Test
-  void acceptsCatalogExternalEquipmentDuringArgumentation() {
+  void keepsArgumentationAsReviewerOpinionOnly() {
     assertThat(LudongPocTaskFormCatalog.validate(
         "argumentation_review", "approve", Map.of(
-            "purchaseReason", "教学设备老化，需要更新",
             "argumentationOpinion", "同意",
-            "items", List.of(Map.of(
-                "materialId", "",
-                "name", "专用实验设备",
-                "quantity", "1",
-                "unitPrice", "120000",
-                "configurationLimit", "实验室专用设备配置标准",
-                "referenceBrands", "调研品牌甲",
-                "technicalParameters", "满足实验教学参数")))))
-        .containsKey("items");
+            "argumentationComment", "必要性论证充分")))
+        .containsOnlyKeys("argumentationOpinion", "argumentationComment");
+  }
+
+  @Test
+  void onlyAllowsRejectWhenArgumentationConclusionIsDifferent() {
+    assertThatThrownBy(() -> LudongPocTaskFormCatalog.validate(
+        "argumentation_review", "approve", Map.of(
+            "argumentationOpinion", "不同意",
+            "argumentationComment", "建议重新论证")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("只能驳回");
   }
 
   @Test

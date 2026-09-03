@@ -99,9 +99,10 @@ public class LudongPocApplicationService {
   @Transactional
   public LudongPocApplicationResponse create(LudongPocApplicationRequest request) {
     permissionService.require("buyer:ludong-poc:write");
-    validate(request);
     List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items());
     Map<String, Object> normalizedForm = prepareApplicationForm(request.formData(), normalizedItems);
+    validate(request, normalizedForm, normalizedItems);
+    BigDecimal budgetAmount = calculateBudget(normalizedItems);
     String tenantId = tenant();
     String userId = user();
     String id = "ldu-poc-" + UUID.randomUUID();
@@ -109,7 +110,7 @@ public class LudongPocApplicationService {
         + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
     mapper.insert(
         id, tenantId, no, request.projectName().trim(), request.applicantUnit().trim(),
-        blankToNull(request.departmentId()), request.budgetAmount(), write(normalizedForm),
+        blankToNull(request.departmentId()), budgetAmount, write(normalizedForm),
         write(normalizedItems), userId);
     auditService.recordCurrentTenantAction(
         "ludong_poc.created", "ludong_project_application", id, "创建货物类采购申报材料包 " + no);
@@ -119,13 +120,14 @@ public class LudongPocApplicationService {
   @Transactional
   public LudongPocApplicationResponse update(String id, LudongPocApplicationRequest request) {
     permissionService.require("buyer:ludong-poc:write");
-    validate(request);
     List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items());
     Map<String, Object> normalizedForm = prepareApplicationForm(request.formData(), normalizedItems);
+    validate(request, normalizedForm, normalizedItems);
+    BigDecimal budgetAmount = calculateBudget(normalizedItems);
     requireApplication(tenant(), id);
     int changed = mapper.updateDraft(
         tenant(), id, request.projectName().trim(), request.applicantUnit().trim(),
-        blankToNull(request.departmentId()), request.budgetAmount(), write(normalizedForm), write(normalizedItems));
+        blankToNull(request.departmentId()), budgetAmount, write(normalizedForm), write(normalizedItems));
     if (changed == 0) {
       throw new IllegalStateException("只有草稿或已驳回的申报可以编辑");
     }
@@ -149,7 +151,7 @@ public class LudongPocApplicationService {
       throw new IllegalStateException("当前申报状态不允许提交审批");
     }
     Map<String, Object> workflowForm = new LinkedHashMap<>();
-    List.of("sameFundingUnit", "requiresItReview", "requiresAssetReview", "requiresLabReview")
+    List.of("requiresItReview", "requiresAssetReview", "requiresLabReview")
         .forEach(key -> workflowForm.put(key, form.get(key)));
     workflowForm.put("requiresSchoolLeader", requiresSchoolLeader(application, form) ? "是" : "否");
     workflowService.start(new WorkflowStartCommand(
@@ -195,9 +197,6 @@ public class LudongPocApplicationService {
     }
     Map<String, Object> reviewData = LudongPocTaskFormCatalog.validate(
         nodeId, request.action(), request.reviewData());
-    if ("approve".equals(request.action()) && "argumentation_review".equals(nodeId)) {
-      reviewData = normalizeReviewMaterials(reviewData);
-    }
     reviewRecordMapper.insert(
         "ldu-review-" + UUID.randomUUID(), tenant(), request.applicationId(), taskId,
         nodeId, user(), request.action(), write(reviewData), request.comment());
@@ -278,10 +277,10 @@ public class LudongPocApplicationService {
     return application;
   }
 
-  private void validate(LudongPocApplicationRequest request) {
-    if (request.budgetAmount().signum() <= 0) {
-      throw new IllegalArgumentException("预算金额必须大于 0");
-    }
+  private void validate(
+      LudongPocApplicationRequest request,
+      Map<String, Object> formData,
+      List<Map<String, Object>> items) {
     if (request.projectName().isBlank() || request.applicantUnit().isBlank()) {
       throw new IllegalArgumentException("采购项目名称和申报单位不能为空");
     }
@@ -303,15 +302,18 @@ public class LudongPocApplicationService {
         Map.entry("technicalLeaderName", "技术负责人"),
         Map.entry("fundingSource", "经费来源"),
         Map.entry("fundingUnitId", "经费主管单位"),
+        Map.entry("purchaseReason", "购置理由及必要性"),
         Map.entry("procurementFunction", "采购标的需实现的功能"),
         Map.entry("procurementGoal", "采购标的需实现的目标"),
         Map.entry("implementationLocation", "项目实施地点"),
+        Map.entry("installationReady", "是否具备安装条件"),
+        Map.entry("utilitiesReady", "水电暖气等条件是否满足"),
         Map.entry("deliveryDays", "交付天数"),
         Map.entry("coreProduct", "核心产品"),
         Map.entry("warrantyYears", "质量保证期"),
         Map.entry("acceptanceStandard", "验收标准"));
     for (Map.Entry<String, String> field : requiredFields.entrySet()) {
-      Object value = request.formData().get(field.getKey());
+      Object value = formData.get(field.getKey());
       if (value == null || String.valueOf(value).isBlank()) {
         throw new IllegalArgumentException("采购需求表必填项不能为空: " + field.getValue());
       }
@@ -319,24 +321,55 @@ public class LudongPocApplicationService {
     for (Map.Entry<String, String> field : Map.of(
         "deliveryDays", "交付天数", "warrantyYears", "质量保证期").entrySet()) {
       try {
-        if (new BigDecimal(String.valueOf(request.formData().get(field.getKey()))).signum() <= 0) {
+        if (new BigDecimal(String.valueOf(formData.get(field.getKey()))).signum() <= 0) {
           throw new IllegalArgumentException(field.getValue() + "必须大于 0");
         }
       } catch (NumberFormatException exception) {
         throw new IllegalArgumentException(field.getValue() + "必须是有效数字", exception);
       }
     }
-    if (request.items().isEmpty()) {
+    for (String field : List.of("siteVisitRequired", "sampleRequired", "demoRequired")) {
+      if (!List.of("是", "否").contains(String.valueOf(formData.get(field)))) {
+        throw new IllegalArgumentException("请完整选择评审现场与补充要求: " + field);
+      }
+    }
+    if ("是".equals(String.valueOf(formData.get("siteVisitRequired")))) {
+      requireFormText(formData, "siteVisitTime", "勘查时间");
+      requireFormText(formData, "siteVisitLocation", "勘查地点");
+      requireFormText(formData, "siteVisitContact", "勘查联系人");
+      requireFormText(formData, "siteVisitPhone", "勘查联系电话");
+    }
+    if ("是".equals(String.valueOf(formData.get("sampleRequired")))) {
+      requireFormText(formData, "sampleRequirement", "样品要求");
+    }
+    if ("是".equals(String.valueOf(formData.get("demoRequired")))) {
+      requireFormText(formData, "demoDuration", "演示时长");
+      requireFormText(formData, "demoRequirement", "演示要求");
+    }
+    if (items.isEmpty()) {
       throw new IllegalArgumentException("至少填写一条拟采购设备明细");
     }
-    for (int index = 0; index < request.items().size(); index++) {
-      Map<String, Object> item = request.items().get(index);
+    int coreProductCount = 0;
+    for (int index = 0; index < items.size(); index++) {
+      Map<String, Object> item = items.get(index);
       if (item.get("name") == null || String.valueOf(item.get("name")).isBlank()) {
         throw new IllegalArgumentException("第 " + (index + 1) + " 条设备名称不能为空");
       }
       requireItemText(item, index, "unit", "计量单位");
       requireItemText(item, index, "technicalParameters", "主要技术参数");
       requireItemText(item, index, "purpose", "主要用途");
+      requireItemText(item, index, "imported", "是否进口设备");
+      if ("是".equals(String.valueOf(item.get("imported")))) {
+        requireItemText(item, index, "importLeadTime", "进口设备预计供货期");
+      }
+      requireItemText(item, index, "usageDirection", "使用方向");
+      requireItemText(item, index, "userName", "使用人");
+      requireItemText(item, index, "installationLocation", "安装地点");
+      requireItemText(item, index, "coreProduct", "是否核心产品");
+      requireItemText(item, index, "governmentMallCatalog", "是否属于网上商城目录");
+      if ("是".equals(String.valueOf(item.get("coreProduct")))) {
+        coreProductCount++;
+      }
       try {
         if (new BigDecimal(String.valueOf(item.get("quantity"))).signum() <= 0) {
           throw new IllegalArgumentException("第 " + (index + 1) + " 条设备数量必须大于 0");
@@ -349,9 +382,20 @@ public class LudongPocApplicationService {
         requireItemText(item, index, "selectedBrand", "商城最终品牌");
         requireItemText(item, index, "selectedModel", "商城最终型号");
         requireItemText(item, index, "selectedSupplier", "商城供应商");
+        requirePositiveItemNumber(item, index, "standardUnitPrice", "配置标准单价");
         requirePositiveItemNumber(item, index, "selectedUnitPrice", "商城确认单价");
         requireItemText(item, index, "selectionParticipants", "商城选型人员");
       }
+    }
+    if (coreProductCount != 1) {
+      throw new IllegalArgumentException("拟采购设备清单必须且只能标注一个核心产品");
+    }
+  }
+
+  private static void requireFormText(Map<String, Object> form, String field, String label) {
+    Object value = form.get(field);
+    if (value == null || String.valueOf(value).isBlank()) {
+      throw new IllegalArgumentException("采购需求表必填项不能为空: " + label);
     }
   }
 
@@ -376,8 +420,7 @@ public class LudongPocApplicationService {
   }
 
   private void validateWorkflowFlags(Map<String, Object> form) {
-    for (String key : List.of(
-        "sameFundingUnit", "requiresItReview", "requiresAssetReview", "requiresLabReview")) {
+    for (String key : List.of("requiresItReview", "requiresAssetReview", "requiresLabReview")) {
       if (!List.of("是", "否").contains(String.valueOf(form.get(key)))) {
         throw new IllegalArgumentException("提交前必须完成审批路由项: " + key);
       }
@@ -406,8 +449,9 @@ public class LudongPocApplicationService {
           LudongPocWorkflowDefinition.FLOW_SCHEMA);
       return;
     }
-    String upgradedFlow = addRequiredParticipantSteps(current.flowSchema());
-    if (upgradedFlow == null) {
+    String upgradedFlow = upgradeManagedFlow(current.flowSchema());
+    boolean formNeedsUpgrade = current.formSchema().contains("sameFundingUnit");
+    if (upgradedFlow == null && !formNeedsUpgrade) {
       return;
     }
     publicationService.ensureManagedPublishedDefinition(
@@ -417,11 +461,11 @@ public class LudongPocApplicationService {
         "鲁东大学货物类采购申报",
         "采购需求表与采购招标申请单共用一个材料包；按条件路由审核并统一归档。",
         LudongPocWorkflowDefinition.BUSINESS_TYPE,
-        current.formSchema(),
-        upgradedFlow);
+        LudongPocWorkflowDefinition.FORM_SCHEMA,
+        upgradedFlow == null ? current.flowSchema() : upgradedFlow);
   }
 
-  private String addRequiredParticipantSteps(String flowSchema) {
+  private String upgradeManagedFlow(String flowSchema) {
     try {
       JsonNode parsed = objectMapper.readTree(flowSchema);
       if (!(parsed instanceof ObjectNode root) || !(root.path("steps") instanceof ArrayNode steps)) {
@@ -433,9 +477,7 @@ public class LudongPocApplicationService {
           "mall_selection_participant_review");
       List<String> existingIds = new java.util.ArrayList<>();
       steps.forEach(step -> existingIds.add(step.path("id").asText()));
-      if (existingIds.containsAll(requiredIds)) {
-        return null;
-      }
+      boolean changed = false;
       int insertAt = Math.max(0, existingIds.indexOf("argumentation_review") + 1);
       List<ObjectNode> requiredSteps = List.of(
           approvalStep("technical_leader_review", "技术负责人确认", "role-ldu-technical-leader"),
@@ -444,13 +486,38 @@ public class LudongPocApplicationService {
       for (ObjectNode step : requiredSteps) {
         if (!existingIds.contains(step.path("id").asText())) {
           steps.insert(insertAt++, step);
+          changed = true;
         }
       }
-      return objectMapper.writeValueAsString(root);
+      boolean fundingStepPresent = false;
+      for (int index = 0; index < steps.size(); index++) {
+        String id = steps.get(index).path("id").asText();
+        if ("funding_route".equals(id)) {
+          steps.set(index, approvalStep(
+              "funding_review", "经费主管单位负责人审核", "role-ldu-funding-manager"));
+          fundingStepPresent = true;
+          changed = true;
+        } else if ("funding_review".equals(id)) {
+          fundingStepPresent = true;
+        }
+      }
+      if (!fundingStepPresent) {
+        int unitIndex = -1;
+        for (int index = 0; index < steps.size(); index++) {
+          if ("unit_review".equals(steps.get(index).path("id").asText())) {
+            unitIndex = index;
+            break;
+          }
+        }
+        steps.insert(unitIndex < 0 ? steps.size() : unitIndex + 1, approvalStep(
+            "funding_review", "经费主管单位负责人审核", "role-ldu-funding-manager"));
+        changed = true;
+      }
+      return changed ? objectMapper.writeValueAsString(root) : null;
     } catch (IllegalArgumentException exception) {
       throw exception;
     } catch (Exception exception) {
-      throw new IllegalStateException("无法升级鲁东 POC 审批参与人节点", exception);
+      throw new IllegalStateException("无法升级鲁东 POC 审批流程", exception);
     }
   }
 
@@ -464,32 +531,6 @@ public class LudongPocApplicationService {
     step.put("title", title);
     step.set("assignment", assignment);
     return step;
-  }
-
-  private Map<String, Object> normalizeReviewMaterials(Map<String, Object> reviewData) {
-    List<Map<String, Object>> items = objectMapper.convertValue(reviewData.get("items"), ITEMS_TYPE);
-    validateMaterialReferences(items);
-    Map<String, Object> normalized = new LinkedHashMap<>(reviewData);
-    normalized.put("items", items);
-    return Map.copyOf(normalized);
-  }
-
-  private void validateMaterialReferences(List<Map<String, Object>> items) {
-    List<String> materialIds = items.stream()
-        .map(item -> item.get("materialId") == null ? "" : String.valueOf(item.get("materialId")).trim())
-        .filter(id -> !id.isBlank())
-        .distinct()
-        .toList();
-    long linkedCount = items.stream()
-        .filter(item -> item.get("materialId") != null && !String.valueOf(item.get("materialId")).isBlank())
-        .count();
-    if (materialIds.size() != linkedCount) {
-      throw new IllegalArgumentException("设备配置明细不能重复关联同一物料");
-    }
-    if (materialApplicationService.findMaterialsByTenantAndIds(tenant(), materialIds).size()
-        != materialIds.size()) {
-      throw new IllegalArgumentException("设备配置明细包含不存在或不属于当前租户的学校采购目录物料");
-    }
   }
 
   private List<Map<String, Object>> prepareApplicationItems(List<Map<String, Object>> items) {
@@ -535,16 +576,28 @@ public class LudongPocApplicationService {
         normalized.put("materialCode", material.code() == null ? "" : material.code());
         normalized.put("materialCategory", material.category() == null ? "" : material.category());
         normalized.put("catalogSource", "catalog");
-        normalized.put("governmentMallCatalog", material.governmentMallCatalog() ? "是" : "否");
       } else {
         normalized.put("materialId", "");
         normalized.put("materialCode", "");
-        normalized.put("materialCategory", "");
         normalized.put("catalogSource", "custom");
-        normalized.put("governmentMallCatalog", "否");
+      }
+      String submittedMallValue = String.valueOf(normalized.getOrDefault("governmentMallCatalog", ""));
+      boolean manualMallDecision = "manual".equals(normalized.get("governmentMallCatalogMode"))
+          && List.of("是", "否").contains(submittedMallValue);
+      MallCatalogDecision systemDecision = inferMallCatalog(normalized, material);
+      normalized.put("governmentMallCatalogSystemValue", systemDecision.value());
+      normalized.put("governmentMallCatalogSystemReason", systemDecision.reason());
+      if (manualMallDecision) {
+        normalized.put("governmentMallCatalog", submittedMallValue);
+        normalized.put("governmentMallCatalogMode", "manual");
+        normalized.put("governmentMallCatalogReason", "申报人根据实际目录范围人工确认");
+      } else {
+        normalized.put("governmentMallCatalog", systemDecision.value());
+        normalized.put("governmentMallCatalogMode", "auto");
+        normalized.put("governmentMallCatalogReason", systemDecision.reason());
       }
       normalized.put("totalPrice", researchedPrice.multiply(quantity).toPlainString());
-      putDefault(normalized, "configurationLimit", "附件3（办公设备及家具配置标准）");
+      normalized.remove("configurationLimit");
       return Map.copyOf(normalized);
     }).toList();
     for (int index = 0; index < normalizedItems.size(); index++) {
@@ -553,6 +606,7 @@ public class LudongPocApplicationService {
         requireItemText(item, index, "selectedBrand", "商城最终品牌");
         requireItemText(item, index, "selectedModel", "商城最终型号");
         requireItemText(item, index, "selectedSupplier", "商城供应商");
+        requirePositiveItemNumber(item, index, "standardUnitPrice", "配置标准单价");
         requirePositiveItemNumber(item, index, "selectedUnitPrice", "商城确认单价");
         requireItemText(item, index, "selectionParticipants", "商城选型人员");
       }
@@ -567,6 +621,24 @@ public class LudongPocApplicationService {
         .count();
     Map<String, Object> normalized = new LinkedHashMap<>(formData);
     normalized.entrySet().removeIf(entry -> entry.getValue() == null);
+    normalized.remove("sameFundingUnit");
+    normalized.remove("configurationStandard");
+    if (!"是".equals(String.valueOf(normalized.get("siteVisitRequired")))) {
+      List.of("siteVisitTime", "siteVisitLocation", "siteVisitContact", "siteVisitPhone")
+          .forEach(key -> normalized.put(key, ""));
+    }
+    if (!"是".equals(String.valueOf(normalized.get("sampleRequired")))) {
+      normalized.put("sampleRequirement", "");
+    }
+    if (!"是".equals(String.valueOf(normalized.get("demoRequired")))) {
+      normalized.put("demoDuration", "");
+      normalized.put("demoRequirement", "");
+    }
+    normalized.put("coreProduct", items.stream()
+        .filter(item -> "是".equals(String.valueOf(item.get("coreProduct"))))
+        .map(item -> String.valueOf(item.getOrDefault("name", "")))
+        .findFirst()
+        .orElse(""));
     normalized.put("mallSelectionApplicable", mallItemCount > 0 ? "是" : "否");
     normalized.put("mallSelectionReason", mallItemCount > 0
         ? "设备清单中有 " + mallItemCount + " 项属于山东省政府采购网上商城目录"
@@ -574,12 +646,34 @@ public class LudongPocApplicationService {
     return Map.copyOf(normalized);
   }
 
-  private static void putDefault(Map<String, Object> target, String field, String value) {
-    Object current = target.get(field);
-    if ((current == null || String.valueOf(current).isBlank()) && value != null && !value.isBlank()) {
-      target.put(field, value);
+  private static BigDecimal calculateBudget(List<Map<String, Object>> items) {
+    BigDecimal total = items.stream()
+        .map(item -> new BigDecimal(String.valueOf(item.get("totalPrice"))))
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    if (total.signum() <= 0) {
+      throw new IllegalArgumentException("根据设备清单计算的预算金额必须大于 0");
     }
+    return total;
   }
+
+  private static MallCatalogDecision inferMallCatalog(Map<String, Object> item, Material material) {
+    if (material != null && material.governmentMallCatalog()) {
+      return new MallCatalogDecision("是", "学校采购目录已标记为山东省政府采购网上商城目录");
+    }
+    String source = String.join(" ",
+        String.valueOf(item.getOrDefault("name", "")),
+        String.valueOf(item.getOrDefault("materialCategory", "")));
+    for (String keyword : List.of(
+        "台式计算机", "台式机", "笔记本电脑", "便携式计算机", "打印机", "复印机",
+        "投影仪", "投影设备", "多功能一体机", "空调机")) {
+      if (source.contains(keyword)) {
+        return new MallCatalogDecision("是", "设备名称或目录分类命中网上商城品目关键词“" + keyword + "”");
+      }
+    }
+    return new MallCatalogDecision("否", "学校采购目录标识和设备名称均未命中网上商城品目，可人工调整");
+  }
+
+  private record MallCatalogDecision(String value, String reason) {}
 
   private LudongPocApplicationResponse toResponse(LudongPocApplication value) {
     Map<String, Object> accumulated = accumulatedData(value);
@@ -611,7 +705,7 @@ public class LudongPocApplicationService {
     BigDecimal threshold = "学院".equals(String.valueOf(form.get("applicantUnitType")))
         ? new BigDecimal("300000")
         : new BigDecimal("100000");
-    return application.budgetAmount().compareTo(threshold) > 0;
+    return application.budgetAmount().compareTo(threshold) >= 0;
   }
 
   private Map<String, Object> readMap(String json) {

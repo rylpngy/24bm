@@ -33,11 +33,11 @@ const application: LudongApplication = {
 };
 
 describe('createTaskReviewData', () => {
-  it('carries the same material lines into argumentation', () => {
+  it('keeps argumentation focused on reviewer conclusion instead of editing applicant data', () => {
     const data = createTaskReviewData(task('argumentation_review'), application);
 
-    expect(data.items).toEqual(application.items);
-    expect(data.configurationStandard).toBe('附件3（办公设备及家具配置标准）');
+    expect(data).toEqual({ argumentationOpinion: '', argumentationComment: '' });
+    expect(data).not.toHaveProperty('items');
   });
 
   it('keeps mall participant review as confirmation of the applicant-filled form', () => {
@@ -45,6 +45,6 @@ describe('createTaskReviewData', () => {
 
     expect(data).not.toHaveProperty('items');
     expect(data).not.toHaveProperty('configurationStandard');
-    expect(data.mallSelectionParticipantOpinion).toBe('同意');
+    expect(data.mallSelectionParticipantOpinion).toBe('');
   });
 });

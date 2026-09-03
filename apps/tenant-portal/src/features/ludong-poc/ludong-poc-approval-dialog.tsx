@@ -8,10 +8,9 @@ import {
   ShieldCheck, Sparkles, ThumbsUp, TriangleAlert, WandSparkles, X, XCircle,
 } from 'lucide-react';
 import {
-  emptyItem, ludongApi, type LudongAiReviewFinding, type LudongAiReviewResult,
-  type LudongAiReviewMetrics, type LudongApplication, type LudongItem, type WorkflowTask,
+  ludongApi, type LudongAiReviewFinding, type LudongAiReviewResult,
+  type LudongAiReviewMetrics, type LudongApplication, type WorkflowTask,
 } from './api';
-import { LudongPocMaterialItemsEditor } from './ludong-poc-material-items-editor';
 
 type ReviewData = Record<string, unknown>;
 type FieldDefinition = {
@@ -33,10 +32,8 @@ const nodeForms: Record<string, { title: string; fields: FieldDefinition[] }> = 
   argumentation_review: {
     title: '购置必要性论证',
     fields: [
-      { id: 'purchaseReason', label: '购置理由及必要性论证', type: 'textarea', required: true },
-      { id: 'configurationStandard', label: '配置标准', type: 'select', options: ['附件3（办公设备及家具配置标准）'], required: true },
       { id: 'argumentationOpinion', label: '论证结论', type: 'select', options: agree, required: true },
-      { id: 'argumentationComment', label: '论证补充意见', type: 'textarea' },
+      { id: 'argumentationComment', label: '论证意见', type: 'textarea', required: true },
     ],
   },
   technical_leader_review: { title: '技术负责人确认', fields: [
@@ -124,19 +121,13 @@ export function taskNodeId(task: WorkflowTask) {
   return task.taskDefinitionKey?.startsWith('task_') ? task.taskDefinitionKey.slice(5) : task.taskDefinitionKey;
 }
 
-export function createTaskReviewData(task: WorkflowTask, app?: LudongApplication): ReviewData {
+export function createTaskReviewData(task: WorkflowTask, _app?: LudongApplication): ReviewData {
   const node = taskNodeId(task);
   const form = nodeForms[node];
   const data: ReviewData = {};
   form?.fields.forEach((field) => {
-    data[field.id] = field.options?.[0] ?? '';
+    data[field.id] = '';
   });
-  if (node === 'argumentation_review') {
-    data.items = app?.items?.length ? app.items.map((item) => ({ ...emptyItem(), ...item })) : [];
-  }
-  if (node === 'argumentation_review') {
-    data.configurationStandard = '附件3（办公设备及家具配置标准）';
-  }
   return data;
 }
 
@@ -156,19 +147,9 @@ export function LudongPocApprovalDialog({
   const node = taskNodeId(task);
   const form = nodeForms[node];
   const update = (key: string, value: unknown) => setReviewData({ ...reviewData, [key]: value });
-  const items = (reviewData.items as LudongItem[] | undefined) ?? [];
-  const stageItemsComplete = node === 'argumentation_review'
-    ? items.length > 0 && items.every((item) => (
-      item.name.trim()
-      && Number(item.quantity) > 0
-      && Number(item.unitPrice) > 0
-      && item.configurationLimit.trim()
-      && item.referenceBrands.trim()
-      && item.technicalParameters.trim()
-    ))
-    : true;
-  const complete = form?.fields.every((field) => !field.required || String(reviewData[field.id] ?? '').trim())
-    && stageItemsComplete;
+  const complete = form?.fields.every((field) => !field.required || String(reviewData[field.id] ?? '').trim());
+  const argumentationRejected = node === 'argumentation_review'
+    && reviewData.argumentationOpinion === '不同意';
   const aiReview = useMutation({
     mutationFn: () => {
       if (!app) throw new Error('未找到项目申报数据');
@@ -225,19 +206,15 @@ export function LudongPocApprovalDialog({
             <div className="grid gap-4 md:grid-cols-2">
               {form.fields.map((field) => <TaskField key={field.id} field={field} value={reviewData[field.id]} onChange={(value) => update(field.id, value)} />)}
             </div>
-            {node === 'argumentation_review' && (
-              <div className="mt-6 border-t border-slate-100 pt-5">
-                <LudongPocMaterialItemsEditor stage="argumentation" items={items} onChange={(value) => update('items', value)} />
-              </div>
-            )}
           </SectionCard>}
+          {argumentationRejected && <FeedbackNotice tone="error" message="论证结论为“不同意”，本节点只能驳回，不能审批通过。" />}
           <Field label="审批意见"><textarea value={comment} onChange={(e) => setComment(e.target.value)} className={cn(inputClass, 'h-24 py-3 leading-6')} /></Field>
           <FeedbackNotice tone="info" message="签字由当前登录账号和办理时间自动形成电子审批记录。后续办理人可查看本节点提交的全部信息。" />
         </div>
 
         <footer className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50/70 p-4">
           <ActionButton icon={XCircle} tone="red" size="md" disabled={busy} onClick={() => onComplete('reject')}>驳回</ActionButton>
-          <PrimaryActionButton icon={CheckCircle2} size="md" flushTop busy={busy} pendingLabel="提交中" disabled={!form || !complete} onClick={() => onComplete('approve')}>审批通过并签字</PrimaryActionButton>
+          <PrimaryActionButton icon={CheckCircle2} size="md" flushTop busy={busy} pendingLabel="提交中" disabled={!form || !complete || argumentationRejected} onClick={() => onComplete('approve')}>审批通过并签字</PrimaryActionButton>
         </footer>
       </section>
     </div>
@@ -316,7 +293,7 @@ function AiReviewPanel({
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {(result.institutionalDocuments?.length ? result.institutionalDocuments : [
-                    '鲁东大学采购管理办法及配套制度', '货物类采购申请表', '采购需求表（货物类）', '附件3配置标准',
+                    '鲁东大学采购管理办法及配套制度', '货物类采购申请表', '采购需求表（货物类）',
                   ]).map((source) => (
                     <span key={source} className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600">{source}</span>
                   ))}
@@ -436,7 +413,7 @@ const inputClass = 'h-10 w-full rounded-lg border border-slate-200 bg-white px-3
 
 function TaskField({ field, value, onChange }: { field: FieldDefinition; value: unknown; onChange: (value: string) => void }) {
   const control = field.type === 'select'
-    ? <select className={inputClass} value={String(value ?? '')} onChange={(e) => onChange(e.target.value)}>{field.options?.map((option) => <option key={option}>{option}</option>)}</select>
+    ? <select className={inputClass} value={String(value ?? '')} onChange={(e) => onChange(e.target.value)}><option value="">请选择</option>{field.options?.map((option) => <option key={option}>{option}</option>)}</select>
     : field.type === 'textarea'
       ? <textarea className={cn(inputClass, 'h-24 py-3 leading-6')} value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} />
       : <input className={inputClass} value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} />;
@@ -446,13 +423,48 @@ function TaskField({ field, value, onChange }: { field: FieldDefinition; value: 
 function Snapshot({ app }: { app?: LudongApplication }) {
   if (!app) return null;
   const data = app.formData;
-  const facts = [
-    ['申报单位', app.applicantUnit], ['单位类型', data.applicantUnitType], ['预算金额', `¥${Number(app.budgetAmount).toLocaleString('zh-CN')}`], ['经费来源', data.fundingSource],
-    ['项目负责人', data.projectLeaderName], ['技术负责人', data.technicalLeaderName], ['购置论证', data.argumentationOpinion], ['信创审核', data.itReviewOpinion],
-    ['申报单位意见', data.applicantUnitOpinion], ['经费主管单位意见', data.fundingUnitOpinion], ['资产配置审核', data.assetConfigurationOpinion], ['实验室审核', data.labReviewOpinion],
-    ['财务预算', data.financeBudgetStatus], ['采购预算', data.procurementBudgetStatus], ['采购方式', data.procurementMethod],
-  ].filter(([, value]) => value != null && String(value).trim());
-  return <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{facts.map(([label, value]) => <div key={label} className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3"><dt className="text-[11px] font-black text-slate-400">{label}</dt><dd className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">{String(value)}</dd></div>)}</dl>;
+  const sections: Array<{ title: string; facts: Array<[string, string | number | undefined]> }> = [
+    { title: '项目与经费', facts: [
+      ['采购项目名称', app.projectName], ['申报单位', app.applicantUnit], ['单位类型', data.applicantUnitType],
+      ['预算金额', `¥${Number(app.budgetAmount).toLocaleString('zh-CN')}`], ['经费来源', data.fundingSource],
+      ['经费主管单位', data.fundingUnitName], ['经费项目名称', data.fundingProjectName], ['经费项目编号', data.fundingProjectNo],
+      ['项目负责人', data.projectLeaderName], ['项目负责人电话', data.projectLeaderPhone],
+      ['技术负责人', data.technicalLeaderName], ['技术负责人电话', data.technicalLeaderPhone],
+    ] },
+    { title: '采购需求', facts: [
+      ['购置理由及必要性', data.purchaseReason], ['参与编制人员', data.participants], ['面向中小企业', data.smeSuitable],
+      ['面向小微企业', data.microSuitable], ['采购标的功能', data.procurementFunction], ['采购目标', data.procurementGoal],
+      ['国家强制标准要求', data.mandatoryStandards], ['其他标准', data.otherStandards], ['供应商特殊资质', data.supplierQualifications],
+    ] },
+    { title: '交付、服务与验收', facts: [
+      ['项目实施地点', data.implementationLocation], ['具备安装条件', data.installationReady], ['水电暖气等条件满足', data.utilitiesReady],
+      ['现有资产处置方案', data.assetDisposalPlan], ['交付天数', data.deliveryDays], ['核心产品', data.coreProduct],
+      ['包装运输要求', data.packingRequirement], ['质保期（年）', data.warrantyYears],
+      ['国产设备付款方式', data.domesticPaymentTerms], ['进口设备付款方式', data.importPaymentTerms],
+      ['售后服务要求', data.afterSalesRequirement], ['验收标准', data.acceptanceStandard], ['其他技术服务要求', data.otherTechnicalRequirements],
+    ] },
+    { title: '现场与补充要求', facts: [
+      ['需要现场勘查', data.siteVisitRequired], ['勘查时间', data.siteVisitTime], ['勘查地点', data.siteVisitLocation],
+      ['勘查联系人', data.siteVisitContact], ['勘查电话', data.siteVisitPhone], ['需要样品', data.sampleRequired],
+      ['样品要求', data.sampleRequirement], ['需要产品演示', data.demoRequired], ['演示时长', data.demoDuration],
+      ['演示要求', data.demoRequirement], ['其他补充事宜', data.otherNotes],
+    ] },
+  ];
+  return <div className="space-y-5">
+    {sections.map((section) => <div key={section.title}>
+      <h3 className="mb-2 text-xs font-black text-slate-800">{section.title}</h3>
+      <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{section.facts.map(([label, value]) => <div key={label} className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3"><dt className="text-[11px] font-black text-slate-400">{label}</dt><dd className="mt-1 break-words text-xs font-bold leading-5 text-slate-700">{value == null || String(value).trim() === '' ? '未填写' : String(value)}</dd></div>)}</dl>
+    </div>)}
+    <div>
+      <h3 className="mb-2 text-xs font-black text-slate-800">拟采购设备清单</h3>
+      <div className="space-y-2">{app.items.map((item, index) => <div key={`${item.materialId || item.name}-${index}`} className="rounded-lg border border-slate-200 bg-white p-3">
+        <div className="flex flex-wrap items-center gap-2"><b className="text-xs text-slate-900">{index + 1}. {item.name || '未填写设备名称'}</b>{item.coreProduct === '是' && <StatusPill label="核心产品" />}{item.governmentMallCatalog === '是' && <StatusPill label="网上商城目录" />}</div>
+        <p className="mt-2 text-xs font-bold leading-5 text-slate-600">数量 {item.quantity || '—'} {item.unit || ''} · 单价 ¥{Number(item.unitPrice || 0).toLocaleString('zh-CN')} · 小计 ¥{Number(item.totalPrice || 0).toLocaleString('zh-CN')} · 是否进口 {item.imported || '—'} · 使用方向 {item.usageDirection || '—'}</p>
+        <p className="mt-1 text-xs font-bold leading-5 text-slate-500">技术参数：{item.technicalParameters || '未填写'}；参考品牌/型号：{item.referenceBrands || '未填写'}；用途：{item.purpose || '未填写'}；使用人：{item.userName || '未填写'}；安装地点：{item.installationLocation || '未填写'}{item.imported === '是' ? `；预计供货期：${item.importLeadTime || '未填写'}` : ''}</p>
+        {item.governmentMallCatalog === '是' && <p className="mt-1 text-xs font-bold leading-5 text-blue-700">商城确认：{item.selectedBrand || '未填写品牌'} / {item.selectedModel || '未填写型号'} · {item.selectedSupplier || '未填写供应商'} · ¥{Number(item.selectedUnitPrice || 0).toLocaleString('zh-CN')}</p>}
+      </div>)}</div>
+    </div>
+  </div>;
 }
 
 function Field({ label, required, className, children }: { label: string; required?: boolean; className?: string; children: React.ReactNode }) {

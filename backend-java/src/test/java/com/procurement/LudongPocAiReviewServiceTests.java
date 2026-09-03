@@ -33,7 +33,7 @@ class LudongPocAiReviewServiceTests {
 
     assertThat(result.analysisMode()).isEqualTo("RULE_ASSISTED");
     assertThat(result.nodeName()).isEqualTo("购置必要性论证");
-    assertThat(result.reviewFocus()).contains("购置理由与业务目标", "附件 3 配置标准");
+    assertThat(result.reviewFocus()).contains("购置理由与业务目标", "学校采购管理办法");
     assertThat(result.missingMaterials()).contains("购置理由及必要性论证");
     assertThat(result.findings()).anyMatch(item -> item.title().contains("必要性论证"));
     assertThat(result.findings()).allSatisfy(item -> {
@@ -41,7 +41,7 @@ class LudongPocAiReviewServiceTests {
       assertThat(item.evidenceReferences()).anyMatch(ref -> "FIELD".equals(ref.type()));
       assertThat(item.evidenceReferences()).anyMatch(ref -> "RULE".equals(ref.type()));
     });
-    assertThat(result.knowledgeVersion()).startsWith("ldu-procurement-policy-v2");
+    assertThat(result.knowledgeVersion()).startsWith("ldu-procurement-policy-v3");
     assertThat(result.institutionalBasis()).isEqualTo("鲁东大学校内采购制度知识库");
     assertThat(result.evidenceBoundary())
         .contains("不使用互联网搜索", "第三方", "人工核验");
