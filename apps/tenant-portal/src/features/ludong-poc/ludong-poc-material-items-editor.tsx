@@ -12,7 +12,7 @@ const textareaClass = 'min-h-20 w-full resize-y rounded-lg border border-slate-2
 const stageCopy: Record<LudongMaterialStage, { title: string; description: string; empty: string }> = {
   application: {
     title: '拟采购设备清单',
-    description: '可从学校采购目录选择，也可新增目录外设备。目录带出的价格、数量、参数、型号和用途均为参考，申请人可按市场调研结果修改。',
+    description: '可从学校采购目录选择，也可新增目录外设备。目录参考值可修改；使用方向、是否进口、使用人和存放地点必须由申请人按实际情况确认，系统不会按单位类型自动赋值。',
     empty: '请从学校采购目录选择设备，或新增目录外设备。',
   },
   'mall-selection': {
@@ -225,11 +225,17 @@ function ApplicationFields({ item, index, update, updateCoreProduct, restoreMall
     <StageField label="参考品牌及型号" className="lg:col-span-2"><input className={inputClass} value={item.referenceBrands} onChange={(event) => update(index, 'referenceBrands', event.target.value)} /></StageField>
     <StageField label="主要技术参数、配置" required className="md:col-span-2"><textarea className={textareaClass} value={item.technicalParameters} onChange={(event) => update(index, 'technicalParameters', event.target.value)} /></StageField>
     <StageField label="设备用途" required className="md:col-span-2"><textarea className={textareaClass} value={item.purpose} onChange={(event) => update(index, 'purpose', event.target.value)} /></StageField>
-    <StageField label="是否进口设备" required><select className={inputClass} value={item.imported} onChange={(event) => update(index, 'imported', event.target.value)}><option value="">请选择</option><option>是</option><option>否</option></select></StageField>
+    <StageField label="是否进口设备" required>
+      <select className={inputClass} value={item.imported} onChange={(event) => update(index, 'imported', event.target.value)}><option value="">请按市场调研结果选择</option><option>是</option><option>否</option></select>
+      <span className="mt-1.5 block text-[11px] font-bold leading-5 text-slate-400">由申请人依据采购方案和市场调研确认，系统不根据设备名称自动判断。</span>
+    </StageField>
     {item.imported === '是' && <StageField label="进口设备预计供货期" required><input className={inputClass} value={item.importLeadTime} onChange={(event) => update(index, 'importLeadTime', event.target.value)} placeholder="例如：合同签订后 90 日" /></StageField>}
-    <StageField label="使用方向" required><select className={inputClass} value={item.usageDirection} onChange={(event) => update(index, 'usageDirection', event.target.value)}><option value="">请选择</option><option>教学</option><option>科研</option><option>行政</option><option>其他</option></select></StageField>
-    <StageField label="使用人" required><input className={inputClass} value={item.userName} onChange={(event) => update(index, 'userName', event.target.value)} /></StageField>
-    <StageField label="安装地点" required><input className={inputClass} value={item.installationLocation} onChange={(event) => update(index, 'installationLocation', event.target.value)} /></StageField>
+    <StageField label="使用方向" required>
+      <select className={inputClass} value={item.usageDirection === '行政' ? '行政办公' : item.usageDirection} onChange={(event) => update(index, 'usageDirection', event.target.value)}><option value="">请按实际用途选择</option><option>教学</option><option>科研</option><option>行政办公</option><option>其他</option></select>
+      <span className="mt-1.5 block text-[11px] font-bold leading-5 text-slate-400">学院项目也可能用于教学、科研或行政办公，系统不按申报单位类型默认选择。</span>
+    </StageField>
+    <StageField label="使用人" required><input className={inputClass} value={item.userName} onChange={(event) => update(index, 'userName', event.target.value)} placeholder="填写实际使用人" /></StageField>
+    <StageField label="存放地点" required><input className={inputClass} value={item.installationLocation} onChange={(event) => update(index, 'installationLocation', event.target.value)} placeholder="填写设备实际存放地点" /></StageField>
     <StageField label="是否属于网上商城目录" required className="lg:col-span-2">
       <div className="flex gap-2">
         <select className={inputClass} value={item.governmentMallCatalog} onChange={(event) => update(index, 'governmentMallCatalog', event.target.value)}><option value="">请选择</option><option>是</option><option>否</option></select>

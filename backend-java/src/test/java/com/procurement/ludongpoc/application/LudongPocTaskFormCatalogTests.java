@@ -74,7 +74,7 @@ class LudongPocTaskFormCatalogTests {
 
     assertThat(reused)
         .containsEntry(
-            "procurementBudgetStatus", "本项目年初无预算，现已办理预算追加手续")
+            "procurementBudgetStatus", "本项目年初无采购预算，现已办理采购预算追加手续")
         .containsEntry(
             "procurementBudgetOpinion", "同工号审批结论自动复用，来源节点：finance_budget_review");
   }

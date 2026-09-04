@@ -58,6 +58,9 @@ class LudongPocDocumentServiceTests {
     String demandText = text(demandDocument);
     String applicationText = text(applicationDocument);
     String mallConfirmationText = tableText(applicationDocument, 2);
+    String purchaseReasonCell = tableCellText(applicationDocument, 0, 5, 1);
+    String technicalLeaderCell = tableCellText(applicationDocument, 0, 3, 5);
+    String mallParticipantCell = tableCellText(applicationDocument, 2, 1, 9);
     Path qaDirectory = Path.of("target", "docx-qa");
     Files.createDirectories(qaDirectory);
     Files.write(qaDirectory.resolve("ludong-purchase-demand.docx"), demandDocument);
@@ -65,26 +68,38 @@ class LudongPocDocumentServiceTests {
 
     assertThat(demandText).contains(
         "智慧教室设备更新项目", "预算金额：320000 元", "项目负责人签字：王老师",
-        "参与编制人员：王老师、赵老师", "专门面向中小企业采购：☑ 是    ☐ 否",
+        "技术负责人：技术负责人（2026-08-28）",
+        "参与编制人员：参与编制确认人（2026-08-28）",
+        "专门面向中小企业采购：☑ 是    ☐ 否",
         "远程教学和课堂互动", "提升教学质量", "GB 4943.1", "学校设备技术规范",
         "南校区教学楼", "合同签订后 30 日内", "智慧教学终端", "3 年",
         "安装调试完成后验收", "技术负责人", "参与编制确认人",
         "单位负责人（签字）：申报单位负责人");
     assertThat(applicationText).contains(
         "智慧教室设备更新项目", "32", "年度教学经费", "教学条件改善专项",
-        "王老师", "赵老师", "购置必要性充分", "☑ 同意", "☐ 不同意",
+        "王老师", "技术负责人（2026-08-28）", "购置必要性充分", "☑ 同意", "☐ 不同意",
         "教育信息技术部意见", "申报单位意见", "经费主管单位意见",
         "是否超价格上限：☐ 是    ☑ 否", "配置审核意见",
         "大型仪器设备共享审核", "分管校领导意见",
         "☑ 本项目已列入本年度学校预算",
         "☐ 本项目年初无预算，现已办理预算追加手续",
-        "☑ 本项目年初无预算，现已办理预算追加手续",
-        "☐ 本项目本年度无预算，已列入下一年度预算",
+        "☑ 本项目年初无采购预算，现已办理采购预算追加手续",
+        "☐ 本项目本年度无采购预算，已列入下一年度采购预算",
         "材料完整，确认提交", "材料齐全，确认受理",
         "☑ 公开招标", "☐ 邀请招标", "☐ 单一来源采购",
-        "负责人终审意见", "技术负责人确认", "参与编制人员确认", "网上商城选型确认",
+        "负责人终审意见",
         "高性能教学终端", "目录外专用实验装置", "国产处理器，32GB内存", "商城选型确认人", "申报单位负责人");
+    assertThat(purchaseReasonCell).contains(
+        "申报人购置理由及必要性：购置必要性充分",
+        "论证结论：☑ 同意    ☐ 不同意",
+        "论证意见：论证材料完整",
+        "论证人（签字）：论证人（2026-08-28）")
+        .doesNotContain("技术负责人确认", "参与编制人员确认", "网上商城选型确认");
+    assertThat(technicalLeaderCell).isEqualTo("技术负责人（2026-08-28）");
+    assertThat(mallParticipantCell).isEqualTo("商城选型确认人（2026-08-28）");
     assertThat(mallConfirmationText).contains("高性能教学终端").doesNotContain("目录外专用实验装置");
+    assertTablesAllowWrapping(demandDocument);
+    assertTablesAllowWrapping(applicationDocument);
     assertThat(demandText).doesNotContain("驳回时的错误覆盖值");
     assertThat(applicationText).doesNotContain("驳回时的错误覆盖值");
   }
@@ -110,6 +125,9 @@ class LudongPocDocumentServiceTests {
         "预算审查情况", "☐ 本项目已列入本年度学校预算",
         "☐ 本项目年初无预算，现已办理预算追加手续",
         "☐ 本项目本年度无预算，已列入下一年度预算",
+        "采购预算审查情况", "☐ 本项目已列入本年度采购预算",
+        "☐ 本项目年初无采购预算，现已办理采购预算追加手续",
+        "☐ 本项目本年度无采购预算，已列入下一年度采购预算",
         "采购方式", "☐ 公开招标", "☐ 邀请招标", "☐ 竞争性谈判",
         "☐ 竞争性磋商", "☐ 单一来源采购", "☐ 询价",
         "是否超价格上限：☐ 是    ☐ 否", "论证结论：☐ 同意    ☐ 不同意");
@@ -330,6 +348,28 @@ class LudongPocDocumentServiceTests {
       document.getTables().get(tableIndex).getRows()
           .forEach(row -> row.getTableCells().forEach(cell -> result.append(cell.getText()).append('\n')));
       return result.toString();
+    }
+  }
+
+  private static String tableCellText(
+      byte[] documentBytes, int tableIndex, int rowIndex, int cellIndex) throws Exception {
+    try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(documentBytes))) {
+      return document.getTables().get(tableIndex).getRow(rowIndex).getCell(cellIndex).getText();
+    }
+  }
+
+  private static void assertTablesAllowWrapping(byte[] documentBytes) throws Exception {
+    try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(documentBytes))) {
+      for (XWPFTable table : document.getTables()) {
+        table.getRows().forEach(row -> {
+          assertThat(row.isCantSplitRow()).isTrue();
+          row.getTableCells().forEach(cell -> {
+            boolean noWrap = cell.getCTTc().getTcPr() != null
+                && cell.getCTTc().getTcPr().isSetNoWrap();
+            assertThat(noWrap).isFalse();
+          });
+        });
+      }
     }
   }
 

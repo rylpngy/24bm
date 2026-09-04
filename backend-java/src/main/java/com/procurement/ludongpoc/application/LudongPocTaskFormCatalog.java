@@ -132,8 +132,31 @@ final class LudongPocTaskFormCatalog {
         : "financeBudgetStatus";
     Object value = source.get(alternate);
     if (value != null && !String.valueOf(value).isBlank()) {
-      target.put(targetField, value);
+      target.put(targetField, normalizeBudgetStatus(targetField, String.valueOf(value)));
     }
+  }
+
+  private static String normalizeBudgetStatus(String targetField, String value) {
+    String normalized = value == null ? "" : value.trim();
+    if ("procurementBudgetStatus".equals(targetField)) {
+      return switch (normalized) {
+        case "本项目已列入本年度学校预算", "本项目已列入本年度预算" ->
+            "本项目已列入本年度采购预算";
+        case "本项目年初无预算，现已办理预算追加手续" ->
+            "本项目年初无采购预算，现已办理采购预算追加手续";
+        case "本项目本年度无预算，已列入下一年度预算" ->
+            "本项目本年度无采购预算，已列入下一年度采购预算";
+        default -> normalized;
+      };
+    }
+    return switch (normalized) {
+      case "本项目已列入本年度采购预算" -> "本项目已列入本年度学校预算";
+      case "本项目年初无采购预算，现已办理采购预算追加手续" ->
+          "本项目年初无预算，现已办理预算追加手续";
+      case "本项目本年度无采购预算，已列入下一年度采购预算" ->
+          "本项目本年度无预算，已列入下一年度预算";
+      default -> normalized;
+    };
   }
 
   private static Object reusedRequiredValue(String field, Map<String, Object> source) {

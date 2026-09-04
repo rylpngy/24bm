@@ -4,6 +4,17 @@ import { calculateApplicationBudget, evaluateRouteDecisions, getMissingRequiredF
 import { inferGovernmentMallCatalog } from './ludong-poc-material-items-editor';
 
 describe('getMissingRequiredFields', () => {
+  it('leaves use direction, import status, user and storage location for manual confirmation', () => {
+    const item = emptyItem();
+
+    expect(item).toMatchObject({
+      imported: '',
+      usageDirection: '',
+      userName: '',
+      installationLocation: '',
+    });
+  });
+
   it('reports every hidden requirement with a user-facing label', () => {
     const missing = getMissingRequiredFields({
       projectName: '教学设备更新',
@@ -143,7 +154,7 @@ describe('getMissingRequiredFields', () => {
     const decisions = evaluateRouteDecisions({
       applicantUnit: '财经处',
       projectName: '办公终端更新',
-      items: [{ ...emptyItem(), name: '台式计算机', usageDirection: '行政' }],
+      items: [{ ...emptyItem(), name: '台式计算机', usageDirection: '行政办公' }],
     });
 
     expect(decisions.find((item) => item.key === 'requiresItReview')?.value).toBe('是');

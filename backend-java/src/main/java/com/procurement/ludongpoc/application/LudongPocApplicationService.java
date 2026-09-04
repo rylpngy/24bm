@@ -359,12 +359,19 @@ public class LudongPocApplicationService {
       requireItemText(item, index, "technicalParameters", "主要技术参数");
       requireItemText(item, index, "purpose", "主要用途");
       requireItemText(item, index, "imported", "是否进口设备");
+      if (!List.of("是", "否").contains(String.valueOf(item.get("imported")))) {
+        throw new IllegalArgumentException("第 " + (index + 1) + " 条是否进口设备必须选择是或否");
+      }
       if ("是".equals(String.valueOf(item.get("imported")))) {
         requireItemText(item, index, "importLeadTime", "进口设备预计供货期");
       }
       requireItemText(item, index, "usageDirection", "使用方向");
+      if (!List.of("教学", "科研", "行政", "行政办公", "其他")
+          .contains(String.valueOf(item.get("usageDirection")))) {
+        throw new IllegalArgumentException("第 " + (index + 1) + " 条使用方向不在允许范围内");
+      }
       requireItemText(item, index, "userName", "使用人");
-      requireItemText(item, index, "installationLocation", "安装地点");
+      requireItemText(item, index, "installationLocation", "存放地点");
       requireItemText(item, index, "coreProduct", "是否核心产品");
       requireItemText(item, index, "governmentMallCatalog", "是否属于网上商城目录");
       if ("是".equals(String.valueOf(item.get("coreProduct")))) {
@@ -571,6 +578,9 @@ public class LudongPocApplicationService {
       }
       Map<String, Object> normalized = new LinkedHashMap<>(item);
       normalized.entrySet().removeIf(entry -> entry.getValue() == null);
+      if ("行政".equals(String.valueOf(normalized.get("usageDirection")))) {
+        normalized.put("usageDirection", "行政办公");
+      }
       if (material != null) {
         normalized.put("materialId", material.id());
         normalized.put("materialCode", material.code() == null ? "" : material.code());

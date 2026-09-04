@@ -61,6 +61,7 @@ export function LudongPocForm({
       governmentMallCatalogSystemValue: item.governmentMallCatalogSystemValue || mallDecision.value,
       governmentMallCatalogSystemReason: item.governmentMallCatalogSystemReason || mallDecision.reason,
       coreProduct: item.coreProduct || (initial?.formData.coreProduct === item.name ? '是' : '否'),
+      usageDirection: item.usageDirection === '行政' ? '行政办公' : item.usageDirection,
     };
   }));
   const update = (key: string, value: string) => setFormData((current) => {
@@ -384,7 +385,7 @@ export function getMissingRequiredFields({
       if (item.imported === '是') requireText(item.importLeadTime, `第 ${index + 1} 条进口设备预计供货期`);
       requireText(item.usageDirection, `第 ${index + 1} 条使用方向`);
       requireText(item.userName, `第 ${index + 1} 条使用人`);
-      requireText(item.installationLocation, `第 ${index + 1} 条安装地点`);
+      requireText(item.installationLocation, `第 ${index + 1} 条存放地点`);
       requireText(item.coreProduct, `第 ${index + 1} 条是否核心产品`);
       requireText(item.governmentMallCatalog, `第 ${index + 1} 条是否属于网上商城目录`);
       if (item.governmentMallCatalog === '是') {

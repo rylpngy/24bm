@@ -22,10 +22,15 @@ type FieldDefinition = {
 };
 
 const agree = ['同意', '不同意'];
-const budgetStatuses = [
+export const financeBudgetStatuses = [
   '本项目已列入本年度学校预算',
   '本项目年初无预算，现已办理预算追加手续',
   '本项目本年度无预算，已列入下一年度预算',
+];
+export const procurementBudgetStatuses = [
+  '本项目已列入本年度采购预算',
+  '本项目年初无采购预算，现已办理采购预算追加手续',
+  '本项目本年度无采购预算，已列入下一年度采购预算',
 ];
 
 const nodeForms: Record<string, { title: string; fields: FieldDefinition[] }> = {
@@ -92,11 +97,11 @@ const nodeForms: Record<string, { title: string; fields: FieldDefinition[] }> = 
     { id: 'schoolLeaderComment', label: '批示意见', type: 'textarea' },
   ] },
   finance_budget_review: { title: '财务预算办公室审核', fields: [
-    { id: 'financeBudgetStatus', label: '预算审查情况', type: 'select', options: budgetStatuses, required: true },
+    { id: 'financeBudgetStatus', label: '预算审查情况', type: 'select', options: financeBudgetStatuses, required: true },
     { id: 'financeBudgetOpinion', label: '财务预算补充意见', type: 'textarea' },
   ] },
   procurement_budget_review: { title: '采购预算办公室审核', fields: [
-    { id: 'procurementBudgetStatus', label: '采购预算审查情况', type: 'select', options: budgetStatuses, required: true },
+    { id: 'procurementBudgetStatus', label: '采购预算审查情况', type: 'select', options: procurementBudgetStatuses, required: true },
     { id: 'procurementBudgetOpinion', label: '采购预算补充意见', type: 'textarea' },
   ] },
   handover_submit: { title: '申请材料提交确认', fields: [
@@ -460,7 +465,7 @@ function Snapshot({ app }: { app?: LudongApplication }) {
       <div className="space-y-2">{app.items.map((item, index) => <div key={`${item.materialId || item.name}-${index}`} className="rounded-lg border border-slate-200 bg-white p-3">
         <div className="flex flex-wrap items-center gap-2"><b className="text-xs text-slate-900">{index + 1}. {item.name || '未填写设备名称'}</b>{item.coreProduct === '是' && <StatusPill label="核心产品" />}{item.governmentMallCatalog === '是' && <StatusPill label="网上商城目录" />}</div>
         <p className="mt-2 text-xs font-bold leading-5 text-slate-600">数量 {item.quantity || '—'} {item.unit || ''} · 单价 ¥{Number(item.unitPrice || 0).toLocaleString('zh-CN')} · 小计 ¥{Number(item.totalPrice || 0).toLocaleString('zh-CN')} · 是否进口 {item.imported || '—'} · 使用方向 {item.usageDirection || '—'}</p>
-        <p className="mt-1 text-xs font-bold leading-5 text-slate-500">技术参数：{item.technicalParameters || '未填写'}；参考品牌/型号：{item.referenceBrands || '未填写'}；用途：{item.purpose || '未填写'}；使用人：{item.userName || '未填写'}；安装地点：{item.installationLocation || '未填写'}{item.imported === '是' ? `；预计供货期：${item.importLeadTime || '未填写'}` : ''}</p>
+        <p className="mt-1 text-xs font-bold leading-5 text-slate-500">技术参数：{item.technicalParameters || '未填写'}；参考品牌/型号：{item.referenceBrands || '未填写'}；用途：{item.purpose || '未填写'}；使用人：{item.userName || '未填写'}；存放地点：{item.installationLocation || '未填写'}{item.imported === '是' ? `；预计供货期：${item.importLeadTime || '未填写'}` : ''}</p>
         {item.governmentMallCatalog === '是' && <p className="mt-1 text-xs font-bold leading-5 text-blue-700">商城确认：{item.selectedBrand || '未填写品牌'} / {item.selectedModel || '未填写型号'} · {item.selectedSupplier || '未填写供应商'} · ¥{Number(item.selectedUnitPrice || 0).toLocaleString('zh-CN')}</p>}
       </div>)}</div>
     </div>

@@ -42,10 +42,14 @@ public class LudongPocDocumentService {
   private static final TypeReference<List<Map<String, Object>>> ITEMS_TYPE = new TypeReference<>() {};
   private static final List<String> YES_NO_OPTIONS = List.of("是", "否");
   private static final List<String> APPROVAL_OPTIONS = List.of("同意", "不同意");
-  private static final List<String> BUDGET_STATUS_OPTIONS = List.of(
+  private static final List<String> FINANCE_BUDGET_STATUS_OPTIONS = List.of(
       "本项目已列入本年度学校预算",
       "本项目年初无预算，现已办理预算追加手续",
       "本项目本年度无预算，已列入下一年度预算");
+  private static final List<String> PROCUREMENT_BUDGET_STATUS_OPTIONS = List.of(
+      "本项目已列入本年度采购预算",
+      "本项目年初无采购预算，现已办理采购预算追加手续",
+      "本项目本年度无采购预算，已列入下一年度采购预算");
   private static final List<String> SHARING_OPTIONS = List.of("同意共享", "不同意共享", "不涉及");
   private static final List<String> HANDOVER_ACCEPTANCE_OPTIONS = List.of(
       "材料齐全，确认受理", "材料不齐，退回补充");
@@ -198,11 +202,11 @@ public class LudongPocDocumentService {
     try (XWPFDocument document = openTemplate("purchase-demand-goods.docx")) {
       replace(document, "项目负责人签字：", "项目负责人签字：" + value(data, "projectLeaderName")
           + "    负责人联系电话：" + value(data, "projectLeaderPhone")
-          + "    技术负责人：" + value(data, "technicalLeaderName")
-          + "（线上确认：" + signatures.getOrDefault("technical_leader_review", "") + "）"
-          + "    日期：" + LocalDate.now());
-      replace(document, "参与编制人员：", "参与编制人员：" + value(data, "participants")
-          + "    线上确认：" + signatures.getOrDefault("compilation_participant_review", ""));
+          + "    日期：" + LocalDate.now()
+          + "\n技术负责人：" + signatureOrValue(
+              signatures, "technical_leader_review", data, "technicalLeaderName"));
+      replace(document, "参与编制人员：", "参与编制人员：" + signatureOrValue(
+          signatures, "compilation_participant_review", data, "participants"));
       replace(document, "1.项目名称", "1.项目名称  " + application.projectName()
           + "    预算金额：" + application.budgetAmount().stripTrailingZeros().toPlainString() + " 元");
       replace(document, "2.是否适宜由中小企业", choice(
@@ -246,6 +250,7 @@ public class LudongPocDocumentService {
       replace(document, "4.其他补充事宜", "4.其他补充事宜：" + value(data, "otherNotes"));
       replace(document, "单位负责人（签字）：", "单位负责人（签字）：" + signatures.getOrDefault("unit_review", "")
           + "    申报单位（盖章）：" + application.applicantUnit());
+      optimizeDocumentLayout(document);
       return write(document);
     } catch (Exception exception) {
       throw new IllegalStateException("无法生成采购需求表", exception);
@@ -271,20 +276,14 @@ public class LudongPocDocumentService {
       set(main, 1, 4, value(data, "fundingProjectName") + "\n经费来源：" + value(data, "fundingSource"));
       set(main, 2, 4, value(data, "fundingProjectNo"));
       set(main, 3, 2, value(data, "projectLeaderName"));
-      set(main, 3, 5, value(data, "technicalLeaderName")
-          + "\n线上确认：" + signatures.getOrDefault("technical_leader_review", ""));
+      set(main, 3, 5, signatureOrValue(
+          signatures, "technical_leader_review", data, "technicalLeaderName"));
       set(main, 4, 2, value(data, "projectLeaderPhone"));
       set(main, 4, 5, value(data, "technicalLeaderPhone"));
       set(main, 5, 1, "申报人购置理由及必要性：" + value(data, "purchaseReason")
           + "\n论证人审核：" + choice("论证结论", value(data, "argumentationOpinion"), APPROVAL_OPTIONS, 0)
-          + "\n补充意见：" + value(data, "argumentationComment")
-          + "\n论证人（签字）：" + signatures.getOrDefault("argumentation_review", "")
-          + "\n" + choice("技术负责人确认", value(data, "technicalLeaderOpinion"), APPROVAL_OPTIONS, 0)
-          + "；签字：" + signatures.getOrDefault("technical_leader_review", "")
-          + "\n" + choice("参与编制人员确认", value(data, "compilationParticipantOpinion"), APPROVAL_OPTIONS, 0)
-          + "；签字：" + signatures.getOrDefault("compilation_participant_review", "")
-          + "\n" + choice("网上商城选型确认", value(data, "mallSelectionParticipantOpinion"), APPROVAL_OPTIONS, 0)
-          + "；签字：" + signatures.getOrDefault("mall_selection_participant_review", ""));
+          + "\n论证意见：" + value(data, "argumentationComment")
+          + "\n论证人（签字）：" + signatures.getOrDefault("argumentation_review", ""));
       set(main, 6, 1, choice("教育信息技术部意见", value(data, "itReviewOpinion"), APPROVAL_OPTIONS, 0)
           + "\n补充意见：" + value(data, "itReviewComment")
           + "\n单位负责人（签字）：" + signatures.getOrDefault("it_review", ""));
@@ -319,10 +318,12 @@ public class LudongPocDocumentService {
           + "\n补充意见：" + value(data, "schoolLeaderComment")
           + "\n负责人（签字）："
           + signatures.getOrDefault("school_leader_review", ""));
-      set(main, 12, 1, choice("预算审查情况", value(data, "financeBudgetStatus"), BUDGET_STATUS_OPTIONS, 1)
+      set(main, 12, 1, choice("预算审查情况", value(data, "financeBudgetStatus"), FINANCE_BUDGET_STATUS_OPTIONS, 1)
           + "\n补充意见：" + value(data, "financeBudgetOpinion")
           + "\n负责人（签字）：" + signatures.getOrDefault("finance_budget_review", ""));
-      set(main, 13, 1, choice("采购预算审查情况", value(data, "procurementBudgetStatus"), BUDGET_STATUS_OPTIONS, 1)
+      set(main, 13, 1, choice("采购预算审查情况",
+          normalizeProcurementBudgetStatus(value(data, "procurementBudgetStatus")),
+          PROCUREMENT_BUDGET_STATUS_OPTIONS, 1)
           + "\n补充意见：" + value(data, "procurementBudgetOpinion")
           + "\n经办人（签字）：" + signatures.getOrDefault("procurement_budget_review", ""));
       set(main, 14, 1, "提交确认：" + value(data, "handoverSubmitConfirmation")
@@ -344,9 +345,9 @@ public class LudongPocDocumentService {
         main.getRow(row).setHeight(0);
         main.getRow(row).setHeightRule(TableRowHeightRule.AUTO);
       }
-      main.getRows().forEach(row -> row.setCantSplitRow(true));
       fillEquipmentTable(document.getTables().get(1), items);
       fillMallTable(document.getTables().get(2), items, signatures);
+      optimizeDocumentLayout(document);
       return write(document);
     } catch (Exception exception) {
       throw new IllegalStateException("无法生成项目采购及招标申请单", exception);
@@ -355,6 +356,8 @@ public class LudongPocDocumentService {
 
   private void fillEquipmentTable(XWPFTable table, List<Map<String, Object>> items) {
     table.getRow(0).setRepeatHeader(true);
+    set(table, 0, 10, "使用方向\n（教学、科研、行政办公）");
+    set(table, 0, 12, "存放地点");
     int count = Math.min(items.size(), table.getNumberOfRows() - 1);
     String[] keys = {"name", "quantity", "unitPrice", "totalPrice", "technicalParameters",
         "referenceBrands", "imported", "importLeadTime", "purpose", "usageDirection", "userName", "installationLocation"};
@@ -389,8 +392,8 @@ public class LudongPocDocumentService {
           + "\n联系电话：" + value(item, "supplierPhone") + "\n产品链接：" + value(item, "productLink"));
       set(table, row, 7, value(item, "selectedParameters"));
       set(table, row, 8, value(item, "selectedUnitPrice"));
-      set(table, row, 9, value(item, "selectionParticipants")
-          + "\n线上确认：" + signatures.getOrDefault("mall_selection_participant_review", ""));
+      set(table, row, 9, signatureOrValue(
+          signatures, "mall_selection_participant_review", item, "selectionParticipants"));
     }
     removeUnusedRows(table, count + 1);
   }
@@ -468,6 +471,9 @@ public class LudongPocDocumentService {
     if (row >= table.getNumberOfRows() || col >= table.getRow(row).getTableCells().size()) return;
     XWPFTableCell cell = table.getRow(row).getCell(col);
     if (cell == null) return;
+    if (cell.getCTTc().getTcPr() != null && cell.getCTTc().getTcPr().isSetNoWrap()) {
+      cell.getCTTc().getTcPr().unsetNoWrap();
+    }
     XWPFParagraph paragraph = cell.getParagraphs().isEmpty() ? cell.addParagraph() : cell.getParagraphs().get(0);
     setParagraph(paragraph, text, 8.5);
     while (cell.getParagraphs().size() > 1) {
@@ -482,11 +488,52 @@ public class LudongPocDocumentService {
     paragraph.setSpacingBefore(0);
     paragraph.setSpacingAfter(0);
     paragraph.setSpacingBetween(1.0);
+    paragraph.setWordWrapped(true);
     XWPFRun run = paragraph.createRun();
     applyArchiveFont(run);
     run.setColor("000000");
     run.setFontSize(fontSize);
-    run.setText(text == null ? "" : text);
+    String[] lines = (text == null ? "" : text).split("\\R", -1);
+    for (int index = 0; index < lines.length; index++) {
+      if (index > 0) {
+        run.addBreak();
+      }
+      run.setText(lines[index]);
+    }
+  }
+
+  private static void optimizeDocumentLayout(XWPFDocument document) {
+    for (XWPFTable table : document.getTables()) {
+      table.getRows().forEach(row -> {
+        row.setHeight(0);
+        row.setHeightRule(TableRowHeightRule.AUTO);
+        row.setCantSplitRow(true);
+        row.getTableCells().forEach(cell -> {
+          if (cell.getCTTc().getTcPr() != null && cell.getCTTc().getTcPr().isSetNoWrap()) {
+            cell.getCTTc().getTcPr().unsetNoWrap();
+          }
+          cell.getParagraphs().forEach(paragraph -> paragraph.setWordWrapped(true));
+        });
+      });
+    }
+  }
+
+  private static String signatureOrValue(
+      Map<String, String> signatures, String nodeId, Map<String, Object> data, String field) {
+    String signature = signatures.getOrDefault(nodeId, "").trim();
+    return signature.isBlank() ? value(data, field) : signature;
+  }
+
+  private static String normalizeProcurementBudgetStatus(String selected) {
+    return switch (selected == null ? "" : selected.trim()) {
+      case "本项目已列入本年度学校预算", "本项目已列入本年度预算" ->
+          "本项目已列入本年度采购预算";
+      case "本项目年初无预算，现已办理预算追加手续" ->
+          "本项目年初无采购预算，现已办理采购预算追加手续";
+      case "本项目本年度无预算，已列入下一年度预算" ->
+          "本项目本年度无采购预算，已列入下一年度采购预算";
+      default -> selected == null ? "" : selected.trim();
+    };
   }
 
   private static void applyArchiveFont(XWPFRun run) {
