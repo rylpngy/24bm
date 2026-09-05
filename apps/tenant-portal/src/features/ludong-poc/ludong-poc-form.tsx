@@ -4,6 +4,9 @@ import { FeedbackNotice, PageHeader, PrimaryActionButton, SectionCard, cn } from
 import { ClipboardList, GitBranch, ListChecks, RotateCcw, Save, WalletCards } from 'lucide-react';
 import { defaultFormData, emptyItem, type LudongApplication, type LudongItem } from './api';
 import { inferGovernmentMallCatalog, LudongPocMaterialItemsEditor } from './ludong-poc-material-items-editor';
+import {
+  acceptanceStandardTemplate, otherTechnicalRequirementsTemplate, requirementSupplement,
+} from './ludong-poc-requirement-templates';
 
 export interface LudongFormPayload {
   projectName: string;
@@ -41,6 +44,10 @@ export function LudongPocForm({
   const [showValidation, setShowValidation] = useState(false);
   const [formData, setFormData] = useState<Record<string, string>>(() => {
     const data = { ...defaultFormData, ...initial?.formData };
+    data.acceptanceStandard = requirementSupplement(acceptanceStandardTemplate, data.acceptanceStandard);
+    data.otherTechnicalRequirements = requirementSupplement(
+      otherTechnicalRequirementsTemplate, data.otherTechnicalRequirements,
+    );
     if (!data.fundingUnitId && initial?.departmentId) {
       data.fundingUnitId = initial.departmentId;
       data.fundingUnitName = initial.applicantUnit;
@@ -251,8 +258,18 @@ export function LudongPocForm({
           <Field label="国产设备及服务付款方式"><textarea className={textareaClass} value={formData.domesticPaymentTerms} onChange={(e) => update('domesticPaymentTerms', e.target.value)} /><span className="mt-1.5 block text-[11px] font-bold text-amber-700">仅供参考，可按实际需求修改。</span></Field>
           <Field label="进口设备付款方式"><textarea className={textareaClass} value={formData.importPaymentTerms} onChange={(e) => update('importPaymentTerms', e.target.value)} /><span className="mt-1.5 block text-[11px] font-bold text-amber-700">仅供参考，可按实际需求修改。</span></Field>
           <Field label="售后服务要求"><textarea className={textareaClass} value={formData.afterSalesRequirement} onChange={(e) => update('afterSalesRequirement', e.target.value)} /></Field>
-          <Field label="验收标准" required className="md:col-span-2"><textarea className={textareaClass} value={formData.acceptanceStandard} onChange={(e) => update('acceptanceStandard', e.target.value)} /></Field>
-          <Field label="其他技术与服务要求" className="md:col-span-2"><textarea className={textareaClass} value={formData.otherTechnicalRequirements} onChange={(e) => update('otherTechnicalRequirements', e.target.value)} /></Field>
+          <FixedTemplateRequirement
+            label="验收标准"
+            template={acceptanceStandardTemplate}
+            supplement={formData.acceptanceStandard}
+            onChange={(value) => update('acceptanceStandard', value)}
+          />
+          <FixedTemplateRequirement
+            label="其他技术与服务要求"
+            template={[otherTechnicalRequirementsTemplate]}
+            supplement={formData.otherTechnicalRequirements}
+            onChange={(value) => update('otherTechnicalRequirements', value)}
+          />
         </div>
       </SectionCard>
 
@@ -356,7 +373,6 @@ export function getMissingRequiredFields({
   requireText(formData.utilitiesReady, '水电暖气等条件是否满足');
   if (!(Number(formData.deliveryDays) > 0)) missing.push('交付天数');
   if (!(Number(formData.warrantyYears) > 0)) missing.push('质量保证期');
-  requireText(formData.acceptanceStandard, '验收标准');
   requireText(formData.siteVisitRequired, '是否需要现场勘查');
   if (formData.siteVisitRequired === '是') {
     requireText(formData.siteVisitTime, '勘查时间');
@@ -401,6 +417,24 @@ export function getMissingRequiredFields({
     if (coreProducts.length !== 1) missing.push(coreProducts.length ? '只能标注一个核心产品' : '请标注一个核心产品');
   }
   return missing;
+}
+
+function FixedTemplateRequirement({
+  label, template, supplement, onChange,
+}: {
+  label: string;
+  template: readonly string[];
+  supplement: string;
+  onChange: (value: string) => void;
+}) {
+  return <div className="md:col-span-2">
+    <span className="mb-2 block text-xs font-black text-slate-700">{label}</span>
+    <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+      <div className="flex items-center justify-between gap-3"><p className="text-xs font-black text-slate-800">模板固定内容</p><span className="rounded-md bg-slate-200/70 px-2 py-1 text-[10px] font-black text-slate-600">不可删除</span></div>
+      <div className="mt-2 space-y-2">{template.map((line) => <p key={line} className="text-xs font-bold leading-6 text-slate-600">{line}</p>)}</div>
+    </div>
+    <label className="mt-3 block"><span className="mb-2 block text-xs font-black text-slate-600">补充内容（可选）</span><textarea className={textareaClass} value={supplement} onChange={(event) => onChange(event.target.value)} placeholder={`可结合本项目实际情况补充${label}`} /></label>
+  </div>;
 }
 
 export function calculateApplicationBudget(items: LudongItem[]) {

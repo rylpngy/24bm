@@ -310,8 +310,7 @@ public class LudongPocApplicationService {
         Map.entry("utilitiesReady", "水电暖气等条件是否满足"),
         Map.entry("deliveryDays", "交付天数"),
         Map.entry("coreProduct", "核心产品"),
-        Map.entry("warrantyYears", "质量保证期"),
-        Map.entry("acceptanceStandard", "验收标准"));
+        Map.entry("warrantyYears", "质量保证期"));
     for (Map.Entry<String, String> field : requiredFields.entrySet()) {
       Object value = formData.get(field.getKey());
       if (value == null || String.valueOf(value).isBlank()) {

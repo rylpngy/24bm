@@ -49,7 +49,6 @@ describe('getMissingRequiredFields', () => {
         utilitiesReady: '是',
         deliveryDays: '30',
         warrantyYears: '3',
-        acceptanceStandard: '按合同和采购文件验收',
         siteVisitRequired: '否',
         sampleRequired: '否',
         demoRequired: '否',
@@ -74,6 +73,15 @@ describe('getMissingRequiredFields', () => {
     });
 
     expect(missing).toEqual([]);
+  });
+
+  it('treats the fixed acceptance template as complete without requiring a supplement', () => {
+    const formData = { ...defaultFormData, acceptanceStandard: '' };
+    const missing = getMissingRequiredFields({
+      projectName: '', applicantUnit: '', departmentId: '', formData, items: [],
+    });
+
+    expect(missing).not.toContain('验收标准');
   });
 
   it('allows a catalog-external item and reports its missing market-research fields', () => {

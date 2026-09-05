@@ -23,6 +23,7 @@ import { TeamPage } from '../team/team-page';
 import { LudongPocLogin } from './ludong-poc-login';
 import { LudongPocForm, type LudongFormPayload } from './ludong-poc-form';
 import { LudongPocArchiveMaterials } from './ludong-poc-archive-materials';
+import { LudongPocApplicationSnapshot } from './ludong-poc-application-snapshot';
 import { createTaskReviewData, LudongPocApprovalDialog } from './ludong-poc-approval-dialog';
 import { ludongApi, type LudongApplication, type WorkflowHistory, type WorkflowTask } from './api';
 import { availableReportYears, buildLudongAnalytics, type ReportPeriod } from './ludong-poc-analytics';
@@ -388,16 +389,9 @@ function ApplicationDetail({ application, onBack }: { application: LudongApplica
       ]} />
       <div className="grid gap-5 xl:grid-cols-[1.5fr_.85fr]">
         <div className="space-y-5">
-          <SectionCard title="项目基础信息" icon={ClipboardList}><InfoGrid items={[
-            ['申报编号', app.applicationNo], ['申报单位', app.applicantUnit], ['经费项目', app.formData.fundingProjectName || '—'], ['经费项目编号', app.formData.fundingProjectNo || '—'], ['项目负责人', app.formData.projectLeaderName || '—'], ['联系电话', app.formData.projectLeaderPhone || '—'],
-          ]} /></SectionCard>
-          <SectionCard title="拟采购设备清单" icon={WalletCards} extra={<StatusPill label={`${app.items.length} 项`} />}><div className="space-y-3">{app.items.map((item, index) => (
-            <div key={`${item.name}-${index}`} className="grid min-w-0 gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-4 md:grid-cols-[2rem_minmax(0,1fr)_7rem_9rem] md:items-center"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-black text-white">{index + 1}</span><div className="min-w-0"><p className="truncate text-sm font-black text-slate-950">{item.name}</p><p className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-slate-500">{item.technicalParameters || item.purpose || '未填写用途或技术参数'}</p></div><p className="text-xs font-bold text-slate-600">数量 {item.quantity}</p><p className="font-mono text-sm font-black text-slate-950">{Number(item.totalPrice || 0) > 0 ? currency(Number(item.totalPrice)) : '论证后核价'}</p></div>
-          ))}</div></SectionCard>
-          <SectionCard title="采购需求摘要" icon={FileText}><InfoGrid items={[
-            ['采购目标', app.formData.procurementGoal || '—'], ['实施地点', app.formData.implementationLocation || '—'], ['核心产品', app.formData.coreProduct || '—'], ['交付期限', `${app.formData.deliveryDays || '—'} 天`], ['质保期', `${app.formData.warrantyYears || '—'} 年`], ['验收标准', app.formData.acceptanceStandard || '—'],
-          ]} /></SectionCard>
-          <ApprovalSummary app={app} />
+          <SectionCard title="项目申报与审批详情" icon={ClipboardList} extra={<StatusPill label="完整材料" />}>
+            <LudongPocApplicationSnapshot app={app} />
+          </SectionCard>
         </div>
         <div className="space-y-5">
           <WorkflowCard history={history.data} loading={history.isLoading} />
@@ -638,31 +632,6 @@ function WorkflowCard({ history, loading }: { history?: WorkflowHistory | null; 
   );
 }
 
-function ApprovalSummary({ app }: { app: LudongApplication }) {
-  const allFields: [string, string][] = [
-    ['购置必要性论证', app.formData.argumentationOpinion],
-    ['教育信息技术部意见', app.formData.itReviewOpinion],
-    ['申报单位意见', app.formData.applicantUnitOpinion],
-    ['经费主管单位意见', app.formData.fundingUnitOpinion],
-    ['资产配置审核', app.formData.assetConfigurationOpinion],
-    ['资产处分管领导', app.formData.assetDivisionLeaderOpinion],
-    ['资产处单位负责人', app.formData.assetUnitLeaderOpinion],
-    ['实验室管理处审核', app.formData.labReviewOpinion],
-    ['实验室处分管领导', app.formData.labDivisionLeaderOpinion],
-    ['实验室处单位负责人', app.formData.labUnitLeaderOpinion],
-    ['分管校领导意见', app.formData.schoolLeaderOpinion],
-    ['财务预算审查', app.formData.financeBudgetStatus],
-    ['采购预算审查', app.formData.procurementBudgetStatus],
-    ['申请材料提交', app.formData.handoverSubmitConfirmation],
-    ['申请材料受理', app.formData.handoverAcceptance],
-    ['批准采购方式', app.formData.procurementMethod],
-    ['财经处负责人终审', app.formData.financeResponsibleOpinion],
-  ];
-  const fields = allFields.filter(([, value]) => Boolean(value));
-  if (!fields.length) return null;
-  return <SectionCard title="审批结果汇总" icon={CheckCircle2} extra={<StatusPill label={`已完成 ${fields.length} 项`} />}><InfoGrid items={fields} /></SectionCard>;
-}
-
 function RouteDecisionSummary({ app }: { app: LudongApplication }) {
   const decisions = [
     ['requiresItReview', '涉及信创产品'],
@@ -717,7 +686,6 @@ function workflowProgressMeta(node: WorkflowProgressNode, workflowStatus: string
       return { label: '未开始', description: workflowStatus.toUpperCase() === 'REJECTED' ? '流程已驳回，本节点尚未进入' : '待前序审批节点完成后进入', markerClass: 'border-slate-200 bg-white text-slate-400', badgeClass: 'bg-slate-50 text-slate-500' };
   }
 }
-function InfoGrid({ items }: { items: [string, string][] }) { return <dl className="grid gap-4 sm:grid-cols-2">{items.map(([label, value]) => <div key={label} className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/60 p-3"><dt className="text-[11px] font-black text-slate-400">{label}</dt><dd className="mt-1.5 break-words text-sm font-bold leading-6 text-slate-800">{value}</dd></div>)}</dl>; }
 function InfoCell({ label, value }: { label: string; value: string }) { return <div className="min-w-0"><p className="text-[10px] font-black text-slate-400">{label}</p><p className="mt-1 truncate font-black text-slate-800">{value}</p></div>; }
 function DocumentRow({ name, ready }: { name: string; ready: boolean }) { return <div className="flex min-w-0 items-center gap-3 rounded-lg border border-slate-200 px-3 py-3"><FileText size={17} className="shrink-0 text-blue-600" /><p className="min-w-0 flex-1 truncate text-xs font-black text-slate-800">{name}</p><StatusPill label={ready ? '可下载' : '审批后生成'} /></div>; }
 function currency(value?: number) {

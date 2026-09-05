@@ -55,6 +55,12 @@ public class LudongPocDocumentService {
       "材料齐全，确认受理", "材料不齐，退回补充");
   private static final List<String> PROCUREMENT_METHOD_OPTIONS = List.of(
       "公开招标", "邀请招标", "竞争性谈判", "竞争性磋商", "单一来源采购", "询价");
+  private static final String ACCEPTANCE_STANDARD_TEMPLATE =
+      "货物安装完成正常运行后，由供货商提出验收申请，项目单位同意后，按照学校验收的权限，相关部门及人员形成验收小组，验收小组根据采购文件、投标文件、合同等项目文件约定内容对项目进行综合运行验收。";
+  private static final String ACCEPTANCE_STANDARD_FOLLOWUP =
+      "如验收达不到规定要求，采购人有权要求更换货物或拒绝付款，成交供应商若违约，采购人将依法追究相应法律责任。";
+  private static final String OTHER_TECHNICAL_REQUIREMENTS_TEMPLATE =
+      "符合国家关于国产设备节能要求、强制采购要求和优先采购要求。";
 
   private final LudongPocApplicationService applicationService;
   private final UnifiedWorkflowApplicationService workflowService;
@@ -233,8 +239,10 @@ public class LudongPocDocumentService {
       replace(document, "国产设备及服务：", "国产设备及服务：" + value(data, "domesticPaymentTerms"));
       replace(document, "进口设备：", "进口设备：" + value(data, "importPaymentTerms"));
       replace(document, "需要有明确的售后服务方案", value(data, "afterSalesRequirement"));
-      replace(document, "货物安装完成正常运行后", value(data, "acceptanceStandard"));
-      replace(document, "符合国家关于国产设备", value(data, "otherTechnicalRequirements"));
+      replace(document, "货物安装完成正常运行后", withSupplement(
+          ACCEPTANCE_STANDARD_TEMPLATE, value(data, "acceptanceStandard"), ACCEPTANCE_STANDARD_FOLLOWUP));
+      replace(document, "符合国家关于国产设备", withSupplement(
+          OTHER_TECHNICAL_REQUIREMENTS_TEMPLATE, value(data, "otherTechnicalRequirements")));
       replace(document, "1.是否需要进行现场勘查", choice(
           "1.是否需要进行现场勘查", value(data, "siteVisitRequired"), YES_NO_OPTIONS, 0)
           + "    勘查时间：" + value(data, "siteVisitTime"));
@@ -545,6 +553,18 @@ public class LudongPocDocumentService {
   private static String value(Map<String, Object> data, String key) {
     Object value = data.get(key);
     return value == null ? "" : String.valueOf(value);
+  }
+
+  private static String withSupplement(String fixedText, String supplement, String... otherFixedTexts) {
+    String additional = supplement == null ? "" : supplement.trim();
+    additional = additional.replace(fixedText, "").trim();
+    for (String otherFixedText : otherFixedTexts) {
+      additional = additional.replace(otherFixedText, "").trim();
+    }
+    if (additional.startsWith("申报补充：")) {
+      additional = additional.substring(5).trim();
+    }
+    return additional.isBlank() ? fixedText : fixedText + "\n申报补充：" + additional;
   }
 
   private static String choice(
