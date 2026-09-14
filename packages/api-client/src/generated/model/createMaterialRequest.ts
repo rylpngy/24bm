@@ -14,6 +14,7 @@ export interface CreateMaterialRequest {
   referencePrice?: number;
   specification?: string;
   brand?: string;
+  governmentMallCatalog?: boolean;
   taxRate?: number;
   description?: string;
 }

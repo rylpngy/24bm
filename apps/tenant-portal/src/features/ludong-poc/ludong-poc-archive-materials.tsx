@@ -153,7 +153,7 @@ export function LudongPocArchiveMaterials({
       {!query.isLoading && materials.length === 0 && (
         <EmptyState
           title="尚未归集原始材料"
-          description="请上传项目附件、配置标准和商城确认材料，补充证明可按项目实际情况上传。"
+          description="请上传项目附件和商城确认材料，补充证明可按项目实际情况上传。"
           icon={FileText}
         />
       )}

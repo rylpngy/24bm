@@ -1,0 +1,11 @@
+.env
+data/postgres/*
+!data/postgres/.gitkeep
+data/minio/*
+!data/minio/.gitkeep
+images/*
+!images/.gitkeep
+state/
+.pack.*
+*.tar.gz
+*.tar.gz.sha256

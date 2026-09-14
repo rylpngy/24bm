@@ -1,0 +1,9 @@
+[env]
+DEPLOY_TARGET = "ludong-prod"
+DEPLOY_ALLOWED_BRANCH = "codex/ludong-poc-catalog-ai-manual"
+DEPLOY_REMOTE_HOST = "root@8.146.230.159"
+DEPLOY_REMOTE_PORT = "22"
+DEPLOY_REMOTE_DIR = "/var/www/ludongdemo.24bid.cn/current"
+DEPLOY_EXPECTED_HOST = "ludongdemo.24bid.cn"
+DEPLOY_STARTUP_TIMEOUT = "180"
+DEPLOY_IMAGE_TAG_PREFIX = "poc"

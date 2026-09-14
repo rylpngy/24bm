@@ -22,7 +22,7 @@ const LUDONG_WORKFLOW_STEPS: WorkflowStepDefinition[] = [
   { id: 'mall_selection_participant_review', title: '网上商城选型参与人确认' },
   { id: 'it_review', title: '教育信息技术部审核', applies: flag('requiresItReview', '是') },
   { id: 'unit_review', title: '申报单位负责人审核' },
-  { id: 'funding_review', title: '经费主管单位负责人审核', applies: flag('sameFundingUnit', '否') },
+  { id: 'funding_review', title: '经费主管单位负责人审核' },
   { id: 'asset_configuration_review', title: '资产处配置审核', applies: flag('requiresAssetReview', '是') },
   { id: 'asset_division_leader_review', title: '资产处分管领导审核', applies: flag('requiresAssetReview', '是') },
   { id: 'asset_unit_leader_review', title: '资产处单位负责人审核', applies: flag('requiresAssetReview', '是') },
@@ -59,9 +59,6 @@ export function buildLudongWorkflowProgress(history?: WorkflowHistory | null): W
     if (event?.action === 'rejected') return { ...step, status: 'rejected', event };
     if (event?.action === 'approved') {
       return { ...step, status: event.comment?.includes('自动复用结论') ? 'reused' : 'completed', event };
-    }
-    if (step.id === 'funding_review' && formData.sameFundingUnit === '是') {
-      return { ...step, status: 'reused' };
     }
     if (step.applies && !step.applies(formData)) return { ...step, status: 'skipped' };
     if (step.id === currentNodeId) return { ...step, status: 'current', event: arrivals.get(step.id) };

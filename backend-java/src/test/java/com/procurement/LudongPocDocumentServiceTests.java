@@ -57,6 +57,10 @@ class LudongPocDocumentServiceTests {
     byte[] applicationDocument = service.generate(APPLICATION_ID, LudongPocDocumentService.DocumentType.APPLICATION);
     String demandText = text(demandDocument);
     String applicationText = text(applicationDocument);
+    String mallConfirmationText = tableText(applicationDocument, 2);
+    String purchaseReasonCell = tableCellText(applicationDocument, 0, 5, 1);
+    String technicalLeaderCell = tableCellText(applicationDocument, 0, 3, 5);
+    String mallParticipantCell = tableCellText(applicationDocument, 2, 1, 9);
     Path qaDirectory = Path.of("target", "docx-qa");
     Files.createDirectories(qaDirectory);
     Files.write(qaDirectory.resolve("ludong-purchase-demand.docx"), demandDocument);
@@ -64,25 +68,40 @@ class LudongPocDocumentServiceTests {
 
     assertThat(demandText).contains(
         "智慧教室设备更新项目", "预算金额：320000 元", "项目负责人签字：王老师",
-        "参与编制人员：王老师、赵老师", "专门面向中小企业采购：☑ 是    ☐ 否",
+        "技术负责人：技术负责人（2026-08-28）",
+        "参与编制人员：参与编制确认人（2026-08-28）",
+        "专门面向中小企业采购：☑ 是    ☐ 否",
         "远程教学和课堂互动", "提升教学质量", "GB 4943.1", "学校设备技术规范",
         "南校区教学楼", "合同签订后 30 日内", "智慧教学终端", "3 年",
-        "安装调试完成后验收", "技术负责人", "参与编制确认人",
+        "货物安装完成正常运行后", "申报补充：安装调试完成后验收",
+        "符合国家关于国产设备节能要求", "申报补充：符合节能要求",
+        "技术负责人", "参与编制确认人",
         "单位负责人（签字）：申报单位负责人");
     assertThat(applicationText).contains(
         "智慧教室设备更新项目", "32", "年度教学经费", "教学条件改善专项",
-        "王老师", "赵老师", "购置必要性充分", "附件3配置标准", "☑ 同意", "☐ 不同意",
+        "王老师", "技术负责人（2026-08-28）", "购置必要性充分", "☑ 同意", "☐ 不同意",
         "教育信息技术部意见", "申报单位意见", "经费主管单位意见",
         "是否超价格上限：☐ 是    ☑ 否", "配置审核意见",
         "大型仪器设备共享审核", "分管校领导意见",
         "☑ 本项目已列入本年度学校预算",
         "☐ 本项目年初无预算，现已办理预算追加手续",
-        "☑ 本项目年初无预算，现已办理预算追加手续",
-        "☐ 本项目本年度无预算，已列入下一年度预算",
+        "☑ 本项目年初无采购预算，现已办理采购预算追加手续",
+        "☐ 本项目本年度无采购预算，已列入下一年度采购预算",
         "材料完整，确认提交", "材料齐全，确认受理",
         "☑ 公开招标", "☐ 邀请招标", "☐ 单一来源采购",
-        "负责人终审意见", "技术负责人确认", "参与编制人员确认", "网上商城选型确认",
-        "高性能教学终端", "国产处理器，32GB内存", "商城选型确认人", "申报单位负责人");
+        "负责人终审意见",
+        "高性能教学终端", "目录外专用实验装置", "国产处理器，32GB内存", "商城选型确认人", "申报单位负责人");
+    assertThat(purchaseReasonCell).contains(
+        "申报人购置理由及必要性：购置必要性充分",
+        "论证结论：☑ 同意    ☐ 不同意",
+        "论证意见：论证材料完整",
+        "论证人（签字）：论证人（2026-08-28）")
+        .doesNotContain("技术负责人确认", "参与编制人员确认", "网上商城选型确认");
+    assertThat(technicalLeaderCell).isEqualTo("技术负责人（2026-08-28）");
+    assertThat(mallParticipantCell).isEqualTo("商城选型确认人（2026-08-28）");
+    assertThat(mallConfirmationText).contains("高性能教学终端").doesNotContain("目录外专用实验装置");
+    assertTablesAllowWrapping(demandDocument);
+    assertTablesAllowWrapping(applicationDocument);
     assertThat(demandText).doesNotContain("驳回时的错误覆盖值");
     assertThat(applicationText).doesNotContain("驳回时的错误覆盖值");
   }
@@ -108,9 +127,12 @@ class LudongPocDocumentServiceTests {
         "预算审查情况", "☐ 本项目已列入本年度学校预算",
         "☐ 本项目年初无预算，现已办理预算追加手续",
         "☐ 本项目本年度无预算，已列入下一年度预算",
+        "采购预算审查情况", "☐ 本项目已列入本年度采购预算",
+        "☐ 本项目年初无采购预算，现已办理采购预算追加手续",
+        "☐ 本项目本年度无采购预算，已列入下一年度采购预算",
         "采购方式", "☐ 公开招标", "☐ 邀请招标", "☐ 竞争性谈判",
         "☐ 竞争性磋商", "☐ 单一来源采购", "☐ 询价",
-        "是否超价格上限：☐ 是    ☐ 否", "论证意见：☐ 同意    ☐ 不同意");
+        "是否超价格上限：☐ 是    ☐ 否", "论证结论：☐ 同意    ☐ 不同意");
   }
 
   @Test
@@ -155,15 +177,13 @@ class LudongPocDocumentServiceTests {
         "01-生成表格/01-采购需求表（货物类）.docx",
         "01-生成表格/02-货物类项目采购及招标申请单、受理单.docx",
         "02-项目附件/01-项目附件.pdf",
-        "03-配置标准/01-配置标准.pdf",
-        "04-商城确认材料/01-商城确认材料.pdf",
-        "05-补充证明/01-补充证明.pdf");
+        "03-商城确认材料/01-商城确认材料.pdf",
+        "04-补充证明/01-补充证明.pdf");
     String manifest = new String(
         entries.get("00-归档材料清单.txt"), java.nio.charset.StandardCharsets.UTF_8);
     assertThat(manifest).contains(
         "鲁东大学货物类采购申报归档材料清单",
         "项目附件：1 份（应归档）",
-        "配置标准：1 份（应归档）",
         "商城确认材料：1 份（应归档）",
         "补充证明：1 份（按需归档）",
         "SHA-256:");
@@ -184,6 +204,7 @@ class LudongPocDocumentServiceTests {
     form.put("microSuitable", "否");
     form.put("procurementFunction", "远程教学和课堂互动");
     form.put("procurementGoal", "提升教学质量");
+    form.put("purchaseReason", "购置必要性充分");
     form.put("mandatoryStandards", "GB 4943.1");
     form.put("otherStandards", "学校设备技术规范");
     form.put("supplierQualifications", "依法登记并具备履约能力");
@@ -209,17 +230,26 @@ class LudongPocDocumentServiceTests {
     form.put("otherNotes", "无其他事项");
     List<Map<String, Object>> items = List.of(Map.ofEntries(
         Map.entry("name", "高性能教学终端"), Map.entry("quantity", "10"),
+        Map.entry("governmentMallCatalog", "是"),
         Map.entry("unitPrice", "32000"), Map.entry("totalPrice", "320000"),
         Map.entry("technicalParameters", "国产处理器，32GB内存"),
         Map.entry("referenceBrands", "品牌甲、品牌乙、品牌丙"), Map.entry("imported", "否"),
         Map.entry("importLeadTime", ""), Map.entry("purpose", "智慧教学"),
         Map.entry("usageDirection", "教学"), Map.entry("userName", "王老师"),
-        Map.entry("installationLocation", "南校区教学楼"), Map.entry("configurationLimit", "32000"),
+        Map.entry("installationLocation", "南校区教学楼"), Map.entry("standardUnitPrice", "32000"),
         Map.entry("selectedBrand", "品牌甲"), Map.entry("selectedModel", "A1"),
         Map.entry("selectedSupplier", "测试供应商"), Map.entry("supplierContact", "李经理"),
         Map.entry("supplierPhone", "13900000001"), Map.entry("productLink", "https://example.test/a1"),
         Map.entry("selectedParameters", "国产处理器，32GB内存"),
-        Map.entry("selectedUnitPrice", "31800"), Map.entry("selectionParticipants", "王老师、赵老师、李老师")));
+        Map.entry("selectedUnitPrice", "31800"), Map.entry("selectionParticipants", "王老师、赵老师、李老师")),
+        Map.ofEntries(
+            Map.entry("name", "目录外专用实验装置"), Map.entry("quantity", "1"),
+            Map.entry("governmentMallCatalog", "否"), Map.entry("unitPrice", "0"),
+            Map.entry("totalPrice", "0"), Map.entry("technicalParameters", "定制实验参数"),
+            Map.entry("referenceBrands", "无"), Map.entry("imported", "否"),
+            Map.entry("importLeadTime", ""), Map.entry("purpose", "实验教学"),
+            Map.entry("usageDirection", "教学"), Map.entry("userName", "王老师"),
+            Map.entry("installationLocation", "实验楼")));
     return new LudongPocApplication(
         APPLICATION_ID, TENANT_ID, "LDU-2026-001", "智慧教室设备更新项目", "教务处", "dept-jwc",
         new BigDecimal("320000"), "approved", objectMapper.writeValueAsString(form),
@@ -230,7 +260,6 @@ class LudongPocDocumentServiceTests {
   private static List<LudongPocReviewRecord> reviews(ObjectMapper objectMapper) throws Exception {
     List<LudongPocReviewRecord> result = new ArrayList<>();
     result.add(review(objectMapper, "argumentation_review", "approve", Map.of(
-        "purchaseReason", "购置必要性充分", "configurationStandard", "附件3配置标准",
         "argumentationOpinion", "同意", "argumentationComment", "论证材料完整")));
     result.add(review(objectMapper, "technical_leader_review", "approve", Map.of(
         "technicalLeaderOpinion", "同意")));
@@ -312,6 +341,37 @@ class LudongPocDocumentServiceTests {
         table.getRows().forEach(row -> row.getTableCells().forEach(cell -> result.append(cell.getText()).append('\n')));
       }
       return result.toString();
+    }
+  }
+
+  private static String tableText(byte[] documentBytes, int tableIndex) throws Exception {
+    try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(documentBytes))) {
+      StringBuilder result = new StringBuilder();
+      document.getTables().get(tableIndex).getRows()
+          .forEach(row -> row.getTableCells().forEach(cell -> result.append(cell.getText()).append('\n')));
+      return result.toString();
+    }
+  }
+
+  private static String tableCellText(
+      byte[] documentBytes, int tableIndex, int rowIndex, int cellIndex) throws Exception {
+    try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(documentBytes))) {
+      return document.getTables().get(tableIndex).getRow(rowIndex).getCell(cellIndex).getText();
+    }
+  }
+
+  private static void assertTablesAllowWrapping(byte[] documentBytes) throws Exception {
+    try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(documentBytes))) {
+      for (XWPFTable table : document.getTables()) {
+        table.getRows().forEach(row -> {
+          assertThat(row.isCantSplitRow()).isTrue();
+          row.getTableCells().forEach(cell -> {
+            boolean noWrap = cell.getCTTc().getTcPr() != null
+                && cell.getCTTc().getTcPr().isSetNoWrap();
+            assertThat(noWrap).isFalse();
+          });
+        });
+      }
     }
   }
 

@@ -14,12 +14,12 @@ public interface MaterialMapper {
 
   String COLUMNS =
       "id, tenant_id, code, name, category, unit, reference_price,"
-          + " specification, brand, tax_rate, description";
+          + " specification, brand, government_mall_catalog, tax_rate, description";
 
   @Select("""
       <script>
       select id, tenant_id, code, name, category, unit, reference_price,
-             specification, brand, tax_rate, description
+             specification, brand, government_mall_catalog, tax_rate, description
       from materials
       where tenant_id = #{tenantId}
         <if test="category != null and category != ''">
@@ -44,7 +44,7 @@ public interface MaterialMapper {
 
   @Select("""
       select id, tenant_id, code, name, category, unit, reference_price,
-             specification, brand, tax_rate, description
+             specification, brand, government_mall_catalog, tax_rate, description
       from materials
       where tenant_id = #{tenantId} and id = #{id}
       """)
@@ -53,10 +53,10 @@ public interface MaterialMapper {
   @Insert("""
       insert into materials (
         id, tenant_id, code, name, category, unit, reference_price,
-        specification, brand, tax_rate, description
+        specification, brand, government_mall_catalog, tax_rate, description
       ) values (
         #{id}, #{tenantId}, #{code}, #{name}, #{category}, #{unit}, #{referencePrice},
-        #{specification}, #{brand}, #{taxRate}, #{description}
+        #{specification}, #{brand}, #{governmentMallCatalog}, #{taxRate}, #{description}
       )
       """)
   void insert(
@@ -69,6 +69,7 @@ public interface MaterialMapper {
       @Param("referencePrice") BigDecimal referencePrice,
       @Param("specification") String specification,
       @Param("brand") String brand,
+      @Param("governmentMallCatalog") boolean governmentMallCatalog,
       @Param("taxRate") BigDecimal taxRate,
       @Param("description") String description);
 
@@ -81,6 +82,7 @@ public interface MaterialMapper {
           reference_price = #{referencePrice},
           specification = #{specification},
           brand = #{brand},
+          government_mall_catalog = #{governmentMallCatalog},
           tax_rate = #{taxRate},
           description = #{description},
           updated_at = now()
@@ -97,6 +99,7 @@ public interface MaterialMapper {
       @Param("referencePrice") BigDecimal referencePrice,
       @Param("specification") String specification,
       @Param("brand") String brand,
+      @Param("governmentMallCatalog") boolean governmentMallCatalog,
       @Param("taxRate") BigDecimal taxRate,
       @Param("description") String description);
 }

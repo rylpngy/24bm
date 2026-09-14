@@ -24,8 +24,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * 审批节点智能辅助评审。可配置 OpenAI 兼容接口；未配置或调用失败时，
- * 使用可复现的采购规则模型进行辅助分析，不自动作出审批决定。
+ * 审批节点智能辅助评审。只使用学校已导入的采购制度、当前项目材料和
+ * 前序审批记录；不使用互联网搜索或第三方知识作为审批依据。
  */
 @Service
 public class LudongPocAiReviewService {
@@ -80,6 +80,8 @@ public class LudongPocAiReviewService {
     } catch (Exception ignored) {
       return new LudongPocAiReviewResponse(
           local.runId(), "RULE_FALLBACK", RULE_MODEL, knowledgeBase.version(),
+          knowledgeBase.institutionalBasis(), knowledgeBase.evidenceBoundary(),
+          knowledgeBase.institutionalDocuments(),
           OffsetDateTime.now(), local.nodeName(),
           local.summary(), local.recommendation(), local.confidence(), local.reviewFocus(),
           local.findings(), local.missingMaterials(), local.suggestedComment(), local.accuracyNotice());
@@ -129,9 +131,12 @@ public class LudongPocAiReviewService {
           : "经辅助核验，当前项目基本信息、设备明细和前序材料未发现明显缺项，具备继续审批条件。";
     return new LudongPocAiReviewResponse(
         "ai-run-" + UUID.randomUUID(), "RULE_ASSISTED", RULE_MODEL, knowledgeBase.version(),
+        knowledgeBase.institutionalBasis(), knowledgeBase.evidenceBoundary(),
+        knowledgeBase.institutionalDocuments(),
         OffsetDateTime.now(), profile.name(), summary, recommendation, confidence, profile.focus(),
         findings, List.copyOf(missing), suggestedComment,
-        "置信度表示当前材料对规则与模型分析的支撑程度，不代表结论正确率；辅助结果须由审批人复核确认。");
+        "辅助意见仅依据学校已导入的采购管理制度、当前项目材料和前序审批记录；"
+            + "不引用互联网搜索或第三方信息。置信度不代表结论正确率，最终意见须由审批人复核确认。");
   }
 
   private void addCoreFindings(
@@ -187,7 +192,14 @@ public class LudongPocAiReviewService {
     }
 
     if ("是".equals(text(form.get("mallSelectionApplicable")))) {
-      long incompleteSelections = items.stream().filter(item -> blank(item.get("selectedBrand"))
+      boolean hasCatalogSnapshot = items.stream()
+          .anyMatch(item -> item.containsKey("governmentMallCatalog"));
+      List<Map<String, Object>> mallItems = hasCatalogSnapshot
+          ? items.stream()
+              .filter(item -> "是".equals(text(item.get("governmentMallCatalog"))))
+              .toList()
+          : items;
+      long incompleteSelections = mallItems.stream().filter(item -> blank(item.get("selectedBrand"))
           || blank(item.get("selectedModel"))
           || blank(item.get("selectedSupplier"))
           || number(item.get("selectedUnitPrice")).compareTo(BigDecimal.ZERO) <= 0
@@ -199,10 +211,10 @@ public class LudongPocAiReviewService {
             "网上商城型号确认单"));
       } else {
         findings.add(finding("passed", "商城型号确认单已完成",
-            "全部 " + items.size() + " 项设备均已记录商城选型依据和参与人员。",
+            "全部 " + mallItems.size() + " 项省政府商城目录设备均已记录选型依据和参与人员。",
             "网上商城型号确认单"));
       }
-      long overpricedSelections = items.stream().filter(item -> {
+      long overpricedSelections = mallItems.stream().filter(item -> {
         BigDecimal requested = number(item.get("unitPrice"));
         BigDecimal selected = number(item.get("selectedUnitPrice"));
         return requested.signum() > 0 && selected.compareTo(requested) > 0;
@@ -212,7 +224,7 @@ public class LudongPocAiReviewService {
             overpricedSelections + " 项商品的商城选型单价高于购置申请单价，不应直接进入后续审批。",
             "预算单价 / 商城选型单价"));
       }
-      long insufficientParticipants = items.stream().filter(item ->
+      long insufficientParticipants = mallItems.stream().filter(item ->
           participantCount(item.get("selectionParticipants")) < 3).count();
       if (insufficientParticipants > 0) {
         findings.add(finding("risk", "商城选型参与人数不足",
@@ -276,13 +288,15 @@ public class LudongPocAiReviewService {
         }
       }
       case "asset_configuration_review", "asset_division_leader_review", "asset_unit_leader_review" -> {
-        long missingStandards = items.stream().filter(item -> blank(item.get("configurationLimit"))).count();
-        findings.add(finding(missingStandards > 0 ? "warning" : "passed",
-            "配置标准和数量上限核验",
-            missingStandards > 0
-                ? missingStandards + " 项设备尚未关联附件三具体配置标准，须由资产审核人补充核验。"
-                : "全部设备均已记录配置标准依据，仍需资产审核人确认标准版本和适用范围。",
-            "附件 3 / 设备配置明细"));
+        BigDecimal itemTotal = items.stream()
+            .map(item -> number(item.get("totalPrice")))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        findings.add(finding(
+            itemTotal.compareTo(application.budgetAmount()) == 0 ? "passed" : "risk",
+            "资产数量与价格复核",
+            "设备清单共 " + items.size() + " 项，明细合计 " + money(itemTotal)
+                + "。请资产审核人依学校现行采购管理办法人工确认数量、单价和现有资产情况。",
+            "设备清单 / 学校采购管理办法"));
       }
       case "lab_equipment_review", "lab_division_leader_review", "lab_unit_leader_review" ->
           findings.add(finding("warning", "大型仪器共享及使用条件",
@@ -321,10 +335,17 @@ public class LudongPocAiReviewService {
     context.put("currentReviewData", current);
     context.put("priorApprovals", priorApprovals);
     context.put("knowledgeVersion", knowledgeBase.version());
+    context.put("institutionalBasis", knowledgeBase.institutionalBasis());
+    context.put("evidenceBoundary", knowledgeBase.evidenceBoundary());
+    context.put("institutionalDocuments", knowledgeBase.institutionalDocuments());
     context.put("ruleAnalysis", local);
-    String system = "你是高校采购审批辅助员。仅做辅助研判，不代替审批人作决定。"
+    String system = "你是鲁东大学采购审批辅助员，仅做辅助研判，不代替审批人作决定。"
+        + "你只能使用输入中的 institutionalDocuments、application、currentReviewData、priorApprovals"
+        + " 和 ruleAnalysis 作为依据。禁止使用模型训练记忆、互联网搜索、第三方网站、外部行业知识"
+        + " 或未在输入中提供的制度内容形成审批结论。"
+        + "若校内制度未覆盖某事项，不得自行补充外部结论，应保留规则分析并明确提示人工核验。"
         + "请结合当前节点重点和规则分析输出 JSON，不要输出法律结论。"
-        + "只能使用 ruleAnalysis.findings 中已有的 findingId，并保留其证据关系，不得虚构制度条款。"
+        + "只能使用 ruleAnalysis.findings 中已有的 findingId，并保留其证据关系，不得虚构制度名称、条款或编号。"
         + "字段：summary,recommendation,confidence,reviewFocus,findings,missingMaterials,suggestedComment；"
         + "findings 元素字段为 findingId,level(passed/warning/risk),title,detail。";
     Map<String, Object> payload = Map.of(
@@ -369,7 +390,9 @@ public class LudongPocAiReviewService {
     List<LudongPocAiReviewFinding> finalFindings = findings.isEmpty()
         ? local.findings() : List.copyOf(findings);
     return new LudongPocAiReviewResponse(
-        local.runId(), "AI_MODEL", model, knowledgeBase.version(), OffsetDateTime.now(), profile.name(),
+        local.runId(), "AI_MODEL", model, knowledgeBase.version(),
+        knowledgeBase.institutionalBasis(), knowledgeBase.evidenceBoundary(),
+        knowledgeBase.institutionalDocuments(), OffsetDateTime.now(), profile.name(),
         valueOr(result.path("summary").asText(), local.summary()),
         valueOr(result.path("recommendation").asText(), local.recommendation()),
         Math.max(0, Math.min(100, result.path("confidence").asInt(local.confidence()))),
@@ -380,14 +403,14 @@ public class LudongPocAiReviewService {
 
   private static Map<String, NodeProfile> profiles() {
     Map<String, NodeProfile> result = new LinkedHashMap<>();
-    result.put("argumentation_review", profile("购置必要性论证", "购置理由与业务目标", "参考品牌型号的合理性", "设备数量及技术参数", "附件 3 配置标准"));
+    result.put("argumentation_review", profile("购置必要性论证", "购置理由与业务目标", "参考品牌型号的合理性", "设备数量及技术参数", "学校采购管理办法"));
     result.put("technical_leader_review", profile("技术负责人确认", "技术参数可执行性", "接口与兼容性", "安装实施条件", "验收指标"));
     result.put("compilation_participant_review", profile("参与编制人员确认", "表单字段完整性", "采购目标一致性", "技术与服务要求", "设备清单一致性"));
     result.put("mall_selection_participant_review", profile("网上商城选型参与人确认", "品牌型号", "供应商与商品链接", "商城价格", "选型参与记录"));
     result.put("it_review", profile("教育信息技术部审核", "信创产品范围", "软硬件生态适配", "网络与数据安全", "技术参数可验证性"));
     result.put("unit_review", profile("申报单位负责人审核", "项目必要性", "单位内部需求", "项目负责人责任", "申报材料完整性"));
     result.put("funding_review", profile("经费主管单位负责人审核", "经费来源", "预算归属", "支出必要性", "预算与明细一致性"));
-    result.put("asset_configuration_review", profile("资产处配置审核", "配置价格上限", "配置数量上限", "现有资产情况", "附件 3 配置标准"));
+    result.put("asset_configuration_review", profile("资产处配置审核", "设备数量", "市场调研价格", "现有资产情况", "学校采购管理办法"));
     result.put("asset_division_leader_review", profile("资产处分管领导审核", "配置审核结果", "超限情况", "资产配置合理性"));
     result.put("asset_unit_leader_review", profile("资产处单位负责人审核", "资产审核意见完整性", "超标事项", "配置决策依据"));
     result.put("lab_equipment_review", profile("实验室管理处论证审核", "大型仪器认定", "设备共享方案", "安装使用条件", "预计使用效益"));
@@ -484,9 +507,6 @@ public class LudongPocAiReviewService {
     if (clue.contains("商城")) {
       ruleIds.add("LDU-MALL-001");
       ruleIds.add("LDU-MALL-002");
-    }
-    if (clue.contains("附件 3") || clue.contains("附件3") || clue.contains("配置标准")) {
-      ruleIds.add("LDU-ASSET-ANNEX3-001");
     }
     if (clue.contains("设备") || clue.contains("参数")) ruleIds.add("LDU-FORM-ITEM-001");
     if (clue.contains("校领导")) {

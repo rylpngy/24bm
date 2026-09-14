@@ -6,7 +6,6 @@ final class LudongPocWorkflowDefinition {
   // 这里只保存发起时用于条件路由的事实。各审批节点填写项由 TaskFormCatalog 单独约束。
   static final String FORM_SCHEMA = """
       {"fields":[
-        {"id":"sameFundingUnit","type":"select","label":"经费主管单位与申报单位相同","required":true,"options":["是","否"]},
         {"id":"requiresItReview","type":"select","label":"涉及信创产品审核","required":true,"options":["是","否"]},
         {"id":"requiresAssetReview","type":"select","label":"涉及办公设备或家具配置审核","required":true,"options":["是","否"]},
         {"id":"requiresLabReview","type":"select","label":"涉及大型仪器或实验室审核","required":true,"options":["是","否"]},
@@ -26,11 +25,7 @@ final class LudongPocWorkflowDefinition {
           {"label":"不涉及","condition":null,"steps":[{"id":"it_skip","type":"auto","title":"无需信创审核"}]}
         ]},
         {"id":"unit_review","type":"approver","title":"申报单位负责人审核","assignment":{"type":"role","roleId":"role-ldu-unit-manager"}},
-        {"id":"funding_route","type":"condition","title":"经费主管单位路由","branches":[
-          {"label":"不同单位","condition":{"field":"sameFundingUnit","op":"==","value":"否"},"steps":[
-            {"id":"funding_review","type":"approver","title":"经费主管单位负责人审核","assignment":{"type":"role","roleId":"role-ldu-funding-manager"}}]},
-          {"label":"同一单位复用前序结论","condition":null,"steps":[{"id":"funding_skip","type":"auto","title":"经费主管单位审核自动复用"}]}
-        ]},
+        {"id":"funding_review","type":"approver","title":"经费主管单位负责人审核","assignment":{"type":"role","roleId":"role-ldu-funding-manager"}},
         {"id":"asset_route","type":"condition","title":"办公设备及家具配置审核路由","branches":[
           {"label":"需要资产配置审核","condition":{"field":"requiresAssetReview","op":"==","value":"是"},"steps":[
             {"id":"asset_configuration_review","type":"approver","title":"资产处配置审核","assignment":{"type":"role","roleId":"role-ldu-asset-review"}},

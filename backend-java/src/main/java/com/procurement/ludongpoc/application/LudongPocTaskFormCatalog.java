@@ -9,8 +9,8 @@ import java.util.Set;
 final class LudongPocTaskFormCatalog {
   private static final String REUSED_DECISION = "同工号审批复用（原节点已通过）";
   private static final Map<String, NodeForm> FORMS = Map.ofEntries(
-      entry("argumentation_review", required("purchaseReason", "argumentationOpinion", "items"),
-          "purchaseReason", "argumentationOpinion", "argumentationComment", "configurationStandard", "items"),
+      entry("argumentation_review", required("argumentationOpinion", "argumentationComment"),
+          "argumentationOpinion", "argumentationComment"),
       entry("technical_leader_review", required("technicalLeaderOpinion"),
           "technicalLeaderOpinion", "technicalLeaderComment"),
       entry("compilation_participant_review", required("compilationParticipantOpinion"),
@@ -79,9 +79,11 @@ final class LudongPocTaskFormCatalog {
           throw new IllegalArgumentException("审批通过前必须完成节点字段: " + key);
         }
       }
-      if ("argumentation_review".equals(nodeId)) {
-        validateItems(normalized.get("items"));
-      }
+    }
+    if ("argumentation_review".equals(nodeId)
+        && "approve".equals(action)
+        && "不同意".equals(String.valueOf(normalized.get("argumentationOpinion")))) {
+      throw new IllegalArgumentException("论证结论为不同意时只能驳回，不能审批通过");
     }
     return Map.copyOf(normalized);
   }
@@ -130,38 +132,41 @@ final class LudongPocTaskFormCatalog {
         : "financeBudgetStatus";
     Object value = source.get(alternate);
     if (value != null && !String.valueOf(value).isBlank()) {
-      target.put(targetField, value);
+      target.put(targetField, normalizeBudgetStatus(targetField, String.valueOf(value)));
     }
+  }
+
+  private static String normalizeBudgetStatus(String targetField, String value) {
+    String normalized = value == null ? "" : value.trim();
+    if ("procurementBudgetStatus".equals(targetField)) {
+      return switch (normalized) {
+        case "本项目已列入本年度学校预算", "本项目已列入本年度预算" ->
+            "本项目已列入本年度采购预算";
+        case "本项目年初无预算，现已办理预算追加手续" ->
+            "本项目年初无采购预算，现已办理采购预算追加手续";
+        case "本项目本年度无预算，已列入下一年度预算" ->
+            "本项目本年度无采购预算，已列入下一年度采购预算";
+        default -> normalized;
+      };
+    }
+    return switch (normalized) {
+      case "本项目已列入本年度采购预算" -> "本项目已列入本年度学校预算";
+      case "本项目年初无采购预算，现已办理采购预算追加手续" ->
+          "本项目年初无预算，现已办理预算追加手续";
+      case "本项目本年度无采购预算，已列入下一年度采购预算" ->
+          "本项目本年度无预算，已列入下一年度预算";
+      default -> normalized;
+    };
   }
 
   private static Object reusedRequiredValue(String field, Map<String, Object> source) {
     if (field.endsWith("Opinion")) {
       return "同意";
     }
-    if ("items".equals(field) && source.get("items") instanceof List<?> items) {
-      return items;
-    }
     if ("handoverSubmitConfirmation".equals(field)) {
       return "同工号前序节点已确认申请材料";
     }
     return REUSED_DECISION;
-  }
-
-  private static void validateItems(Object raw) {
-    if (!(raw instanceof List<?> items) || items.isEmpty()) {
-      throw new IllegalArgumentException("论证环节至少需要填写一条设备配置明细");
-    }
-    for (Object item : items) {
-      if (!(item instanceof Map<?, ?> map)
-          || map.get("materialId") == null
-          || String.valueOf(map.get("materialId")).isBlank()
-          || map.get("name") == null
-          || String.valueOf(map.get("name")).isBlank()
-          || map.get("quantity") == null
-          || String.valueOf(map.get("quantity")).isBlank()) {
-        throw new IllegalArgumentException("设备配置明细必须关联物料库，并包含设备名称和数量");
-      }
-    }
   }
 
   private static Map.Entry<String, NodeForm> entry(

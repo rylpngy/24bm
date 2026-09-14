@@ -16,6 +16,7 @@ export interface MaterialResponse {
   referencePrice?: number;
   specification?: string;
   brand?: string;
+  governmentMallCatalog?: boolean;
   taxRate?: number;
   description?: string;
 }

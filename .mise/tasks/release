@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+mode=${1:-build}
+[[ $# -eq 0 ]] || shift
+only=all
+release_id=''
+forward=()
+
+while (($#)); do
+  case "$1" in
+    --only)
+      shift
+      (($#)) || { echo "错误: --only 缺少值" >&2; exit 1; }
+      only=$1
+      ;;
+    --release)
+      shift
+      (($#)) || { echo "错误: --release 缺少值" >&2; exit 1; }
+      release_id=$1
+      ;;
+    *) forward+=("$1") ;;
+  esac
+  shift
+done
+
+case "$only" in all|backend|frontend) ;; *) echo "错误: --only 仅支持 all、backend、frontend" >&2; exit 1 ;; esac
+if [[ "$mode" == rollback && "$only" == all ]]; then
+  echo "错误: 回滚必须通过 --only backend 或 --only frontend 明确组件" >&2
+  exit 1
+fi
+if [[ -z "$release_id" && "$mode" != status ]]; then
+  release_id="$(date +%Y%m%d-%H%M%S)-$(git -C "$ROOT" rev-parse --short=8 HEAD)"
+fi
+[[ -z "$release_id" ]] || forward+=(--release "$release_id")
+
+run_component() {
+  local directory=$1
+  MISE_PROJECT_ROOT="$directory" bash "$directory/.mise/tasks/release" "$mode" "${forward[@]}"
+}
+
+[[ "$only" == frontend ]] || run_component "$ROOT/backend-java"
+[[ "$only" == backend ]] || run_component "$ROOT/apps/tenant-portal"

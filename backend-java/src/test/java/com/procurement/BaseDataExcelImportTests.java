@@ -75,15 +75,15 @@ class BaseDataExcelImportTests {
   void materialImportInsertsValidRowsAndReportsInvalidOnes() {
     when(materialMapper.listByTenant("tenant-1", null, null)).thenReturn(List.of(
         new Material("mat-0", "tenant-1", "MAT-EXIST", "既有物料", "办公用品", "个",
-            BigDecimal.ONE, "", "", BigDecimal.TEN, "")));
+            BigDecimal.ONE, "", "", false, BigDecimal.TEN, "")));
 
     ImportResultResponse result = materialService.importMaterials(sheet(List.of(
-        List.of("物料编码*", "物料名称*", "分类*", "计量单位*", "参考价", "规格型号", "品牌", "税率(%)", "描述"),
-        List.of("MAT-001", "A4复印纸", "办公用品", "箱", "180", "70g", "得力", "13", ""),
-        List.of("MAT-EXIST", "重复编码", "办公用品", "个", "1", "", "", "", ""),
-        List.of("", "缺编码", "办公用品", "个", "", "", "", "", ""),
-        List.of("MAT-002", "坏价格", "办公用品", "个", "abc", "", "", "", ""),
-        List.of("MAT-001", "文件内重复", "办公用品", "个", "2", "", "", "", ""))));
+        List.of("物料编码*", "物料名称*", "分类*", "计量单位*", "参考价", "规格型号", "品牌", "省政府网上商城目录(是/否)", "税率(%)", "描述"),
+        List.of("MAT-001", "A4复印纸", "办公用品", "箱", "180", "70g", "得力", "是", "13", ""),
+        List.of("MAT-EXIST", "重复编码", "办公用品", "个", "1", "", "", "否", "", ""),
+        List.of("", "缺编码", "办公用品", "个", "", "", "", "否", "", ""),
+        List.of("MAT-002", "坏价格", "办公用品", "个", "abc", "", "", "否", "", ""),
+        List.of("MAT-001", "文件内重复", "办公用品", "个", "2", "", "", "否", "", ""))));
 
     assertThat(result.totalRows()).isEqualTo(5);
     assertThat(result.successCount()).isEqualTo(1);
@@ -94,7 +94,7 @@ class BaseDataExcelImportTests {
     assertThat(result.failures().get(3).message()).contains("MAT-001");
     verify(materialMapper, times(1)).insert(
         anyString(), eq("tenant-1"), eq("MAT-001"), eq("A4复印纸"), eq("办公用品"), eq("箱"),
-        any(), anyString(), anyString(), any(), anyString());
+        any(), anyString(), anyString(), eq(true), any(), anyString());
   }
 
   @Test

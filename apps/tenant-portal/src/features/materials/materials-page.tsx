@@ -22,6 +22,7 @@ const schema = z.object({
   referencePrice: z.number().min(0, '参考价不能为负'),
   specification: z.string(),
   brand: z.string(),
+  governmentMallCatalog: z.boolean(),
   taxRate: z.number().min(0, '税率不能为负').max(100, '税率不超过 100'),
   description: z.string(),
 });
@@ -141,6 +142,12 @@ function MaterialDialog({
             <Field label="规格型号">
               <input className={inputCls} placeholder="如 50*50mm" {...register('specification')} />
             </Field>
+            <Field label="省政府网上商城目录">
+              <label className="flex h-10 items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-700">
+                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-blue-600" {...register('governmentMallCatalog')} />
+                属于山东省政府采购网上商城目录
+              </label>
+            </Field>
             <Field label="计量单位" required error={errors.unit?.message}>
               <input className={inputCls} placeholder="件" {...register('unit')} />
             </Field>
@@ -252,6 +259,7 @@ export function MaterialsPage() {
       referencePrice: 0,
       specification: '',
       brand: '',
+      governmentMallCatalog: false,
       taxRate: 13,
       description: '',
     },
@@ -599,6 +607,7 @@ export function MaterialsPage() {
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       <MiniFact label="分类 / 单位" value={`${m.category ?? '—'} / ${m.unit ?? '—'}`} />
                       <MiniFact label="参考单价" value={currency(m.referencePrice)} />
+                      <MiniFact label="商城目录" value={m.governmentMallCatalog ? '山东省政府网上商城' : '学校采购目录'} />
                     </div>
                     <button
                       type="button"
@@ -618,6 +627,7 @@ export function MaterialsPage() {
                       <th className="px-5 py-4">规格型号</th>
                       <th className="px-5 py-4">单位</th>
                       <th className="px-5 py-4">所属分类</th>
+                      <th className="px-5 py-4">目录属性</th>
                       <th className="px-5 py-4 text-right">参考价</th>
                       <th className="px-5 py-4">状态</th>
                       <th className="px-5 py-4 text-right">操作</th>
@@ -636,6 +646,14 @@ export function MaterialsPage() {
                         <td className="px-5 py-5">
                           <span className="inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
                             {m.category ?? '—'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-5">
+                          <span className={cn(
+                            'inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-black',
+                            m.governmentMallCatalog ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500',
+                          )}>
+                            {m.governmentMallCatalog ? '省商城目录' : '校内目录'}
                           </span>
                         </td>
                         <td className="px-5 py-5 text-right font-mono font-black text-slate-900">
