@@ -90,6 +90,7 @@ class PurchaseOrderNotificationTests {
 
   @Test
   void creatingPurchaseOrderFromAwardNotifiesActiveSupplierUsersToConfirmOrder() {
+    when(purchaseOrderMapper.lockSupplierAdmissionStatus("tenant-1", "supplier-1")).thenReturn("已准入");
     TenantContext.set("tenant-1", null, "buyer-user");
     when(awardDecisionMapper.findApprovedForOrder("tenant-1", "award-1", "已通过"))
         .thenReturn(award("award-1", "tenant-1", "supplier-1", "已通过"));

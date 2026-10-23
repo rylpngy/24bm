@@ -7,9 +7,25 @@
  */
 
 export interface CreateSupplierUserRequest {
+  /**
+   * @minLength 0
+   * @maxLength 100
+   */
   name: string;
+  /**
+   * @minLength 0
+   * @maxLength 30
+   */
   mobile?: string;
+  /**
+   * @minLength 0
+   * @maxLength 254
+   */
   email?: string;
   status: string;
+  /**
+   * @minLength 6
+   * @maxLength 72
+   */
   initialPassword: string;
 }

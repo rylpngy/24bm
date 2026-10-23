@@ -15,7 +15,7 @@ import { SupplierMetricCard, SupplierMetricGrid } from './supplier-metric-card';
 
 const PAGE_SIZE = 8;
 
-const STATUS_FILTERS = ['全部', '待准入', '准入审批中', '已准入', '已驳回', '黑名单'] as const;
+const STATUS_FILTERS = ['全部', '待准入', '准入审批中', '已准入', '已驳回', '黑名单', '退出审批中', '已退出'] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 

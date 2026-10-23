@@ -6,6 +6,8 @@ import static org.mockito.Mockito.when;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.supplier.api.ChangeSupplierUserStatusRequest;
+import com.procurement.supplier.api.ChangeSupplierUserRoleRequest;
+import com.procurement.supplier.api.UpdateSupplierUserRequest;
 import com.procurement.supplier.api.CreateSupplierUserRequest;
 import com.procurement.supplier.api.ResetSupplierUserPasswordRequest;
 import com.procurement.supplier.application.SupplierUserApplicationService;
@@ -162,5 +164,82 @@ class SupplierUserLifecycleTests {
         "supplier.finance@example.com",
         "active",
         "role-supplier-sales");
+  }
+
+  private void prepareRoleChange() {
+    TenantContext.set(null, "ent-supplier-sunrise", "owner");
+    when(supplierUserMapper.existsBySupplierAndId("ent-supplier-sunrise", "member")).thenReturn(true);
+    when(supplierUserMapper.existsSupplierRole("ent-supplier-sunrise", "role-system-supplier-member")).thenReturn(true);
+    when(supplierUserMapper.countOtherActiveAdmins("ent-supplier-sunrise", "member")).thenReturn(1);
+    when(supplierUserMapper.findBySupplierAndId("ent-supplier-sunrise", "member")).thenReturn(user("member"));
+  }
+
+  @Test
+  void profileNormalizesContactsAndKeepsRolesUntouched() {
+    prepareRoleChange();
+    supplierUserApplicationService.updateUserProfile("member", new UpdateSupplierUserRequest("  成员  ", "13800009999", "Member@Example.com"));
+    verify(supplierUserMapper).hasLoginConflict("ent-supplier-sunrise", "member", "13800009999", "member@example.com");
+    verify(supplierUserMapper).updateProfile("ent-supplier-sunrise", "member", "成员", "13800009999", "member@example.com");
+    org.mockito.Mockito.verify(supplierUserMapper, org.mockito.Mockito.never()).clearUserRoles(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void contactValidationRejectsMissingInvalidAndOccupiedAccounts() {
+    prepareRoleChange();
+    Assertions.assertThrows(IllegalArgumentException.class, () -> supplierUserApplicationService.updateUserProfile(
+        "member", new UpdateSupplierUserRequest("成员", " ", "")));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> supplierUserApplicationService.updateUserProfile(
+        "member", new UpdateSupplierUserRequest("成员", "abc", null)));
+    when(supplierUserMapper.hasLoginConflict("ent-supplier-sunrise", "member", null, "used@example.com")).thenReturn(true);
+    Assertions.assertThrows(IllegalArgumentException.class, () -> supplierUserApplicationService.updateUserProfile(
+        "member", new UpdateSupplierUserRequest("成员", null, "USED@example.com")));
+    org.mockito.Mockito.verify(supplierUserMapper, org.mockito.Mockito.never()).updateProfile(
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
+  void profileRejectsForeignMemberAndCreateWithoutLoginContact() {
+    prepareRoleChange();
+    Assertions.assertThrows(IllegalArgumentException.class, () -> supplierUserApplicationService.updateUserProfile(
+        "foreign", new UpdateSupplierUserRequest("成员", null, "other@example.com")));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> supplierUserApplicationService.createCurrentSupplierUser(
+        new CreateSupplierUserRequest("成员", null, null, "active", "demo123456")));
+  }
+
+  @Test
+  void roleReplacementClearsLegacyGrantsAndInvalidatesSessions() {
+    prepareRoleChange();
+    supplierUserApplicationService.changeUserRole("member", new ChangeSupplierUserRoleRequest("role-system-supplier-member"));
+    var ordered = org.mockito.Mockito.inOrder(supplierUserMapper);
+    ordered.verify(supplierUserMapper).lockSupplier("ent-supplier-sunrise");
+    ordered.verify(supplierUserMapper).clearUserRoles("ent-supplier-sunrise", "member");
+    ordered.verify(supplierUserMapper).assignRole("member", "role-system-supplier-member");
+    ordered.verify(supplierUserMapper).invalidateSessions("ent-supplier-sunrise", "member");
+    verify(auditLogApplicationService).recordTenantAction(null,
+        "supplier_user.role_changed:role-system-supplier-member", "supplier_user", "member");
+  }
+
+  @Test
+  void roleReplacementRejectsForeignUsersAndArbitraryRoles() {
+    prepareRoleChange();
+    Assertions.assertThrows(IllegalArgumentException.class, () -> supplierUserApplicationService.changeUserRole(
+        "foreign-user", new ChangeSupplierUserRoleRequest("role-system-supplier-member")));
+    Assertions.assertThrows(IllegalArgumentException.class, () -> supplierUserApplicationService.changeUserRole(
+        "member", new ChangeSupplierUserRoleRequest("role-platform-admin")));
+    org.mockito.Mockito.verify(supplierUserMapper, org.mockito.Mockito.never())
+        .clearUserRoles(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void roleReplacementProtectsSelfAndLastAdministrator() {
+    prepareRoleChange();
+    when(supplierUserMapper.existsBySupplierAndId("ent-supplier-sunrise", "owner")).thenReturn(true);
+    Assertions.assertThrows(IllegalArgumentException.class, () -> supplierUserApplicationService.changeUserRole(
+        "owner", new ChangeSupplierUserRoleRequest("role-system-supplier-member")));
+    when(supplierUserMapper.countOtherActiveAdmins("ent-supplier-sunrise", "member")).thenReturn(0);
+    Assertions.assertThrows(IllegalArgumentException.class, () -> supplierUserApplicationService.changeUserRole(
+        "member", new ChangeSupplierUserRoleRequest("role-system-supplier-member")));
+    org.mockito.Mockito.verify(supplierUserMapper, org.mockito.Mockito.never())
+        .clearUserRoles(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
   }
 }

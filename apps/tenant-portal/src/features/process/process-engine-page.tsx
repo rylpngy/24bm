@@ -45,6 +45,7 @@ const BUSINESS_TYPES = [
   { id: 'ludong_project_application', label: '鲁东大学货物类采购申报' },
   { id: 'purchase_demand', label: '采购需求' },
   { id: 'buyer_supplier_admission', label: '供应商准入' },
+  { id: 'buyer_supplier_exit', label: '供应商退出' },
   { id: 'rfq_award', label: '询价定标' },
   { id: 'contract_approval', label: '合同审批' },
   { id: 'payment_request', label: '付款申请' },

@@ -49,6 +49,7 @@ export function WorkflowSubmitDialog({
   onClose,
   onSubmit,
   children,
+  initialValues,
 }: {
   businessType: string;
   title: string;
@@ -57,6 +58,7 @@ export function WorkflowSubmitDialog({
   onClose: () => void;
   onSubmit: (formData: Record<string, unknown>) => void;
   children?: ReactNode;
+  initialValues?: Record<string, unknown>;
 }) {
   const formQuery = useWorkflowRuntimePublishedForm(businessType);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -66,10 +68,11 @@ export function WorkflowSubmitDialog({
   const message = validationError ?? (attemptedSubmit ? workflowSubmissionErrorMessage(submissionError) : null);
 
   useEffect(() => {
-    setValues({});
+    setValues(Object.fromEntries(Object.entries(initialValues ?? {}).filter(([, value]) =>
+      typeof value === 'string' || typeof value === 'number').map(([key, value]) => [key, String(value)])));
     setValidationError(null);
     setAttemptedSubmit(false);
-  }, [businessType, formQuery.data?.data?.definitionVersionId]);
+  }, [businessType, formQuery.data?.data?.definitionVersionId, initialValues]);
 
   const submit = () => {
     const missing = form.fields.find((field) => field.required && !(values[field.id] ?? '').trim());
@@ -79,12 +82,12 @@ export function WorkflowSubmitDialog({
     }
     setValidationError(null);
     setAttemptedSubmit(true);
-    onSubmit(values);
+    onSubmit(Object.fromEntries(Object.entries(values).filter(([key]) => form.fields.some(field => field.id === key))));
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
-      <div className="max-h-[85vh] w-full max-w-xl overflow-auto rounded-xl bg-white p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={busy ? undefined : onClose}>
+      <div role="dialog" aria-modal="true" aria-label={`提交审批 · ${title}`} className="max-h-[85vh] w-full max-w-xl overflow-auto rounded-xl bg-white p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-base font-black text-slate-950">提交审批 · {title}</h2>
@@ -92,7 +95,7 @@ export function WorkflowSubmitDialog({
               {formQuery.data?.data?.definitionVersionId ? '按当前已发布流程版本填写审批字段。' : '当前将使用系统默认审批版本。'}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="关闭"><X size={18} /></button>
+          <button type="button" disabled={busy} onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="关闭"><X size={18} /></button>
         </div>
 
         {message && <div className="mt-4" role="alert"><FeedbackNotice tone="error" message={message} /></div>}
@@ -133,18 +136,19 @@ function WorkflowFormField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-black text-slate-600">
+      <label htmlFor={`workflow-field-${field.id}`} className="mb-1 block text-xs font-black text-slate-600">
         {field.label}{field.required && <span className="ml-1 text-red-500">*</span>}
       </label>
       {field.type === 'textarea' ? (
-        <textarea className={`${inputCls} min-h-24`} placeholder={field.placeholder} value={value} onChange={(event) => onChange(event.target.value)} />
+        <textarea id={`workflow-field-${field.id}`} className={`${inputCls} min-h-24`} placeholder={field.placeholder} value={value} onChange={(event) => onChange(event.target.value)} />
       ) : field.type === 'select' ? (
-        <select className={inputCls} value={value} onChange={(event) => onChange(event.target.value)}>
+        <select id={`workflow-field-${field.id}`} className={inputCls} value={value} onChange={(event) => onChange(event.target.value)}>
           <option value="">{field.placeholder || '请选择'}</option>
           {(field.options ?? []).map((option) => <option key={option} value={option}>{option}</option>)}
         </select>
       ) : (
         <input
+          id={`workflow-field-${field.id}`}
           className={inputCls}
           type={field.type === 'number' || field.type === 'money' ? 'number' : field.type === 'date' ? 'date' : 'text'}
           placeholder={field.placeholder}

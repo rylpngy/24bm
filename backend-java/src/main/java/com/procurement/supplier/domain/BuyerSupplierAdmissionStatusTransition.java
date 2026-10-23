@@ -6,7 +6,8 @@ import org.springframework.stereotype.Component;
 public class BuyerSupplierAdmissionStatusTransition {
 
   public void requireAdmissionSubmission(String currentStatus, String relationId) {
-    if (!BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(currentStatus)) {
+    if (!BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(currentStatus)
+        && !BuyerSupplierRelationStatus.REJECTED.equals(currentStatus)) {
       throw new IllegalStateException(
           "Only pending supplier relations can be submitted for admission: " + relationId);
     }

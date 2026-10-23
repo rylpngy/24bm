@@ -29,6 +29,7 @@ import type {
   ApiResponseBuyerSupplierResponse,
   ApiResponseListBuyerSupplierResponse,
   ApiResponseListSupplierQualificationResponse,
+  ApiResponseSupplierExitRiskResponse,
   ApiResponseVoid,
   BuyerSupplierListParams,
   ChangeBuyerSupplierPerformanceRequest,
@@ -654,6 +655,178 @@ export function useBuyerSupplierDownloadQualification<TData = Awaited<ReturnType
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerSupplierDownloadQualificationQueryOptions(relationId,qualificationId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerSupplierQualificationArchive = (
+    relationId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseListSupplierQualificationResponse>(
+      {url: `/api/v1/buyer/suppliers/${relationId}/qualification-archive`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getBuyerSupplierQualificationArchiveQueryKey = (relationId?: string,) => {
+    return [
+    `/api/v1/buyer/suppliers/${relationId}/qualification-archive`
+    ] as const;
+    }
+
+
+export const getBuyerSupplierQualificationArchiveQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError = ErrorType<ApiResponseVoid>>(relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierQualificationArchiveQueryKey(relationId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>> = ({ signal }) => buyerSupplierQualificationArchive(relationId, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(relationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerSupplierQualificationArchiveQueryResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>>
+export type BuyerSupplierQualificationArchiveQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerSupplierQualificationArchive<TData = Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierQualificationArchive<TData = Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierQualificationArchive<TData = Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerSupplierQualificationArchive<TData = Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierQualificationArchive>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerSupplierQualificationArchiveQueryOptions(relationId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerSupplierExitRisk = (
+    relationId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseSupplierExitRiskResponse>(
+      {url: `/api/v1/buyer/suppliers/${relationId}/exit-risk`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getBuyerSupplierExitRiskQueryKey = (relationId?: string,) => {
+    return [
+    `/api/v1/buyer/suppliers/${relationId}/exit-risk`
+    ] as const;
+    }
+
+
+export const getBuyerSupplierExitRiskQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError = ErrorType<ApiResponseVoid>>(relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierExitRiskQueryKey(relationId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierExitRisk>>> = ({ signal }) => buyerSupplierExitRisk(relationId, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(relationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerSupplierExitRiskQueryResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierExitRisk>>>
+export type BuyerSupplierExitRiskQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerSupplierExitRisk<TData = Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierExitRisk>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierExitRisk>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierExitRisk<TData = Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierExitRisk>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierExitRisk>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierExitRisk<TData = Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerSupplierExitRisk<TData = Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError = ErrorType<ApiResponseVoid>>(
+ relationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierExitRisk>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerSupplierExitRiskQueryOptions(relationId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

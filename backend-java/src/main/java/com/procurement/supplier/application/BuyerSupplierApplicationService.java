@@ -123,6 +123,17 @@ public class BuyerSupplierApplicationService {
         .toList();
   }
 
+  public String relationQualificationFileName(String relationId, String qualificationId) {
+    var relation = requireRelation(TenantAccessGuard.requireTenantId("buyer supplier APIs"), relationId);
+    return supplierQualificationApplicationService.findForBuyerReview(relation.supplierId(), qualificationId).fileName();
+  }
+
+  public List<SupplierQualificationResponse> listRelationQualificationArchive(String relationId) {
+    var relation = requireRelation(TenantAccessGuard.requireTenantId("buyer supplier APIs"), relationId);
+    return supplierQualificationMapper.listBySupplierFiltered(relation.supplierId(), "all", null).stream()
+        .map(this::toQualificationResponse).toList();
+  }
+
   @Transactional
   public BuyerSupplierResponse createSupplierRelation(CreateBuyerSupplierRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
@@ -158,13 +169,16 @@ public class BuyerSupplierApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
     buyerSupplierAdmissionStatusTransition.requireAdmissionSubmission(relation.status(), relationId);
+    if (supplierQualificationMapper.blockingReviews(relationId) > 0) {
+      throw new IllegalStateException("存在待复核或已退回的资质变更，请先完成资质复核后再提交准入");
+    }
     requireActiveQualification(relation);
 
     if (unifiedWorkflowApplicationService != null) {
       int updated = buyerSupplierRelationMapper.updateStatus(
           tenantId,
           relationId,
-          BuyerSupplierRelationStatus.PENDING_ADMISSION,
+          relation.status(),
           BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL);
       if (updated == 0) {
         throw new IllegalStateException("Supplier relation status changed before admission could be submitted: " + relationId);
@@ -195,7 +209,7 @@ public class BuyerSupplierApplicationService {
       int bypassed = buyerSupplierRelationMapper.updateStatus(
           tenantId,
           relationId,
-          BuyerSupplierRelationStatus.PENDING_ADMISSION,
+          relation.status(),
           BuyerSupplierRelationStatus.ADMITTED);
       if (bypassed == 0) {
         throw new IllegalStateException("Supplier relation status changed before admission could be submitted: " + relationId);
@@ -213,7 +227,7 @@ public class BuyerSupplierApplicationService {
     int updated = buyerSupplierRelationMapper.updateStatus(
         tenantId,
         relationId,
-        BuyerSupplierRelationStatus.PENDING_ADMISSION,
+        relation.status(),
         BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL);
     if (updated == 0) {
       throw new IllegalStateException("Supplier relation status changed before admission could be submitted: " + relationId);
@@ -308,6 +322,9 @@ public class BuyerSupplierApplicationService {
 
   @Transactional
   public BuyerSupplierResponse changeRelationStatus(String relationId, ChangeBuyerSupplierStatusRequest request) {
+    if (request.reason() != null && request.reason().isBlank()) {
+      throw new IllegalArgumentException("请填写状态调整原因。");
+    }
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
     buyerSupplierManualStatusTransition.requireSupportedTarget(request.status());
@@ -321,12 +338,22 @@ public class BuyerSupplierApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("Supplier relation status changed before manual update could be applied: " + relationId);
     }
-    auditLogApplicationService.recordTenantAction(
-        BuyerSupplierAuditAction.RELATION_STATUS_CHANGED,
-        AuditTargetType.BUYER_SUPPLIER_RELATION,
-        relationId);
+    if (request.reason() != null) {
+      auditLogApplicationService.recordCurrentTenantAction(
+          BuyerSupplierAuditAction.RELATION_STATUS_CHANGED, AuditTargetType.BUYER_SUPPLIER_RELATION,
+          relationId, relation.status() + " → " + request.status() + "；原因：" + request.reason().trim());
+    } else {
+      auditLogApplicationService.recordTenantAction(
+          BuyerSupplierAuditAction.RELATION_STATUS_CHANGED, AuditTargetType.BUYER_SUPPLIER_RELATION, relationId);
+    }
 
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
+  }
+
+  public com.procurement.supplier.api.SupplierExitRiskResponse exitRisk(String relationId) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
+    BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
+    return buyerSupplierRelationMapper.exitRisk(tenantId, relation.supplierId());
   }
 
   @Transactional

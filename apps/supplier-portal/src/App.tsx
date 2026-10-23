@@ -101,7 +101,7 @@ export function App() {
       ) : activeModuleId === 'profile' ? (
         <ProfilePage />
       ) : activeModuleId === 'qualifications' ? (
-        <QualificationsPage />
+        <QualificationsPage canManage={hasPermission(granted, 'supplier:qualification:manage')} />
       ) : activeModuleId === 'team' ? (
         <TeamPage canManage={hasPermission(granted, 'supplier:*')} currentUserId={session.userId} />
       ) : (

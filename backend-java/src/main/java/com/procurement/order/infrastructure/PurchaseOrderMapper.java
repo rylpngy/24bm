@@ -14,6 +14,13 @@ import org.apache.ibatis.annotations.Update;
 public interface PurchaseOrderMapper {
 
   @Select("""
+      select status from buyer_supplier_relations
+      where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+      for update
+      """)
+  String lockSupplierAdmissionStatus(@Param("tenantId") String tenantId, @Param("supplierId") String supplierId);
+
+  @Select("""
       select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at, delivery_address, contact_name, contact_phone, payment_terms
       from purchase_orders
       where tenant_id = #{tenantId}

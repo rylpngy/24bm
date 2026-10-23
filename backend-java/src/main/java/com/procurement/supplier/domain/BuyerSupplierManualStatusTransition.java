@@ -13,13 +13,15 @@ public class BuyerSupplierManualStatusTransition {
   }
 
   public void requireTransition(String currentStatus, String targetStatus, String relationId) {
-    if (BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL.equals(currentStatus)) {
+    if (BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL.equals(currentStatus)
+        || BuyerSupplierRelationStatus.IN_EXIT_APPROVAL.equals(currentStatus)) {
       throw new IllegalStateException(
           "Supplier relations in admission approval cannot be manually changed: " + relationId);
     }
     if (BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(targetStatus)
         && !BuyerSupplierRelationStatus.BLACKLISTED.equals(currentStatus)
-        && !BuyerSupplierRelationStatus.REJECTED.equals(currentStatus)) {
+        && !BuyerSupplierRelationStatus.REJECTED.equals(currentStatus)
+        && !BuyerSupplierRelationStatus.EXITED.equals(currentStatus)) {
       throw new IllegalStateException(
           "Only blacklisted or rejected supplier relations can be restored to pending admission: " + relationId);
     }

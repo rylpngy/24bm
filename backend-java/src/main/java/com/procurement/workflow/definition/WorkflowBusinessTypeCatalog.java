@@ -10,6 +10,7 @@ public final class WorkflowBusinessTypeCatalog {
       ApprovalBusinessType.LUDONG_PROJECT_APPLICATION,
       ApprovalBusinessType.PURCHASE_DEMAND,
       ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,
+      "buyer_supplier_exit",
       ApprovalBusinessType.RFQ_AWARD,
       ApprovalBusinessType.CONTRACT_APPROVAL,
       ApprovalBusinessType.PAYMENT_REQUEST,

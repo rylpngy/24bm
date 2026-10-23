@@ -3,6 +3,9 @@
 
 export { configureApiClient, setAuthToken, setAuthExpiredHandler, setTokenRefresher, axiosInstance, downloadReport, uploadImportFile } from './http-client';
 export type { ImportResult, ImportRowError } from './http-client';
+export { replaceSupplierQualification, supplierQualificationHistory, buyerQualificationArchive } from './qualification-lifecycle';
+export { qualificationReviews, decideQualificationReview } from './qualification-lifecycle';
+export type { QualificationReview } from './qualification-lifecycle';
 export type { ErrorType, BodyType } from './http-client';
 
 // 竞价实时事件流(G-1):SSE 通道 + 订阅 hook(降级轮询由调用方按 live 控制)。

@@ -27,15 +27,19 @@ import {
   type BuyerSupplierResponse,
   type PurchaseOrderResponse,
   useBuyerSupplierChangeStatus,
+  buyerSupplierExitRisk,
+  type SupplierExitRiskResponse,
   usePurchaseOrderList,
-  useUnifiedWorkflowCompleteTask,
+  type WorkflowTask,
   useWorkflowBuyerSupplierAdmissionSubmit,
   useWorkflowRuntimeTasks,
 } from '@24bid/api-client';
-import { FeedbackNotice, StatusPill, cn } from '@24bid/ui';
+import { ConfirmDialog, FeedbackNotice, StatusPill, cn } from '@24bid/ui';
 import { SupplierQualificationsTab } from './supplier-qualifications-tab';
-import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
+import { SupplierAdmissionSubmitDialog } from './supplier-admission-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
+import { SupplierAdmissionReviewDialog } from './supplier-admission-review-dialog';
+import { SupplierExitActions } from './supplier-exit-actions';
 
 type TabId = 'orders' | 'finance' | 'performance' | 'products' | 'qualifications';
 
@@ -55,15 +59,6 @@ const shortDate = (v?: string) => (v ? v.slice(0, 10) : '—');
 interface AdmissionFeedback {
   tone: 'success' | 'error' | 'info';
   message: string;
-}
-
-function admissionErrorMessage(error: unknown, fallback: string) {
-  const response = error as {
-    response?: { data?: { message?: unknown; error?: { message?: unknown } } };
-    message?: unknown;
-  };
-  const message = response.response?.data?.message ?? response.response?.data?.error?.message ?? response.message;
-  return typeof message === 'string' && message.trim() ? message : fallback;
 }
 
 const scoreTone = (score: number) => {
@@ -168,6 +163,7 @@ export function SupplierDetailPage({
       {id && showApproval && can('buyer:workflow:read') && (
         <div id="supplier-approval-panel">
           <WorkflowStatusPanel businessType="buyer_supplier_admission" businessId={id} />
+          <WorkflowStatusPanel businessType="buyer_supplier_exit" businessId={id} />
         </div>
       )}
 
@@ -344,15 +340,29 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
   const queryClient = useQueryClient();
   const submit = useWorkflowBuyerSupplierAdmissionSubmit();
   const workflowTasks = useWorkflowRuntimeTasks(can('buyer:workflow:review'));
-  const completeTask = useUnifiedWorkflowCompleteTask();
+  const [review, setReview] = useState<{ task: WorkflowTask; approved: boolean } | null>(null);
   const changeStatus = useBuyerSupplierChangeStatus();
+  const [riskLoading, setRiskLoading] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<{ status: string; risk: SupplierExitRiskResponse } | null>(null);
   const id = supplier.id ?? '';
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [feedback, setFeedback] = useState<AdmissionFeedback | null>(null);
   const admissionTask = (workflowTasks.data?.data ?? []).find(
     (task) => task.businessType === 'buyer_supplier_admission' && task.businessId === id,
   );
-  const busy = submit.isPending || completeTask.isPending || changeStatus.isPending;
+  const busy = submit.isPending || changeStatus.isPending || riskLoading;
+  const prepareStatus = async (status: string) => {
+    if (!id || !can('buyer:supplier:manage') || busy) return;
+    setFeedback(null);
+    setRiskLoading(true);
+    try {
+      const response = await buyerSupplierExitRisk(id);
+      if (!response.data) throw new Error('风险数据为空');
+      setStatusTarget({ status, risk: response.data });
+    } catch {
+      setFeedback({ tone: 'error', message: '未结业务风险加载失败，暂不能调整状态，请重试。' });
+    } finally { setRiskLoading(false); }
+  };
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({
@@ -366,39 +376,9 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
     ]);
 
   const reviewAdmission = (approved: boolean) => {
-    if (!admissionTask) return;
+    if (!admissionTask || workflowTasks.isError || !can('buyer:workflow:review')) return;
     setFeedback(null);
-    completeTask.mutate(
-      {
-        taskId: admissionTask.taskId,
-        data: {
-          action: approved ? 'approve' : 'reject',
-          comment: approved ? '资料与资质核验通过，同意准入。' : '资料或资质不符合准入要求，驳回申请。',
-        },
-      },
-      {
-        onSuccess: (response) => {
-          const status = response.data?.status;
-          setFeedback({
-            tone: 'success',
-            message:
-              status === 'processing'
-                ? '当前审批节点已完成，流程已转交下一办理人。'
-                : approved
-                  ? '供应商准入审批已通过。'
-                  : '供应商准入申请已驳回。',
-          });
-          void refresh();
-        },
-        onError: (error) => {
-          setFeedback({
-            tone: 'error',
-            message: admissionErrorMessage(error, '准入审批失败，请刷新任务后重试。'),
-          });
-          void refresh();
-        },
-      },
-    );
+    setReview({ task: admissionTask, approved });
   };
 
   const action = lifecycleAction(
@@ -407,12 +387,10 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
       submit: () => setShowSubmitDialog(true),
       approve: () => reviewAdmission(true),
       reject: () => reviewAdmission(false),
-      blacklist: () =>
-        changeStatus.mutate({ relationId: id, data: { status: '黑名单' } }, { onSuccess: refresh }),
-      restore: () =>
-        changeStatus.mutate({ relationId: id, data: { status: '待准入' } }, { onSuccess: refresh }),
+      blacklist: () => { void prepareStatus('黑名单'); },
+      restore: () => { void prepareStatus('待准入'); },
     },
-    Boolean(admissionTask) && can('buyer:workflow:review'),
+    Boolean(admissionTask) && !workflowTasks.isError && !workflowTasks.isLoading && can('buyer:workflow:review'),
   ).filter(() => supplier.status === '准入审批中' ? can('buyer:workflow:review') : can('buyer:supplier:manage'));
   const hint =
     supplier.status === '待准入' || supplier.status === '已驳回'
@@ -429,11 +407,28 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
           ? '已准入供应商;发现重大风险可加入黑名单。'
           : supplier.status === '黑名单'
             ? '黑名单供应商;整改核实后可恢复为待准入。'
+            : supplier.status === '退出审批中'
+              ? '退出审核期间暂停新订单，已有业务保留。'
+              : supplier.status === '已退出'
+                ? '已退出合作；恢复后需重新完成准入审批。'
             : '可执行生命周期操作。';
 
   return (
     <>
+      <ConfirmDialog open={!!statusTarget} title={statusTarget?.status === '黑名单' ? '加入黑名单' : '恢复为待准入'}
+        tone={statusTarget?.status === '黑名单' ? 'danger' : 'primary'}
+        message={`未收货订单 ${statusTarget?.risk.unreceivedOrderCount ?? 0} 笔；未付清发票 ${statusTarget?.risk.unpaidInvoiceCount ?? 0} 张，票面合计 ¥${Number(statusTarget?.risk.unpaidInvoiceFaceAmount ?? 0).toLocaleString('zh-CN')}（非剩余应付余额）。${statusTarget?.status === '黑名单' ? '将禁止新订单并继续拦截付款，既有订单可继续履约。' : '需重新完成准入审批才可下新单，不代表原有风险已结清。'}`}
+        input={{ label: '处理原因', placeholder: '填写风险情况、处理依据或整改情况' }}
+        confirmLabel="确认调整" busy={changeStatus.isPending} onCancel={() => setStatusTarget(null)}
+        onConfirm={(reason) => {
+          if (!statusTarget || !can('buyer:supplier:manage')) return;
+          changeStatus.mutate({ relationId: id, data: { status: statusTarget.status, reason } }, {
+            onSuccess: () => { setStatusTarget(null); setFeedback({ tone: 'success', message: '状态已调整，处理原因已记录。' }); void refresh(); },
+            onError: (e) => { setStatusTarget(null); setFeedback({ tone: 'error', message: (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '状态调整失败，请刷新后重试。' }); },
+          });
+        }} />
       <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+        <SupplierExitActions id={id} status={supplier.status} />
         {feedback && (
           <div className="mb-3">
             <FeedbackNotice tone={feedback.tone} message={feedback.message} />
@@ -476,7 +471,7 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
                 disabled={busy || !id}
                 onClick={item.onClick}
                 className={cn(
-                  'inline-flex h-10 items-center rounded-lg px-5 text-sm font-black text-white transition disabled:bg-slate-300',
+                  'inline-flex h-10 items-center whitespace-nowrap rounded-lg px-5 text-sm font-black text-white transition disabled:bg-slate-300',
                   item.tone === 'blue' && 'bg-blue-600 hover:bg-blue-700',
                   item.tone === 'emerald' && 'bg-emerald-600 hover:bg-emerald-700',
                   item.tone === 'red' && 'bg-red-600 hover:bg-red-700',
@@ -488,9 +483,12 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
           </div>
         </div>
       </div>
+      {review && <SupplierAdmissionReviewDialog {...review} onClose={() => setReview(null)} onComplete={message => {
+        setReview(null); setFeedback({ tone: 'success', message }); void refresh();
+      }} />}
       {showSubmitDialog && (
-        <WorkflowSubmitDialog
-          businessType="buyer_supplier_admission"
+        <SupplierAdmissionSubmitDialog
+          relationId={id}
           title={supplier.supplierName ?? '供应商准入'}
           busy={submit.isPending}
           submissionError={submit.error}
@@ -818,7 +816,10 @@ function lifecycleAction(
     case '已准入':
       return [{ label: '加入黑名单', onClick: handlers.blacklist, tone: 'red' as const }];
     case '黑名单':
+    case '已退出':
       return [{ label: '恢复待准入', onClick: handlers.restore, tone: 'blue' as const }];
+    case '退出审批中':
+      return [];
     default:
       return [{ label: '提交准入', onClick: handlers.submit, tone: 'blue' as const }];
   }

@@ -6,7 +6,8 @@ import {
   useBuyerSupplierListRelationQualifications,
 } from '@24bid/api-client';
 import { FeedbackNotice, Pagination, Panel, SearchInput, ShellState } from '@24bid/ui';
-import { qualificationAlert } from './supplier-qualifications-tab';
+import { qualificationAlert } from './qualification-status';
+import { QualificationReviewPanel } from './qualification-review-panel';
 import { SupplierSummaryChip, SupplierSummaryChips } from './supplier-metric-card';
 
 const PAGE_SIZE = 8;
@@ -25,17 +26,23 @@ function SupplierQualRow({
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <div
+      <button
+        type="button"
         onClick={() => id && onOpen(id)}
-        className="flex cursor-pointer items-center justify-between gap-2"
+        className="flex w-full items-center justify-between gap-2 text-left focus-visible:outline-blue-600"
       >
         <p className="break-words font-black text-slate-950">{supplier.supplierName}</p>
         <span className="inline-flex items-center gap-1 text-xs font-black text-blue-600">
-          资质 {quals.length} · 360 <ChevronRight size={13} />
+          详情 <ChevronRight size={13} />
         </span>
-      </div>
+      </button>
       {query.isLoading ? (
         <p className="mt-2 text-xs font-bold text-slate-400">加载证照…</p>
+      ) : query.isError ? (
+        <div role="alert" className="mt-2 text-sm text-red-700">
+          资质加载失败
+          <button type="button" className="ml-3 font-bold underline" onClick={() => void query.refetch()}>重试</button>
+        </div>
       ) : quals.length === 0 ? (
         <p className="mt-2 text-xs font-bold text-slate-400">暂无资质证照。</p>
       ) : (
@@ -68,12 +75,12 @@ function SupplierQualRow({
 export function SupplierQualificationsBoard({ onOpen }: { onOpen: (id: string) => void }) {
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('');
   const query = useBuyerSupplierList();
   const all = query.data?.data ?? [];
   const kw = keyword.toLowerCase();
-  // 只对已准入/审批中的供应商看资质(待准入往往尚未提交证照)。
   const tracked = all
-    .filter((s) => s.status === '已准入' || s.status === '准入审批中')
+    .filter((s) => !status || s.status === status)
     .filter((s) => !kw || (s.supplierName ?? '').toLowerCase().includes(kw));
   const pageCount = Math.max(1, Math.ceil(tracked.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -81,18 +88,23 @@ export function SupplierQualificationsBoard({ onOpen }: { onOpen: (id: string) =
 
   return (
     <Panel title="资质管理" icon={BadgeCheck} subtitle="跨供应商证照台账 · 到期预警">
+      <QualificationReviewPanel />
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <SupplierSummaryChips>
           <SupplierSummaryChip
             icon={FileCheck2}
-            label="需维护"
-            value={String(all.filter((s) => s.status === '已准入' || s.status === '准入审批中').length)}
+            label="供应商"
+            value={String(all.length)}
             tone="blue"
           />
           <SupplierSummaryChip icon={CheckCircle2} label="已准入" value={String(all.filter((s) => s.status === '已准入').length)} tone="emerald" />
           <SupplierSummaryChip icon={ShieldCheck} label="审批中" value={String(all.filter((s) => s.status === '准入审批中').length)} tone="violet" />
           <SupplierSummaryChip icon={BadgeCheck} label="当前展示" value={String(tracked.length)} tone="amber" />
         </SupplierSummaryChips>
+        <select aria-label="准入状态" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700">
+          <option value="">全部准入状态</option>
+          {[...new Set(all.map((s) => s.status).filter(Boolean))].map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
         <SearchInput
           className="mb-0 ml-auto"
           placeholder="按供应商名称搜索"
@@ -105,6 +117,11 @@ export function SupplierQualificationsBoard({ onOpen }: { onOpen: (id: string) =
 
       {query.isLoading ? (
         <ShellState variant="loading" title="加载供应商" desc="拉取供应商及其证照…" />
+      ) : query.isError ? (
+        <div role="alert" className="text-sm text-red-700">
+          供应商台账加载失败。
+          <button type="button" className="ml-3 font-bold underline" onClick={() => void query.refetch()}>重试</button>
+        </div>
       ) : tracked.length === 0 ? (
         <FeedbackNotice tone="info" message={keyword ? '没有符合条件的供应商。' : '暂无可展示资质的供应商。'} />
       ) : (

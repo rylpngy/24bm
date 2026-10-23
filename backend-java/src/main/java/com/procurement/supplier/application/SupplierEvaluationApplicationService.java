@@ -1,6 +1,8 @@
 package com.procurement.supplier.application;
 
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.supplier.api.AutoScoreSuggestionResponse;
 import com.procurement.supplier.api.ConfirmCooperationTierRequest;
 import com.procurement.supplier.api.CreateSupplierEvaluationRequest;
@@ -27,14 +29,17 @@ public class SupplierEvaluationApplicationService {
   private final SupplierEvaluationMapper evaluationMapper;
   private final BuyerSupplierRelationMapper relationMapper;
   private final SupplierFulfillmentMetricsMapper metricsMapper;
+  private final AuditLogApplicationService audit;
 
   public SupplierEvaluationApplicationService(
       SupplierEvaluationMapper evaluationMapper,
       BuyerSupplierRelationMapper relationMapper,
-      SupplierFulfillmentMetricsMapper metricsMapper) {
+      SupplierFulfillmentMetricsMapper metricsMapper,
+      AuditLogApplicationService audit) {
     this.evaluationMapper = evaluationMapper;
     this.relationMapper = relationMapper;
     this.metricsMapper = metricsMapper;
+    this.audit = audit;
   }
 
   // 按实测履约自动评分:质量=合格率、交付=准时率;价格/服务无客观数据,取默认基准 80。
@@ -104,6 +109,9 @@ public class SupplierEvaluationApplicationService {
         request.comment(),
         userId);
 
+    audit.recordCurrentTenantAction("supplier_evaluation.created", AuditTargetType.BUYER_SUPPLIER_RELATION,
+        relationId, "考核单=" + id + "，周期=" + request.period() + "，综合分=" + total + "，建议层级=" + suggestedTier);
+
     return evaluationMapper.listBySupplier(tenantId, relation.supplierId()).stream()
         .filter(e -> e.id().equals(id))
         .map(this::toResponse)
@@ -117,8 +125,14 @@ public class SupplierEvaluationApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier evaluation APIs");
     requireRelation(tenantId, relationId);
     SupplierCooperationTier.requireValid(request.cooperationTier());
+    if (request.evaluationScore() != null) {
+      SupplierPerformanceScoring.requireValidScore(request.evaluationScore(), "调级依据");
+    }
     relationMapper.updateCooperationTier(
         tenantId, relationId, request.cooperationTier(), request.evaluationScore());
+    audit.recordCurrentTenantAction("supplier_cooperation_tier.confirmed", AuditTargetType.BUYER_SUPPLIER_RELATION,
+        relationId, "合作层级=" + request.cooperationTier() + "，依据分数="
+            + (request.evaluationScore() == null ? "未提供" : request.evaluationScore()));
   }
 
   private BuyerSupplierRelation requireRelation(String tenantId, String relationId) {

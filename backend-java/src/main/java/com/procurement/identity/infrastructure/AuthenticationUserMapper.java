@@ -18,6 +18,7 @@ public interface AuthenticationUserMapper {
         and u.password_hash is not null
         and (
           u.email = #{account}
+          or (#{scope} = 'SUPPLIER' and lower(btrim(u.email)) = lower(trim(#{account})))
           or u.mobile = #{account}
           or u.id = #{account}
           or upper(u.employee_no) = upper(trim(#{account}))

@@ -23,7 +23,7 @@ const statusLabel: Record<string, string> = {
 };
 
 const businessLabel: Record<string, string> = {
-  purchase_demand: '采购需求', buyer_supplier_admission: '供应商准入', rfq_award: '询价定标',
+  purchase_demand: '采购需求', buyer_supplier_admission: '供应商准入', buyer_supplier_exit: '供应商退出', rfq_award: '询价定标',
   contract_approval: '合同审批', payment_request: '付款申请', payment_batch: '付款批次',
   payment_archive_exception: '付款归档例外',
 };

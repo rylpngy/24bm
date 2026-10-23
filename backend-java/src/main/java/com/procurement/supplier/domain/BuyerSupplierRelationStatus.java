@@ -6,6 +6,8 @@ public final class BuyerSupplierRelationStatus {
   public static final String ADMITTED = "已准入";
   public static final String REJECTED = "已驳回";
   public static final String BLACKLISTED = "黑名单";
+  public static final String IN_EXIT_APPROVAL = "退出审批中";
+  public static final String EXITED = "已退出";
 
   private BuyerSupplierRelationStatus() {
   }

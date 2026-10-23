@@ -14,6 +14,10 @@ class PortalPermissionPolicyTests {
     assertThat(required("buyer", "GET", "suppliers/s/qualifications/q/download")).isEqualTo("buyer:supplier:read");
     assertThat(required("buyer", "POST", "suppliers/s/submit")).isEqualTo("buyer:supplier:manage");
     assertThat(required("buyer", "POST", "suppliers/s/approval")).isEqualTo("buyer:workflow:review");
+    assertThat(required("buyer", "POST", "suppliers/qualification-reviews/1/review")).isEqualTo("buyer:workflow:review");
+    assertThat(required("buyer", "GET", "suppliers/qualification-reviews")).isEqualTo("buyer:supplier:read");
+    assertThat(required("buyer", "GET", "suppliers/s/exit-risk")).isEqualTo("buyer:supplier:manage");
+    assertThat(required("buyer", "POST", "suppliers/s/exit")).isEqualTo("buyer:supplier:manage");
     assertThat(required("buyer", "POST", "supplier-invitations/import")).isEqualTo("buyer:supplier:manage");
   }
   @Test
