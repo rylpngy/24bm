@@ -7,14 +7,16 @@ import { FeedbackNotice } from '@24bid/ui';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { SupplierAdmissionReviewDialog } from './supplier-admission-review-dialog';
+import { SupplierUnsettledBusiness } from './supplier-unsettled-business';
 
-export function SupplierExitActions({ id, status }: { id: string; status?: string }) {
+export function SupplierExitActions({ id, status, supplierId }: { id: string; status?: string; supplierId?: string }) {
   const { can } = useBuyerPermissions();
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [risk, setRisk] = useState<{ orders: number; invoices: number } | null>(null);
   const [review, setReview] = useState<{ task: WorkflowTask; approved: boolean } | null>(null);
   const tasks = useWorkflowRuntimeTasks(status === '退出审批中' && can('buyer:workflow:review'));
   const task = tasks.data?.data?.find(t => t.businessType === 'buyer_supplier_exit' && t.businessId === id);
@@ -29,8 +31,9 @@ export function SupplierExitActions({ id, status }: { id: string; status?: strin
       const { data } = await buyerSupplierExitRisk(id);
       if (!data) throw new Error();
       if (data.unreceivedOrderCount || data.unpaidInvoiceCount) {
+        setRisk({ orders: data.unreceivedOrderCount ?? 0, invoices: data.unpaidInvoiceCount ?? 0 });
         setMessage(`暂不能退出：未收货订单 ${data.unreceivedOrderCount} 笔，未付清发票 ${data.unpaidInvoiceCount} 张。请先处理未结业务。`);
-      } else { submit.reset(); setOpen(true); }
+      } else { setRisk(null); submit.reset(); setOpen(true); }
     } catch { setMessage('未结业务核查失败，请刷新后重试。'); }
     finally { setLoading(false); }
   };
@@ -39,8 +42,10 @@ export function SupplierExitActions({ id, status }: { id: string; status?: strin
     {message && <FeedbackNotice tone="info" message={message} />}
     {status === '已准入' && can('buyer:supplier:manage') && <button type="button" disabled={loading}
       onClick={() => void prepare()} className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 disabled:opacity-50">
-      <LogOut size={16} />{loading ? '核查未结业务…' : '申请退出'}
+      <LogOut size={16} />{loading ? '核查未结业务…' : risk ? '重新核查退出条件' : '申请退出'}
     </button>}
+    {risk && supplierId && status === '已准入' && can('buyer:supplier:manage') &&
+      <SupplierUnsettledBusiness supplierId={supplierId} orderCount={risk.orders} invoiceCount={risk.invoices} />}
     {status === '退出审批中' && <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
       <span>{tasks.isError ? '审批任务加载失败，请刷新重试。' : task ? '当前退出审批由您办理。' : '退出审批中，暂停新增订单。请展开审批信息查看办理进度。'}</span>
       {task && !tasks.isError && can('buyer:workflow:review') && <>
