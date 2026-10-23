@@ -39,6 +39,14 @@ public interface InvoiceReconciliationMapper {
       @Param("stage") String stage,
       @Param("nextAction") String nextAction);
 
+  default List<InvoiceReconciliation> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("stage") String stage,
+      @Param("supplierId") String supplierId,
+      @Param("orderId") String orderId) {
+    return listVisible(tenantId, stage, supplierId, orderId, com.procurement.identity.domain.DataScope.unrestricted());
+  }
+
   @Select("""
       <script>
       select
@@ -76,14 +84,18 @@ public interface InvoiceReconciliationMapper {
       <if test="orderId != null">
         and reconciliation.order_id = #{orderId}
       </if>
+      and reconciliation.order_id in (
+      """ + FinanceScopeSql.ORDERS + """
+      )
       order by reconciliation.updated_at desc, reconciliation.created_at desc
       </script>
       """)
-  List<InvoiceReconciliation> listByTenantFiltered(
+  List<InvoiceReconciliation> listVisible(
       @Param("tenantId") String tenantId,
       @Param("stage") String stage,
       @Param("supplierId") String supplierId,
-      @Param("orderId") String orderId);
+      @Param("orderId") String orderId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       <script>

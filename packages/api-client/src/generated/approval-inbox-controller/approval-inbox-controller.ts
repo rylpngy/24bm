@@ -351,7 +351,3 @@ export function useApprovalInboxPending<TData = Awaited<ReturnType<typeof approv
 
   return query;
 }
-
-
-
-

@@ -8,6 +8,7 @@
 
 export interface UpsertDepartmentBudgetRequest {
   departmentId: string;
+  /** @pattern [0-9]{4} */
   period: string;
   totalAmount: number;
 }

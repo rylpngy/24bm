@@ -37,6 +37,8 @@ class PurchaseDemandDepartmentValidationTests {
   private final ApprovalTemplateMapper approvalTemplateMapper = org.mockito.Mockito.mock(ApprovalTemplateMapper.class);
   private final BuyerUserMapper buyerUserMapper = org.mockito.Mockito.mock(BuyerUserMapper.class);
   private final DepartmentMapper departmentMapper = org.mockito.Mockito.mock(DepartmentMapper.class);
+  private final com.procurement.sourcing.application.RfqDemandLinkQueryService linkQueryService =
+      org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class);
   private final ApprovalTaskApplicationService approvalTaskApplicationService =
       new ApprovalTaskApplicationService(approvalTaskMapper, approvalTemplateMapper, buyerUserMapper);
   private final AuditLogApplicationService auditLogApplicationService =
@@ -44,7 +46,7 @@ class PurchaseDemandDepartmentValidationTests {
   private final NotificationApplicationService notificationApplicationService =
       org.mockito.Mockito.mock(NotificationApplicationService.class);
   private final com.procurement.identity.application.DataScopeService dataScopeService =
-      org.mockito.Mockito.mock(com.procurement.identity.application.DataScopeService.class);
+      TestDataScopes.unrestricted();
   private final PurchaseDemandApplicationService purchaseDemandApplicationService =
       new PurchaseDemandApplicationService(
           purchaseDemandMapper,
@@ -52,12 +54,13 @@ class PurchaseDemandDepartmentValidationTests {
           approvalTaskMapper,
           approvalTaskApplicationService,
       com.procurement.TestApprovalGates.alwaysOn(),
-          org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqDemandLinkQueryService.class),
+          linkQueryService,
           departmentMapper,
           auditLogApplicationService,
           notificationApplicationService,
           new PurchaseDemandApprovalStatusTransition(),
-          dataScopeService);
+          dataScopeService,
+          org.mockito.Mockito.mock(com.procurement.identity.application.PermissionService.class));
 
   @AfterEach
   void clearTenantContext() {
@@ -123,7 +126,7 @@ class PurchaseDemandDepartmentValidationTests {
     TenantContext.set("tenant-1", null, "buyer-user-1");
     String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
     when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
-    when(purchaseDemandMapper.countByTenantAndIdPrefix("tenant-1", "IT" + date)).thenReturn(7);
+    when(purchaseDemandMapper.allocateSequence("IT" + date)).thenReturn(8L);
     when(purchaseDemandMapper.findByTenantAndId("tenant-1", "IT" + date + "008"))
         .thenReturn(demand("IT" + date + "008"));
     when(purchaseDemandItemMapper.listByDemand("tenant-1", "IT" + date + "008")).thenReturn(List.of());
@@ -213,6 +216,30 @@ class PurchaseDemandDepartmentValidationTests {
 
     verify(purchaseDemandMapper).listByTenantFiltered(
         "tenant-1", null, null, null, null, "buyer-user-1");
+  }
+
+  @Test
+  void listLoadsItemsAndLinksInBatchesInsteadOfPerDemand() {
+    TenantContext.set("tenant-1", null, "buyer-user-1");
+    when(purchaseDemandMapper.listByTenantFiltered("tenant-1", null, null, null, null, null))
+        .thenReturn(List.of(demand("demand-1"), demand("demand-2")));
+    var ids = List.of("demand-1", "demand-2");
+    when(purchaseDemandItemMapper.listByDemands("tenant-1", ids)).thenReturn(List.of(
+        new com.procurement.demand.domain.PurchaseDemandItem("item-1", "tenant-1", "demand-1", "mat-1", BigDecimal.ONE)));
+    when(linkQueryService.findLatestLinksForDemands("tenant-1", ids)).thenReturn(java.util.Map.of(
+        "demand-1", new com.procurement.sourcing.application.RfqDemandLinkQueryService.RfqDemandLink("rfq-1", "报价中")));
+
+    var rows = purchaseDemandApplicationService.listCurrentTenantDemands(null, null, null);
+
+    assertThat(rows).hasSize(2);
+    assertThat(rows.getFirst().lineItems()).singleElement()
+        .satisfies(item -> assertThat(item.materialId()).isEqualTo("mat-1"));
+    assertThat(rows.getFirst().linkedRfqId()).isEqualTo("rfq-1");
+    assertThat(rows.get(1).lineItems()).isEmpty();
+    verify(purchaseDemandItemMapper).listByDemands("tenant-1", ids);
+    verify(linkQueryService).findLatestLinksForDemands("tenant-1", ids);
+    verify(purchaseDemandItemMapper, never()).listByDemand(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    verify(linkQueryService, never()).findLatestLinkForDemand(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
   }
 
   private PurchaseDemand demand(String id) {

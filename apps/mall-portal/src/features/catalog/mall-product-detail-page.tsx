@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ArrowLeft, ShieldCheck, ShoppingCart, Truck } from 'lucide-react';
 import { useBuyerMallAddToCart, useBuyerMallProduct } from '@24bid/api-client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useMallPermissions } from '../../lib/use-mall-permissions';
 import { FeedbackNotice, MiniFact, PrimaryActionButton, RichTextView, cn } from '@24bid/ui';
 import type { MallRoute } from '../../App';
 import { currency } from './product-card';
@@ -28,6 +29,7 @@ export function MallProductDetailPage({
   onNavigate: (route: MallRoute) => void;
 }) {
   const queryClient = useQueryClient();
+  const { can } = useMallPermissions();
   const product = useBuyerMallProduct(productId);
   const addToCart = useBuyerMallAddToCart();
   const [skuId, setSkuId] = useState<string | null>(null);
@@ -76,6 +78,7 @@ export function MallProductDetailPage({
   if (product.isLoading) {
     return <FeedbackNotice tone="info" message="正在加载商品详情…" />;
   }
+  if (product.isError) return <FeedbackNotice tone="error" message="商品详情加载失败，请刷新重试。" />;
   if (!detail) {
     return <FeedbackNotice tone="error" message="商品不存在或不在本企业可见范围。" />;
   }
@@ -204,7 +207,7 @@ export function MallProductDetailPage({
               </b>
             </p>
 
-            <div className="mt-3">
+            {can('buyer:mall:purchase') && <div className="mt-3">
               <PrimaryActionButton
                 onClick={submitAdd}
                 busy={addToCart.isPending}
@@ -215,7 +218,7 @@ export function MallProductDetailPage({
               >
                 加入购物车
               </PrimaryActionButton>
-            </div>
+            </div>}
             <p className="mt-2 text-[11px] font-bold text-slate-400">
               数量是否满足起订量与库存,由服务端在加购与结算时校验。
             </p>

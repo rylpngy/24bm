@@ -55,7 +55,9 @@ class FinancePaymentStateTransitionTests {
       tenantFeatureApplicationService,
       notificationApplicationService,
       new InvoicePaymentStatusTransition(),
-          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class));
+          org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class),
+      TestFinanceAccess.unrestricted(),
+      org.mockito.Mockito.mock(com.procurement.finance.application.PaymentAuthorizationService.class));
   private final InvoiceApplicationService invoiceApplicationService = new InvoiceApplicationService(
       purchaseOrderMapper,
         org.mockito.Mockito.mock(com.procurement.order.infrastructure.ReceiptMapper.class),
@@ -76,14 +78,14 @@ class FinancePaymentStateTransitionTests {
   @Test
   void listBuyerInvoicesAppliesFiltersInsideCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(invoiceMapper.listByTenantFiltered("tenant-1", "待付款", "supplier-1", "po-1"))
+    when(invoiceMapper.listVisible("tenant-1", "待付款", "supplier-1", "po-1", com.procurement.identity.domain.DataScope.unrestricted()))
         .thenReturn(List.of(invoice("invoice-1", "tenant-1", "待付款")));
     when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
         .thenReturn(order(BigDecimal.valueOf(100)));
 
     InvoiceResponse response = paymentApplicationService.listCurrentTenantInvoices("待付款", "supplier-1", "po-1").getFirst();
 
-    verify(invoiceMapper).listByTenantFiltered("tenant-1", "待付款", "supplier-1", "po-1");
+    verify(invoiceMapper).listVisible("tenant-1", "待付款", "supplier-1", "po-1", com.procurement.identity.domain.DataScope.unrestricted());
     org.assertj.core.api.Assertions.assertThat(response.orderAmount()).isEqualByComparingTo("100");
     org.assertj.core.api.Assertions.assertThat(response.varianceAmount()).isEqualByComparingTo("0");
     org.assertj.core.api.Assertions.assertThat(response.receiptStatus()).isEqualTo("已收货");
@@ -96,14 +98,14 @@ class FinancePaymentStateTransitionTests {
   @Test
   void listBuyerReconciliationsUsesIndependentLedgerInsideCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(invoiceReconciliationMapper.listByTenantFiltered("tenant-1", "待付款", "supplier-1", "po-1"))
+    when(invoiceReconciliationMapper.listVisible("tenant-1", "待付款", "supplier-1", "po-1", com.procurement.identity.domain.DataScope.unrestricted()))
         .thenReturn(List.of(reconciliation("recon-1", "invoice-1", "待付款", "登记付款")));
 
     InvoiceReconciliationResponse response = paymentApplicationService
         .listCurrentTenantReconciliations("待付款", "supplier-1", "po-1")
         .getFirst();
 
-    verify(invoiceReconciliationMapper).listByTenantFiltered("tenant-1", "待付款", "supplier-1", "po-1");
+    verify(invoiceReconciliationMapper).listVisible("tenant-1", "待付款", "supplier-1", "po-1", com.procurement.identity.domain.DataScope.unrestricted());
     org.assertj.core.api.Assertions.assertThat(response.id()).isEqualTo("recon-1");
     org.assertj.core.api.Assertions.assertThat(response.reconciliationNo()).isEqualTo("REC-invoice-1");
     org.assertj.core.api.Assertions.assertThat(response.invoiceId()).isEqualTo("invoice-1");

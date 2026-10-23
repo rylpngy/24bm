@@ -18,7 +18,9 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,8 +28,11 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 @SpringBootTest
-@EnabledIfSystemProperty(named = "ludong.reuse.it.jdbc", matches = ".+")
+@Testcontainers
+@org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 class LudongPocEmployeeReuseIT {
+  @Container
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
   private static final String TENANT_ID = "tenant-ldu-reuse-it";
   private static final String DEPARTMENT_ID = "dept-ldu-reuse-it";
   private static final String APPLICANT_ID = "user-ldu-reuse-applicant-it";
@@ -41,11 +46,9 @@ class LudongPocEmployeeReuseIT {
 
   @DynamicPropertySource
   static void registerProperties(DynamicPropertyRegistry registry) {
-    registry.add("spring.datasource.url", () -> System.getProperty("ludong.reuse.it.jdbc"));
-    registry.add("spring.datasource.username", () -> System.getProperty(
-        "ludong.reuse.it.username", "procurement"));
-    registry.add("spring.datasource.password", () -> System.getProperty(
-        "ludong.reuse.it.password", "procurement"));
+    registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+    registry.add("spring.datasource.username", POSTGRES::getUsername);
+    registry.add("spring.datasource.password", POSTGRES::getPassword);
     registry.add("keycloak.enabled", () -> false);
     registry.add("app.seed.locations", () -> "");
   }

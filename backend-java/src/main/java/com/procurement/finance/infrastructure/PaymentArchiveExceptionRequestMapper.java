@@ -11,6 +11,14 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface PaymentArchiveExceptionRequestMapper {
 
+  default List<PaymentArchiveExceptionRequest> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("paymentBatchNo") String paymentBatchNo,
+      @Param("approvalStatus") String approvalStatus,
+      @Param("exceptionType") String exceptionType) {
+    return listVisible(tenantId, paymentBatchNo, approvalStatus, exceptionType, com.procurement.identity.domain.DataScope.unrestricted());
+  }
+
   @Select("""
       <script>
       select id, tenant_id, payment_batch_no, exception_type, exception_reason,
@@ -27,14 +35,18 @@ public interface PaymentArchiveExceptionRequestMapper {
       <if test="exceptionType != null">
         and exception_type = #{exceptionType}
       </if>
+      and payment_batch_no in (
+      """ + FinanceScopeSql.BATCHES + """
+      )
       order by updated_at desc, created_at desc
       </script>
       """)
-  List<PaymentArchiveExceptionRequest> listByTenantFiltered(
+  List<PaymentArchiveExceptionRequest> listVisible(
       @Param("tenantId") String tenantId,
       @Param("paymentBatchNo") String paymentBatchNo,
       @Param("approvalStatus") String approvalStatus,
-      @Param("exceptionType") String exceptionType);
+      @Param("exceptionType") String exceptionType,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Insert("""
       insert into payment_archive_exception_requests (

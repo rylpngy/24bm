@@ -14,6 +14,11 @@ export { useAuctionStream } from './use-auction-stream';
 export { createAppQueryClient } from './query-client';
 
 export * from './workflow-runtime';
+export * from './demand-queries';
+export * from './payment-ledger';
+export * from './payment-reviews';
+export * from './attachment-integrity';
+export * from './session-permissions';
 
 export * from './generated/model';
 export * from './generated/controllers';

@@ -1,5 +1,6 @@
 import { useBuyerSupplierListRelationQualifications } from '@24bid/api-client';
 import { ShellState } from '@24bid/ui';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { OwnerAttachments } from '../attachments/owner-attachments';
 
 // 资质到期状态:已过期 / 即将到期(30天内) / 正常。
@@ -19,6 +20,7 @@ export function SupplierQualificationsTab({
   relationId: string;
   supplierId?: string;
 }) {
+  const { can } = useBuyerPermissions();
   const qualifications = useBuyerSupplierListRelationQualifications(relationId);
   const quals = qualifications.data?.data ?? [];
 
@@ -68,7 +70,8 @@ export function SupplierQualificationsTab({
           ownerType="supplier"
           ownerId={supplierId}
           title="资质附件"
-          emptyHint="暂无资质附件,点击右上角上传营业执照、资质证书、开户许可证等。"
+          readOnly={!can('buyer:supplier:manage')}
+          emptyHint="暂无资质附件。"
         />
       )}
     </div>

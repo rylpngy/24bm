@@ -65,8 +65,8 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(order("po-1", "tenant-1", "supplier-1", "待发货"));
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
-        awardDecisionMapper,
-        rfqMapper,
+          TestOrderAccess.unrestricted(),
+        new com.procurement.sourcing.application.OrderAwardQueryService(awardDecisionMapper, rfqMapper),
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -89,8 +89,8 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(0);
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
-        awardDecisionMapper,
-        rfqMapper,
+          TestOrderAccess.unrestricted(),
+        new com.procurement.sourcing.application.OrderAwardQueryService(awardDecisionMapper, rfqMapper),
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -113,6 +113,7 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(0);
 
     DeliveryApplicationService service = new DeliveryApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper,
         deliveryMapper,
         auditLogApplicationService,
@@ -134,6 +135,7 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(1);
 
     DeliveryApplicationService service = new DeliveryApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper,
         deliveryMapper,
         auditLogApplicationService,
@@ -194,8 +196,8 @@ class OrderFulfillmentStateTransitionTests {
         .thenAnswer(invocation -> order(invocation.getArgument(1), "tenant-1", "supplier-1", "待供应商确认"));
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
-        awardDecisionMapper,
-        rfqMapper,
+          TestOrderAccess.unrestricted(),
+        new com.procurement.sourcing.application.OrderAwardQueryService(awardDecisionMapper, rfqMapper),
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -243,8 +245,8 @@ class OrderFulfillmentStateTransitionTests {
             org.mockito.ArgumentMatchers.eq(LocalDate.parse("2026-06-20")));
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
-        awardDecisionMapper,
-        rfqMapper,
+          TestOrderAccess.unrestricted(),
+        new com.procurement.sourcing.application.OrderAwardQueryService(awardDecisionMapper, rfqMapper),
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -286,8 +288,8 @@ class OrderFulfillmentStateTransitionTests {
         .thenAnswer(invocation -> order(invocation.getArgument(1), "tenant-1", "supplier-1", "待供应商确认"));
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
-        awardDecisionMapper,
-        rfqMapper,
+          TestOrderAccess.unrestricted(),
+        new com.procurement.sourcing.application.OrderAwardQueryService(awardDecisionMapper, rfqMapper),
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -328,8 +330,8 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(rfq("rfq-1", "tenant-1", "已定标", "supplier-2"));
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
-        awardDecisionMapper,
-        rfqMapper,
+          TestOrderAccess.unrestricted(),
+        new com.procurement.sourcing.application.OrderAwardQueryService(awardDecisionMapper, rfqMapper),
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -360,8 +362,8 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(java.util.List.of());
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
-        awardDecisionMapper,
-        rfqMapper,
+          TestOrderAccess.unrestricted(),
+        new com.procurement.sourcing.application.OrderAwardQueryService(awardDecisionMapper, rfqMapper),
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -382,8 +384,8 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(java.util.List.of());
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
-        awardDecisionMapper,
-        rfqMapper,
+          TestOrderAccess.unrestricted(),
+        new com.procurement.sourcing.application.OrderAwardQueryService(awardDecisionMapper, rfqMapper),
         purchaseOrderMapper,
         auditLogApplicationService,
         notificationApplicationService,
@@ -404,6 +406,7 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(List.of());
 
     ReceiptApplicationService service = new ReceiptApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
@@ -426,6 +429,7 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(List.of());
 
     DeliveryApplicationService service = new DeliveryApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper,
         deliveryMapper,
         auditLogApplicationService,
@@ -459,6 +463,7 @@ class OrderFulfillmentStateTransitionTests {
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 500, java.time.LocalDate.parse("2026-06-18"), java.time.LocalDate.parse("2026-06-22"), "整车直发，预计3日到货"));
 
     DeliveryApplicationService service = new DeliveryApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper,
         deliveryMapper,
         auditLogApplicationService,
@@ -486,6 +491,7 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(0);
 
     ReceiptApplicationService service = new ReceiptApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
@@ -512,6 +518,7 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(0);
 
     ReceiptApplicationService service = new ReceiptApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
@@ -551,6 +558,7 @@ class OrderFulfillmentStateTransitionTests {
         .thenReturn(1);
 
     ReceiptApplicationService service = new ReceiptApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
@@ -600,6 +608,7 @@ class OrderFulfillmentStateTransitionTests {
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00"), 100, 98, "外观完好，抽检合格", null, null, null));
 
     ReceiptApplicationService service = new ReceiptApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper,
         deliveryMapper,
         receiptMapper,
@@ -640,6 +649,7 @@ class OrderFulfillmentStateTransitionTests {
             BigDecimal.valueOf(4), BigDecimal.valueOf(12000), BigDecimal.valueOf(48000), 0)));
 
     ReceiptApplicationService service = new ReceiptApplicationService(
+          TestOrderAccess.unrestricted(),
         purchaseOrderMapper, deliveryMapper, receiptMapper,
         orderLineItemMapper, receiptLineItemMapper,
         auditLogApplicationService, notificationApplicationService,

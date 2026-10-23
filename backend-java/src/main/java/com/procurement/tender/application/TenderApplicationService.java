@@ -81,6 +81,8 @@ public class TenderApplicationService {
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
   private final RfqAnnouncementService rfqAnnouncementService;
   private final TenantCapabilityApplicationService tenantCapabilityApplicationService;
+  private final com.procurement.identity.application.PermissionService permissions;
+  private final com.procurement.identity.application.DataScopeService scopes;
 
   public TenderApplicationService(
       TenderMapper tenderMapper,
@@ -95,7 +97,9 @@ public class TenderApplicationService {
       RfqApplicationService rfqApplicationService,
       PurchaseOrderApplicationService purchaseOrderApplicationService,
       RfqAnnouncementService rfqAnnouncementService,
-      TenantCapabilityApplicationService tenantCapabilityApplicationService) {
+      TenantCapabilityApplicationService tenantCapabilityApplicationService,
+      com.procurement.identity.application.PermissionService permissions,
+      com.procurement.identity.application.DataScopeService scopes) {
     this.tenderMapper = tenderMapper;
     this.acquisitionMapper = acquisitionMapper;
     this.bidMapper = bidMapper;
@@ -109,18 +113,22 @@ public class TenderApplicationService {
     this.purchaseOrderApplicationService = purchaseOrderApplicationService;
     this.rfqAnnouncementService = rfqAnnouncementService;
     this.tenantCapabilityApplicationService = tenantCapabilityApplicationService;
+    this.permissions = permissions;
+    this.scopes = scopes;
   }
 
   // ── 买方:编制 / 发布 / 发放 ─────────────────────────────────
   public List<TenderResponse> listCurrentTenantTenders() {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    return tenderMapper.listByTenant(tenantId).stream()
+    permissions.require("buyer:tender:read");
+    return tenderMapper.listVisibleByTenant(tenantId, scopes.currentUserDataScope()).stream()
         .map(t -> toResponse(t, acquisitionMapper.listByTender(tenantId, t.id()), true))
         .toList();
   }
 
   @Transactional
   public TenderResponse create(SaveTenderRequest request) {
+    permissions.require("buyer:tender:manage");
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
     // M-0:招标方式未开通即拒绝立项。
     tenantCapabilityApplicationService.requireMethodEnabled(
@@ -853,10 +861,12 @@ public class TenderApplicationService {
   }
 
   private Tender requireTender(String tenantId, String tenderId) {
+    permissions.require("buyer:tender:manage");
     Tender tender = tenderMapper.findByTenantAndId(tenantId, tenderId);
     if (tender == null) {
       throw new IllegalArgumentException("Tender not found in tenant scope: " + tenderId);
     }
+    scopes.requireCreatorAccess(tender.ownerId());
     return tender;
   }
 

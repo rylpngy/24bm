@@ -130,7 +130,7 @@ public interface MallListingMapper {
 
   // 商城消费:经商城锚点 RFQ(方式=商城)生成的订单,按供应商聚合。
   @Select("""
-      select o.supplier_id as supplier_id,
+      <script>select o.supplier_id as supplier_id,
              coalesce(e.name, o.supplier_id) as supplier_name,
              count(1) as order_count,
              sum(o.amount) as total_amount
@@ -138,10 +138,14 @@ public interface MallListingMapper {
       join rfqs r on r.id = o.rfq_id and r.tenant_id = o.tenant_id
       left join enterprises e on e.id = o.supplier_id
       where o.tenant_id = #{tenantId} and r.method = '商城'
+        and o.id in (
+      """ + com.procurement.common.data.ProcurementScopeSql.ORDERS + """
+        )
       group by o.supplier_id, coalesce(e.name, o.supplier_id)
-      order by total_amount desc
+      order by total_amount desc</script>
       """)
-  List<com.procurement.mall.domain.MallSupplierSpend> mallSpendBySupplier(@Param("tenantId") String tenantId);
+  List<com.procurement.mall.domain.MallSupplierSpend> mallSpendBySupplier(@Param("tenantId") String tenantId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       select count(1) from mall_listings

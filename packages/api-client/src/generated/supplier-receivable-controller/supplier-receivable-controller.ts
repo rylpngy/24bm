@@ -266,7 +266,3 @@ export function useSupplierReceivablePaymentAuditLogs<TData = Awaited<ReturnType
 
   return query;
 }
-
-
-
-

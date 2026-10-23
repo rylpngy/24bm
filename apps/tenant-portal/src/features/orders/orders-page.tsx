@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { ArrowLeft, Info, Truck } from 'lucide-react';
 import {
   useBuyerDeliveryList,
@@ -33,16 +34,17 @@ const conclusionCls = (c?: string | null) => {
 
 // S5b:采购订单履约。表格列表 → 详情页(抬头/行项/物流/收货验收),对齐采购需求页面规范。
 export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => void }) {
+  const { can } = useBuyerPermissions();
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const query = usePurchaseOrderList();
-  const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
-  const receiptsQuery = useBuyerReceiptList();
+  const suppliersQuery = useBuyerSupplierList({ status: '已准入' }, { query: { enabled: can('buyer:supplier:read') } });
+  const receiptsQuery = useBuyerReceiptList(undefined, { query: { enabled: can('buyer:receipt:read') } });
   const deliveriesQuery = useBuyerDeliveryList();
-  const allOrders = query.data?.data ?? [];
+  const allOrders = query.isError ? [] : query.data?.data ?? [];
 
 
   const supplierNames = useMemo(() => {
@@ -261,7 +263,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
             )}
 
             {/* 收货验收动作已迁至「收货验收」工作台,此处保留引导 */}
-            {o.status === '已发货' && (
+            {o.status === '已发货' && can('buyer:receipt:read') && (
               <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3">
                 <p className="text-xs font-black text-blue-800">
                   货物已发出,待收货验收。数量核对、质检结论与不合格处置请在「收货验收」工作台完成。
@@ -304,8 +306,8 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
               <div className="mt-4 space-y-0">
                 {[
                   { label: '订单创建', time: o.createdAt?.slice(0, 10) ?? null, done: true },
-                  { label: '供应商发货', time: delivery?.shippedDate ?? null, done: !!delivery },
-                  { label: '收货验收', time: rec ? (rec.result ?? '已验收') : null, done: !!rec },
+                  { label: '供应商发货', time: delivery?.shippedDate ?? (delivery?.createdAt ? `登记于 ${delivery.createdAt.slice(0, 10)}` : null), done: !!delivery || o.status === '已发货' || o.status === '已收货' },
+                  { label: '收货验收', time: rec ? (rec.result ?? '已验收') : null, done: !!rec || o.status === '已收货' },
                 ].map((step, idx, arr) => (
                   <div key={step.label} className="relative pl-5">
                     {idx < arr.length - 1 && <span className="absolute left-[5px] top-4 h-full w-px bg-slate-200" />}
@@ -316,7 +318,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                       )}
                     />
                     <p className={cn('text-sm font-black', step.done ? 'text-slate-950' : 'text-slate-400')}>{step.label}</p>
-                    <p className="mt-0.5 pb-3 font-mono text-[11px] font-bold text-slate-400">{step.time ?? '待进行'}</p>
+                    <p className="mt-0.5 pb-3 font-mono text-[11px] font-bold text-slate-400">{step.time ?? (step.done ? '已完成，时间未登记' : '待进行')}</p>
                   </div>
                 ))}
               </div>
@@ -356,7 +358,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
         />
       </div>
 
-      {query.isLoading ? (
+      {query.isError ? <FeedbackNotice tone="error" message="采购订单加载失败，请刷新或确认当前账号权限。" /> : query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载采购订单…" />
       ) : orders.length === 0 ? (
         <FeedbackNotice
@@ -392,12 +394,13 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                   onClick={() => o.id && setSelectedId(o.id)}
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                 >
-                  '查看详情'
+                  详情
                 </button>
               </div>
             ))}
           >
-            <table className="w-full min-w-[920px] text-left text-sm">
+            <table className="w-full min-w-[800px] table-fixed text-left text-sm [&_td]:px-3 [&_th]:px-3 [&_td_p]:max-w-full">
+              <colgroup>{['5%', '21%', '16%', '13%', '12%', '16%', '17%'].map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
               <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="w-12 px-2 py-4 text-center">序号</th>
@@ -406,7 +409,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                   <th className="px-5 py-4">预计到货</th>
                   <th className="px-5 py-4">状态</th>
                   <th className="px-5 py-4 text-right">订单金额</th>
-                  <th className="px-5 py-4 text-right">操作</th>
+                  <th className="sticky right-0 w-40 whitespace-nowrap bg-slate-50 px-5 py-4 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -429,9 +432,9 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                     <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">{o.expectedReceiptDate ?? '—'}</td>
                     <td className="px-5 py-5">{o.status && <StatusPill label={o.status} />}</td>
                     <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(o.amount)}</td>
-                    <td className="px-5 py-5 text-right">
-                      <div className="flex justify-end gap-2">
-                        {o.status === '已发货' && (
+                    <td className="sticky right-0 bg-white px-5 py-5 text-right">
+                      <div className="flex justify-end gap-2 whitespace-nowrap">
+                        {o.status === '已发货' && can('buyer:receipt:read') && (
                           <button
                             type="button"
                             onClick={() => onNavigate('receipts')}

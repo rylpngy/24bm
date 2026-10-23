@@ -52,7 +52,8 @@ class PurchaseDemandUpdateDraftTests {
           auditLogApplicationService,
           notificationApplicationService,
           new PurchaseDemandApprovalStatusTransition(),
-          org.mockito.Mockito.mock(com.procurement.identity.application.DataScopeService.class));
+          TestDataScopes.unrestricted(),
+          org.mockito.Mockito.mock(com.procurement.identity.application.PermissionService.class));
 
   @AfterEach
   void clearTenantContext() {

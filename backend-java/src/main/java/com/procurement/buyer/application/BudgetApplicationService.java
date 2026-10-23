@@ -15,24 +15,46 @@ import org.springframework.stereotype.Service;
 @Service
 public class BudgetApplicationService {
   private final DepartmentBudgetMapper budgetMapper;
+  private final com.procurement.identity.application.PermissionService permissions;
+  private final com.procurement.identity.application.DataScopeService scopes;
+  private final com.procurement.audit.application.AuditLogApplicationService audit;
 
-  public BudgetApplicationService(DepartmentBudgetMapper budgetMapper) {
+  public BudgetApplicationService(DepartmentBudgetMapper budgetMapper,
+      com.procurement.identity.application.PermissionService permissions,
+      com.procurement.identity.application.DataScopeService scopes,
+      com.procurement.audit.application.AuditLogApplicationService audit) {
     this.budgetMapper = budgetMapper;
+    this.permissions = permissions;
+    this.scopes = scopes;
+    this.audit = audit;
   }
 
   public List<DepartmentBudgetResponse> listBudgets() {
     String tenantId = TenantAccessGuard.requireTenantId("budget APIs");
-    return budgetMapper.listByTenant(tenantId).stream().map(this::toResponse).toList();
+    permissions.require("buyer:budget:read");
+    return budgetMapper.listByTenant(tenantId, scopes.currentUserDataScope()).stream().map(this::toResponse).toList();
   }
 
+  @org.springframework.transaction.annotation.Transactional
   public DepartmentBudgetResponse upsertBudget(UpsertDepartmentBudgetRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("budget APIs");
+    permissions.require("buyer:budget:manage");
+    var scope = scopes.currentUserDataScope();
+    if (scope.restricted() && (scope.requesterId() != null || !scope.departmentIds().contains(request.departmentId()))) {
+      throw new com.procurement.common.tenant.PermissionDeniedException("当前数据范围不允许维护该部门预算");
+    }
+    if (!budgetMapper.activeDepartmentExists(tenantId, request.departmentId())) {
+      throw new IllegalArgumentException("请选择本企业的有效部门");
+    }
     String existingId =
         budgetMapper.findId(tenantId, request.departmentId(), request.period());
     String id = existingId != null ? existingId : "budget-" + UUID.randomUUID();
     budgetMapper.upsert(
         id, tenantId, request.departmentId(), request.period(), request.totalAmount());
-    return toResponse(budgetMapper.findByTenantAndId(tenantId, id));
+    String savedId = budgetMapper.findId(tenantId, request.departmentId(), request.period());
+    audit.recordCurrentTenantAction("department_budget.updated", "department_budget", savedId,
+        "期间:" + request.period() + ";预算总额:" + request.totalAmount().toPlainString());
+    return toResponse(budgetMapper.findByTenantAndId(tenantId, savedId));
   }
 
   private DepartmentBudgetResponse toResponse(DepartmentBudget b) {

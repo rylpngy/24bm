@@ -9,7 +9,10 @@ import com.procurement.attachment.api.CreateAttachmentUploadTicketRequest;
 import com.procurement.attachment.application.AttachmentApplicationService;
 import com.procurement.attachment.domain.Attachment;
 import com.procurement.attachment.infrastructure.AttachmentMapper;
-import com.procurement.audit.infrastructure.AuditLogMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.attachment.application.AttachmentAccessService;
+import com.procurement.attachment.infrastructure.AttachmentUploadTicketMapper;
+import com.procurement.common.tenant.PermissionDeniedException;
 import com.procurement.common.tenant.TenantContext;
 import com.procurement.sourcing.infrastructure.QuoteMapper;
 import java.time.OffsetDateTime;
@@ -19,10 +22,12 @@ import org.junit.jupiter.api.Test;
 class AttachmentMetadataLifecycleTests {
 
   private final AttachmentMapper attachmentMapper = org.mockito.Mockito.mock(AttachmentMapper.class);
-  private final AuditLogMapper auditLogMapper = org.mockito.Mockito.mock(AuditLogMapper.class);
+  private final AuditLogApplicationService auditLogMapper = org.mockito.Mockito.mock(AuditLogApplicationService.class);
+  private final AttachmentAccessService access = org.mockito.Mockito.mock(AttachmentAccessService.class);
+  private final AttachmentUploadTicketMapper tickets = org.mockito.Mockito.mock(AttachmentUploadTicketMapper.class);
   private final QuoteMapper quoteMapper = org.mockito.Mockito.mock(QuoteMapper.class);
   private final AttachmentApplicationService attachmentApplicationService =
-      new AttachmentApplicationService(attachmentMapper, auditLogMapper, quoteMapper, org.mockito.Mockito.mock(com.procurement.common.storage.ObjectStorageService.class));
+      new AttachmentApplicationService(attachmentMapper, auditLogMapper, access, org.mockito.Mockito.mock(com.procurement.common.storage.ObjectStorageService.class), tickets);
 
   @AfterEach
   void clearTenantContext() {
@@ -32,6 +37,9 @@ class AttachmentMetadataLifecycleTests {
   @Test
   void createAttachmentRecordsVisibilityAndActiveStatusFromServerContext() {
     TenantContext.set("tenant-1", null, "buyer-1");
+    when(attachmentMapper.copyUploadFingerprint(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.anyString())).thenReturn(1);
+    when(tickets.consume("tenant-1", "tenant-1/quote/quote-1/quote.xlsx", "buyer-1", "quote", "quote-1", "报价单.xlsx", "supplier_shared"))
+        .thenReturn(1);
     when(quoteMapper.findByTenantAndId("tenant-1", "quote-1"))
         .thenReturn(new com.procurement.sourcing.domain.Quote(
             "quote-1",
@@ -70,6 +78,8 @@ class AttachmentMetadataLifecycleTests {
   @Test
   void createQuoteAttachmentRejectsUnknownCurrentTenantQuote() {
     TenantContext.set("tenant-1", null, "buyer-1");
+    org.mockito.Mockito.doThrow(new PermissionDeniedException("Quote attachment owner not found in tenant scope: quote-missing"))
+        .when(access).requireAccess("quote", "quote-missing", true);
 
     assertThatThrownBy(() -> attachmentApplicationService.createCurrentTenantAttachment(new CreateAttachmentRequest(
         "quote",
@@ -77,7 +87,7 @@ class AttachmentMetadataLifecycleTests {
         "报价单.xlsx",
         "tenant-1/quote/quote-missing/quote.xlsx",
         "supplier_shared")))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(PermissionDeniedException.class)
         .hasMessageContaining("Quote attachment owner not found in tenant scope: quote-missing");
 
     verify(attachmentMapper, org.mockito.Mockito.never()).insert(
@@ -148,9 +158,9 @@ class AttachmentMetadataLifecycleTests {
     org.assertj.core.api.Assertions.assertThat(link.attachmentId()).isEqualTo("att-1");
     org.assertj.core.api.Assertions.assertThat(link.storageKey()).isEqualTo("tenant-1/quote/quote-1/quote.xlsx");
     org.assertj.core.api.Assertions.assertThat(link.downloadUrl())
-        .contains("/api/v1/buyer/attachments/att-1/download")
-        .contains("token=");
-    org.assertj.core.api.Assertions.assertThat(link.expiresAt()).isAfter(link.createdAt());
+        .isEqualTo("/api/v1/buyer/attachments/att-1/download");
+    org.assertj.core.api.Assertions.assertThat(link.expiresAt()).isNull();
+    verify(access).requireAccess("quote", "quote-1", false);
   }
 
   private Attachment attachment(String id, String visibility, String status) {

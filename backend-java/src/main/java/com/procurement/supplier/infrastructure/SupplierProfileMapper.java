@@ -50,30 +50,6 @@ public interface SupplierProfileMapper {
       @Param("creditCode") String creditCode,
       @Param("legalPerson") String legalPerson);
 
-  // 采购方建档:登记时补全供应商主数据(仅覆盖非空传入值的语义由应用层保证)。
-  @Update("""
-      update supplier_enterprises
-      set credit_code = case when #{creditCode} is null or #{creditCode} = '' then credit_code else #{creditCode} end,
-          legal_person = case when #{legalPerson} is null or #{legalPerson} = '' then legal_person else #{legalPerson} end,
-          contact_name = case when #{contactName} is null or #{contactName} = '' then contact_name else #{contactName} end,
-          contact_phone = case when #{contactPhone} is null or #{contactPhone} = '' then contact_phone else #{contactPhone} end,
-          contact_email = case when #{contactEmail} is null or #{contactEmail} = '' then contact_email else #{contactEmail} end,
-          business_scope = case when #{businessScope} is null or #{businessScope} = '' then business_scope else #{businessScope} end,
-          bank_name = case when #{bankName} is null or #{bankName} = '' then bank_name else #{bankName} end,
-          bank_account = case when #{bankAccount} is null or #{bankAccount} = '' then bank_account else #{bankAccount} end
-      where enterprise_id = #{supplierId}
-      """)
-  int updateSupplierMasterData(
-      @Param("supplierId") String supplierId,
-      @Param("creditCode") String creditCode,
-      @Param("legalPerson") String legalPerson,
-      @Param("contactName") String contactName,
-      @Param("contactPhone") String contactPhone,
-      @Param("contactEmail") String contactEmail,
-      @Param("businessScope") String businessScope,
-      @Param("bankName") String bankName,
-      @Param("bankAccount") String bankAccount);
-
   @Select("""
       select t.name
       from buyer_supplier_relations r

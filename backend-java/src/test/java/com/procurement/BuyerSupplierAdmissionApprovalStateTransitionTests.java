@@ -55,14 +55,12 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
           buyerSupplierRelationMapper,
           supplierQualificationMapper,
           new ObjectMapper(),
-          approvalTaskMapper,
           approvalTaskApplicationService,
       com.procurement.TestApprovalGates.alwaysOn(),
           auditLogApplicationService,
           notificationApplicationService,
           new BuyerSupplierAdmissionStatusTransition(),
           new BuyerSupplierManualStatusTransition(),
-      org.mockito.Mockito.mock(com.procurement.supplier.infrastructure.SupplierProfileMapper.class),
       org.mockito.Mockito.mock(com.procurement.supplier.application.SupplierQualificationApplicationService.class));
 
   @AfterEach

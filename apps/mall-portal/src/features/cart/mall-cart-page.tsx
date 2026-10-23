@@ -8,6 +8,7 @@ import {
 import { FeedbackNotice, PrimaryActionButton, cn } from '@24bid/ui';
 import type { MallRoute } from '../../App';
 import { currency } from '../catalog/product-card';
+import { useMallPermissions } from '../../lib/use-mall-permissions';
 
 /**
  * 购物车页:按供应商分组(与结算拆单同口径),行内步进改量,失效行给出原因。
@@ -16,6 +17,8 @@ import { currency } from '../catalog/product-card';
  */
 export function MallCartPage({ onNavigate }: { onNavigate: (route: MallRoute) => void }) {
   const queryClient = useQueryClient();
+  const { can } = useMallPermissions();
+  const canPurchase = can('buyer:mall:purchase');
   const cart = useBuyerMallCart();
   const updateItem = useBuyerMallUpdateCartItem();
   const removeItem = useBuyerMallRemoveCartItem();
@@ -33,6 +36,7 @@ export function MallCartPage({ onNavigate }: { onNavigate: (route: MallRoute) =>
   if (cart.isLoading) {
     return <FeedbackNotice tone="info" message="正在加载购物车…" />;
   }
+  if (cart.isError) return <FeedbackNotice tone="error" message="购物车加载失败，请刷新重试。" />;
 
   if (groups.length === 0) {
     return (
@@ -55,6 +59,7 @@ export function MallCartPage({ onNavigate }: { onNavigate: (route: MallRoute) =>
     <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
       <section className="min-w-0 space-y-4">
         <h1 className="text-xl font-black text-slate-950">购物车</h1>
+        {(updateItem.isError || removeItem.isError) && <FeedbackNotice tone="error" message="购物车更新失败，请刷新后重试。" />}
         {view?.hasBlockedItems && (
           <FeedbackNotice
             tone="error"
@@ -98,7 +103,7 @@ export function MallCartPage({ onNavigate }: { onNavigate: (route: MallRoute) =>
                   </div>
 
                   <div className="flex items-center gap-1">
-                    {[-1, 1].map((direction) => (
+                    {canPurchase && [-1, 1].map((direction) => (
                       <button
                         key={direction}
                         type="button"
@@ -132,7 +137,7 @@ export function MallCartPage({ onNavigate }: { onNavigate: (route: MallRoute) =>
                     {currency(line.lineTotal)}
                   </span>
 
-                  <button
+                  {canPurchase && <button
                     type="button"
                     disabled={busy}
                     onClick={() =>
@@ -142,7 +147,7 @@ export function MallCartPage({ onNavigate }: { onNavigate: (route: MallRoute) =>
                     className="text-slate-400 hover:text-red-500 disabled:opacity-40"
                   >
                     <Trash2 size={15} />
-                  </button>
+                  </button>}
                 </div>
               ))}
             </div>
@@ -167,7 +172,7 @@ export function MallCartPage({ onNavigate }: { onNavigate: (route: MallRoute) =>
               <dd className="font-mono text-lg font-black text-blue-700">{currency(view?.total)}</dd>
             </div>
           </dl>
-          <div className="mt-4">
+          {canPurchase && <div className="mt-4">
             <PrimaryActionButton
               fullWidth
               disabled={view?.hasBlockedItems || (view?.itemCount ?? 0) === 0}
@@ -175,7 +180,7 @@ export function MallCartPage({ onNavigate }: { onNavigate: (route: MallRoute) =>
             >
               去结算
             </PrimaryActionButton>
-          </div>
+          </div>}
           <p className="mt-2 text-[11px] font-bold text-slate-400">
             跨供应商将按供应商拆成多张采购订单,分别履约与对账。
           </p>

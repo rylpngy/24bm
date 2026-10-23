@@ -179,7 +179,3 @@ export function useSupplierQuoteListList<TData = Awaited<ReturnType<typeof suppl
 
   return query;
 }
-
-
-
-

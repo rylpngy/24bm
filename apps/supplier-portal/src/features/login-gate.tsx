@@ -19,6 +19,9 @@ export function LoginGate() {
   const login = useAuthLogin();
   const [kcBusy, setKcBusy] = useState(false);
   const [kcError, setKcError] = useState(false);
+  const [account, setAccount] = useState('');
+  const [password, setPassword] = useState('');
+  const [supplierId, setSupplierId] = useState('');
 
   const handleKeycloakLogin = async () => {
     setKcBusy(true);
@@ -26,8 +29,8 @@ export function LoginGate() {
     try {
       const { token, claims, refreshToken } = await keycloakPasswordLogin({
         keycloakUrl: KEYCLOAK_URL,
-        username: 'supplier.sales@example.com',
-        password: 'demo123456',
+        username: account.trim(),
+        password,
       });
       signIn({
         token,
@@ -48,10 +51,10 @@ export function LoginGate() {
     login.mutate(
       {
         data: {
-          account: 'supplier.sales@example.com',
-          password: 'demo123456',
+          account: account.trim(),
+          password,
           scope: LoginRequestScope.SUPPLIER,
-          supplierId: 'ent-supplier-sunrise',
+          supplierId: supplierId.trim(),
         },
       },
       {
@@ -83,8 +86,12 @@ export function LoginGate() {
           </div>
         </div>
         <Panel title={t('登录')} icon={LogIn} subtitle="供应商端 · 商机 / 报价 / 订单 / 应收">
-          <FeedbackNotice tone="info" message="生产登录走 Keycloak（OIDC 统一身份）。演示账号：供应商销售(晨光科技)。" />
-          <PrimaryActionButton onClick={handleKeycloakLogin} busy={kcBusy} pendingLabel={t('登录中')} icon={KeyRound} fullWidth>
+          <div className="mb-4 space-y-3">
+            <label className="block text-sm font-semibold text-slate-700">账号<input aria-label="账号" autoComplete="username" value={account} onChange={e => setAccount(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3" /></label>
+            <label className="block text-sm font-semibold text-slate-700">密码<input aria-label="密码" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3" /></label>
+            {SELF_LOGIN_FALLBACK && <label className="block text-sm font-semibold text-slate-700">企业编号<input aria-label="企业编号" value={supplierId} onChange={e => setSupplierId(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3" /></label>}
+          </div>
+          <PrimaryActionButton onClick={handleKeycloakLogin} disabled={!account.trim() || !password || login.isPending} busy={kcBusy} pendingLabel={t('登录中')} icon={KeyRound} fullWidth>
             {t('用 Keycloak 登录')}
           </PrimaryActionButton>
           {kcError && (
@@ -98,13 +105,13 @@ export function LoginGate() {
               <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
                 自研 JWT（已退役 · 仅 CI/开发后备）
               </p>
-              <button type="button" onClick={handleLogin} disabled={login.isPending}
+              <button type="button" onClick={handleLogin} disabled={login.isPending || kcBusy || !account.trim() || !password || !supplierId.trim()}
                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
-                <LogIn size={16} /> {login.isPending ? '登录中…' : '以供应商销售登录（自研 JWT）'}
+                <LogIn size={16} /> {login.isPending ? '登录中…' : '账号登录'}
               </button>
               {login.isError && (
                 <div className="mt-3">
-                  <FeedbackNotice tone="error" message="登录失败：自研登录可能已在后端关闭（SELF_LOGIN_ENABLED=false）。" />
+                  <FeedbackNotice tone="error" message="登录失败，请核对账号、密码及所属企业，或联系管理员确认账号状态。" />
                 </div>
               )}
             </div>

@@ -1,5 +1,6 @@
 package com.procurement.sourcing.infrastructure;
 
+import com.procurement.sourcing.domain.DemandRfqLink;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -8,6 +9,25 @@ import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface RfqDemandMapper {
+
+  @Select("""
+      <script>
+      select distinct on (rd.demand_id) rd.demand_id, rd.rfq_id, r.status
+      from rfq_demands rd
+      join rfqs r on r.tenant_id = rd.tenant_id and r.id = rd.rfq_id
+      where rd.tenant_id = #{tenantId} and r.status not in ('已流标', '已废标')
+        <choose>
+          <when test="demandIds != null and !demandIds.isEmpty()">
+            and rd.demand_id in
+            <foreach collection="demandIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+          </when>
+          <otherwise>and false</otherwise>
+        </choose>
+      order by rd.demand_id, r.created_at desc, r.id desc
+      </script>
+      """)
+  List<DemandRfqLink> listLatestLinksByDemands(
+      @Param("tenantId") String tenantId, @Param("demandIds") List<String> demandIds);
 
   @Select("""
       select demand_id

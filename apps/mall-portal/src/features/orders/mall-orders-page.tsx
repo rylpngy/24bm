@@ -8,6 +8,7 @@ import {
   usePurchaseOrderList,
 } from '@24bid/api-client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useMallPermissions } from '../../lib/use-mall-permissions';
 import { FeedbackNotice, Pagination, PrimaryActionButton, StatusPill, cn } from '@24bid/ui';
 import { currency } from '../catalog/product-card';
 
@@ -20,6 +21,7 @@ const PAGE_SIZE = 8;
  * 避免同一动作两处实现导致状态口径分叉。
  */
 export function MallOrdersPage() {
+  const { can } = useMallPermissions();
   const queryClient = useQueryClient();
   const orders = usePurchaseOrderList();
   const afterSales = useBuyerMallAfterSales();
@@ -58,6 +60,9 @@ export function MallOrdersPage() {
 
   if (orders.isLoading) {
     return <FeedbackNotice tone="info" message="正在加载订单…" />;
+  }
+  if (orders.isError || afterSales.isError || reviews.isError) {
+    return <FeedbackNotice tone="error" message="订单或售后信息加载失败，请刷新重试。" />;
   }
 
   return (
@@ -99,8 +104,8 @@ export function MallOrdersPage() {
                     {error && <div className="mb-2"><FeedbackNotice tone="error" message={error} /></div>}
                     <ul className="space-y-2">
                       {(order.lineItems ?? []).map((line, index) => {
-                        const canAfterSales = order.status === '已发货' || order.status === '已收货';
-                        const canReview = order.status === '已收货';
+                        const canAfterSales = can('buyer:mall:purchase') && (order.status === '已发货' || order.status === '已收货');
+                        const canReview = can('buyer:mall:purchase') && order.status === '已收货';
                         const existingReview = lineReview(line.id);
                         const draft = asDraft[line.id ?? ''] ?? { type: '退货', reason: '' };
                         const rd = reviewDraft[line.id ?? ''] ?? { rating: 5, content: '' };

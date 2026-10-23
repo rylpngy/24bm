@@ -24,7 +24,7 @@ import {
 const AUDIENCE_LABELS: Record<string, string> = { all: '全部', buyer: '采购方', supplier: '供应商' };
 
 // 平台公告:发布/撤回面向全部/采购方/供应商的通知。
-export function AnnouncementsPage() {
+export function AnnouncementsPage({ canManage = false }: { canManage?: boolean }) {
   const queryClient = useQueryClient();
   const list = usePlatformAnnouncementList();
   const publish = usePlatformAnnouncementPublish();
@@ -103,10 +103,10 @@ export function AnnouncementsPage() {
           placeholder="按标题 / 正文搜索"
           onSearch={(k) => { setKeyword(k); setPage(1); }}
         />
-        <button type="button" onClick={() => setShowForm((v) => !v)}
+        {canManage && <button type="button" onClick={() => setShowForm((v) => !v)}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800">
           <Plus size={14} /> {showForm ? '收起' : '发布公告'}
-        </button>
+        </button>}
       </div>
       {feedback && (
         <div className="mb-4">
@@ -114,7 +114,7 @@ export function AnnouncementsPage() {
         </div>
       )}
 
-      {showForm && (
+      {canManage && showForm && (
         <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
           <p className="text-sm font-black text-slate-800">发布平台公告</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -141,9 +141,10 @@ export function AnnouncementsPage() {
         </div>
       )}
 
+      {(publish.isError || withdraw.isError) && <FeedbackNotice tone="error" message="操作失败，请核对权限及公告状态后重试。" />}
       {list.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载公告…" />
-      ) : filtered.length === 0 ? (
+      ) : list.isError ? <FeedbackNotice tone="error" message="公告加载失败或权限已变更，请重试。" /> : filtered.length === 0 ? (
         <FeedbackNotice tone="info" message={keyword || statusFilter !== 'all' ? '没有符合条件的公告。' : '暂无公告。点击发布公告创建。'} />
       ) : (
         <>
@@ -163,7 +164,7 @@ export function AnnouncementsPage() {
                   <StatusPill label={active ? '已发布' : '已撤回'} />
                 </div>
                 <RichTextView html={a.content ?? ''} className="mt-2 text-xs leading-5" />
-                {active && a.id && (
+                {canManage && active && a.id && (
                   <div className="mt-3">
                     <button type="button" onClick={() => onWithdraw(a.id!)} disabled={busy}
                       className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50">

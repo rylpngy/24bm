@@ -51,6 +51,7 @@ export function MallCategoryPage({
   const safePage = Math.min(page, pageCount);
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const activeCategory = (categories.data?.data ?? []).find((c) => c.id === categoryId);
+  if (products.isError || categories.isError) return <FeedbackNotice tone="error" message="商品列表或分类加载失败，请刷新重试。" />;
 
   return (
     <div className="grid gap-5 lg:grid-cols-[13rem_1fr]">

@@ -39,6 +39,7 @@ class DeliveryNotificationTests {
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final DeliveryApplicationService deliveryApplicationService = new DeliveryApplicationService(
+          TestOrderAccess.unrestricted(),
       purchaseOrderMapper,
       deliveryMapper,
       auditLogApplicationService,

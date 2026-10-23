@@ -113,7 +113,3 @@ export function useSupplierFulfillmentFulfillmentMetrics<TData = Awaited<ReturnT
 
   return query;
 }
-
-
-
-

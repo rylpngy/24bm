@@ -239,7 +239,3 @@ export function useSupplierDeliveryList<TData = Awaited<ReturnType<typeof suppli
 
   return query;
 }
-
-
-
-

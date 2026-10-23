@@ -199,7 +199,3 @@ export function useAuctionStreamBuyerStream<TData = Awaited<ReturnType<typeof au
 
   return query;
 }
-
-
-
-

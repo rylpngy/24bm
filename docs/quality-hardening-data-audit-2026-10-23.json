@@ -1,0 +1,308 @@
+{
+  "checks": [
+    {
+      "id": "account_no_effective_role",
+      "count": 0,
+      "title": "启用账号无有效角色",
+      "action": "确认账号归属及岗位后由管理员授权；无使用需求则经确认停用，不能自动授予管理员权限。",
+      "samples": [],
+      "category": "账号与权限",
+      "severity": "异常"
+    },
+    {
+      "id": "role_binding_scope",
+      "count": 0,
+      "title": "角色绑定与账号租户或端类型不一致",
+      "action": "当前权限过滤不采用此类绑定；确认正确岗位后修正绑定，不能通过放宽租户过滤解决。",
+      "samples": [],
+      "category": "账号与权限",
+      "severity": "异常"
+    },
+    {
+      "id": "account_department",
+      "count": 0,
+      "title": "账号部门不存在或跨租户",
+      "action": "按实际组织关系核对账号部门，不自动迁移账号所属企业。",
+      "samples": [],
+      "category": "账号与权限",
+      "severity": "异常"
+    },
+    {
+      "id": "department_parent",
+      "count": 0,
+      "title": "部门上级不存在、跨租户或指向自身",
+      "action": "核对组织层级后修正；本项不替代所有多层循环检查。",
+      "samples": [],
+      "category": "账号与权限",
+      "severity": "异常"
+    },
+    {
+      "id": "department_manager",
+      "count": 8,
+      "title": "部门主管缺失、停用或不属于本部门",
+      "action": "确认是否允许跨部门兼任主管，再维护主管及其有效岗位。",
+      "samples": [
+        {
+          "id": "dept-167dbf83-8655-47bc-8be5-36078164b380",
+          "tenant_id": "qa-loop-1792716906449",
+          "manager_id": null
+        },
+        {
+          "id": "dept-2e52fded-5b9d-46fb-85da-155dcd31639b",
+          "tenant_id": "qa-loop-1792717189256",
+          "manager_id": null
+        },
+        {
+          "id": "dept-4df35a3f-694d-4970-840f-ed08928f8036",
+          "tenant_id": "qa-loop-1792717148543",
+          "manager_id": null
+        },
+        {
+          "id": "dept-admin",
+          "tenant_id": "tenant-acme",
+          "manager_id": null
+        },
+        {
+          "id": "dept-ec94bf69-ae4c-4ce2-8f85-d29a0d9d6854",
+          "tenant_id": "qa-loop-1792716894822",
+          "manager_id": null
+        },
+        {
+          "id": "dept-hq",
+          "tenant_id": "tenant-acme",
+          "manager_id": null
+        },
+        {
+          "id": "qa-round12-1792714168152",
+          "tenant_id": "tenant-acme",
+          "manager_id": null
+        },
+        {
+          "id": "qa-round13-readonly",
+          "tenant_id": "tenant-acme",
+          "manager_id": null
+        }
+      ],
+      "category": "账号与权限",
+      "severity": "待确认"
+    },
+    {
+      "id": "restricted_role_without_department",
+      "count": 0,
+      "title": "部门范围账号未配置有效部门",
+      "action": "按岗位补齐部门；已有全部数据角色时本项不报缺失，不能用扩大数据权限代替组织维护。",
+      "samples": [],
+      "category": "账号与权限",
+      "severity": "待确认"
+    },
+    {
+      "id": "supplier_no_owner",
+      "count": 0,
+      "title": "供应商已有账号但无启用管理员",
+      "action": "确认该企业是否仍需登录及团队维护；管理员身份需企业确认，不自动将业务成员升级。",
+      "samples": [],
+      "category": "账号与权限",
+      "severity": "待确认"
+    },
+    {
+      "id": "broad_permissions",
+      "count": 10,
+      "title": "启用账号的端级管理员角色绑定",
+      "action": "逐项确认确为管理员；这是权限清单，不代表已发生越权，历史角色不自动替换。",
+      "samples": [
+        {
+          "id": "user-buyer-owner",
+          "role_id": "role-buyer-owner",
+          "tenant_id": "tenant-acme",
+          "supplier_id": null
+        },
+        {
+          "id": "user-platform-admin",
+          "role_id": "role-platform-admin",
+          "tenant_id": null,
+          "supplier_id": null
+        },
+        {
+          "id": "user-qa-loop-1792716894822-owner",
+          "role_id": "role-qa-loop-1792716894822-buyer-owner",
+          "tenant_id": "qa-loop-1792716894822",
+          "supplier_id": null
+        },
+        {
+          "id": "user-qa-loop-1792716906449-owner",
+          "role_id": "role-qa-loop-1792716906449-buyer-owner",
+          "tenant_id": "qa-loop-1792716906449",
+          "supplier_id": null
+        },
+        {
+          "id": "user-qa-loop-1792717148543-owner",
+          "role_id": "role-qa-loop-1792717148543-buyer-owner",
+          "tenant_id": "qa-loop-1792717148543",
+          "supplier_id": null
+        },
+        {
+          "id": "user-qa-loop-1792717189256-owner",
+          "role_id": "role-qa-loop-1792717189256-buyer-owner",
+          "tenant_id": "qa-loop-1792717189256",
+          "supplier_id": null
+        },
+        {
+          "id": "user-qa-round14-1792716661818-owner",
+          "role_id": "role-system-supplier-owner",
+          "tenant_id": null,
+          "supplier_id": "qa-round14-1792716661818"
+        },
+        {
+          "id": "user-qa-round14-1792716692894-owner",
+          "role_id": "role-system-supplier-owner",
+          "tenant_id": null,
+          "supplier_id": "qa-round14-1792716692894"
+        },
+        {
+          "id": "user-qa-round14-1792716773780-owner",
+          "role_id": "role-system-supplier-owner",
+          "tenant_id": null,
+          "supplier_id": "qa-round14-1792716773780"
+        },
+        {
+          "id": "user-supplier-sales",
+          "role_id": "role-supplier-sales",
+          "tenant_id": null,
+          "supplier_id": "ent-supplier-sunrise"
+        }
+      ],
+      "category": "账号与权限",
+      "severity": "待确认"
+    },
+    {
+      "id": "invoice_order_scope",
+      "count": 0,
+      "title": "发票与订单租户或供应商不一致",
+      "action": "暂停该记录后续财务操作，由业务人员确认真实订单及归属后制定修复方案。",
+      "samples": [],
+      "category": "业务关联",
+      "severity": "异常"
+    },
+    {
+      "id": "fulfillment_scope",
+      "count": 0,
+      "title": "发货或收货记录与订单归属不一致",
+      "action": "核对原始履约凭据，不能仅改状态掩盖关联问题。",
+      "samples": [],
+      "category": "业务关联",
+      "severity": "异常"
+    },
+    {
+      "id": "order_fulfillment_missing",
+      "count": 9,
+      "title": "已发货或已收货订单缺少对应履约记录",
+      "action": "区分历史导入和数据丢失，核对原始单据后补录，不能凭订单状态虚构物流和验收信息。",
+      "samples": [
+        {
+          "id": "o-round6-browser",
+          "status": "已收货",
+          "tenant_id": "tenant-acme"
+        },
+        {
+          "id": "po-analytics-jan",
+          "status": "已收货",
+          "tenant_id": "tenant-acme"
+        },
+        {
+          "id": "po-analytics-mar",
+          "status": "已收货",
+          "tenant_id": "tenant-acme"
+        },
+        {
+          "id": "po-analytics-may",
+          "status": "已发货",
+          "tenant_id": "tenant-acme"
+        },
+        {
+          "id": "po-bigvar",
+          "status": "已收货",
+          "tenant_id": "tenant-acme"
+        },
+        {
+          "id": "po-newinv",
+          "status": "已收货",
+          "tenant_id": "tenant-acme"
+        },
+        {
+          "id": "po-tech-1",
+          "status": "已收货",
+          "tenant_id": "tenant-acme"
+        },
+        {
+          "id": "po-tech-2",
+          "status": "已发货",
+          "tenant_id": "tenant-acme"
+        },
+        {
+          "id": "po-var",
+          "status": "已收货",
+          "tenant_id": "tenant-acme"
+        }
+      ],
+      "category": "业务关联",
+      "severity": "待确认"
+    },
+    {
+      "id": "payment_entry_scope",
+      "count": 0,
+      "title": "付款流水归属或冲销关系不一致",
+      "action": "财务核对真实付款及冲销凭据，保留原始流水，不直接删除记录或改写余额。",
+      "samples": [],
+      "category": "财务核对",
+      "severity": "异常"
+    },
+    {
+      "id": "payment_balance",
+      "count": 0,
+      "title": "付款状态与金额流水不一致",
+      "action": "使用付款核对记录收集凭据；无流水的历史已付款不等于实际未付款，不自动补记余额。",
+      "samples": [],
+      "category": "财务核对",
+      "severity": "待确认"
+    },
+    {
+      "id": "payment_request_evidence",
+      "count": 0,
+      "title": "已有付款但缺少匹配的已通过付款申请",
+      "action": "核对历史审批依据和原始付款单，不自动补通过审批。",
+      "samples": [],
+      "category": "财务核对",
+      "severity": "待确认"
+    },
+    {
+      "id": "payment_batch_evidence",
+      "count": 0,
+      "title": "已有付款但缺少已通过付款批次",
+      "action": "与付款申请及批次审批凭据一起核对，不以补批次状态替代审批。",
+      "samples": [],
+      "category": "财务核对",
+      "severity": "待确认"
+    },
+    {
+      "id": "legacy_runtime_active",
+      "count": 0,
+      "title": "旧自研运行时仍有非终态实例",
+      "action": "核对实例来源及业务状态，逐项决定迁移或结束方式，不直接修改Flowable或旧实例状态。",
+      "samples": [],
+      "category": "流程运行时",
+      "severity": "待确认"
+    }
+  ],
+  "database": "quality_hardening",
+  "readOnly": "on",
+  "inventory": {
+    "users": 24,
+    "orders": 23,
+    "tenants": 5,
+    "invoices": 8
+  },
+  "isolation": "repeatable read",
+  "generatedAt": "2026-10-23T01:06:19.149038+00:00",
+  "container": "24bid-quality-hardening-postgres",
+  "scope": "Selected database only; findings are not proof of production defects. Samples capped at 20 per check; counts are complete."
+}

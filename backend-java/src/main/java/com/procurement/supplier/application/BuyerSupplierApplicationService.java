@@ -8,7 +8,6 @@ import com.procurement.approval.application.ApprovalTaskApplicationService;
 import com.procurement.approval.domain.ApprovalBusinessType;
 import com.procurement.approval.domain.ApprovalTask;
 import com.procurement.approval.domain.ApprovalStatus;
-import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -30,7 +29,6 @@ import com.procurement.supplier.domain.BuyerSupplierPerformanceScore;
 import com.procurement.supplier.domain.BuyerSupplierRelationStatus;
 import com.procurement.supplier.domain.SupplierQualification;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
-import com.procurement.supplier.infrastructure.SupplierProfileMapper;
 import com.procurement.supplier.infrastructure.SupplierQualificationMapper;
 import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
 import com.procurement.workflow.application.WorkflowStartCommand;
@@ -46,10 +44,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BuyerSupplierApplicationService {
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper;
-  private final SupplierProfileMapper supplierProfileMapper;
   private final SupplierQualificationMapper supplierQualificationMapper;
   private final ObjectMapper objectMapper;
-  private final ApprovalTaskMapper approvalTaskMapper;
   private final ApprovalTaskApplicationService approvalTaskApplicationService;
   private final ApprovalGate approvalGate;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -63,19 +59,16 @@ public class BuyerSupplierApplicationService {
       BuyerSupplierRelationMapper buyerSupplierRelationMapper,
       SupplierQualificationMapper supplierQualificationMapper,
       ObjectMapper objectMapper,
-      ApprovalTaskMapper approvalTaskMapper,
       ApprovalTaskApplicationService approvalTaskApplicationService,
       ApprovalGate approvalGate,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       BuyerSupplierAdmissionStatusTransition buyerSupplierAdmissionStatusTransition,
       BuyerSupplierManualStatusTransition buyerSupplierManualStatusTransition,
-      SupplierProfileMapper supplierProfileMapper,
       SupplierQualificationApplicationService supplierQualificationApplicationService) {
     this.buyerSupplierRelationMapper = buyerSupplierRelationMapper;
     this.supplierQualificationMapper = supplierQualificationMapper;
     this.objectMapper = objectMapper;
-    this.approvalTaskMapper = approvalTaskMapper;
     this.approvalTaskApplicationService = approvalTaskApplicationService;
     this.approvalGate = approvalGate;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -83,7 +76,6 @@ public class BuyerSupplierApplicationService {
     this.buyerSupplierAdmissionStatusTransition = buyerSupplierAdmissionStatusTransition;
     this.buyerSupplierManualStatusTransition = buyerSupplierManualStatusTransition;
     this.supplierQualificationApplicationService = supplierQualificationApplicationService;
-    this.supplierProfileMapper = supplierProfileMapper;
   }
 
   @Autowired
@@ -134,6 +126,9 @@ public class BuyerSupplierApplicationService {
   @Transactional
   public BuyerSupplierResponse createSupplierRelation(CreateBuyerSupplierRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier APIs");
+    if (!BuyerSupplierRelationStatus.PENDING_ADMISSION.equals(request.status())) {
+      throw new IllegalArgumentException("供应商登记仅允许待准入状态，请通过准入审批后启用。");
+    }
     String relationId = "bsr-" + UUID.randomUUID();
     buyerSupplierRelationMapper.insert(
         relationId,
@@ -142,34 +137,15 @@ public class BuyerSupplierApplicationService {
         request.status(),
         request.level(),
         writeCategories(request.categories()));
-    applyMasterDataOnCreate(request);
+    buyerSupplierRelationMapper.updatePrivateProfile(
+        tenantId, relationId, request.creditCode(), request.legalPerson(),
+        request.contactName(), request.contactPhone(), request.contactEmail(),
+        request.businessScope(), request.bankName(), request.bankAccount());
     auditLogApplicationService.recordTenantAction(
         BuyerSupplierAuditAction.RELATION_CREATED,
         AuditTargetType.BUYER_SUPPLIER_RELATION,
         relationId);
     return toResponse(buyerSupplierRelationMapper.findByTenantAndId(tenantId, relationId));
-  }
-
-  // 采购方建档:登记时提供的主数据写入供应商主档(空值不覆盖既有值)。
-  private void applyMasterDataOnCreate(CreateBuyerSupplierRequest request) {
-    boolean hasAny = java.util.stream.Stream.of(
-            request.creditCode(), request.legalPerson(), request.contactName(), request.contactPhone(),
-            request.contactEmail(), request.businessScope(), request.bankName(), request.bankAccount())
-        .anyMatch(v -> v != null && !v.isBlank());
-    if (!hasAny || supplierProfileMapper == null) {
-      return;
-    }
-    // 空值不覆盖既有值(SQL CASE 保留)。
-    supplierProfileMapper.updateSupplierMasterData(
-        request.supplierId(),
-        request.creditCode(),
-        request.legalPerson(),
-        request.contactName(),
-        request.contactPhone(),
-        request.contactEmail(),
-        request.businessScope(),
-        request.bankName(),
-        request.bankAccount());
   }
 
   @Transactional
@@ -290,11 +266,10 @@ public class BuyerSupplierApplicationService {
           history.actedAt());
     }
 
-    ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
+    ApprovalTask approvalTask = approvalTaskApplicationService.findPendingTask(
         tenantId,
         ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,
-        relationId,
-        ApprovalStatus.PENDING);
+        relationId);
     if (approvalTask == null) {
       throw new IllegalStateException("Pending approval task not found for supplier admission: " + relationId);
     }
@@ -302,16 +277,12 @@ public class BuyerSupplierApplicationService {
     String approvalStatus = Boolean.TRUE.equals(request.approved()) ? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED;
     boolean approved = Boolean.TRUE.equals(request.approved());
     String relationStatus = buyerSupplierAdmissionStatusTransition.reviewTargetStatus(approved);
-    int approvalUpdated = approvalTaskMapper.updateStatus(
+    ApprovalTask completedTask = approvalTaskApplicationService.recordDecision(
         tenantId,
         approvalTask.id(),
-        ApprovalStatus.PENDING,
         approvalStatus,
         userId,
         request.comment());
-    if (approvalUpdated == 0) {
-      throw new IllegalStateException("Approval task status changed before review could be recorded: " + approvalTask.id());
-    }
 
     int relationUpdated = buyerSupplierRelationMapper.updateStatus(
         tenantId,
@@ -332,7 +303,7 @@ public class BuyerSupplierApplicationService {
             : NotificationTitle.SUPPLIER_ADMISSION_REJECTED,
         relation.supplierName() + "准入审批已" + (approved ? "通过" : "驳回") + "。");
 
-    return toApprovalTaskResponse(approvalTaskMapper.findByTenantAndId(tenantId, approvalTask.id()));
+    return toApprovalTaskResponse(completedTask);
   }
 
   @Transactional
@@ -367,6 +338,10 @@ public class BuyerSupplierApplicationService {
         relationId,
         request.level(),
         writeCategories(request.categories()));
+    buyerSupplierRelationMapper.updatePrivateProfile(
+        tenantId, relationId, request.creditCode(), request.legalPerson(),
+        request.contactName(), request.contactPhone(), request.contactEmail(),
+        request.businessScope(), request.bankName(), request.bankAccount());
     auditLogApplicationService.recordTenantAction(
         BuyerSupplierAuditAction.RELATION_PROFILE_UPDATED,
         AuditTargetType.BUYER_SUPPLIER_RELATION,

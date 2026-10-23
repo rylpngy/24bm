@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -87,15 +88,17 @@ function BudgetCard({ b }: { b: DepartmentBudgetResponse }) {
 
 // 预算管理:部门预算池 + 需求占用(已用/在途)→ 剩余/占用率/超预算预警。
 export function BudgetsPage() {
+  const { can } = useBuyerPermissions();
+  const canManage = can('buyer:budget:manage');
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
 
   const query = useBuyerBudgetBudgets();
-  const departments = useDepartmentList().data?.data ?? [];
+  const departments = useDepartmentList({ query: { enabled: canManage && showForm } }).data?.data ?? [];
   const upsert = useBuyerBudgetUpsert();
-  const budgets = query.data?.data ?? [];
+  const budgets = query.isError ? [] : query.data?.data ?? [];
 
   const {
     register,
@@ -113,7 +116,8 @@ export function BudgetsPage() {
         typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/budgets'),
     });
 
-  const onSubmit = (values: FormValues) =>
+  const onSubmit = (values: FormValues) => {
+    if (!canManage) return;
     upsert.mutate(
       { data: values },
       {
@@ -124,6 +128,7 @@ export function BudgetsPage() {
         },
       },
     );
+  };
 
   const overCount = budgets.filter((b) => b.overBudget).length;
   const totalBudget = budgets.reduce((s, b) => s + (b.totalAmount ?? 0), 0);
@@ -145,9 +150,9 @@ export function BudgetsPage() {
   return (
     <Panel title="预算管理" icon={Wallet} subtitle="部门预算池 · 占用 · 超预算预警">
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
-        <MiniFact label="预算总额" value={currency(totalBudget)} />
-        <MiniFact label="累计占用" value={currency(totalOccupied)} />
-        <MiniFact label="超预算部门" value={String(overCount)} />
+        <MiniFact label="预算总额" value={query.isError || query.isLoading ? '--' : currency(totalBudget)} />
+        <MiniFact label="累计占用" value={query.isError || query.isLoading ? '--' : currency(totalOccupied)} />
+        <MiniFact label="超预算部门" value={query.isError || query.isLoading ? '--' : String(overCount)} />
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -159,16 +164,16 @@ export function BudgetsPage() {
             setPage(1);
           }}
         />
-        <button
+        {canManage && <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
         >
           <Plus size={14} /> {showForm ? '收起' : '设置预算'}
-        </button>
+        </button>}
       </div>
 
-      {showForm && (
+      {showForm && canManage && (
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="mb-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4"
@@ -211,7 +216,7 @@ export function BudgetsPage() {
           </div>
           {upsert.isError && (
             <div className="mt-3">
-              <FeedbackNotice tone="error" message="保存失败，请稍后重试。" />
+              <FeedbackNotice tone="error" message={(upsert.error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '保存失败，请稍后重试。'} />
             </div>
           )}
           <PrimaryActionButton
@@ -224,10 +229,12 @@ export function BudgetsPage() {
         </form>
       )}
 
-      {query.isLoading ? (
+      {query.isError ? (
+        <FeedbackNotice tone="error" message="预算数据加载失败或当前账号无权访问，请刷新后重试。" />
+      ) : query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载部门预算…" />
       ) : budgets.length === 0 ? (
-        <FeedbackNotice tone="info" message="暂无部门预算,点击「设置预算」创建。" />
+        <FeedbackNotice tone="info" message="当前数据范围内暂无部门预算。" />
       ) : filteredBudgets.length === 0 ? (
         <FeedbackNotice tone="info" message="当前搜索条件下暂无部门预算。" />
       ) : (

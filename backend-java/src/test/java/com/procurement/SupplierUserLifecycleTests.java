@@ -28,7 +28,8 @@ class SupplierUserLifecycleTests {
           supplierUserMapper,
           auditLogApplicationService,
           passwordEncoder,
-          new SupplierUserStatusTransition());
+          new SupplierUserStatusTransition(),
+          org.mockito.Mockito.mock(com.procurement.identity.application.PermissionService.class));
 
   @AfterEach
   void clearTenantContext() {
@@ -38,7 +39,7 @@ class SupplierUserLifecycleTests {
   @Test
   void createSupplierUserUsesCurrentSupplierAndDefaultSupplierRole() {
     TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
-    when(supplierUserMapper.findDefaultSupplierRoleId("ent-supplier-sunrise")).thenReturn("role-supplier-sales");
+    when(supplierUserMapper.findDefaultSupplierRoleId("ent-supplier-sunrise")).thenReturn("role-system-supplier-member");
     when(passwordEncoder.encode("initial-password")).thenReturn("{bcrypt}initial-hash");
     when(supplierUserMapper.findBySupplierAndId(
             org.mockito.ArgumentMatchers.eq("ent-supplier-sunrise"),
@@ -62,7 +63,7 @@ class SupplierUserLifecycleTests {
         org.mockito.ArgumentMatchers.eq("{bcrypt}initial-hash"));
     verify(supplierUserMapper).assignRole(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("user-")),
-        org.mockito.ArgumentMatchers.eq("role-supplier-sales"));
+        org.mockito.ArgumentMatchers.eq("role-system-supplier-member"));
     verify(auditLogApplicationService).recordTenantAction(
         org.mockito.ArgumentMatchers.isNull(),
         org.mockito.ArgumentMatchers.eq("supplier_user.created"),
@@ -118,6 +119,7 @@ class SupplierUserLifecycleTests {
   @Test
   void changeSupplierUserStatusUpdatesOnlyCurrentSupplierUser() {
     TenantContext.set(null, "ent-supplier-sunrise", "user-supplier-sales");
+    when(supplierUserMapper.countOtherActiveAdmins("ent-supplier-sunrise", "user-supplier-finance")).thenReturn(1);
     when(supplierUserMapper.existsBySupplierAndId("ent-supplier-sunrise", "user-supplier-finance"))
         .thenReturn(true);
     when(supplierUserMapper.findBySupplierAndId("ent-supplier-sunrise", "user-supplier-finance"))

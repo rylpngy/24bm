@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, CheckCircle2, ClipboardCheck, FileBadge, Gavel, Info, Megaphone, Plus, Send, Timer, Trophy, Users } from 'lucide-react';
 import {
@@ -104,6 +105,8 @@ function EvaluationSection({
   refresh: () => void;
 }) {
   const formCommittee = useBuyerTenderFormCommittee();
+  const { can } = useBuyerPermissions();
+  const canManage = can('buyer:tender:manage');
   const submitScores = useBuyerTenderSubmitScores();
   const sendInquiry = useBuyerTenderSendInquiry();
   const [inqBidId, setInqBidId] = useState<string | null>(null);
@@ -195,7 +198,7 @@ function EvaluationSection({
         )}
       </div>
 
-      {evaluators.length === 0 ? (
+      {evaluators.length === 0 && !canManage ? <p className="mt-3 text-sm text-slate-500">尚未组建评标委员会。</p> : evaluators.length === 0 ? (
         <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
           <p className="text-xs font-black text-blue-900">组建评标委员会(3 人及以上且为单数)</p>
           <div className="mt-2 space-y-2">
@@ -245,7 +248,7 @@ function EvaluationSection({
             ))}
           </div>
 
-          {t.status === '评标中' && currentEvaluator && (
+          {canManage && t.status === '评标中' && currentEvaluator && (
             <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
@@ -301,7 +304,7 @@ function EvaluationSection({
 
 
           {/* C-9 评标问询与二次报价:发起 + 留痕 */}
-          {t.status === '评标中' && validBids.length > 0 && (
+          {canManage && t.status === '评标中' && validBids.length > 0 && (
             <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/30 p-3">
               <p className="text-xs font-black text-blue-900">评标问询 / 二次报价(以评标委员会名义发出,定向投标人)</p>
               <div className="mt-2 flex flex-wrap items-end gap-2">
@@ -433,6 +436,8 @@ function AwardSection({
   refresh: () => void;
 }) {
   const displayName = useAuthStore((s) => s.session?.displayName ?? '');
+  const { can } = useBuyerPermissions();
+  const canManage = can('buyer:tender:manage');
   const award = useBuyerTenderAward();
   const execute = useBuyerTenderExecute();
   const esign = useBuyerEsignSign();
@@ -472,7 +477,7 @@ function AwardSection({
         <div className="mt-3">
           <p className="text-xs font-black text-slate-500">招标人签章留痕</p>
           <div className="mt-2">
-            <EsignRecordList records={records.data?.data ?? []} />
+            {records.isError ? <FeedbackNotice tone="error" message="签署记录加载失败，请刷新重试。" /> : <EsignRecordList records={records.data?.data ?? []} />}
           </div>
         </div>
 
@@ -484,7 +489,7 @@ function AwardSection({
               <span className="ml-1 font-mono">{t.executionOrderId}</span>
               <span className="ml-2 text-slate-400">供应商确认后在「采购订单」沿 发货 → 验收 → 发票 → 付款 → 合同 链继续履约。</span>
             </p>
-          ) : (
+          ) : !canManage ? <p className="text-xs text-slate-500">尚未生成执行采购订单。</p> : (
             <div className="flex flex-wrap items-end gap-2">
               <label className="block">
                 <span className="text-xs font-black text-slate-500">预计到货日期</span>
@@ -510,7 +515,7 @@ function AwardSection({
     );
   }
 
-  if (!recommended) return null;
+  if (!recommended || !canManage) return null;
   const selectedBidId = bidId ?? recommended.bidId ?? null;
   const selected = summary.find((r) => r.bidId === selectedBidId);
   const noticeTemplate = () =>
@@ -655,6 +660,7 @@ function BuyerTenderStepper({ tender: t }: { tender: TenderResponse }) {
 function TenderAnnouncements({ tenderId }: { tenderId: string }) {
   const anns = useRfqListAnnouncements(tenderId, { query: { enabled: !!tenderId } });
   const list = anns.data?.data ?? [];
+  if (anns.isError) return <FeedbackNotice tone="error" message="公告记录加载失败，请刷新重试。" />;
   if (list.length === 0) return null;
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
@@ -685,9 +691,11 @@ function TenderAnnouncements({ tenderId }: { tenderId: string }) {
 
 // 招标管理(Track C C-1):文件编制(富文本)→ 发布发售 → 邀请发放 / 领取记录。
 export function TendersPage() {
+  const { can } = useBuyerPermissions();
+  const canManage = can('buyer:tender:manage');
   const queryClient = useQueryClient();
   const tenders = useBuyerTenderList();
-  const suppliers = useBuyerSupplierList({ status: '已准入' });
+  const suppliers = useBuyerSupplierList({ status: '已准入' }, { query: { enabled: canManage && can('buyer:supplier:read') } });
   const create = useBuyerTenderCreate();
   const update = useBuyerTenderUpdate();
   const publish = useBuyerTenderPublish();
@@ -712,7 +720,7 @@ export function TendersPage() {
   const [page, setPage] = useState(1);
   const [distributeIds, setDistributeIds] = useState<string[]>([]);
 
-  const all = tenders.data?.data ?? [];
+  const all = tenders.isError ? [] : tenders.data?.data ?? [];
   const selected = selectedId ? all.find((t) => t.id === selectedId) : undefined;
 
   const refresh = () =>
@@ -738,6 +746,7 @@ export function TendersPage() {
   });
 
   const saveDraft = (thenPublish: boolean) => {
+    if (!canManage) return;
     setError(null);
     const after = (t?: TenderResponse) => {
       if (thenPublish && t?.id) {
@@ -766,6 +775,7 @@ export function TendersPage() {
   };
 
   const openEdit = (t?: TenderResponse) => {
+    if (!canManage) return;
     setError(null);
     if (t) {
       setEditingId(t.id ?? null);
@@ -803,7 +813,8 @@ export function TendersPage() {
   const admitted = useMemo(() => suppliers.data?.data ?? [], [suppliers.data]);
 
   // ── 编制页 ─────────────────────────────────────────────────
-  if (view === 'edit') {
+  if (tenders.isError) return <FeedbackNotice tone="error" message="招标项目加载失败，请确认权限后重试。" />;
+  if (view === 'edit' && canManage) {
     return (
       <div className="space-y-4">
         <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
@@ -969,7 +980,7 @@ export function TendersPage() {
                   {t.prequalificationRequired ? '实行资格预审' : '不实行资格预审'}
                 </span>
               </div>
-              {t.status === '编制中' ? (
+              {canManage && t.status === '编制中' ? (
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <p className="min-w-56 flex-1 text-xs font-bold text-slate-500">
                     开启后,供应商须先提交资格声明并经审查通过,方可领取招标文件与投标。发布发售后不得再变更。
@@ -1036,7 +1047,7 @@ export function TendersPage() {
                                 {q.reviewComment && <p className="mt-1 text-[11px] font-bold text-slate-500">{q.reviewComment}</p>}
                               </td>
                               <td className="px-3 py-2">
-                                {pending && t.status === '发售中' ? (
+                                {canManage && pending && t.status === '发售中' ? (
                                   <div className="flex flex-col items-end gap-2">
                                     <input
                                       className="h-8 w-full min-w-40 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-300"
@@ -1109,7 +1120,7 @@ export function TendersPage() {
                 </div>
               )}
 
-              {t.tenderType === '邀请招标' && t.status === '发售中' && (
+              {canManage && can('buyer:supplier:read') && t.tenderType === '邀请招标' && t.status === '发售中' && (
                 <div className="mt-4 rounded-lg border border-violet-100 bg-violet-50/50 p-3">
                   <p className="text-xs font-black text-violet-800">定向发放招标文件(已准入供应商)</p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -1227,7 +1238,7 @@ export function TendersPage() {
                 <p className="mt-2 text-[11px] font-bold text-slate-400">
                   发放/投标/评分记录保留在本项目备查;重新招标将复制标的要素与正文新建草稿(时间节点须重新设定)。
                 </p>
-                <PrimaryActionButton size="sm" onClick={() =>
+                <PrimaryActionButton size="sm" disabled={!canManage} onClick={() =>
                   t.id && rebidTender.mutate({ tenderId: t.id }, {
                     onSuccess: (r) => {
                       setFeedback(`已按流标项目重新立项:「${r.data?.title}」(${r.data?.tenderNo}),请补齐时间节点后发布。`);
@@ -1300,7 +1311,7 @@ export function TendersPage() {
                 </span>
               </span>
             </div>
-            {t.status === '编制中' && (
+            {canManage && t.status === '编制中' && (
               <div className="flex shrink-0 gap-2">
                 <button type="button" onClick={() => openEdit(t)}
                   className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 hover:bg-slate-50">
@@ -1314,7 +1325,7 @@ export function TendersPage() {
                 </PrimaryActionButton>
               </div>
             )}
-            {t.status === '发售中' && t.openingAt && new Date(t.openingAt) <= new Date() && (
+            {canManage && t.status === '发售中' && t.openingAt && new Date(t.openingAt) <= new Date() && (
               <PrimaryActionButton flushTop size="md" onClick={() =>
                 t.id && openTender.mutate({ tenderId: t.id },
                   { onSuccess: () => { setFeedback('已开标:密封投标解封唱标,指纹核验结果已公示。'); refresh(); }, onError: reportError })}
@@ -1322,7 +1333,7 @@ export function TendersPage() {
                 <Gavel size={14} /> 开标唱标
               </PrimaryActionButton>
             )}
-            {(t.status === '已开标' || t.status === '评标中') && (
+            {canManage && (t.status === '已开标' || t.status === '评标中') && (
               failing ? (
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <input
@@ -1380,10 +1391,10 @@ export function TendersPage() {
         />
         <SearchInput className="mb-0 ml-auto" placeholder="按项目名称 / 招标编号搜索"
           onSearch={(k) => { setKeyword(k); setPage(1); }} />
-        <button type="button" onClick={() => openEdit()}
+        {canManage && <button type="button" onClick={() => openEdit()}
           className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-sm font-black text-white transition hover:bg-slate-800">
           <Plus size={15} /> 新建招标项目
-        </button>
+        </button>}
       </div>
 
       {tenders.isLoading ? (
@@ -1403,7 +1414,7 @@ export function TendersPage() {
                     </p>
                     <p className="mt-1 font-mono text-[11px] font-bold text-slate-400">{t.tenderNo}</p>
                   </div>
-                  {t.status && <StatusPill label={t.status} />}
+                  {t.status && <span className="shrink-0 whitespace-nowrap"><StatusPill label={t.status} /></span>}
                 </div>
                 <button type="button" onClick={() => { setSelectedId(t.id ?? null); setView('detail'); }}
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50">
@@ -1422,7 +1433,7 @@ export function TendersPage() {
                   <th className="px-5 py-4 text-right">预算</th>
                   <th className="px-5 py-4 text-center">发放 / 领取</th>
                   <th className="px-5 py-4">递交截止</th>
-                  <th className="px-5 py-4 text-right">操作</th>
+                  <th className="sticky right-0 z-10 bg-slate-50 px-5 py-4 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1448,9 +1459,9 @@ export function TendersPage() {
                         {acq.length > 0 ? `${acq.length} / ${acq.filter((a) => a.acquiredAt).length}` : '—'}
                       </td>
                       <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">{shortTime(t.submissionDeadline)}</td>
-                      <td className="px-5 py-5 text-right">
-                        <div className="flex justify-end gap-2">
-                          {t.status === '编制中' && (
+                      <td className="sticky right-0 z-10 bg-white px-5 py-5 text-right shadow-[-4px_0_8px_-6px_rgba(15,23,42,0.3)]">
+                        <div className="flex justify-end gap-2 whitespace-nowrap">
+                          {canManage && t.status === '编制中' && (
                             <button type="button" onClick={() => openEdit(t)}
                               className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700">
                               继续编制

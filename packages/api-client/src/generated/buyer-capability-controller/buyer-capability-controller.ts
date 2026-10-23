@@ -113,7 +113,3 @@ export function useBuyerCapabilityCapabilities<TData = Awaited<ReturnType<typeof
 
   return query;
 }
-
-
-
-

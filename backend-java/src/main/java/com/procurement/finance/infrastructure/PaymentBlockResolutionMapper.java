@@ -11,6 +11,15 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface PaymentBlockResolutionMapper {
 
+  default List<PaymentBlockResolution> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("paymentBatchNo") String paymentBatchNo,
+      @Param("blockReason") String blockReason,
+      @Param("resolutionStatus") String resolutionStatus,
+      @Param("invoiceId") String invoiceId) {
+    return listVisible(tenantId, paymentBatchNo, blockReason, resolutionStatus, invoiceId, com.procurement.identity.domain.DataScope.unrestricted());
+  }
+
   @Select("""
       <script>
       select id, tenant_id, payment_batch_no, payment_request_id, invoice_id, supplier_id,
@@ -30,15 +39,19 @@ public interface PaymentBlockResolutionMapper {
       <if test="invoiceId != null">
         and invoice_id = #{invoiceId}
       </if>
+      and payment_batch_no in (
+      """ + FinanceScopeSql.BATCHES + """
+      )
       order by updated_at desc, created_at desc
       </script>
       """)
-  List<PaymentBlockResolution> listByTenantFiltered(
+  List<PaymentBlockResolution> listVisible(
       @Param("tenantId") String tenantId,
       @Param("paymentBatchNo") String paymentBatchNo,
       @Param("blockReason") String blockReason,
       @Param("resolutionStatus") String resolutionStatus,
-      @Param("invoiceId") String invoiceId);
+      @Param("invoiceId") String invoiceId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       select id, tenant_id, payment_batch_no, payment_request_id, invoice_id, supplier_id,

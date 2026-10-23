@@ -58,6 +58,18 @@ public class ApprovalTaskApplicationService {
     return approvalTaskMapper.findPendingByBiz(tenantId, bizType, bizId, ApprovalStatus.PENDING);
   }
 
+  public ApprovalTask recordDecision(String tenantId, String taskId, String newStatus, String actorId, String comment) {
+    if (!ApprovalStatus.APPROVED.equals(newStatus) && !ApprovalStatus.REJECTED.equals(newStatus)) {
+      throw new IllegalArgumentException("Unsupported approval decision: " + newStatus);
+    }
+    int updated = approvalTaskMapper.updateStatus(
+        tenantId, taskId, ApprovalStatus.PENDING, newStatus, actorId, comment);
+    if (updated == 0) {
+      throw new IllegalStateException("Approval task status changed before review could be recorded: " + taskId);
+    }
+    return approvalTaskMapper.findByTenantAndId(tenantId, taskId);
+  }
+
   // 完成审批任务(通过/驳回),写审批意见。
   public void completeTask(String tenantId, String taskId, String newStatus, String comment) {
     ApprovalTask task = approvalTaskMapper.findByTenantAndId(tenantId, taskId);

@@ -1730,7 +1730,3 @@ export function useRfqListAnnouncements<TData = Awaited<ReturnType<typeof rfqLis
 
   return query;
 }
-
-
-
-

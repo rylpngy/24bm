@@ -11,6 +11,33 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface PurchaseDemandMapper {
+  String FILTER = """
+      where tenant_id = #{tenantId}
+      <if test="status != null">and status = #{status}</if>
+      <if test="departmentId != null">and department_id = #{departmentId}</if>
+      <if test="keyword != null">
+        and (title ilike concat('%', #{keyword}, '%')
+          or id ilike concat('%', #{keyword}, '%')
+          or department_id ilike concat('%', #{keyword}, '%'))
+      </if>
+      <if test="departmentIds != null">
+        and department_id in
+        <foreach collection="departmentIds" item="d" open="(" separator="," close=")">#{d}</foreach>
+      </if>
+      <if test="requesterId != null">and requester_id = #{requesterId}</if>
+      """;
+
+  @Select("<script>select count(*) from purchase_demands " + FILTER + "</script>")
+  long countPage(@Param("tenantId") String tenantId, @Param("status") String status,
+      @Param("departmentId") String departmentId, @Param("keyword") String keyword,
+      @Param("departmentIds") List<String> departmentIds, @Param("requesterId") String requesterId);
+
+  @Select("<script>select * from purchase_demands " + FILTER
+      + " order by created_at desc, id desc limit #{limit} offset #{offset}</script>")
+  List<PurchaseDemand> listPage(@Param("tenantId") String tenantId, @Param("status") String status,
+      @Param("departmentId") String departmentId, @Param("keyword") String keyword,
+      @Param("departmentIds") List<String> departmentIds, @Param("requesterId") String requesterId,
+      @Param("limit") int limit, @Param("offset") long offset);
 
   @Select("""
       select id, tenant_id, title, department_id, requester_id, budget, status, created_at, updated_at,
@@ -135,4 +162,18 @@ public interface PurchaseDemandMapper {
   int countByTenantAndIdPrefix(
       @Param("tenantId") String tenantId,
       @Param("idPrefix") String idPrefix);
+
+  @Select(value = """
+      insert into demand_number_sequences (prefix, last_value)
+      select #{prefix}, coalesce(
+        (select last_value from demand_number_sequences where prefix = #{prefix}),
+        (select max(substring(id from length(#{prefix}) + 1)::bigint)
+         from purchase_demands where starts_with(id, #{prefix})
+           and substring(id from length(#{prefix}) + 1) ~ '^[0-9]+$'),
+        0) + 1
+      on conflict (prefix) do update
+        set last_value = demand_number_sequences.last_value + 1
+      returning last_value
+      """, affectData = true)
+  long allocateSequence(@Param("prefix") String prefix);
 }

@@ -15,6 +15,45 @@ import org.apache.ibatis.annotations.Update;
 public interface ContractMapper {
 
   @Select("""
+      select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
+             amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at,
+             sign_date, expiry_date, payment_terms, warranty_terms, renewal_status
+      from contracts where tenant_id = #{tenantId} and related_order_id = #{orderId} for update
+      """)
+  ContractLedger lockByOrder(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
+
+  @Select("""
+      select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
+             amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at,
+             sign_date, expiry_date, payment_terms, warranty_terms, renewal_status
+      from contracts where tenant_id=#{tenantId} and related_order_id=#{orderId}
+      """)
+  ContractLedger findByTenantAndOrderId(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
+
+  @Select("select id from contracts where tenant_id = #{tenantId} and id = #{id} for update")
+  String lockById(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("""
+      <script>
+      select exists(select 1 from contracts c where c.tenant_id = #{tenantId} and c.id = #{id}
+        <if test="departmentIds != null or requesterId != null">
+        and exists(select 1 from purchase_orders po
+          join rfqs r on r.tenant_id = po.tenant_id and r.id = po.rfq_id
+          where po.tenant_id = c.tenant_id and po.id = c.related_order_id
+          <if test="requesterId != null">and r.owner_id = #{requesterId}</if>
+          <if test="departmentIds != null">
+          and exists(select 1 from rfq_demands rd
+            join purchase_demands d on d.tenant_id = rd.tenant_id and d.id = rd.demand_id
+            where rd.tenant_id = r.tenant_id and rd.rfq_id = r.id and d.department_id in
+            <foreach collection="departmentIds" item="department" open="(" separator="," close=")">#{department}</foreach>)
+          </if>)
+        </if>)
+      </script>
+      """)
+  boolean canAccessAttachment(@Param("tenantId") String tenantId, @Param("id") String id,
+      @Param("departmentIds") List<String> departmentIds, @Param("requesterId") String requesterId);
+
+  @Select("""
       <script>
       select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
              amount, status, archive_status, fulfillment_progress, effective_date, created_at, updated_at,

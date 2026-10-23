@@ -531,7 +531,3 @@ export function useSupplierQuoteResult<TData = Awaited<ReturnType<typeof supplie
 
   return query;
 }
-
-
-
-

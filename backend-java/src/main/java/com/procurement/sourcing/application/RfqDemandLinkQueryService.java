@@ -1,8 +1,12 @@
 package com.procurement.sourcing.application;
 
 import com.procurement.sourcing.domain.Rfq;
+import com.procurement.sourcing.domain.DemandRfqLink;
 import com.procurement.sourcing.infrastructure.RfqDemandMapper;
 import com.procurement.sourcing.infrastructure.RfqMapper;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 /**
@@ -34,5 +38,12 @@ public class RfqDemandLinkQueryService {
     }
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     return new RfqDemandLink(rfqId, rfq == null ? null : rfq.status());
+  }
+
+  public Map<String, RfqDemandLink> findLatestLinksForDemands(String tenantId, List<String> demandIds) {
+    if (demandIds == null || demandIds.isEmpty()) return Map.of();
+    return rfqDemandMapper.listLatestLinksByDemands(tenantId, demandIds).stream()
+        .collect(Collectors.toMap(DemandRfqLink::demandId,
+            link -> new RfqDemandLink(link.rfqId(), link.status())));
   }
 }

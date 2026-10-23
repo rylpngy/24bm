@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart, Store } from 'lucide-react';
 import {
@@ -36,6 +37,8 @@ function ListingCard({
   onOrder,
   onAddToCart,
   onToggleStatus,
+  canPurchase,
+  canManage,
 }: {
   listing: MallListingResponse;
   /** M-1:该货架行对应的 SKU 明细(起订量/阶梯价/库存/交期);老数据可能为空。 */
@@ -47,6 +50,8 @@ function ListingCard({
     tierPrices?: { minQty?: number; price?: number }[];
   };
   busy: boolean;
+  canPurchase: boolean;
+  canManage: boolean;
   onOrder: (listingId: string, quantity: number) => void;
   onAddToCart: (listingId: string, quantity: number) => void;
   onToggleStatus: (listingId: string, status: string) => void;
@@ -64,7 +69,7 @@ function ListingCard({
             {listing.materialCode || '—'} · {listing.category || '未分类'} · 供应商 {listing.supplierName}
           </p>
         </div>
-        {listing.status && <StatusPill label={listing.status} />}
+        {listing.status && <span className="shrink-0 whitespace-nowrap"><StatusPill label={listing.status} /></span>}
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <MiniFact label="协议单价" value={`${currency(listing.price)} / ${listing.unit ?? '件'}`} />
@@ -91,7 +96,7 @@ function ListingCard({
         </div>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {onShelf && (
+        {onShelf && canPurchase && (
           <>
             <input
               className={cn(inputCls, 'h-9 w-24')}
@@ -120,14 +125,14 @@ function ListingCard({
             </button>
           </>
         )}
-        <button
+        {canManage && <button
           type="button"
           disabled={busy}
           onClick={() => listing.id && onToggleStatus(listing.id, onShelf ? '下架' : '在架')}
           className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
         >
           {onShelf ? '下架' : '重新上架'}
-        </button>
+        </button>}
       </div>
     </div>
   );
@@ -135,8 +140,13 @@ function ListingCard({
 
 // 企业商城:协议价货架(已准入供应商 × 物料 × 协议价)+ 目录直购成单。
 export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => void }) {
+  const { can } = useBuyerPermissions();
+  const canManage = can('buyer:mall:manage');
+  const canPurchase = can('buyer:mall:purchase');
+  const canReadOrders = can('buyer:order:read');
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState('shop');
+  const [selectedTab, setTab] = useState('shop');
+  const tab = (!canManage && ['shelf', 'review'].includes(selectedTab)) || (!canReadOrders && selectedTab === 'after-sales') ? 'shop' : selectedTab;
   const [keyword, setKeyword] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -166,26 +176,26 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
     }
     return map;
   }, [products.data]);
-  const suppliers = useBuyerSupplierList({ status: '已准入' });
-  const materials = useMaterialList();
+  const suppliers = useBuyerSupplierList({ status: '已准入' }, { query: { enabled: canManage && can('buyer:supplier:read') && tab === 'shelf' } });
+  const materials = useMaterialList(undefined, { query: { enabled: canManage && can('buyer:material:read') && tab === 'shelf' } });
   const publish = useBuyerMallPublish();
   const updateStatus = useBuyerMallUpdateStatus();
   const createOrder = useBuyerMallCreateOrder();
   const checkoutCart = useBuyerMallCheckoutCart();
   // M-2:购物车改为服务端存储——换设备/刷新不丢,单价与可结算性由后端按当前阶梯价与库存实时判定。
-  const cart = useBuyerMallCart();
+  const cart = useBuyerMallCart({ query: { enabled: canPurchase } });
   const addToCart = useBuyerMallAddToCart();
   const updateCartItem = useBuyerMallUpdateCartItem();
   const removeCartItem = useBuyerMallRemoveCartItem();
   const checkoutServerCart = useBuyerMallCheckoutServerCart();
-  const addresses = useBuyerMallAddresses();
+  const addresses = useBuyerMallAddresses({ query: { enabled: canPurchase } });
   // M-4:上架审核台与售后台。
-  const pendingReview = useBuyerMallPendingReview();
+  const pendingReview = useBuyerMallPendingReview({ query: { enabled: canManage && tab === 'review' } });
   const reviewProduct = useBuyerMallReviewProduct();
-  const afterSales = useBuyerMallAfterSales();
+  const afterSales = useBuyerMallAfterSales({ query: { enabled: canReadOrders && tab === 'after-sales' } });
   const [reviewComments, setReviewComments] = useState<Record<string, string>>({});
 
-  const items = listings.data?.data ?? [];
+  const items = listings.isError ? [] : listings.data?.data ?? [];
   const onShelfCount = items.filter((l) => l.status === '在架').length;
   const busy = publish.isPending || updateStatus.isPending || createOrder.isPending || checkoutCart.isPending;
 
@@ -272,9 +282,8 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
         <Tabs
           items={[
             { id: 'shop', label: '商城选购' },
-            { id: 'shelf', label: '货架维护' },
-            { id: 'review', label: `上架审核${(pendingReview.data?.data ?? []).length > 0 ? ` (${(pendingReview.data?.data ?? []).length})` : ''}` },
-            { id: 'after-sales', label: '售后处理' },
+            ...(canManage ? [{ id: 'shelf', label: '货架维护' }, { id: 'review', label: '上架审核' }] : []),
+            ...(canReadOrders ? [{ id: 'after-sales', label: '售后处理' }] : []),
           ]}
           value={tab}
           onChange={setTab}
@@ -287,7 +296,7 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
           <div className="min-w-0 flex-1">
             <FeedbackNotice tone="success" message={feedback} />
           </div>
-          {onNavigate && (
+          {onNavigate && canReadOrders && (
             <button
               type="button"
               onClick={() => onNavigate('orders')}
@@ -310,7 +319,7 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
             tone="info"
             message="供应商提交的商品需审核通过后才会上架。驳回请写明原因,供应商据此补正后可重新提交。"
           />
-          {(pendingReview.data?.data ?? []).length === 0 ? (
+          {pendingReview.isError ? <FeedbackNotice tone="error" message="商品审核数据加载失败，请检查权限后重试。" /> : (pendingReview.data?.data ?? []).length === 0 ? (
             <FeedbackNotice tone="info" message="没有待审核的商品。" />
           ) : (
             (pendingReview.data?.data ?? []).map((product) => {
@@ -400,7 +409,7 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
 
       {tab === 'after-sales' && (
         <div className="space-y-3">
-          {(afterSales.data?.data ?? []).length === 0 ? (
+          {afterSales.isError ? <FeedbackNotice tone="error" message="售后记录加载失败，请检查权限后重试。" /> : (afterSales.data?.data ?? []).length === 0 ? (
             <FeedbackNotice tone="info" message="暂无售后单。采购员可在商城门户的「我的订单」里发起售后。" />
           ) : (
             <div className="overflow-hidden rounded-lg border border-slate-200">
@@ -435,6 +444,8 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
 
       {tab === 'shelf' && (
         <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
+          {(!can('buyer:supplier:read') || !can('buyer:material:read')) && <FeedbackNotice tone="info" message="上架商品还需供应商查看和物料查看权限，请联系管理员授权。" />}
+          {(suppliers.isError || materials.isError) && <FeedbackNotice tone="error" message="供应商或物料加载失败，请刷新重试。" />}
           <p className="text-xs font-black text-blue-900">上架商品(已准入供应商 + 物料 + 协议价)</p>
           <div className="mt-2 grid gap-3 sm:grid-cols-4">
             <select className={inputCls} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
@@ -471,7 +482,7 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
           <div className="mt-3">
             <PrimaryActionButton
               onClick={submitPublish}
-              disabled={busy || !supplierId || !materialId || Number(price) <= 0}
+              disabled={busy || suppliers.isError || materials.isError || !can('buyer:supplier:read') || !can('buyer:material:read') || !supplierId || !materialId || Number(price) <= 0}
             >
               上架商品
             </PrimaryActionButton>
@@ -479,7 +490,8 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
         </div>
       )}
 
-      {cartLines.length > 0 && (
+      {canPurchase && (cart.isError || addresses.isError) && <FeedbackNotice tone="error" message="购物车或收货地址加载失败，请刷新重试。" />}
+      {canPurchase && !cart.isError && !addresses.isError && cartLines.length > 0 && (
         <div className="mb-3 rounded-lg border border-blue-100 bg-blue-50/50 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-black text-blue-900">
@@ -570,10 +582,10 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
         <SearchInput onSearch={setKeyword} placeholder="搜索物料名称 / 编码 / 分类 / 供应商" />
       </div>
 
-      {listings.isLoading ? (
+      {listings.isError ? <FeedbackNotice tone="error" message="商城货架加载失败，请检查权限后重试。" /> : listings.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载商城货架…" />
       ) : items.length === 0 ? (
-        <FeedbackNotice tone="info" message="货架为空。切换到「货架维护」为已准入供应商上架协议价商品。" />
+        <FeedbackNotice tone="info" message="当前没有可展示的商品。" />
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {items
@@ -584,6 +596,8 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
                 listing={l}
                 sku={l.id ? skuById.get(l.id) : undefined}
                 busy={busy}
+                canPurchase={canPurchase}
+                canManage={canManage}
                 onOrder={submitOrder}
                 onAddToCart={(skuId, quantity) =>
                   addToCart.mutate(

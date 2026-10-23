@@ -264,7 +264,3 @@ export function usePlatformSupplierCreditProfiles<TData = Awaited<ReturnType<typ
 
   return query;
 }
-
-
-
-

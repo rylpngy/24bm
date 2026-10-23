@@ -970,7 +970,3 @@ export function useSupplierMallAfterSales<TData = Awaited<ReturnType<typeof supp
 
   return query;
 }
-
-
-
-

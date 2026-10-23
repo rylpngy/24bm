@@ -200,7 +200,3 @@ export function usePublicMallOverview<TData = Awaited<ReturnType<typeof publicMa
 
   return query;
 }
-
-
-
-

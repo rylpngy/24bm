@@ -15,9 +15,12 @@ public class AuditLogController {
   private static final int DEFAULT_LIMIT = 50;
 
   private final AuditLogApplicationService auditLogApplicationService;
+  private final com.procurement.audit.application.AuditReadAccess access;
 
-  public AuditLogController(AuditLogApplicationService auditLogApplicationService) {
+  public AuditLogController(AuditLogApplicationService auditLogApplicationService,
+      com.procurement.audit.application.AuditReadAccess access) {
     this.auditLogApplicationService = auditLogApplicationService;
+    this.access = access;
   }
 
   @GetMapping
@@ -27,6 +30,7 @@ public class AuditLogController {
       @RequestParam(defaultValue = "") String targetType,
       @RequestParam(defaultValue = "") String dateFrom,
       @RequestParam(defaultValue = "") String dateTo) {
+    access.require();
     return ApiResponse.ok(auditLogApplicationService.listCurrentTenantAuditLogs(
         limit, keyword, targetType, dateFrom, dateTo));
   }
@@ -37,6 +41,7 @@ public class AuditLogController {
       @RequestParam String targetId,
       @RequestParam(defaultValue = "") String actions,
       @RequestParam(defaultValue = "" + DEFAULT_LIMIT) int limit) {
+    access.requireTarget(targetType, targetId);
     List<String> actionList = Arrays.stream(actions.split(","))
         .map(String::trim)
         .filter(action -> !action.isBlank())

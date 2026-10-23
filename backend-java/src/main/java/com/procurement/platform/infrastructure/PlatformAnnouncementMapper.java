@@ -14,6 +14,13 @@ public interface PlatformAnnouncementMapper {
   @Select("""
       select id, title, content, audience, status, published_by, created_at
       from platform_announcements
+      order by created_at desc, id
+      """)
+  List<PlatformAnnouncement> listForManagement();
+
+  @Select("""
+      select id, title, content, audience, status, published_by, created_at
+      from platform_announcements
       where status = 'active'
       order by created_at desc
       """)

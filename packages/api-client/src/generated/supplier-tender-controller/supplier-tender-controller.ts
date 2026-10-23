@@ -412,7 +412,3 @@ export function useSupplierTenderList<TData = Awaited<ReturnType<typeof supplier
 
   return query;
 }
-
-
-
-

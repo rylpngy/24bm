@@ -12,6 +12,15 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface PaymentExecutionRecordMapper {
 
+  default List<PaymentExecutionRecord> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("paymentBatchNo") String paymentBatchNo,
+      @Param("executionStatus") String executionStatus,
+      @Param("supplierId") String supplierId,
+      @Param("invoiceId") String invoiceId) {
+    return listVisible(tenantId, paymentBatchNo, executionStatus, supplierId, invoiceId, com.procurement.identity.domain.DataScope.unrestricted());
+  }
+
   @Select("""
       <script>
       select id, tenant_id, payment_batch_no, payment_request_id, invoice_id, supplier_id,
@@ -32,15 +41,19 @@ public interface PaymentExecutionRecordMapper {
       <if test="invoiceId != null">
         and invoice_id = #{invoiceId}
       </if>
+      and invoice_id in (
+      """ + FinanceScopeSql.INVOICES + """
+      )
       order by planned_payment_date nulls last, updated_at desc
       </script>
       """)
-  List<PaymentExecutionRecord> listByTenantFiltered(
+  List<PaymentExecutionRecord> listVisible(
       @Param("tenantId") String tenantId,
       @Param("paymentBatchNo") String paymentBatchNo,
       @Param("executionStatus") String executionStatus,
       @Param("supplierId") String supplierId,
-      @Param("invoiceId") String invoiceId);
+      @Param("invoiceId") String invoiceId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       select id, tenant_id, payment_batch_no, payment_request_id, invoice_id, supplier_id,
@@ -57,9 +70,9 @@ public interface PaymentExecutionRecordMapper {
 
   @Select("""
       select
-        coalesce(sum(case when per.execution_status = '已登记付款' then per.registered_amount else 0 end), 0) as registered_amount,
-        coalesce(sum(case when per.execution_status = '待登记付款' then coalesce(pr.amount, 0) else 0 end), 0) as pending_registration_amount,
-        coalesce(sum(case when per.execution_status = '暂不可登记' then coalesce(pr.amount, 0) else 0 end), 0) as blocked_registration_amount,
+        coalesce(sum(per.registered_amount), 0) as registered_amount,
+        coalesce(sum(case when per.execution_status = '待登记付款' then greatest(coalesce(pr.amount, 0)-per.registered_amount,0) else 0 end), 0) as pending_registration_amount,
+        coalesce(sum(case when per.execution_status = '暂不可登记' then greatest(coalesce(pr.amount, 0)-per.registered_amount,0) else 0 end), 0) as blocked_registration_amount,
         coalesce(sum(case when per.execution_status = '已登记付款' then 1 else 0 end), 0)::int as registered_count,
         coalesce(sum(case when per.execution_status = '待登记付款' then 1 else 0 end), 0)::int as pending_registration_count,
         coalesce(sum(case when per.execution_status = '暂不可登记' then 1 else 0 end), 0)::int as blocked_registration_count,
@@ -93,9 +106,10 @@ public interface PaymentExecutionRecordMapper {
         pr.id,
         pr.invoice_id,
         pr.supplier_id,
-        case when i.payment_status = '已付款' then pr.amount else 0 end,
+        coalesce((select sum(pe.amount) from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id),0),
         (i.created_at::date + interval '30 days')::date,
         case
+          when i.payment_status in ('已付款','部分付款') and not exists (select 1 from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id) then '暂不可登记'
           when i.payment_status = '已付款' then '已登记付款'
           when pr.request_status = '付款申请审批中' then '付款审批中'
           when pr.request_status <> '付款申请已通过' then '暂不可登记'
@@ -105,6 +119,7 @@ public interface PaymentExecutionRecordMapper {
           else '待登记付款'
         end,
         case
+          when i.payment_status in ('已付款','部分付款') and not exists (select 1 from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id) then '历史付款缺少金额流水，请先核对'
           when i.payment_status = '已付款' then '发票已登记付款，仅记录付款登记轨迹，不接真实支付'
           when pr.request_status = '付款申请审批中' then '付款申请审批中，暂不可登记付款'
           when pr.request_status <> '付款申请已通过' then '付款申请未通过，暂不可登记付款'
@@ -114,6 +129,7 @@ public interface PaymentExecutionRecordMapper {
           else '付款申请已通过且三单匹配通过，可进入线下付款登记'
         end,
         case
+          when i.payment_status in ('已付款','部分付款') and not exists (select 1 from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id) then '暂不可登记'
           when i.payment_status = '已付款' then '已登记付款'
           when pr.request_status = '付款申请审批中' then '付款申请审批中'
           when pr.request_status <> '付款申请已通过' then '付款申请未通过'
@@ -153,9 +169,10 @@ public interface PaymentExecutionRecordMapper {
 
   @Update("""
       update payment_execution_records per
-      set registered_amount = case when i.payment_status = '已付款' then pr.amount else 0 end,
+      set registered_amount = coalesce((select sum(pe.amount) from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id),0),
           planned_payment_date = (i.created_at::date + interval '30 days')::date,
           execution_status = case
+            when i.payment_status in ('已付款','部分付款') and not exists (select 1 from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id) then '暂不可登记'
             when i.payment_status = '已付款' then '已登记付款'
             when pr.request_status = '付款申请审批中' then '付款审批中'
             when pr.request_status <> '付款申请已通过' then '暂不可登记'
@@ -165,6 +182,7 @@ public interface PaymentExecutionRecordMapper {
             else '待登记付款'
           end,
           execution_trace = case
+            when i.payment_status in ('已付款','部分付款') and not exists (select 1 from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id) then '历史付款缺少金额流水，请先核对'
             when i.payment_status = '已付款' then '发票已登记付款，仅记录付款登记轨迹，不接真实支付'
             when pr.request_status = '付款申请审批中' then '付款申请审批中，暂不可登记付款'
             when pr.request_status <> '付款申请已通过' then '付款申请未通过，暂不可登记付款'
@@ -174,6 +192,7 @@ public interface PaymentExecutionRecordMapper {
             else '付款申请已通过且三单匹配通过，可进入线下付款登记'
           end,
           execution_block_reason = case
+            when i.payment_status in ('已付款','部分付款') and not exists (select 1 from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id) then '暂不可登记'
             when i.payment_status = '已付款' then '已登记付款'
             when pr.request_status = '付款申请审批中' then '付款申请审批中'
             when pr.request_status <> '付款申请已通过' then '付款申请未通过'
@@ -216,7 +235,12 @@ public interface PaymentExecutionRecordMapper {
       @Param("releaseEvidenceNo") String releaseEvidenceNo,
       @Param("releaseRemark") String releaseRemark);
 
+  default void refreshTenantFromPaymentRequests(String tenantId) {
+    refreshVisible(tenantId, com.procurement.identity.domain.DataScope.unrestricted());
+  }
+
   @Insert("""
+      <script>
       insert into payment_execution_records (
         id, tenant_id, payment_batch_no, payment_request_id, invoice_id, supplier_id,
         registered_amount, planned_payment_date, execution_status, execution_trace,
@@ -229,33 +253,36 @@ public interface PaymentExecutionRecordMapper {
         pr.id,
         pr.invoice_id,
         pr.supplier_id,
-        case when i.payment_status = '已付款' then pr.amount else 0 end,
+        coalesce((select sum(pe.amount) from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id),0),
         (i.created_at::date + interval '30 days')::date,
         case
+          when i.payment_status in ('已付款','部分付款') and not exists (select 1 from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id) then '暂不可登记'
           when i.payment_status = '已付款' then '已登记付款'
           when pr.request_status = '付款申请审批中' then '付款审批中'
-          when pr.request_status <> '付款申请已通过' then '暂不可登记'
+          when pr.request_status &lt;&gt; '付款申请已通过' then '暂不可登记'
           when twm.id is null then '暂不可登记'
-          when twm.match_status = '金额差异' and (vh.id is null or vh.status <> '已处理') then '暂不可登记'
-          when twm.match_status <> '三单匹配通过' then '暂不可登记'
+          when twm.match_status = '金额差异' and (vh.id is null or vh.status &lt;&gt; '已处理') then '暂不可登记'
+          when twm.match_status &lt;&gt; '三单匹配通过' then '暂不可登记'
           else '待登记付款'
         end,
         case
+          when i.payment_status in ('已付款','部分付款') and not exists (select 1 from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id) then '历史付款缺少金额流水，请先核对'
           when i.payment_status = '已付款' then '发票已登记付款，仅记录付款登记轨迹，不接真实支付'
           when pr.request_status = '付款申请审批中' then '付款申请审批中，暂不可登记付款'
-          when pr.request_status <> '付款申请已通过' then '付款申请未通过，暂不可登记付款'
+          when pr.request_status &lt;&gt; '付款申请已通过' then '付款申请未通过，暂不可登记付款'
           when twm.id is null then '三单未同步，暂不可登记付款'
-          when twm.match_status = '金额差异' and (vh.id is null or vh.status <> '已处理') then '三单金额差异未处理，暂不可登记付款'
-          when twm.match_status <> '三单匹配通过' then '三单未通过，暂不可登记付款'
+          when twm.match_status = '金额差异' and (vh.id is null or vh.status &lt;&gt; '已处理') then '三单金额差异未处理，暂不可登记付款'
+          when twm.match_status &lt;&gt; '三单匹配通过' then '三单未通过，暂不可登记付款'
           else '付款申请已通过且三单匹配通过，可进入线下付款登记'
         end,
         case
+          when i.payment_status in ('已付款','部分付款') and not exists (select 1 from invoice_payment_entries pe where pe.tenant_id=i.tenant_id and pe.invoice_id=i.id) then '暂不可登记'
           when i.payment_status = '已付款' then '已登记付款'
           when pr.request_status = '付款申请审批中' then '付款申请审批中'
-          when pr.request_status <> '付款申请已通过' then '付款申请未通过'
+          when pr.request_status &lt;&gt; '付款申请已通过' then '付款申请未通过'
           when twm.id is null then '三单未同步'
-          when twm.match_status = '金额差异' and (vh.id is null or vh.status <> '已处理') then '差异未处理'
-          when twm.match_status <> '三单匹配通过' then '三单未通过'
+          when twm.match_status = '金额差异' and (vh.id is null or vh.status &lt;&gt; '已处理') then '差异未处理'
+          when twm.match_status &lt;&gt; '三单匹配通过' then '三单未通过'
           else '付款申请已通过'
         end,
         pr.created_by
@@ -270,6 +297,9 @@ public interface PaymentExecutionRecordMapper {
         on vh.tenant_id = pr.tenant_id
        and vh.invoice_id = pr.invoice_id
       where pr.tenant_id = #{tenantId}
+      and pr.order_id in (
+      """ + FinanceScopeSql.ORDERS + """
+      )
       on conflict (tenant_id, payment_request_id) do update
         set payment_batch_no = excluded.payment_batch_no,
             invoice_id = excluded.invoice_id,
@@ -280,6 +310,8 @@ public interface PaymentExecutionRecordMapper {
             execution_trace = excluded.execution_trace,
             execution_block_reason = excluded.execution_block_reason,
             updated_at = now()
+      </script>
       """)
-  void refreshTenantFromPaymentRequests(@Param("tenantId") String tenantId);
+  void refreshVisible(@Param("tenantId") String tenantId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 }

@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Select;
 public interface AuthenticationUserMapper {
 
   @Select("""
-      select u.id as user_id, u.tenant_id, u.supplier_id, u.name as display_name, u.password_hash
+      select u.id as user_id, u.tenant_id, u.supplier_id, u.name as display_name, u.password_hash, u.session_version
       from users u
       where u.status = 'active'
         and u.password_hash is not null
@@ -34,12 +34,34 @@ public interface AuthenticationUserMapper {
       @Arg(column = "tenant_id", javaType = String.class),
       @Arg(column = "supplier_id", javaType = String.class),
       @Arg(column = "display_name", javaType = String.class),
-      @Arg(column = "password_hash", javaType = String.class)
+      @Arg(column = "password_hash", javaType = String.class),
+      @Arg(column = "session_version", javaType = long.class)
   })
   AuthenticatedUser findActiveUser(
       @Param("account") String account,
       @Param("scope") String scope,
       @Param("tenantId") String tenantId,
+      @Param("supplierId") String supplierId);
+
+  @Select("""
+      select u.id as user_id, u.tenant_id, u.supplier_id, u.name as display_name,
+             u.password_hash, u.session_version
+      from users u
+      where u.id = #{userId} and u.status = 'active'
+        and ((#{scope} = 'PLATFORM' and u.tenant_id is null and u.supplier_id is null)
+          or (#{scope} = 'BUYER' and u.tenant_id = #{tenantId,jdbcType=VARCHAR} and u.supplier_id is null)
+          or (#{scope} = 'SUPPLIER' and u.supplier_id = #{supplierId,jdbcType=VARCHAR} and u.tenant_id is null))
+      """)
+  @ConstructorArgs({
+      @Arg(column = "user_id", javaType = String.class),
+      @Arg(column = "tenant_id", javaType = String.class),
+      @Arg(column = "supplier_id", javaType = String.class),
+      @Arg(column = "display_name", javaType = String.class),
+      @Arg(column = "password_hash", javaType = String.class),
+      @Arg(column = "session_version", javaType = long.class)
+  })
+  AuthenticatedUser findActiveSessionUser(@Param("userId") String userId,
+      @Param("scope") String scope, @Param("tenantId") String tenantId,
       @Param("supplierId") String supplierId);
 
   @Select("""

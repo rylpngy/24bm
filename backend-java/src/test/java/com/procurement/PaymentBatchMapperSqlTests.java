@@ -14,19 +14,25 @@ class PaymentBatchMapperSqlTests {
   @Test
   void paymentBatchListDataScopeFollowsRequestOrderRfqDemandDepartmentChain() throws IOException {
     String source = Files.readString(MAPPER_SOURCE);
-
-    assertThat(source)
+    assertThat(source).contains("FinanceScopeSql.BATCHES");
+    String scope = Files.readString(Path.of(
+        "src/main/java/com/procurement/finance/infrastructure/FinanceScopeSql.java"));
+    assertThat(scope)
         .contains("from payment_requests scope_pr")
-        .contains("join purchase_orders po")
-        .contains("po.id = scope_pr.order_id")
-        .contains("join rfqs rfq")
-        .contains("rfq.id = po.rfq_id")
-        .contains("join rfq_demands rd")
-        .contains("rd.rfq_id = rfq.id")
-        .contains("join purchase_demands pd")
-        .contains("pd.id = rd.demand_id")
-        .contains("pd.department_id in")
-        .contains("rfq.owner_id = #{requesterId}");
+        .contains("scope_pr.order_id not in")
+        .contains("ProcurementScopeSql.ORDERS")
+        .contains("and not exists");
+    String records = Files.readString(Path.of(
+        "src/main/java/com/procurement/common/data/ProcurementScopeSql.java"));
+    assertThat(records)
+        .contains("from purchase_orders scope_po")
+        .contains("scope_po.rfq_id in")
+        .contains("rd.rfq_id = r.id")
+        .contains("d.id = rd.demand_id")
+        .contains("d.department_id not in")
+        .contains("r.owner_id = #{scope.requesterId}")
+        .contains("and not exists")
+        .contains("<otherwise>and false</otherwise>");
   }
 
   @Test

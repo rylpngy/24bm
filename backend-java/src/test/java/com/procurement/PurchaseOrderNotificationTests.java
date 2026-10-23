@@ -44,8 +44,8 @@ class PurchaseOrderNotificationTests {
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final PurchaseOrderApplicationService purchaseOrderApplicationService = new PurchaseOrderApplicationService(
-      awardDecisionMapper,
-      rfqMapper,
+          TestOrderAccess.unrestricted(),
+      new com.procurement.sourcing.application.OrderAwardQueryService(awardDecisionMapper, rfqMapper),
       purchaseOrderMapper,
       auditLogApplicationService,
       notificationApplicationService,

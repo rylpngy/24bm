@@ -6,5 +6,13 @@ import com.procurement.workflow.domain.WorkflowBusinessInstance;
 public interface WorkflowBusinessCompletionHandler {
   String businessType();
 
+  default boolean requiresBusinessProjection() {
+    return false;
+  }
+
+  default boolean reusesEmployeeDecisions() {
+    return false;
+  }
+
   void onCompleted(WorkflowBusinessInstance instance, WorkflowCompletion completion);
 }

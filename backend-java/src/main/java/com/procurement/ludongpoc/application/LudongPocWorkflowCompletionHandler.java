@@ -25,6 +25,16 @@ public class LudongPocWorkflowCompletionHandler implements WorkflowBusinessCompl
   }
 
   @Override
+  public boolean requiresBusinessProjection() {
+    return true;
+  }
+
+  @Override
+  public boolean reusesEmployeeDecisions() {
+    return true;
+  }
+
+  @Override
   public void onCompleted(WorkflowBusinessInstance instance, WorkflowCompletion completion) {
     String status = completion.approved() ? "approved" : "rejected";
     if (mapper.complete(instance.tenantId(), instance.businessId(), status) == 0) {

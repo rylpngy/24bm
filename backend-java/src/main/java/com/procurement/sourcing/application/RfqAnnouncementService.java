@@ -1,6 +1,8 @@
 package com.procurement.sourcing.application;
 
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.order.application.OrderAccessService;
+import com.procurement.tender.application.TenderReadAccess;
 import com.procurement.sourcing.api.PublicProcurementAnnouncementResponse;
 import com.procurement.sourcing.api.RfqAnnouncementResponse;
 import com.procurement.sourcing.domain.Rfq;
@@ -17,12 +19,17 @@ import org.springframework.stereotype.Service;
 public class RfqAnnouncementService {
   private final RfqAnnouncementMapper rfqAnnouncementMapper;
   private final PublicProcurementAnnouncementMapper publicProcurementAnnouncementMapper;
+  private final TenderReadAccess tenders;
+  private final OrderAccessService orders;
 
   public RfqAnnouncementService(
       RfqAnnouncementMapper rfqAnnouncementMapper,
-      PublicProcurementAnnouncementMapper publicProcurementAnnouncementMapper) {
+      PublicProcurementAnnouncementMapper publicProcurementAnnouncementMapper,
+      TenderReadAccess tenders, OrderAccessService orders) {
     this.rfqAnnouncementMapper = rfqAnnouncementMapper;
     this.publicProcurementAnnouncementMapper = publicProcurementAnnouncementMapper;
+    this.tenders = tenders;
+    this.orders = orders;
   }
 
   // ── 事件登记(模板化正文由真实业务字段生成) ──────────────────
@@ -100,6 +107,7 @@ public class RfqAnnouncementService {
 
   public List<RfqAnnouncementResponse> listForRfq(String rfqId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    if (!tenders.requireIfPresent(rfqId)) orders.requireRfq(rfqId, "buyer:rfq:read");
     return rfqAnnouncementMapper.listByTenantAndRfq(tenantId, rfqId).stream()
         .map(this::toResponse)
         .toList();

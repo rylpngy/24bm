@@ -12,6 +12,7 @@ import com.procurement.esign.infrastructure.EsignRecordMapper;
 import com.procurement.sourcing.application.QuoteApplicationService;
 import com.procurement.sourcing.domain.Quote;
 import com.procurement.tender.application.TenderApplicationService;
+import com.procurement.tender.application.TenderReadAccess;
 import com.procurement.tender.domain.Tender;
 import com.procurement.tender.domain.TenderBid;
 import java.nio.charset.StandardCharsets;
@@ -35,18 +36,20 @@ public class EsignApplicationService {
   private final QuoteApplicationService quoteApplicationService;
   private final TenderApplicationService tenderApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
+  private final TenderReadAccess tenderReadAccess;
 
   public EsignApplicationService(
       EsignRecordMapper esignRecordMapper,
       ContractApplicationService contractApplicationService,
       QuoteApplicationService quoteApplicationService,
       TenderApplicationService tenderApplicationService,
-      AuditLogApplicationService auditLogApplicationService) {
+      AuditLogApplicationService auditLogApplicationService, TenderReadAccess tenderReadAccess) {
     this.esignRecordMapper = esignRecordMapper;
     this.contractApplicationService = contractApplicationService;
     this.quoteApplicationService = quoteApplicationService;
     this.tenderApplicationService = tenderApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
+    this.tenderReadAccess = tenderReadAccess;
   }
 
   // ── 采购方:合同电子签章 ────────────────────────────────────
@@ -94,6 +97,7 @@ public class EsignApplicationService {
 
   public List<EsignRecordResponse> listForBuyer(String targetType, String targetId) {
     String tenantId = TenantAccessGuard.requireTenantId("esign APIs");
+    if ("tender-award".equals(targetType)) tenderReadAccess.require(targetId);
     return esignRecordMapper.listByTarget(tenantId, targetType, targetId).stream()
         .map(this::toResponse)
         .toList();

@@ -269,8 +269,8 @@ export const getUnifiedWorkflowPublishedForm = (businessType: string, signal?: A
     signal,
   });
 
-export function useWorkflowRuntimeTasks() {
-  return useQuery({ queryKey: workflowTasksKey, queryFn: ({ signal }) => listUnifiedWorkflowTasks(signal) });
+export function useWorkflowRuntimeTasks(enabled = true) {
+  return useQuery({ queryKey: workflowTasksKey, queryFn: ({ signal }) => listUnifiedWorkflowTasks(signal), enabled });
 }
 
 export function useUnifiedWorkflowInstanceHistory(workflowInstanceId?: string) {

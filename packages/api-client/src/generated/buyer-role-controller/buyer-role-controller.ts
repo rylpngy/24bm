@@ -585,7 +585,3 @@ export function useBuyerRoleMyPermissions<TData = Awaited<ReturnType<typeof buye
 
   return query;
 }
-
-
-
-

@@ -13,12 +13,30 @@ import org.apache.ibatis.annotations.Update;
 public interface PaymentBatchMapper {
 
   @Select("""
+      select batch_status from payment_batches
+      where tenant_id = #{tenantId} and payment_batch_no = #{batchNo} for update
+      """)
+  String lockStatus(@Param("tenantId") String tenantId, @Param("batchNo") String batchNo);
+
+  default List<PaymentBatch> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("batchStatus") String batchStatus,
+      @Param("supplierId") String supplierId,
+      @Param("scopeDepartmentIds") List<String> scopeDepartmentIds,
+      @Param("requesterId") String requesterId) {
+    var scope = requesterId != null ? com.procurement.identity.domain.DataScope.self(requesterId)
+        : scopeDepartmentIds != null ? com.procurement.identity.domain.DataScope.departments(scopeDepartmentIds)
+        : com.procurement.identity.domain.DataScope.unrestricted();
+    return listVisible(tenantId, batchStatus, supplierId, scope);
+  }
+
+  @Select("""
       <script>
       select pb.id, pb.tenant_id, pb.payment_batch_no, pb.supplier_id, pb.request_count, pb.total_amount,
              pb.approved_amount,
-             coalesce(sum(case when per.execution_status = '已登记付款' then per.registered_amount else 0 end), 0) as registered_amount,
-             coalesce(sum(case when per.execution_status = '待登记付款' then coalesce(pr.amount, 0) else 0 end), 0) as pending_registration_amount,
-             coalesce(sum(case when per.execution_status = '暂不可登记' then coalesce(pr.amount, 0) else 0 end), 0) as blocked_registration_amount,
+             coalesce(sum(per.registered_amount), 0) as registered_amount,
+             coalesce(sum(case when per.execution_status = '待登记付款' then greatest(coalesce(pr.amount, 0)-per.registered_amount,0) else 0 end), 0) as pending_registration_amount,
+             coalesce(sum(case when per.execution_status = '暂不可登记' then greatest(coalesce(pr.amount, 0)-per.registered_amount,0) else 0 end), 0) as blocked_registration_amount,
              coalesce(sum(case when per.execution_status = '已登记付款' then 1 else 0 end), 0)::int as registered_count,
              coalesce(sum(case when per.execution_status = '待登记付款' then 1 else 0 end), 0)::int as pending_registration_count,
              coalesce(sum(case when per.execution_status = '暂不可登记' then 1 else 0 end), 0)::int as blocked_registration_count,
@@ -52,64 +70,27 @@ public interface PaymentBatchMapper {
       <if test="supplierId != null">
         and pb.supplier_id = #{supplierId}
       </if>
-      <if test="scopeDepartmentIds != null">
-        and exists (
-          select 1
-          from payment_requests scope_pr
-          join purchase_orders po
-            on po.tenant_id = scope_pr.tenant_id
-           and po.id = scope_pr.order_id
-          join rfqs rfq
-            on rfq.tenant_id = po.tenant_id
-           and rfq.id = po.rfq_id
-          join rfq_demands rd
-            on rd.tenant_id = rfq.tenant_id
-           and rd.rfq_id = rfq.id
-          join purchase_demands pd
-            on pd.tenant_id = rd.tenant_id
-           and pd.id = rd.demand_id
-          where scope_pr.tenant_id = pb.tenant_id
-            and scope_pr.payment_batch_no = pb.payment_batch_no
-            and pd.department_id in
-            <foreach collection="scopeDepartmentIds" item="departmentId" open="(" separator="," close=")">
-              #{departmentId}
-            </foreach>
-        )
-      </if>
-      <if test="requesterId != null">
-        and exists (
-          select 1
-          from payment_requests scope_pr
-          join purchase_orders po
-            on po.tenant_id = scope_pr.tenant_id
-           and po.id = scope_pr.order_id
-          join rfqs rfq
-            on rfq.tenant_id = po.tenant_id
-           and rfq.id = po.rfq_id
-          where scope_pr.tenant_id = pb.tenant_id
-            and scope_pr.payment_batch_no = pb.payment_batch_no
-            and rfq.owner_id = #{requesterId}
-        )
-      </if>
+      and pb.payment_batch_no in (
+      """ + FinanceScopeSql.BATCHES + """
+      )
       group by pb.id, pb.tenant_id, pb.payment_batch_no, pb.supplier_id, pb.request_count,
                pb.total_amount, pb.approved_amount, pb.batch_status, pb.planned_payment_date,
                pb.created_at, pb.updated_at
       order by pb.planned_payment_date nulls last, pb.updated_at desc
       </script>
       """)
-  List<PaymentBatch> listByTenantFiltered(
+  List<PaymentBatch> listVisible(
       @Param("tenantId") String tenantId,
       @Param("batchStatus") String batchStatus,
       @Param("supplierId") String supplierId,
-      @Param("scopeDepartmentIds") List<String> scopeDepartmentIds,
-      @Param("requesterId") String requesterId);
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       select pb.id, pb.tenant_id, pb.payment_batch_no, pb.supplier_id, pb.request_count, pb.total_amount,
              pb.approved_amount,
-             coalesce(sum(case when per.execution_status = '已登记付款' then per.registered_amount else 0 end), 0) as registered_amount,
-             coalesce(sum(case when per.execution_status = '待登记付款' then coalesce(pr.amount, 0) else 0 end), 0) as pending_registration_amount,
-             coalesce(sum(case when per.execution_status = '暂不可登记' then coalesce(pr.amount, 0) else 0 end), 0) as blocked_registration_amount,
+             coalesce(sum(per.registered_amount), 0) as registered_amount,
+             coalesce(sum(case when per.execution_status = '待登记付款' then greatest(coalesce(pr.amount, 0)-per.registered_amount,0) else 0 end), 0) as pending_registration_amount,
+             coalesce(sum(case when per.execution_status = '暂不可登记' then greatest(coalesce(pr.amount, 0)-per.registered_amount,0) else 0 end), 0) as blocked_registration_amount,
              coalesce(sum(case when per.execution_status = '已登记付款' then 1 else 0 end), 0)::int as registered_count,
              coalesce(sum(case when per.execution_status = '待登记付款' then 1 else 0 end), 0)::int as pending_registration_count,
              coalesce(sum(case when per.execution_status = '暂不可登记' then 1 else 0 end), 0)::int as blocked_registration_count,

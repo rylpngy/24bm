@@ -447,7 +447,3 @@ export function useSupplierQualificationDownload<TData = Awaited<ReturnType<type
 
   return query;
 }
-
-
-
-

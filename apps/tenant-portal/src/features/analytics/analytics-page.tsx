@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import {
   BarChart3,
   Download,
@@ -84,6 +85,7 @@ function SectionCard({
 
 // 采购分析:全部指标来自后端真实聚合(订单/报价/需求行项),不含模拟数据。
 export function AnalyticsPage() {
+  const { can } = useBuyerPermissions();
   const query = useBuyerAnalyticsProcurement();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(false);
@@ -92,7 +94,7 @@ export function AnalyticsPage() {
   if (query.isLoading) {
     return <ShellState variant="loading" title="正在加载采购分析" desc="聚合订单、报价与品类支出…" />;
   }
-  if (!data) {
+  if (query.isError || !data) {
     return <ShellState variant="error" title="采购分析加载失败" desc="请稍后重试或联系管理员。" />;
   }
 
@@ -122,6 +124,7 @@ export function AnalyticsPage() {
   }
 
   const exportReport = async () => {
+    if (!can('buyer:report:export')) return;
     setExporting(true);
     setExportError(false);
     try {
@@ -139,14 +142,14 @@ export function AnalyticsPage() {
         <p className="text-xs font-bold text-slate-400">
           数据来源:采购订单、报价对比与需求行项的后端聚合,随业务实时更新。
         </p>
-        <button
+        {can('buyer:report:export') && <button
           type="button"
           disabled={exporting}
           onClick={exportReport}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800 disabled:bg-slate-400"
         >
           <Download size={14} /> {exporting ? '导出中…' : '导出报表(Excel)'}
-        </button>
+        </button>}
       </div>
       {exportError && (
         <div className="mb-3">

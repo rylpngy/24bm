@@ -16,7 +16,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 合同行项化 + 付款计划:行项派生自关联订单行项;付款计划按里程碑拆分合同金额、逐项登记付款。
+// 合同行项派生自订单，里程碑确认付款条件，已付状态由财务登记同步。
 @Service
 public class ContractScheduleService {
 
@@ -27,14 +27,34 @@ public class ContractScheduleService {
   private final ContractMapper contractMapper;
   private final ContractPaymentMilestoneMapper milestoneMapper;
   private final OrderLineItemMapper orderLineItemMapper;
+  private final com.procurement.identity.application.PermissionService permissions;
+  private final com.procurement.identity.application.DataScopeService scopes;
+  private final com.procurement.audit.application.AuditLogApplicationService audit;
 
   public ContractScheduleService(
       ContractMapper contractMapper,
       ContractPaymentMilestoneMapper milestoneMapper,
-      OrderLineItemMapper orderLineItemMapper) {
+      OrderLineItemMapper orderLineItemMapper,
+      com.procurement.identity.application.PermissionService permissions,
+      com.procurement.identity.application.DataScopeService scopes,
+      com.procurement.audit.application.AuditLogApplicationService audit) {
     this.contractMapper = contractMapper;
     this.milestoneMapper = milestoneMapper;
     this.orderLineItemMapper = orderLineItemMapper;
+    this.permissions = permissions;
+    this.scopes = scopes;
+    this.audit = audit;
+  }
+
+  private void requireAccess(String tenantId, String contractId, boolean write) {
+    permissions.require(write ? "buyer:contract:manage" : "buyer:contract:read");
+    var scope = scopes.currentUserDataScope();
+    if (scope.blocksAll() || !contractMapper.canAccessAttachment(tenantId, contractId,
+        scope.restricted() && scope.requesterId() == null ? scope.departmentIds() : null,
+        scope.restricted() ? scope.requesterId() : null)) {
+      throw new com.procurement.common.tenant.PermissionDeniedException("合同不存在或无权访问");
+    }
+    if (write) contractMapper.lockById(tenantId, contractId);
   }
 
   private ContractLedger requireContract(String tenantId, String contractId) {
@@ -48,6 +68,7 @@ public class ContractScheduleService {
   // 合同行项 = 关联订单的订单行项(合同与订单 1:1)。
   public List<ContractLineItemResponse> lineItems(String contractId) {
     String tenantId = TenantAccessGuard.requireTenantId("contract APIs");
+    requireAccess(tenantId, contractId, false);
     ContractLedger contract = requireContract(tenantId, contractId);
     List<OrderLineItem> lines =
         orderLineItemMapper.listByOrder(tenantId, contract.relatedOrderId());
@@ -64,6 +85,7 @@ public class ContractScheduleService {
 
   public List<ContractPaymentMilestoneResponse> milestones(String contractId) {
     String tenantId = TenantAccessGuard.requireTenantId("contract APIs");
+    requireAccess(tenantId, contractId, false);
     requireContract(tenantId, contractId);
     return milestoneMapper.listByContract(tenantId, contractId).stream()
         .map(this::toMilestoneResponse)
@@ -74,7 +96,11 @@ public class ContractScheduleService {
   @Transactional
   public List<ContractPaymentMilestoneResponse> generateDefaultSchedule(String contractId) {
     String tenantId = TenantAccessGuard.requireTenantId("contract APIs");
+    requireAccess(tenantId, contractId, true);
     ContractLedger contract = requireContract(tenantId, contractId);
+    if ("已归档".equals(contract.archiveStatus())) {
+      throw new IllegalStateException("已归档合同不能修改付款计划");
+    }
     if (milestoneMapper.countByContract(tenantId, contractId) == 0) {
       BigDecimal total = contract.amount() == null ? BigDecimal.ZERO : contract.amount();
       BigDecimal allocated = BigDecimal.ZERO;
@@ -96,34 +122,29 @@ public class ContractScheduleService {
     return milestones(contractId);
   }
 
-  // 登记里程碑付款:须已达成的「待付」里程碑 → 已付。
+  // Compatibility endpoint: payment evidence is written only by the finance transaction.
   @Transactional
   public List<ContractPaymentMilestoneResponse> payMilestone(String contractId, String milestoneId) {
     String tenantId = TenantAccessGuard.requireTenantId("contract APIs");
+    requireAccess(tenantId, contractId, true);
     requireContract(tenantId, contractId);
     List<ContractPaymentMilestone> all = milestoneMapper.listByContract(tenantId, contractId);
-    ContractPaymentMilestone target = all.stream()
+    all.stream()
         .filter(m -> m.id().equals(milestoneId))
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException("里程碑不存在:" + milestoneId));
-    boolean priorAllPaid = all.stream()
-        .filter(m -> m.sortNo() < target.sortNo())
-        .allMatch(m -> "已付".equals(m.status()));
-    if (!priorAllPaid) {
-      throw new IllegalStateException("须先按序支付前序里程碑:" + target.name());
-    }
-    int updated = milestoneMapper.markPaid(tenantId, milestoneId, "待付", "已付");
-    if (updated == 0) {
-      throw new IllegalStateException("只有「已达成」的待付里程碑可以登记付款:" + milestoneId);
-    }
-    return milestones(contractId);
+    throw new IllegalStateException("合同里程碑不能单独登记为已付，请在发票付款台账完成审批及付款登记");
   }
 
   // 确认里程碑达成:须按序达成(前序里程碑均已达成),达成后方可付款。
   @Transactional
   public List<ContractPaymentMilestoneResponse> reachMilestone(String contractId, String milestoneId) {
     String tenantId = TenantAccessGuard.requireTenantId("contract APIs");
-    requireContract(tenantId, contractId);
+    requireAccess(tenantId, contractId, true);
+    var contract = requireContract(tenantId, contractId);
+    if (!"已生效".equals(contract.status()) || "已归档".equals(contract.archiveStatus())) {
+      throw new IllegalStateException("只有未归档的生效合同可以确认付款条件");
+    }
     List<ContractPaymentMilestone> all = milestoneMapper.listByContract(tenantId, contractId);
     ContractPaymentMilestone target = all.stream()
         .filter(m -> m.id().equals(milestoneId))
@@ -142,11 +163,17 @@ public class ContractScheduleService {
     if (updated == 0) {
       throw new IllegalStateException("里程碑达成状态已变更:" + milestoneId);
     }
+    audit.recordTenantAction(tenantId, "contract.milestone_reached", "contract",
+        contractId, "确认付款条件达成：" + target.name());
     return milestones(contractId);
   }
 
   private ContractPaymentMilestoneResponse toMilestoneResponse(ContractPaymentMilestone m) {
+    BigDecimal paid = milestoneMapper.allocatedAmount(m.tenantId(), m.id());
+    String expected = paid == null || paid.signum() == 0 ? "待付" : paid.compareTo(m.amount()) == 0 ? "已付" : "部分已付";
+    boolean verified = paid != null && paid.signum() >= 0 && paid.compareTo(m.amount()) <= 0 && expected.equals(m.status());
     return new ContractPaymentMilestoneResponse(
-        m.id(), m.name(), m.percent(), m.amount(), m.status(), m.paidAt(), m.reached(), m.reachedAt());
+        m.id(), m.name(), m.percent(), m.amount(), m.status(), m.paidAt(), m.reached(), m.reachedAt(),
+        verified ? paid : null, verified ? m.amount().subtract(paid) : null, verified);
   }
 }

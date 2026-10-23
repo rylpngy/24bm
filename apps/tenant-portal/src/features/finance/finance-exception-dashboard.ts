@@ -3,6 +3,7 @@ import type {
   PaymentBatchResponse,
   PaymentBlockResolutionResponse,
   PaymentExecutionRecordResponse,
+  PaymentRequestResponse,
   VarianceHandlingResponse,
 } from '@24bid/api-client';
 
@@ -16,6 +17,7 @@ export interface FinanceExceptionDashboardInput {
   blockResolutions: PaymentBlockResolutionResponse[];
   varianceHandlings: VarianceHandlingResponse[];
   archiveExceptionRequests: PaymentArchiveExceptionRequestResponse[];
+  paymentRequests?: PaymentRequestResponse[];
 }
 
 export interface FinanceExceptionItem {
@@ -81,6 +83,13 @@ export function buildFinanceExceptionDashboard(
   const items: FinanceExceptionItem[] = [];
   const blockByBatch = new Map(input.blockResolutions.map((resolution) => [resolution.paymentBatchNo, resolution]));
   const batchByNo = new Map(input.paymentBatches.map((batch) => [batch.paymentBatchNo, batch]));
+  const requestById = new Map((input.paymentRequests ?? []).map((request) => [request.id, request]));
+  const requestByInvoice = new Map((input.paymentRequests ?? []).map((request) => [request.invoiceId, request]));
+  const requestedAmount = (record: PaymentExecutionRecordResponse) => {
+    const amount = (record.paymentRequestId ? requestById.get(record.paymentRequestId)?.amount : undefined)
+      ?? (record.invoiceId ? requestByInvoice.get(record.invoiceId)?.amount : undefined);
+    return amount == null ? undefined : Math.max(amount - (record.registeredAmount ?? 0), 0);
+  };
 
   for (const record of input.executionRecords) {
     if (record.executionStatus !== '暂不可登记') continue;
@@ -92,7 +101,7 @@ export function buildFinanceExceptionDashboard(
       severity: 'high',
       title: record.paymentBatchNo ?? '未归属批次',
       subtitle: record.invoiceId ? `发票 ${record.invoiceId}` : `付款申请 ${record.paymentRequestId ?? '—'}`,
-      amount: n(record.registeredAmount) || n(batch?.blockedRegistrationAmount),
+      amount: requestedAmount(record),
       reason: record.executionBlockReason ?? resolution?.blockReason ?? batch?.executionBlockSummary,
       nextAction: resolution?.nextStep ?? record.executionNextAction ?? '处理阻断后继续登记付款',
       updatedAt: record.updatedAt,
@@ -147,7 +156,7 @@ export function buildFinanceExceptionDashboard(
       severity: daysBetween(record.plannedPaymentDate, today) >= 7 ? 'high' : 'medium',
       title: record.paymentBatchNo ?? '未归属批次',
       subtitle: record.invoiceId ? `发票 ${record.invoiceId}` : `计划付款日 ${record.plannedPaymentDate}`,
-      amount: n(record.registeredAmount),
+      amount: requestedAmount(record),
       reason: `计划付款日 ${record.plannedPaymentDate}，已逾期 ${daysBetween(record.plannedPaymentDate, today)} 天`,
       nextAction: record.executionNextAction ?? '登记付款或说明延期原因',
       updatedAt: record.updatedAt,

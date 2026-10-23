@@ -145,6 +145,7 @@ class PlatformTenantOnboardingTests {
         "sales@pilot-supplier.example.com",
         "active",
         "{bcrypt}supplier-hash");
+    verify(platformTenantMapper).assignUserRole("user-ent-pilot-supplier-owner", "role-system-supplier-owner");
   }
 
   @Test

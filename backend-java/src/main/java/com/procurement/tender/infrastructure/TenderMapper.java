@@ -50,6 +50,21 @@ public interface TenderMapper {
   @Select("select " + COLUMNS + " from tenders where tenant_id = #{tenantId} order by created_at desc")
   List<Tender> listByTenant(@Param("tenantId") String tenantId);
 
+  @Select("<script>select " + COLUMNS + """
+       from tenders where tenant_id = #{tenantId}
+       <if test="scope.restricted"><choose>
+         <when test="scope.requesterId != null">and owner_id = #{scope.requesterId}</when>
+         <when test="scope.departmentIds != null and !scope.departmentIds.isEmpty()">
+           and owner_id in (select id from users where tenant_id = #{tenantId} and department_id in
+             <foreach collection="scope.departmentIds" item="dept" open="(" separator="," close=")">#{dept}</foreach>)
+         </when>
+         <otherwise>and false</otherwise>
+       </choose></if>
+       order by created_at desc</script>
+      """)
+  List<Tender> listVisibleByTenant(@Param("tenantId") String tenantId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
+
   @Select("select " + COLUMNS + " from tenders where tenant_id = #{tenantId} and id = #{id}")
   Tender findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 

@@ -22,7 +22,14 @@ import org.junit.jupiter.api.Test;
 class BudgetApplicationServiceTests {
 
   private final DepartmentBudgetMapper mapper = mock(DepartmentBudgetMapper.class);
-  private final BudgetApplicationService service = new BudgetApplicationService(mapper);
+  private final BudgetApplicationService service = new BudgetApplicationService(mapper,
+      mock(com.procurement.identity.application.PermissionService.class), TestDataScopes.unrestricted(),
+      mock(com.procurement.audit.application.AuditLogApplicationService.class));
+
+  @org.junit.jupiter.api.BeforeEach
+  void allowTestDepartments() {
+    when(mapper.activeDepartmentExists(any(), any())).thenReturn(true);
+  }
 
   @AfterEach
   void clear() {
@@ -32,7 +39,7 @@ class BudgetApplicationServiceTests {
   @Test
   void computesRemainingOccupancyAndOverBudgetFlag() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(mapper.listByTenant("tenant-1")).thenReturn(List.of(
+    when(mapper.listByTenant("tenant-1", com.procurement.identity.domain.DataScope.unrestricted())).thenReturn(List.of(
         new DepartmentBudget(
             "budget-it-2026", "dept-it", "信息化部", "2026",
             new BigDecimal("480000"), new BigDecimal("458000"), new BigDecimal("36000"), new java.math.BigDecimal("0")),
@@ -57,7 +64,7 @@ class BudgetApplicationServiceTests {
   @Test
   void zeroBudgetYieldsNullOccupancyPercent() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(mapper.listByTenant("tenant-1")).thenReturn(List.of(
+    when(mapper.listByTenant("tenant-1", com.procurement.identity.domain.DataScope.unrestricted())).thenReturn(List.of(
         new DepartmentBudget(
             "budget-zero", "dept-x", "X部", "2026",
             BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new java.math.BigDecimal("0"))));
@@ -89,7 +96,7 @@ class BudgetApplicationServiceTests {
   @Test
   void upsertGeneratesIdWhenNew() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(mapper.findId("tenant-1", "dept-new", "2026")).thenReturn(null);
+    when(mapper.findId("tenant-1", "dept-new", "2026")).thenReturn(null, "budget-generated");
     when(mapper.findByTenantAndId(eq("tenant-1"), any())).thenReturn(
         new DepartmentBudget(
             "budget-generated", "dept-new", "新部门", "2026",

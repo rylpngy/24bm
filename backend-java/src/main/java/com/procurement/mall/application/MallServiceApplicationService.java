@@ -31,25 +31,35 @@ public class MallServiceApplicationService {
   private final PurchaseOrderQueryService purchaseOrderQueryService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
+  private final com.procurement.order.application.OrderAccessService access;
 
   public MallServiceApplicationService(
       MallServiceMapper mallServiceMapper,
       PurchaseOrderQueryService purchaseOrderQueryService,
       AuditLogApplicationService auditLogApplicationService,
-      NotificationApplicationService notificationApplicationService) {
+      NotificationApplicationService notificationApplicationService,
+      com.procurement.order.application.OrderAccessService access) {
     this.mallServiceMapper = mallServiceMapper;
     this.purchaseOrderQueryService = purchaseOrderQueryService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
+    this.access = access;
   }
 
   // ── 买方:申请售后 / 评价 ───────────────────────────────────
   public List<MallAfterSales> listAfterSalesForBuyer() {
-    return mallServiceMapper.listByTenant(TenantAccessGuard.requireTenantId("buyer mall APIs"));
+    return visibleAfterSales("buyer:order:read");
+  }
+
+  private List<MallAfterSales> visibleAfterSales(String permission) {
+    var visible = access.visibleOrders(permission);
+    return mallServiceMapper.listByTenant(TenantAccessGuard.requireTenantId("buyer mall APIs"))
+        .stream().filter(row -> visible.test(row.orderId())).toList();
   }
 
   @Transactional
   public List<MallAfterSales> applyAfterSales(CreateAfterSalesRequest request) {
+    access.requireOrder(request.orderId(), "buyer:mall:purchase");
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     PurchaseOrderQueryService.OrderLineView line =
         purchaseOrderQueryService.findLineForTenant(tenantId, request.orderId(), request.orderLineId());
@@ -69,11 +79,12 @@ public class MallServiceApplicationService {
     notificationApplicationService.notifyActiveSupplierUsers(
         tenantId, line.supplierId(), "商城售后申请",
         line.description() + " 提出" + request.type() + "申请:" + request.reason().trim());
-    return listAfterSalesForBuyer();
+    return visibleAfterSales("buyer:mall:purchase");
   }
 
   @Transactional
   public List<MallReview> submitReview(CreateMallReviewRequest request) {
+    access.requireOrder(request.orderId(), "buyer:mall:purchase");
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     PurchaseOrderQueryService.OrderLineView line =
         purchaseOrderQueryService.findLineForTenant(tenantId, request.orderId(), request.orderLineId());
@@ -90,12 +101,18 @@ public class MallServiceApplicationService {
         line.supplierId(), request.rating(),
         request.content() == null ? "" : request.content().trim());
     auditLogApplicationService.recordTenantAction("mall_review.submitted", AUDIT_TARGET, id);
-    return mallServiceMapper.listReviewsByTenant(tenantId);
+    return visibleReviews("buyer:mall:purchase");
   }
 
   public List<MallReview> listReviewsForBuyer() {
+    return visibleReviews("buyer:order:read");
+  }
+
+  private List<MallReview> visibleReviews(String permission) {
+    var visible = access.visibleOrders(permission);
     return mallServiceMapper.listReviewsByTenant(
-        TenantAccessGuard.requireTenantId("buyer mall APIs"));
+        TenantAccessGuard.requireTenantId("buyer mall APIs")).stream()
+        .filter(row -> visible.test(row.orderId())).toList();
   }
 
   public List<MallReview> listReviewsForProduct(String productId) {

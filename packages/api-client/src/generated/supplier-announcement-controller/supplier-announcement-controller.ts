@@ -113,7 +113,3 @@ export function useSupplierAnnouncementList<TData = Awaited<ReturnType<typeof su
 
   return query;
 }
-
-
-
-

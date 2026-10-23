@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ShoppingCart, Store } from 'lucide-react';
 import { useBuyerMallCart } from '@24bid/api-client';
-import { cn } from '@24bid/ui';
+import { cn, FeedbackNotice } from '@24bid/ui';
+import { useMallPermissions } from './lib/use-mall-permissions';
 import { useAuthStore } from './lib/auth-store';
 import { MallHomePage } from './features/home/mall-home-page';
 import { MallCategoryPage } from './features/catalog/mall-category-page';
@@ -58,6 +59,7 @@ function writeRoute(route: MallRoute) {
 }
 
 export function App() {
+  const { can, query: permissions } = useMallPermissions();
   const session = useAuthStore((s) => s.session);
   const signOut = useAuthStore((s) => s.signOut);
   const [route, setRoute] = useState<MallRoute>(readRoute);
@@ -76,8 +78,10 @@ export function App() {
   };
 
   // 购物车角标只在登录后有意义(未登录浏览公开专区)。
-  const cart = useBuyerMallCart({ query: { enabled: !!session } });
-  const cartCount = cart.data?.data?.itemCount ?? 0;
+  const cart = useBuyerMallCart({ query: { enabled: !!session && can('buyer:mall:read') } });
+  const cartCount = cart.isError ? 0 : cart.data?.data?.itemCount ?? 0;
+  const allowed = can(route.name === 'orders' ? 'buyer:order:read' : 'buyer:mall:read')
+    && (route.name !== 'checkout' || can('buyer:mall:purchase'));
 
   if (!session) {
     return <MallLoginGate onBrowse={() => navigate({ name: 'category' })} route={route} />;
@@ -86,7 +90,7 @@ export function App() {
   return (
     <div className="min-h-dvh bg-slate-50">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-4 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={() => navigate({ name: 'home' })}
@@ -103,18 +107,18 @@ export function App() {
             </span>
           </button>
 
-          <nav className="hidden items-center gap-1 sm:flex">
+          <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto sm:order-none sm:w-auto">
             {[
               { label: '首页', active: route.name === 'home', to: { name: 'home' } as MallRoute },
               { label: '全部商品', active: route.name === 'category', to: { name: 'category' } as MallRoute },
               { label: '我的订单', active: route.name === 'orders', to: { name: 'orders' } as MallRoute },
-            ].map((item) => (
+            ].filter((item) => can(item.to.name === 'orders' ? 'buyer:order:read' : 'buyer:mall:read')).map((item) => (
               <button
                 key={item.label}
                 type="button"
                 onClick={() => navigate(item.to)}
                 className={cn(
-                  'rounded-lg px-3 py-1.5 text-xs font-black transition',
+                  'shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-black transition',
                   item.active ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50',
                 )}
               >
@@ -124,7 +128,7 @@ export function App() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <button
+            {can('buyer:mall:read') && <button
               type="button"
               onClick={() => navigate({ name: 'cart' })}
               className="relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
@@ -136,7 +140,7 @@ export function App() {
                   {cartCount}
                 </span>
               )}
-            </button>
+            </button>}
             <span className="hidden text-xs font-bold text-slate-500 sm:inline">
               {session.displayName}
             </span>
@@ -152,20 +156,24 @@ export function App() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
-        {route.name === 'home' && <MallHomePage onNavigate={navigate} />}
-        {route.name === 'category' && (
-          <MallCategoryPage
-            categoryId={route.categoryId}
-            keyword={route.keyword}
-            onNavigate={navigate}
-          />
-        )}
-        {route.name === 'product' && (
-          <MallProductDetailPage productId={route.productId} onNavigate={navigate} />
-        )}
-        {route.name === 'cart' && <MallCartPage onNavigate={navigate} />}
-        {route.name === 'checkout' && <MallCheckoutPage onNavigate={navigate} />}
-        {route.name === 'orders' && <MallOrdersPage />}
+        {permissions.isLoading ? <FeedbackNotice tone="info" message="正在加载权限…" />
+          : !allowed ? <FeedbackNotice tone="error" message={permissions.isError ? '权限加载失败，请刷新重试。' : '当前账号无权访问此页面，请联系企业管理员。'} />
+          : <>
+              {route.name === 'home' && <MallHomePage onNavigate={navigate} />}
+              {route.name === 'category' && (
+                <MallCategoryPage
+                  categoryId={route.categoryId}
+                  keyword={route.keyword}
+                  onNavigate={navigate}
+                />
+              )}
+              {route.name === 'product' && (
+                <MallProductDetailPage productId={route.productId} onNavigate={navigate} />
+              )}
+              {route.name === 'cart' && <MallCartPage onNavigate={navigate} />}
+              {route.name === 'checkout' && <MallCheckoutPage onNavigate={navigate} />}
+              {route.name === 'orders' && <MallOrdersPage />}
+            </>}
       </main>
     </div>
   );

@@ -13,6 +13,24 @@ import org.apache.ibatis.annotations.Select;
 public interface PurchaseDemandItemMapper {
 
   @Select("""
+      <script>
+      select id, tenant_id, demand_id, material_id, quantity
+      from purchase_demand_items
+      where tenant_id = #{tenantId}
+        <choose>
+          <when test="demandIds != null and !demandIds.isEmpty()">
+            and demand_id in
+            <foreach collection="demandIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+          </when>
+          <otherwise>and false</otherwise>
+        </choose>
+      order by demand_id, id
+      </script>
+      """)
+  List<PurchaseDemandItem> listByDemands(@Param("tenantId") String tenantId,
+      @Param("demandIds") List<String> demandIds);
+
+  @Select("""
       select id, tenant_id, demand_id, material_id, quantity
       from purchase_demand_items
       where tenant_id = #{tenantId} and demand_id = #{demandId}

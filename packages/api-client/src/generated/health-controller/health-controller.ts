@@ -113,7 +113,3 @@ export function useHealthHealth<TData = Awaited<ReturnType<typeof healthHealth>>
 
   return query;
 }
-
-
-
-

@@ -383,7 +383,3 @@ export function useBuyerSupplierInvitationImportTemplate<TData = Awaited<ReturnT
 
   return query;
 }
-
-
-
-

@@ -19,6 +19,7 @@
 
   <properties>
     <java.version>21</java.version>
+    <docker.api.version>1.44</docker.api.version>
   </properties>
 
   <dependencies>
@@ -175,6 +176,9 @@
             <version>3.2.5</version>
             <configuration>
               <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+              <systemPropertyVariables>
+                <api.version>${docker.api.version}</api.version>
+              </systemPropertyVariables>
               <includes>
                 <include>**/*IT.java</include>
               </includes>

@@ -19,19 +19,27 @@ import org.springframework.stereotype.Service;
 @Service
 public class BuyerAnalyticsApplicationService {
   private final BuyerAnalyticsMapper analyticsMapper;
+  private final com.procurement.identity.application.PermissionService permissions;
+  private final com.procurement.identity.application.DataScopeService scopes;
 
-  public BuyerAnalyticsApplicationService(BuyerAnalyticsMapper analyticsMapper) {
+  public BuyerAnalyticsApplicationService(BuyerAnalyticsMapper analyticsMapper,
+      com.procurement.identity.application.PermissionService permissions,
+      com.procurement.identity.application.DataScopeService scopes) {
     this.analyticsMapper = analyticsMapper;
+    this.permissions = permissions;
+    this.scopes = scopes;
   }
 
   public ProcurementAnalyticsResponse procurementAnalytics() {
     String tenantId = TenantAccessGuard.requireTenantId("analytics APIs");
+    permissions.require("buyer:analytics:read");
+    var scope = scopes.currentUserDataScope();
 
-    List<MonthlySpend> monthly = analyticsMapper.monthlySpend(tenantId);
-    List<SupplierSpend> suppliers = analyticsMapper.supplierSpend(tenantId);
-    List<StatusSlice> statuses = analyticsMapper.statusDistribution(tenantId);
-    BigDecimal savings = analyticsMapper.biddingSavings(tenantId);
-    List<com.procurement.buyer.domain.CategorySpend> categories = analyticsMapper.categorySpend(tenantId);
+    List<MonthlySpend> monthly = analyticsMapper.monthlySpend(tenantId, scope);
+    List<SupplierSpend> suppliers = analyticsMapper.supplierSpend(tenantId, scope);
+    List<StatusSlice> statuses = analyticsMapper.statusDistribution(tenantId, scope);
+    BigDecimal savings = analyticsMapper.biddingSavings(tenantId, scope);
+    List<com.procurement.buyer.domain.CategorySpend> categories = analyticsMapper.categorySpend(tenantId, scope);
 
     BigDecimal totalSpend =
         suppliers.stream().map(SupplierSpend::totalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);

@@ -113,7 +113,3 @@ export function useBuyerAnalyticsProcurement<TData = Awaited<ReturnType<typeof b
 
   return query;
 }
-
-
-
-

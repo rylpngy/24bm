@@ -268,6 +268,7 @@ public class PlatformTenantApplicationService {
         request.adminEmail(),
         PlatformTenantStatus.ACTIVE,
         passwordEncoder.encode(request.adminPassword()));
+    platformTenantMapper.assignUserRole(adminUserId, "role-system-supplier-owner");
     auditLogApplicationService.recordTenantAction(
         null,
         "supplier_enterprise.created",

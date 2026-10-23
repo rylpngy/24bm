@@ -42,6 +42,22 @@ public class PurchaseDemandController {
     return ApiResponse.ok(purchaseDemandApplicationService.create(request));
   }
 
+  @GetMapping("/page")
+  public ApiResponse<PurchaseDemandPageResponse> page(
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "8") int pageSize,
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) String departmentId,
+      @RequestParam(required = false) String keyword) {
+    return ApiResponse.ok(purchaseDemandApplicationService.pageCurrentTenantDemands(
+        page, pageSize, status, departmentId, keyword));
+  }
+
+  @GetMapping("/{demandId}")
+  public ApiResponse<PurchaseDemandResponse> detail(@PathVariable String demandId) {
+    return ApiResponse.ok(purchaseDemandApplicationService.getCurrentTenantDemand(demandId));
+  }
+
   @PutMapping("/{demandId}")
   public ApiResponse<PurchaseDemandResponse> update(
       @PathVariable String demandId,

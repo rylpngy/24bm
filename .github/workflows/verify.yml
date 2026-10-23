@@ -23,7 +23,9 @@ jobs:
       # 单测均以 mock 隔离,无需数据库;集成测试(*IT)由 Testcontainers 自起容器。
       - name: Backend tests (unit + integration)
         working-directory: backend-java
-        run: mvn -B -ntp verify
+        run: mvn -B -ntp -Pintegration verify
+      - name: Require executed integration tests
+        run: python3 scripts/check-integration-results.py backend-java/target/failsafe-reports
 
   frontend:
     name: Frontend (pnpm)
@@ -45,6 +47,8 @@ jobs:
         run: node scripts/check-test-dates.mjs
       - name: Unit tests (Vitest)
         run: pnpm test
+      - name: Production build
+        run: pnpm build:all
 
   e2e:
     name: E2E (Playwright, 三端)

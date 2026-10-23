@@ -13,6 +13,7 @@ public interface DataScopeMapper {
       select distinct r.data_scope
       from user_roles ur
       join roles r on r.id = ur.role_id
+      join users u on u.id = ur.user_id and u.status = 'active' and u.tenant_id = r.tenant_id
       where ur.user_id = #{userId}
         and r.scope = 'buyer'
       """)

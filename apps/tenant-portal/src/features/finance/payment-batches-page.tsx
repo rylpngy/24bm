@@ -4,13 +4,13 @@ import {
   useBuyerFinanceActionPaymentBatches,
   useBuyerFinanceActionPaymentBlockResolutions,
   useBuyerFinanceActionPaymentExecutionRecords,
-  useBuyerFinanceActionRegisterPaymentExecutionRecord,
   useBuyerFinanceActionUpdatePaymentBatchStatus,
   useBuyerFinanceActionUpdatePaymentBlockResolutionStatus,
   useWorkflowPaymentBatchStatusUpdate,
 } from '@24bid/api-client';
 import { CountTag, FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
 import { FinanceExceptionDashboardPanel } from './finance-exception-dashboard-panel';
+import { financeErrorMessage } from './finance-feedback';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 import {
@@ -23,33 +23,13 @@ const currency = (v?: number) =>
 
 function PaymentBatchExecutionDetails({
   summary,
-  onRegister,
   onResolveBlock,
   busy,
 }: {
   summary?: PaymentBatchExecutionSummary;
-  onRegister: (
-    executionRecordId: string,
-    evidence: { releaseEvidenceNo?: string; releaseRemark?: string },
-  ) => void;
   onResolveBlock: (resolutionId: string) => void;
   busy: boolean;
 }) {
-  // 登记付款前先展开放款证据表单;凭证号/备注选填,留空则按无证据登记。
-  const [evidenceRecordId, setEvidenceRecordId] = useState<string | null>(null);
-  const [evidenceNo, setEvidenceNo] = useState('');
-  const [evidenceRemark, setEvidenceRemark] = useState('');
-
-  const submitRegister = (recordId: string) => {
-    onRegister(recordId, {
-      releaseEvidenceNo: evidenceNo.trim() || undefined,
-      releaseRemark: evidenceRemark.trim() || undefined,
-    });
-    setEvidenceRecordId(null);
-    setEvidenceNo('');
-    setEvidenceRemark('');
-  };
-
   if (!summary || summary.totalCount === 0) {
     return (
       <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
@@ -67,8 +47,6 @@ function PaymentBatchExecutionDetails({
       </div>
       <div className="mt-2 grid gap-2 sm:grid-cols-3">
         <MiniFact label="已登记明细额" value={currency(summary.registeredAmount)} />
-        <MiniFact label="待登记明细额" value={currency(summary.pendingAmount)} />
-        <MiniFact label="阻断明细额" value={currency(summary.blockedAmount)} />
       </div>
       <div className="mt-2 space-y-2">
         {summary.records.slice(0, 3).map((record) => (
@@ -82,17 +60,10 @@ function PaymentBatchExecutionDetails({
               </div>
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                 <span className="text-xs font-black text-slate-700">{currency(record.amount)}</span>
-                {record.status === '待登记付款' && (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() =>
-                      setEvidenceRecordId((current) => (current === record.id ? null : record.id))
-                    }
-                    className="rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-                  >
-                    {evidenceRecordId === record.id ? '收起' : '登记付款'}
-                  </button>
+                {record.invoiceId && (
+                  <a href={`?module=invoices&recordId=${encodeURIComponent(record.invoiceId)}`} className="inline-flex h-8 items-center whitespace-nowrap rounded-md border border-blue-200 bg-white px-3 text-xs font-bold text-blue-700">
+                    付款金额台账
+                  </a>
                 )}
                 {record.status === '暂不可登记' && record.resolutionId && record.resolutionStatus !== '已处理' && (
                   <button
@@ -111,33 +82,6 @@ function PaymentBatchExecutionDetails({
                 ? `放款凭证 ${record.evidence}`
                 : record.explanation || record.nextAction || '暂无执行说明'}
             </p>
-            {evidenceRecordId === record.id && record.status === '待登记付款' && (
-              <div className="mt-2 rounded-md border border-emerald-100 bg-emerald-50/60 p-2">
-                <p className="text-[11px] font-black text-emerald-800">放款证据(选填)</p>
-                <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
-                  <input
-                    value={evidenceNo}
-                    onChange={(e) => setEvidenceNo(e.target.value)}
-                    placeholder="放款凭证号,如 BANK-20260710-001"
-                    className="rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 placeholder:text-slate-300"
-                  />
-                  <input
-                    value={evidenceRemark}
-                    onChange={(e) => setEvidenceRemark(e.target.value)}
-                    placeholder="放款备注,如付款流水说明"
-                    className="rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 placeholder:text-slate-300"
-                  />
-                </div>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => submitRegister(record.id)}
-                  className="mt-1.5 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-                >
-                  确认登记付款
-                </button>
-              </div>
-            )}
             {record.nextAction && (
               <p className="mt-1 break-words text-[11px] font-bold text-slate-400">
                 下一步：{record.nextAction}
@@ -162,7 +106,6 @@ export function PaymentBatchesPage() {
   const query = useBuyerFinanceActionPaymentBatches();
   const executions = useBuyerFinanceActionPaymentExecutionRecords();
   const blockResolutions = useBuyerFinanceActionPaymentBlockResolutions();
-  const registerPayment = useBuyerFinanceActionRegisterPaymentExecutionRecord();
   const resolveBlock = useBuyerFinanceActionUpdatePaymentBlockResolutionStatus();
   const updateBatchStatus = useBuyerFinanceActionUpdatePaymentBatchStatus();
   const submitBatchApproval = useWorkflowPaymentBatchStatusUpdate();
@@ -181,11 +124,7 @@ export function PaymentBatchesPage() {
     });
   };
   const reportActionError = (error: unknown) => {
-    const message =
-      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-      (error as Error)?.message ??
-      '操作失败,请稍后重试';
-    setActionError(message);
+    setActionError(financeErrorMessage(error));
   };
   const changeBatchStatus = (paymentBatchNo: string | undefined, batchStatus: string) => {
     if (!paymentBatchNo) return;
@@ -195,10 +134,15 @@ export function PaymentBatchesPage() {
     );
   };
   const busy =
-    registerPayment.isPending
-    || resolveBlock.isPending
+    resolveBlock.isPending
     || updateBatchStatus.isPending
     || submitBatchApproval.isPending;
+
+  if (query.isError || executions.isError || blockResolutions.isError) {
+    return <FeedbackNotice tone="error" message={financeErrorMessage(
+      query.error ?? executions.error ?? blockResolutions.error, '付款批次加载失败，请刷新重试。',
+    )} />;
+  }
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
@@ -331,19 +275,6 @@ export function PaymentBatchesPage() {
                 <PaymentBatchExecutionDetails
                   summary={b.paymentBatchNo ? executionSummaries.get(b.paymentBatchNo) : undefined}
                   busy={busy}
-                  onRegister={(executionRecordId, evidence) =>
-                    registerPayment.mutate(
-                      {
-                        executionRecordId,
-                        data: {
-                          paymentStatus: '已付款',
-                          releaseEvidenceNo: evidence.releaseEvidenceNo,
-                          releaseRemark: evidence.releaseRemark,
-                        },
-                      },
-                      { onSuccess: refreshFinanceQueries, onError: reportActionError },
-                    )
-                  }
                   onResolveBlock={(resolutionId) =>
                     resolveBlock.mutate(
                       {
