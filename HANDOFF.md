@@ -1,5 +1,7 @@
 # 24Bid 当前交付接手说明
 
+发布更新（2026-10-23）：用户已确认PR111精确提交90561d5a，以merge合并为4ea7d95bf278ce0ce9f480a6d663eb18b6f36649；受控watcher确认merged。本地原四端5173-5176/8080已发布该合并版本，固定目录 `/Users/epl/.codex/deployments/24bid-base/4ea7d95bf278`，原库144表摘要零差异、5附件一致，副本迁移及四端浏览器检查通过。原库到期台账符合条件记录为0，按真实空态验收；详情交互先前在隔离环境验收。备份srm-backup-1792750590651，旧cf51cce8构建保留回退。当前工作分支仍codex/srm-phase-one-acceptance，5fe7dd42审批刷新修复未发布，下一步单独交付该修复。下方等待确认及PR110运行状态为历史记录。
+
 最新状态（2026-10-23）：当前工作分支 `codex/srm-phase-one-acceptance`，基于PR111的90561d5a。PR111已通过CI及ready检查，具体SHA合并确认已向用户发出，尚无确认结果；不得用直接API绕过pr_land工具。原服务仍PR110，未替换数据。本轮修复连续审批待办刷新竞态，185前端测试、采购方构建和隔离SRM业务回归通过；修改在本分支单独交付，尚未发布。验收及后续范围以 `docs/srm-phase-one-acceptance.md` 为准，下文均为历史过程记录。
 
 更新：2026-10-23。当前交付分支 `codex/srm-unsettled-business`，从已合并PR109的 `origin/main` 创建，本机工作区 `/Users/epl/.codex/worktrees/6166/24Bid`。
