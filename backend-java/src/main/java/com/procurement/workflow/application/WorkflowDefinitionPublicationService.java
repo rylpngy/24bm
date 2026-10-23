@@ -293,6 +293,7 @@ public class WorkflowDefinitionPublicationService {
     return switch (businessType) {
       case "purchase_demand" -> "采购需求";
       case "buyer_supplier_admission" -> "供应商准入";
+      case "buyer_supplier_exit" -> "供应商退出";
       case "rfq_award" -> "询价定标";
       case "contract_approval" -> "合同";
       case "payment_request" -> "付款申请";

@@ -48,6 +48,7 @@ export * from './public-portal-controller/public-portal-controller';
 export * from './public-procurement-announcement-controller/public-procurement-announcement-controller';
 export * from './purchase-demand-controller/purchase-demand-controller';
 export * from './purchase-order-controller/purchase-order-controller';
+export * from './qualification-review-controller/qualification-review-controller';
 export * from './rfq-award-controller/rfq-award-controller';
 export * from './rfq-controller/rfq-controller';
 export * from './session-permission-controller/session-permission-controller';
@@ -55,6 +56,7 @@ export * from './supplier-announcement-controller/supplier-announcement-controll
 export * from './supplier-delivery-controller/supplier-delivery-controller';
 export * from './supplier-esign-controller/supplier-esign-controller';
 export * from './supplier-evaluation-controller/supplier-evaluation-controller';
+export * from './supplier-exit-controller/supplier-exit-controller';
 export * from './supplier-fulfillment-controller/supplier-fulfillment-controller';
 export * from './supplier-invoice-controller/supplier-invoice-controller';
 export * from './supplier-invoice-reconciliation-controller/supplier-invoice-reconciliation-controller';

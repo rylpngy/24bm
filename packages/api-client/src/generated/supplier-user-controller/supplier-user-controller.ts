@@ -28,10 +28,12 @@ import type {
   ApiResponseListSupplierUserResponse,
   ApiResponseSupplierUserResponse,
   ApiResponseVoid,
+  ChangeSupplierUserRoleRequest,
   ChangeSupplierUserStatusRequest,
   CreateSupplierUserRequest,
   ResetSupplierUserPasswordRequest,
-  SupplierUserListParams
+  SupplierUserListParams,
+  UpdateSupplierUserRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -241,6 +243,124 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getSupplierUserChangeStatusMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierUserChangeRole = (
+    userId: string,
+    changeSupplierUserRoleRequest: BodyType<ChangeSupplierUserRoleRequest>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseSupplierUserResponse>(
+      {url: `/api/v1/supplier/users/${userId}/role`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: changeSupplierUserRoleRequest, signal
+    },
+      );
+    }
+
+
+
+export const getSupplierUserChangeRoleMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserChangeRole>>, TError,{userId: string;data: BodyType<ChangeSupplierUserRoleRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierUserChangeRole>>, TError,{userId: string;data: BodyType<ChangeSupplierUserRoleRequest>}, TContext> => {
+
+const mutationKey = ['supplierUserChangeRole'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierUserChangeRole>>, {userId: string;data: BodyType<ChangeSupplierUserRoleRequest>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  supplierUserChangeRole(userId,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierUserChangeRoleMutationResult = NonNullable<Awaited<ReturnType<typeof supplierUserChangeRole>>>
+    export type SupplierUserChangeRoleMutationBody = BodyType<ChangeSupplierUserRoleRequest>
+    export type SupplierUserChangeRoleMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierUserChangeRole = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserChangeRole>>, TError,{userId: string;data: BodyType<ChangeSupplierUserRoleRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierUserChangeRole>>,
+        TError,
+        {userId: string;data: BodyType<ChangeSupplierUserRoleRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierUserChangeRoleMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierUserUpdateProfile = (
+    userId: string,
+    updateSupplierUserRequest: BodyType<UpdateSupplierUserRequest>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseSupplierUserResponse>(
+      {url: `/api/v1/supplier/users/${userId}/profile`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: updateSupplierUserRequest, signal
+    },
+      );
+    }
+
+
+
+export const getSupplierUserUpdateProfileMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserUpdateProfile>>, TError,{userId: string;data: BodyType<UpdateSupplierUserRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierUserUpdateProfile>>, TError,{userId: string;data: BodyType<UpdateSupplierUserRequest>}, TContext> => {
+
+const mutationKey = ['supplierUserUpdateProfile'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierUserUpdateProfile>>, {userId: string;data: BodyType<UpdateSupplierUserRequest>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  supplierUserUpdateProfile(userId,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierUserUpdateProfileMutationResult = NonNullable<Awaited<ReturnType<typeof supplierUserUpdateProfile>>>
+    export type SupplierUserUpdateProfileMutationBody = BodyType<UpdateSupplierUserRequest>
+    export type SupplierUserUpdateProfileMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierUserUpdateProfile = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierUserUpdateProfile>>, TError,{userId: string;data: BodyType<UpdateSupplierUserRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierUserUpdateProfile>>,
+        TError,
+        {userId: string;data: BodyType<UpdateSupplierUserRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierUserUpdateProfileMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

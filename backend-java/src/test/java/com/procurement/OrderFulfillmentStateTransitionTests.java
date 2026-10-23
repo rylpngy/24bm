@@ -174,6 +174,7 @@ class OrderFulfillmentStateTransitionTests {
 
   @Test
   void buyerOrderCreationRecordsAuditLogForNewPurchaseOrder() {
+    when(purchaseOrderMapper.lockSupplierAdmissionStatus("tenant-1", "supplier-1")).thenReturn("已准入");
     TenantContext.set("tenant-1", null, "buyer-user");
     when(awardDecisionMapper.findApprovedForOrder("tenant-1", "award-1", "已通过"))
         .thenReturn(new AwardDecision(
@@ -216,6 +217,7 @@ class OrderFulfillmentStateTransitionTests {
 
   @Test
   void buyerOrderCreationReturnsExistingOrderWhenConcurrentInsertAlreadyCreatedIt() {
+    when(purchaseOrderMapper.lockSupplierAdmissionStatus("tenant-1", "supplier-1")).thenReturn("已准入");
     TenantContext.set("tenant-1", null, "buyer-user");
     when(awardDecisionMapper.findApprovedForOrder("tenant-1", "award-1", "已通过"))
         .thenReturn(new AwardDecision(

@@ -14,7 +14,7 @@ let refreshing: Promise<string | null> | null = null;
 
 /** 应用启动时配置后端地址。 */
 export function configureApiClient(options: { baseUrl?: string }): void {
-  if (options.baseUrl) {
+  if (options.baseUrl !== undefined) {
     axiosInstance.defaults.baseURL = options.baseUrl;
   }
 }

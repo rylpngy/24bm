@@ -809,7 +809,7 @@ public class UnifiedWorkflowApplicationService {
     owners.put(instance.businessType(), instance.businessId());
     switch (instance.businessType()) {
       case "purchase_demand" -> owners.put("purchase_demand", instance.businessId());
-      case "buyer_supplier_admission" -> putOwner(owners, "supplier", snapshot.get("supplierId"));
+      case "buyer_supplier_admission", "buyer_supplier_exit" -> putOwner(owners, "supplier", snapshot.get("supplierId"));
       case "rfq_award" -> putOwner(owners, "rfq", snapshot.get("rfqId"));
       case "contract_approval" -> owners.put("contract", instance.businessId());
       case "payment_request" -> putOwner(owners, "invoice", snapshot.get("invoiceId"));
@@ -843,6 +843,7 @@ public class UnifiedWorkflowApplicationService {
     return switch (businessType) {
       case "purchase_demand" -> "采购需求";
       case "buyer_supplier_admission" -> "供应商准入";
+      case "buyer_supplier_exit" -> "供应商退出";
       case "rfq_award" -> "询价定标";
       case "contract_approval" -> "合同审批";
       case "payment_request" -> "付款申请";

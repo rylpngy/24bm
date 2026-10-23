@@ -14,11 +14,18 @@ class BuyerSupplierAdmissionStatusTransitionTests {
       new BuyerSupplierAdmissionStatusTransition();
 
   @Test
-  void allowsAdmissionSubmissionOnlyFromPendingAdmission() {
+  void allowsAdmissionSubmissionFromPendingOrRejectedOnly() {
     assertThatCode(() -> transition.requireAdmissionSubmission(
         BuyerSupplierRelationStatus.PENDING_ADMISSION,
         "rel-1"))
         .doesNotThrowAnyException();
+
+    assertThatCode(() -> transition.requireAdmissionSubmission(BuyerSupplierRelationStatus.REJECTED, "rel-1"))
+        .doesNotThrowAnyException();
+    for (String blocked : new String[] {BuyerSupplierRelationStatus.IN_ADMISSION_APPROVAL, BuyerSupplierRelationStatus.BLACKLISTED}) {
+      assertThatThrownBy(() -> transition.requireAdmissionSubmission(blocked, "rel-1"))
+          .isInstanceOf(IllegalStateException.class);
+    }
 
     assertThatThrownBy(() -> transition.requireAdmissionSubmission(
         BuyerSupplierRelationStatus.ADMITTED,

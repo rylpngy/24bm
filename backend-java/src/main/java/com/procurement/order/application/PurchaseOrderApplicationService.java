@@ -182,6 +182,8 @@ public class PurchaseOrderApplicationService {
       return toResponse(existingOrder);
     }
 
+    requireAdmittedSupplier(tenantId, award.supplierId());
+
     String orderId = newId("po");
     try {
       purchaseOrderMapper.insert(
@@ -259,6 +261,7 @@ public class PurchaseOrderApplicationService {
     return orderId;
   }
 
+  @Transactional
   public String createMallOrder(
       String rfqId,
       String supplierId,
@@ -267,6 +270,7 @@ public class PurchaseOrderApplicationService {
       java.util.List<DirectOrderLine> lines) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
+    requireAdmittedSupplier(tenantId, supplierId);
     String orderId = newId("po");
     purchaseOrderMapper.insert(
         orderId,
@@ -303,6 +307,7 @@ public class PurchaseOrderApplicationService {
       String lineDescription) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
+    requireAdmittedSupplier(tenantId, supplierId);
     String orderId = newId("po");
     purchaseOrderMapper.insert(
         orderId,
@@ -324,6 +329,12 @@ public class PurchaseOrderApplicationService {
         NotificationTitle.PURCHASE_ORDER_PENDING_CONFIRMATION,
         "中标执行订单 " + orderId + " 已生成(依据中标通知书),请及时确认订单。");
     return orderId;
+  }
+
+  private void requireAdmittedSupplier(String tenantId, String supplierId) {
+    if (!"已准入".equals(purchaseOrderMapper.lockSupplierAdmissionStatus(tenantId, supplierId))) {
+      throw new IllegalStateException("供应商未准入或已被限制合作，不能生成新订单；既有订单不受影响。");
+    }
   }
 
   private PurchaseOrderResponse toResponse(PurchaseOrder order) {

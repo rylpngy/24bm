@@ -49,4 +49,18 @@ public class SupplierUserController {
       @Valid @RequestBody ChangeSupplierUserStatusRequest request) {
     return ApiResponse.ok(supplierUserApplicationService.changeUserStatus(userId, request));
   }
+
+  @PostMapping("/{userId}/role")
+  public ApiResponse<SupplierUserResponse> changeRole(
+      @PathVariable String userId,
+      @Valid @RequestBody ChangeSupplierUserRoleRequest request) {
+    return ApiResponse.ok(supplierUserApplicationService.changeUserRole(userId, request));
+  }
+
+  @PostMapping("/{userId}/profile")
+  public ApiResponse<SupplierUserResponse> updateProfile(
+      @PathVariable String userId,
+      @Valid @RequestBody UpdateSupplierUserRequest request) {
+    return ApiResponse.ok(supplierUserApplicationService.updateUserProfile(userId, request));
+  }
 }

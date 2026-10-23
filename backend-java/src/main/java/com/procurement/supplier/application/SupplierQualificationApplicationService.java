@@ -45,6 +45,7 @@ public class SupplierQualificationApplicationService {
         safeSegment(supplierId), UUID.randomUUID(), safeSegment(request.fileName()));
     String uploadUrl = "/api/v1/supplier/qualifications/upload-sink?storageKey="
         + URLEncoder.encode(storageKey, StandardCharsets.UTF_8);
+    supplierQualificationMapper.issueUpload(storageKey, supplierId, request.fileName());
     return new QualificationUploadTicketResponse(
         request.fileName(), storageKey, uploadUrl, issuedAt, issuedAt.plusMinutes(15));
   }
@@ -53,7 +54,14 @@ public class SupplierQualificationApplicationService {
   public void storeObject(String storageKey, byte[] data, String contentType) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
     requireOwnKey(storageKey, supplierId);
+    if (data == null || data.length == 0 || data.length > 20 * 1024 * 1024) {
+      throw new IllegalArgumentException("证照文件不能为空且不能超过 20 MB");
+    }
+    if (supplierQualificationMapper.claimUpload(storageKey, supplierId) != 1) {
+      throw new IllegalArgumentException("上传凭证已失效或已使用，请重新选择文件");
+    }
     objectStorageService.put(storageKey, data, contentType);
+    supplierQualificationMapper.finishUpload(storageKey, supplierId, hash(data), data.length);
   }
 
   /** 供应商下载本方证照原件。 */
@@ -63,7 +71,7 @@ public class SupplierQualificationApplicationService {
     if (qualification == null) {
       throw new IllegalArgumentException("Supplier qualification not found in supplier scope: " + qualificationId);
     }
-    return objectStorageService.get(qualification.storageKey());
+    return loadObject(qualification);
   }
 
   /** 采购方核验入口:按供应商 id 读取其证照原件(准入审核用)。 */
@@ -76,7 +84,80 @@ public class SupplierQualificationApplicationService {
   }
 
   public ObjectStorageService.StoredObject loadObject(SupplierQualification qualification) {
-    return objectStorageService.get(qualification.storageKey());
+    var object = objectStorageService.get(qualification.storageKey());
+    String expected = supplierQualificationMapper.originalHash(qualification.storageKey());
+    if (expected != null && !expected.equals(hash(object.data()))) {
+      throw new IllegalStateException("原件完整性核验失败，请联系管理员，禁止使用该文件进行审核");
+    }
+    return object;
+  }
+
+  private static String hash(byte[] data) {
+    try {
+      return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(data));
+    } catch (java.security.NoSuchAlgorithmException exception) {
+      throw new IllegalStateException(exception);
+    }
+  }
+
+  public String ownFileName(String id) {
+    return findForBuyerReview(TenantAccessGuard.requireSupplierId("supplier qualification APIs"), id).fileName();
+  }
+
+  public List<java.util.Map<String, Object>> history() {
+    return supplierQualificationMapper.history(TenantAccessGuard.requireSupplierId("supplier qualification APIs"));
+  }
+
+  @Transactional
+  public SupplierQualificationResponse replaceQualification(String id, CreateSupplierQualificationRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
+    if (supplierQualificationMapper.lockQualification(supplierId, id) == null
+        || supplierQualificationMapper.replacement(supplierId, id) != null) {
+      throw new IllegalArgumentException("资质不存在或已被新版替代，请刷新列表");
+    }
+    var replacement = createCurrentSupplierQualification(request);
+    if (supplierQualificationMapper.replace(supplierId, id, replacement.id()) != 1) {
+      throw new IllegalStateException("资质已发生变更，请刷新列表");
+    }
+    supplierQualificationMapper.recordEvent(supplierId, id, replacement.id(), "replaced",
+        TenantAccessGuard.requireUserId("supplier qualification APIs"));
+    supplierQualificationMapper.supersedeReviews(id);
+    supplierQualificationMapper.enqueueReviews(supplierId, replacement.id(), id);
+    return replacement;
+  }
+
+  public List<com.procurement.supplier.api.QualificationReviewResponse> buyerReviews() {
+    return supplierQualificationMapper.reviews(TenantAccessGuard.requireTenantId("qualification review"), null);
+  }
+
+  public List<com.procurement.supplier.api.QualificationReviewResponse> supplierReviews() {
+    return supplierQualificationMapper.reviews(null, TenantAccessGuard.requireSupplierId("qualification review"));
+  }
+
+  @Transactional
+  public void review(long id, com.procurement.supplier.api.QualificationReviewRequest request) {
+    String tenantId = TenantAccessGuard.requireTenantId("qualification review");
+    String supplierId = supplierQualificationMapper.reviewSupplier(tenantId, id);
+    String qualificationId = supplierQualificationMapper.reviewQualification(tenantId, id);
+    if (supplierId == null || qualificationId == null) throw new IllegalArgumentException("复核记录不存在或不属于当前企业");
+    var qualification = supplierQualificationMapper.lockQualification(supplierId, qualificationId);
+    if (qualification == null || supplierQualificationMapper.replacement(supplierId, qualificationId) != null
+        || !SupplierQualificationStatus.ACTIVE.equals(qualification.status())) {
+      throw new IllegalArgumentException("资质已变更或停用，请刷新后核验最新版");
+    }
+    if (request.comment() == null || request.comment().isBlank() || request.comment().length() > 2000) {
+      throw new IllegalArgumentException("请填写不超过2000字的复核意见");
+    }
+    if (Boolean.TRUE.equals(request.approved())) {
+      if (qualification.expiresAt() != null && qualification.expiresAt().isBefore(LocalDate.now())) {
+        throw new IllegalArgumentException("已过期资质不能通过复核");
+      }
+      loadObject(qualification);
+    }
+    String actor = TenantAccessGuard.requireUserId("qualification review");
+    if (supplierQualificationMapper.decideReview(tenantId, id, Boolean.TRUE.equals(request.approved()) ? "approved" : "rejected", request.comment().trim(), actor) != 1) {
+      throw new IllegalStateException("该复核已办理或资质已更新，请刷新");
+    }
   }
 
   private static void requireOwnKey(String storageKey, String supplierId) {
@@ -113,6 +194,16 @@ public class SupplierQualificationApplicationService {
   public SupplierQualificationResponse createCurrentSupplierQualification(CreateSupplierQualificationRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
     QualificationExpiryPolicy.requireUploadedFile(request.fileName(), request.storageKey());
+    requireOwnKey(request.storageKey(), supplierId);
+    ObjectStorageService.StoredObject original = objectStorageService.get(request.storageKey());
+    if (original == null || original.data() == null || original.data().length == 0) {
+      throw new IllegalArgumentException("请先上传有效的证照原件再归档");
+    }
+    String expected = supplierQualificationMapper.originalHash(request.storageKey());
+    if (expected == null || !expected.equals(hash(original.data()))
+        || supplierQualificationMapper.registerUpload(request.storageKey(), supplierId, request.fileName()) != 1) {
+      throw new IllegalArgumentException("原件未上传、已归档或完整性核验失败，请重新上传");
+    }
     String qualificationId = "qual-" + UUID.randomUUID();
     supplierQualificationMapper.insert(
         qualificationId,
@@ -123,6 +214,8 @@ public class SupplierQualificationApplicationService {
         request.fileName(),
         request.storageKey(),
         SupplierQualificationStatus.ACTIVE);
+    supplierQualificationMapper.recordEvent(supplierId, qualificationId, null, "created",
+        TenantAccessGuard.requireUserId("supplier qualification APIs"));
     return toResponse(supplierQualificationMapper.findBySupplierAndId(supplierId, qualificationId));
   }
 
@@ -133,7 +226,13 @@ public class SupplierQualificationApplicationService {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
     supplierQualificationStatusTransition.requireSupportedTarget(request.status());
     requireQualification(supplierId, qualificationId);
+    supplierQualificationMapper.lockQualification(supplierId, qualificationId);
+    if (supplierQualificationMapper.replacement(supplierId, qualificationId) != null) {
+      throw new IllegalArgumentException("此资质已被新版替代，不允许重新启用或修改");
+    }
     supplierQualificationMapper.updateStatus(supplierId, qualificationId, request.status());
+    supplierQualificationMapper.recordEvent(supplierId, qualificationId, null, request.status(),
+        TenantAccessGuard.requireUserId("supplier qualification APIs"));
     return toResponse(supplierQualificationMapper.findBySupplierAndId(supplierId, qualificationId));
   }
 

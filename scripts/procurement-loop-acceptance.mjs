@@ -12,6 +12,7 @@ const platformPassword = required('ACCEPTANCE_PLATFORM_PASSWORD');
 const supplierAccount = required('ACCEPTANCE_SUPPLIER_ACCOUNT');
 const supplierPassword = required('ACCEPTANCE_SUPPLIER_PASSWORD');
 const supplierId = required('ACCEPTANCE_SUPPLIER_ID');
+const verifySupplierRestrictions = process.env.ACCEPTANCE_VERIFY_SUPPLIER_RESTRICTIONS === '1';
 const password = required('ACCEPTANCE_BUYER_PASSWORD');
 const runId = `qa-loop-${Date.now()}`;
 const report = { runId, base, tenantId: runId, checks: [], records: {}, passed: false };
@@ -103,10 +104,22 @@ try {
   await request('buyer/orders', b, { awardId: award.id, expectedReceiptDate: day(14).slice(0, 10) }, 'POST', [400]);
   check('order creation blocked before award approval');
   await complete(b, 'rfq_award', award.id);
+  if (verifySupplierRestrictions) {
+    await request(`buyer/suppliers/${relation.id}/status`, b, { status: '黑名单' });
+    await request('buyer/orders', b, { awardId: award.id }, 'POST', [400]);
+    await request(`buyer/suppliers/${relation.id}/status`, b, { status: '待准入' });
+    await request('buyer/orders', b, { awardId: award.id }, 'POST', [400]);
+    await request(`buyer/suppliers/${relation.id}/submit`, b, { formData: {} });
+    await complete(b, 'buyer_supplier_admission', relation.id);
+    check('new orders blocked while blacklisted and pending readmission');
+  }
   const order = await request('buyer/orders', b, { awardId: award.id, expectedReceiptDate: day(14).slice(0, 10) });
   report.records.orderId = order.id;
   assert.equal(order.amount, 1200);
   assert.ok((await request('supplier/orders', s)).some(o => o.id === order.id && o.amount === 1200));
+  if (verifySupplierRestrictions) {
+    await request(`buyer/suppliers/${relation.id}/status`, b, { status: '黑名单' });
+  }
   assert.equal((await request('buyer/orders', b, { awardId: award.id })).id, order.id);
   assert.equal((await request(`supplier/orders/${order.id}/confirm`, s, {})).status, '待发货');
   await request(`supplier/orders/${order.id}/deliveries`, s, { carrier: '验收物流', trackingNo: runId, shippedQuantity: 0 }, 'POST', [400]);
@@ -116,6 +129,7 @@ try {
   await request(`buyer/orders/${order.id}/receipts`, b, { result: '验收通过', receivedQuantity: 3, qualifiedQuantity: 3 });
   assert.equal((await request('supplier/orders', s)).find(o => o.id === order.id).status, '已收货');
   check('quote, award, unique order, confirmation, shipment and receipt synchronized');
+  if (verifySupplierRestrictions) check('existing order remains idempotent and fulfillable after blacklisting');
   await request(`supplier/orders/${order.id}/invoices`, s, { amount: 1200, invoiceNo: `INV-${runId}`, taxRate: -1 }, 'POST', [400]);
   const invoice = await request(`supplier/orders/${order.id}/invoices`, s, { amount: 1200, invoiceNo: `INV-${runId}`, taxRate: 0 });
   assert.equal(invoice.taxRate, 0);
@@ -135,6 +149,11 @@ try {
   check('payment blocked before batch approval');
   await request(`buyer/payment-batches/${batchNo}/status`, b, { batchStatus: '审批中', formData: {} }, 'PUT');
   await complete(b, 'payment_batch', batchNo);
+  if (verifySupplierRestrictions) {
+    await request(`buyer/payment-execution-records/${execution.id}/registration`, b,
+      { paymentStatus: '已付款', releaseEvidenceNo: `QA-${runId}`, releaseRemark: '验证既有黑名单付款控制' }, 'POST', [400]);
+    check('existing blacklist payment safeguard remains enforced after fulfillment');
+  } else {
   await request(`buyer/payment-execution-records/${execution.id}/registration`, b,
     { paymentStatus: '已付款', releaseEvidenceNo: `QA-${runId}`, releaseRemark: '本地验收登记，无真实银行划款' });
   await request(`buyer/payment-execution-records/${execution.id}/registration`, b, { paymentStatus: '已付款' }, 'POST', [400]);
@@ -144,6 +163,7 @@ try {
   assert.equal((await request(`buyer/payment-batches/${batchNo}/status`, b, { batchStatus: '已付款归档' }, 'PUT')).batchStatus, '已付款归档');
   assert.equal((await request('buyer/workflow/tasks', b)).length, 0);
   check('three-way match, request/batch approval, payment registration and archive synchronized');
+  }
   const audit = await request('buyer/audit-logs', b);
   for (const targetId of [demand.id, rfq.id, order.id, invoice.id]) {
     assert.ok(audit.some(entry => entry.targetId === targetId && entry.actorId && entry.createdAt), `Missing audit trail: ${targetId}`);

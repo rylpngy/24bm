@@ -8,4 +8,9 @@
 
 export interface ChangeBuyerSupplierStatusRequest {
   status: string;
+  /**
+   * @minLength 0
+   * @maxLength 2000
+   */
+  reason?: string;
 }

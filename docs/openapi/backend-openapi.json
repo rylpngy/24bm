@@ -2670,6 +2670,126 @@
         }
       }
     },
+    "/api/v1/supplier/users/{userId}/role": {
+      "post": {
+        "tags": [
+          "supplier-user-controller"
+        ],
+        "operationId": "SupplierUser_changeRole",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeSupplierUserRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierUserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/users/{userId}/profile": {
+      "post": {
+        "tags": [
+          "supplier-user-controller"
+        ],
+        "operationId": "SupplierUser_updateProfile",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSupplierUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierUserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/users/{userId}/password": {
       "post": {
         "tags": [
@@ -3422,6 +3542,66 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ChangeSupplierQualificationStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierQualificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/qualifications/{qualificationId}/replacement": {
+      "post": {
+        "tags": [
+          "supplier-qualification-controller"
+        ],
+        "operationId": "SupplierQualification_replace",
+        "parameters": [
+          {
+            "name": "qualificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupplierQualificationRequest"
               }
             }
           },
@@ -7109,6 +7289,66 @@
         }
       }
     },
+    "/api/v1/buyer/suppliers/{relationId}/exit": {
+      "post": {
+        "tags": [
+          "supplier-exit-controller"
+        ],
+        "operationId": "SupplierExit_submitExit",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitSupplierExitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkflowStartResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/suppliers/{relationId}/evaluations": {
       "get": {
         "tags": [
@@ -7250,6 +7490,67 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseApprovalTaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/qualification-reviews/{id}/review": {
+      "post": {
+        "tags": [
+          "qualification-review-controller"
+        ],
+        "operationId": "QualificationReview_review",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualificationReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
                 }
               }
             }
@@ -13015,6 +13316,86 @@
         }
       }
     },
+    "/api/v1/supplier/qualifications/reviews": {
+      "get": {
+        "tags": [
+          "qualification-review-controller"
+        ],
+        "operationId": "QualificationReview_supplierReviews",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListQualificationReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/qualifications/history": {
+      "get": {
+        "tags": [
+          "supplier-qualification-controller"
+        ],
+        "operationId": "SupplierQualification_history",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMapStringObject"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/orders": {
       "get": {
         "tags": [
@@ -15161,6 +15542,106 @@
         }
       }
     },
+    "/api/v1/buyer/suppliers/{relationId}/qualification-archive": {
+      "get": {
+        "tags": [
+          "buyer-supplier-controller"
+        ],
+        "operationId": "BuyerSupplier_qualificationArchive",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListSupplierQualificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/{relationId}/exit-risk": {
+      "get": {
+        "tags": [
+          "buyer-supplier-controller"
+        ],
+        "operationId": "BuyerSupplier_exitRisk",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierExitRiskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/suppliers/{relationId}/auto-score": {
       "get": {
         "tags": [
@@ -15184,6 +15665,46 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseAutoScoreSuggestionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/qualification-reviews": {
+      "get": {
+        "tags": [
+          "qualification-review-controller"
+        ],
+        "operationId": "QualificationReview_buyerReviews",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListQualificationReviewResponse"
                 }
               }
             }
@@ -21150,18 +21671,26 @@
         "type": "object",
         "properties": {
           "name": {
+            "maxLength": 100,
+            "minLength": 0,
             "type": "string"
           },
           "mobile": {
+            "maxLength": 30,
+            "minLength": 0,
             "type": "string"
           },
           "email": {
+            "maxLength": 254,
+            "minLength": 0,
             "type": "string"
           },
           "status": {
             "type": "string"
           },
           "initialPassword": {
+            "maxLength": 72,
+            "minLength": 6,
             "type": "string"
           }
         }
@@ -21213,6 +21742,40 @@
         "type": "object",
         "properties": {
           "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ChangeSupplierUserRoleRequest": {
+        "required": [
+          "roleId"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateSupplierUserRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "mobile": {
+            "maxLength": 30,
+            "minLength": 0,
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 254,
+            "minLength": 0,
             "type": "string"
           }
         }
@@ -23098,6 +23661,11 @@
         "properties": {
           "status": {
             "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": "string"
           }
         }
       },
@@ -23155,6 +23723,63 @@
             "minimum": 0,
             "exclusiveMinimum": false,
             "type": "number"
+          }
+        }
+      },
+      "SubmitSupplierExitRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "ApiResponseWorkflowStartResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WorkflowStartResult"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkflowStartResult": {
+        "type": "object",
+        "properties": {
+          "workflowInstanceId": {
+            "type": "string"
+          },
+          "flowableProcessInstanceId": {
+            "type": "string"
+          },
+          "definitionVersionId": {
+            "type": "string"
+          },
+          "firstTaskId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -23254,6 +23879,23 @@
             "type": "boolean"
           },
           "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "QualificationReviewRequest": {
+        "required": [
+          "approved",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "boolean"
+          },
+          "comment": {
+            "maxLength": 2000,
+            "minLength": 0,
             "type": "string"
           }
         }
@@ -26223,6 +26865,87 @@
           }
         }
       },
+      "ApiResponseListQualificationReviewResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QualificationReviewResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "QualificationReviewResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "relationId": {
+            "type": "string"
+          },
+          "qualificationId": {
+            "type": "string"
+          },
+          "previousId": {
+            "type": "string"
+          },
+          "qualificationType": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "tenantName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseListMapStringObject": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object"
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "ApiResponseListPurchaseOrderResponse": {
         "type": "object",
         "properties": {
@@ -27965,6 +28688,36 @@
           "derivedDeliveryScore": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "ApiResponseSupplierExitRiskResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SupplierExitRiskResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierExitRiskResponse": {
+        "type": "object",
+        "properties": {
+          "unreceivedOrderCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unpaidInvoiceCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unpaidInvoiceFaceAmount": {
+            "type": "number"
           }
         }
       },

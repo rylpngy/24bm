@@ -237,6 +237,7 @@ import org.springframework.test.web.servlet.MvcResult;
     PlatformWorkspaceController.class,
     SupplierAnnouncementController.class,
     BuyerSupplierController.class,
+    com.procurement.supplier.api.SupplierExitController.class,
     BuyerSupplierDiscoveryController.class,
     BuyerSupplierInvitationController.class,
     SupplierEvaluationController.class,
@@ -422,6 +423,9 @@ class HttpSecurityContractTests {
 
   @MockBean
   private BuyerSupplierApplicationService buyerSupplierApplicationService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierExitApplicationService supplierExitApplicationService;
 
   @MockBean
   private com.procurement.supplier.application.SupplierDiscoveryApplicationService supplierDiscoveryApplicationService;

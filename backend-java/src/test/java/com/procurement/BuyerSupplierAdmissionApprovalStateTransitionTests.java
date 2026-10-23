@@ -69,13 +69,45 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
   }
 
   @Test
-  void submitCreatesPendingAdmissionApprovalForPendingSupplierRelation() {
+  void exitRiskCannotReadAnotherTenantRelation() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+        () -> buyerSupplierApplicationService.exitRisk("foreign"));
+    verify(buyerSupplierRelationMapper, org.mockito.Mockito.never()).exitRisk(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void exitRiskUsesSupplierFromOwnedRelationOnly() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    var own = relation("rel-1", "tenant-1", "已准入");
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1")).thenReturn(own);
+    buyerSupplierApplicationService.exitRisk("rel-1");
+    verify(buyerSupplierRelationMapper).exitRisk("tenant-1", own.supplierId());
+  }
+
+  @Test
+  void manualStatusChangeRetainsReasonInAudit() {
     TenantContext.set("tenant-1", null, "buyer-1");
     when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
-        .thenReturn(relation("rel-1", "tenant-1", "待准入"));
+        .thenReturn(relation("rel-1", "tenant-1", "已准入"));
+    when(buyerSupplierRelationMapper.updateStatus("tenant-1", "rel-1", "已准入", "黑名单")).thenReturn(1);
+    buyerSupplierApplicationService.changeRelationStatus("rel-1",
+        new com.procurement.supplier.api.ChangeBuyerSupplierStatusRequest("黑名单", "证照失效待整改"));
+    verify(auditLogApplicationService).recordCurrentTenantAction(
+        com.procurement.supplier.domain.BuyerSupplierAuditAction.RELATION_STATUS_CHANGED,
+        "buyer_supplier_relation", "rel-1", "已准入 → 黑名单；原因：证照失效待整改");
+  }
+
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"待准入", "已驳回"})
+  void submitCreatesPendingAdmissionApprovalForPendingOrRejectedSupplierRelation(String status) {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
+        .thenReturn(relation("rel-1", "tenant-1", status));
     when(supplierQualificationMapper.listActiveBySupplier("supplier-1"))
         .thenReturn(List.of(qualification("qual-1", "supplier-1")));
-    when(buyerSupplierRelationMapper.updateStatus("tenant-1", "rel-1", "待准入", "准入审批中"))
+    when(buyerSupplierRelationMapper.updateStatus("tenant-1", "rel-1", status, "准入审批中"))
         .thenReturn(1);
     when(approvalTaskMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.any()))
         .thenReturn(task("approval-1", "tenant-1", "rel-1", "待审批"));
@@ -88,7 +120,7 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
 
     assertThat(response.bizType()).isEqualTo("buyer_supplier_admission");
     assertThat(response.status()).isEqualTo("待审批");
-    verify(buyerSupplierRelationMapper).updateStatus("tenant-1", "rel-1", "待准入", "准入审批中");
+    verify(buyerSupplierRelationMapper).updateStatus("tenant-1", "rel-1", status, "准入审批中");
     verify(approvalTaskMapper).insert(
         org.mockito.ArgumentMatchers.any(),
         org.mockito.ArgumentMatchers.eq("tenant-1"),
@@ -113,6 +145,16 @@ class BuyerSupplierAdmissionApprovalStateTransitionTests {
     assertThatThrownBy(() -> buyerSupplierApplicationService.submitAdmission("rel-1"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Supplier admission requires at least one active qualification");
+  }
+
+  @Test
+  void unresolvedQualificationChangesBlockAdmissionSubmission() {
+    TenantContext.set("tenant-1", null, "buyer-1");
+    when(buyerSupplierRelationMapper.findByTenantAndId("tenant-1", "rel-1"))
+        .thenReturn(relation("rel-1", "tenant-1", "待准入"));
+    when(supplierQualificationMapper.blockingReviews("rel-1")).thenReturn(1);
+    assertThatThrownBy(() -> buyerSupplierApplicationService.submitAdmission("rel-1"))
+        .isInstanceOf(IllegalStateException.class).hasMessageContaining("资质复核");
   }
 
   private ApprovalTemplate template(String code, String bizType) {

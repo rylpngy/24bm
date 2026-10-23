@@ -64,7 +64,12 @@ public class BuyerSupplierController {
       @PathVariable String relationId, @PathVariable String qualificationId) {
     return SupplierQualificationController.streamed(
         buyerSupplierApplicationService.loadRelationQualificationObject(relationId, qualificationId),
-        qualificationId);
+        buyerSupplierApplicationService.relationQualificationFileName(relationId, qualificationId));
+  }
+
+  @GetMapping("/{relationId}/qualification-archive")
+  public ApiResponse<List<SupplierQualificationResponse>> qualificationArchive(@PathVariable String relationId) {
+    return ApiResponse.ok(buyerSupplierApplicationService.listRelationQualificationArchive(relationId));
   }
 
   @PostMapping("/{relationId}/approval")
@@ -79,6 +84,11 @@ public class BuyerSupplierController {
       @PathVariable String relationId,
       @Valid @RequestBody ChangeBuyerSupplierStatusRequest request) {
     return ApiResponse.ok(buyerSupplierApplicationService.changeRelationStatus(relationId, request));
+  }
+
+  @GetMapping("/{relationId}/exit-risk")
+  public ApiResponse<SupplierExitRiskResponse> exitRisk(@PathVariable String relationId) {
+    return ApiResponse.ok(buyerSupplierApplicationService.exitRisk(relationId));
   }
 
   @PostMapping("/{relationId}/profile")

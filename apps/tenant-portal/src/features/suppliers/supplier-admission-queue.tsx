@@ -5,13 +5,13 @@ import { AlertCircle, CheckCircle2, ChevronRight, Clock3, ShieldCheck } from 'lu
 import {
   type WorkflowTask,
   useBuyerSupplierList,
-  useUnifiedWorkflowCompleteTask,
   useWorkflowBuyerSupplierAdmissionSubmit,
   useWorkflowRuntimeTasks,
 } from '@24bid/api-client';
 import { FeedbackNotice, Pagination, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
 import { SupplierSummaryChip, SupplierSummaryChips } from './supplier-metric-card';
-import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
+import { SupplierAdmissionSubmitDialog } from './supplier-admission-submit-dialog';
+import { SupplierAdmissionReviewDialog } from './supplier-admission-review-dialog';
 
 const ADMISSION_STATUSES = ['待准入', '准入审批中', '已驳回'];
 const PAGE_SIZE = 8;
@@ -19,15 +19,6 @@ const PAGE_SIZE = 8;
 interface Feedback {
   tone: 'success' | 'error' | 'info';
   message: string;
-}
-
-function errorMessage(error: unknown, fallback: string) {
-  const response = error as {
-    response?: { data?: { message?: unknown; error?: { message?: unknown } } };
-    message?: unknown;
-  };
-  const message = response.response?.data?.message ?? response.response?.data?.error?.message ?? response.message;
-  return typeof message === 'string' && message.trim() ? message : fallback;
 }
 
 // 准入审批台:把准入流程中的供应商聚成工作队列,行内直接提交/过/驳。
@@ -41,7 +32,7 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
   const query = useBuyerSupplierList();
   const workflowTasks = useWorkflowRuntimeTasks(can('buyer:workflow:review'));
   const submit = useWorkflowBuyerSupplierAdmissionSubmit();
-  const completeTask = useUnifiedWorkflowCompleteTask();
+  const [review, setReview] = useState<{ task: WorkflowTask; approved: boolean } | null>(null);
   const all = query.data?.data ?? [];
   const admissionTaskByRelationId = new Map<string, WorkflowTask>();
   (workflowTasks.data?.data ?? [])
@@ -75,42 +66,12 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
       }),
     ]);
 
-  const busy = submit.isPending || completeTask.isPending;
+  const busy = submit.isPending;
   const count = (st: string) => all.filter((s) => s.status === st).length;
 
   const reviewTask = (task: WorkflowTask, approved: boolean) => {
     setFeedback(null);
-    completeTask.mutate(
-      {
-        taskId: task.taskId,
-        data: {
-          action: approved ? 'approve' : 'reject',
-          comment: approved ? '资料与资质核验通过，同意准入。' : '资料或资质不符合准入要求，驳回申请。',
-        },
-      },
-      {
-        onSuccess: (response) => {
-          const status = response.data?.status;
-          setFeedback({
-            tone: 'success',
-            message:
-              status === 'processing'
-                ? '当前审批节点已完成，流程已转交下一办理人。'
-                : approved
-                  ? '供应商准入审批已通过。'
-                  : '供应商准入申请已驳回。',
-          });
-          void refresh();
-        },
-        onError: (error) => {
-          setFeedback({
-            tone: 'error',
-            message: errorMessage(error, '准入审批失败，请刷新任务后重试。'),
-          });
-          void refresh();
-        },
-      },
-    );
+    setReview({ task, approved });
   };
 
   const btn = (label: string, onClick: () => void, tone: 'blue' | 'emerald' | 'red') => (
@@ -119,7 +80,7 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
       onClick={onClick}
       disabled={busy}
       className={cn(
-        'inline-flex h-8 items-center rounded-md px-3 text-xs font-black text-white transition disabled:bg-slate-400',
+        'inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-md px-3 text-xs font-black text-white transition disabled:bg-slate-400',
         tone === 'emerald' && 'bg-emerald-600 hover:bg-emerald-700',
         tone === 'blue' && 'bg-blue-600 hover:bg-blue-700',
         tone === 'red' && 'bg-red-600 hover:bg-red-700',
@@ -135,6 +96,7 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
       case '已驳回':
         return can('buyer:supplier:manage') ? btn('提交准入', () => setSubmitRelation({ id, name: supplierName ?? '供应商准入' }), 'blue') : null;
       case '准入审批中': {
+        if (workflowTasks.isError) return <span className="text-xs font-bold text-red-700">办理权限读取失败</span>;
         if (workflowTasks.isLoading) {
           return (
             <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-500">
@@ -193,6 +155,8 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
 
       {query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载准入队列…" />
+      ) : query.isError ? (
+        <div role="alert"><FeedbackNotice tone="error" message="准入队列加载失败。" /><button type="button" className="mt-2 text-sm font-bold text-blue-600" onClick={() => void query.refetch()}>重试</button></div>
       ) : queue.length === 0 ? (
         <FeedbackNotice
           tone="info"
@@ -215,7 +179,7 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
                   等级 {s.level ?? '—'} · 授权品类 {(s.categories ?? []).join('、') || '—'}
                 </p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 {s.id && actionsFor(s.id, s.status, s.supplierName)}
                 {s.id && (
                   <button
@@ -223,7 +187,7 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
                     onClick={() => onOpen(s.id!)}
                     className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
                   >
-                    360 <ChevronRight size={13} />
+                    详情 <ChevronRight size={13} />
                   </button>
                 )}
               </div>
@@ -234,9 +198,12 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
         </>
       )}
       </Panel>
+      {review && <SupplierAdmissionReviewDialog {...review} onClose={() => setReview(null)} onComplete={message => {
+        setReview(null); setFeedback({ tone: 'success', message }); void refresh();
+      }} />}
       {submitRelation && (
-        <WorkflowSubmitDialog
-          businessType="buyer_supplier_admission"
+        <SupplierAdmissionSubmitDialog
+          relationId={submitRelation.id}
           title={submitRelation.name}
           busy={submit.isPending}
           submissionError={submit.error}

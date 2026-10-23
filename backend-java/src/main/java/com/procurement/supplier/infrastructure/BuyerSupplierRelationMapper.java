@@ -12,6 +12,21 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface BuyerSupplierRelationMapper {
 
+  @Select("select id from buyer_supplier_relations where tenant_id = #{tenantId} and id = #{id} for update")
+  String lockRelation(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("""
+      select
+        (select count(*) from purchase_orders where tenant_id = #{tenantId}
+          and supplier_id = #{supplierId} and status != '已收货') as unreceived_order_count,
+        (select count(*) from invoices where tenant_id = #{tenantId}
+          and supplier_id = #{supplierId} and payment_status != '已付款') as unpaid_invoice_count,
+        (select coalesce(sum(amount), 0) from invoices where tenant_id = #{tenantId}
+          and supplier_id = #{supplierId} and payment_status != '已付款') as unpaid_invoice_face_amount
+      """)
+  com.procurement.supplier.api.SupplierExitRiskResponse exitRisk(
+      @Param("tenantId") String tenantId, @Param("supplierId") String supplierId);
+
   @Select("""
       <script>
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,

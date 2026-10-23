@@ -68,14 +68,14 @@ public class SupplierQualificationController {
   public ResponseEntity<Resource> download(@PathVariable String qualificationId) {
     ObjectStorageService.StoredObject object =
         supplierQualificationApplicationService.loadOwnObject(qualificationId);
-    return streamed(object, qualificationId);
+    return streamed(object, supplierQualificationApplicationService.ownFileName(qualificationId));
   }
 
   static ResponseEntity<Resource> streamed(ObjectStorageService.StoredObject object, String fallbackName) {
     String encoded = URLEncoder.encode(fallbackName, StandardCharsets.UTF_8).replace("+", "%20");
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION,
-            "attachment; filename=\"" + fallbackName + "\"; filename*=UTF-8''" + encoded)
+            "attachment; filename*=UTF-8''" + encoded)
         .contentType(object.contentType() == null
             ? MediaType.APPLICATION_OCTET_STREAM
             : MediaType.parseMediaType(object.contentType()))
@@ -87,5 +87,16 @@ public class SupplierQualificationController {
       @PathVariable String qualificationId,
       @Valid @RequestBody ChangeSupplierQualificationStatusRequest request) {
     return ApiResponse.ok(supplierQualificationApplicationService.changeQualificationStatus(qualificationId, request));
+  }
+
+  @PostMapping("/{qualificationId}/replacement")
+  public ApiResponse<SupplierQualificationResponse> replace(@PathVariable String qualificationId,
+      @Valid @RequestBody CreateSupplierQualificationRequest request) {
+    return ApiResponse.ok(supplierQualificationApplicationService.replaceQualification(qualificationId, request));
+  }
+
+  @GetMapping("/history")
+  public ApiResponse<List<java.util.Map<String, Object>>> history() {
+    return ApiResponse.ok(supplierQualificationApplicationService.history());
   }
 }
